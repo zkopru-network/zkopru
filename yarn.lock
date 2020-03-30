@@ -1764,12 +1764,12 @@
 "@zkopru/circuits@file:packages/circuits":
   version "0.0.1"
   dependencies:
-    "@zkopru/common" "file:../../../.cache/yarn/v4/npm-@zkopru-circuits-0.0.1-111262d5-932f-443e-b903-74462b3291c1-1585592085461/node_modules/@zkopru/common"
+    circomlib "^0.1.1"
 
 "@zkopru/cli-wallet@file:packages/cli-wallet":
   version "0.0.1"
   dependencies:
-    "@zkopru/common" "file:../../../.cache/yarn/v4/npm-@zkopru-cli-wallet-0.0.1-74219190-d0c9-482a-8114-eb1830446170-1585592085463/node_modules/@zkopru/common"
+    "@zkopru/common" "file:../../../.cache/yarn/v4/npm-@zkopru-cli-wallet-0.0.1-217ac528-7303-4f2c-9aea-25f91675f409-1585593015164/node_modules/@zkopru/common"
 
 "@zkopru/common@file:packages/common":
   version "0.0.1"
@@ -1777,7 +1777,7 @@
 "@zkopru/contracts@file:packages/contracts":
   version "0.0.1"
   dependencies:
-    "@zkopru/common" "file:../../../.cache/yarn/v4/npm-@zkopru-contracts-0.0.1-92f81ebc-0c7c-485b-afdf-36d39f710bc9-1585592085464/node_modules/@zkopru/common"
+    "@zkopru/common" "file:../../../.cache/yarn/v4/npm-@zkopru-contracts-0.0.1-cfdf66ab-edf2-493a-b434-840c248dd4a2-1585593015165/node_modules/@zkopru/common"
     circomlib "^0.1.1"
     merkle-tree-rollup "^1.1.4"
     smt-rollup "github:wanseob/smt-rollup"
@@ -1787,12 +1787,12 @@
 "@zkopru/coordinator@file:packages/coordinator":
   version "0.0.1"
   dependencies:
-    "@zkopru/common" "file:../../../.cache/yarn/v4/npm-@zkopru-coordinator-0.0.1-c8eaa45e-f698-4284-8787-fa5f6cce993f-1585592085572/node_modules/@zkopru/common"
+    "@zkopru/common" "file:../../../.cache/yarn/v4/npm-@zkopru-coordinator-0.0.1-113d4ee9-5d6e-4cec-9efe-f4bdb21493bc-1585593015178/node_modules/@zkopru/common"
 
 "@zkopru/testset@file:packages/testset":
   version "0.0.1"
   dependencies:
-    "@zkopru/common" "file:../../../.cache/yarn/v4/npm-@zkopru-testset-0.0.1-e511be95-379e-4db0-96c6-8d538845f70f-1585592085572/node_modules/@zkopru/common"
+    "@zkopru/common" "file:../../../.cache/yarn/v4/npm-@zkopru-testset-0.0.1-89e4d7fd-5cf8-4206-9879-756e34900003-1585593015179/node_modules/@zkopru/common"
 
 JSONStream@^1.0.4, JSONStream@^1.3.4:
   version "1.3.5"
@@ -2918,6 +2918,22 @@ circom@0.5.3:
     circom_runtime "0.0.3"
     ffiasm "0.0.2"
     ffjavascript "0.0.3"
+    ffwasm "0.0.6"
+    fnv-plus "^1.3.1"
+    r1csfile "0.0.3"
+    tmp-promise "^2.0.2"
+    wasmbuilder "0.0.10"
+
+circom@^0.5.4:
+  version "0.5.4"
+  resolved "https://registry.yarnpkg.com/circom/-/circom-0.5.4.tgz#a872b43fa1cfbe49b2cd1a2680ebcb0571bb59bf"
+  integrity sha512-160Qs9lptZBNy/BWuRKsLYWX2RjMwxnH+GfUEO5RzEWBEwsiG0GX2HM+07IbWK4lxaZufE0wkF808YmpKcuYPQ==
+  dependencies:
+    big-integer "^1.6.32"
+    chai "^4.2.0"
+    circom_runtime "0.0.3"
+    ffiasm "0.0.2"
+    ffjavascript "0.0.4"
     ffwasm "0.0.6"
     fnv-plus "^1.3.1"
     r1csfile "0.0.3"
@@ -10379,7 +10395,7 @@ snapdragon@^0.8.1:
     source-map-resolve "^0.5.0"
     use "^3.1.0"
 
-snarkjs@^0.1.22:
+snarkjs@^0.1.22, snarkjs@^0.1.25:
   version "0.1.25"
   resolved "https://registry.yarnpkg.com/snarkjs/-/snarkjs-0.1.25.tgz#fa9d12eb4ae3a57d82529590c6a480c4b61ae34e"
   integrity sha512-VtQoCWbkt3uFGnBB9aEYX1OITw9Rx40q2wkj1QElRcJtJU0R73BJ+CNfYEty7/Z10pEjkGkUCD4a3J6MOAllQA==
