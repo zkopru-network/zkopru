@@ -1,0 +1,97 @@
+{
+  "name": "zkopru",
+  "version": "0.0.1",
+  "license": "GPL-3.0-or-later",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "bootstrap": "lerna exec npm install && lerna link",
+    "build": "lerna run --parallel build",
+    "build:fresh": "yarn clean && yarn build",
+    "clean": "lerna run --parallel clean && shx rm -rf .build-cache *.log coverage junit.xml",
+    "test": "lerna run test --parallel",
+    "test:ci": "jest --coverage --ci --reporters='jest-junit'",
+    "test:unit": "jest packages/*/test/unit",
+    "test:integration": "jest packages/*/test/integration",
+    "coverage": "jest --coverage",
+    "coverage:unit": "yarn test:unit --coverage",
+    "coverage:integration": "yarn test:integration --coverage",
+    "coverage:show": "live-server coverage",
+    "lint": "eslint --ext js --ext ts --ext md",
+    "lint:ci": "yarn lint . --format junit",
+    "lint:md": "markdownlint --ignore node_modules --ignore .git",
+    "format": "yarn lint --fix",
+    "format:md": "yarn lint:md --fix",
+    "husky-skip": "cross-env HUSKY_SKIP_HOOKS=1",
+    "precommit": "lerna run --concurrency 1 --stream precommit --since HEAD",
+    "commit": "git cz"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "yarn precommit && yarn test",
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "git add"
+    ],
+    "*.md": [
+      "yarn format:md",
+      "git add"
+    ]
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^8.1.0",
+    "@commitlint/config-conventional": "^8.1.0",
+    "@types/jest": "^24.0.23",
+    "@types/node": "^12.7.5",
+    "@typescript-eslint/eslint-plugin": "^2.2.0",
+    "@typescript-eslint/parser": "^2.2.0",
+    "circomlib": "^0.1.1",
+    "commitizen": "^4.0.3",
+    "cross-env": "^6.0.3",
+    "cz-conventional-changelog": "^3.0.2",
+    "eslint": "^6.1.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-config-prettier": "^6.0.0",
+    "eslint-import-resolver-lerna": "^1.1.0",
+    "eslint-import-resolver-typescript": "^1.1.1",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-jest": "^22.9.0",
+    "eslint-plugin-markdown": "^1.0.0",
+    "eslint-plugin-prettier": "^3.1.0",
+    "eslint-plugin-truffle": "^0.3.1",
+    "eth-gas-reporter": "^0.2.16",
+    "husky": "^3.1.0",
+    "jest": "^24.7.1",
+    "jest-junit": "^10.0.0",
+    "lerna": "^3.13.2",
+    "link-module-alias": "^1.2.0",
+    "lint-staged": "^8.1.5",
+    "live-server": "^1.2.1",
+    "markdownlint-cli": "^0.22.0",
+    "prettier": "^1.16.4",
+    "serve": "^11.2.0",
+    "shx": "^0.3.2",
+    "solc": "^0.5.15",
+    "solium": "^1.2.5",
+    "truffle": "^5.1.19",
+    "truffle-artifactor": "^4.0.30",
+    "ts-jest": "^24.2.0",
+    "ts-node-dev": "^1.0.0-pre.44",
+    "tsconfig-paths": "^3.9.0",
+    "typescript": "^3.4.3"
+  },
+  "dependencies": {
+    "@zkopru/circuits": "file:packages/circuits",
+    "@zkopru/cli-wallet": "file:packages/cli-wallet",
+    "@zkopru/common": "file:packages/common",
+    "@zkopru/contracts": "file:packages/contracts",
+    "@zkopru/coordinator": "file:packages/coordinator",
+    "@zkopru/testset": "file:packages/testset"
+  }
+}

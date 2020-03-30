@@ -1,0 +1,4 @@
+linters:
+    contracts/**/*.sol:
+      - solium -d contracts/
+      - git add

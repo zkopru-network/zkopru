@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "es2015",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "rootDir": ".",
+    "baseUrl": "packages",
+    "paths": {
+      "@zkopru/*": ["*/src"],
+      "~circuits/*": ["circuits/src/*"],
+      "~cli-wallet/*": ["cli-wallet/src/*"],
+      "~common/*": ["common/src/*"],
+      "~contracts/*": ["contracts/src/*"],
+      "~coordinator/*": ["coordinator/src/*"],
+      "~testset/*": ["testset/src/*"],
+      "~*": ["*/src"]
+    },
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "removeComments": true,
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "incremental": true,
+    "resolveJsonModule": true
+  }
+}
