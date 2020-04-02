@@ -24,6 +24,11 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@zkopru/common": "file:../common"
+    "@zkopru/contracts": "file:../contracts",
+    "@zkopru/commons": "file:../commons",
+    "express": "^4.17.1",
+    "snarkjs": "^0.1.25",
+    "web3": "^1.2.6",
+    "web3-utils": "^1.2.6"
   }
 }
