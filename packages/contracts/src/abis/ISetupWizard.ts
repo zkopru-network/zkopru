@@ -1,0 +1,68 @@
+export const ISetupWizardABI = [
+  {
+    inputs: [
+      { internalType: 'uint8', name: 'txType', type: 'uint8' },
+      { internalType: 'uint8', name: 'numOfInputs', type: 'uint8' },
+      { internalType: 'uint8', name: 'numOfOutputs', type: 'uint8' },
+      { internalType: 'uint256[2]', name: 'alfa1', type: 'uint256[2]' },
+      { internalType: 'uint256[2][2]', name: 'beta2', type: 'uint256[2][2]' },
+      { internalType: 'uint256[2][2]', name: 'gamma2', type: 'uint256[2][2]' },
+      { internalType: 'uint256[2][2]', name: 'delta2', type: 'uint256[2][2]' },
+      { internalType: 'uint256[2][]', name: 'ic', type: 'uint256[2][]' },
+    ],
+    name: 'registerVk',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'addr', type: 'address' }],
+    name: 'makeUserInteractable',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'addr', type: 'address' }],
+    name: 'makeRollUpable',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'address', name: 'depositChallenge', type: 'address' },
+      { internalType: 'address', name: 'headerChallenge', type: 'address' },
+      { internalType: 'address', name: 'migrationChallenge', type: 'address' },
+      { internalType: 'address', name: 'rollUpChallenge', type: 'address' },
+      { internalType: 'address', name: 'txChallenge', type: 'address' },
+    ],
+    name: 'makeChallengeable',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'addr', type: 'address' }],
+    name: 'makeMigratable',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'address[]', name: 'migrants', type: 'address[]' },
+    ],
+    name: 'allowMigrants',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'completeSetup',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+]

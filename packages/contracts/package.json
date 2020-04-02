@@ -14,8 +14,9 @@
     "precommit": "#lint-staged",
     "compile": "truffle compile",
     "postinstall": "shx mkdir -p dist",
-    "build": "tsc --build tsconfig.build.json && link-module-alias",
+    "build": "yarn compile && yarn web3TS && yarn genABI && yarn genTS && tsc --build tsconfig.build.json && link-module-alias && yarn prettier",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
+    "tsc": "tsc --build tsconfig.build.json && link-module-alias",
     "test": "truffle test",
     "test:unit": "jest test/unit",
     "test:watch": "jest --watch",
@@ -23,14 +24,21 @@
     "coverage": "jest --coverage",
     "coverage:show": "live-server coverage",
     "dev": "ts-node-dev -r tsconfig-paths/register src/index.ts",
+    "web3TS": "truffle compile && typechain --target web3-v1 './build/**/*.json' --outDir src/contracts",
+    "genABI": "node utils/abi-generator.js",
+    "genTS": "node utils/ts-generator.js",
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@zkopru/common": "file:../common",
+    "@zkopru/commons": "file:../commons",
+    "bignumber.js": "^9.0.0",
+    "bn.js": "^5.1.1",
     "circomlib": "^0.1.1",
     "merkle-tree-rollup": "^1.1.4",
     "smt-rollup": "github:wanseob/smt-rollup",
     "solc": "^0.6.4",
-    "truffle-artifactor": "^4.0.30"
+    "truffle-artifactor": "^4.0.30",
+    "web3-core": "^1.2.6",
+    "web3-eth-contract": "^1.2.6"
   }
 }
