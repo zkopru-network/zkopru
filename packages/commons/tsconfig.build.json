@@ -3,7 +3,9 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-    "tsBuildInfoFile": "../../.build-cache/common.tsbuildinfo"
+    "allowJs": true,
+    "noImplicitAny": false,
+    "tsBuildInfoFile": "../../.build-cache/commons.tsbuildinfo"
   },
   "include": ["src"],
 }
