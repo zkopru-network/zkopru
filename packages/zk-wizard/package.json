@@ -1,5 +1,5 @@
 {
-  "name": "@zkopru/cli-wallet",
+  "name": "@zkopru/zk-wizard",
   "version": "0.0.1",
   "license": "GPL-3.0-or-later",
   "main": "dist/index.js",
@@ -8,7 +8,7 @@
     "dist"
   ],
   "_moduleAliases": {
-    "~cli-wallet": "dist"
+    "~zk-wizard": "dist"
   },
   "scripts": {
     "postinstall": "shx mkdir -p dist",
@@ -24,6 +24,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@zkopru/common": "file:../common"
+    "@zkopru/commons": "file:../commons",
+    "@zkopru/tree": "file:../tree"
   }
 }

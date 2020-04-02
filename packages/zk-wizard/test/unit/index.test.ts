@@ -1,4 +1,4 @@
-import { run } from '~cli-wallet'
+import { run } from '@zkopru/zk-wizard'
 
 describe('index', () => {
   it('run', () => {
