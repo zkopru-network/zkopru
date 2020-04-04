@@ -1,4 +1,5 @@
 build
+temp
 **/*/package-lock.json
 reports
 junit.xml

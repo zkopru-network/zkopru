@@ -24,7 +24,6 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@zkopru/commons": "file:../commons",
-    "@zkopru/tree": "file:../tree"
+    "@zkopru/core": "file:../core",
   }
 }

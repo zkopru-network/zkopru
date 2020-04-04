@@ -6,5 +6,10 @@
     "tsBuildInfoFile": "../../.build-cache/testset.tsbuildinfo"
   },
   "include": ["src"],
-  "references": [{ "path": "../common/tsconfig.build.json", "prepend": false }]
+  "references": [
+    { "path": "../core/tsconfig.build.json", "prepend": false },
+    { "path": "../contracts/tsconfig.build.json", "prepend": false },
+    { "path": "../tree/tsconfig.build.json", "prepend": false },
+    { "path": "../zk-wizard/tsconfig.build.json", "prepend": false },
+  ]
 }

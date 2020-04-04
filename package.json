@@ -47,8 +47,11 @@
   "devDependencies": {
     "@commitlint/cli": "^8.1.0",
     "@commitlint/config-conventional": "^8.1.0",
+    "@nano-sql/adapter-rocksdb": "^2.0.7",
+    "@types/async-lock": "^1.1.1",
+    "@types/express": "^4.17.4",
+    "@types/fs-extra": "^8.1.0",
     "@types/jest": "^24.0.23",
-    "@types/node": "^12.7.5",
     "@typescript-eslint/eslint-plugin": "^2.2.0",
     "@typescript-eslint/parser": "^2.2.0",
     "circom": "^0.5.4",
@@ -67,6 +70,7 @@
     "eslint-plugin-prettier": "^3.1.0",
     "eslint-plugin-truffle": "^0.3.1",
     "eth-gas-reporter": "^0.2.16",
+    "fs-extra": "^9.0.0",
     "husky": "^3.1.0",
     "jest": "^24.7.1",
     "jest-junit": "^10.0.0",
@@ -86,14 +90,16 @@
     "ts-jest": "^24.2.0",
     "ts-node-dev": "^1.0.0-pre.44",
     "tsconfig-paths": "^3.9.0",
+    "typechain": "^1.0.5",
+    "typechain-target-web3-v1": "^1.0.4",
     "typescript": "^3.4.3"
   },
   "dependencies": {
     "@zkopru/circuits": "file:packages/circuits",
-    "@zkopru/cli-wallet": "file:packages/cli-wallet",
-    "@zkopru/common": "file:packages/common",
+    "@zkopru/core": "file:packages/core",
     "@zkopru/contracts": "file:packages/contracts",
     "@zkopru/coordinator": "file:packages/coordinator",
-    "@zkopru/testset": "file:packages/testset"
+    "@zkopru/testset": "file:packages/testset",
+    "@zkopru/zk-wizard": "file:packages/zk-wizard"
   }
 }

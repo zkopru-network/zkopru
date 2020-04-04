@@ -30,7 +30,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@zkopru/commons": "file:../commons",
+    "@zkopru/core": "file:../core",
     "bignumber.js": "^9.0.0",
     "bn.js": "^5.1.1",
     "circomlib": "^0.1.1",

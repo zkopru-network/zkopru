@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es2015",
+    "target": "es5",
     "module": "commonjs",
     "moduleResolution": "node",
     "rootDir": ".",
@@ -8,11 +8,11 @@
     "paths": {
       "@zkopru/*": ["*/src"],
       "~circuits/*": ["circuits/src/*"],
-      "~cli-wallet/*": ["cli-wallet/src/*"],
-      "~common/*": ["common/src/*"],
+      "~core/*": ["core/src/*"],
       "~contracts/*": ["contracts/src/*"],
       "~coordinator/*": ["coordinator/src/*"],
       "~testset/*": ["testset/src/*"],
+      "~zk-wizard/*": ["zk-wizard/src/*"],
       "~*": ["*/src"]
     },
     "strict": true,
@@ -27,6 +27,8 @@
     "sourceMap": true,
     "esModuleInterop": true,
     "incremental": true,
-    "resolveJsonModule": true
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "noImplicitAny": false
   }
 }

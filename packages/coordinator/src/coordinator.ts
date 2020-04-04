@@ -1,5 +1,5 @@
 // import { Hex } from 'web3-utils'
-// import { ZkTx } from '@zkopru/commons'
+// import { ZkTx } from '@zkopru/core'
 // import Web3 from 'web3'
 // import { ITxPool } from './tx_pool'
 // import { ISyncrhonizer } from './synchronizer'

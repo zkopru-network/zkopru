@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { Field, F, BabyJubjub, RawTx, ZkTx, Utils } from '@zkopru/commons'
-import { Grove, MerkleProof } from '@zkopru/tree'
+import { Field, F, BabyJubjub, RawTx, ZkTx, Utils, Grove, MerkleTree } from '@zkopru/core'
+import zkopru from '@zkopru/core'
+
 
 export class ZkWizard {
   circuits: { [key: string]: Buffer }

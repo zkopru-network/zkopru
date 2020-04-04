@@ -7,7 +7,6 @@
   },
   "include": ["src"],
   "references": [
-    { "path": "../commons/tsconfig.build.json", "prepend": false },
-    { "path": "../tree/tsconfig.build.json", "prepend": false }
+    { "path": "../core/tsconfig.build.json", "prepend": false },
   ]
 }

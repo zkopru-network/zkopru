@@ -14,17 +14,9 @@
     "circuit": "./script/compile_circuits.sh",
     "setup": "./script/snark_setup.sh",
     "clean": "shx rm -rf build",
-    "test": "jest",
-    "test:unit": "jest test/unit",
-    "test:watch": "jest --watch",
-    "test:ci": "jest --coverage --ci --reporters='jest-junit'",
-    "coverage": "jest --coverage",
     "coverage:show": "live-server coverage"
   },
   "dependencies": {
     "circomlib": "^0.1.1"
-  },
-  "devDependencies": {
-    "circom": "^0.5.4"
   }
 }

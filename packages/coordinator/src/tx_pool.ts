@@ -1,5 +1,5 @@
 import { Hex } from 'web3-utils'
-import { ZkTx, Utils } from '@zkopru/commons'
+import { ZkTx, Utils } from '@zkopru/core'
 import * as snarkjs from 'snarkjs'
 
 const PENDING = 'pending'

@@ -3,8 +3,9 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-    "tsBuildInfoFile": "../../.build-cache/contracts.tsbuildinfo"
+    "allowJs": true,
+    "noImplicitAny": false,
+    "tsBuildInfoFile": "../../.build-cache/core.tsbuildinfo"
   },
   "include": ["src"],
-  "references": [{ "path": "../core/tsconfig.build.json", "prepend": false }]
 }

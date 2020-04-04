@@ -25,6 +25,7 @@ const common = {
     'no-await-in-loop': 'off',
     'consistent-return': 'off',
     'no-shadow': 'off',
+    'no-bitwise': 'off',
     'no-unused-vars': 'off',
   },
 }
@@ -56,6 +57,16 @@ module.exports = {
       rules: {
         ...common.rules,
         '@typescript-eslint/explicit-function-return-type': 'off',
+        "@typescript-eslint/member-delimiter-style": ["error", {
+          multiline: {
+            delimiter: 'none',    // 'none' or 'semi' or 'comma'
+            requireLast: true,
+          },
+          singleline: {
+            delimiter: 'semi',    // 'semi' or 'comma'
+            requireLast: false,
+          },
+        }]
       },
       settings: {
         'import/resolver': {

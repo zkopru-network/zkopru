@@ -1,22 +1,22 @@
 {
-  "name": "@zkopru/testset",
+  "name": "@zkopru/core",
   "version": "0.0.1",
   "license": "GPL-3.0-or-later",
-  "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
   "_moduleAliases": {
-    "~testset": "dist"
+    "~core": "dist"
   },
   "scripts": {
-    "postinstall": "shx mkdir -p dist",
+    "postinstall": "shx mkdir -p dist && link-module-alias",
     "build": "tsc --build tsconfig.build.json && link-module-alias",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "test": "jest",
     "test:unit": "jest test/unit",
+    "test:integration": "jest test/unit",
     "test:watch": "jest --watch",
     "test:ci": "jest --coverage --ci --reporters='jest-junit'",
     "coverage": "jest --coverage",
@@ -25,10 +25,16 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@zkopru/core": "file:../core",
-    "@zkopru/contracts": "file:../contracts",
-    "@zkopru/tree": "file:../tree",
-    "@zkopru/zk-wizard": "file:../zk-wizard",
-    "fs-extra": "^9.0.0"
+    "@nano-sql/core": "^2.3.7",
+    "async-lock": "^1.2.2",
+    "big-integer": "^1.6.48",
+    "blake-hash": "^1.1.0",
+    "chacha20": "^0.1.4",
+    "circom_runtime": "^0.0.3",
+    "circomlib": "^0.1.1",
+    "ffjavascript": "^0.0.4",
+    "snarkjs": "^0.1.25",
+    "web3-eth-accounts": "^1.2.6",
+    "web3-utils": "^1.2.6"
   }
 }

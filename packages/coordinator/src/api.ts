@@ -1,5 +1,5 @@
 import express from 'express'
-import { ZkTx } from '@zkopru/commons'
+import { ZkTx } from '@zkopru/core'
 
 export class API {
   app: express.Application
