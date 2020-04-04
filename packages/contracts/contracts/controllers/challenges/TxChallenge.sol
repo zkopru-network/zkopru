@@ -226,12 +226,12 @@ contract TxChallenge is Challengeable {
         nullifiers[0] = usedNullifier;
         siblings[0] = sibling;
         bytes32 updatedRoot = SMT256.rollUp(
-            _block.header.prevNullifierRoot,
+            _parentHeader.nullifierRoot,
             nullifiers,
             siblings
         );
         return Challenge(
-            updatedRoot == _block.header.prevNullifierRoot,
+            updatedRoot == _parentHeader.nullifierRoot,
             _block.submissionId,
             _block.header.proposer,
             "Double spending validation"

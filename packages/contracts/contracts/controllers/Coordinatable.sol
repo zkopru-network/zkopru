@@ -62,7 +62,7 @@ contract Coordinatable is Layer2 {
         /// Record l2 chain
         Layer2.chain.parentOf[currentBlockHash] = _block.header.parentBlock;
         /// Record reference for the inclusion proofs
-        Layer2.chain.utxoRootOf[currentBlockHash] = _block.header.nextUTXORoot;
+        Layer2.chain.utxoRootOf[currentBlockHash] = _block.header.utxoRoot;
         /// Update exit allowance period
         proposer.exitAllowance = block.number + CHALLENGE_PERIOD;
         /// Freeze the latest mass deposit for the next block proposer
@@ -100,15 +100,13 @@ contract Coordinatable is Layer2 {
         /// Update withdrawable every finalization
         require(Layer2.chain.withdrawables.length >= 2, "not initialized blockchain");
         Withdrawable storage latest = Layer2.chain.withdrawables[Layer2.chain.withdrawables.length - 1];
-        require(latest.root == finalization.header.prevWithdrawalRoot, "Different withdrawal tree");
-        require(latest.index == finalization.header.prevWithdrawalIndex, "Different withdrawal tree");
-        if (finalization.header.prevWithdrawalIndex > finalization.header.nextWithdrawalIndex) {
+        if (latest.index > finalization.header.withdrawalIndex) {
             /// Fully filled. Start a new withdrawal tree
             Layer2.chain.withdrawables.push();
         }
         Withdrawable storage target = Layer2.chain.withdrawables[Layer2.chain.withdrawables.length - 1];
-        target.root = finalization.header.nextWithdrawalRoot;
-        target.index = finalization.header.nextWithdrawalIndex;
+        target.root = finalization.header.withdrawalRoot;
+        target.index = finalization.header.withdrawalIndex;
 
         /// Update the daily snapshot of withdrawable tree to prevent race conditions
         if (Layer2.chain.snapshotTimestamp + 1 days < now) {

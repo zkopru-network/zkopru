@@ -96,20 +96,15 @@ struct Header {
     uint256 fee;
 
     /** UTXO roll up  */
-    uint256 prevUTXORoot;
-    uint256 prevUTXOIndex;
-    uint256 nextUTXORoot;
-    uint256 nextUTXOIndex;
+    uint256 utxoRoot;
+    uint256 utxoIndex;
 
     /** Nullifier roll up  */
-    bytes32 prevNullifierRoot;
-    bytes32 nextNullifierRoot;
+    bytes32 nullifierRoot;
 
     /** Withdrawal roll up  */
-    bytes32 prevWithdrawalRoot;
-    uint256 prevWithdrawalIndex;
-    bytes32 nextWithdrawalRoot;
-    uint256 nextWithdrawalIndex;
+    bytes32 withdrawalRoot;
+    uint256 withdrawalIndex;
 
     /** Transactions */
     bytes32 txRoot;
@@ -148,11 +143,11 @@ enum OutflowType { UTXO, Withdrawal, Migration }
 /// Only used for migration
 struct PublicData {
     address to; // to == 0: UTXO / to == address(this): Withdrawal / else: Migration
-    uint256 eth; 
-    address token; 
-    uint256 amount; 
-    uint256 nft; 
-    uint256 fee; 
+    uint256 eth;
+    address token;
+    uint256 amount;
+    uint256 nft;
+    uint256 fee;
 }
 
 struct AtomicSwap {
@@ -181,16 +176,11 @@ library Types {
                 header.parentBlock,
                 header.metadata,
                 header.fee,
-                header.prevUTXORoot,
-                header.prevUTXOIndex,
-                header.nextUTXORoot,
-                header.nextUTXOIndex,
-                header.prevNullifierRoot,
-                header.nextNullifierRoot,
-                header.prevWithdrawalRoot,
-                header.prevWithdrawalIndex,
-                header.nextWithdrawalRoot,
-                header.nextWithdrawalIndex,
+                header.utxoRoot,
+                header.utxoIndex,
+                header.nullifierRoot,
+                header.withdrawalRoot,
+                header.withdrawalIndex,
                 header.txRoot,
                 header.depositRoot,
                 header.migrationRoot
@@ -232,7 +222,7 @@ library Types {
 
     function toBytes(Outflow memory outflow) internal pure returns (bytes memory) {
         if(isUTXO(outflow)) {
-            return abi.encodePacked(outflow.note); 
+            return abi.encodePacked(outflow.note);
         } else {
             return abi.encodePacked(
                 outflow.note,

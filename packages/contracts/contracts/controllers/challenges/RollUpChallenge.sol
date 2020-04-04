@@ -26,21 +26,30 @@ contract RollUpChallenge is Challengeable {
         uint utxoRollUpId,
         uint[] calldata _deposits,
         uint numOfUTXOs,
+        Header memory _parentHeader,
         bytes calldata
     ) external {
-        Block memory _block = Deserializer.blockFromCalldataAt(3);
-        Challenge memory result = _challengeResultOfUTXORollUp(_block, utxoRollUpId, numOfUTXOs, _deposits);
+        Block memory _block = Deserializer.blockFromCalldataAt(4);
+        Challenge memory result = _challengeResultOfUTXORollUp(
+            _block,
+            _parentHeader,
+            utxoRollUpId,
+            numOfUTXOs,
+            _deposits
+        );
         _execute(result);
     }
 
     function challengeNullifierRollUp(
         uint nullifierRollUpId,
         uint numOfNullifiers,
+        Header memory _parentHeader,
         bytes calldata
     ) external {
-        Block memory _block = Deserializer.blockFromCalldataAt(2);
+        Block memory _block = Deserializer.blockFromCalldataAt(3);
         Challenge memory result = _challengeResultOfNullifierRollUp(
             _block,
+            _parentHeader,
             nullifierRollUpId,
             numOfNullifiers
         );
@@ -50,16 +59,23 @@ contract RollUpChallenge is Challengeable {
     function challengeWithdrawalRollUp(
         uint withdrawalRollUpId,
         uint numOfWithdrawals,
+        Header memory _parentHeader,
         bytes calldata
     ) external {
-        Block memory _block = Deserializer.blockFromCalldataAt(2);
-        Challenge memory result = _challengeResultOfWithdrawalRollUp(_block, withdrawalRollUpId, numOfWithdrawals);
+        Block memory _block = Deserializer.blockFromCalldataAt(3);
+        Challenge memory result = _challengeResultOfWithdrawalRollUp(
+            _block,
+            _parentHeader,
+            withdrawalRollUpId,
+            numOfWithdrawals
+        );
         _execute(result);
     }
 
     /** Computes challenge here */
     function _challengeResultOfUTXORollUp(
         Block memory _block,
+        Header memory _parentHeader,
         uint _utxoRollUpId,
         uint _utxoNum,
         uint[] memory _deposits
@@ -103,17 +119,17 @@ contract RollUpChallenge is Challengeable {
         /// Start a new tree if there's no room to add the new outputs
         uint startingIndex;
         uint startingRoot;
-        if (_block.header.prevUTXOIndex + _utxoNum < POOL_SIZE) {
+        if (_parentHeader.utxoIndex + _utxoNum < POOL_SIZE) {
             /// it uses the latest tree
-            startingIndex = _block.header.prevUTXOIndex;
-            startingRoot = _block.header.prevUTXORoot;
+            startingIndex = _parentHeader.utxoIndex;
+            startingRoot = _parentHeader.utxoRoot;
         } else {
             /// start a new tree
             startingIndex = 0;
             startingRoot = 0;
         }
         /// Submitted invalid next output index
-        if (_block.header.nextUTXOIndex != (startingIndex + _utxoNum)) {
+        if (_block.header.utxoIndex != (startingIndex + _utxoNum)) {
             return Challenge(
                 true,
                 _block.submissionId,
@@ -128,7 +144,7 @@ contract RollUpChallenge is Challengeable {
             SubTreeRollUpLib.newSubTreeOPRU(
                 uint(startingRoot),
                 startingIndex,
-                uint(_block.header.nextUTXORoot),
+                uint(_block.header.utxoRoot),
                 SUB_TREE_DEPTH,
                 outputs
             )
@@ -145,6 +161,7 @@ contract RollUpChallenge is Challengeable {
     /// Possibility to cost a lot of failure gases because of the 'already slashed' _blocks
     function _challengeResultOfNullifierRollUp(
         Block memory _block,
+        Header memory _parentHeader,
         uint nullifierRollUpId,
         uint numOfNullifiers
     )
@@ -152,6 +169,7 @@ contract RollUpChallenge is Challengeable {
         view
         returns (Challenge memory)
     {
+        require(_block.header.parentBlock == _parentHeader.hash(), "Invalid prev header");
         /// Assign a new array
         bytes32[] memory nullifiers = new bytes32[](numOfNullifiers);
         /// Get outputs to append
@@ -167,8 +185,8 @@ contract RollUpChallenge is Challengeable {
         /// Get rolled up root
         SMT256.OPRU memory proof = Layer2.proof.ofNullifierRollUp[nullifierRollUpId];
         bool isValidRollUp = proof.verify(
-            _block.header.prevNullifierRoot,
-            _block.header.nextNullifierRoot,
+            _parentHeader.nullifierRoot,
+            _block.header.nullifierRoot,
             RollUpLib.merge(bytes32(0), nullifiers)
         );
 
@@ -182,6 +200,7 @@ contract RollUpChallenge is Challengeable {
 
     function _challengeResultOfWithdrawalRollUp(
         Block memory _block,
+        Header memory _parentHeader,
         uint withdrawalRollUpId,
         uint numOfWithdrawals
     )
@@ -189,6 +208,7 @@ contract RollUpChallenge is Challengeable {
         view
         returns (Challenge memory)
     {
+        require(_block.header.parentBlock == _parentHeader.hash(), "Invalid prev header");
         /// Assign a new array
         bytes32[] memory withdrawals = new bytes32[](numOfWithdrawals);
         /// Append Withdrawal notes from transactions
@@ -205,17 +225,17 @@ contract RollUpChallenge is Challengeable {
         /// Start a new tree if there's no room to add the new withdrawals
         uint startingIndex;
         bytes32 startingRoot;
-        if (_block.header.prevWithdrawalIndex + numOfWithdrawals < POOL_SIZE) {
+        if (_parentHeader.withdrawalIndex + numOfWithdrawals < POOL_SIZE) {
             /// it uses the latest tree
-            startingIndex = _block.header.prevWithdrawalIndex;
-            startingRoot = _block.header.prevWithdrawalRoot;
+            startingIndex = _parentHeader.withdrawalIndex;
+            startingRoot = _parentHeader.withdrawalRoot;
         } else {
             /// start a new tree
             startingIndex = 0;
             startingRoot = 0;
         }
         /// Submitted invalid index of the next withdrawal tree
-        if (_block.header.nextWithdrawalIndex != (startingIndex + numOfWithdrawals)) {
+        if (_block.header.withdrawalIndex != (startingIndex + numOfWithdrawals)) {
             return Challenge(
                 true,
                 _block.submissionId,
@@ -234,7 +254,7 @@ contract RollUpChallenge is Challengeable {
             SubTreeRollUpLib.newSubTreeOPRU(
                 uint(startingRoot),
                 startingIndex,
-                uint(_block.header.nextWithdrawalRoot),
+                uint(_block.header.withdrawalRoot),
                 SUB_TREE_DEPTH,
                 uintLeaves
             )
