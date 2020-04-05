@@ -63,7 +63,7 @@ contract MigrationChallenge is Challengeable {
         address destination
     )
         internal
-        view
+        pure
         returns (Challenge memory)
     {
         MassMigration memory submitted;
@@ -117,7 +117,7 @@ contract MigrationChallenge is Challengeable {
         address erc20
     )
         internal
-        view
+        pure
         returns (Challenge memory)
     {
         ERC20Migration memory submitted;
@@ -171,7 +171,7 @@ contract MigrationChallenge is Challengeable {
         uint tokenId
     )
         internal
-        view
+        pure
         returns (Challenge memory)
     {
         ERC721Migration memory submitted;

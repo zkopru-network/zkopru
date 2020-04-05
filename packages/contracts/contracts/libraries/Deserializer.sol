@@ -3,6 +3,9 @@ pragma solidity >= 0.6.0;
 import { Header, Body, Transaction, MassDeposit, MassMigration, Block, Finalization } from "./Types.sol";
 
 library Deserializer {
+    function headerFromCalldataAt(uint paramIndex) internal pure returns (Header memory) {
+    }
+
     /**
      * @dev Block data will be serialized with the following structure
      *      https://github.com/wilsonbeam/zk-optimistic-rollup/wiki/Serialization
@@ -19,7 +22,7 @@ library Deserializer {
                 new_calldata_cursor := add(curr_call_cursor, 0x20)
                 new_mem_cursor := add(curr_mem_cursor, 0x20)
             }
-            function partial_copy_and_move(curr_mem_cursor, curr_call_cursor, len) -> new_mem_cursor, new_calldata_cursor { 
+            function partial_copy_and_move(curr_mem_cursor, curr_call_cursor, len) -> new_mem_cursor, new_calldata_cursor {
                 mstore(curr_mem_cursor, 0) // initialization with zeroes
                 calldatacopy(add(curr_mem_cursor, sub(0x20, len)), curr_call_cursor, len)
                 new_calldata_cursor := add(curr_call_cursor, len)
@@ -236,12 +239,12 @@ library Deserializer {
             mstore(0x40, mem_pos)
             if not(eq(sub(cp, start), data_len)) {
                 revert(0, 0)
-            } 
+            }
             */
         }
         return _block;
     }
-    
+
     function massMigrationFromCalldataAt(uint paramIndex) internal pure returns (MassMigration memory) {
     }
     function finalizationFromCalldataAt(uint paramIndex) internal pure returns (Finalization memory) {

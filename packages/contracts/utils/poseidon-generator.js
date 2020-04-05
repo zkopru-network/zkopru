@@ -3,7 +3,7 @@ const path = require('path')
 const fs = require('fs')
 
 const poseidonGenContract = require('circomlib/src/poseidon_gencontract.js')
-const Artifactor = require('truffle-artifactor')
+const Artifactor = require('@truffle/artifactor')
 
 const SEED = 'poseidon'
 const NROUNDSF = 8

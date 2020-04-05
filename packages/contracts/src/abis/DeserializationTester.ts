@@ -17,10 +17,8 @@ export const DeserializationTesterABI = [
     inputs: [{ internalType: 'bytes', name: '', type: 'bytes' }],
     name: 'getUTXORollUp',
     outputs: [
-      { internalType: 'uint256', name: 'prevRoot', type: 'uint256' },
-      { internalType: 'uint256', name: 'prevIndex', type: 'uint256' },
-      { internalType: 'uint256', name: 'nextRoot', type: 'uint256' },
-      { internalType: 'uint256', name: 'nextIndex', type: 'uint256' },
+      { internalType: 'uint256', name: 'root', type: 'uint256' },
+      { internalType: 'uint256', name: 'index', type: 'uint256' },
     ],
     stateMutability: 'pure',
     type: 'function',
@@ -28,10 +26,7 @@ export const DeserializationTesterABI = [
   {
     inputs: [{ internalType: 'bytes', name: '', type: 'bytes' }],
     name: 'getNullifierRollUp',
-    outputs: [
-      { internalType: 'bytes32', name: 'prevRoot', type: 'bytes32' },
-      { internalType: 'bytes32', name: 'nextRoot', type: 'bytes32' },
-    ],
+    outputs: [{ internalType: 'bytes32', name: 'root', type: 'bytes32' }],
     stateMutability: 'pure',
     type: 'function',
   },
@@ -39,10 +34,8 @@ export const DeserializationTesterABI = [
     inputs: [{ internalType: 'bytes', name: '', type: 'bytes' }],
     name: 'getWithdrawalRollUp',
     outputs: [
-      { internalType: 'bytes32', name: 'prevRoot', type: 'bytes32' },
-      { internalType: 'uint256', name: 'prevIndex', type: 'uint256' },
-      { internalType: 'bytes32', name: 'nextRoot', type: 'bytes32' },
-      { internalType: 'uint256', name: 'nextIndex', type: 'uint256' },
+      { internalType: 'bytes32', name: 'root', type: 'bytes32' },
+      { internalType: 'uint256', name: 'index', type: 'uint256' },
     ],
     stateMutability: 'pure',
     type: 'function',

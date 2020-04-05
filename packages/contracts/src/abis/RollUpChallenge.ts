@@ -54,6 +54,7 @@ export const RollUpChallengeABI = [
       { internalType: 'uint256[]', name: '_deposits', type: 'uint256[]' },
       { internalType: 'uint256', name: 'numOfUTXOs', type: 'uint256' },
       { internalType: 'bytes', name: '', type: 'bytes' },
+      { internalType: 'bytes', name: '', type: 'bytes' },
     ],
     name: 'challengeUTXORollUp',
     outputs: [],
@@ -65,6 +66,7 @@ export const RollUpChallengeABI = [
       { internalType: 'uint256', name: 'nullifierRollUpId', type: 'uint256' },
       { internalType: 'uint256', name: 'numOfNullifiers', type: 'uint256' },
       { internalType: 'bytes', name: '', type: 'bytes' },
+      { internalType: 'bytes', name: '', type: 'bytes' },
     ],
     name: 'challengeNullifierRollUp',
     outputs: [],
@@ -75,6 +77,7 @@ export const RollUpChallengeABI = [
     inputs: [
       { internalType: 'uint256', name: 'withdrawalRollUpId', type: 'uint256' },
       { internalType: 'uint256', name: 'numOfWithdrawals', type: 'uint256' },
+      { internalType: 'bytes', name: '', type: 'bytes' },
       { internalType: 'bytes', name: '', type: 'bytes' },
     ],
     name: 'challengeWithdrawalRollUp',

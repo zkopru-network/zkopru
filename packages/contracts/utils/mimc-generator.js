@@ -3,7 +3,7 @@ const path = require('path')
 const fs = require('fs')
 
 const mimcGenContract = require('circomlib/src/mimcsponge_gencontract.js')
-const Artifactor = require('truffle-artifactor')
+const Artifactor = require('@truffle/artifactor')
 
 const SEED = 'mimcsponge'
 

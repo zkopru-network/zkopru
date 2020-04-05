@@ -53,11 +53,14 @@ contract TxChallenge is Challengeable {
         uint txIndex,
         uint inflowIndex,
         bytes32[256] calldata sibling,
+        bytes calldata,
         bytes calldata
     ) external {
+        Header memory _parentHeader = Deserializer.headerFromCalldataAt(3);
         Block memory _block = Deserializer.blockFromCalldataAt(4);
         Challenge memory result = _challengeResultOfUsedNullifier(
             _block,
+            _parentHeader,
             txIndex,
             inflowIndex,
             sibling
@@ -190,6 +193,7 @@ contract TxChallenge is Challengeable {
         uint txIndex
     )
         internal
+        pure
         returns (Challenge memory)
     {
         uint swap = _block.body.txs[txIndex].swap;
@@ -212,6 +216,7 @@ contract TxChallenge is Challengeable {
 
     function _challengeResultOfUsedNullifier(
         Block memory _block,
+        Header memory _parentHeader,
         uint txIndex,
         uint inflowIndex,
         bytes32[256] memory sibling

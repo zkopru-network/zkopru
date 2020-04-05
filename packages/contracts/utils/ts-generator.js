@@ -13,24 +13,25 @@ const abis = fs
 
 const importContracts = `${ts.reduce((prev, name) => {
   if (name === 'types') return prev
-  return `${prev}import { ${name} } from './contracts/${name}'\n`
+  return `${prev}export { ${name} } from './contracts/${name}'\n`
 }, '')}`
 const importABIs = `${abis.reduce((prev, name) => {
-  return `${prev}import { ${name}ABI } from './abis/${name}'\n`
+  return `${prev}export { ${name}ABI } from './abis/${name}'\n`
 }, '')}`
 
-const exportContracts = `export const Contracts = {${ts.reduce((prev, name) => {
-  if (name === 'types') return prev
-  return `${prev}  ${name},\n`
-}, '\n')}}`
+// const exportContracts = `export const Contracts = {${ts.reduce((prev, name) => {
+//   if (name === 'types') return prev
+//   return `${prev}  ${name},\n`
+// }, '\n')}}`
 
-const exportABIs = `export const ABIs = {${abis.reduce((prev, name) => {
-  return `${prev}  ${name}ABI,\n`
-}, '\n')}}`
+// const exportABIs = `export const ABIs = {${abis.reduce((prev, name) => {
+//   return `${prev}  ${name}ABI,\n`
+// }, '\n')}}`
 
 fs.mkdirSync('./src', { recursive: true })
 
-const src = `${importContracts}${importABIs}\n${exportContracts}\n\n${exportABIs}\n`
+const src = `${importContracts}\n${importABIs}`
+// const src = `${importContracts}\n${importABIs}\n${exportContracts}\n\n${exportABIs}\n`
 const formatted = prettier.format(src, {
   semi: false,
   parser: 'babel',

@@ -6,6 +6,7 @@ const prettier = require('prettier')
 
 const contracts = fs.readdirSync('./build/contracts')
 fs.mkdirSync('./build/abis', { recursive: true })
+fs.mkdirSync('./src/abis', { recursive: true })
 for (const contract of contracts) {
   const artifact = JSON.parse(
     fs.readFileSync(`./build/contracts/${contract}`, 'utf8'),

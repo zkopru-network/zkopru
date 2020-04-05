@@ -13,6 +13,7 @@ import {
     Outflow,
     MassDeposit,
     OutflowType,
+    Header,
     Types
 } from "../../libraries/Types.sol";
 import { Deserializer } from "../../libraries/Deserializer.sol";
@@ -21,14 +22,16 @@ contract RollUpChallenge is Challengeable {
     using SubTreeRollUpLib for SplitRollUp;
     using SMT256 for SMT256.OPRU;
     using Types for Outflow;
+    using Types for Header;
 
     function challengeUTXORollUp(
         uint utxoRollUpId,
         uint[] calldata _deposits,
         uint numOfUTXOs,
-        Header memory _parentHeader,
+        bytes calldata,
         bytes calldata
     ) external {
+        Header memory _parentHeader = Deserializer.headerFromCalldataAt(3);
         Block memory _block = Deserializer.blockFromCalldataAt(4);
         Challenge memory result = _challengeResultOfUTXORollUp(
             _block,
@@ -43,9 +46,10 @@ contract RollUpChallenge is Challengeable {
     function challengeNullifierRollUp(
         uint nullifierRollUpId,
         uint numOfNullifiers,
-        Header memory _parentHeader,
+        bytes calldata,
         bytes calldata
     ) external {
+        Header memory _parentHeader = Deserializer.headerFromCalldataAt(2);
         Block memory _block = Deserializer.blockFromCalldataAt(3);
         Challenge memory result = _challengeResultOfNullifierRollUp(
             _block,
@@ -59,9 +63,10 @@ contract RollUpChallenge is Challengeable {
     function challengeWithdrawalRollUp(
         uint withdrawalRollUpId,
         uint numOfWithdrawals,
-        Header memory _parentHeader,
+        bytes calldata,
         bytes calldata
     ) external {
+        Header memory _parentHeader = Deserializer.headerFromCalldataAt(2);
         Block memory _block = Deserializer.blockFromCalldataAt(3);
         Challenge memory result = _challengeResultOfWithdrawalRollUp(
             _block,
@@ -139,8 +144,8 @@ contract RollUpChallenge is Challengeable {
         }
 
         /// Check validity of the roll up using the storage based Poseidon sub-tree roll up
-        SplitRollUp memory rollUpProof = Layer2.proof.ofUTXORollUp[_utxoRollUpId];
-        bool isValidRollUp = rollUpProof.verify(
+        // SplitRollUp memory rollUpProof =
+        bool isValidRollUp = Layer2.proof.ofUTXORollUp[_utxoRollUpId].verify(
             SubTreeRollUpLib.newSubTreeOPRU(
                 uint(startingRoot),
                 startingIndex,
@@ -149,7 +154,6 @@ contract RollUpChallenge is Challengeable {
                 outputs
             )
         );
-
         return Challenge(
             !isValidRollUp,
             _block.submissionId,

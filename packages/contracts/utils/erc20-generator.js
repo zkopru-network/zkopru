@@ -1,8 +1,10 @@
 console.log('> Compiling ERC20')
 const path = require('path')
 const fs = require('fs')
-const solc = require('solc')
-const Artifactor = require('truffle-artifactor')
+// eslint-disable-next-line import/no-extraneous-dependencies
+const solc = require('solc5')
+// eslint-disable-next-line import/no-extraneous-dependencies
+const Artifactor = require('@truffle/artifactor')
 
 const erc20Code = fs.readFileSync('./utils/TestERC20.sol', 'utf8')
 

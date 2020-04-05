@@ -18,44 +18,34 @@ contract DeserializationTester {
     external
     pure
     returns (
-        uint256 prevRoot,
-        uint256 prevIndex,
-        uint256 nextRoot,
-        uint256 nextIndex
+        uint256 root,
+        uint256 index
     ) {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
-        prevRoot = _parentHeader.utxoRoot;
-        prevIndex = _parentHeader.utxoIndex;
-        nextRoot = _block.header.utxoRoot;
-        nextIndex = _block.header.utxoIndex;
+        root = _block.header.utxoRoot;
+        index = _block.header.utxoIndex;
     }
 
     function getNullifierRollUp(bytes calldata)
     external
     pure
     returns (
-        bytes32 prevRoot,
-        bytes32 nextRoot
+        bytes32 root
     ) {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
-        prevRoot = _parentHeader.nullifierRoot;
-        nextRoot = _block.header.nullifierRoot;
+        root = _block.header.nullifierRoot;
     }
 
     function getWithdrawalRollUp(bytes calldata)
     external
     pure
     returns (
-        bytes32 prevRoot,
-        uint256 prevIndex,
-        bytes32 nextRoot,
-        uint256 nextIndex
+        bytes32 root,
+        uint256 index
     ) {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
-        prevRoot = _parentHeader.withdrawalRoot;
-        prevIndex = _parentHeader.withdrawalIndex;
-        nextRoot = _block.header.withdrawalRoot;
-        nextIndex = _block.header.withdrawalIndex;
+        root = _block.header.withdrawalRoot;
+        index = _block.header.withdrawalIndex;
     }
 
     function getTxRoot(bytes calldata) external pure returns (bytes32) {

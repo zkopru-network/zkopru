@@ -85,6 +85,7 @@ export const TxChallengeABI = [
       { internalType: 'uint256', name: 'inflowIndex', type: 'uint256' },
       { internalType: 'bytes32[256]', name: 'sibling', type: 'bytes32[256]' },
       { internalType: 'bytes', name: '', type: 'bytes' },
+      { internalType: 'bytes', name: '', type: 'bytes' },
     ],
     name: 'challengeUsedNullifier',
     outputs: [],
