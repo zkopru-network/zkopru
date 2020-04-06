@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.build.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "allowJs": true,
+    "noImplicitAny": false,
+    "tsBuildInfoFile": "../../.build-cache/transaction.tsbuildinfo"
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../babyjubjub/tsconfig.build.json", "prepend": false },
+    { "path": "../utils/tsconfig.build.json", "prepend": false }
+  ]
+}

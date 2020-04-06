@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { Field, F, BabyJubjub, RawTx, ZkTx, Utils, Grove, MerkleTree } from '@zkopru/core'
-import zkopru from '@zkopru/core'
-
+import { nanoSQL } from '@nano-sql/core'
+import { Field, F, Point, EdDSA, signEdDSA } from '@zkopru/babyjubjub'
+import { RawTx, ZkTx } from '@zkopru/transaction'
+import { MerkleProof } from '@zkopru/tree'
+import * as utils from '@zkopru/utils'
+import { Grove } from '@zkopru/core'
 
 export class ZkWizard {
   circuits: { [key: string]: Buffer }
@@ -12,14 +15,25 @@ export class ZkWizard {
 
   privKey: string
 
-  pubKey: BabyJubjub.Point
+  pubKey: Point
 
-  constructor({ grove, privKey }: { grove: Grove; privKey: string }) {
+  db: nanoSQL
+
+  constructor({
+    db,
+    grove,
+    privKey,
+  }: {
+    db: nanoSQL
+    grove: Grove
+    privKey: string
+  }) {
     this.grove = grove
     this.privKey = privKey
     this.circuits = {}
     this.provingKeys = {}
-    this.pubKey = BabyJubjub.Point.fromPrivKey(privKey)
+    this.pubKey = Point.fromPrivKey(privKey)
+    this.db = db
   }
 
   addCircuit({
@@ -53,7 +67,7 @@ export class ZkWizard {
   async shield({ tx, toMemo }: { tx: RawTx; toMemo?: number }): Promise<ZkTx> {
     return new Promise<ZkTx>((resolve, reject) => {
       const merkleProof: { [hash: string]: MerkleProof } = {}
-      const eddsa: { [hash: string]: BabyJubjub.EdDSA } = {}
+      const eddsa: { [hash: string]: EdDSA } = {}
 
       function isDataPrepared(): boolean {
         return (
@@ -78,7 +92,7 @@ export class ZkWizard {
           toMemo?: number
           data: {
             merkleProof: { [hash: string]: MerkleProof }
-            eddsa: { [hash: string]: BabyJubjub.EdDSA }
+            eddsa: { [hash: string]: EdDSA }
           }
         }) => Promise<ZkTx>
       }) {
@@ -96,7 +110,7 @@ export class ZkWizard {
       const { buildZkTx } = this
 
       tx.inflow.forEach(async (utxo, index) => {
-        eddsa[index] = BabyJubjub.signEdDSA({
+        eddsa[index] = signEdDSA({
           msg: utxo.hash(),
           privKey: this.privKey,
         })
@@ -117,7 +131,7 @@ export class ZkWizard {
     toMemo?: number
     data: {
       merkleProof: { [hash: string]: MerkleProof }
-      eddsa: { [hash: string]: BabyJubjub.EdDSA }
+      eddsa: { [hash: string]: EdDSA }
     }
   }): Promise<ZkTx> {
     const circuitWasm = this.circuits[
@@ -155,7 +169,7 @@ export class ZkWizard {
       input[`signatures[1][${i}]`] = data.eddsa[i].R8.y
       input[`signatures[2][${i}]`] = data.eddsa[i].S
       input[`note_index[${i}]`] = data.merkleProof[i].index
-      for (let j = 0; j < this.grove.depth; j += 1) {
+      for (let j = 0; j < this.grove.config.utxoTreeDepth; j += 1) {
         input[`siblings[${j}][${i}]`] = data.merkleProof[i].siblings[j]
       }
       // public signals
@@ -196,9 +210,9 @@ export class ZkWizard {
     Object.keys(input).forEach(key => {
       stringifiedInputs[key] = input[key].toString()
     })
-    const witness = await Utils.calculateWitness(circuitWasm, stringifiedInputs)
+    const witness = await utils.calculateWitness(circuitWasm, stringifiedInputs)
 
-    const { proof } = await Utils.genProof(provingKey, witness)
+    const { proof } = await utils.genProof(provingKey, witness)
     // let { proof, publicSignals } = Utils.genProof(snarkjs.unstringifyBigInts(provingKey), witness);
     // TODO handle genProof exception
     const zkTx: ZkTx = new ZkTx({
@@ -208,7 +222,7 @@ export class ZkWizard {
           root: data.merkleProof[index].root,
         }
       }),
-      outflow: tx.outflow.map(utxo => utxo.toOutflow()),
+      outflow: tx.outflow.map(utxo => utxo.toZkOutflow()),
       fee: tx.fee,
       proof: {
         pi_a: proof.pi_a.map(Field.from),

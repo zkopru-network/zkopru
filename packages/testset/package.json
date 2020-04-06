@@ -25,10 +25,13 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@zkopru/core": "file:../core",
+    "@nano-sql/core": "^2.3.7",
+    "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/contracts": "file:../contracts",
-    "@zkopru/tree": "file:../tree",
+    "@zkopru/core": "file:../core",
+    "@zkopru/transaction": "file:../transaction",
     "@zkopru/zk-wizard": "file:../zk-wizard",
+    "big-integer": "^1.6.48",
     "fs-extra": "^9.0.0"
   }
 }

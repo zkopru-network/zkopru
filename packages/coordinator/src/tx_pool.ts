@@ -1,5 +1,6 @@
 import { Hex } from 'web3-utils'
-import { ZkTx, Utils } from '@zkopru/core'
+import { ZkTx } from '@zkopru/transaction'
+import { root } from '@zkopru/utils'
 import * as snarkjs from 'snarkjs'
 
 const PENDING = 'pending'
@@ -88,7 +89,7 @@ export class TxMemPool implements TxPoolInterface {
       }
     }
     const txHashes = picked.map(tx => tx.hash())
-    const txRoot = Utils.root(txHashes)
+    const txRoot = root(txHashes)
     this.blockTxMap[txRoot] = txHashes
     return picked
   }

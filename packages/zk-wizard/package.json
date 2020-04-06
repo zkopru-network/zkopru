@@ -24,6 +24,11 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@nano-sql/core": "^2.3.7",
+    "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/core": "file:../core",
+    "@zkopru/transaction": "file:../transaction",
+    "@zkopru/tree": "file:../tree",
+    "@zkopru/utils": "file:../utils"
   }
 }

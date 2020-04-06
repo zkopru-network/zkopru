@@ -7,11 +7,17 @@
     "baseUrl": "packages",
     "paths": {
       "@zkopru/*": ["*/src"],
+      "~account/*": ["account/src/*"],
+      "~babyjubjub/*": ["babyjubjub/src/*"],
       "~circuits/*": ["circuits/src/*"],
-      "~core/*": ["core/src/*"],
       "~contracts/*": ["contracts/src/*"],
       "~coordinator/*": ["coordinator/src/*"],
+      "~core/*": ["core/src/*"],
+      "~database/*": ["database/src/*"],
       "~testset/*": ["testset/src/*"],
+      "~transaction/*": ["transaction/src/*"],
+      "~tree/*": ["tree/src/*"],
+      "~utils/*": ["utils/src/*"],
       "~zk-wizard/*": ["zk-wizard/src/*"],
       "~*": ["*/src"]
     },
