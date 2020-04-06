@@ -103,7 +103,7 @@ export class HDWallet {
       const derivedKey = masterNode.derive(PATH(i))
       try {
         const derivedPubKey = Point.fromPrivKey(derivedKey.privateKey).toHex()
-        if (derivedPubKey in storedPubKeys) {
+        if (storedPubKeys.includes(derivedPubKey)) {
           candidates.push(derivedKey.privateKey)
         }
       } catch (err) {
