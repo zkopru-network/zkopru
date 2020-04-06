@@ -13,28 +13,52 @@ const abis = fs
 
 const importContracts = `${ts.reduce((prev, name) => {
   if (name === 'types') return prev
+  return `${prev}import { ${name} } from './contracts/${name}'\n`
+}, '')}`
+
+const importABIs = `${abis.reduce((prev, name) => {
+  if (!ts.includes(name)) return prev
+  return `${prev}import { ${name}ABI } from './abis/${name}'\n`
+}, '')}`
+
+const exportContracts = `${ts.reduce((prev, name) => {
+  if (name === 'types') return prev
   return `${prev}export { ${name} } from './contracts/${name}'\n`
 }, '')}`
-const importABIs = `${abis.reduce((prev, name) => {
-  return `${prev}export { ${name}ABI } from './abis/${name}'\n`
+
+const staticClasses = `${ts.reduce((prev, name) => {
+  if (name === 'types') return prev
+  return `${prev}
+  static as${name}(
+    web3: Web3,
+    address: string,
+    option: ContractOptions,
+  ): ${name} {
+    const abi: any[] = [...${name}ABI]
+    return new web3.eth.Contract(abi, address, option) as ${name}
+  }
+`
 }, '')}`
 
-// const exportContracts = `export const Contracts = {${ts.reduce((prev, name) => {
-//   if (name === 'types') return prev
-//   return `${prev}  ${name},\n`
-// }, '\n')}}`
+const ZkOPRUContract = `export default class ZkOPRUContract {${staticClasses}}`
 
-// const exportABIs = `export const ABIs = {${abis.reduce((prev, name) => {
-//   return `${prev}  ${name}ABI,\n`
-// }, '\n')}}`
+const base = `/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable max-classes-per-file */
 
+import Web3 from 'web3'
+import { ContractOptions } from 'web3-eth-contract'
+`
 fs.mkdirSync('./src', { recursive: true })
 
-const src = `${importContracts}\n${importABIs}`
+const src = `${base}${importContracts}${importABIs}\n${exportContracts}\n${ZkOPRUContract}\n`
 // const src = `${importContracts}\n${importABIs}\n${exportContracts}\n\n${exportABIs}\n`
 const formatted = prettier.format(src, {
   semi: false,
-  parser: 'babel',
+  parser: 'typescript',
   singleQuote: true,
+  useTabs: false,
+  tabWidth: 2,
+  trailingComma: 'all',
+  endOfLine: 'lf',
 })
 fs.writeFileSync('./src/index.ts', src)

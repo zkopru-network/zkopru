@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
 
-import { ZkOptimisticRollUp, ZkOptimisticRollUpABI } from '@zkopru/contracts'
+import Deployed, { ZkOptimisticRollUp } from '@zkopru/contracts'
 import { poseidonHasher, keccakHasher } from '@zkopru/tree'
 import bigInt, { BigNumber } from 'big-integer'
 import { provider } from 'web3-core'
@@ -44,12 +44,11 @@ export class ZkOPRU {
     this.web3 = new Web3(provider)
 
     // TODO: solc's abi generation and web3.js type declaration does not fit each other
-    const abi: any[] = [...ZkOptimisticRollUpABI]
-    this.contract = new this.web3.eth.Contract(
-      abi,
+    this.contract = Deployed.asZkOptimisticRollUp(
+      this.web3,
       address,
-      option,
-    ) as ZkOptimisticRollUp
+      option || {},
+    )
 
     this.networkId = networkId
     this.address = address
