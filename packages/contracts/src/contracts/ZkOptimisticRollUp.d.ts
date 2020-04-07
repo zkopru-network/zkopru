@@ -31,35 +31,65 @@ export class ZkOptimisticRollUp extends Contract {
 
     SUB_TREE_SIZE(): TransactionObject<string>
 
-    allowMigrants(migrants: string[]): TransactionObject<void>
+    committedDeposits(
+      massDepositHash: string | number[],
+    ): TransactionObject<string>
 
-    completeSetup(): TransactionObject<void>
+    finalizedUTXOs(utxoRoot: string | number[]): TransactionObject<boolean>
 
-    deregister(): TransactionObject<void>
+    massDepositId(): TransactionObject<string>
 
-    finalize(arg0: string | number[]): TransactionObject<void>
+    migrations(migrationHash: string | number[]): TransactionObject<boolean>
 
-    isProposable(proposerAddr: string): TransactionObject<boolean>
+    parentOf(header: string | number[]): TransactionObject<string>
 
-    makeChallengeable(
-      depositChallenge: string,
-      headerChallenge: string,
-      migrationChallenge: string,
-      rollUpChallenge: string,
-      txChallenge: string,
-    ): TransactionObject<void>
+    proposals(
+      proposalId: string | number[],
+    ): TransactionObject<{
+      header: string
+      challengeDue: string
+      slashed: boolean
+      0: string
+      1: string
+      2: boolean
+    }>
 
-    makeMigratable(addr: string): TransactionObject<void>
-
-    makeRollUpable(addr: string): TransactionObject<void>
-
-    makeUserInteractable(addr: string): TransactionObject<void>
-
-    propose(arg0: string | number[]): TransactionObject<void>
+    proposers(
+      addr: string,
+    ): TransactionObject<{
+      stake: string
+      reward: string
+      exitAllowance: string
+      0: string
+      1: string
+      2: string
+    }>
 
     proxied(arg0: string | number[]): TransactionObject<string>
 
-    register(): TransactionObject<void>
+    snapshotTimestamp(): TransactionObject<string>
+
+    stagedDeposits(): TransactionObject<{
+      merged: string
+      fee: string
+      0: string
+      1: string
+    }>
+
+    stagedSize(): TransactionObject<string>
+
+    utxoRootOf(header: string | number[]): TransactionObject<string>
+
+    withdrawables(
+      idx: number | string,
+    ): TransactionObject<{
+      root: string
+      index: string
+      0: string
+      1: string
+    }>
+
+    withdrawn(leaf: string | number[]): TransactionObject<boolean>
 
     registerVk(
       numOfInputs: number | string,
@@ -71,19 +101,27 @@ export class ZkOptimisticRollUp extends Contract {
       ic: (number | string)[][],
     ): TransactionObject<void>
 
-    withdrawReward(amount: number | string): TransactionObject<void>
+    makeUserInteractable(addr: string): TransactionObject<void>
+
+    makeCoordinatable(addr: string): TransactionObject<void>
+
+    makeRollUpable(addr: string): TransactionObject<void>
+
+    makeChallengeable(
+      depositChallenge: string,
+      headerChallenge: string,
+      migrationChallenge: string,
+      rollUpChallenge: string,
+      txChallenge: string,
+    ): TransactionObject<void>
+
+    makeMigratable(addr: string): TransactionObject<void>
+
+    allowMigrants(migrants: string[]): TransactionObject<void>
+
+    completeSetup(): TransactionObject<void>
   }
   events: {
-    Finalized: ContractEvent<string>
-    MassDepositCommit: ContractEvent<{
-      id: string
-      merged: string
-      fee: string
-      0: string
-      1: string
-      2: string
-    }>
-    NewProposal: ContractEvent<string>
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
 }

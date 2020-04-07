@@ -1,6 +1,7 @@
 const Poseidon = artifacts.require('Poseidon')
 const TestERC20 = artifacts.require('TestERC20')
 const UserInteractable = artifacts.require('UserInteractable')
+const Coordinatable = artifacts.require('Coordinatable')
 const RollUpable = artifacts.require('RollUpable')
 const RollUpChallenge = artifacts.require('RollUpChallenge')
 const DepositChallenge = artifacts.require('DepositChallenge')
@@ -9,7 +10,6 @@ const TxChallenge = artifacts.require('TxChallenge')
 const MigrationChallenge = artifacts.require('MigrationChallenge')
 const Migratable = artifacts.require('Migratable')
 const ZkOPRU = artifacts.require('ZkOptimisticRollUp')
-const ISetupWizard = artifacts.require('ISetupWizard')
 
 const instances = {}
 
@@ -24,6 +24,10 @@ module.exports = function migration(deployer, _, accounts) {
     })
     .then(ui => {
       instances.ui = ui
+      return Coordinatable.deployed()
+    })
+    .then(coordinatable => {
+      instances.coordinatable = coordinatable
       return RollUpable.deployed()
     })
     .then(rollUp => {
@@ -54,26 +58,25 @@ module.exports = function migration(deployer, _, accounts) {
       instances.migratable = migratable
       return ZkOPRU.deployed()
     })
-    .then(coordinatable => {
-      return ISetupWizard.at(coordinatable.address)
-    })
-    .then(async wizard => {
+    .then(async zkopru => {
+      console.log(`Deployed ZKOPRU at:\n${zkopru.address}`)
       // Setup proxy
-      await wizard.makeUserInteractable(instances.ui.address)
-      await wizard.makeRollUpable(instances.rollup.address)
-      await wizard.makeChallengeable(
+      await zkopru.makeCoordinatable(instances.coordinatable.address)
+      await zkopru.makeUserInteractable(instances.ui.address)
+      await zkopru.makeRollUpable(instances.rollup.address)
+      await zkopru.makeChallengeable(
         instances.depositChallenge.address,
         instances.headerChallenge.address,
         instances.migrationChallenge.address,
         instances.rollUpChallenge.address,
         instances.txChallenge.address,
       )
-      await wizard.makeMigratable(instances.migratable.address)
+      await zkopru.makeMigratable(instances.migratable.address)
       // Setup zkSNARKs
       // await wizard.registerVk(...)
       // Setup migrations
       // await wizard.allowMigrants(...)
       // Complete setup
-      await wizard.completeSetup()
+      await zkopru.completeSetup()
     })
 }

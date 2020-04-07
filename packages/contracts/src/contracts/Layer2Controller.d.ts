@@ -31,31 +31,67 @@ export class Layer2Controller extends Contract {
 
     SUB_TREE_SIZE(): TransactionObject<string>
 
-    deregister(): TransactionObject<void>
+    committedDeposits(
+      massDepositHash: string | number[],
+    ): TransactionObject<string>
 
-    finalize(arg0: string | number[]): TransactionObject<void>
+    finalizedUTXOs(utxoRoot: string | number[]): TransactionObject<boolean>
 
-    isProposable(proposerAddr: string): TransactionObject<boolean>
+    massDepositId(): TransactionObject<string>
 
-    propose(arg0: string | number[]): TransactionObject<void>
+    migrations(migrationHash: string | number[]): TransactionObject<boolean>
 
-    proxied(arg0: string | number[]): TransactionObject<string>
+    parentOf(header: string | number[]): TransactionObject<string>
 
-    register(): TransactionObject<void>
+    proposals(
+      proposalId: string | number[],
+    ): TransactionObject<{
+      header: string
+      challengeDue: string
+      slashed: boolean
+      0: string
+      1: string
+      2: boolean
+    }>
 
-    withdrawReward(amount: number | string): TransactionObject<void>
-  }
-  events: {
-    Finalized: ContractEvent<string>
-    MassDepositCommit: ContractEvent<{
-      id: string
-      merged: string
-      fee: string
+    proposers(
+      addr: string,
+    ): TransactionObject<{
+      stake: string
+      reward: string
+      exitAllowance: string
       0: string
       1: string
       2: string
     }>
-    NewProposal: ContractEvent<string>
+
+    proxied(arg0: string | number[]): TransactionObject<string>
+
+    snapshotTimestamp(): TransactionObject<string>
+
+    stagedDeposits(): TransactionObject<{
+      merged: string
+      fee: string
+      0: string
+      1: string
+    }>
+
+    stagedSize(): TransactionObject<string>
+
+    utxoRootOf(header: string | number[]): TransactionObject<string>
+
+    withdrawables(
+      idx: number | string,
+    ): TransactionObject<{
+      root: string
+      index: string
+      0: string
+      1: string
+    }>
+
+    withdrawn(leaf: string | number[]): TransactionObject<boolean>
+  }
+  events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
 }

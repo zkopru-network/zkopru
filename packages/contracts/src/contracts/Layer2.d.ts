@@ -30,6 +30,64 @@ export class Layer2 extends Contract {
     SUB_TREE_DEPTH(): TransactionObject<string>
 
     SUB_TREE_SIZE(): TransactionObject<string>
+
+    parentOf(header: string | number[]): TransactionObject<string>
+
+    utxoRootOf(header: string | number[]): TransactionObject<string>
+
+    finalizedUTXOs(utxoRoot: string | number[]): TransactionObject<boolean>
+
+    proposers(
+      addr: string,
+    ): TransactionObject<{
+      stake: string
+      reward: string
+      exitAllowance: string
+      0: string
+      1: string
+      2: string
+    }>
+
+    proposals(
+      proposalId: string | number[],
+    ): TransactionObject<{
+      header: string
+      challengeDue: string
+      slashed: boolean
+      0: string
+      1: string
+      2: boolean
+    }>
+
+    stagedDeposits(): TransactionObject<{
+      merged: string
+      fee: string
+      0: string
+      1: string
+    }>
+
+    stagedSize(): TransactionObject<string>
+
+    massDepositId(): TransactionObject<string>
+
+    committedDeposits(
+      massDepositHash: string | number[],
+    ): TransactionObject<string>
+
+    withdrawables(
+      idx: number | string,
+    ): TransactionObject<{
+      root: string
+      index: string
+      0: string
+      1: string
+    }>
+
+    snapshotTimestamp(): TransactionObject<string>
+
+    withdrawn(leaf: string | number[]): TransactionObject<boolean>
+
+    migrations(migrationHash: string | number[]): TransactionObject<boolean>
   }
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter

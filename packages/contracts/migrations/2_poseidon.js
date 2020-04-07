@@ -21,7 +21,7 @@
 const path = require('path')
 
 const poseidonGenContract = require('circomlib/src/poseidon_gencontract.js')
-const Artifactor = require('truffle-artifactor')
+const Artifactor = require('@truffle/artifactor')
 
 const SEED = 'poseidon'
 

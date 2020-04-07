@@ -6,6 +6,7 @@ export const MigrationsABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -13,6 +14,7 @@ export const MigrationsABI = [
     outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [{ internalType: 'uint256', name: 'completed', type: 'uint256' }],

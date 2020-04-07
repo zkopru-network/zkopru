@@ -1,8 +1,9 @@
 pragma solidity >= 0.6.0;
 
-import { Coordinatable } from "./controllers/Coordinatable.sol";
+import { Layer2 } from "./storage/Layer2.sol";
 import { SNARKsVerifier } from "./libraries/SNARKs.sol";
 import { Pairing } from "./libraries/Pairing.sol";
+import { ICoordinatable } from "./interfaces/ICoordinatable.sol";
 import { IUserInteractable } from "./interfaces/IUserInteractable.sol";
 import { IRollUpable } from "./interfaces/IRollUpable.sol";
 import { IMigratable } from "./interfaces/IMigratable.sol";
@@ -14,7 +15,7 @@ import { ITxChallenge } from "./interfaces/ITxChallenge.sol";
 
 /* solium-disable */
 
-contract Layer2Controller is Coordinatable {
+contract Layer2Controller is Layer2 {
     /** Addresses where to execute the given function call */
     mapping(bytes4=>address) public proxied;
 
@@ -43,7 +44,25 @@ contract Layer2Controller is Coordinatable {
      * @dev See Coordinatable.sol's register() function
     */
     receive() external payable {
-        Coordinatable.register();
+        bytes4 sig = ICoordinatable(0).register.selector;
+        address addr = proxied[sig];
+        assembly {
+            let freememstart := mload(0x40)
+            calldatacopy(freememstart, 0, calldatasize())
+            let success := delegatecall(not(0), addr, freememstart, calldatasize(), freememstart, 32)
+            switch success
+            case 0 { revert(freememstart, 32) }
+            default { return(freememstart, 32) }
+        }
+    }
+
+    function _connectCoordinatable(address addr) internal {
+        _connect(addr, ICoordinatable(0).register.selector);
+        _connect(addr, ICoordinatable(0).deregister.selector);
+        _connect(addr, ICoordinatable(0).propose.selector);
+        _connect(addr, ICoordinatable(0).finalize.selector);
+        _connect(addr, ICoordinatable(0).withdrawReward.selector);
+        _connect(addr, ICoordinatable(0).isProposable.selector);
     }
 
     function _connectUserInteractable(address addr) internal {

@@ -31,6 +31,64 @@ export class RollUpChallenge extends Contract {
 
     SUB_TREE_SIZE(): TransactionObject<string>
 
+    committedDeposits(
+      massDepositHash: string | number[],
+    ): TransactionObject<string>
+
+    finalizedUTXOs(utxoRoot: string | number[]): TransactionObject<boolean>
+
+    massDepositId(): TransactionObject<string>
+
+    migrations(migrationHash: string | number[]): TransactionObject<boolean>
+
+    parentOf(header: string | number[]): TransactionObject<string>
+
+    proposals(
+      proposalId: string | number[],
+    ): TransactionObject<{
+      header: string
+      challengeDue: string
+      slashed: boolean
+      0: string
+      1: string
+      2: boolean
+    }>
+
+    proposers(
+      addr: string,
+    ): TransactionObject<{
+      stake: string
+      reward: string
+      exitAllowance: string
+      0: string
+      1: string
+      2: string
+    }>
+
+    snapshotTimestamp(): TransactionObject<string>
+
+    stagedDeposits(): TransactionObject<{
+      merged: string
+      fee: string
+      0: string
+      1: string
+    }>
+
+    stagedSize(): TransactionObject<string>
+
+    utxoRootOf(header: string | number[]): TransactionObject<string>
+
+    withdrawables(
+      idx: number | string,
+    ): TransactionObject<{
+      root: string
+      index: string
+      0: string
+      1: string
+    }>
+
+    withdrawn(leaf: string | number[]): TransactionObject<boolean>
+
     challengeUTXORollUp(
       utxoRollUpId: number | string,
       _deposits: (number | string)[],
