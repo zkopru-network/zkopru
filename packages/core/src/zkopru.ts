@@ -1,11 +1,9 @@
-/* eslint-disable @typescript-eslint/camelcase */
-
-import Deployed, { ZkOptimisticRollUp } from '@zkopru/contracts'
 import { poseidonHasher, keccakHasher } from '@zkopru/tree'
 import bigInt, { BigNumber } from 'big-integer'
 import { provider } from 'web3-core'
 import { ContractOptions } from 'web3-eth-contract'
 import Web3 from 'web3'
+import ZkOPRUContract from '@zkopru/contracts'
 
 export interface ZkOPRUConfig {
   utxoTreeDepth: number
@@ -26,31 +24,27 @@ export interface ZkOPRUConfig {
 export class ZkOPRU {
   web3: Web3
 
-  networkId: number
-
   address: string
 
   config: ZkOPRUConfig
 
-  contract: ZkOptimisticRollUp
+  contract: ZkOPRUContract
 
-  constructor(
-    provider: provider,
-    networkId: number,
-    address: string,
-    config?: ZkOPRUConfig,
-    option?: ContractOptions,
-  ) {
+  constructor({
+    provider,
+    address,
+    option,
+    config,
+  }: {
+    provider: provider
+    address: string
+    option?: ContractOptions
+    config?: ZkOPRUConfig
+  }) {
     this.web3 = new Web3(provider)
 
-    // TODO: solc's abi generation and web3.js type declaration does not fit each other
-    this.contract = Deployed.asZkOptimisticRollUp(
-      this.web3,
-      address,
-      option || {},
-    )
+    this.contract = new ZkOPRUContract(provider, address, option)
 
-    this.networkId = networkId
     this.address = address
     this.config = config || {
       utxoTreeDepth: 31,
