@@ -46,7 +46,7 @@ const staticClasses = `${importExportList.reduce((prev, name) => {
   static as${name}(
     web3: Web3,
     address: string,
-    option: ContractOptions,
+    option?: ContractOptions,
   ): ${name} {
     const abi: any[] = [...${name}ABI]
     return new web3.eth.Contract(abi, address, option) as ${name}
@@ -72,7 +72,7 @@ const ZkOPRUContract = `export default class ZkOPRUContract {
 
   setup: ISetupWizard
 
-  constructor(provider: provider, address: string, option: ContractOptions) {
+  constructor(provider: provider, address: string, option?: ContractOptions) {
     const web3 = new Web3(provider)
     this.coordinator = ZkOPRUContract.asICoordinatable(web3, address, option)
     this.user = ZkOPRUContract.asIUserInteractable(web3, address, option)

@@ -59,7 +59,7 @@ export default class ZkOPRUContract {
 
   setup: ISetupWizard
 
-  constructor(provider: provider, address: string, option: ContractOptions) {
+  constructor(provider: provider, address: string, option?: ContractOptions) {
     const web3 = new Web3(provider)
     this.coordinator = ZkOPRUContract.asICoordinatable(web3, address, option)
     this.user = ZkOPRUContract.asIUserInteractable(web3, address, option)
@@ -78,7 +78,7 @@ export default class ZkOPRUContract {
   static asICoordinatable(
     web3: Web3,
     address: string,
-    option: ContractOptions,
+    option?: ContractOptions,
   ): ICoordinatable {
     const abi: any[] = [...ICoordinatableABI]
     return new web3.eth.Contract(abi, address, option) as ICoordinatable
@@ -87,7 +87,7 @@ export default class ZkOPRUContract {
   static asIDepositChallenge(
     web3: Web3,
     address: string,
-    option: ContractOptions,
+    option?: ContractOptions,
   ): IDepositChallenge {
     const abi: any[] = [...IDepositChallengeABI]
     return new web3.eth.Contract(abi, address, option) as IDepositChallenge
@@ -96,7 +96,7 @@ export default class ZkOPRUContract {
   static asIHeaderChallenge(
     web3: Web3,
     address: string,
-    option: ContractOptions,
+    option?: ContractOptions,
   ): IHeaderChallenge {
     const abi: any[] = [...IHeaderChallengeABI]
     return new web3.eth.Contract(abi, address, option) as IHeaderChallenge
@@ -105,7 +105,7 @@ export default class ZkOPRUContract {
   static asIMigratable(
     web3: Web3,
     address: string,
-    option: ContractOptions,
+    option?: ContractOptions,
   ): IMigratable {
     const abi: any[] = [...IMigratableABI]
     return new web3.eth.Contract(abi, address, option) as IMigratable
@@ -114,7 +114,7 @@ export default class ZkOPRUContract {
   static asIMigrationChallenge(
     web3: Web3,
     address: string,
-    option: ContractOptions,
+    option?: ContractOptions,
   ): IMigrationChallenge {
     const abi: any[] = [...IMigrationChallengeABI]
     return new web3.eth.Contract(abi, address, option) as IMigrationChallenge
@@ -123,7 +123,7 @@ export default class ZkOPRUContract {
   static asIRollUpChallenge(
     web3: Web3,
     address: string,
-    option: ContractOptions,
+    option?: ContractOptions,
   ): IRollUpChallenge {
     const abi: any[] = [...IRollUpChallengeABI]
     return new web3.eth.Contract(abi, address, option) as IRollUpChallenge
@@ -132,7 +132,7 @@ export default class ZkOPRUContract {
   static asIRollUpable(
     web3: Web3,
     address: string,
-    option: ContractOptions,
+    option?: ContractOptions,
   ): IRollUpable {
     const abi: any[] = [...IRollUpableABI]
     return new web3.eth.Contract(abi, address, option) as IRollUpable
@@ -141,7 +141,7 @@ export default class ZkOPRUContract {
   static asISetupWizard(
     web3: Web3,
     address: string,
-    option: ContractOptions,
+    option?: ContractOptions,
   ): ISetupWizard {
     const abi: any[] = [...ISetupWizardABI]
     return new web3.eth.Contract(abi, address, option) as ISetupWizard
@@ -150,7 +150,7 @@ export default class ZkOPRUContract {
   static asITxChallenge(
     web3: Web3,
     address: string,
-    option: ContractOptions,
+    option?: ContractOptions,
   ): ITxChallenge {
     const abi: any[] = [...ITxChallengeABI]
     return new web3.eth.Contract(abi, address, option) as ITxChallenge
@@ -159,7 +159,7 @@ export default class ZkOPRUContract {
   static asIUserInteractable(
     web3: Web3,
     address: string,
-    option: ContractOptions,
+    option?: ContractOptions,
   ): IUserInteractable {
     const abi: any[] = [...IUserInteractableABI]
     return new web3.eth.Contract(abi, address, option) as IUserInteractable
@@ -168,7 +168,7 @@ export default class ZkOPRUContract {
   static asZkOptimisticRollUp(
     web3: Web3,
     address: string,
-    option: ContractOptions,
+    option?: ContractOptions,
   ): ZkOptimisticRollUp {
     const abi: any[] = [...ZkOptimisticRollUpABI]
     return new web3.eth.Contract(abi, address, option) as ZkOptimisticRollUp
