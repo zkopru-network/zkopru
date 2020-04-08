@@ -72,8 +72,7 @@ const ZkOPRUContract = `export default class ZkOPRUContract {
 
   setup: ISetupWizard
 
-  constructor(provider: provider, address: string, option?: ContractOptions) {
-    const web3 = new Web3(provider)
+  constructor(web3: Web3, address: string, option?: ContractOptions) {
     this.coordinator = ZkOPRUContract.asICoordinatable(web3, address, option)
     this.user = ZkOPRUContract.asIUserInteractable(web3, address, option)
     this.migrator = ZkOPRUContract.asIMigratable(web3, address, option)
@@ -93,7 +92,6 @@ const base = `/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable max-classes-per-file */
 
 import Web3 from 'web3'
-import { provider } from 'web3-core'
 import { ContractOptions } from 'web3-eth-contract'
 `
 fs.mkdirSync('./src', { recursive: true })
