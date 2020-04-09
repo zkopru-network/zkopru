@@ -49,6 +49,20 @@ export const Layer2ABI = [
     type: 'function',
   },
   {
+    inputs: [{ internalType: 'address', name: '', type: 'address' }],
+    name: 'allowedMigrants',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'latest',
+    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
     inputs: [{ internalType: 'bytes32', name: 'header', type: 'bytes32' }],
     name: 'parentOf',
     outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
@@ -154,6 +168,22 @@ export const Layer2ABI = [
     ],
     name: 'migrations',
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'uint8', name: 'numOfInputs', type: 'uint8' },
+      { internalType: 'uint8', name: 'numOfOutputs', type: 'uint8' },
+    ],
+    name: 'getVk',
+    outputs: [
+      { internalType: 'uint256[2]', name: 'alfa1', type: 'uint256[2]' },
+      { internalType: 'uint256[2][2]', name: 'beta2', type: 'uint256[2][2]' },
+      { internalType: 'uint256[2][2]', name: 'gamma2', type: 'uint256[2][2]' },
+      { internalType: 'uint256[2][2]', name: 'delta2', type: 'uint256[2][2]' },
+      { internalType: 'uint256[2][]', name: 'ic', type: 'uint256[2][]' },
+    ],
     stateMutability: 'view',
     type: 'function',
   },

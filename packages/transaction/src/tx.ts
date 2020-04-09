@@ -289,7 +289,9 @@ export class TxBuilder {
 
     const changeETH = spendingAmount.eth.sub(sendingAmount.eth).sub(this.txFee)
     if (!changeETH.isZero()) {
-      changes.push(Output.newEtherNote({ eth: changeETH, pubKey: this.changeTo }))
+      changes.push(
+        Output.newEtherNote({ eth: changeETH, pubKey: this.changeTo }),
+      )
     }
 
     const inflow = [...spendings]

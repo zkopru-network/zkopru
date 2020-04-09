@@ -1,7 +1,7 @@
 import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 import { EncryptedKeystoreV3Json } from 'web3-core'
 
-export interface KeystoreSqlObj {
+export interface KeystoreSql {
   id?: string
   pubKey?: string
   address?: string
@@ -33,7 +33,7 @@ export const keystore: InanoSQLTableConfig = {
     {
       name: 'addKey',
       args: {},
-      call: (db, args: KeystoreSqlObj) => {
+      call: (db, args: KeystoreSql) => {
         return db.query('upsert', [args]).emit()
       },
     },

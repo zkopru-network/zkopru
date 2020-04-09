@@ -4,8 +4,9 @@ import "../libraries/Types.sol";
 import { Pairing } from "../libraries/Pairing.sol";
 import { SNARKsVerifier } from "../libraries/SNARKs.sol";
 import { Configurated } from "./Configurated.sol";
-import { OPRU, SplitRollUp } from "merkle-tree-rollup/contracts/library/Types.sol";
+
 import { SMT256 } from "smt-rollup/contracts/SMT.sol";
+import { OPRU, SplitRollUp } from "merkle-tree-rollup/contracts/library/Types.sol";
 
 struct RollUpProofs {
     SplitRollUp[] ofUTXORollUp;
@@ -22,10 +23,14 @@ contract Layer2 is Configurated {
     mapping(bytes32=>SNARKsVerifier.VerifyingKey) vks;
 
     /** Addresses allowed to migrate from. Setup wizard manages the list */
-    mapping(address=>bool) allowedMigrants;
+    mapping(address=>bool) public allowedMigrants;
 
     /** Roll up proofs for challenge */
     RollUpProofs proof;
+
+    function latest() public view returns (bytes32) {
+        return chain.latest;
+    }
 
     function parentOf(bytes32 header) public view returns (bytes32) {
         return chain.parentOf[header];
@@ -87,5 +92,28 @@ contract Layer2 is Configurated {
 
     function migrations(bytes32 migrationHash) public view returns (bool) {
         return chain.migrations[migrationHash];
+    }
+
+    function getVk(uint8 numOfInputs, uint8 numOfOutputs) public view returns (
+        uint[2] memory alfa1,
+        uint[2][2] memory beta2,
+        uint[2][2] memory gamma2,
+        uint[2][2] memory delta2,
+        uint[2][] memory ic
+    ) {
+        bytes32 txSig = Types.getSNARKsSignature(numOfInputs, numOfOutputs);
+        SNARKsVerifier.VerifyingKey memory vk = vks[txSig];
+        alfa1[0] = vk.alfa1.X;
+        alfa1[1] = vk.alfa1.Y;
+        beta2[0] = vk.beta2.X;
+        beta2[1] = vk.beta2.Y;
+        gamma2[0] = vk.gamma2.X;
+        gamma2[1] = vk.gamma2.Y;
+        delta2[0] = vk.delta2.X;
+        delta2[1] = vk.delta2.Y;
+        ic = new uint[2][](vk.ic.length);
+        for(uint i = 0; i < vk.ic.length; i++) {
+            ic[i] = [vk.ic[i].X, vk.ic[i].Y];
+        }
     }
 }

@@ -1,5 +1,6 @@
 import express from 'express'
 import { ZkTx } from '@zkopru/transaction'
+import { BootstrapData } from '@zkopru/core'
 
 export class API {
   app: express.Application
@@ -10,11 +11,16 @@ export class API {
     txRequest?: (tx: ZkTx) => Promise<string>
   }
 
+  bootstrapCache?: BootstrapData
+
   constructor(config: { port: number }) {
     this.app = express()
     this.port = config.port
     this.handlers = {}
-    this.app.post('/zkopru', async (req, res) => {
+    this.app.get('/bootstrap', async (_, res) => {
+      if (this.bootstrapCache) res.send(this.bootstrapCache)
+    })
+    this.app.post('/tx', async (req, res) => {
       const tx = ZkTx.decode(req.body)
       if (this.handlers.txRequest) {
         const result = await this.handlers.txRequest(tx)

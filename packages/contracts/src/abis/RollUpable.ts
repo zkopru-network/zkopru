@@ -19,7 +19,6 @@ export const RollUpableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -27,7 +26,6 @@ export const RollUpableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -35,7 +33,6 @@ export const RollUpableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -43,7 +40,6 @@ export const RollUpableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -51,7 +47,6 @@ export const RollUpableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -59,7 +54,6 @@ export const RollUpableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -67,7 +61,13 @@ export const RollUpableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
+  },
+  {
+    inputs: [{ internalType: 'address', name: '', type: 'address' }],
+    name: 'allowedMigrants',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
   },
   {
     inputs: [
@@ -77,7 +77,6 @@ export const RollUpableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'bytes32', name: 'utxoRoot', type: 'bytes32' }],
@@ -85,7 +84,29 @@ export const RollUpableABI = [
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
+  },
+  {
+    inputs: [
+      { internalType: 'uint8', name: 'numOfInputs', type: 'uint8' },
+      { internalType: 'uint8', name: 'numOfOutputs', type: 'uint8' },
+    ],
+    name: 'getVk',
+    outputs: [
+      { internalType: 'uint256[2]', name: 'alfa1', type: 'uint256[2]' },
+      { internalType: 'uint256[2][2]', name: 'beta2', type: 'uint256[2][2]' },
+      { internalType: 'uint256[2][2]', name: 'gamma2', type: 'uint256[2][2]' },
+      { internalType: 'uint256[2][2]', name: 'delta2', type: 'uint256[2][2]' },
+      { internalType: 'uint256[2][]', name: 'ic', type: 'uint256[2][]' },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'latest',
+    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
+    stateMutability: 'view',
+    type: 'function',
   },
   {
     inputs: [],
@@ -93,7 +114,6 @@ export const RollUpableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [
@@ -103,7 +123,6 @@ export const RollUpableABI = [
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'bytes32', name: 'header', type: 'bytes32' }],
@@ -111,7 +130,6 @@ export const RollUpableABI = [
     outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'bytes32', name: 'proposalId', type: 'bytes32' }],
@@ -123,7 +141,6 @@ export const RollUpableABI = [
     ],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'address', name: 'addr', type: 'address' }],
@@ -135,7 +152,6 @@ export const RollUpableABI = [
     ],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -143,7 +159,6 @@ export const RollUpableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -154,7 +169,6 @@ export const RollUpableABI = [
     ],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -162,7 +176,6 @@ export const RollUpableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'bytes32', name: 'header', type: 'bytes32' }],
@@ -170,7 +183,6 @@ export const RollUpableABI = [
     outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'uint256', name: 'idx', type: 'uint256' }],
@@ -181,7 +193,6 @@ export const RollUpableABI = [
     ],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'bytes32', name: 'leaf', type: 'bytes32' }],
@@ -189,7 +200,6 @@ export const RollUpableABI = [
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [

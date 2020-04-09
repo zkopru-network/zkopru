@@ -8,7 +8,7 @@ import {
 } from 'bip39'
 import crypto from 'crypto'
 import HDNode from 'hdkey'
-import { HDWalletSqlObj, KeystoreSqlObj, schema } from '@zkopru/database'
+import { HDWalletSql, KeystoreSql, schema } from '@zkopru/database'
 import { Point, Field } from '@zkopru/babyjubjub'
 import { ZkAccount } from './account'
 
@@ -51,15 +51,15 @@ export class HDWallet {
     this.id = id
   }
 
-  async list(): Promise<HDWalletSqlObj[]> {
+  async list(): Promise<HDWalletSql[]> {
     const rows = await this.db
       .selectTable(schema.hdWallet.name)
       .query('select')
       .exec()
-    return rows as HDWalletSqlObj[]
+    return rows as HDWalletSql[]
   }
 
-  async load(wallet: HDWalletSqlObj, password: string) {
+  async load(wallet: HDWalletSql, password: string) {
     const {
       id,
       algorithm,
@@ -92,7 +92,7 @@ export class HDWallet {
   async retrieveAccounts(): Promise<ZkAccount[]> {
     if (!this.seed) throw Error('Not initialized')
     const { seed } = this
-    const keys: KeystoreSqlObj[] = await this.db
+    const keys: KeystoreSql[] = await this.db
       .selectTable(schema.keystore.name)
       .query('select')
       .exec()
@@ -130,7 +130,7 @@ export class HDWallet {
     return account
   }
 
-  export(password: string): HDWalletSqlObj {
+  export(password: string): HDWalletSql {
     if (!this.mnemonic) throw Error('Not initialized')
     const entropy: string = mnemonicToEntropy(this.mnemonic)
     const algorithm = 'aes-256-cbc'
@@ -147,7 +147,7 @@ export class HDWallet {
     const cipher = crypto.createCipheriv(algorithm, key, iv)
     const ciphertext =
       cipher.update(entropy, 'binary', 'hex') + cipher.final('hex')
-    const hdwallet: HDWalletSqlObj = {
+    const hdwallet: HDWalletSql = {
       ciphertext,
       iv: iv.toString('hex'),
       algorithm,

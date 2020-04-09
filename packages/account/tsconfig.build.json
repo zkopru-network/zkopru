@@ -5,7 +5,7 @@
     "outDir": "./dist",
     "allowJs": true,
     "noImplicitAny": false,
-    "tsBuildInfoFile": "../../.build-cache/core.tsbuildinfo"
+    "tsBuildInfoFile": "../../.build-cache/account.tsbuildinfo"
   },
   "include": ["src"],
   "references": [

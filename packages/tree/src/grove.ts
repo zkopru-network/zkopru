@@ -1,20 +1,20 @@
 import { nanoSQL } from '@nano-sql/core'
 import {
-  TreeSqlObj,
+  TreeSql,
   schema,
-  MerkleProofCacheSqlObject,
-  OutputSqlObject,
+  MerkleProofCacheSql,
+  OutputSql,
 } from '@zkopru/database'
 import { Field, Point } from '@zkopru/babyjubjub'
+import { InanoSQLQueryBuilder } from '@nano-sql/core/lib/interfaces'
+import { Hasher } from './hasher'
 import {
   LightRollUpTree,
-  MerkleProof,
   TreeType,
   Item,
-  Hasher,
+  MerkleProof,
   merkleProof,
-} from '@zkopru/tree'
-import { InanoSQLQueryBuilder } from '@nano-sql/core/lib/interfaces'
+} from './tree'
 
 export interface GroveConfig {
   utxoTreeDepth: number
@@ -55,7 +55,7 @@ export class Grove {
       .selectTable(schema.tree.name)
       .query('select')
       .where(['zkopru', '=', this.zkopruId])
-      .exec()) as TreeSqlObj[]
+      .exec()) as TreeSql[]
 
     const utxoTreeSqlObjs = trees
       .filter(tree => tree.type === TreeType.UTXO)
@@ -73,7 +73,7 @@ export class Grove {
       // start a new tree if there's no utxo tree
       const queryResult = (await this.initNewTreeQuery(
         TreeType.UTXO,
-      ).exec()) as TreeSqlObj[]
+      ).exec()) as TreeSql[]
       utxoTreeSqlObjs.push(...queryResult)
     }
 
@@ -81,7 +81,7 @@ export class Grove {
       // start a new tree if there's no withdrawal tree
       const queryResult = (await this.initNewTreeQuery(
         TreeType.WITHDRAWAL,
-      ).exec()) as TreeSqlObj[]
+      ).exec()) as TreeSql[]
       withdrawalTreeSqlObjs.push(...queryResult)
     }
 
@@ -89,7 +89,7 @@ export class Grove {
       // start a new tree if there's no nullifier tree
       const queryResult = (await this.initNewTreeQuery(
         TreeType.NULLIFIER,
-      ).exec()) as TreeSqlObj[]
+      ).exec()) as TreeSql[]
       nullifierTreeSqlObjs.push(...queryResult)
     }
 
@@ -101,6 +101,20 @@ export class Grove {
     this.nullifierTree = nullifierTreeSqlObjs
       .map(this.toRollUpTree)
       .pop() as LightRollUpTree
+  }
+
+  setPubKeysToObserve(points: Point[]) {
+    this.config.pubKeysToObserve = points
+    this.utxoTrees.forEach(tree => tree.updatePubKeys(points))
+    this.withdrawalTrees.forEach(tree => tree.updatePubKeys(points))
+    this.nullifierTree.updatePubKeys(points)
+  }
+
+  setAddressesToObserve(addresses: string[]) {
+    this.config.addressesToObserve = addresses
+    this.utxoTrees.forEach(tree => tree.updateAddresses(addresses))
+    this.withdrawalTrees.forEach(tree => tree.updateAddresses(addresses))
+    this.nullifierTree.updateAddresses(addresses)
   }
 
   latestUTXOTree(): LightRollUpTree {
@@ -173,7 +187,7 @@ export class Grove {
       .query('select')
       .where(['hash', '=', hash.toHex()])
       .exec()
-    const output: OutputSqlObject = queryResult.pop() as OutputSqlObject
+    const output: OutputSql = queryResult.pop() as OutputSql
     if (!output) throw Error('Failed to find the utxo')
 
     const cachedSiblings = (await this.db
@@ -182,10 +196,10 @@ export class Grove {
         depth: this.config.utxoTreeDepth,
         index: output.index,
       })
-      .exec()) as MerkleProofCacheSqlObject[]
+      .exec()) as MerkleProofCacheSql[]
     let root!: Field
     const siblings = [...this.config.utxoHasher.preHash]
-    cachedSiblings.forEach((obj: MerkleProofCacheSqlObject) => {
+    cachedSiblings.forEach((obj: MerkleProofCacheSql) => {
       const level =
         1 +
         this.config.utxoTreeDepth -
@@ -207,19 +221,17 @@ export class Grove {
     return proof
   }
 
-  async withdrawalMerkleProof(
-    withdrawal: OutputSqlObject,
-  ): Promise<MerkleProof> {
+  async withdrawalMerkleProof(withdrawal: OutputSql): Promise<MerkleProof> {
     const cachedSiblings = (await this.db
       .selectTable(schema.merkleProofCache(withdrawal.tree).name)
       .presetQuery('getSiblings', {
         depth: this.config.withdrawalTreeDepth,
         index: withdrawal.index,
       })
-      .exec()) as MerkleProofCacheSqlObject[]
+      .exec()) as MerkleProofCacheSql[]
     let root!: Field
     const siblings = [...this.config.withdrawalHasher.preHash]
-    cachedSiblings.forEach((obj: MerkleProofCacheSqlObject) => {
+    cachedSiblings.forEach((obj: MerkleProofCacheSql) => {
       const level =
         1 +
         this.config.withdrawalTreeDepth -
@@ -243,7 +255,7 @@ export class Grove {
 
   private async initNewTree(treeType: TreeType): Promise<LightRollUpTree> {
     const query = this.initNewTreeQuery(treeType)
-    const sqlResult = (await query.exec()).pop() as TreeSqlObj
+    const sqlResult = (await query.exec()).pop() as TreeSql
     return this.toRollUpTree(sqlResult)
   }
 
@@ -274,7 +286,7 @@ export class Grove {
     })
   }
 
-  private toRollUpTree(obj: TreeSqlObj): LightRollUpTree {
+  private toRollUpTree(obj: TreeSql): LightRollUpTree {
     return new LightRollUpTree({
       db: this.db,
       metadata: {

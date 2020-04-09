@@ -1,6 +1,10 @@
 pragma solidity >= 0.6.0;
 
 interface ICoordinatable {
+    event NewProposal(bytes32 submissionId);
+    event Finalized(bytes32 submissionId);
+    event MassDepositCommit(uint id, bytes32 merged, uint256 fee);
+
     /**
      * @notice Coordinator calls this function for the proof of stake.
      *         Coordinator should pay more than MINIMUM_STAKE. See 'Configurated.sol'

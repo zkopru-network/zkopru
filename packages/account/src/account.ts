@@ -1,7 +1,7 @@
 import { Accounts } from 'web3-eth-accounts'
-import { Account, EncryptedKeystoreV3Json } from 'web3-core'
+import { Account, EncryptedKeystoreV3Json, AddAccount } from 'web3-core'
 import { Field, Point, EdDSA, signEdDSA } from '@zkopru/babyjubjub'
-import { KeystoreSqlObj } from '@zkopru/database'
+import { KeystoreSql } from '@zkopru/database'
 
 export class ZkAccount {
   private privateKey: Field
@@ -21,7 +21,7 @@ export class ZkAccount {
     this.address = this.ethAccount.address
   }
 
-  toKeystoreSqlObj(password: string): KeystoreSqlObj {
+  toKeystoreSqlObj(password: string): KeystoreSql {
     return {
       pubKey: this.pubKey.encode().toString(),
       address: this.address,
@@ -31,6 +31,13 @@ export class ZkAccount {
 
   signEdDSA(msg: Field): EdDSA {
     return signEdDSA({ msg, privKey: this.privateKey.toBuffer() })
+  }
+
+  toAddAccount(): AddAccount {
+    return {
+      address: this.address,
+      privateKey: this.privateKey.toHex(),
+    }
   }
 
   static fromEncryptedKeystoreV3Json(

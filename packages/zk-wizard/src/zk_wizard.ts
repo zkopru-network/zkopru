@@ -2,9 +2,8 @@
 import { nanoSQL } from '@nano-sql/core'
 import { Field, F, Point, EdDSA, signEdDSA } from '@zkopru/babyjubjub'
 import { RawTx, ZkTx } from '@zkopru/transaction'
-import { MerkleProof } from '@zkopru/tree'
+import { MerkleProof, Grove } from '@zkopru/tree'
 import * as utils from '@zkopru/utils'
-import { Grove } from '@zkopru/core'
 
 export class ZkWizard {
   circuits: { [key: string]: Buffer }

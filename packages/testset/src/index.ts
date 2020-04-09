@@ -4,9 +4,8 @@ import { nanoSQL, nSQL } from '@nano-sql/core'
 import fs from 'fs-extra'
 import { Field, Point } from '@zkopru/babyjubjub'
 import { RawTx, ZkTx, Output, TokenUtils } from '@zkopru/transaction'
-import { Grove } from '@zkopru/core'
 import { ZkWizard } from '@zkopru/zk-wizard'
-import { keccakHasher, poseidonHasher } from '@zkopru/tree'
+import { keccakHasher, poseidonHasher, Grove } from '@zkopru/tree'
 
 const alicePrivKey = "I am Alice's private key"
 const alicePubKey: Point = Point.fromPrivKey(alicePrivKey)

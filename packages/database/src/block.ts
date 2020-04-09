@@ -1,12 +1,42 @@
 import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 
+export enum BlockStatus {
+  NOT_FETCHED = 0,
+  FETCHED = 1,
+  VERIFIED = 2,
+  FINALIZED = 3,
+  INVALIDATED = 4,
+  REVERTED = 5,
+}
+
+export interface BlockSql {
+  hash: string
+  status?: BlockStatus
+  proposedAt: number
+  submissionId: string
+  header: {
+    proposer: string
+    parentBlock: string
+    metadata: string
+    fee: string
+    utxoRoot: string
+    utxoIndex: string
+    nullifierRoot: string
+    withdrawalRoot: string
+    withdrawalIndex: string
+    txRoot: string
+    depositRoot: string
+    migrationRoot: string
+  }
+}
+
 export function block(zkopruId: string): InanoSQLTableConfig {
   return {
     name: `zkopru-block-${zkopruId}`,
     model: {
       'hash:string': { pk: true },
-      'blockNum:int': {},
-      'parent:string': {},
+      'status:int': { default: 0 },
+      'proposedAt:int': {},
       'submissionId:string': {},
       'header:obj': {
         model: {
@@ -33,15 +63,14 @@ export function block(zkopruId: string): InanoSQLTableConfig {
       },
     },
     indexes: {
-      'blockNum:int': {},
+      'proposedAt:int': {},
     },
     queries: [
       {
         name: 'newBlock',
         args: {
           'hash:string': { pk: true },
-          'blockNum:int': {},
-          'parent:string': {},
+          'proposedAt:int': {},
           'submissionId:string': {},
           'header:obj': {},
         },
@@ -50,22 +79,10 @@ export function block(zkopruId: string): InanoSQLTableConfig {
         },
       },
       {
-        name: 'getBlockNumber',
+        name: 'getLastUpstreamBlock',
         args: {},
         call: (db, _) => {
-          return db.query('select', ['MAX(blockNum)']).emit()
-        },
-      },
-      {
-        name: 'getBlockWithNumber',
-        args: {
-          'blockNum:int': {},
-        },
-        call: (db, args) => {
-          return db
-            .query('select')
-            .where(['blockNum', '=', args.blockNum])
-            .emit()
+          return db.query('select', ['MAX(proposedAt)']).emit()
         },
       },
       {
@@ -87,11 +104,10 @@ export function block(zkopruId: string): InanoSQLTableConfig {
           return db
             .query('select', [
               'hash',
-              'blockNum',
-              'parent',
+              'proposedAt',
               'submissionId',
               'header',
-              'MAX(blockNum)',
+              'MAX(proposedAt)',
             ])
             .emit()
         },

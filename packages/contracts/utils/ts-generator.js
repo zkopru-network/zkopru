@@ -55,6 +55,8 @@ const staticClasses = `${importExportList.reduce((prev, name) => {
 }, '')}`
 
 const ZkOPRUContract = `export default class ZkOPRUContract {
+  upstream: ZkOptimisticRollUp
+
   coordinator: ICoordinatable
 
   user: IUserInteractable
@@ -73,6 +75,7 @@ const ZkOPRUContract = `export default class ZkOPRUContract {
   setup: ISetupWizard
 
   constructor(web3: Web3, address: string, option?: ContractOptions) {
+    this.upstream = ZkOPRUContract.asZkOptimisticRollUp(web3, address, option)
     this.coordinator = ZkOPRUContract.asICoordinatable(web3, address, option)
     this.user = ZkOPRUContract.asIUserInteractable(web3, address, option)
     this.migrator = ZkOPRUContract.asIMigratable(web3, address, option)

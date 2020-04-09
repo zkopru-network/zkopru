@@ -1,7 +1,7 @@
 import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 import { OutputStatus } from '@zkopru/transaction'
 
-export interface OutputSqlObject {
+export interface OutputSql {
   hash: string
   tree: string
   index: string

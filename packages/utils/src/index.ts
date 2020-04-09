@@ -24,6 +24,12 @@ export function root(hashes: Hex[]): Hex {
   return root(parents)
 }
 
+export function verifyingKeyIdentifier(nI: number, nO: number): string {
+  const identifier = soliditySha3(nI, nO)
+  if (!identifier) throw Error('soliditySha3 returns null')
+  return identifier
+}
+
 export class Queue {
   buffer: Buffer
 

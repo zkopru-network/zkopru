@@ -30,6 +30,16 @@ export class ICoordinatable extends Contract {
     isProposable(proposerAddr: string): TransactionObject<boolean>
   }
   events: {
+    Finalized: ContractEvent<string>
+    MassDepositCommit: ContractEvent<{
+      id: string
+      merged: string
+      fee: string
+      0: string
+      1: string
+      2: string
+    }>
+    NewProposal: ContractEvent<string>
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
 }

@@ -11,4 +11,5 @@ export {
 } from './tree'
 
 export { Hasher, keccakHasher, poseidonHasher } from './hasher'
-// export { Grove } from './grove'
+
+export { Grove } from './grove'

@@ -1,6 +1,6 @@
 import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 
-export interface HDWalletSqlObj {
+export interface HDWalletSql {
   id?: string
   ciphertext: string
   iv: string
@@ -29,7 +29,7 @@ export const hdWallet: InanoSQLTableConfig = {
     {
       name: 'save',
       args: {},
-      call: (db, args: HDWalletSqlObj) => {
+      call: (db, args: HDWalletSql) => {
         return db.query('upsert', [{ updated: Date.now(), ...args }]).emit()
       },
     },

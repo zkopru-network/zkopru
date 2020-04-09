@@ -26,15 +26,20 @@
   },
   "dependencies": {
     "@nano-sql/core": "^2.3.7",
+    "@zkopru/account": "file:../account",
     "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/contracts": "file:../contracts",
     "@zkopru/database": "file:../database",
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/tree": "file:../tree",
+    "@zkopru/utils": "file:../utils",
     "async-lock": "^1.2.2",
     "big-integer": "^1.6.48",
+    "node-fetch": "^2.6.0",
     "web3": "^1.2.6",
     "web3-core": "^1.2.6",
-    "web3-eth-contract": "^1.2.6"
+    "web3-eth-contract": "^1.2.6",
+    "web3-utils": "^1.2.6",
+    "winston": "^3.2.1"
   }
 }

@@ -24,6 +24,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@zkopru/core": "file:../core",
     "@zkopru/contracts": "file:../contracts",
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/utils": "file:../utils",

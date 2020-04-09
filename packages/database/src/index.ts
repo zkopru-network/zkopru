@@ -16,8 +16,10 @@ export const schema = {
   keystore,
 }
 
-export { TreeSqlObj } from './tree'
-export { OutputSqlObject } from './output'
-export { MerkleProofCacheSqlObject } from './merkle-proof-cache'
-export { KeystoreSqlObj } from './keystore'
-export { HDWalletSqlObj } from './hdwallet'
+export { TreeSql } from './tree'
+export { OutputSql } from './output'
+export { MerkleProofCacheSql } from './merkle-proof-cache'
+export { KeystoreSql } from './keystore'
+export { HDWalletSql } from './hdwallet'
+export { ZkOPRUSql } from './zkopru'
+export { BlockSql, BlockStatus } from './block'

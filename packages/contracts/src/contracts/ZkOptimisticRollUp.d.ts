@@ -31,11 +31,31 @@ export class ZkOptimisticRollUp extends Contract {
 
     SUB_TREE_SIZE(): TransactionObject<string>
 
+    allowedMigrants(arg0: string): TransactionObject<boolean>
+
     committedDeposits(
       massDepositHash: string | number[],
     ): TransactionObject<string>
 
     finalizedUTXOs(utxoRoot: string | number[]): TransactionObject<boolean>
+
+    getVk(
+      numOfInputs: number | string,
+      numOfOutputs: number | string,
+    ): TransactionObject<{
+      alfa1: string[]
+      beta2: string[][]
+      gamma2: string[][]
+      delta2: string[][]
+      ic: string[][]
+      0: string[]
+      1: string[][]
+      2: string[][]
+      3: string[][]
+      4: string[][]
+    }>
+
+    latest(): TransactionObject<string>
 
     massDepositId(): TransactionObject<string>
 

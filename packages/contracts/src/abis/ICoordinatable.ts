@@ -1,5 +1,46 @@
 export const ICoordinatableABI = [
   {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'bytes32',
+        name: 'submissionId',
+        type: 'bytes32',
+      },
+    ],
+    name: 'Finalized',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: false, internalType: 'uint256', name: 'id', type: 'uint256' },
+      {
+        indexed: false,
+        internalType: 'bytes32',
+        name: 'merged',
+        type: 'bytes32',
+      },
+      { indexed: false, internalType: 'uint256', name: 'fee', type: 'uint256' },
+    ],
+    name: 'MassDepositCommit',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'bytes32',
+        name: 'submissionId',
+        type: 'bytes32',
+      },
+    ],
+    name: 'NewProposal',
+    type: 'event',
+  },
+  {
     inputs: [],
     name: 'register',
     outputs: [],

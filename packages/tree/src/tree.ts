@@ -1,11 +1,7 @@
 import { nanoSQL } from '@nano-sql/core'
 import { Field, Point } from '@zkopru/babyjubjub'
 import { Output, OutputStatus } from '@zkopru/transaction'
-import {
-  schema,
-  OutputSqlObject,
-  MerkleProofCacheSqlObject,
-} from '@zkopru/database'
+import { schema, OutputSql, MerkleProofCacheSql } from '@zkopru/database'
 import bigInt, { BigInteger } from 'big-integer'
 import { Hasher } from './hasher'
 
@@ -283,8 +279,8 @@ export class LightRollUpTree {
     const start = this.latestLeafIndex()
     const depth = this.depth()
     const latestSiblings = this.siblings()
-    const merkleProofCacheQuery: MerkleProofCacheSqlObject[] = []
-    const outputAppendingQuery: OutputSqlObject[] = []
+    const merkleProofCacheQuery: MerkleProofCacheSql[] = []
+    const outputAppendingQuery: OutputSql[] = []
     let root!: Field
 
     const trackingLeaves: Field[] = await this.indexesOfTrackingLeaves()

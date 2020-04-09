@@ -31,6 +31,10 @@ export class Layer2 extends Contract {
 
     SUB_TREE_SIZE(): TransactionObject<string>
 
+    allowedMigrants(arg0: string): TransactionObject<boolean>
+
+    latest(): TransactionObject<string>
+
     parentOf(header: string | number[]): TransactionObject<string>
 
     utxoRootOf(header: string | number[]): TransactionObject<string>
@@ -88,6 +92,22 @@ export class Layer2 extends Contract {
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
 
     migrations(migrationHash: string | number[]): TransactionObject<boolean>
+
+    getVk(
+      numOfInputs: number | string,
+      numOfOutputs: number | string,
+    ): TransactionObject<{
+      alfa1: string[]
+      beta2: string[][]
+      gamma2: string[][]
+      delta2: string[][]
+      ic: string[][]
+      0: string[]
+      1: string[][]
+      2: string[][]
+      3: string[][]
+      4: string[][]
+    }>
   }
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter

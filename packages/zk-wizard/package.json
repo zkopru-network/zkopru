@@ -25,10 +25,15 @@
   },
   "dependencies": {
     "@nano-sql/core": "^2.3.7",
+    "@zkopru/account": "file:../account",
     "@zkopru/babyjubjub": "file:../babyjubjub",
+    "@zkopru/contracts": "file:../contracts",
     "@zkopru/core": "file:../core",
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/tree": "file:../tree",
-    "@zkopru/utils": "file:../utils"
+    "@zkopru/utils": "file:../utils",
+    "web3": "^1.2.6",
+    "web3-core": "^1.2.6",
+    "web3-eth-contract": "^1.2.6"
   }
 }

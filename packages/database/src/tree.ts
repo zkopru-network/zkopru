@@ -1,6 +1,6 @@
 import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 
-export interface TreeSqlObj {
+export interface TreeSql {
   id: string
   type: number
   index: number
