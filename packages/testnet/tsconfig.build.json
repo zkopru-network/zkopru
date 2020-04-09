@@ -3,7 +3,7 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-    "tsBuildInfoFile": "../../.build-cache/testset.tsbuildinfo"
+    "tsBuildInfoFile": "../../.build-cache/testnet.tsbuildinfo"
   },
   "include": ["src"],
   "references": [

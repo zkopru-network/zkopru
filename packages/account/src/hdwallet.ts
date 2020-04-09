@@ -1,4 +1,4 @@
-import { nanoSQL } from '@nano-sql/core'
+import { InanoSQLInstance } from '@nano-sql/core'
 import {
   generateMnemonic,
   mnemonicToSeedSync,
@@ -14,7 +14,7 @@ import { ZkAccount } from './account'
 
 export const PATH = (index: number) => `m/44'/60'/0'/0/${index}`
 export class HDWallet {
-  db: nanoSQL
+  db: InanoSQLInstance
 
   id?: string
 
@@ -24,7 +24,7 @@ export class HDWallet {
 
   private seed!: Buffer
 
-  constructor(db: nanoSQL) {
+  constructor(db: InanoSQLInstance) {
     this.db = db
   }
 

@@ -14,7 +14,7 @@
       "~coordinator/*": ["coordinator/src/*"],
       "~core/*": ["core/src/*"],
       "~database/*": ["database/src/*"],
-      "~testset/*": ["testset/src/*"],
+      "~testnet/*": ["testnet/src/*"],
       "~transaction/*": ["transaction/src/*"],
       "~tree/*": ["tree/src/*"],
       "~utils/*": ["utils/src/*"],

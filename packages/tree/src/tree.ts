@@ -1,4 +1,4 @@
-import { nanoSQL } from '@nano-sql/core'
+import { InanoSQLInstance } from '@nano-sql/core'
 import { Field, Point } from '@zkopru/babyjubjub'
 import { Output, OutputStatus } from '@zkopru/transaction'
 import { schema, OutputSql, MerkleProofCacheSql } from '@zkopru/database'
@@ -86,7 +86,7 @@ export interface TreeConfig {
 }
 
 export class LightRollUpTree {
-  db: nanoSQL
+  db: InanoSQLInstance
 
   config: TreeConfig
 
@@ -100,7 +100,7 @@ export class LightRollUpTree {
     data,
     config,
   }: {
-    db: nanoSQL
+    db: InanoSQLInstance
     metadata: TreeMetadata
     data: TreeData
     config: TreeConfig
@@ -118,7 +118,7 @@ export class LightRollUpTree {
     data,
     config,
   }: {
-    db: nanoSQL
+    db: InanoSQLInstance
     metadata: TreeMetadata
     data: TreeData
     config: TreeConfig

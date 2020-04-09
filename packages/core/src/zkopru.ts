@@ -1,6 +1,6 @@
 import { ZkAccount } from '@zkopru/account'
 import { provider } from 'web3-core'
-import { nanoSQL } from '@nano-sql/core'
+import { InanoSQLInstance } from '@nano-sql/core'
 import Web3 from 'web3'
 import { Layer1 } from './layer1'
 import { Verifier } from './verifier'
@@ -44,7 +44,7 @@ export class ZkOPRU {
   }: {
     provider: provider
     address: string
-    db: nanoSQL
+    db: InanoSQLInstance
     account?: ZkAccount
     bootstrapNode?: BootstrapNode
     option?: ZkOPRUOption
@@ -67,7 +67,7 @@ export class ZkOPRU {
   }: {
     provider: provider
     address: string
-    db: nanoSQL
+    db: InanoSQLInstance
     account?: ZkAccount
     bootstrapNode?: BootstrapNode
   }) {

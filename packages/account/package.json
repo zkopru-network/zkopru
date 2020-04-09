@@ -8,7 +8,7 @@
     "dist"
   ],
   "_moduleAliases": {
-    "~core": "dist"
+    "~account": "dist"
   },
   "scripts": {
     "postinstall": "shx mkdir -p dist && link-module-alias",

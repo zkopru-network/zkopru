@@ -7,9 +7,10 @@
     "packages/*"
   ],
   "scripts": {
-    "bootstrap": "lerna exec npm install && lerna link",
+    "bootstrap": "lerna bootstrap && lerna link",
     "build": "lerna run --parallel build",
     "build:fresh": "yarn clean && yarn build",
+    "postbuild": "yarn bootstrap",
     "clean": "lerna run --parallel clean && shx rm -rf .build-cache *.log coverage junit.xml",
     "test": "lerna run test --parallel",
     "pretest:integrate": "docker-compose up -d --build",
@@ -112,7 +113,7 @@
     "@zkopru/coordinator": "file:packages/coordinator",
     "@zkopru/core": "file:packages/core",
     "@zkopru/database": "file:packages/database",
-    "@zkopru/testset": "file:packages/testset",
+    "@zkopru/testnet": "file:packages/testnet",
     "@zkopru/transaction": "file:packages/transaction",
     "@zkopru/tree": "file:packages/tree",
     "@zkopru/utils": "file:packages/utils",

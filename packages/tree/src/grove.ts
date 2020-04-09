@@ -1,4 +1,4 @@
-import { nanoSQL } from '@nano-sql/core'
+import { InanoSQLInstance } from '@nano-sql/core'
 import {
   TreeSql,
   schema,
@@ -34,7 +34,7 @@ export interface GroveConfig {
 export class Grove {
   zkopruId: string
 
-  db: nanoSQL
+  db: InanoSQLInstance
 
   config: GroveConfig
 
@@ -44,7 +44,7 @@ export class Grove {
 
   nullifierTree!: LightRollUpTree
 
-  constructor(zkopruId: string, db: nanoSQL, config: GroveConfig) {
+  constructor(zkopruId: string, db: InanoSQLInstance, config: GroveConfig) {
     this.zkopruId = zkopruId
     this.config = config
     this.db = db

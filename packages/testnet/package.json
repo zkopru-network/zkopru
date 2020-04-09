@@ -1,5 +1,5 @@
 {
-  "name": "@zkopru/testset",
+  "name": "@zkopru/testnet",
   "version": "0.0.1",
   "license": "GPL-3.0-or-later",
   "private": true,
@@ -9,7 +9,7 @@
     "dist"
   ],
   "_moduleAliases": {
-    "~testset": "dist"
+    "~testnet": "dist"
   },
   "scripts": {
     "postinstall": "shx mkdir -p dist",

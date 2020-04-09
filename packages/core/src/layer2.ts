@@ -1,4 +1,4 @@
-import { nanoSQL } from '@nano-sql/core'
+import { InanoSQLInstance } from '@nano-sql/core'
 import { Field } from '@zkopru/babyjubjub'
 import { Grove } from '@zkopru/tree'
 import AsyncLock from 'async-lock'
@@ -23,7 +23,7 @@ export class Layer2 {
 
   nodeType: NodeType
 
-  db: nanoSQL
+  db: InanoSQLInstance
 
   latest: Field
 
@@ -32,7 +32,7 @@ export class Layer2 {
   }
 
   constructor(
-    db: nanoSQL,
+    db: InanoSQLInstance,
     nodeType: NodeType,
     config: Configuration,
     vks?: {
@@ -84,7 +84,7 @@ export class Layer2 {
   }
 
   static async with(
-    db: nanoSQL,
+    db: InanoSQLInstance,
     networkId: number,
     chainId: number,
     address: string,
