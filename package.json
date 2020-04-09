@@ -7,10 +7,10 @@
     "packages/*"
   ],
   "scripts": {
-    "bootstrap": "lerna bootstrap && lerna link",
+    "postinstall": "yarn bootstrap",
+    "bootstrap": "lerna bootstrap && lerna link --force-local",
     "build": "lerna run --parallel build",
     "build:fresh": "yarn clean && yarn build",
-    "postbuild": "yarn bootstrap",
     "clean": "lerna run --parallel clean && shx rm -rf .build-cache *.log coverage junit.xml",
     "test": "lerna run test --parallel",
     "pretest:integrate": "docker-compose up -d --build",
@@ -104,19 +104,5 @@
     "typechain": "^1.0.5",
     "typechain-target-web3-v1": "^1.0.4",
     "typescript": "^3.4.3"
-  },
-  "dependencies": {
-    "@zkopru/account": "file:packages/account",
-    "@zkopru/babyjubjub": "file:packages/babyjubjub",
-    "@zkopru/circuits": "file:packages/circuits",
-    "@zkopru/contracts": "file:packages/contracts",
-    "@zkopru/coordinator": "file:packages/coordinator",
-    "@zkopru/core": "file:packages/core",
-    "@zkopru/database": "file:packages/database",
-    "@zkopru/testnet": "file:packages/testnet",
-    "@zkopru/transaction": "file:packages/transaction",
-    "@zkopru/tree": "file:packages/tree",
-    "@zkopru/utils": "file:packages/utils",
-    "@zkopru/zk-wizard": "file:packages/zk-wizard"
-  }
+  }  
 }
