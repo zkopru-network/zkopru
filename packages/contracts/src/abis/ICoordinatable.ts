@@ -5,7 +5,7 @@ export const ICoordinatableABI = [
       {
         indexed: false,
         internalType: 'bytes32',
-        name: 'submissionId',
+        name: 'blockHash',
         type: 'bytes32',
       },
     ],
@@ -33,7 +33,7 @@ export const ICoordinatableABI = [
       {
         indexed: false,
         internalType: 'bytes32',
-        name: 'submissionId',
+        name: 'blockHash',
         type: 'bytes32',
       },
     ],

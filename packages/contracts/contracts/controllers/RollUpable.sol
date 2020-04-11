@@ -36,7 +36,7 @@ contract RollUpable is Layer2 {
             Hash.poseidon(),
             startingRoot,
             startingIndex,
-            SUB_TREE_DEPTH,
+            UTXO_SUB_TREE_DEPTH,
             initialSiblings
         );
         uint id = Layer2.proof.ofUTXORollUp.length - 1;
@@ -75,7 +75,7 @@ contract RollUpable is Layer2 {
         SplitRollUp storage rollUp = Layer2.proof.ofUTXORollUp[id];
         rollUp.update(
             Hash.poseidon(),
-            SUB_TREE_DEPTH,
+            UTXO_SUB_TREE_DEPTH,
             leaves
         );
     }
@@ -103,7 +103,7 @@ contract RollUpable is Layer2 {
         SplitRollUp storage rollUp = Layer2.proof.ofWithdrawalRollUp[id];
         rollUp.update(
             Hash.keccak(),
-            SUB_TREE_DEPTH,
+            WITHDRAWAL_SUB_TREE_DEPTH,
             initialSiblings,
             leaves
         );

@@ -6,20 +6,30 @@ export const ZkOptimisticRollUpABI = [
     stateMutability: 'nonpayable',
     type: 'constructor',
   },
-  { stateMutability: 'payable', type: 'fallback' },
-  {
-    inputs: [],
-    name: 'CHALLENGE_LIMIT',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
+  { stateMutability: 'payable', type: 'fallback', payable: true },
   {
     inputs: [],
     name: 'CHALLENGE_PERIOD',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
+  },
+  {
+    inputs: [],
+    name: 'MAX_UTXO_PER_TREE',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+    constant: true,
+  },
+  {
+    inputs: [],
+    name: 'MAX_WITHDRAWAL_PER_TREE',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -27,13 +37,15 @@ export const ZkOptimisticRollUpABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
-    name: 'POOL_SIZE',
+    name: 'NULLIFIER_TREE_DEPTH',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -41,20 +53,55 @@ export const ZkOptimisticRollUpABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
-    name: 'SUB_TREE_DEPTH',
+    name: 'UTXO_SUB_TREE_DEPTH',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
-    name: 'SUB_TREE_SIZE',
+    name: 'UTXO_SUB_TREE_SIZE',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
+  },
+  {
+    inputs: [],
+    name: 'UTXO_TREE_DEPTH',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+    constant: true,
+  },
+  {
+    inputs: [],
+    name: 'WITHDRAWAL_SUB_TREE_DEPTH',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+    constant: true,
+  },
+  {
+    inputs: [],
+    name: 'WITHDRAWAL_SUB_TREE_SIZE',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+    constant: true,
+  },
+  {
+    inputs: [],
+    name: 'WITHDRAWAL_TREE_DEPTH',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+    constant: true,
   },
   {
     inputs: [{ internalType: 'address', name: '', type: 'address' }],
@@ -62,6 +109,7 @@ export const ZkOptimisticRollUpABI = [
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [
@@ -71,6 +119,7 @@ export const ZkOptimisticRollUpABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [{ internalType: 'bytes32', name: 'utxoRoot', type: 'bytes32' }],
@@ -78,6 +127,7 @@ export const ZkOptimisticRollUpABI = [
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [
@@ -94,6 +144,7 @@ export const ZkOptimisticRollUpABI = [
     ],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -101,6 +152,7 @@ export const ZkOptimisticRollUpABI = [
     outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -108,6 +160,7 @@ export const ZkOptimisticRollUpABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [
@@ -117,6 +170,7 @@ export const ZkOptimisticRollUpABI = [
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [{ internalType: 'bytes32', name: 'header', type: 'bytes32' }],
@@ -124,6 +178,7 @@ export const ZkOptimisticRollUpABI = [
     outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [{ internalType: 'bytes32', name: 'proposalId', type: 'bytes32' }],
@@ -135,6 +190,7 @@ export const ZkOptimisticRollUpABI = [
     ],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [{ internalType: 'address', name: 'addr', type: 'address' }],
@@ -146,6 +202,7 @@ export const ZkOptimisticRollUpABI = [
     ],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [{ internalType: 'bytes4', name: '', type: 'bytes4' }],
@@ -153,6 +210,7 @@ export const ZkOptimisticRollUpABI = [
     outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -160,6 +218,7 @@ export const ZkOptimisticRollUpABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -170,6 +229,7 @@ export const ZkOptimisticRollUpABI = [
     ],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -177,6 +237,7 @@ export const ZkOptimisticRollUpABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [{ internalType: 'bytes32', name: 'header', type: 'bytes32' }],
@@ -184,6 +245,7 @@ export const ZkOptimisticRollUpABI = [
     outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [{ internalType: 'uint256', name: 'idx', type: 'uint256' }],
@@ -194,6 +256,7 @@ export const ZkOptimisticRollUpABI = [
     ],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [{ internalType: 'bytes32', name: 'leaf', type: 'bytes32' }],
@@ -201,8 +264,9 @@ export const ZkOptimisticRollUpABI = [
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
-  { stateMutability: 'payable', type: 'receive' },
+  { stateMutability: 'payable', type: 'receive', payable: true },
   {
     inputs: [
       { internalType: 'uint8', name: 'numOfInputs', type: 'uint8' },

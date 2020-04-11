@@ -1,8 +1,8 @@
 pragma solidity >= 0.6.0;
 
 interface ICoordinatable {
-    event NewProposal(bytes32 submissionId);
-    event Finalized(bytes32 submissionId);
+    event NewProposal(bytes32 blockHash);
+    event Finalized(bytes32 blockHash);
     event MassDepositCommit(uint id, bytes32 merged, uint256 fee);
 
     /**

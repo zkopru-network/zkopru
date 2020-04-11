@@ -4,11 +4,14 @@ import { ISetupWizard } from "./interfaces/ISetupWizard.sol";
 import { Layer2 } from "./storage/Layer2.sol";
 import { Layer2Controller } from "./Layer2Controller.sol";
 import { SNARKsVerifier } from "./libraries/SNARKs.sol";
-import { Types } from "./libraries/Types.sol";
+import { Header, Types } from "./libraries/Types.sol";
 import { Pairing } from "./libraries/Pairing.sol";
-
+import { Hash } from "./libraries/Hash.sol";
+import { SMT256 } from "smt-rollup/contracts/SMT.sol";
 
 contract ZkOptimisticRollUp is Layer2Controller {
+    using Types for Header;
+
     address setupWizard;
 
     constructor(address _setupWizard) public {
@@ -79,13 +82,37 @@ contract ZkOptimisticRollUp is Layer2Controller {
         }
     }
 
-    function init(bytes32 genesis) internal {
+    function init() internal {
+        uint[] memory poseidonPreHashes = Hash.poseidonPrehashedZeroes();
+        uint utxoRoot = poseidonPreHashes[poseidonPreHashes.length - 1];
+        uint[] memory keccakPreHashes = Hash.keccakPrehashedZeroes();
+        uint withdrawalRoot = keccakPreHashes[keccakPreHashes.length - 1];
+        bytes32 nullifierRoot = bytes32(0);
+        for (uint i = 0; i < 256; i++) {
+            nullifierRoot = keccak256(abi.encodePacked(nullifierRoot, nullifierRoot));
+        }
+        Header memory header = Header(
+            address(this),
+            bytes32(0),
+            bytes32(0),
+            uint256(0),
+            utxoRoot,
+            uint256(0),
+            nullifierRoot,
+            bytes32(withdrawalRoot),
+            uint256(0),
+            bytes32(0),
+            bytes32(0),
+            bytes32(0)
+        );
+        bytes32 genesis = header.hash();
         Layer2.chain.latest = genesis;
         Layer2.chain.withdrawables.push(); /// withdrawables[0]: daily snapshot
         Layer2.chain.withdrawables.push(); /// withdrawables[0]: initial withdrawable tree
     }
 
     function completeSetup() public onlySetupWizard {
+        init();
         delete setupWizard;
     }
 }

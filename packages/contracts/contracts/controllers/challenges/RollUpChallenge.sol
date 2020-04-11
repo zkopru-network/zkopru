@@ -124,7 +124,7 @@ contract RollUpChallenge is Challengeable {
         /// Start a new tree if there's no room to add the new outputs
         uint startingIndex;
         uint startingRoot;
-        if (_parentHeader.utxoIndex + _utxoNum < POOL_SIZE) {
+        if (_parentHeader.utxoIndex + _utxoNum < MAX_UTXO_PER_TREE) {
             /// it uses the latest tree
             startingIndex = _parentHeader.utxoIndex;
             startingRoot = _parentHeader.utxoRoot;
@@ -150,7 +150,7 @@ contract RollUpChallenge is Challengeable {
                 uint(startingRoot),
                 startingIndex,
                 uint(_block.header.utxoRoot),
-                SUB_TREE_DEPTH,
+                UTXO_SUB_TREE_DEPTH,
                 outputs
             )
         );
@@ -229,7 +229,7 @@ contract RollUpChallenge is Challengeable {
         /// Start a new tree if there's no room to add the new withdrawals
         uint startingIndex;
         bytes32 startingRoot;
-        if (_parentHeader.withdrawalIndex + numOfWithdrawals < POOL_SIZE) {
+        if (_parentHeader.withdrawalIndex + numOfWithdrawals < MAX_WITHDRAWAL_PER_TREE) {
             /// it uses the latest tree
             startingIndex = _parentHeader.withdrawalIndex;
             startingRoot = _parentHeader.withdrawalRoot;
@@ -259,7 +259,7 @@ contract RollUpChallenge is Challengeable {
                 uint(startingRoot),
                 startingIndex,
                 uint(_block.header.withdrawalRoot),
-                SUB_TREE_DEPTH,
+                WITHDRAWAL_SUB_TREE_DEPTH,
                 uintLeaves
             )
         );

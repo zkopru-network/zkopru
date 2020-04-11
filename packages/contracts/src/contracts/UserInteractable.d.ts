@@ -17,13 +17,15 @@ export class UserInteractable extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
   clone(): UserInteractable
   methods: {
-    CHALLENGE_LIMIT(): TransactionObject<string>
-
     CHALLENGE_PERIOD(): TransactionObject<string>
+
+    MAX_UTXO_PER_TREE(): TransactionObject<string>
+
+    MAX_WITHDRAWAL_PER_TREE(): TransactionObject<string>
 
     MINIMUM_STAKE(): TransactionObject<string>
 
-    POOL_SIZE(): TransactionObject<string>
+    NULLIFIER_TREE_DEPTH(): TransactionObject<string>
 
     RANGE_LIMIT(): TransactionObject<string>
 
@@ -31,9 +33,17 @@ export class UserInteractable extends Contract {
 
     SNARK_FIELD(): TransactionObject<string>
 
-    SUB_TREE_DEPTH(): TransactionObject<string>
+    UTXO_SUB_TREE_DEPTH(): TransactionObject<string>
 
-    SUB_TREE_SIZE(): TransactionObject<string>
+    UTXO_SUB_TREE_SIZE(): TransactionObject<string>
+
+    UTXO_TREE_DEPTH(): TransactionObject<string>
+
+    WITHDRAWAL_SUB_TREE_DEPTH(): TransactionObject<string>
+
+    WITHDRAWAL_SUB_TREE_SIZE(): TransactionObject<string>
+
+    WITHDRAWAL_TREE_DEPTH(): TransactionObject<string>
 
     allowedMigrants(arg0: string): TransactionObject<boolean>
 
