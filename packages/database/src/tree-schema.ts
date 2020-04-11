@@ -148,16 +148,6 @@ export const tree: InanoSQLTableConfig = {
       },
     },
     {
-      name: 'getNullifierTree',
-      args: {},
-      call: (db, _) => {
-        return db
-          .query('select')
-          .where(['type', '=', 3])
-          .emit()
-      },
-    },
-    {
       name: 'getUtxoTrees',
       args: {
         'grove:string': {},
@@ -179,19 +169,6 @@ export const tree: InanoSQLTableConfig = {
         return db
           .query('select')
           .where([['grove', '=', args.grove], 'AND', ['type', '=', 2]])
-          .orderBy(['index ASC'])
-          .emit()
-      },
-    },
-    {
-      name: 'getNullifierTrees',
-      args: {
-        'grove:string': {},
-      },
-      call: (db, args) => {
-        return db
-          .query('select')
-          .where([['grove', '=', args.grove], 'AND', ['type', '=', 3]])
           .orderBy(['index ASC'])
           .emit()
       },

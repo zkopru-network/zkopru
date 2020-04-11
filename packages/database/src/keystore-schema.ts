@@ -1,5 +1,5 @@
-import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 import { EncryptedKeystoreV3Json } from 'web3-core'
+import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 
 export interface KeystoreSql {
   id?: string

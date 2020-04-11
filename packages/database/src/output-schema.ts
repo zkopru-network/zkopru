@@ -1,5 +1,5 @@
-import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 import { OutputStatus } from '@zkopru/transaction'
+import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 
 export interface OutputSql {
   hash: string
@@ -139,7 +139,11 @@ export const output: InanoSQLTableConfig = {
           .where([
             [['tree.zkopru', '=', args.zkopru], 'AND', ['output.type', '=', 1]],
             'AND',
-            [['output.to', 'IN', args.addresses], 'AND', ['output.status', '=', 1]],
+            [
+              ['output.to', 'IN', args.addresses],
+              'AND',
+              ['output.status', '=', 1],
+            ],
           ])
           .emit()
       },
@@ -161,7 +165,11 @@ export const output: InanoSQLTableConfig = {
           .where([
             [['tree.zkopru', '=', args.zkopru], 'AND', ['output.type', '=', 2]],
             'AND',
-            [['output.to', 'IN', args.addresses], 'AND', ['output.status', '=', 1]],
+            [
+              ['output.to', 'IN', args.addresses],
+              'AND',
+              ['output.status', '=', 1],
+            ],
           ])
           .emit()
       },

@@ -1,4 +1,4 @@
-import { ZkTx } from "@zkopru/transaction"
+import { ZkTx } from '@zkopru/transaction'
 import { VerifyingKey, verifyZkTx } from './snark'
 
 process.on('message', async (message: { tx: ZkTx; vk: VerifyingKey }) => {

@@ -238,7 +238,7 @@ export async function loadGrove(db: nanoSQL): Promise<{ grove: Grove }> {
     withdrawalSubTreeSize: 32,
     utxoHasher: poseidonHasher(31),
     withdrawalHasher: keccakHasher(31),
-    nullifierHasher: keccakHasher(254),
+    nullifierHasher: keccakHasher(256),
     fullSync: true,
     forceUpdate: true,
     pubKeysToObserve: [alicePubKey, bobPubKey],

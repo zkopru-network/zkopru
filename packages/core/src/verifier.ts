@@ -1,16 +1,37 @@
 import { verifyingKeyIdentifier } from '@zkopru/utils'
 import { fork, ChildProcess } from 'child_process'
 // import { Point } from '@zkopru/babyjubjub'
-import { Block } from './block'
+import { Block, Header } from './block'
 import { VerifyingKey } from './snark'
-import { ChallengeCode } from './challenge'
+import { ChallengeCode, Challenge } from './challenge'
+import { L1Contract } from './layer1'
+import { L2Chain } from './layer2'
+
+export interface VerifyOption {
+  header: boolean
+  deposit: boolean
+  migration: boolean
+  outputRollUp: boolean
+  withdrawalRollUp: boolean
+  nullifierRollUp: boolean // Only for FULL NODE
+  snark: boolean
+}
+
+export enum VerifyResult {
+  INVALIDATED,
+  PARTIALLY_VERIFIED,
+  FULLY_VERIFIED,
+}
 
 export class Verifier {
+  option: VerifyOption
+
   vks: {
     [txType: string]: VerifyingKey
   }
 
-  constructor(vks?: { [txType: string]: VerifyingKey }) {
+  constructor(option: VerifyOption, vks?: { [txType: string]: VerifyingKey }) {
+    this.option = option
     this.vks = vks || {}
   }
 
@@ -19,9 +40,40 @@ export class Verifier {
   }
 
   async verify(
+    layer1: L1Contract,
+    layer2: L2Chain,
+    prevHeader: Header,
     block: Block,
-  ): Promise<{ result: boolean; code?: ChallengeCode }> {
-    return new Promise<{ result: boolean; code?: ChallengeCode }>(res => {
+  ): Promise<{ result: VerifyResult; challenge?: ChallengeCode }> {
+    console.log(this, layer1, layer2, block, this.option, prevHeader)
+    const verificationResult = true
+    const challenge = ChallengeCode.INVALID_SNARK
+    const fullVerification = Object.values(this.option).reduce(
+      (prev, curr) => (prev ? curr : prev),
+      true,
+    )
+    let result: VerifyResult | undefined
+    if (verificationResult) {
+      result = fullVerification
+        ? VerifyResult.FULLY_VERIFIED
+        : VerifyResult.PARTIALLY_VERIFIED
+    } else {
+      result = VerifyResult.INVALIDATED
+    }
+    return { result, challenge }
+  }
+
+  async verifyHeader(block: Block): Promise<ChallengeCode | null> {
+    console.log(block, this)
+    // onChallenge({ block })
+    return ChallengeCode.INVALID_SNARK
+  }
+
+  async verifyTxs(
+    block: Block,
+    onChallenge: (challenge: Challenge) => Promise<void>,
+  ): Promise<boolean> {
+    return new Promise<boolean>(res => {
       const prepared: ChildProcess[] = []
       const used: ChildProcess[] = []
       const success: boolean[] = []
@@ -36,19 +88,21 @@ export class Verifier {
         return vkExist
       }, true)
       if (!allVKsExist) {
-        res({ result: false, code: ChallengeCode.NOT_SUPPORTED_TYPE })
+        onChallenge({ block, code: ChallengeCode.NOT_SUPPORTED_TYPE })
+        res(false)
       }
       // prepare processes and attach listeners
       Array(block.body.txs.length)
         .fill(undefined)
         .forEach(_ => {
           // TODO try forking dirname + js extension later
-          const process = fork('./snark_child_process.ts')
+          const process = fork('./snark-child-process.ts')
           prepared.push(process)
           process.on('message', message => {
             const { result } = message as { result: boolean }
             if (!result) {
-              res({ result: false, code: ChallengeCode.INVALID_SNARK })
+              onChallenge({ block, code: ChallengeCode.INVALID_SNARK })
+              res(false)
               const killProc = (process: ChildProcess) => {
                 if (!process.killed) {
                   process.kill()
@@ -59,7 +113,7 @@ export class Verifier {
             } else {
               success.push(true)
               if (success.length === block.body.txs.length) {
-                res({ result: true })
+                res(true)
               }
             }
           })

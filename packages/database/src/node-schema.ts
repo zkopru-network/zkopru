@@ -1,29 +1,33 @@
 import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 
-export interface ZkOPRUSql {
+export enum NodeType {
+  FULL_NODE = 0,
+  LIGHT_NODE = 1,
+}
+
+export interface ChainConfig {
   id: string
   networkId: number
   chainId: number
-  address: string
   nodeType: number
+  address: string
   config: {
     utxoTreeDepth: number
     withdrawalTreeDepth: number
     nullifierTreeDepth: number
-    utxoPreHashes: string[]
-    withdrawalPreHashes: string[]
-    nullifierPreHashes: string[]
     challengePeriod: number
-    challengeLimit: number
     minimumStake: string
     referenceDepth: number
-    poolSize: number
-    subTreeDepth: number
-    subTreeSize: number
+    maxUtxoPerTree: string
+    maxWithdrawalPerTree: string
+    utxoSubTreeDepth: number
+    utxoSubTreeSize: number
+    withdrawalSubTreeDepth: number
+    withdrawalSubTreeSize: number
   }
 }
 
-export const zkopru: InanoSQLTableConfig = {
+export const chain: InanoSQLTableConfig = {
   name: 'zkopru',
   model: {
     'id:uuid': { pk: true },
@@ -46,7 +50,7 @@ export const zkopru: InanoSQLTableConfig = {
         'challengeLimit:int': {},
         'minimumStake:string': {},
         'referenceDepth:int': {},
-        'poolSize:int': {},
+        'poolSize:string': {},
         'subTreeDepth:int': {},
         'subTreeSize:int': {},
       },

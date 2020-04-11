@@ -1,6 +1,6 @@
-import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 import bigInt from 'big-integer'
 import { Field } from '@zkopru/babyjubjub'
+import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 
 export interface MerkleProofCacheSql {
   nodeIndex: string

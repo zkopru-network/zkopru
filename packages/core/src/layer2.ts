@@ -2,53 +2,47 @@ import { InanoSQLInstance } from '@nano-sql/core'
 import { Field } from '@zkopru/babyjubjub'
 import { Grove } from '@zkopru/tree'
 import AsyncLock from 'async-lock'
-import { ZkOPRUSql } from '@zkopru/database'
-import { Challenge } from './challenge'
-import { Configuration } from './layer1'
-import { Block } from './block'
-import { VerifyingKey } from './snark'
+import { ChainConfig, NodeType, BlockStatus } from '@zkopru/database'
+import { L1Config } from './layer1'
+import { Block, blockToSqlObj, Header, blockFromLayer1Tx } from './block'
 import { BootstrapData } from './bootstrap'
 
-export enum NodeType {
-  FULL_NODE,
-  LIGHT_NODE,
-}
+export class L2Chain implements ChainConfig {
+  id: string
 
-export class Layer2 {
-  lock: AsyncLock
+  networkId: number
 
-  config: Configuration
+  chainId: number
 
-  grove!: Grove
+  address: string
 
   nodeType: NodeType
+
+  lock: AsyncLock
+
+  config: L1Config
+
+  grove: Grove
 
   db: InanoSQLInstance
 
   latest: Field
 
-  vks: {
-    [txType: string]: VerifyingKey
-  }
-
-  constructor(
-    db: InanoSQLInstance,
-    nodeType: NodeType,
-    config: Configuration,
-    vks?: {
-      [txType: string]: VerifyingKey
-    },
-  ) {
-    this.config = config
+  constructor(db: InanoSQLInstance, grove: Grove, chainConfig: ChainConfig) {
     this.db = db
+    this.grove = grove
+    this.id = chainConfig.id
+    this.networkId = chainConfig.networkId
+    this.chainId = chainConfig.chainId
+    this.address = chainConfig.address
+    this.nodeType = chainConfig.nodeType
+    this.config = chainConfig.config
     this.latest = Field.zero
     this.lock = new AsyncLock()
-    this.nodeType = nodeType
-    this.vks = vks || {}
   }
 
   async needBootstrapping(): Promise<boolean> {
-    if (this.nodeType === NodeType.LIGHT_NODE) {
+    if (this.nodeType !== NodeType.FULL_NODE) {
       // TODO query and check the date
       return true
     }
@@ -71,35 +65,38 @@ export class Layer2 {
     // this.grove = new Grove(config.zkopru, )
   }
 
-  async apply(block: Block) {
-    console.log(block, this)
-  }
+  async getOldestUnverifiedBlock(): Promise<{
+    prevHeader?: Header
+    block?: Block
+  }> {
+    const lastVerified = await this.db
+      .query('select', ['hash', 'proposedAt', 'header', 'MAX(proposedAt)'])
+      .where(['status', 'IN', [BlockStatus.VERIFIED, BlockStatus.FINALIZED]])
+      .exec()
+    if (lastVerified.length > 0) {
+      const lastVerifiedBlock = lastVerified[0]
+      const prevHeader = lastVerifiedBlock.header
 
-  async verify(
-    block: Block,
-    onChallenge: (challenge: Challenge) => Promise<void>,
-  ) {
-    console.log(block, this)
-    onChallenge({ block })
-  }
-
-  static async with(
-    db: InanoSQLInstance,
-    networkId: number,
-    chainId: number,
-    address: string,
-  ): Promise<Layer2 | null> {
-    const zkopru: ZkOPRUSql[] = (await db
-      .selectTable('zkopru')
-      .presetQuery('read', {
-        networkId,
-        chainId,
-        address,
-      })
-      .exec()) as ZkOPRUSql[]
-    if (zkopru[0]) {
-      return new Layer2(db, zkopru[0].nodeType, zkopru[0].config)
+      const lastUnverified = await this.db
+        .query('select', ['header', 'txData', 'MIN(proposedAt)'])
+        .where(['header.parentBlock', '=', prevHeader.hash])
+        .exec()
+      const block = blockFromLayer1Tx(lastUnverified[0].txData)
+      if (lastUnverified.length > 0) {
+        return {
+          prevHeader,
+          block,
+        }
+      }
     }
-    return null
+    return {}
+  }
+
+  async apply(block: Block) {
+    // 1. check status
+    await this.db
+      .selectTable('block')
+      .query('upsert', blockToSqlObj(block))
+      .exec()
   }
 }

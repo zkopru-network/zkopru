@@ -1,6 +1,7 @@
 import { ZkTx } from '@zkopru/transaction'
-import { BlockSql, BlockStatus } from '@zkopru/database'
+import { BlockSql } from '@zkopru/database'
 import { Transaction } from 'web3-core'
+// import { soliditySha3 } from 'web3-utils'
 
 export interface MassDeposit {
   merged: string
@@ -53,66 +54,60 @@ export interface Finalization {
   massMigration: MassMigration[]
 }
 
-export class Block {
+export enum BlockStatus {
+  NOT_FETCHED = 0,
+  FETCHED = 1,
+  PARTIALLY_VERIFIED = 2,
+  FULLY_VERIFIED = 3,
+  FINALIZED = 4,
+  INVALIDATED = 5,
+  REVERTED = 6,
+}
+
+export interface Block {
   hash: string
 
-  status: number
+  status: BlockStatus
 
   proposedAt: number
 
   parent: string
 
-  submissionId: string
+  txHash: string
+
+  txData?: Transaction
 
   header: Header
 
   body: Body
+}
 
-  constructor({
-    hash,
-    submissionId,
-    status,
-    proposedAt,
-    parent,
-    header,
-    body,
-  }: {
-    hash: string
-    status: number
-    proposedAt: number
-    parent: string
-    submissionId: string
-    header: Header
-    body: Body
-  }) {
-    this.hash = hash
-    this.submissionId = submissionId
-    this.status = status
-    this.proposedAt = proposedAt
-    this.parent = parent
-    this.header = header
-    this.body = body
+export function blockToSqlObj(block: Block): BlockSql {
+  return {
+    hash: block.hash,
+    status: block.status,
+    proposedAt: block.proposedAt,
+    txHash: block.txHash,
+    header: block.header,
+    txData: block.txData ? block.txData : undefined,
   }
+}
 
-  toSqlObj(): BlockSql {
-    return {
-      hash: this.hash,
-      status: BlockStatus.FETCHED,
-      proposedAt: this.proposedAt,
-      submissionId: this.submissionId,
-      header: this.header,
-    }
-  }
+export function blockToBytes(block: Block): Buffer {
+  // TODO
+  return Buffer.from(block.hash)
+}
 
-  toBytes(): Buffer {
-    return Buffer.from(this.hash)
-  }
+export function blockFromLayer1Tx(tx: Transaction): Block {
+  // TODO
+  console.log(tx)
+  const test: any = {}
+  return {
+    ...test,
+  } as Block
+}
 
-  static fromLayer1Tx(tx: Transaction): Block {
-    console.log(tx)
-    const test: any = {}
-    return new Block({
-      ...test,
-    })
-  }
+export function headerHash(header: Header): string {
+  // TODO
+  return header.depositRoot
 }

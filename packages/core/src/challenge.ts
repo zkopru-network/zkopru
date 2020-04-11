@@ -6,5 +6,6 @@ export enum ChallengeCode {
 }
 
 export interface Challenge {
+  code: ChallengeCode
   block: Block
 }

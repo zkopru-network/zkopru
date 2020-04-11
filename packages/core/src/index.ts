@@ -1,4 +1,4 @@
-export { ZkOPRU } from './zkopru'
+export { Node } from './node'
 export { Verifier } from './verifier'
 export { BootstrapData, BootstrapNode, HttpBootstrapNode } from './bootstrap'
 export {

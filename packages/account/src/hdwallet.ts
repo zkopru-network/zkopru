@@ -125,7 +125,7 @@ export class HDWallet {
     const account = new ZkAccount(derivedKey.privateKey)
     await this.db
       .selectTable(schema.keystore.name)
-      .presetQuery('addKey', account.toKeystoreSqlObj(this.password))
+      .presetQuery('getKeys', account.toKeystoreSqlObj(this.password))
       .exec()
     return account
   }
@@ -162,8 +162,11 @@ export class HDWallet {
   async save(password: string): Promise<{ id: string }> {
     const hdwallet = this.export(password)
     const result = await this.db
-      .selectTable(schema.keystore.name)
-      .presetQuery('save', { id: this.id, ...hdwallet })
+      .selectTable(schema.hdWallet.name)
+      .presetQuery('save', {
+        id: this.id,
+        ...hdwallet,
+      })
       .exec()
     return { id: result[0].id }
   }

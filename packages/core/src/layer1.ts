@@ -1,33 +1,30 @@
 import ZkOPRUContract from '@zkopru/contracts'
-import { poseidonHasher, keccakHasher } from '@zkopru/tree'
 import { verifyingKeyIdentifier } from '@zkopru/utils'
 import { Point, Field } from '@zkopru/babyjubjub'
 import Web3 from 'web3'
 import { ContractOptions } from 'web3-eth-contract'
-import bigInt, { BigNumber } from 'big-integer'
-import { Block } from './block'
 import { VerifyingKey } from './snark'
 
-export interface Configuration {
+export interface L1Config {
   utxoTreeDepth: number
   withdrawalTreeDepth: number
   nullifierTreeDepth: number
-  utxoPreHashes: string[]
-  withdrawalPreHashes: string[]
-  nullifierPreHashes: string[]
-  subTreeDepth: number
-  subTreeSize: number
   challengePeriod: number
-  minimumStake: BigNumber
+  minimumStake: string
   referenceDepth: number
-  poolSize: BigNumber
+  maxUtxoPerTree: string
+  maxWithdrawalPerTree: string
+  utxoSubTreeDepth: number
+  utxoSubTreeSize: number
+  withdrawalSubTreeDepth: number
+  withdrawalSubTreeSize: number
 }
 
 function toPoint(strArr: string[]): Point {
   return Point.from(strArr[0], strArr[1])
 }
 
-export class Layer1 extends ZkOPRUContract {
+export class L1Contract extends ZkOPRUContract {
   web3: Web3
 
   constructor(web3: Web3, address: string, option?: ContractOptions) {
@@ -78,54 +75,76 @@ export class Layer1 extends ZkOPRUContract {
     })
   }
 
-  async getConfig(): Promise<Configuration> {
-    const defaultConfig: Configuration = {
-      utxoTreeDepth: 31,
-      withdrawalTreeDepth: 31,
-      nullifierTreeDepth: 255,
-      utxoPreHashes: poseidonHasher(31).preHash.map(field => field.toString()),
-      withdrawalPreHashes: keccakHasher(31).preHash.map(field =>
-        field.toString(),
-      ),
-      nullifierPreHashes: keccakHasher(255).preHash.map(field =>
-        field.toString(),
-      ),
-      subTreeDepth: 5,
-      subTreeSize: 31,
-      challengePeriod: 7 * 24 * 3600,
-      minimumStake: `32${Array(18)
-        .fill('0')
-        .join('')}`,
-      referenceDepth: 128,
-      poolSize: bigInt(1)
-        .shiftLeft(31)
-        .toString(10),
-    }
-    console.log(this.user.defaultAccount)
-    return defaultConfig as Configuration
-  }
+  async getConfig(): Promise<L1Config> {
+    // const utxoTreeDepth = await this.upstream.methods
+    const utxoTreeDepth = parseInt(
+      await this.upstream.methods.UTXO_SUB_TREE_DEPTH().call(),
+      10,
+    )
 
-  async fetchBlocks(
-    ethereumBlockNum: number,
-    onBlock: (block: Block) => Promise<void>,
-  ) {
-    this.coordinator.events
-      .NewProposal({ fromBlock: ethereumBlockNum })
-      .on('connected', subId => {
-        console.log(subId)
-      })
-      .on('data', async event => {
-        const { returnValues, transactionHash, blockNumber } = event
-        console.log(returnValues, transactionHash, blockNumber)
-        const tx = await this.web3.eth.getTransaction(transactionHash)
-        onBlock(Block.fromLayer1Tx(tx))
-      })
-      .on('changed', event => {
-        // removed
-        console.log(event)
-      })
-      .on('error', err => {
-        console.log(err)
-      })
+    const withdrawalTreeDepth = parseInt(
+      await this.upstream.methods.WITHDRAWAL_SUB_TREE_DEPTH().call(),
+      10,
+    )
+
+    const nullifierTreeDepth = parseInt(
+      await this.upstream.methods.NULLIFIER_TREE_DEPTH().call(),
+      10,
+    )
+
+    const challengePeriod = parseInt(
+      await this.upstream.methods.CHALLENGE_PERIOD().call(),
+      10,
+    )
+
+    const utxoSubTreeDepth = parseInt(
+      await this.upstream.methods.UTXO_SUB_TREE_DEPTH().call(),
+      10,
+    )
+
+    const utxoSubTreeSize = parseInt(
+      await this.upstream.methods.UTXO_SUB_TREE_SIZE().call(),
+      10,
+    )
+
+    const withdrawalSubTreeDepth = parseInt(
+      await this.upstream.methods.WITHDRAWAL_SUB_TREE_SIZE().call(),
+      10,
+    )
+
+    const withdrawalSubTreeSize = parseInt(
+      await this.upstream.methods.WITHDRAWAL_SUB_TREE_SIZE().call(),
+      10,
+    )
+
+    const minimumStake = await this.upstream.methods.MINIMUM_STAKE().call()
+
+    const referenceDepth = parseInt(
+      await this.upstream.methods.REF_DEPTH().call(),
+      10,
+    )
+
+    const maxUtxoPerTree = await this.upstream.methods
+      .MAX_UTXO_PER_TREE()
+      .call()
+
+    const maxWithdrawalPerTree = await this.upstream.methods
+      .MAX_WITHDRAWAL_PER_TREE()
+      .call()
+
+    return {
+      utxoTreeDepth,
+      withdrawalTreeDepth,
+      nullifierTreeDepth,
+      utxoSubTreeDepth,
+      utxoSubTreeSize,
+      withdrawalSubTreeDepth,
+      withdrawalSubTreeSize,
+      challengePeriod,
+      minimumStake,
+      referenceDepth,
+      maxUtxoPerTree,
+      maxWithdrawalPerTree,
+    }
   }
 }
