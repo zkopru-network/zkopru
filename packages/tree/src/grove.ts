@@ -6,7 +6,6 @@ import {
   OutputSql,
 } from '@zkopru/database'
 import { Field, Point } from '@zkopru/babyjubjub'
-import { InanoSQLQueryBuilder } from '@nano-sql/core/lib/interfaces'
 import { Hasher } from './hasher'
 import {
   LightRollUpTree,
@@ -42,12 +41,31 @@ export class Grove {
 
   withdrawalTrees!: LightRollUpTree[]
 
-  nullifierTree!: LightRollUpTree
+  nullifierTree?: LightRollUpTree
 
   constructor(zkopruId: string, db: InanoSQLInstance, config: GroveConfig) {
     this.zkopruId = zkopruId
     this.config = config
     this.db = db
+  }
+
+  async applyBootstrap({
+    utxoTreeIndex,
+    utxoTreeBootstrap,
+    withdrawalTreeIndex,
+    withdrawalTreeBootstrap,
+  }: {
+    utxoTreeIndex: number
+    utxoTreeBootstrap: MerkleProof
+    withdrawalTreeIndex: number
+    withdrawalTreeBootstrap: MerkleProof
+  }) {
+    await this.bootstrapTree(utxoTreeIndex, TreeType.UTXO, utxoTreeBootstrap)
+    await this.bootstrapTree(
+      withdrawalTreeIndex,
+      TreeType.WITHDRAWAL,
+      withdrawalTreeBootstrap,
+    )
   }
 
   async init() {
@@ -71,29 +89,23 @@ export class Grove {
 
     if (utxoTreeSqlObjs.length === 0) {
       // start a new tree if there's no utxo tree
-      const queryResult = (await this.initNewTreeQuery(
-        TreeType.UTXO,
-      ).exec()) as TreeSql[]
-      utxoTreeSqlObjs.push(...queryResult)
+      const { treeSql } = await this.bootstrapTree(0, TreeType.UTXO)
+      utxoTreeSqlObjs.push(treeSql)
     }
 
     if (withdrawalTreeSqlObjs.length === 0) {
       // start a new tree if there's no withdrawal tree
-      const queryResult = (await this.initNewTreeQuery(
-        TreeType.WITHDRAWAL,
-      ).exec()) as TreeSql[]
-      withdrawalTreeSqlObjs.push(...queryResult)
+      const { treeSql } = await this.bootstrapTree(0, TreeType.WITHDRAWAL)
+      withdrawalTreeSqlObjs.push(treeSql)
     }
 
     if (nullifierTreeSqlObjs.length === 0) {
       // start a new tree if there's no nullifier tree
-      const queryResult = (await this.initNewTreeQuery(
-        TreeType.NULLIFIER,
-      ).exec()) as TreeSql[]
-      nullifierTreeSqlObjs.push(...queryResult)
+      const { treeSql } = await this.bootstrapTree(0, TreeType.NULLIFIER)
+      nullifierTreeSqlObjs.push(treeSql)
     }
 
-    if (nullifierTreeSqlObjs.length !== 1)
+    if (nullifierTreeSqlObjs.length > 1)
       throw Error('You have more than 1 nullifier tree')
 
     this.utxoTrees = utxoTreeSqlObjs.map(this.toRollUpTree)
@@ -107,14 +119,12 @@ export class Grove {
     this.config.pubKeysToObserve = points
     this.utxoTrees.forEach(tree => tree.updatePubKeys(points))
     this.withdrawalTrees.forEach(tree => tree.updatePubKeys(points))
-    this.nullifierTree.updatePubKeys(points)
   }
 
   setAddressesToObserve(addresses: string[]) {
     this.config.addressesToObserve = addresses
     this.utxoTrees.forEach(tree => tree.updateAddresses(addresses))
     this.withdrawalTrees.forEach(tree => tree.updateAddresses(addresses))
-    this.nullifierTree.updateAddresses(addresses)
   }
 
   latestUTXOTree(): LightRollUpTree {
@@ -132,19 +142,22 @@ export class Grove {
     utxos.forEach((item: Item, index: number) => {
       fixedSizeUtxos[index] = item
     })
-    const tree = this.latestUTXOTree()
-    if (!tree) throw Error('Grove is not initialized')
+    const latestTree = this.latestUTXOTree()
+    if (!latestTree) throw Error('Grove is not initialized')
     if (
-      tree
+      latestTree
         .latestLeafIndex()
         .add(this.config.utxoSubTreeSize)
-        .lt(tree.maxSize())
+        .lt(latestTree.maxSize())
     ) {
-      await tree.append(...fixedSizeUtxos)
+      await latestTree.append(...fixedSizeUtxos)
     } else {
-      const newTree = await this.initNewTree(TreeType.UTXO)
-      this.utxoTrees.push(newTree)
-      await newTree.append(...fixedSizeUtxos)
+      const { tree } = await this.bootstrapTree(
+        latestTree.metadata.index,
+        TreeType.UTXO,
+      )
+      this.utxoTrees.push(tree)
+      await tree.append(...fixedSizeUtxos)
     }
   }
 
@@ -159,26 +172,33 @@ export class Grove {
         leafHash: withdrawal,
       }
     })
-    const tree = this.latestWithdrawalTree()
-    if (!tree) throw Error('Grove is not initialized')
+    const latestTree = this.latestWithdrawalTree()
+    if (!latestTree) throw Error('Grove is not initialized')
     if (
-      tree
+      latestTree
         .latestLeafIndex()
         .add(this.config.withdrawalSubTreeSize)
-        .lt(tree.maxSize())
+        .lt(latestTree.maxSize())
     ) {
-      await tree.append(...fixedSizeWithdrawals)
+      await latestTree.append(...fixedSizeWithdrawals)
     } else {
-      const newTree = await this.initNewTree(TreeType.WITHDRAWAL)
-      this.withdrawalTrees.push(newTree)
-      await newTree.append(...fixedSizeWithdrawals)
+      const { tree } = await this.bootstrapTree(
+        latestTree.metadata.index,
+        TreeType.WITHDRAWAL,
+      )
+      this.withdrawalTrees.push(tree)
+      await tree.append(...fixedSizeWithdrawals)
     }
   }
 
   async markAsNullified(...nullifiers: Field[]): Promise<void> {
+    // only the full node manages the nullifier tree
     const tree = this.nullifierTree
-    if (!tree) throw Error('Grove is not initialized')
-    await tree.append(...nullifiers.map(nullifier => ({ leafHash: nullifier })))
+    if (tree) {
+      await tree.append(
+        ...nullifiers.map(nullifier => ({ leafHash: nullifier })),
+      )
+    }
   }
 
   async utxoMerkleProof(hash: Field): Promise<MerkleProof> {
@@ -253,13 +273,11 @@ export class Grove {
     return proof
   }
 
-  private async initNewTree(treeType: TreeType): Promise<LightRollUpTree> {
-    const query = this.initNewTreeQuery(treeType)
-    const sqlResult = (await query.exec()).pop() as TreeSql
-    return this.toRollUpTree(sqlResult)
-  }
-
-  private initNewTreeQuery(treeType: TreeType): InanoSQLQueryBuilder {
+  private async bootstrapTree(
+    treeIndex: number,
+    treeType: TreeType,
+    merkleProof?: MerkleProof,
+  ): Promise<{ treeSql: TreeSql; tree: LightRollUpTree }> {
     let hasher: Hasher
     switch (treeType) {
       case TreeType.UTXO:
@@ -274,17 +292,60 @@ export class Grove {
       default:
         throw Error('Not supported type of tree')
     }
-    return this.db.selectTable(schema.tree.name).presetQuery('bootstrapTree', {
-      index: 0,
-      type: treeType,
-      zkopru: this.zkopruId,
-      data: {
+    let data: { root: string; index: string; siblings: string[] }
+    if (merkleProof) {
+      data = {
+        root: merkleProof.root.toHex(),
+        index: merkleProof.index.toHex(),
+        siblings: merkleProof.siblings.map(s => s.toHex()),
+      }
+    } else {
+      data = {
         root: ([...hasher.preHash].pop() as Field).toHex(),
         index: Field.zero.toHex(),
         siblings: hasher.preHash.map(f => f.toHex()),
-      },
-    })
+      }
+    }
+    const treeSql = (
+      await this.db
+        .selectTable(schema.tree.name)
+        .presetQuery('bootstrapTree', {
+          index: treeIndex,
+          type: treeType,
+          zkopru: this.zkopruId,
+          data,
+        })
+        .exec()
+    ).pop() as TreeSql
+    return { treeSql, tree: this.toRollUpTree(treeSql) }
   }
+
+  // private initNewTreeQuery(treeType: TreeType): InanoSQLQueryBuilder {
+  //   let hasher: Hasher
+  //   switch (treeType) {
+  //     case TreeType.UTXO:
+  //       hasher = this.config.utxoHasher
+  //       break
+  //     case TreeType.WITHDRAWAL:
+  //       hasher = this.config.withdrawalHasher
+  //       break
+  //     case TreeType.NULLIFIER:
+  //       hasher = this.config.nullifierHasher
+  //       break
+  //     default:
+  //       throw Error('Not supported type of tree')
+  //   }
+  //   return this.db.selectTable(schema.tree.name).presetQuery('genesisTree', {
+  //     index: 0,
+  //     type: treeType,
+  //     zkopru: this.zkopruId,
+  //     data: {
+  //       root: ([...hasher.preHash].pop() as Field).toHex(),
+  //       index: Field.zero.toHex(),
+  //       siblings: hasher.preHash.map(f => f.toHex()),
+  //     },
+  //   })
+  // }
 
   private toRollUpTree(obj: TreeSql): LightRollUpTree {
     return new LightRollUpTree({

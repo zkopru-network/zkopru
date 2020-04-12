@@ -3,10 +3,11 @@ import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 export enum BlockStatus {
   NOT_FETCHED = 0,
   FETCHED = 1,
-  VERIFIED = 2,
-  FINALIZED = 3,
-  INVALIDATED = 4,
-  REVERTED = 5,
+  PARTIALLY_VERIFIED = 2,
+  FULLY_VERIFIED = 3,
+  FINALIZED = 4,
+  INVALIDATED = 5,
+  REVERTED = 6,
 }
 
 export interface BlockSql {
@@ -87,19 +88,47 @@ export function block(zkopruId: string): InanoSQLTableConfig {
         },
       },
       {
-        name: 'getSyncStart',
+        name: 'bootstrapBlock',
+        args: {
+          'block:obj': {},
+        },
+        call: (db, args) => {
+          const { block } = args
+          return db
+            .query('upsert', [
+              {
+                ...block,
+                status: BlockStatus.FINALIZED,
+                txData: null,
+              },
+            ])
+            .emit()
+        },
+      },
+      {
+        name: 'getProposalSyncIndex',
         args: {},
         call: (db, _) => {
           return db
-            .query('select', ['MIN(proposedAt)'])
+            .query('select', ['MAX(proposedAt)'])
             .where(['status', '<=', BlockStatus.NOT_FETCHED])
+            .emit()
+        },
+      },
+      {
+        name: 'getFinalizationSyncIndex',
+        args: {},
+        call: (db, _) => {
+          return db
+            .query('select', ['MAX(proposedAt)'])
+            .where(['status', '=', BlockStatus.FINALIZED])
             .emit()
         },
       },
       {
         name: 'writeNewProposal',
         args: {
-          'hash:string ': {},
+          'hash:string': {},
           'proposedAt:int ': {},
           'txHash:string ': {},
         },
@@ -137,15 +166,37 @@ export function block(zkopruId: string): InanoSQLTableConfig {
         },
       },
       {
-        name: 'markAsVerified',
+        name: 'markAsPartiallyVerified',
         args: {
           'hash:string': { pk: true },
         },
         call: (db, args) => {
           return db
             .query('upsert', [
-              { hash: args.hash, status: BlockStatus.VERIFIED, txData: null },
+              {
+                hash: args.hash,
+                status: BlockStatus.PARTIALLY_VERIFIED,
+                txData: null,
+              },
             ])
+            .emit()
+        },
+      },
+      {
+        name: 'markAsFullyVerified',
+        args: {
+          'hash:string': { pk: true },
+        },
+        call: (db, args) => {
+          return db
+            .query('upsert', [
+              {
+                hash: args.hash,
+                status: BlockStatus.FULLY_VERIFIED,
+                txData: null,
+              },
+            ])
+            .where(['status', '<', BlockStatus.FINALIZED])
             .emit()
         },
       },
@@ -159,6 +210,7 @@ export function block(zkopruId: string): InanoSQLTableConfig {
             .query('upsert', [
               { hash: args.hash, status: BlockStatus.FINALIZED },
             ])
+            .where(['status', '<', BlockStatus.FINALIZED])
             .emit()
         },
       },
@@ -189,7 +241,7 @@ export function block(zkopruId: string): InanoSQLTableConfig {
         },
       },
       {
-        name: 'getLastUpstreamBlock',
+        name: 'getBlockNumForLatestProposal',
         args: {},
         call: (db, _) => {
           return db.query('select', ['MAX(proposedAt)']).emit()
@@ -204,6 +256,29 @@ export function block(zkopruId: string): InanoSQLTableConfig {
           return db
             .query('select')
             .where(['hash', '=', args.hash])
+            .emit()
+        },
+      },
+      {
+        name: 'getLastVerifiedBlock',
+        args: {},
+        call: (db, _) => {
+          return db
+            .query('select', [
+              'hash',
+              'proposedAt',
+              'header',
+              'MAX(proposedAt)',
+            ])
+            .where([
+              'status',
+              'IN',
+              [
+                BlockStatus.PARTIALLY_VERIFIED,
+                BlockStatus.FULLY_VERIFIED,
+                BlockStatus.FINALIZED,
+              ],
+            ])
             .emit()
         },
       },

@@ -3,14 +3,13 @@ import { WebsocketProvider, IpcProvider } from 'web3-core'
 import { InanoSQLInstance } from '@nano-sql/core'
 import { uuid } from '@nano-sql/core/lib/utilities'
 import Web3 from 'web3'
-import { ChainConfig, NodeType, schema } from '@zkopru/database'
-import { Grove, poseidonHasher, keccakHasher } from '@zkopru/tree'
+import { ChainConfig, NodeType, schema, BlockStatus } from '@zkopru/database'
+import { Grove, poseidonHasher, keccakHasher, merkleProof } from '@zkopru/tree'
 import { L1Contract } from './layer1'
 import { Verifier, VerifyOption, VerifyResult } from './verifier'
 import { L2Chain } from './layer2'
-import { BootstrapData, BootstrapNode } from './bootstrap'
-import { BlockStatus, headerHash } from './block'
-import { Challenge } from './challenge'
+import { BootstrapHelper } from './bootstrap'
+import { headerHash, blockFromLayer1Tx } from './block'
 import { Synchronizer } from './synchronizer'
 import { genesis } from './genesis'
 
@@ -37,7 +36,9 @@ export class Node {
 
   synchronizer: Synchronizer
 
-  account: ZkAccount | undefined
+  bootstrapHelper?: BootstrapHelper
+
+  accounts?: ZkAccount[]
 
   status: Status
 
@@ -48,24 +49,30 @@ export class Node {
     l2Chain,
     verifier,
     synchronizer,
-    account,
+    bootstrapHelper,
+    accounts,
     config,
   }: {
     l1Contract: L1Contract
     l2Chain: L2Chain
     verifier: Verifier
+    bootstrapHelper?: BootstrapHelper
     synchronizer: Synchronizer
-    account?: ZkAccount
+    accounts?: ZkAccount[]
     config: NodeConfiguration
   }) {
     if (config.nodeType === NodeType.LIGHT_NODE && config.verifyOption) {
       throw Error('Only Full node can process verifications')
     }
+    if (config.nodeType === NodeType.LIGHT_NODE && !accounts) {
+      throw Error('You can run light node without setting accounts')
+    }
     this.l1Contract = l1Contract
     this.l2Chain = l2Chain
     this.verifier = verifier
     this.synchronizer = synchronizer
-    this.account = account
+    this.bootstrapHelper = bootstrapHelper
+    this.accounts = accounts
     this.config = config
     this.status = Status.STOPPED
   }
@@ -74,15 +81,15 @@ export class Node {
     provider,
     address,
     db,
-    account,
-    bootstrapNode,
+    accounts,
+    bootstrapHelper,
     option,
   }: {
     provider: provider
     address: string
     db: InanoSQLInstance
-    account?: ZkAccount
-    bootstrapNode?: BootstrapNode
+    accounts?: ZkAccount[]
+    bootstrapHelper?: BootstrapHelper
     option?: NodeConfiguration
   }): Promise<Node> {
     const nodeConfig = option || {
@@ -97,10 +104,15 @@ export class Node {
         snark: false,
       },
     }
+    const isFullNode: boolean = nodeConfig.nodeType === NodeType.FULL_NODE
+    if (isFullNode && !bootstrapHelper)
+      throw Error('You need bootstrap node to run light node')
     const web3: Web3 = new Web3(provider)
     // Add zk account to the web3 object if it exists
-    if (account) {
-      web3.eth.accounts.wallet.add(account.toAddAccount())
+    if (accounts) {
+      for (const account of accounts) {
+        web3.eth.accounts.wallet.add(account.toAddAccount())
+      }
     }
     const l1Contract = new L1Contract(web3, address)
     // retrieve l2 chain from database
@@ -130,16 +142,23 @@ export class Node {
         })
         .exec()
       const l1Config = await l1Contract.getConfig()
+      const addressesToObserve = accounts
+        ? accounts.map(account => account.address)
+        : []
+      const pubKeysToObserve = accounts
+        ? accounts.map(account => account.pubKey)
+        : []
       const grove = new Grove(id, db, {
         ...l1Config,
         utxoHasher: hashers.utxo,
         withdrawalHasher: hashers.withdrawal,
         nullifierHasher: hashers.nullifier,
-        fullSync: nodeConfig.nodeType === NodeType.FULL_NODE,
-        forceUpdate: nodeConfig.nodeType === NodeType.LIGHT_NODE,
-        pubKeysToObserve: [],
-        addressesToObserve: [],
+        fullSync: isFullNode,
+        forceUpdate: !isFullNode,
+        pubKeysToObserve,
+        addressesToObserve,
       })
+      await grove.init()
       l2Chain = new L2Chain(db, grove, {
         id,
         nodeType: nodeConfig.nodeType,
@@ -151,32 +170,28 @@ export class Node {
     } else {
       l2Chain = l2ChainFromDB
     }
-    // Get snark verification keys from layer1
     let vks = {}
     if (nodeConfig.verifyOption.snark) {
       vks = await l1Contract.getVKs()
     }
     const verifier = new Verifier(nodeConfig.verifyOption, vks)
     // If the chain needs bootstraping, fetch bootstrap data and apply
-    if (await l2Chain.needBootstrapping()) {
-      let bootstrapData: BootstrapData | undefined
-      if (bootstrapNode) {
-        bootstrapData = await bootstrapNode.fetchBootstrapData()
-      }
-      await l2Chain.bootstrap(bootstrapData)
-    }
     const synchronizer = new Synchronizer(db, l2Chain.id, l1Contract)
     return new Node({
       l1Contract,
       l2Chain,
       verifier,
       synchronizer,
-      account,
+      bootstrapHelper,
+      accounts,
       config: nodeConfig,
     })
   }
 
-  startSync() {
+  async startSync() {
+    if (this.config.nodeType === NodeType.LIGHT_NODE) {
+      await this.bootstrap()
+    }
     this.synchronizer.sync()
     this.synchronizer.on('newBlock', this.processUnverifiedBlocks)
   }
@@ -186,46 +201,77 @@ export class Node {
     this.synchronizer.off('newBlock', this.processUnverifiedBlocks)
   }
 
+  async bootstrap() {
+    if (!this.bootstrapHelper) return
+    const latest = await this.l1Contract.upstream.methods.latest().call()
+    const latestBlockFromDB = await this.l2Chain.getBlock(latest)
+    if (
+      latestBlockFromDB &&
+      latestBlockFromDB.status &&
+      latestBlockFromDB.status >= BlockStatus.PARTIALLY_VERIFIED
+    ) {
+      return
+    }
+    const bootstrapData = await this.bootstrapHelper.fetchBootstrapData(latest)
+    const txData = await this.l1Contract.web3.eth.getTransaction(
+      bootstrapData.txHash,
+    )
+    const block = blockFromLayer1Tx(txData)
+    const headerProof = headerHash(block.header) === latest
+    const utxoMerkleProof = merkleProof(
+      this.l2Chain.grove.config.utxoHasher,
+      bootstrapData.utxoTreeBootstrap,
+    )
+    const withdrawalMerkleProof = merkleProof(
+      this.l2Chain.grove.config.withdrawalHasher,
+      bootstrapData.withdrawalTreeBootstrap,
+    )
+    if (headerProof && utxoMerkleProof && withdrawalMerkleProof) {
+      await this.l2Chain.applyBootstrap(block, bootstrapData)
+    }
+  }
+
   async processUnverifiedBlocks() {
     // prevHeader should be a verified one
     const { prevHeader, block } = await this.l2Chain.getOldestUnverifiedBlock()
     if (!block) return
     if (!prevHeader)
       throw Error('Unexpected runtime error occured during the verification.')
-    const { result, challenge } = await this.verifier.verify(
-      this.l1Contract,
-      this.l2Chain,
+    const { result, challenge } = await this.verifier.verify({
+      layer1: this.l1Contract,
+      layer2: this.l2Chain,
       prevHeader,
       block,
-    )
-    let status: BlockStatus
+    })
     if (challenge) {
-      status = BlockStatus.INVALIDATED
-      await this.tryChallenge({ block, code: challenge })
+      await this.l2Chain.markAsInvalidated(block.hash)
+      await challenge.send()
+    } else if (result === VerifyResult.FULLY_VERIFIED) {
+      await this.l2Chain.markAsFullyVerified(block.hash)
     } else {
-      status =
-        result === VerifyResult.FULLY_VERIFIED
-          ? BlockStatus.FULLY_VERIFIED
-          : BlockStatus.PARTIALLY_VERIFIED
+      await this.l2Chain.markAsPartiallyVerified(block.hash)
     }
-    await this.l2Chain.apply({ ...block, status })
   }
 
-  private async tryChallenge(challenge: Challenge) {
-    // subscribe challenge event from web3 and sync it to the database
-    // query database the challenge status
-    // request web3 to check if there exists any challenge if you don't have it from the database
-    // submit challenge
-    console.log(challenge, this)
+  async getNetworkStatus(): Promise<Status> {
+    if (!this.synchronizer.isSyncing) return Status.STOPPED
+    const lastestProposal = await this.l2Chain.db
+      .selectTable(schema.block(this.l2Chain.id).name)
+      .presetQuery('getBlockNumForLatestProposal')
+      .exec()
+    const l1BlockNumOfLatestProposal = lastestProposal[0].proposedAt
+    const latestVerification = await this.l2Chain.db
+      .selectTable(schema.block(this.l2Chain.id).name)
+      .presetQuery('getLastVerfiedBlock')
+      .exec()
+    const l1BlockNumOfLatestVerified = latestVerification[0].proposedAt
+    if (l1BlockNumOfLatestProposal - l1BlockNumOfLatestVerified < 5) {
+      return Status.LIVE
+    }
+    // TODO: layer1 REVERT handling & challenge handling
+    return Status.ON_SYNCING
   }
 
-  // network status
-  // addAccounts
-  // setAccount
-  // getDataForBlockProposing
-  // getDataForTxBuilding
-  // this.synchronizer = new Synchronizer({
-  // })
   static async retrieveL2ChainFromDB(
     db: InanoSQLInstance,
     networkId: number,

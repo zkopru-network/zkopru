@@ -2,9 +2,9 @@ import { InanoSQLInstance } from '@nano-sql/core'
 import { Field } from '@zkopru/babyjubjub'
 import { Grove } from '@zkopru/tree'
 import AsyncLock from 'async-lock'
-import { ChainConfig, NodeType, BlockStatus } from '@zkopru/database'
+import { ChainConfig, NodeType, schema, BlockSql } from '@zkopru/database'
 import { L1Config } from './layer1'
-import { Block, blockToSqlObj, Header, blockFromLayer1Tx } from './block'
+import { Block, Header, blockFromLayer1Tx } from './block'
 import { BootstrapData } from './bootstrap'
 
 export class L2Chain implements ChainConfig {
@@ -41,28 +41,13 @@ export class L2Chain implements ChainConfig {
     this.lock = new AsyncLock()
   }
 
-  async needBootstrapping(): Promise<boolean> {
-    if (this.nodeType !== NodeType.FULL_NODE) {
-      // TODO query and check the date
-      return true
-    }
-    return false
-  }
-
-  async latestBlock(): Promise<Field> {
-    return new Promise<Field>(resolve => {
-      this.lock.acquire('latest', () => {
-        resolve(this.latest)
-      })
-    })
-  }
-
-  async bootstrap(bootstrapData?: BootstrapData) {
-    if (bootstrapData) {
-      //
-    }
-    await this.db.query('select').exec()
-    // this.grove = new Grove(config.zkopru, )
+  async getBlock(hash: string): Promise<BlockSql | null> {
+    const queryResult = await this.db
+      .selectTable(schema.block(this.id).name)
+      .presetQuery('getBlockWithHash', { hash })
+      .exec()
+    if (queryResult.length === 0) return null
+    return queryResult[0] as BlockSql
   }
 
   async getOldestUnverifiedBlock(): Promise<{
@@ -70,14 +55,14 @@ export class L2Chain implements ChainConfig {
     block?: Block
   }> {
     const lastVerified = await this.db
-      .query('select', ['hash', 'proposedAt', 'header', 'MAX(proposedAt)'])
-      .where(['status', 'IN', [BlockStatus.VERIFIED, BlockStatus.FINALIZED]])
+      .selectTable(schema.block(this.id).name)
+      .presetQuery('getLastVerifiedBlock')
       .exec()
     if (lastVerified.length > 0) {
       const lastVerifiedBlock = lastVerified[0]
       const prevHeader = lastVerifiedBlock.header
-
       const lastUnverified = await this.db
+        .selectTable(schema.block(this.id).name)
         .query('select', ['header', 'txData', 'MIN(proposedAt)'])
         .where(['header.parentBlock', '=', prevHeader.hash])
         .exec()
@@ -92,11 +77,36 @@ export class L2Chain implements ChainConfig {
     return {}
   }
 
-  async apply(block: Block) {
-    // 1. check status
-    await this.db
-      .selectTable('block')
-      .query('upsert', blockToSqlObj(block))
+  async applyBootstrap(block: Block, bootstrapData: BootstrapData) {
+    this.grove.applyBootstrap(bootstrapData)
+    this.db
+      .selectTable(schema.block(this.id).name)
+      .presetQuery('bootstrapBlock', { block })
       .exec()
+  }
+
+  async markAsPartiallyVerified(hash: string) {
+    this.db
+      .selectTable(schema.block(this.id).name)
+      .presetQuery('markAsPartiallyVerified', { hash })
+      .exec()
+  }
+
+  async markAsFullyVerified(hash: string) {
+    this.db
+      .selectTable(schema.block(this.id).name)
+      .presetQuery('markAsFullyVerified', { hash })
+  }
+
+  async markAsFinalized(hash: string) {
+    this.db
+      .selectTable(schema.block(this.id).name)
+      .presetQuery('markAsFinalized', { hash })
+  }
+
+  async markAsInvalidated(hash: string) {
+    this.db
+      .selectTable(schema.block(this.id).name)
+      .presetQuery('markAsInvalidated', { hash })
   }
 }

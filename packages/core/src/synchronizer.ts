@@ -3,10 +3,11 @@ import { schema } from '@zkopru/database'
 import { EventEmitter } from 'events'
 import { L1Contract } from './layer1'
 import { blockFromLayer1Tx } from './block'
-import { ContractEventEmitter } from '~contracts/contracts/types'
 
 export class Synchronizer extends EventEmitter {
   id: string
+
+  isSyncing: boolean
 
   db: InanoSQLInstance
 
@@ -16,7 +17,9 @@ export class Synchronizer extends EventEmitter {
     [txHash: string]: boolean
   }
 
-  subscription?: ContractEventEmitter<string>
+  proposalSubscriber?: EventEmitter
+
+  finalizationSubscriber?: EventEmitter
 
   constructor(db: InanoSQLInstance, zkopruId: string, l1Contract: L1Contract) {
     super()
@@ -24,17 +27,56 @@ export class Synchronizer extends EventEmitter {
     this.id = zkopruId
     this.l1Contract = l1Contract
     this.fetching = {}
+    this.isSyncing = false
   }
 
   async sync() {
-    if (this.subscription) console.log('Already on syncing')
+    this.isSyncing = true
+    this.listenNewProposals()
+    this.listenFinalization()
+  }
+
+  async listenFinalization() {
+    if (this.isSyncing) return
     // TODO get 'from' from database
     const query = await this.db
       .selectTable(schema.block(this.id).name)
-      .presetQuery('getStartSync')
+      .presetQuery('getFinalizationSyncIndex')
       .exec()
     const startFrom = query[0] ? query[0].proposedAt : 0
-    this.subscription = this.l1Contract.coordinator.events
+    this.finalizationSubscriber = this.l1Contract.coordinator.events
+      .Finalized({ fromBlock: startFrom })
+      .on('connected', subId => {
+        console.log(subId)
+      })
+      .on('data', async event => {
+        const { returnValues } = event
+        // WRITE DATABASE
+        await this.db
+          .selectTable(schema.block(this.id).name)
+          .presetQuery('markAsFinalized', {
+            hash: returnValues,
+          })
+          .exec()
+      })
+      .on('changed', event => {
+        // TODO removed
+        console.log(event)
+      })
+      .on('error', err => {
+        console.log(err)
+      })
+  }
+
+  async listenNewProposals() {
+    if (this.isSyncing) return
+    // TODO get 'from' from database
+    const query = await this.db
+      .selectTable(schema.block(this.id).name)
+      .presetQuery('getProposalSyncIndex')
+      .exec()
+    const startFrom = query[0] ? query[0].proposedAt : 0
+    this.proposalSubscriber = this.l1Contract.coordinator.events
       .NewProposal({ fromBlock: startFrom })
       .on('connected', subId => {
         console.log(subId)
@@ -54,7 +96,7 @@ export class Synchronizer extends EventEmitter {
         this.fetch(transactionHash)
       })
       .on('changed', event => {
-        // removed
+        // TODO removed
         console.log(event)
       })
       .on('error', err => {
@@ -63,10 +105,13 @@ export class Synchronizer extends EventEmitter {
   }
 
   stop() {
-    if (this.subscription) {
-      // web3 Contract ts doesn't have unsubscribe() function property
-      ;(this.subscription as any).unsubscribe()
+    if (this.proposalSubscriber) {
+      this.proposalSubscriber.removeAllListeners()
     }
+    if (this.finalizationSubscriber) {
+      this.finalizationSubscriber.removeAllListeners()
+    }
+    this.isSyncing = false
   }
 
   async fetch(txHash: string) {

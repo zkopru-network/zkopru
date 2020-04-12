@@ -1,6 +1,10 @@
 export { Node } from './node'
 export { Verifier } from './verifier'
-export { BootstrapData, BootstrapNode, HttpBootstrapNode } from './bootstrap'
+export {
+  BootstrapData,
+  BootstrapHelper,
+  HttpBootstrapHelper,
+} from './bootstrap'
 export {
   Block,
   Header,

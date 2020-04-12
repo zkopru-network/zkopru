@@ -6,6 +6,7 @@ import { VerifyingKey } from './snark'
 import { ChallengeCode, Challenge } from './challenge'
 import { L1Contract } from './layer1'
 import { L2Chain } from './layer2'
+import { TransactionObject } from '~contracts/contracts/types'
 
 export interface VerifyOption {
   header: boolean
@@ -39,15 +40,32 @@ export class Verifier {
     this.vks[verifyingKeyIdentifier(nI, nO)] = vk
   }
 
-  async verify(
-    layer1: L1Contract,
-    layer2: L2Chain,
-    prevHeader: Header,
-    block: Block,
-  ): Promise<{ result: VerifyResult; challenge?: ChallengeCode }> {
+  async verify({
+    layer1,
+    layer2,
+    prevHeader,
+    block,
+  }: {
+    layer1: L1Contract
+    layer2: L2Chain
+    prevHeader: Header
+    block: Block
+  }): Promise<{ result: VerifyResult; challenge?: TransactionObject<void> }> {
+    if (this.option.header) {
+      const headerChallenge = await this.verifyHeader(block)
+      if (headerChallenge) {
+        if (!block.txData) throw Error('Not available to the tx data')
+        return {
+          result: VerifyResult.INVALIDATED,
+          challenge: layer1.challenger.header.methods.challengeDepositRoot(
+            block.txData.input,
+          ),
+        }
+      }
+    }
+    // implement every challenge logics here
     console.log(this, layer1, layer2, block, this.option, prevHeader)
     const verificationResult = true
-    const challenge = ChallengeCode.INVALID_SNARK
     const fullVerification = Object.values(this.option).reduce(
       (prev, curr) => (prev ? curr : prev),
       true,
@@ -60,7 +78,7 @@ export class Verifier {
     } else {
       result = VerifyResult.INVALIDATED
     }
-    return { result, challenge }
+    return { result }
   }
 
   async verifyHeader(block: Block): Promise<ChallengeCode | null> {

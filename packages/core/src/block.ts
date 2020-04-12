@@ -1,5 +1,5 @@
 import { ZkTx } from '@zkopru/transaction'
-import { BlockSql } from '@zkopru/database'
+import { BlockSql, BlockStatus } from '@zkopru/database'
 import { Transaction } from 'web3-core'
 // import { soliditySha3 } from 'web3-utils'
 
@@ -52,16 +52,6 @@ export interface Finalization {
   header: Header
   massDeposits: MassDeposit[]
   massMigration: MassMigration[]
-}
-
-export enum BlockStatus {
-  NOT_FETCHED = 0,
-  FETCHED = 1,
-  PARTIALLY_VERIFIED = 2,
-  FULLY_VERIFIED = 3,
-  FINALIZED = 4,
-  INVALIDATED = 5,
-  REVERTED = 6,
 }
 
 export interface Block {
