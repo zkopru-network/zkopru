@@ -1,3 +1,4 @@
+/* eslint-disable max-classes-per-file */
 import { Hex, soliditySha3, padLeft } from 'web3-utils'
 
 import * as circomruntime from 'circom_runtime'
@@ -24,6 +25,13 @@ export function root(hashes: Hex[]): Hex {
   return root(parents)
 }
 
+export function hexToBuffer(hex: string, len?: number): Buffer {
+  if (!len) return Buffer.from(hex.split('0x').pop() || '')
+  const buff = Buffer.from(hex.split('0x').pop() || '')
+  if (buff.length > len) throw Error('Exceeds the given buffer size')
+  return Buffer.concat([Buffer.alloc(len - buff.length).fill(0), buff])
+}
+
 export function verifyingKeyIdentifier(nI: number, nO: number): string {
   const identifier = soliditySha3(nI, nO)
   if (!identifier) throw Error('soliditySha3 returns null')
@@ -44,6 +52,39 @@ export class Queue {
     const dequeued = this.buffer.slice(this.cursor, this.cursor + n)
     this.cursor += n
     return dequeued
+  }
+}
+
+export class StringifiedHexQueue {
+  str: string
+
+  cursor: number
+
+  constructor(str: string) {
+    this.str = str.split('0x').pop() || ''
+    this.cursor = 0
+  }
+
+  dequeue(n: number): string {
+    const dequeued = this.str.slice(this.cursor, this.cursor + n)
+    this.cursor += n
+    return `0x${dequeued}`
+  }
+
+  dequeueToNumber(n: number): number {
+    const dequeued = this.str.slice(this.cursor, this.cursor + n)
+    this.cursor += n
+    return parseInt(dequeued, 16)
+  }
+
+  dequeueToBuffer(n: number): Buffer {
+    const dequeued = this.str.slice(this.cursor, this.cursor + n)
+    this.cursor += n
+    return Buffer.from(dequeued, 'hex')
+  }
+
+  dequeueAll(): string {
+    return `0x${this.str.slice(this.cursor)}`
   }
 }
 
