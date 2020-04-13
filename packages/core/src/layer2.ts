@@ -4,7 +4,7 @@ import { Grove } from '@zkopru/tree'
 import AsyncLock from 'async-lock'
 import { ChainConfig, NodeType, schema, BlockSql } from '@zkopru/database'
 import { L1Config } from './layer1'
-import { Block, Header, blockFromLayer1Tx } from './block'
+import { Block, Header, deserializeBlockFromL1Tx } from './block'
 import { BootstrapData } from './bootstrap'
 
 export class L2Chain implements ChainConfig {
@@ -66,7 +66,7 @@ export class L2Chain implements ChainConfig {
         .query('select', ['header', 'txData', 'MIN(proposedAt)'])
         .where(['header.parentBlock', '=', prevHeader.hash])
         .exec()
-      const block = blockFromLayer1Tx(lastUnverified[0].txData)
+      const block = deserializeBlockFromL1Tx(lastUnverified[0].txData)
       if (lastUnverified.length > 0) {
         return {
           prevHeader,

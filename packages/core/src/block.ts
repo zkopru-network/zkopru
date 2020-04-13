@@ -93,7 +93,7 @@ export function blockToSqlObj(block: Block): BlockSql {
   }
 }
 
-export function blockToBytes(block: Block): Buffer {
+export function serializeBlock(block: Block): Buffer {
   const arr: Buffer[] = []
   // Header
   const headerBytes = Buffer.concat([
@@ -381,7 +381,7 @@ export function headerHash(header: Header): string {
   return result
 }
 
-export function blockFromLayer1Tx(tx: Transaction): Block {
+export function deserializeBlockFromL1Tx(tx: Transaction): Block {
   const deserializedHeader = deserializeHeaderFrom(tx.input)
   const deserializedTxs = deserializeTxsFrom(deserializedHeader.rest)
   const deserializedMassDeposits = deserializeMassDeposits(deserializedTxs.rest)

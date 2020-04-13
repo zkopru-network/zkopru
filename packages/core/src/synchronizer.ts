@@ -2,7 +2,7 @@ import { InanoSQLInstance } from '@nano-sql/core'
 import { schema } from '@zkopru/database'
 import { EventEmitter } from 'events'
 import { L1Contract } from './layer1'
-import { blockFromLayer1Tx } from './block'
+import { deserializeBlockFromL1Tx } from './block'
 
 export class Synchronizer extends EventEmitter {
   id: string
@@ -38,7 +38,6 @@ export class Synchronizer extends EventEmitter {
 
   async listenFinalization() {
     if (this.isSyncing) return
-    // TODO get 'from' from database
     const query = await this.db
       .selectTable(schema.block(this.id).name)
       .presetQuery('getFinalizationSyncIndex')
@@ -70,7 +69,6 @@ export class Synchronizer extends EventEmitter {
 
   async listenNewProposals() {
     if (this.isSyncing) return
-    // TODO get 'from' from database
     const query = await this.db
       .selectTable(schema.block(this.id).name)
       .presetQuery('getProposalSyncIndex')
@@ -118,7 +116,7 @@ export class Synchronizer extends EventEmitter {
     if (this.fetching[txHash]) return
     // console.log(returnValues, transactionHash, blockNumber)
     const txData = await this.l1Contract.web3.eth.getTransaction(txHash)
-    const block = blockFromLayer1Tx(txData)
+    const block = deserializeBlockFromL1Tx(txData)
     const { hash } = block
     await this.db
       .selectTable(schema.block(this.id).name)

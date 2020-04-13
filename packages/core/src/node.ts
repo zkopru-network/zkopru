@@ -9,7 +9,7 @@ import { L1Contract } from './layer1'
 import { Verifier, VerifyOption, VerifyResult } from './verifier'
 import { L2Chain } from './layer2'
 import { BootstrapHelper } from './bootstrap'
-import { headerHash, blockFromLayer1Tx } from './block'
+import { headerHash, deserializeBlockFromL1Tx } from './block'
 import { Synchronizer } from './synchronizer'
 import { genesis } from './genesis'
 
@@ -216,7 +216,7 @@ export class Node {
     const txData = await this.l1Contract.web3.eth.getTransaction(
       bootstrapData.txHash,
     )
-    const block = blockFromLayer1Tx(txData)
+    const block = deserializeBlockFromL1Tx(txData)
     const headerProof = headerHash(block.header) === latest
     const utxoMerkleProof = merkleProof(
       this.l2Chain.grove.config.utxoHasher,
