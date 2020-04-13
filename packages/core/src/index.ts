@@ -1,5 +1,7 @@
-export { Node } from './node'
-export { Verifier } from './verifier'
+export { ZkOPRUNode } from './zkopru-node'
+export { FullNode } from './full-node'
+export { LightNode } from './light-node'
+export { Verifier, VerifyOption } from './verifier'
 export {
   BootstrapData,
   BootstrapHelper,

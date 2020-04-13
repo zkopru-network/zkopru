@@ -75,11 +75,18 @@ export interface Block {
 
   txHash: string
 
-  txData?: Transaction
-
   header: Header
 
   body: Body
+
+  txData?: Transaction
+
+  bootstrap?: {
+    utxoTreeIndex: number
+    utxoBootstrap: string[]
+    withdrawalTreeIndex: number
+    withdrawalBootstrap: string[]
+  }
 }
 
 export function blockToSqlObj(block: Block): BlockSql {
@@ -90,6 +97,7 @@ export function blockToSqlObj(block: Block): BlockSql {
     txHash: block.txHash,
     header: block.header,
     txData: block.txData ? block.txData : undefined,
+    bootstrap: block.bootstrap ? block.bootstrap : undefined,
   }
 }
 

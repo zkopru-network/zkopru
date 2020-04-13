@@ -2,7 +2,7 @@ import { InanoSQLInstance } from '@nano-sql/core'
 import { Field } from '@zkopru/babyjubjub'
 import { Grove } from '@zkopru/tree'
 import AsyncLock from 'async-lock'
-import { ChainConfig, NodeType, schema, BlockSql } from '@zkopru/database'
+import { ChainConfig, schema, BlockSql } from '@zkopru/database'
 import { L1Config } from './layer1'
 import { Block, Header, deserializeBlockFromL1Tx } from './block'
 import { BootstrapData } from './bootstrap'
@@ -15,8 +15,6 @@ export class L2Chain implements ChainConfig {
   chainId: number
 
   address: string
-
-  nodeType: NodeType
 
   lock: AsyncLock
 
@@ -35,7 +33,6 @@ export class L2Chain implements ChainConfig {
     this.networkId = chainConfig.networkId
     this.chainId = chainConfig.chainId
     this.address = chainConfig.address
-    this.nodeType = chainConfig.nodeType
     this.config = chainConfig.config
     this.latest = Field.zero
     this.lock = new AsyncLock()

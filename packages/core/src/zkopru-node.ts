@@ -1,9 +1,7 @@
 import { ZkAccount } from '@zkopru/account'
-import { WebsocketProvider, IpcProvider } from 'web3-core'
 import { InanoSQLInstance } from '@nano-sql/core'
 import { uuid } from '@nano-sql/core/lib/utilities'
-import Web3 from 'web3'
-import { ChainConfig, NodeType, schema, BlockStatus } from '@zkopru/database'
+import { ChainConfig, schema, BlockStatus } from '@zkopru/database'
 import { Grove, poseidonHasher, keccakHasher, merkleProof } from '@zkopru/tree'
 import { L1Contract } from './layer1'
 import { Verifier, VerifyOption, VerifyResult } from './verifier'
@@ -13,8 +11,6 @@ import { headerHash, deserializeBlockFromL1Tx } from './block'
 import { Synchronizer } from './synchronizer'
 import { genesis } from './genesis'
 
-type provider = WebsocketProvider | IpcProvider
-
 export enum Status {
   STOPPED,
   ON_SYNCING,
@@ -22,12 +18,7 @@ export enum Status {
   ON_ERROR,
 }
 
-export interface NodeConfiguration {
-  nodeType: NodeType
-  verifyOption: VerifyOption
-}
-
-export class Node {
+export class ZkOPRUNode {
   l1Contract: L1Contract
 
   l2Chain: L2Chain
@@ -42,7 +33,7 @@ export class Node {
 
   status: Status
 
-  config: NodeConfiguration
+  verifyOption: VerifyOption
 
   constructor({
     l1Contract,
@@ -51,7 +42,7 @@ export class Node {
     synchronizer,
     bootstrapHelper,
     accounts,
-    config,
+    verifyOption,
   }: {
     l1Contract: L1Contract
     l2Chain: L2Chain
@@ -59,139 +50,19 @@ export class Node {
     bootstrapHelper?: BootstrapHelper
     synchronizer: Synchronizer
     accounts?: ZkAccount[]
-    config: NodeConfiguration
+    verifyOption: VerifyOption
   }) {
-    if (config.nodeType === NodeType.LIGHT_NODE && config.verifyOption) {
-      throw Error('Only Full node can process verifications')
-    }
-    if (config.nodeType === NodeType.LIGHT_NODE && !accounts) {
-      throw Error('You can run light node without setting accounts')
-    }
     this.l1Contract = l1Contract
     this.l2Chain = l2Chain
     this.verifier = verifier
     this.synchronizer = synchronizer
     this.bootstrapHelper = bootstrapHelper
     this.accounts = accounts
-    this.config = config
+    this.verifyOption = verifyOption
     this.status = Status.STOPPED
   }
 
-  static async new({
-    provider,
-    address,
-    db,
-    accounts,
-    bootstrapHelper,
-    option,
-  }: {
-    provider: provider
-    address: string
-    db: InanoSQLInstance
-    accounts?: ZkAccount[]
-    bootstrapHelper?: BootstrapHelper
-    option?: NodeConfiguration
-  }): Promise<Node> {
-    const nodeConfig = option || {
-      nodeType: NodeType.LIGHT_NODE,
-      verifyOption: {
-        header: true,
-        deposit: true,
-        migration: true,
-        outputRollUp: true,
-        withdrawalRollUp: true,
-        nullifierRollUp: false,
-        snark: false,
-      },
-    }
-    const isFullNode: boolean = nodeConfig.nodeType === NodeType.FULL_NODE
-    if (isFullNode && !bootstrapHelper)
-      throw Error('You need bootstrap node to run light node')
-    const web3: Web3 = new Web3(provider)
-    // Add zk account to the web3 object if it exists
-    if (accounts) {
-      for (const account of accounts) {
-        web3.eth.accounts.wallet.add(account.toAddAccount())
-      }
-    }
-    const l1Contract = new L1Contract(web3, address)
-    // retrieve l2 chain from database
-    const networkId = await web3.eth.net.getId()
-    const chainId = await web3.eth.getChainId()
-    let l2Chain: L2Chain
-    const l2ChainFromDB = await Node.retrieveL2ChainFromDB(
-      db,
-      networkId,
-      chainId,
-      address,
-    )
-    // if there is no existing l2 chain, create new one
-    if (!l2ChainFromDB) {
-      const id = uuid()
-      const hashers = {
-        utxo: poseidonHasher(31),
-        withdrawal: keccakHasher(31),
-        nullifier: keccakHasher(256),
-      }
-      const genesisBlock = genesis({ address, hashers })
-      await db
-        .selectTable(schema.block(id).name)
-        .presetQuery('addGenesisBlock', {
-          hash: headerHash(genesisBlock),
-          header: genesisBlock,
-        })
-        .exec()
-      const l1Config = await l1Contract.getConfig()
-      const addressesToObserve = accounts
-        ? accounts.map(account => account.address)
-        : []
-      const pubKeysToObserve = accounts
-        ? accounts.map(account => account.pubKey)
-        : []
-      const grove = new Grove(id, db, {
-        ...l1Config,
-        utxoHasher: hashers.utxo,
-        withdrawalHasher: hashers.withdrawal,
-        nullifierHasher: hashers.nullifier,
-        fullSync: isFullNode,
-        forceUpdate: !isFullNode,
-        pubKeysToObserve,
-        addressesToObserve,
-      })
-      await grove.init()
-      l2Chain = new L2Chain(db, grove, {
-        id,
-        nodeType: nodeConfig.nodeType,
-        networkId,
-        chainId,
-        address,
-        config: l1Config,
-      })
-    } else {
-      l2Chain = l2ChainFromDB
-    }
-    let vks = {}
-    if (nodeConfig.verifyOption.snark) {
-      vks = await l1Contract.getVKs()
-    }
-    const verifier = new Verifier(nodeConfig.verifyOption, vks)
-    // If the chain needs bootstraping, fetch bootstrap data and apply
-    const synchronizer = new Synchronizer(db, l2Chain.id, l1Contract)
-    return new Node({
-      l1Contract,
-      l2Chain,
-      verifier,
-      synchronizer,
-      bootstrapHelper,
-      accounts,
-      config: nodeConfig,
-    })
-  }
-
-  async startSync() {
-    if (this.config.nodeType === NodeType.LIGHT_NODE) {
-      await this.bootstrap()
-    }
+  startSync() {
     this.synchronizer.sync()
     this.synchronizer.on('newBlock', this.processUnverifiedBlocks)
   }
@@ -272,12 +143,21 @@ export class Node {
     return Status.ON_SYNCING
   }
 
-  static async retrieveL2ChainFromDB(
+  static async getOrInitChain(
     db: InanoSQLInstance,
+    l1Contract: L1Contract,
     networkId: number,
     chainId: number,
     address: string,
-  ): Promise<L2Chain | null> {
+    fullSync: boolean,
+    accounts?: ZkAccount[],
+  ): Promise<L2Chain> {
+    const pubKeysToObserve = accounts
+      ? accounts.map(account => account.pubKey)
+      : []
+    const addressesToObserve = accounts
+      ? accounts.map(account => account.address)
+      : []
     const chainConfig: ChainConfig[] = (await db
       .selectTable(schema.chain.name)
       .presetQuery('read', {
@@ -293,13 +173,45 @@ export class Node {
         utxoHasher: poseidonHasher(31),
         withdrawalHasher: keccakHasher(31),
         nullifierHasher: keccakHasher(256),
-        fullSync: l2Config.nodeType === NodeType.FULL_NODE,
-        forceUpdate: l2Config.nodeType === NodeType.LIGHT_NODE,
-        pubKeysToObserve: [],
-        addressesToObserve: [],
+        fullSync,
+        forceUpdate: !fullSync,
+        pubKeysToObserve,
+        addressesToObserve,
       })
       return new L2Chain(db, grove, l2Config)
     }
-    return null
+    const id = uuid()
+    const hashers = {
+      utxo: poseidonHasher(31),
+      withdrawal: keccakHasher(31),
+      nullifier: keccakHasher(256),
+    }
+    const genesisBlock = genesis({ address, hashers })
+    await db
+      .selectTable(schema.block(id).name)
+      .presetQuery('addGenesisBlock', {
+        hash: headerHash(genesisBlock),
+        header: genesisBlock,
+      })
+      .exec()
+    const l1Config = await l1Contract.getConfig()
+    const grove = new Grove(id, db, {
+      ...l1Config,
+      utxoHasher: hashers.utxo,
+      withdrawalHasher: hashers.withdrawal,
+      nullifierHasher: hashers.nullifier,
+      fullSync: true,
+      forceUpdate: false,
+      pubKeysToObserve,
+      addressesToObserve,
+    })
+    await grove.init()
+    return new L2Chain(db, grove, {
+      id,
+      networkId,
+      chainId,
+      address,
+      config: l1Config,
+    })
   }
 }

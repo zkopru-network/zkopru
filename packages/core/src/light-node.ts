@@ -1,0 +1,147 @@
+import { ZkAccount } from '@zkopru/account'
+import { WebsocketProvider, IpcProvider } from 'web3-core'
+import { InanoSQLInstance } from '@nano-sql/core'
+import Web3 from 'web3'
+import { BlockStatus } from '@zkopru/database'
+import { merkleProof } from '@zkopru/tree'
+import { L1Contract } from './layer1'
+import { Verifier, VerifyOption } from './verifier'
+import { L2Chain } from './layer2'
+import { BootstrapHelper } from './bootstrap'
+import { headerHash, deserializeBlockFromL1Tx } from './block'
+import { Synchronizer } from './synchronizer'
+import { ZkOPRUNode } from './zkopru-node'
+
+type provider = WebsocketProvider | IpcProvider
+
+export class LightNode extends ZkOPRUNode {
+  constructor({
+    l1Contract,
+    l2Chain,
+    verifier,
+    synchronizer,
+    bootstrapHelper,
+    accounts,
+    verifyOption,
+  }: {
+    l1Contract: L1Contract
+    l2Chain: L2Chain
+    verifier: Verifier
+    bootstrapHelper: BootstrapHelper
+    synchronizer: Synchronizer
+    accounts: ZkAccount[]
+    verifyOption: VerifyOption
+  }) {
+    super({
+      l1Contract,
+      l2Chain,
+      verifier,
+      synchronizer,
+      bootstrapHelper,
+      accounts,
+      verifyOption,
+    })
+    if (verifyOption.nullifierRollUp) {
+      throw Error('Light node cannot process nullifier verifications')
+    }
+  }
+
+  async startSync() {
+    await this.bootstrap()
+    super.startSync()
+  }
+
+  async bootstrap() {
+    if (!this.bootstrapHelper) return
+    const latest = await this.l1Contract.upstream.methods.latest().call()
+    const latestBlockFromDB = await this.l2Chain.getBlock(latest)
+    if (
+      latestBlockFromDB &&
+      latestBlockFromDB.status &&
+      latestBlockFromDB.status >= BlockStatus.PARTIALLY_VERIFIED
+    ) {
+      return
+    }
+    const bootstrapData = await this.bootstrapHelper.fetchBootstrapData(latest)
+    const txData = await this.l1Contract.web3.eth.getTransaction(
+      bootstrapData.txHash,
+    )
+    const block = deserializeBlockFromL1Tx(txData)
+    const headerProof = headerHash(block.header) === latest
+    const utxoMerkleProof = merkleProof(
+      this.l2Chain.grove.config.utxoHasher,
+      bootstrapData.utxoTreeBootstrap,
+    )
+    const withdrawalMerkleProof = merkleProof(
+      this.l2Chain.grove.config.withdrawalHasher,
+      bootstrapData.withdrawalTreeBootstrap,
+    )
+    if (headerProof && utxoMerkleProof && withdrawalMerkleProof) {
+      await this.l2Chain.applyBootstrap(block, bootstrapData)
+    }
+  }
+
+  static async new({
+    provider,
+    address,
+    db,
+    accounts,
+    bootstrapHelper,
+    option,
+  }: {
+    provider: provider
+    address: string
+    db: InanoSQLInstance
+    accounts: ZkAccount[]
+    bootstrapHelper: BootstrapHelper
+    option?: VerifyOption
+  }): Promise<LightNode> {
+    const verifyOption = option || {
+      header: true,
+      deposit: true,
+      migration: true,
+      outputRollUp: true,
+      withdrawalRollUp: true,
+      nullifierRollUp: false,
+      snark: false,
+    }
+    if (!bootstrapHelper)
+      throw Error('You need bootstrap node to run light node')
+    const web3: Web3 = new Web3(provider)
+    // Add zk account to the web3 object if it exists
+    if (accounts) {
+      for (const account of accounts) {
+        web3.eth.accounts.wallet.add(account.toAddAccount())
+      }
+    }
+    const l1Contract = new L1Contract(web3, address)
+    // retrieve l2 chain from database
+    const networkId = await web3.eth.net.getId()
+    const chainId = await web3.eth.getChainId()
+    const l2Chain: L2Chain = await ZkOPRUNode.getOrInitChain(
+      db,
+      l1Contract,
+      networkId,
+      chainId,
+      address,
+      false,
+      accounts,
+    )
+    let vks = {}
+    if (verifyOption.snark) {
+      vks = await l1Contract.getVKs()
+    }
+    const verifier = new Verifier(verifyOption, vks)
+    // If the chain needs bootstraping, fetch bootstrap data and apply
+    const synchronizer = new Synchronizer(db, l2Chain.id, l1Contract)
+    return new LightNode({
+      l1Contract,
+      l2Chain,
+      verifier,
+      synchronizer,
+      bootstrapHelper,
+      accounts,
+      verifyOption,
+    })
+  }
+}
