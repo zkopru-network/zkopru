@@ -30,6 +30,12 @@ export interface BlockSql {
     migrationRoot: string
   }
   txData?: object
+  bootstrap?: {
+    utxoTreeIndex: number
+    utxoBootstrap: string[]
+    withdrawalTreeIndex: number
+    withdrawalBootstrap: string[]
+  }
 }
 
 export function block(zkopruId: string): InanoSQLTableConfig {
@@ -40,7 +46,6 @@ export function block(zkopruId: string): InanoSQLTableConfig {
       'status:int': { default: 0 },
       'proposedAt:int': {},
       'txHash:string': {},
-      'txData:any': {},
       'header:obj': {
         model: {
           'proposer:string': {},
@@ -62,6 +67,15 @@ export function block(zkopruId: string): InanoSQLTableConfig {
           'txRoot:string': {},
           'depositRoot:string': {},
           'migrationRoot:string': {},
+        },
+      },
+      'txData:any': {},
+      'bootstrap:obj': {
+        model: {
+          'utxoTreeIndex:number': {},
+          'utxoBootstrap:string[]': {},
+          'withdrawalTreeIndex:number': {},
+          'withdrawalBootstrap:string[]': {},
         },
       },
     },

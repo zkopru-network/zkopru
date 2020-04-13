@@ -9,7 +9,6 @@ export interface ChainConfig {
   id: string
   networkId: number
   chainId: number
-  nodeType: number
   address: string
   config: {
     utxoTreeDepth: number

@@ -1,9 +1,9 @@
-import { Node } from '@zkopru/core'
+import { LightNode } from '@zkopru/core'
 
 export class ZkWallet {
-  zkopru: Node
+  zkopru: LightNode
 
-  constructor(zkopru: Node) {
+  constructor(zkopru: LightNode) {
     this.zkopru = zkopru
   }
 }

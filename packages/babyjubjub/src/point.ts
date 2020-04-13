@@ -1,4 +1,4 @@
-import { BigNumber } from 'big-integer'
+import bigInt, { BigNumber, BigInteger } from 'big-integer'
 import * as snarkjs from 'snarkjs'
 import * as circomlib from 'circomlib'
 import createBlakeHash from 'blake-hash'
@@ -62,6 +62,10 @@ export class Point {
 
   toHex(): string {
     return this.encode().toString('hex')
+  }
+
+  toBigIntArr(): BigInteger[] {
+    return [this.x.val, this.y.val, bigInt(1)]
   }
 
   add(p: Point): Point {

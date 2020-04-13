@@ -1,12 +1,12 @@
 import { verifyingKeyIdentifier } from '@zkopru/utils'
-import { fork, ChildProcess } from 'child_process'
 // import { Point } from '@zkopru/babyjubjub'
 import { Block, Header } from './block'
 import { VerifyingKey } from './snark'
-import { ChallengeCode, Challenge } from './challenge'
+import { ChallengeCode } from './challenge'
 import { L1Contract } from './layer1'
 import { L2Chain } from './layer2'
 import { TransactionObject } from '~contracts/contracts/types'
+import { SNARKVerifier } from './snark-verifier'
 
 export interface VerifyOption {
   header: boolean
@@ -27,17 +27,15 @@ export enum VerifyResult {
 export class Verifier {
   option: VerifyOption
 
-  vks: {
-    [txType: string]: VerifyingKey
-  }
+  snarkVerifier: SNARKVerifier
 
   constructor(option: VerifyOption, vks?: { [txType: string]: VerifyingKey }) {
     this.option = option
-    this.vks = vks || {}
+    this.snarkVerifier = new SNARKVerifier(vks)
   }
 
   addVerifyingKey(nI: number, nO: number, vk: VerifyingKey) {
-    this.vks[verifyingKeyIdentifier(nI, nO)] = vk
+    this.snarkVerifier.vks[verifyingKeyIdentifier(nI, nO)] = vk
   }
 
   async verify({
@@ -87,64 +85,15 @@ export class Verifier {
     return ChallengeCode.INVALID_SNARK
   }
 
-  async verifyTxs(
-    block: Block,
-    onChallenge: (challenge: Challenge) => Promise<void>,
-  ): Promise<boolean> {
-    return new Promise<boolean>(res => {
-      const prepared: ChildProcess[] = []
-      const used: ChildProcess[] = []
-      const success: boolean[] = []
-      const allVKsExist = block.body.txs.reduce((vkExist, tx) => {
-        if (!vkExist) return vkExist
-        const vk = this.vks[
-          verifyingKeyIdentifier(tx.inflow.length, tx.outflow.length)
-        ]
-        if (!vk) {
-          return false
-        }
-        return vkExist
-      }, true)
-      if (!allVKsExist) {
-        onChallenge({ block, code: ChallengeCode.NOT_SUPPORTED_TYPE })
-        res(false)
-      }
-      // prepare processes and attach listeners
-      Array(block.body.txs.length)
-        .fill(undefined)
-        .forEach(_ => {
-          // TODO try forking dirname + js extension later
-          const process = fork('./snark-child-process.ts')
-          prepared.push(process)
-          process.on('message', message => {
-            const { result } = message as { result: boolean }
-            if (!result) {
-              onChallenge({ block, code: ChallengeCode.INVALID_SNARK })
-              res(false)
-              const killProc = (process: ChildProcess) => {
-                if (!process.killed) {
-                  process.kill()
-                }
-              }
-              prepared.forEach(killProc)
-              used.forEach(killProc)
-            } else {
-              success.push(true)
-              if (success.length === block.body.txs.length) {
-                res(true)
-              }
-            }
-          })
-        })
-      // execute child process to compute snark verification
-      for (const tx of block.body.txs) {
-        const process = prepared.pop() as ChildProcess
-        used.push(process)
-        const vk = this.vks[
-          verifyingKeyIdentifier(tx.inflow.length, tx.outflow.length)
-        ]
-        process.send({ tx, vk })
-      }
-    })
+  async verifyTxs(block: Block): Promise<{ result: boolean; index?: number }> {
+    // todo 1. snark test
+    const { result, index } = await this.snarkVerifier.verifyTxs(block.body.txs)
+    // todo 2. inclusion reference check
+    // todo 3. overflow check(solidity support required)
+    // todo 4. double spending check
+    // todo 5. doubled nullifier test
+    // todo 6. atomic swap test
+    // todo: onChallenge()
+    return { result, index }
   }
 }

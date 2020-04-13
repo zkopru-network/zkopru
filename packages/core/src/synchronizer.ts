@@ -1,17 +1,28 @@
 import { InanoSQLInstance } from '@nano-sql/core'
 import { schema } from '@zkopru/database'
 import { EventEmitter } from 'events'
+import { InanoSQLObserverQuery } from '@nano-sql/core/lib/interfaces'
 import { L1Contract } from './layer1'
 import { deserializeBlockFromL1Tx } from './block'
+import { L2Chain } from './layer2'
+
+export enum NetworkStatus {
+  STOPPED,
+  INITIALIZING,
+  ON_SYNCING,
+  LIVE,
+  FULLY_SYNCED,
+  ON_ERROR,
+}
 
 export class Synchronizer extends EventEmitter {
-  id: string
-
-  isSyncing: boolean
+  zkopruId: string
 
   db: InanoSQLInstance
 
   l1Contract!: L1Contract
+
+  l2Chain!: L2Chain
 
   fetching: {
     [txHash: string]: boolean
@@ -21,56 +32,125 @@ export class Synchronizer extends EventEmitter {
 
   finalizationSubscriber?: EventEmitter
 
-  constructor(db: InanoSQLInstance, zkopruId: string, l1Contract: L1Contract) {
+  private latestProposalObserver?: InanoSQLObserverQuery
+
+  private latestVerificationObserver?: InanoSQLObserverQuery
+
+  private latestProposedHash?: string
+
+  private latestProposedAt?: number
+
+  private latestVerfied?: number
+
+  status: NetworkStatus
+
+  constructor(db: InanoSQLInstance, l1Contract: L1Contract, l2Chain: L2Chain) {
     super()
     this.db = db
-    this.id = zkopruId
+    this.zkopruId = l2Chain.id
     this.l1Contract = l1Contract
+    this.l2Chain = l2Chain
     this.fetching = {}
-    this.isSyncing = false
+    this.status = NetworkStatus.STOPPED
   }
 
-  async sync() {
-    this.isSyncing = true
-    this.listenNewProposals()
-    this.listenFinalization()
+  setStatus(status: NetworkStatus) {
+    if (this.status !== status) {
+      this.status = status
+      this.emit('status', status, this.latestProposedHash)
+    }
   }
 
-  async listenFinalization() {
-    if (this.isSyncing) return
+  async sync(
+    proposalCB?: (hash: string) => void,
+    finalizationCB?: (hash: string) => void,
+  ) {
+    if (this.status === NetworkStatus.STOPPED) {
+      this.setStatus(NetworkStatus.ON_SYNCING)
+      this.listenBlockUpdate()
+      this.listenNewProposals(proposalCB)
+      this.listenFinalization(finalizationCB)
+    }
+  }
+
+  stop() {
+    if (this.proposalSubscriber) {
+      this.proposalSubscriber.removeAllListeners()
+    }
+    if (this.finalizationSubscriber) {
+      this.finalizationSubscriber.removeAllListeners()
+    }
+    if (this.latestProposalObserver) {
+      this.latestProposalObserver.unsubscribe()
+    }
+    this.setStatus(NetworkStatus.STOPPED)
+  }
+
+  listenBlockUpdate() {
+    this.latestProposalObserver = this.db
+      .selectTable(schema.block(this.zkopruId).name)
+      .query('select', ['hash', 'MAX(proposedAt)'])
+      .listen({
+        debounce: 500,
+        compareFn: (rowsA, rowsB) => {
+          return rowsA[0]?.proposedAt !== rowsB[0]?.proposedAt
+        },
+      })
+    this.latestProposalObserver.exec(async (rows, err) => {
+      if (err) this.setStatus(NetworkStatus.ON_ERROR)
+      else {
+        this.latestProposedHash = rows[0]?.hash
+        this.setLatestProposed(rows[0]?.proposesAt)
+      }
+    })
+    this.latestVerificationObserver = this.db
+      .selectTable(schema.block(this.zkopruId).name)
+      .presetQuery('getLastVerfiedBlock')
+      .listen({
+        debounce: 500,
+        compareFn: (rowsA, rowsB) => {
+          return rowsA[0]?.proposedAt !== rowsB[0]?.proposedAt
+        },
+      })
+    this.latestVerificationObserver.exec(async (rows, err) => {
+      if (err) this.setStatus(NetworkStatus.ON_ERROR)
+      else {
+        this.setLatestVerified(rows[0]?.proposesAt)
+      }
+    })
+  }
+
+  private setLatestProposed(blockNum: number) {
+    if (this.latestProposedAt !== blockNum) {
+      this.latestProposedAt = blockNum
+      this.updateStatus()
+    }
+  }
+
+  private setLatestVerified(blockNum: number) {
+    if (this.latestVerfied !== blockNum) {
+      this.latestVerfied = blockNum
+      this.updateStatus()
+    }
+  }
+
+  async updateStatus() {
+    if (!this.latestProposedAt || !this.latestVerfied) {
+      this.setStatus(NetworkStatus.INITIALIZING)
+    } else if (this.latestProposedAt === this.latestVerfied) {
+      this.setStatus(NetworkStatus.FULLY_SYNCED)
+    } else if (this.latestProposedAt - this.latestVerfied < 5) {
+      this.setStatus(NetworkStatus.LIVE)
+    } else {
+      this.setStatus(NetworkStatus.ON_SYNCING)
+    }
+    // TODO: layer1 REVERT handling & challenge handling
+  }
+
+  async listenNewProposals(cb?: (hash: string) => void) {
+    if (this.status !== NetworkStatus.STOPPED) return
     const query = await this.db
-      .selectTable(schema.block(this.id).name)
-      .presetQuery('getFinalizationSyncIndex')
-      .exec()
-    const startFrom = query[0] ? query[0].proposedAt : 0
-    this.finalizationSubscriber = this.l1Contract.coordinator.events
-      .Finalized({ fromBlock: startFrom })
-      .on('connected', subId => {
-        console.log(subId)
-      })
-      .on('data', async event => {
-        const { returnValues } = event
-        // WRITE DATABASE
-        await this.db
-          .selectTable(schema.block(this.id).name)
-          .presetQuery('markAsFinalized', {
-            hash: returnValues,
-          })
-          .exec()
-      })
-      .on('changed', event => {
-        // TODO removed
-        console.log(event)
-      })
-      .on('error', err => {
-        console.log(err)
-      })
-  }
-
-  async listenNewProposals() {
-    if (this.isSyncing) return
-    const query = await this.db
-      .selectTable(schema.block(this.id).name)
+      .selectTable(schema.block(this.zkopruId).name)
       .presetQuery('getProposalSyncIndex')
       .exec()
     const startFrom = query[0] ? query[0].proposedAt : 0
@@ -83,13 +163,14 @@ export class Synchronizer extends EventEmitter {
         const { returnValues, blockNumber, transactionHash } = event
         // WRITE DATABASE
         await this.db
-          .selectTable(schema.block(this.id).name)
+          .selectTable(schema.block(this.zkopruId).name)
           .presetQuery('writeNewProposal', {
             hash: returnValues,
             proposedAt: blockNumber,
             txHash: transactionHash,
           })
           .exec()
+        if (cb) cb(returnValues)
         // FETCH DETAILS
         this.fetch(transactionHash)
       })
@@ -102,14 +183,36 @@ export class Synchronizer extends EventEmitter {
       })
   }
 
-  stop() {
-    if (this.proposalSubscriber) {
-      this.proposalSubscriber.removeAllListeners()
-    }
-    if (this.finalizationSubscriber) {
-      this.finalizationSubscriber.removeAllListeners()
-    }
-    this.isSyncing = false
+  async listenFinalization(cb?: (hash: string) => void) {
+    if (this.status !== NetworkStatus.STOPPED) return
+    const query = await this.db
+      .selectTable(schema.block(this.zkopruId).name)
+      .presetQuery('getFinalizationSyncIndex')
+      .exec()
+    const startFrom = query[0] ? query[0].proposedAt : 0
+    this.finalizationSubscriber = this.l1Contract.coordinator.events
+      .Finalized({ fromBlock: startFrom })
+      .on('connected', subId => {
+        console.log(subId)
+      })
+      .on('data', async event => {
+        const { returnValues } = event
+        // WRITE DATABASE
+        await this.db
+          .selectTable(schema.block(this.zkopruId).name)
+          .presetQuery('markAsFinalized', {
+            hash: returnValues,
+          })
+          .exec()
+        if (cb) cb(returnValues)
+      })
+      .on('changed', event => {
+        // TODO removed
+        console.log(event)
+      })
+      .on('error', err => {
+        console.log(err)
+      })
   }
 
   async fetch(txHash: string) {
@@ -119,7 +222,7 @@ export class Synchronizer extends EventEmitter {
     const block = deserializeBlockFromL1Tx(txData)
     const { hash } = block
     await this.db
-      .selectTable(schema.block(this.id).name)
+      .selectTable(schema.block(this.zkopruId).name)
       .presetQuery('saveFetchedBlock', {
         hash,
         header: block.header,

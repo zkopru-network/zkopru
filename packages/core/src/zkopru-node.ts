@@ -11,13 +11,6 @@ import { headerHash, deserializeBlockFromL1Tx } from './block'
 import { Synchronizer } from './synchronizer'
 import { genesis } from './genesis'
 
-export enum Status {
-  STOPPED,
-  ON_SYNCING,
-  LIVE,
-  ON_ERROR,
-}
-
 export class ZkOPRUNode {
   l1Contract: L1Contract
 
@@ -30,8 +23,6 @@ export class ZkOPRUNode {
   bootstrapHelper?: BootstrapHelper
 
   accounts?: ZkAccount[]
-
-  status: Status
 
   verifyOption: VerifyOption
 
@@ -59,7 +50,6 @@ export class ZkOPRUNode {
     this.bootstrapHelper = bootstrapHelper
     this.accounts = accounts
     this.verifyOption = verifyOption
-    this.status = Status.STOPPED
   }
 
   startSync() {
@@ -122,25 +112,6 @@ export class ZkOPRUNode {
     } else {
       await this.l2Chain.markAsPartiallyVerified(block.hash)
     }
-  }
-
-  async getNetworkStatus(): Promise<Status> {
-    if (!this.synchronizer.isSyncing) return Status.STOPPED
-    const lastestProposal = await this.l2Chain.db
-      .selectTable(schema.block(this.l2Chain.id).name)
-      .presetQuery('getBlockNumForLatestProposal')
-      .exec()
-    const l1BlockNumOfLatestProposal = lastestProposal[0].proposedAt
-    const latestVerification = await this.l2Chain.db
-      .selectTable(schema.block(this.l2Chain.id).name)
-      .presetQuery('getLastVerfiedBlock')
-      .exec()
-    const l1BlockNumOfLatestVerified = latestVerification[0].proposedAt
-    if (l1BlockNumOfLatestProposal - l1BlockNumOfLatestVerified < 5) {
-      return Status.LIVE
-    }
-    // TODO: layer1 REVERT handling & challenge handling
-    return Status.ON_SYNCING
   }
 
   static async getOrInitChain(

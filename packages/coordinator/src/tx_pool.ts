@@ -75,6 +75,7 @@ export class TxMemPool implements TxPoolInterface {
   }
 
   async pickPendingTxs(maxBytes: number): Promise<ZkTx[]> {
+    // TODO add atomic swap tx logic here
     let available = maxBytes
     this.sortPendingTxs()
     const candidates = this.blockTxMap[PENDING]

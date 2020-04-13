@@ -1,8 +1,11 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import ZkOPRUContract from '@zkopru/contracts'
 import { verifyingKeyIdentifier } from '@zkopru/utils'
-import { Point, Field } from '@zkopru/babyjubjub'
+import { Field } from '@zkopru/babyjubjub'
 import Web3 from 'web3'
 import { ContractOptions } from 'web3-eth-contract'
+import bigInt from 'big-integer'
+import * as ffjs from 'ffjavascript'
 import { VerifyingKey } from './snark'
 
 export interface L1Config {
@@ -18,10 +21,6 @@ export interface L1Config {
   utxoSubTreeSize: number
   withdrawalSubTreeDepth: number
   withdrawalSubTreeSize: number
-}
-
-function toPoint(strArr: string[]): Point {
-  return Point.from(strArr[0], strArr[1])
 }
 
 export class L1Contract extends ZkOPRUContract {
@@ -53,18 +52,41 @@ export class L1Contract extends ZkOPRUContract {
               if (Field.from(vk.alfa1[0]).isZero()) done()
               else {
                 const sig = verifyingKeyIdentifier(nI, nO)
+                const vk_alfa_1 = [
+                  bigInt(vk.alfa1[0]),
+                  bigInt(vk.alfa1[1]),
+                  bigInt(1),
+                ]
+                const vk_beta_2 = [
+                  [bigInt(vk.beta2[0][0]), bigInt(vk.beta2[0][1])],
+                  [bigInt(vk.beta2[1][1]), bigInt(vk.beta2[1][1])],
+                  [bigInt(1), bigInt(0)],
+                ]
+                const vk_gamma_2 = [
+                  [bigInt(vk.gamma2[0][0]), bigInt(vk.gamma2[0][1])],
+                  [bigInt(vk.gamma2[1][1]), bigInt(vk.gamma2[1][1])],
+                  [bigInt(1), bigInt(0)],
+                ]
+                const vk_delta_2 = [
+                  [bigInt(vk.delta2[0][0]), bigInt(vk.delta2[0][1])],
+                  [bigInt(vk.delta2[1][1]), bigInt(vk.delta2[1][1])],
+                  [bigInt(1), bigInt(0)],
+                ]
+                const vk_alfabeta_12 = ffjs.bn128.pairing(vk_alfa_1, vk_beta_2)
+                const IC = vk.ic.map(ic => [
+                  bigInt(ic[0]),
+                  bigInt(ic[1]),
+                  bigInt(1),
+                ])
                 vks[sig] = {
-                  alfa1: toPoint(vk.alfa1),
-                  beta2: { X: toPoint(vk.beta2[0]), Y: toPoint(vk.beta2[1]) },
-                  gamma2: {
-                    X: toPoint(vk.gamma2[0]),
-                    Y: toPoint(vk.gamma2[1]),
-                  },
-                  delta2: {
-                    X: toPoint(vk.delta2[0]),
-                    Y: toPoint(vk.delta2[1]),
-                  },
-                  ic: vk.ic.map(toPoint),
+                  protocol: 'groth',
+                  nPublic: vk.ic.length - 1,
+                  vk_alfa_1,
+                  vk_beta_2,
+                  vk_gamma_2,
+                  vk_delta_2,
+                  vk_alfabeta_12,
+                  IC,
                 }
                 done()
               }

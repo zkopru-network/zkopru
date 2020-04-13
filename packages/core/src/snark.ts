@@ -1,27 +1,23 @@
-import { Point } from '@zkopru/babyjubjub'
+/* eslint-disable @typescript-eslint/camelcase */
 import { ZkTx } from '@zkopru/transaction'
+import * as snarkjs from 'snarkjs'
+import { BigInteger } from 'big-integer'
 
 export interface VerifyingKey {
-  alfa1: Point
-  beta2: {
-    X: Point
-    Y: Point
-  }
-  gamma2: {
-    X: Point
-    Y: Point
-  }
-  delta2: {
-    X: Point
-    Y: Point
-  }
-  ic: Point[]
+  protocol: string
+  nPublic: number
+  vk_alfa_1: BigInteger[]
+  vk_beta_2: BigInteger[][]
+  vk_gamma_2: BigInteger[][]
+  vk_delta_2: BigInteger[][]
+  vk_alfabeta_12: BigInteger[][][]
+  IC: BigInteger[][]
 }
 
 export async function verifyZkTx(
   zkTx: ZkTx,
   vk: VerifyingKey,
 ): Promise<boolean> {
-  console.log('TODD', zkTx, vk)
-  return true
+  const isValid = snarkjs.groth.isValid(vk, zkTx.circomProof(), zkTx.signals())
+  return isValid
 }
