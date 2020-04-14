@@ -52,11 +52,11 @@ export class Verifier {
     if (this.option.header) {
       const headerChallenge = await this.verifyHeader(block)
       if (headerChallenge) {
-        if (!block.txData) throw Error('Not available to the tx data')
+        if (!block.proposalData) throw Error('Not available to the tx data')
         return {
           result: VerifyResult.INVALIDATED,
           challenge: layer1.challenger.header.methods.challengeDepositRoot(
-            block.txData.input,
+            block.proposalData.input,
           ),
         }
       }

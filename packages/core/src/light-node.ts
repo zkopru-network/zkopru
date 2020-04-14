@@ -63,10 +63,10 @@ export class LightNode extends ZkOPRUNode {
       return
     }
     const bootstrapData = await this.bootstrapHelper.fetchBootstrapData(latest)
-    const txData = await this.l1Contract.web3.eth.getTransaction(
-      bootstrapData.txHash,
+    const proposalData = await this.l1Contract.web3.eth.getTransaction(
+      bootstrapData.proposalHash,
     )
-    const block = deserializeBlockFromL1Tx(txData)
+    const block = deserializeBlockFromL1Tx(proposalData)
     const headerProof = headerHash(block.header) === latest
     const utxoMerkleProof = merkleProof(
       this.l2Chain.grove.config.utxoHasher,

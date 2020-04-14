@@ -14,7 +14,7 @@ export interface BlockSql {
   hash: string
   status?: number
   proposedAt: number
-  txHash: string
+  proposalHash: string
   header: {
     proposer: string
     parentBlock: string
@@ -29,7 +29,7 @@ export interface BlockSql {
     depositRoot: string
     migrationRoot: string
   }
-  txData?: object
+  proposalData?: object
   bootstrap?: {
     utxoTreeIndex: number
     utxoBootstrap: string[]
@@ -45,7 +45,7 @@ export function block(zkopruId: string): InanoSQLTableConfig {
       'hash:string': { pk: true },
       'status:int': { default: 0 },
       'proposedAt:int': {},
-      'txHash:string': {},
+      'proposalHash:string': {},
       'header:obj': {
         model: {
           'proposer:string': {},
@@ -69,7 +69,7 @@ export function block(zkopruId: string): InanoSQLTableConfig {
           'migrationRoot:string': {},
         },
       },
-      'txData:any': {},
+      'proposalData:any': {},
       'bootstrap:obj': {
         model: {
           'utxoTreeIndex:number': {},
@@ -113,7 +113,7 @@ export function block(zkopruId: string): InanoSQLTableConfig {
               {
                 ...block,
                 status: BlockStatus.FINALIZED,
-                txData: null,
+                proposalData: null,
               },
             ])
             .emit()
@@ -144,7 +144,7 @@ export function block(zkopruId: string): InanoSQLTableConfig {
         args: {
           'hash:string': {},
           'proposedAt:int ': {},
-          'txHash:string ': {},
+          'proposalHash:string ': {},
         },
         call: (db, args) => {
           return db
@@ -152,7 +152,7 @@ export function block(zkopruId: string): InanoSQLTableConfig {
               {
                 hash: args.hash,
                 proposedAt: args.proposedAt,
-                txHash: args.txHash,
+                proposalHash: args.proposalHash,
                 status: BlockStatus.NOT_FETCHED,
               },
             ])
@@ -164,7 +164,7 @@ export function block(zkopruId: string): InanoSQLTableConfig {
         args: {
           'hash:string': { pk: true },
           'header:obj': {},
-          'txData:string': {},
+          'proposalData:string': {},
         },
         call: (db, args) => {
           return db
@@ -172,7 +172,7 @@ export function block(zkopruId: string): InanoSQLTableConfig {
               {
                 hash: args.hash,
                 header: args.header,
-                txData: args.txData,
+                proposalData: args.proposalData,
                 status: BlockStatus.FETCHED,
               },
             ])
@@ -190,7 +190,7 @@ export function block(zkopruId: string): InanoSQLTableConfig {
               {
                 hash: args.hash,
                 status: BlockStatus.PARTIALLY_VERIFIED,
-                txData: null,
+                proposalData: null,
               },
             ])
             .emit()
@@ -207,7 +207,7 @@ export function block(zkopruId: string): InanoSQLTableConfig {
               {
                 hash: args.hash,
                 status: BlockStatus.FULLY_VERIFIED,
-                txData: null,
+                proposalData: null,
               },
             ])
             .where(['status', '<', BlockStatus.FINALIZED])
@@ -304,7 +304,7 @@ export function block(zkopruId: string): InanoSQLTableConfig {
             .query('select', [
               'hash',
               'proposedAt',
-              'txHash',
+              'proposalHash',
               'header',
               'MAX(proposedAt)',
             ])

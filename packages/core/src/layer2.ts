@@ -60,10 +60,10 @@ export class L2Chain implements ChainConfig {
       const prevHeader = lastVerifiedBlock.header
       const lastUnverified = await this.db
         .selectTable(schema.block(this.id).name)
-        .query('select', ['header', 'txData', 'MIN(proposedAt)'])
+        .query('select', ['header', 'proposalData', 'MIN(proposedAt)'])
         .where(['header.parentBlock', '=', prevHeader.hash])
         .exec()
-      const block = deserializeBlockFromL1Tx(lastUnverified[0].txData)
+      const block = deserializeBlockFromL1Tx(lastUnverified[0].proposalData)
       if (lastUnverified.length > 0) {
         return {
           prevHeader,

@@ -35,7 +35,7 @@ export class TxMemPool implements TxPoolInterface {
   }
 
   txs: {
-    [txHash: string]: ZkTx
+    [proposalHash: string]: ZkTx
   }
 
   verifyingKeys: { [key: string]: {} }
@@ -66,12 +66,12 @@ export class TxMemPool implements TxPoolInterface {
   }
 
   async addToTxPool(zkTx: ZkTx): Promise<void> {
-    const txHash = zkTx.hash()
+    const proposalHash = zkTx.hash()
     if (!this.verifyTx(zkTx)) {
       throw Error('SNARK is invalid')
     }
-    this.addToBlock({ blockHash: PENDING, txHash })
-    this.txs[txHash] = zkTx
+    this.addToBlock({ blockHash: PENDING, proposalHash })
+    this.txs[proposalHash] = zkTx
   }
 
   async pickPendingTxs(maxBytes: number): Promise<ZkTx[]> {
@@ -89,9 +89,9 @@ export class TxMemPool implements TxPoolInterface {
         picked.push(tx)
       }
     }
-    const txHashes = picked.map(tx => tx.hash())
-    const txRoot = root(txHashes)
-    this.blockTxMap[txRoot] = txHashes
+    const proposalHashes = picked.map(tx => tx.hash())
+    const txRoot = root(proposalHashes)
+    this.blockTxMap[txRoot] = proposalHashes
     return picked
   }
 
@@ -129,24 +129,24 @@ export class TxMemPool implements TxPoolInterface {
 
   private addToBlock({
     blockHash,
-    txHash,
+    proposalHash,
   }: {
     blockHash: string
-    txHash: Hex
+    proposalHash: Hex
   }) {
-    let txHashes: Hex[] = this.blockTxMap[blockHash]
+    let proposalHashes: Hex[] = this.blockTxMap[blockHash]
     // let txs: ZkTransaction[] = this.txs[blockHash];
-    if (!txHashes) {
-      txHashes = []
-      this.blockTxMap[blockHash] = txHashes
+    if (!proposalHashes) {
+      proposalHashes = []
+      this.blockTxMap[blockHash] = proposalHashes
     }
-    const alreadyExist = txHashes.reduce((exist, val) => {
+    const alreadyExist = proposalHashes.reduce((exist, val) => {
       if (exist) return true
 
-      return val === txHash
+      return val === proposalHash
     }, false)
     if (!alreadyExist) {
-      txHashes.push(txHash)
+      proposalHashes.push(proposalHash)
     } else {
       throw Error('Already exists')
     }

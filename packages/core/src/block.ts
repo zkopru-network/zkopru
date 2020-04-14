@@ -73,13 +73,13 @@ export interface Block {
 
   parent: string
 
-  txHash: string
+  proposalHash: string
 
   header: Header
 
   body: Body
 
-  txData?: Transaction
+  proposalData?: Transaction
 
   bootstrap?: {
     utxoTreeIndex: number
@@ -94,9 +94,9 @@ export function blockToSqlObj(block: Block): BlockSql {
     hash: block.hash,
     status: block.status,
     proposedAt: block.proposedAt,
-    txHash: block.txHash,
+    proposalHash: block.proposalHash,
     header: block.header,
-    txData: block.txData ? block.txData : undefined,
+    proposalData: block.proposalData ? block.proposalData : undefined,
     bootstrap: block.bootstrap ? block.bootstrap : undefined,
   }
 }
@@ -410,8 +410,8 @@ export function deserializeBlockFromL1Tx(tx: Transaction): Block {
     status: BlockStatus.FETCHED,
     proposedAt: tx.blockNumber || 0,
     parent: header.parentBlock,
-    txHash: tx.hash,
-    txData: tx,
+    proposalHash: tx.hash,
+    proposalData: tx,
     header,
     body,
   }

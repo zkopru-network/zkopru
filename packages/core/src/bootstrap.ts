@@ -3,7 +3,7 @@ import { MerkleProof } from '@zkopru/tree'
 import { Field } from '@zkopru/babyjubjub'
 
 export interface BootstrapData {
-  txHash: string
+  proposalHash: string
   utxoTreeIndex: number
   utxoTreeBootstrap: MerkleProof
   withdrawalTreeIndex: number
@@ -26,7 +26,7 @@ export class HttpBootstrapHelper implements BootstrapHelper {
       `${this.endpoint}/bootstrap?hash=${latest}`,
     )
     return {
-      txHash: response.txHash,
+      proposalHash: response.proposalHash,
       utxoTreeIndex: response.utxoTreeIndex,
       utxoTreeBootstrap: {
         root: Field.from(response.utxoBootstrap.root),

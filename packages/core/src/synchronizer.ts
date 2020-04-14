@@ -25,7 +25,7 @@ export class Synchronizer extends EventEmitter {
   l2Chain!: L2Chain
 
   fetching: {
-    [txHash: string]: boolean
+    [proposalHash: string]: boolean
   }
 
   proposalSubscriber?: EventEmitter
@@ -167,7 +167,7 @@ export class Synchronizer extends EventEmitter {
           .presetQuery('writeNewProposal', {
             hash: returnValues,
             proposedAt: blockNumber,
-            txHash: transactionHash,
+            proposalHash: transactionHash,
           })
           .exec()
         if (cb) cb(returnValues)
@@ -215,21 +215,21 @@ export class Synchronizer extends EventEmitter {
       })
   }
 
-  async fetch(txHash: string) {
-    if (this.fetching[txHash]) return
+  async fetch(proposalHash: string) {
+    if (this.fetching[proposalHash]) return
     // console.log(returnValues, transactionHash, blockNumber)
-    const txData = await this.l1Contract.web3.eth.getTransaction(txHash)
-    const block = deserializeBlockFromL1Tx(txData)
+    const proposalData = await this.l1Contract.web3.eth.getTransaction(proposalHash)
+    const block = deserializeBlockFromL1Tx(proposalData)
     const { hash } = block
     await this.db
       .selectTable(schema.block(this.zkopruId).name)
       .presetQuery('saveFetchedBlock', {
         hash,
         header: block.header,
-        txData,
+        proposalData,
       })
       .exec()
-    delete this.fetching[txHash]
+    delete this.fetching[proposalHash]
     this.emit('newBlock', block)
   }
 }

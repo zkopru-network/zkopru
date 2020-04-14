@@ -141,7 +141,7 @@ export class Coordinator {
       throw Error('Bootstrap for requested block is not found')
     }
     return {
-      txHash: block.txHash,
+      proposalHash: block.proposalHash,
       utxoTreeIndex: block.bootstrap.utxoTreeIndex,
       utxoBootstrap: block.bootstrap.utxoBootstrap,
       withdrawalTreeIndex: block.bootstrap.withdrawalTreeIndex,
