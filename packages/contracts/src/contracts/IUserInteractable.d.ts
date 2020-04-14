@@ -45,6 +45,14 @@ export class IUserInteractable extends Contract {
     ): TransactionObject<void>
   }
   events: {
+    Deposit: ContractEvent<{
+      queuedAt: string
+      note: string
+      fee: string
+      0: string
+      1: string
+      2: string
+    }>
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
 }

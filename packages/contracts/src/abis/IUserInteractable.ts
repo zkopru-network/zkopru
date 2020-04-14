@@ -1,5 +1,25 @@
 export const IUserInteractableABI = [
   {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'uint256',
+        name: 'queuedAt',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'note',
+        type: 'uint256',
+      },
+      { indexed: false, internalType: 'uint256', name: 'fee', type: 'uint256' },
+    ],
+    name: 'Deposit',
+    type: 'event',
+  },
+  {
     inputs: [
       { internalType: 'uint256', name: 'note', type: 'uint256' },
       { internalType: 'uint256', name: 'amount', type: 'uint256' },

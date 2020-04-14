@@ -1,6 +1,8 @@
 pragma solidity >= 0.6.0;
 
 interface IUserInteractable {
+    event Deposit(uint indexed queuedAt, uint note, uint fee);
+
     /**
      * @notice Users can use zkopru network by submitting a new homomorphically hiden note.
      * @param note Should be same with the poseidon hash of (amount, fee, pubKey)
