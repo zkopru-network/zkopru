@@ -19,7 +19,7 @@ contract Coordinatable is Layer2 {
 
     event NewProposal(bytes32 blockHash);
     event Finalized(bytes32 blockHash);
-    event MassDepositCommit(uint id, bytes32 merged, uint256 fee);
+    event MassDepositCommit(uint index, bytes32 merged, uint256 fee);
 
     function register() public payable {
         require(msg.value >= MINIMUM_STAKE, "Should stake more than minimum amount of ETH");
