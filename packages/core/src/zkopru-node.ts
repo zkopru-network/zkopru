@@ -2,12 +2,12 @@ import { ZkAccount } from '@zkopru/account'
 import { InanoSQLInstance } from '@nano-sql/core'
 import { uuid } from '@nano-sql/core/lib/utilities'
 import { ChainConfig, schema, BlockStatus } from '@zkopru/database'
-import { Grove, poseidonHasher, keccakHasher, merkleProof } from '@zkopru/tree'
+import { Grove, poseidonHasher, keccakHasher, verifyProof } from '@zkopru/tree'
 import { L1Contract } from './layer1'
-import { Verifier, VerifyOption, VerifyResult } from './verifier'
+import { Verifier, VerifyOption } from './verifier'
 import { L2Chain } from './layer2'
 import { BootstrapHelper } from './bootstrap'
-import { headerHash, deserializeBlockFromL1Tx } from './block'
+import { headerHash, Block } from './block'
 import { Synchronizer } from './synchronizer'
 import { genesis } from './genesis'
 
@@ -55,6 +55,7 @@ export class ZkOPRUNode {
   startSync() {
     this.synchronizer.sync()
     this.synchronizer.on('newBlock', this.processUnverifiedBlocks)
+    this.synchronizer.on('finalization', this.finalizeBlock)
   }
 
   stopSync() {
@@ -65,7 +66,7 @@ export class ZkOPRUNode {
   async bootstrap() {
     if (!this.bootstrapHelper) return
     const latest = await this.l1Contract.upstream.methods.latest().call()
-    const latestBlockFromDB = await this.l2Chain.getBlock(latest)
+    const latestBlockFromDB = await this.l2Chain.getBlockSql(latest)
     if (
       latestBlockFromDB &&
       latestBlockFromDB.status &&
@@ -77,15 +78,15 @@ export class ZkOPRUNode {
     const proposalData = await this.l1Contract.web3.eth.getTransaction(
       bootstrapData.proposalHash,
     )
-    const block = deserializeBlockFromL1Tx(proposalData)
+    const block = Block.fromTx(proposalData)
     const headerProof = headerHash(block.header) === latest
-    const utxoMerkleProof = merkleProof(
+    const utxoMerkleProof = verifyProof(
       this.l2Chain.grove.config.utxoHasher,
-      bootstrapData.utxoTreeBootstrap,
+      bootstrapData.utxoStartingLeafProof,
     )
-    const withdrawalMerkleProof = merkleProof(
+    const withdrawalMerkleProof = verifyProof(
       this.l2Chain.grove.config.withdrawalHasher,
-      bootstrapData.withdrawalTreeBootstrap,
+      bootstrapData.withdrawalStartingLeafProof,
     )
     if (headerProof && utxoMerkleProof && withdrawalMerkleProof) {
       await this.l2Chain.applyBootstrap(block, bootstrapData)
@@ -98,20 +99,18 @@ export class ZkOPRUNode {
     if (!block) return
     if (!prevHeader)
       throw Error('Unexpected runtime error occured during the verification.')
-    const { result, challenge } = await this.verifier.verify({
+    const patch = await this.verifier.verifyBlock({
       layer1: this.l1Contract,
       layer2: this.l2Chain,
       prevHeader,
       block,
     })
-    if (challenge) {
-      await this.l2Chain.markAsInvalidated(block.hash)
-      await challenge.send()
-    } else if (result === VerifyResult.FULLY_VERIFIED) {
-      await this.l2Chain.markAsFullyVerified(block.hash)
-    } else {
-      await this.l2Chain.markAsPartiallyVerified(block.hash)
-    }
+
+    await this.l2Chain.applyPatch(patch)
+  }
+
+  async finalizeBlock(hash: string) {
+    this.l2Chain.finalize(hash)
   }
 
   static async getOrInitChain(

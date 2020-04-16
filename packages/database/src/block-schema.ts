@@ -102,6 +102,23 @@ export function block(zkopruId: string): InanoSQLTableConfig {
         },
       },
       {
+        name: 'recordBootstrap',
+        args: {
+          'hash:string': {},
+          'bootstrap:obj': {},
+        },
+        call: (db, args) => {
+          return db
+            .query('upsert', [
+              {
+                hash: args.hash,
+                bootstrap: args.bootstrap,
+              },
+            ])
+            .emit()
+        },
+      },
+      {
         name: 'bootstrapBlock',
         args: {
           'block:obj': {},
@@ -120,7 +137,7 @@ export function block(zkopruId: string): InanoSQLTableConfig {
         },
       },
       {
-        name: 'getProposalSyncIndex',
+        name: 'getProposalSyncStart',
         args: {},
         call: (db, _) => {
           return db
@@ -130,7 +147,7 @@ export function block(zkopruId: string): InanoSQLTableConfig {
         },
       },
       {
-        name: 'getFinalizationSyncIndex',
+        name: 'getFinalizationSyncStart',
         args: {},
         call: (db, _) => {
           return db
@@ -190,7 +207,6 @@ export function block(zkopruId: string): InanoSQLTableConfig {
               {
                 hash: args.hash,
                 status: BlockStatus.PARTIALLY_VERIFIED,
-                proposalData: null,
               },
             ])
             .emit()
@@ -207,7 +223,6 @@ export function block(zkopruId: string): InanoSQLTableConfig {
               {
                 hash: args.hash,
                 status: BlockStatus.FULLY_VERIFIED,
-                proposalData: null,
               },
             ])
             .where(['status', '<', BlockStatus.FINALIZED])

@@ -1,11 +1,19 @@
 import { InanoSQLInstance } from '@nano-sql/core'
 import { Field } from '@zkopru/babyjubjub'
-import { Grove } from '@zkopru/tree'
+import { Grove, GrovePatch } from '@zkopru/tree'
 import AsyncLock from 'async-lock'
-import { ChainConfig, schema, BlockSql } from '@zkopru/database'
+import { ChainConfig, schema, BlockSql, DepositSql } from '@zkopru/database'
+import { Transaction } from 'web3-core'
 import { L1Config } from './layer1'
-import { Block, Header, deserializeBlockFromL1Tx } from './block'
+import { Block, Header, VerifyResult, MassDeposit } from './block'
 import { BootstrapData } from './bootstrap'
+
+export interface Patch {
+  result: VerifyResult
+  block: string
+  massDeposits?: string[]
+  treePatch?: GrovePatch
+}
 
 export class L2Chain implements ChainConfig {
   id: string
@@ -38,13 +46,35 @@ export class L2Chain implements ChainConfig {
     this.lock = new AsyncLock()
   }
 
-  async getBlock(hash: string): Promise<BlockSql | null> {
+  async getBlockSql(hash: string): Promise<BlockSql | null> {
     const queryResult = await this.db
       .selectTable(schema.block(this.id).name)
       .presetQuery('getBlockWithHash', { hash })
       .exec()
     if (queryResult.length === 0) return null
     return queryResult[0] as BlockSql
+  }
+
+  async getBlock(hash: string): Promise<Block | null> {
+    const blockSql = await this.getBlockSql(hash)
+    if (!blockSql) return null
+    const txData = blockSql.proposalData as Transaction
+    if (!txData) return null
+    return Block.fromTx(txData)
+  }
+
+  async getDeposits(massDeposit: MassDeposit): Promise<DepositSql[]> {
+    const commitIndexArr = await this.db
+      .selectTable(schema.massDeposit.name)
+      .presetQuery('getCommitIndex', { ...massDeposit, zkopru: this.id })
+      .exec()
+    const commitIndex = commitIndexArr[0]
+    if (!commitIndex) throw Error('Failed to find the mass deposit')
+    const deposits = await this.db
+      .selectTable(schema.deposit.name)
+      .presetQuery('getDeposits', { commitIndex, zkopru: this.id })
+      .exec()
+    return deposits as DepositSql[]
   }
 
   async getOldestUnverifiedBlock(): Promise<{
@@ -63,7 +93,7 @@ export class L2Chain implements ChainConfig {
         .query('select', ['header', 'proposalData', 'MIN(proposedAt)'])
         .where(['header.parentBlock', '=', prevHeader.hash])
         .exec()
-      const block = deserializeBlockFromL1Tx(lastUnverified[0].proposalData)
+      const block = Block.fromTx(lastUnverified[0].proposalData)
       if (lastUnverified.length > 0) {
         return {
           prevHeader,
@@ -74,6 +104,31 @@ export class L2Chain implements ChainConfig {
     return {}
   }
 
+  async applyPatch(patch: Patch) {
+    const { result, block, treePatch, massDeposits } = patch
+    // Apply tree patch
+    if (treePatch) {
+      if (result === VerifyResult.INVALIDATED)
+        throw Error('Invalid result cannot make a patch')
+      await this.grove.applyPatch(treePatch)
+    }
+    // Record the verify result
+    if (result === VerifyResult.INVALIDATED) {
+      await this.markAsInvalidated(block)
+    } else {
+      if (!patch) throw Error('patch does not exists')
+      if (result === VerifyResult.FULLY_VERIFIED) {
+        await this.markAsFullyVerified(block)
+      } else {
+        await this.markAsPartiallyVerified(block)
+      }
+    }
+    // Update mass deposits inclusion status
+    if (massDeposits) {
+      await this.markMassDepositsAsIncludedIn(massDeposits, block)
+    }
+  }
+
   async applyBootstrap(block: Block, bootstrapData: BootstrapData) {
     this.grove.applyBootstrap(bootstrapData)
     this.db
@@ -82,26 +137,41 @@ export class L2Chain implements ChainConfig {
       .exec()
   }
 
-  async markAsPartiallyVerified(hash: string) {
+  async finalize(hash: string) {
+    await this.markAsFinalized(hash)
+  }
+
+  private async markMassDepositsAsIncludedIn(ids: string[], block: string) {
+    this.db
+      .selectTable(schema.massDeposit.name)
+      .presetQuery('markAsIncludedIn', {
+        zkopru: this.id,
+        block,
+        ids,
+      })
+      .exec()
+  }
+
+  private async markAsPartiallyVerified(hash: string) {
     this.db
       .selectTable(schema.block(this.id).name)
       .presetQuery('markAsPartiallyVerified', { hash })
       .exec()
   }
 
-  async markAsFullyVerified(hash: string) {
+  private async markAsFullyVerified(hash: string) {
     this.db
       .selectTable(schema.block(this.id).name)
       .presetQuery('markAsFullyVerified', { hash })
   }
 
-  async markAsFinalized(hash: string) {
+  private async markAsFinalized(hash: string) {
     this.db
       .selectTable(schema.block(this.id).name)
       .presetQuery('markAsFinalized', { hash })
   }
 
-  async markAsInvalidated(hash: string) {
+  private async markAsInvalidated(hash: string) {
     this.db
       .selectTable(schema.block(this.id).name)
       .presetQuery('markAsInvalidated', { hash })

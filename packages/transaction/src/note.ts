@@ -7,14 +7,15 @@ import { ZkOutflow } from './zk_tx'
 
 const poseidonHash = circomlib.poseidon.createHash(6, 8, 57, 'poseidon')
 
-export enum OutputStatus {
-  NON_INCLUDED = 0,
-  UNSPENT = 1,
-  SPENDING = 2,
-  SPENT = 3,
+export enum OutflowType {
+  UTXO = 0,
+  WITHDRAWAL = 1,
+  MIGRATION = 2,
 }
 
-export class Output {
+export class Note {
+  outflowType?: OutflowType
+
   eth: Field
 
   pubKey: Point
@@ -27,14 +28,6 @@ export class Output {
 
   nft: Field
 
-  publicData?: {
-    isWithdrawal: boolean
-    to: Field
-    fee: Field
-  }
-
-  status?: OutputStatus
-
   constructor(
     eth: Field,
     salt: Field,
@@ -42,12 +35,6 @@ export class Output {
     erc20Amount: Field,
     nft: Field,
     pubKey: Point,
-    publicData?: {
-      isWithdrawal: boolean
-      to: Field
-      fee: Field
-    },
-    status?: OutputStatus,
   ) {
     this.eth = eth
     this.pubKey = pubKey
@@ -55,8 +42,6 @@ export class Output {
     this.tokenAddr = tokenAddr
     this.erc20Amount = erc20Amount
     this.nft = nft
-    this.publicData = publicData || undefined
-    this.status = status || OutputStatus.NON_INCLUDED
   }
 
   static newEtherNote({
@@ -67,8 +52,8 @@ export class Output {
     eth: F
     pubKey: Point
     salt?: F
-  }): Output {
-    return new Output(
+  }): Note {
+    return new Note(
       Field.from(eth),
       salt ? Field.from(salt) : Field.from(randomHex(16)),
       Field.from(0),
@@ -90,8 +75,8 @@ export class Output {
     erc20Amount: F
     pubKey: Point
     salt?: F
-  }): Output {
-    return new Output(
+  }): Note {
+    return new Note(
       Field.from(eth),
       salt ? Field.from(salt) : Field.from(randomHex(16)),
       Field.from(tokenAddr),
@@ -113,8 +98,8 @@ export class Output {
     nft: F
     pubKey: Point
     salt?: F
-  }): Output {
-    return new Output(
+  }): Note {
+    return new Note(
       Field.from(eth),
       salt ? Field.from(salt) : Field.from(randomHex(16)),
       Field.from(tokenAddr),
@@ -122,26 +107,6 @@ export class Output {
       Field.from(nft),
       pubKey,
     )
-  }
-
-  markAsWithdrawal({ to, fee }: { to: F; fee: F }) {
-    this.publicData = {
-      isWithdrawal: true,
-      to: Field.from(to),
-      fee: Field.from(fee),
-    }
-  }
-
-  markAsMigration({ to, fee }: { to: F; fee: F }) {
-    this.publicData = {
-      isWithdrawal: false,
-      to: Field.from(to),
-      fee: Field.from(fee),
-    }
-  }
-
-  markAsInternalUtxo() {
-    this.publicData = undefined
   }
 
   hash(): Field {
@@ -188,25 +153,11 @@ export class Output {
   }
 
   toZkOutflow(): ZkOutflow {
-    let outflow
-    if (this.publicData) {
-      outflow = {
-        note: this.hash(),
-        outflowType: this.outflowType(),
-        data: {
-          to: this.publicData.to,
-          eth: this.eth,
-          tokenAddr: this.tokenAddr,
-          erc20Amount: this.erc20Amount,
-          nft: this.nft,
-          fee: this.publicData.fee,
-        },
-      }
-    } else {
-      outflow = {
-        note: this.hash(),
-        outflowType: this.outflowType(),
-      }
+    if (!this.outflowType) throw Error('outflow type is undefined')
+    const outflowType: Field = Field.from(this.outflowType)
+    const outflow = {
+      note: this.hash(),
+      outflowType,
     }
     return outflow
   }
@@ -225,19 +176,9 @@ export class Output {
     })
   }
 
-  outflowType(): Field {
-    if (this.publicData) {
-      if (this.publicData.isWithdrawal) {
-        return Field.from(1) // Withdrawal
-      }
-      return Field.from(2) // Migration
-    }
-    return Field.from(0) // UTXO
-  }
-
-  static fromJSON(data: string): Output {
+  static fromJSON(data: string): Note {
     const obj = JSON.parse(data)
-    return new Output(
+    return new Note(
       obj.eth,
       obj.salt,
       obj.token,
@@ -255,7 +196,7 @@ export class Output {
     utxoHash: Field
     memo: Buffer
     privKey: string
-  }): Output | null {
+  }): Note | null {
     const multiplier = Point.getMultiplier(privKey)
     const ephemeralPubKey = Point.decode(memo.subarray(0, 32))
     const sharedKey = ephemeralPubKey.mul(multiplier).encode()
@@ -271,7 +212,7 @@ export class Output {
 
     const myPubKey: Point = Point.fromPrivKey(privKey)
     if (tokenAddress.isZero()) {
-      const etherNote = Output.newEtherNote({
+      const etherNote = Note.newEtherNote({
         eth: value,
         pubKey: myPubKey,
         salt,
@@ -280,7 +221,7 @@ export class Output {
         return etherNote
       }
     } else {
-      const erc20Note = Output.newERC20Note({
+      const erc20Note = Note.newERC20Note({
         eth: Field.from(0),
         tokenAddr: tokenAddress,
         erc20Amount: value,
@@ -290,7 +231,7 @@ export class Output {
       if (utxoHash.equal(erc20Note.hash())) {
         return erc20Note
       }
-      const nftNote = Output.newNFTNote({
+      const nftNote = Note.newNFTNote({
         eth: Field.from(0),
         tokenAddr: tokenAddress,
         nft: value,

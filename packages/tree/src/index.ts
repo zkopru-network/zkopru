@@ -1,15 +1,19 @@
 export {
-  MerkleProof,
   Item,
-  merkleProof,
-  startingLeafProof,
-  TreeType,
   TreeMetadata,
   TreeData,
   TreeConfig,
   LightRollUpTree,
-} from './tree'
+} from './light-rollup-tree'
+
+export { MerkleProof, verifyProof, startingLeafProof } from './merkle-proof'
+
+export { UtxoTree } from './utxo-tree'
+
+export { WithdrawalTree } from './withdrawal-tree'
+
+export { NullifierTree } from './nullifier-tree'
 
 export { Hasher, keccakHasher, poseidonHasher } from './hasher'
 
-export { Grove } from './grove'
+export { Grove, GroveConfig, GrovePatch } from './grove'

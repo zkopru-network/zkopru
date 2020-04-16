@@ -1,10 +1,11 @@
 import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 
-export interface TreeSql {
+export interface LightRollUpTreeSql {
   id: string
   type: number
   index: number
   zkopru: string
+  block: string
   start: string
   end: string
   data: {
@@ -14,13 +15,14 @@ export interface TreeSql {
   }
 }
 
-export const tree: InanoSQLTableConfig = {
+export const lightRollUpTree: InanoSQLTableConfig = {
   name: 'tree',
   model: {
     'id:uuid': { pk: true },
-    'type:int': { min: 1, max: 3, immutable: true }, // 1: utxo 2: withdrawal 3: nullifier
+    'type:int': { min: 1, max: 2, immutable: true }, // 1: utxo 2: withdrawal
     'index:int': { immutable: true },
     'zkopru:uuid': { foreignKey: 'zkopru:id', immutable: true },
+    'block:string': {},
     'start:string': {},
     'end:string': {},
     'data:obj': {

@@ -3,12 +3,12 @@ import { WebsocketProvider, IpcProvider } from 'web3-core'
 import { InanoSQLInstance } from '@nano-sql/core'
 import Web3 from 'web3'
 import { BlockStatus } from '@zkopru/database'
-import { merkleProof } from '@zkopru/tree'
+import { verifyProof } from '@zkopru/tree'
 import { L1Contract } from './layer1'
 import { Verifier, VerifyOption } from './verifier'
 import { L2Chain } from './layer2'
 import { BootstrapHelper } from './bootstrap'
-import { headerHash, deserializeBlockFromL1Tx } from './block'
+import { Block, headerHash } from './block'
 import { Synchronizer } from './synchronizer'
 import { ZkOPRUNode } from './zkopru-node'
 
@@ -54,7 +54,7 @@ export class LightNode extends ZkOPRUNode {
   async bootstrap() {
     if (!this.bootstrapHelper) return
     const latest = await this.l1Contract.upstream.methods.latest().call()
-    const latestBlockFromDB = await this.l2Chain.getBlock(latest)
+    const latestBlockFromDB = await this.l2Chain.getBlockSql(latest)
     if (
       latestBlockFromDB &&
       latestBlockFromDB.status &&
@@ -66,15 +66,15 @@ export class LightNode extends ZkOPRUNode {
     const proposalData = await this.l1Contract.web3.eth.getTransaction(
       bootstrapData.proposalHash,
     )
-    const block = deserializeBlockFromL1Tx(proposalData)
+    const block = Block.fromTx(proposalData)
     const headerProof = headerHash(block.header) === latest
-    const utxoMerkleProof = merkleProof(
+    const utxoMerkleProof = verifyProof(
       this.l2Chain.grove.config.utxoHasher,
-      bootstrapData.utxoTreeBootstrap,
+      bootstrapData.utxoStartingLeafProof,
     )
-    const withdrawalMerkleProof = merkleProof(
+    const withdrawalMerkleProof = verifyProof(
       this.l2Chain.grove.config.withdrawalHasher,
-      bootstrapData.withdrawalTreeBootstrap,
+      bootstrapData.withdrawalStartingLeafProof,
     )
     if (headerProof && utxoMerkleProof && withdrawalMerkleProof) {
       await this.l2Chain.applyBootstrap(block, bootstrapData)
@@ -133,7 +133,7 @@ export class LightNode extends ZkOPRUNode {
     }
     const verifier = new Verifier(verifyOption, vks)
     // If the chain needs bootstraping, fetch bootstrap data and apply
-    const synchronizer = new Synchronizer(db, l1Contract, l2Chain)
+    const synchronizer = new Synchronizer(db, l2Chain.id, l1Contract)
     return new LightNode({
       l1Contract,
       l2Chain,

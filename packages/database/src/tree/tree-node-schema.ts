@@ -2,14 +2,14 @@ import bigInt from 'big-integer'
 import { Field } from '@zkopru/babyjubjub'
 import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 
-export interface MerkleProofCacheSql {
+export interface TreeNodeSql {
   nodeIndex: string
   value: string
 }
 
-export function merkleProofCache(treeId: string): InanoSQLTableConfig {
+export function treeNode(treeId: string): InanoSQLTableConfig {
   return {
-    name: `merkle-proof-cache-${treeId}`,
+    name: `treeNode-${treeId}`,
     model: {
       'nodeIndex:string': { pk: true },
       'value:string': {},

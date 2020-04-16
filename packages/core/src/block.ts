@@ -64,168 +64,10 @@ export interface Finalization {
   massMigration: MassMigration[]
 }
 
-export interface Block {
-  hash: string
-
-  status: BlockStatus
-
-  proposedAt: number
-
-  parent: string
-
-  proposalHash: string
-
-  header: Header
-
-  body: Body
-
-  proposalData?: Transaction
-
-  bootstrap?: {
-    utxoTreeIndex: number
-    utxoBootstrap: string[]
-    withdrawalTreeIndex: number
-    withdrawalBootstrap: string[]
-  }
-}
-
-export function blockToSqlObj(block: Block): BlockSql {
-  return {
-    hash: block.hash,
-    status: block.status,
-    proposedAt: block.proposedAt,
-    proposalHash: block.proposalHash,
-    header: block.header,
-    proposalData: block.proposalData ? block.proposalData : undefined,
-    bootstrap: block.bootstrap ? block.bootstrap : undefined,
-  }
-}
-
-export function serializeBlock(block: Block): Buffer {
-  const arr: Buffer[] = []
-  // Header
-  const headerBytes = Buffer.concat([
-    Utils.hexToBuffer(block.header.proposer, 20),
-    Utils.hexToBuffer(block.header.parentBlock, 32),
-    Utils.hexToBuffer(block.header.metadata, 32),
-    Utils.hexToBuffer(block.header.fee, 32),
-    Utils.hexToBuffer(block.header.utxoRoot, 32),
-    Utils.hexToBuffer(block.header.utxoIndex, 32),
-    Utils.hexToBuffer(block.header.nullifierRoot, 32),
-    Utils.hexToBuffer(block.header.withdrawalRoot, 32),
-    Utils.hexToBuffer(block.header.withdrawalIndex, 32),
-    Utils.hexToBuffer(block.header.txRoot, 32),
-    Utils.hexToBuffer(block.header.depositRoot, 32),
-    Utils.hexToBuffer(block.header.migrationRoot, 32),
-  ])
-  arr.push(headerBytes)
-  // Txs
-  const txLenBytes = Utils.hexToBuffer(block.body.txs.length.toString(16), 2)
-  arr.push(txLenBytes)
-  for (let i = 0; i < block.body.txs.length; i += 1) {
-    const numOfInflowByte = Utils.hexToBuffer(
-      block.body.txs[i].inflow.length.toString(16),
-      1,
-    )
-    arr.push(numOfInflowByte)
-    for (let j = 0; j < block.body.txs[i].inflow.length; j += 1) {
-      arr.push(block.body.txs[i].inflow[j].nullifier.toBuffer(32))
-      arr.push(block.body.txs[i].inflow[j].root.toBuffer(32))
-    }
-    const numOfOutflowByte = Utils.hexToBuffer(
-      block.body.txs[i].outflow.length.toString(16),
-      1,
-    )
-    arr.push(numOfOutflowByte)
-    for (let j = 0; j < block.body.txs[i].outflow.length; j += 1) {
-      arr.push(block.body.txs[i].outflow[j].note.toBuffer(32))
-      arr.push(block.body.txs[i].outflow[j].outflowType.toBuffer(1))
-      const { data } = block.body.txs[i].outflow[j]
-      if (data) {
-        arr.push(data.to.toBuffer(20))
-        arr.push(data.eth.toBuffer(32))
-        arr.push(data.tokenAddr.toBuffer(20))
-        arr.push(data.erc20Amount.toBuffer(32))
-        arr.push(data.nft.toBuffer(32))
-        arr.push(data.fee.toBuffer(32))
-      } else if (block.body.txs[i].outflow[j].outflowType.isZero()) {
-        throw Error('public data should exist')
-      }
-    }
-    const swapExistenceByte = block.body.txs[i].swap
-      ? Buffer.from([1])
-      : Buffer.from([0])
-    arr.push(swapExistenceByte)
-    const { swap } = block.body.txs[i]
-    if (swap) {
-      arr.push(swap.toBuffer(32))
-    }
-    arr.push(block.body.txs[i].fee.toBuffer(32))
-    const { proof } = block.body.txs[i]
-    if (!proof) throw Error('SNARK proof should exist')
-    arr.push(proof.pi_a[0].toBuffer(32))
-    arr.push(proof.pi_a[1].toBuffer(32))
-    arr.push(proof.pi_b[0][0].toBuffer(32))
-    arr.push(proof.pi_b[0][1].toBuffer(32))
-    arr.push(proof.pi_b[1][0].toBuffer(32))
-    arr.push(proof.pi_b[1][1].toBuffer(32))
-    arr.push(proof.pi_c[0].toBuffer(32))
-    arr.push(proof.pi_c[1].toBuffer(32))
-    const { memo } = block.body.txs[i]
-    const memoExistenceByte = memo
-      ? Buffer.from([memo.byteLength])
-      : Buffer.from([0])
-    arr.push(memoExistenceByte)
-    if (memo) {
-      arr.push(memo)
-      if (memo.byteLength > 256) throw Error('Memo field allows only 256 bytes')
-    }
-  }
-  // Mass deposits
-  const massDepositLenBytes = Utils.hexToBuffer(
-    block.body.massDeposits.length.toString(16),
-    1,
-  )
-  arr.push(massDepositLenBytes)
-  for (let i = 0; i < block.body.massDeposits.length; i += 1) {
-    arr.push(Utils.hexToBuffer(block.body.massDeposits[i].merged, 32))
-    arr.push(Utils.hexToBuffer(block.body.massDeposits[i].fee, 32))
-  }
-  // Mass migrations
-  const massMigrationLenBytes = Utils.hexToBuffer(
-    block.body.massMigrations.length.toString(16),
-    1,
-  )
-  arr.push(massMigrationLenBytes)
-  for (let i = 0; i < block.body.massMigrations.length; i += 1) {
-    arr.push(Utils.hexToBuffer(block.body.massMigrations[i].destination, 20))
-    arr.push(Utils.hexToBuffer(block.body.massMigrations[i].totalETH, 32))
-    arr.push(
-      Utils.hexToBuffer(
-        block.body.massMigrations[i].migratingLeaves.merged,
-        32,
-      ),
-    )
-    arr.push(
-      Utils.hexToBuffer(block.body.massMigrations[i].migratingLeaves.fee, 32),
-    )
-    const { erc20, erc721 } = block.body.massMigrations[i]
-    arr.push(Utils.hexToBuffer(erc20.length.toString(16), 1))
-    for (let j = 0; j < erc20.length; j += 1) {
-      arr.push(Utils.hexToBuffer(erc20[j].addr, 20))
-      arr.push(Utils.hexToBuffer(erc20[j].amount, 32))
-    }
-    arr.push(Utils.hexToBuffer(erc721.length.toString(16), 1))
-    for (let j = 0; j < erc721.length; j += 1) {
-      arr.push(Utils.hexToBuffer(erc721[j].addr, 20))
-      const { nfts } = erc721[j]
-      arr.push(Utils.hexToBuffer(nfts.length.toString(16), 1))
-      for (let k = 0; k < nfts.length; k += 1) {
-        arr.push(Utils.hexToBuffer(nfts[k], 32))
-      }
-    }
-  }
-  return Buffer.concat(arr)
+export enum VerifyResult {
+  INVALIDATED,
+  PARTIALLY_VERIFIED,
+  FULLY_VERIFIED,
 }
 
 function deserializeHeaderFrom(
@@ -389,30 +231,234 @@ export function headerHash(header: Header): string {
   return result
 }
 
-export function deserializeBlockFromL1Tx(tx: Transaction): Block {
-  const deserializedHeader = deserializeHeaderFrom(tx.input)
-  const deserializedTxs = deserializeTxsFrom(deserializedHeader.rest)
-  const deserializedMassDeposits = deserializeMassDeposits(deserializedTxs.rest)
-  const deserializedMassMigrations = deserializeMassMigrations(
-    deserializedMassDeposits.rest,
-  )
-  const { header } = deserializedHeader
-  const { txs } = deserializedTxs
-  const { massDeposits } = deserializedMassDeposits
-  const { massMigrations } = deserializedMassMigrations
-  const body: Body = {
-    txs,
-    massDeposits,
-    massMigrations,
+export class Block {
+  hash: string
+
+  status: BlockStatus
+
+  proposedAt: number
+
+  parent: string
+
+  proposalHash: string
+
+  header: Header
+
+  body: Body
+
+  proposalData?: Transaction
+
+  bootstrap?: {
+    utxoTreeIndex: number
+    utxoBootstrap: string[]
+    withdrawalTreeIndex: number
+    withdrawalBootstrap: string[]
   }
-  return {
-    hash: headerHash(header),
-    status: BlockStatus.FETCHED,
-    proposedAt: tx.blockNumber || 0,
-    parent: header.parentBlock,
-    proposalHash: tx.hash,
-    proposalData: tx,
+
+  constructor({
+    hash,
+    status,
+    proposedAt,
+    parent,
+    proposalHash,
     header,
     body,
+    proposalData,
+    bootstrap,
+  }: {
+    hash: string
+    status: BlockStatus
+    proposedAt: number
+    parent: string
+    proposalHash: string
+    header: Header
+    body: Body
+    proposalData?: Transaction
+    bootstrap?: {
+      utxoTreeIndex: number
+      utxoBootstrap: string[]
+      withdrawalTreeIndex: number
+      withdrawalBootstrap: string[]
+    }
+  }) {
+    this.hash = hash
+    this.status = status
+    this.proposedAt = proposedAt
+    this.parent = parent
+    this.proposalHash = proposalHash
+    this.header = header
+    this.body = body
+    this.proposalData = proposalData
+    this.bootstrap = bootstrap
+  }
+
+  toSqlObj(): BlockSql {
+    return {
+      hash: this.hash,
+      status: this.status,
+      proposedAt: this.proposedAt,
+      proposalHash: this.proposalHash,
+      header: this.header,
+      proposalData: this.proposalData ? this.proposalData : undefined,
+      bootstrap: this.bootstrap ? this.bootstrap : undefined,
+    }
+  }
+
+  serializeBlock(this: Block): Buffer {
+    const arr: Buffer[] = []
+    // Header
+    const headerBytes = Buffer.concat([
+      Utils.hexToBuffer(this.header.proposer, 20),
+      Utils.hexToBuffer(this.header.parentBlock, 32),
+      Utils.hexToBuffer(this.header.metadata, 32),
+      Utils.hexToBuffer(this.header.fee, 32),
+      Utils.hexToBuffer(this.header.utxoRoot, 32),
+      Utils.hexToBuffer(this.header.utxoIndex, 32),
+      Utils.hexToBuffer(this.header.nullifierRoot, 32),
+      Utils.hexToBuffer(this.header.withdrawalRoot, 32),
+      Utils.hexToBuffer(this.header.withdrawalIndex, 32),
+      Utils.hexToBuffer(this.header.txRoot, 32),
+      Utils.hexToBuffer(this.header.depositRoot, 32),
+      Utils.hexToBuffer(this.header.migrationRoot, 32),
+    ])
+    arr.push(headerBytes)
+    // Txs
+    const txLenBytes = Utils.hexToBuffer(this.body.txs.length.toString(16), 2)
+    arr.push(txLenBytes)
+    for (let i = 0; i < this.body.txs.length; i += 1) {
+      const numOfInflowByte = Utils.hexToBuffer(
+        this.body.txs[i].inflow.length.toString(16),
+        1,
+      )
+      arr.push(numOfInflowByte)
+      for (let j = 0; j < this.body.txs[i].inflow.length; j += 1) {
+        arr.push(this.body.txs[i].inflow[j].nullifier.toBuffer(32))
+        arr.push(this.body.txs[i].inflow[j].root.toBuffer(32))
+      }
+      const numOfOutflowByte = Utils.hexToBuffer(
+        this.body.txs[i].outflow.length.toString(16),
+        1,
+      )
+      arr.push(numOfOutflowByte)
+      for (let j = 0; j < this.body.txs[i].outflow.length; j += 1) {
+        arr.push(this.body.txs[i].outflow[j].note.toBuffer(32))
+        arr.push(this.body.txs[i].outflow[j].outflowType.toBuffer(1))
+        const { data } = this.body.txs[i].outflow[j]
+        if (data) {
+          arr.push(data.to.toBuffer(20))
+          arr.push(data.eth.toBuffer(32))
+          arr.push(data.tokenAddr.toBuffer(20))
+          arr.push(data.erc20Amount.toBuffer(32))
+          arr.push(data.nft.toBuffer(32))
+          arr.push(data.fee.toBuffer(32))
+        } else if (this.body.txs[i].outflow[j].outflowType.isZero()) {
+          throw Error('public data should exist')
+        }
+      }
+      const swapExistenceByte = this.body.txs[i].swap
+        ? Buffer.from([1])
+        : Buffer.from([0])
+      arr.push(swapExistenceByte)
+      const { swap } = this.body.txs[i]
+      if (swap) {
+        arr.push(swap.toBuffer(32))
+      }
+      arr.push(this.body.txs[i].fee.toBuffer(32))
+      const { proof } = this.body.txs[i]
+      if (!proof) throw Error('SNARK proof should exist')
+      arr.push(proof.pi_a[0].toBuffer(32))
+      arr.push(proof.pi_a[1].toBuffer(32))
+      arr.push(proof.pi_b[0][0].toBuffer(32))
+      arr.push(proof.pi_b[0][1].toBuffer(32))
+      arr.push(proof.pi_b[1][0].toBuffer(32))
+      arr.push(proof.pi_b[1][1].toBuffer(32))
+      arr.push(proof.pi_c[0].toBuffer(32))
+      arr.push(proof.pi_c[1].toBuffer(32))
+      const { memo } = this.body.txs[i]
+      const memoExistenceByte = memo
+        ? Buffer.from([memo.byteLength])
+        : Buffer.from([0])
+      arr.push(memoExistenceByte)
+      if (memo) {
+        arr.push(memo)
+        if (memo.byteLength > 256)
+          throw Error('Memo field allows only 256 bytes')
+      }
+    }
+    // Mass deposits
+    const massDepositLenBytes = Utils.hexToBuffer(
+      this.body.massDeposits.length.toString(16),
+      1,
+    )
+    arr.push(massDepositLenBytes)
+    for (let i = 0; i < this.body.massDeposits.length; i += 1) {
+      arr.push(Utils.hexToBuffer(this.body.massDeposits[i].merged, 32))
+      arr.push(Utils.hexToBuffer(this.body.massDeposits[i].fee, 32))
+    }
+    // Mass migrations
+    const massMigrationLenBytes = Utils.hexToBuffer(
+      this.body.massMigrations.length.toString(16),
+      1,
+    )
+    arr.push(massMigrationLenBytes)
+    for (let i = 0; i < this.body.massMigrations.length; i += 1) {
+      arr.push(Utils.hexToBuffer(this.body.massMigrations[i].destination, 20))
+      arr.push(Utils.hexToBuffer(this.body.massMigrations[i].totalETH, 32))
+      arr.push(
+        Utils.hexToBuffer(
+          this.body.massMigrations[i].migratingLeaves.merged,
+          32,
+        ),
+      )
+      arr.push(
+        Utils.hexToBuffer(this.body.massMigrations[i].migratingLeaves.fee, 32),
+      )
+      const { erc20, erc721 } = this.body.massMigrations[i]
+      arr.push(Utils.hexToBuffer(erc20.length.toString(16), 1))
+      for (let j = 0; j < erc20.length; j += 1) {
+        arr.push(Utils.hexToBuffer(erc20[j].addr, 20))
+        arr.push(Utils.hexToBuffer(erc20[j].amount, 32))
+      }
+      arr.push(Utils.hexToBuffer(erc721.length.toString(16), 1))
+      for (let j = 0; j < erc721.length; j += 1) {
+        arr.push(Utils.hexToBuffer(erc721[j].addr, 20))
+        const { nfts } = erc721[j]
+        arr.push(Utils.hexToBuffer(nfts.length.toString(16), 1))
+        for (let k = 0; k < nfts.length; k += 1) {
+          arr.push(Utils.hexToBuffer(nfts[k], 32))
+        }
+      }
+    }
+    return Buffer.concat(arr)
+  }
+
+  static fromTx(tx: Transaction): Block {
+    const deserializedHeader = deserializeHeaderFrom(tx.input)
+    const deserializedTxs = deserializeTxsFrom(deserializedHeader.rest)
+    const deserializedMassDeposits = deserializeMassDeposits(
+      deserializedTxs.rest,
+    )
+    const deserializedMassMigrations = deserializeMassMigrations(
+      deserializedMassDeposits.rest,
+    )
+    const { header } = deserializedHeader
+    const { txs } = deserializedTxs
+    const { massDeposits } = deserializedMassDeposits
+    const { massMigrations } = deserializedMassMigrations
+    const body: Body = {
+      txs,
+      massDeposits,
+      massMigrations,
+    }
+    return new Block({
+      hash: headerHash(header),
+      status: BlockStatus.FETCHED,
+      proposedAt: tx.blockNumber || 0,
+      parent: header.parentBlock,
+      proposalHash: tx.hash,
+      proposalData: tx,
+      header,
+      body,
+    })
   }
 }

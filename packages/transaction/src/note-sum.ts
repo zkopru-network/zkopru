@@ -1,7 +1,7 @@
 import { Field } from '@zkopru/babyjubjub'
-import { Output } from './output'
+import { Note } from './note'
 
-export class Spendable {
+export class Sum {
   eth: Field
 
   erc20: { [addr: string]: Field }
@@ -18,17 +18,17 @@ export class Spendable {
     this.erc721 = erc721
   }
 
-  static etherFrom(utxos: Output[]): Field {
+  static etherFrom(notes: Note[]): Field {
     let sum = Field.from(0)
-    for (const item of utxos) {
+    for (const item of notes) {
       sum = sum.add(item.eth)
     }
     return sum
   }
 
-  static erc20From(utxos: Output[]): { [addr: string]: Field } {
+  static erc20From(notes: Note[]): { [addr: string]: Field } {
     const erc20: { [addr: string]: Field } = {}
-    for (const item of utxos) {
+    for (const item of notes) {
       const addr = item.tokenAddr.toHex()
       if (!item.erc20Amount.isZero() && item.nft.isZero()) {
         const prev = erc20[addr] ? erc20[addr] : Field.from(0)
@@ -38,9 +38,9 @@ export class Spendable {
     return erc20
   }
 
-  static nftsFrom(utxos: Output[]): { [addr: string]: Field[] } {
+  static nftsFrom(notes: Note[]): { [addr: string]: Field[] } {
     const erc721: { [addr: string]: Field[] } = {}
-    for (const item of utxos) {
+    for (const item of notes) {
       const addr = item.tokenAddr.toHex()
       if (item.erc20Amount.isZero() && !item.nft.isZero()) {
         if (!erc721[addr]) {
@@ -52,11 +52,11 @@ export class Spendable {
     return erc721
   }
 
-  static from(utxos: Output[]): Spendable {
+  static from(notes: Note[]): Sum {
     return {
-      eth: Spendable.etherFrom(utxos),
-      erc20: Spendable.erc20From(utxos),
-      erc721: Spendable.nftsFrom(utxos),
+      eth: Sum.etherFrom(notes),
+      erc20: Sum.erc20From(notes),
+      erc721: Sum.nftsFrom(notes),
     }
   }
 }

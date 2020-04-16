@@ -134,7 +134,7 @@ export class Coordinatable extends Contract {
   events: {
     Finalized: ContractEvent<string>
     MassDepositCommit: ContractEvent<{
-      id: string
+      index: string
       merged: string
       fee: string
       0: string

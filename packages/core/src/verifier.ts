@@ -1,12 +1,13 @@
 import { verifyingKeyIdentifier } from '@zkopru/utils'
 // import { Point } from '@zkopru/babyjubjub'
-import { Block, Header } from './block'
+import { DepositSql } from '@zkopru/database'
+import { soliditySha3 } from 'web3-utils'
+import bigInt from 'big-integer'
+import { Block, Header, VerifyResult } from './block'
 import { VerifyingKey } from './snark'
-import { ChallengeCode } from './challenge'
 import { L1Contract } from './layer1'
-import { L2Chain } from './layer2'
-import { TransactionObject } from '~contracts/contracts/types'
 import { SNARKVerifier } from './snark-verifier'
+import { L2Chain, Patch } from './layer2'
 
 export interface VerifyOption {
   header: boolean
@@ -16,12 +17,6 @@ export interface VerifyOption {
   withdrawalRollUp: boolean
   nullifierRollUp: boolean // Only for FULL NODE
   snark: boolean
-}
-
-export enum VerifyResult {
-  INVALIDATED,
-  PARTIALLY_VERIFIED,
-  FULLY_VERIFIED,
 }
 
 export class Verifier {
@@ -38,7 +33,7 @@ export class Verifier {
     this.snarkVerifier.vks[verifyingKeyIdentifier(nI, nO)] = vk
   }
 
-  async verify({
+  async verifyBlock({
     layer1,
     layer2,
     prevHeader,
@@ -48,20 +43,25 @@ export class Verifier {
     layer2: L2Chain
     prevHeader: Header
     block: Block
-  }): Promise<{ result: VerifyResult; challenge?: TransactionObject<void> }> {
+  }): Promise<Patch> {
     if (this.option.header) {
-      const headerChallenge = await this.verifyHeader(block)
-      if (headerChallenge) {
-        if (!block.proposalData) throw Error('Not available to the tx data')
-        return {
-          result: VerifyResult.INVALIDATED,
-          challenge: layer1.challenger.header.methods.challengeDepositRoot(
-            block.proposalData.input,
-          ),
-        }
-      }
+      await this.verifyHeader(block)
     }
     // implement every challenge logics here
+    // deposit verification
+    for (const massDeposit of block.body.massDeposits) {
+      const deposits: DepositSql[] = await layer2.getDeposits(massDeposit)
+      let merged
+      let fee = bigInt.zero
+      for (const deposit of deposits) {
+        merged = soliditySha3(merged || 0, deposit.note) || ''
+        fee = bigInt(deposit.fee).add(fee)
+      }
+      if (merged !== massDeposit.merged || fee.neq(massDeposit.fee)) {
+        throw Error('Failed to match the deposit leaves with the proposal.')
+      }
+    }
+
     console.log(this, layer1, layer2, block, this.option, prevHeader)
     const verificationResult = true
     const fullVerification = Object.values(this.option).reduce(
@@ -76,13 +76,13 @@ export class Verifier {
     } else {
       result = VerifyResult.INVALIDATED
     }
-    return { result }
+    // TODO return other patches here
+    return { result, block: block.hash }
   }
 
-  async verifyHeader(block: Block): Promise<ChallengeCode | null> {
+  async verifyHeader(block: Block) {
     console.log(block, this)
     // onChallenge({ block })
-    return ChallengeCode.INVALID_SNARK
   }
 
   async verifyTxs(block: Block): Promise<{ result: boolean; index?: number }> {

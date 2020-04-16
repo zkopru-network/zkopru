@@ -1,7 +1,13 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { nanoSQL } from '@nano-sql/core'
 import { Field, F, Point, EdDSA, signEdDSA } from '@zkopru/babyjubjub'
-import { RawTx, ZkTx } from '@zkopru/transaction'
+import {
+  RawTx,
+  ZkTx,
+  OutflowType,
+  Withdrawal,
+  Migration,
+} from '@zkopru/transaction'
 import { MerkleProof, Grove } from '@zkopru/tree'
 import * as utils from '@zkopru/utils'
 
@@ -176,32 +182,44 @@ export class ZkWizard {
       input[`nullifiers[${i}]`] = utxo.nullifier()
     })
     // outflow data
-    tx.outflow.forEach((utxo, i) => {
+    tx.outflow.forEach((note, i) => {
       // private signals
-      input[`new_note[0][${i}]`] = utxo.eth
-      input[`new_note[1][${i}]`] = utxo.pubKey.x
-      input[`new_note[2][${i}]`] = utxo.pubKey.y
-      input[`new_note[3][${i}]`] = utxo.salt
-      input[`new_note[4][${i}]`] = utxo.tokenAddr
-      input[`new_note[5][${i}]`] = utxo.erc20Amount
-      input[`new_note[6][${i}]`] = utxo.nft
+      input[`new_note[0][${i}]`] = note.eth
+      input[`new_note[1][${i}]`] = note.pubKey.x
+      input[`new_note[2][${i}]`] = note.pubKey.y
+      input[`new_note[3][${i}]`] = note.salt
+      input[`new_note[4][${i}]`] = note.tokenAddr
+      input[`new_note[5][${i}]`] = note.erc20Amount
+      input[`new_note[6][${i}]`] = note.nft
       // public signals
-      input[`new_note_hash[${i}]`] = utxo.hash()
-      input[`typeof_new_note[${i}]`] = utxo.outflowType()
-      input[`public_data[0][${i}]`] = utxo.publicData
-        ? utxo.publicData.to
-        : Field.zero
-      input[`public_data[1][${i}]`] = utxo.publicData ? utxo.eth : Field.zero
-      input[`public_data[2][${i}]`] = utxo.publicData
-        ? utxo.tokenAddr
-        : Field.zero
-      input[`public_data[3][${i}]`] = utxo.publicData
-        ? utxo.erc20Amount
-        : Field.zero
-      input[`public_data[4][${i}]`] = utxo.publicData ? utxo.nft : Field.zero
-      input[`public_data[5][${i}]`] = utxo.publicData
-        ? utxo.publicData.fee
-        : Field.zero
+      input[`new_note_hash[${i}]`] = note.hash()
+      input[`typeof_new_note[${i}]`] = Field.from(
+        note.outflowType || OutflowType.UTXO,
+      )
+      input[`public_data[0][${i}]`] =
+        note instanceof Withdrawal || note instanceof Migration
+          ? note.publicData.to
+          : Field.zero
+      input[`public_data[1][${i}]`] =
+        note instanceof Withdrawal || note instanceof Migration
+          ? note.eth
+          : Field.zero
+      input[`public_data[2][${i}]`] =
+        note instanceof Withdrawal || note instanceof Migration
+          ? note.tokenAddr
+          : Field.zero
+      input[`public_data[3][${i}]`] =
+        note instanceof Withdrawal || note instanceof Migration
+          ? note.erc20Amount
+          : Field.zero
+      input[`public_data[4][${i}]`] =
+        note instanceof Withdrawal || note instanceof Migration
+          ? note.nft
+          : Field.zero
+      input[`public_data[5][${i}]`] =
+        note instanceof Withdrawal || note instanceof Migration
+          ? note.publicData.fee
+          : Field.zero
     })
     input.swap = tx.swap ? tx.swap : Field.zero
     input.fee = tx.fee

@@ -1,19 +1,18 @@
 import { InanoSQLInstance } from '@nano-sql/core'
 import {
-  TreeSql,
+  LightRollUpTreeSql,
   schema,
-  MerkleProofCacheSql,
-  OutputSql,
+  TreeNodeSql,
+  UtxoSql,
 } from '@zkopru/database'
 import { Field, Point } from '@zkopru/babyjubjub'
+import AsyncLock from 'async-lock'
 import { Hasher } from './hasher'
-import {
-  LightRollUpTree,
-  TreeType,
-  Item,
-  MerkleProof,
-  merkleProof,
-} from './tree'
+import { MerkleProof, verifyProof, startingLeafProof } from './merkle-proof'
+import { Item } from './light-rollup-tree'
+import { UtxoTree } from './utxo-tree'
+import { WithdrawalTree } from './withdrawal-tree'
+import { NullifierTree } from './nullifier-tree'
 
 export interface GroveConfig {
   utxoTreeDepth: number
@@ -30,20 +29,30 @@ export interface GroveConfig {
   addressesToObserve: string[]
 }
 
+export interface GrovePatch {
+  header: string
+  utxos: Item[]
+  withdrawals: Field[]
+  nullifiers: Field[]
+}
+
 export class Grove {
+  lock: AsyncLock
+
   zkopruId: string
 
   db: InanoSQLInstance
 
   config: GroveConfig
 
-  utxoTrees!: LightRollUpTree[]
+  utxoTrees!: UtxoTree[]
 
-  withdrawalTrees!: LightRollUpTree[]
+  withdrawalTrees!: WithdrawalTree[]
 
-  nullifierTree?: LightRollUpTree
+  nullifierTree?: NullifierTree
 
   constructor(zkopruId: string, db: InanoSQLInstance, config: GroveConfig) {
+    this.lock = new AsyncLock()
     this.zkopruId = zkopruId
     this.config = config
     this.db = db
@@ -51,91 +60,157 @@ export class Grove {
 
   async applyBootstrap({
     utxoTreeIndex,
-    utxoTreeBootstrap,
+    utxoStartingLeafProof,
     withdrawalTreeIndex,
-    withdrawalTreeBootstrap,
+    withdrawalStartingLeafProof,
   }: {
     utxoTreeIndex: number
-    utxoTreeBootstrap: MerkleProof
+    utxoStartingLeafProof: MerkleProof
     withdrawalTreeIndex: number
-    withdrawalTreeBootstrap: MerkleProof
+    withdrawalStartingLeafProof: MerkleProof
   }) {
-    await this.bootstrapTree(utxoTreeIndex, TreeType.UTXO, utxoTreeBootstrap)
-    await this.bootstrapTree(
-      withdrawalTreeIndex,
-      TreeType.WITHDRAWAL,
-      withdrawalTreeBootstrap,
-    )
+    await this.lock.acquire('grove', async () => {
+      await this.bootstrapUtxoTree(utxoTreeIndex, utxoStartingLeafProof)
+      await this.bootstrapWithdrawalTree(
+        withdrawalTreeIndex,
+        withdrawalStartingLeafProof,
+      )
+    })
   }
 
   async init() {
-    const trees = (await this.db
-      .selectTable(schema.tree.name)
-      .query('select')
-      .where(['zkopru', '=', this.zkopruId])
-      .exec()) as TreeSql[]
+    await this.lock.acquire('grove', async () => {
+      const utxoTreeSqls = (
+        await this.db
+          .selectTable(schema.utxoTree.name)
+          .query('select')
+          .where(['zkopru', '=', this.zkopruId])
+          .exec()
+      ).sort((a, b) => a.index - b.index) as LightRollUpTreeSql[]
 
-    const utxoTreeSqlObjs = trees
-      .filter(tree => tree.type === TreeType.UTXO)
-      .sort((a, b) => a.index - b.index)
+      if (utxoTreeSqls.length === 0) {
+        // start a new tree if there's no utxo tree
+        const { treeSql } = await this.bootstrapUtxoTree(0)
+        utxoTreeSqls.push(treeSql)
+      }
 
-    const withdrawalTreeSqlObjs = trees
-      .filter(tree => tree.type === TreeType.WITHDRAWAL)
-      .sort((a, b) => a.index - b.index)
+      this.utxoTrees = utxoTreeSqls.map(obj =>
+        UtxoTree.from(this.db, obj, {
+          hasher: this.config.utxoHasher,
+          forceUpdate: this.config.forceUpdate,
+          fullSync: this.config.fullSync,
+        }),
+      )
 
-    const nullifierTreeSqlObjs = trees
-      .filter(tree => tree.type === TreeType.NULLIFIER)
-      .sort((a, b) => a.index - b.index)
+      const withdrawalTreeSqls = (
+        await this.db
+          .selectTable(schema.withdrawalTree.name)
+          .query('select')
+          .where(['zkopru', '=', this.zkopruId])
+          .exec()
+      ).sort((a, b) => a.index - b.index) as LightRollUpTreeSql[]
 
-    if (utxoTreeSqlObjs.length === 0) {
-      // start a new tree if there's no utxo tree
-      const { treeSql } = await this.bootstrapTree(0, TreeType.UTXO)
-      utxoTreeSqlObjs.push(treeSql)
-    }
+      if (withdrawalTreeSqls.length === 0) {
+        // start a new tree if there's no utxo tree
+        const { treeSql } = await this.bootstrapWithdrawalTree(0)
+        withdrawalTreeSqls.push(treeSql)
+      }
 
-    if (withdrawalTreeSqlObjs.length === 0) {
-      // start a new tree if there's no withdrawal tree
-      const { treeSql } = await this.bootstrapTree(0, TreeType.WITHDRAWAL)
-      withdrawalTreeSqlObjs.push(treeSql)
-    }
+      this.withdrawalTrees = withdrawalTreeSqls.map(obj =>
+        WithdrawalTree.from(this.db, obj, {
+          hasher: this.config.withdrawalHasher,
+          forceUpdate: this.config.forceUpdate,
+          fullSync: this.config.fullSync,
+        }),
+      )
 
-    if (nullifierTreeSqlObjs.length === 0) {
-      // start a new tree if there's no nullifier tree
-      const { treeSql } = await this.bootstrapTree(0, TreeType.NULLIFIER)
-      nullifierTreeSqlObjs.push(treeSql)
-    }
-
-    if (nullifierTreeSqlObjs.length > 1)
-      throw Error('You have more than 1 nullifier tree')
-
-    this.utxoTrees = utxoTreeSqlObjs.map(this.toRollUpTree)
-    this.withdrawalTrees = withdrawalTreeSqlObjs.map(this.toRollUpTree)
-    this.nullifierTree = nullifierTreeSqlObjs
-      .map(this.toRollUpTree)
-      .pop() as LightRollUpTree
+      this.nullifierTree = new NullifierTree({
+        db: this.db,
+        hasher: this.config.nullifierHasher,
+        zkopruId: this.zkopruId,
+        depth: this.config.nullifierTreeDepth,
+      })
+    })
   }
 
   setPubKeysToObserve(points: Point[]) {
     this.config.pubKeysToObserve = points
     this.utxoTrees.forEach(tree => tree.updatePubKeys(points))
-    this.withdrawalTrees.forEach(tree => tree.updatePubKeys(points))
   }
 
   setAddressesToObserve(addresses: string[]) {
     this.config.addressesToObserve = addresses
-    this.utxoTrees.forEach(tree => tree.updateAddresses(addresses))
     this.withdrawalTrees.forEach(tree => tree.updateAddresses(addresses))
   }
 
-  latestUTXOTree(): LightRollUpTree {
+  latestUTXOTree(): UtxoTree {
     return this.utxoTrees[this.utxoTrees.length - 1]
   }
 
-  latestWithdrawalTree(): LightRollUpTree {
+  latestWithdrawalTree(): WithdrawalTree {
     return this.withdrawalTrees[this.withdrawalTrees.length - 1]
   }
 
-  async appendUTXOs(...utxos: Item[]): Promise<void> {
+  async applyPatch(patch: GrovePatch) {
+    await this.lock.acquire('grove', async () => {
+      await this.appendUTXOs(patch.utxos)
+      await this.appendWithdrawals(patch.withdrawals)
+      await this.markAsNullified(patch.header, patch.nullifiers)
+      if (this.config.fullSync) {
+        await this.recordBootstrap(patch.header)
+      }
+    })
+  }
+
+  async dryPatch(
+    patch: GrovePatch,
+  ): Promise<{
+    utxoTreeIndex: Field
+    utxoTreeRoot: Field
+    withdrawalTreeIndex: Field
+    withdrawalTreeRoot: Field
+    nullifierTreeRoot?: Field
+  }> {
+    let result!: {
+      utxoTreeIndex: Field
+      utxoTreeRoot: Field
+      withdrawalTreeIndex: Field
+      withdrawalTreeRoot: Field
+      nullifierTreeRoot?: Field
+    }
+    await this.lock.acquire('grove', async () => {
+      const utxoResult = await this.latestUTXOTree().dryAppend(...patch.utxos)
+      const withdrawalResult = await this.latestWithdrawalTree().dryAppend(
+        ...patch.withdrawals.map(leafHash => ({ leafHash })),
+      )
+      const nullifierRoot = await this.nullifierTree?.dryRunNullify(
+        ...patch.nullifiers,
+      )
+      result.utxoTreeIndex = utxoResult.index
+      result.utxoTreeRoot = utxoResult.root
+      result.withdrawalTreeIndex = withdrawalResult.index
+      result.withdrawalTreeRoot = withdrawalResult.root
+      result.nullifierTreeRoot = nullifierRoot
+    })
+    return result
+  }
+
+  private async recordBootstrap(header: string): Promise<void> {
+    await this.db
+      .selectTable(schema.block(this.zkopruId).name)
+      .presetQuery('recordBootstrap', {
+        hash: header,
+        bootstrap: {
+          utxoTreeIndex: this.latestUTXOTree().metadata.index,
+          utxoBootstrap: this.latestUTXOTree().data.siblings,
+          withdrawalTreeIndex: this.latestWithdrawalTree().metadata.index,
+          withdrawlBootstrap: this.latestWithdrawalTree().data.siblings,
+        },
+      })
+      .exec()
+  }
+
+  private async appendUTXOs(utxos: Item[]): Promise<void> {
     const fixedSizeUtxos: Item[] = Array(this.config.utxoSubTreeSize).fill({
       leafHash: Field.zero,
     })
@@ -152,16 +227,15 @@ export class Grove {
     ) {
       await latestTree.append(...fixedSizeUtxos)
     } else {
-      const { tree } = await this.bootstrapTree(
-        latestTree.metadata.index,
-        TreeType.UTXO,
+      const { tree } = await this.bootstrapUtxoTree(
+        latestTree.metadata.index + 1,
       )
       this.utxoTrees.push(tree)
       await tree.append(...fixedSizeUtxos)
     }
   }
 
-  async appendWithdrawals(...withdrawals: Field[]): Promise<void> {
+  private async appendWithdrawals(withdrawals: Field[]): Promise<void> {
     const fixedSizeWithdrawals: Item[] = Array(
       this.config.withdrawalSubTreeSize,
     ).fill({
@@ -182,44 +256,44 @@ export class Grove {
     ) {
       await latestTree.append(...fixedSizeWithdrawals)
     } else {
-      const { tree } = await this.bootstrapTree(
-        latestTree.metadata.index,
-        TreeType.WITHDRAWAL,
+      const { tree } = await this.bootstrapWithdrawalTree(
+        latestTree.metadata.index + 1,
       )
       this.withdrawalTrees.push(tree)
       await tree.append(...fixedSizeWithdrawals)
     }
   }
 
-  async markAsNullified(...nullifiers: Field[]): Promise<void> {
+  private async markAsNullified(
+    block: string,
+    nullifiers: Field[],
+  ): Promise<void> {
     // only the full node manages the nullifier tree
     const tree = this.nullifierTree
     if (tree) {
-      await tree.append(
-        ...nullifiers.map(nullifier => ({ leafHash: nullifier })),
-      )
+      await tree.nullify(nullifiers, block)
     }
   }
 
   async utxoMerkleProof(hash: Field): Promise<MerkleProof> {
     const queryResult = await this.db
-      .selectTable(schema.output.name)
+      .selectTable(schema.utxo.name)
       .query('select')
       .where(['hash', '=', hash.toHex()])
       .exec()
-    const output: OutputSql = queryResult.pop() as OutputSql
-    if (!output) throw Error('Failed to find the utxo')
+    const utxo: UtxoSql = queryResult.pop() as UtxoSql
+    if (!utxo) throw Error('Failed to find the utxo')
 
     const cachedSiblings = (await this.db
-      .selectTable(schema.merkleProofCache(output.tree).name)
+      .selectTable(schema.utxoTreeNode(utxo.tree).name)
       .presetQuery('getSiblings', {
         depth: this.config.utxoTreeDepth,
-        index: output.index,
+        index: utxo.index,
       })
-      .exec()) as MerkleProofCacheSql[]
+      .exec()) as TreeNodeSql[]
     let root!: Field
     const siblings = [...this.config.utxoHasher.preHash]
-    cachedSiblings.forEach((obj: MerkleProofCacheSql) => {
+    cachedSiblings.forEach((obj: TreeNodeSql) => {
       const level =
         1 +
         this.config.utxoTreeDepth -
@@ -233,25 +307,33 @@ export class Grove {
     if (!root) throw Error('Failed to find root')
     const proof = {
       root,
-      index: Field.from(output.index),
-      leaf: Field.from(output.hash),
+      index: Field.from(utxo.index),
+      leaf: Field.from(utxo.hash),
       siblings,
     }
-    merkleProof(this.config.utxoHasher, proof)
+    verifyProof(this.config.utxoHasher, proof)
     return proof
   }
 
-  async withdrawalMerkleProof(withdrawal: OutputSql): Promise<MerkleProof> {
+  async withdrawalMerkleProof(hash: Field): Promise<MerkleProof> {
+    const queryResult = await this.db
+      .selectTable(schema.withdrawal.name)
+      .query('select')
+      .where(['hash', '=', hash.toHex()])
+      .exec()
+    const withdrawal: UtxoSql = queryResult.pop() as UtxoSql
+    if (!withdrawal) throw Error('Failed to find the withdrawal')
+
     const cachedSiblings = (await this.db
-      .selectTable(schema.merkleProofCache(withdrawal.tree).name)
+      .selectTable(schema.withdrawalTreeNode(withdrawal.tree).name)
       .presetQuery('getSiblings', {
         depth: this.config.withdrawalTreeDepth,
         index: withdrawal.index,
       })
-      .exec()) as MerkleProofCacheSql[]
+      .exec()) as TreeNodeSql[]
     let root!: Field
     const siblings = [...this.config.withdrawalHasher.preHash]
-    cachedSiblings.forEach((obj: MerkleProofCacheSql) => {
+    cachedSiblings.forEach((obj: TreeNodeSql) => {
       const level =
         1 +
         this.config.withdrawalTreeDepth -
@@ -269,35 +351,24 @@ export class Grove {
       leaf: Field.from(withdrawal.hash),
       siblings,
     }
-    merkleProof(this.config.utxoHasher, proof)
+    verifyProof(this.config.withdrawalHasher, proof)
     return proof
   }
 
-  private async bootstrapTree(
+  private async bootstrapUtxoTree(
     treeIndex: number,
-    treeType: TreeType,
-    merkleProof?: MerkleProof,
-  ): Promise<{ treeSql: TreeSql; tree: LightRollUpTree }> {
-    let hasher: Hasher
-    switch (treeType) {
-      case TreeType.UTXO:
-        hasher = this.config.utxoHasher
-        break
-      case TreeType.WITHDRAWAL:
-        hasher = this.config.withdrawalHasher
-        break
-      case TreeType.NULLIFIER:
-        hasher = this.config.nullifierHasher
-        break
-      default:
-        throw Error('Not supported type of tree')
-    }
+    proof?: MerkleProof,
+  ): Promise<{ treeSql: LightRollUpTreeSql; tree: UtxoTree }> {
+    const hasher = this.config.utxoHasher
     let data: { root: string; index: string; siblings: string[] }
-    if (merkleProof) {
+    if (proof) {
       data = {
-        root: merkleProof.root.toHex(),
-        index: merkleProof.index.toHex(),
-        siblings: merkleProof.siblings.map(s => s.toHex()),
+        root: proof.root.toHex(),
+        index: proof.index.toHex(),
+        siblings: proof.siblings.map(s => s.toHex()),
+      }
+      if (!startingLeafProof(hasher, proof.root, proof.index, proof.siblings)) {
+        throw Error('Invalid starting leaf proof')
       }
     } else {
       data = {
@@ -308,68 +379,59 @@ export class Grove {
     }
     const treeSql = (
       await this.db
-        .selectTable(schema.tree.name)
+        .selectTable(schema.utxoTree.name)
         .presetQuery('bootstrapTree', {
           index: treeIndex,
-          type: treeType,
           zkopru: this.zkopruId,
           data,
         })
         .exec()
-    ).pop() as TreeSql
-    return { treeSql, tree: this.toRollUpTree(treeSql) }
+    ).pop() as LightRollUpTreeSql
+    const tree = UtxoTree.from(this.db, treeSql, {
+      hasher: this.config.utxoHasher,
+      forceUpdate: this.config.forceUpdate,
+      fullSync: this.config.fullSync,
+    })
+    return { treeSql, tree }
   }
 
-  // private initNewTreeQuery(treeType: TreeType): InanoSQLQueryBuilder {
-  //   let hasher: Hasher
-  //   switch (treeType) {
-  //     case TreeType.UTXO:
-  //       hasher = this.config.utxoHasher
-  //       break
-  //     case TreeType.WITHDRAWAL:
-  //       hasher = this.config.withdrawalHasher
-  //       break
-  //     case TreeType.NULLIFIER:
-  //       hasher = this.config.nullifierHasher
-  //       break
-  //     default:
-  //       throw Error('Not supported type of tree')
-  //   }
-  //   return this.db.selectTable(schema.tree.name).presetQuery('genesisTree', {
-  //     index: 0,
-  //     type: treeType,
-  //     zkopru: this.zkopruId,
-  //     data: {
-  //       root: ([...hasher.preHash].pop() as Field).toHex(),
-  //       index: Field.zero.toHex(),
-  //       siblings: hasher.preHash.map(f => f.toHex()),
-  //     },
-  //   })
-  // }
-
-  private toRollUpTree(obj: TreeSql): LightRollUpTree {
-    return new LightRollUpTree({
-      db: this.db,
-      metadata: {
-        id: obj.id,
-        type: obj.type,
-        index: obj.index,
-        zkopruId: obj.zkopru,
-        start: Field.from(obj.start),
-        end: Field.from(obj.end),
-      },
-      data: {
-        root: Field.from(obj.data.root),
-        index: Field.from(obj.data.index),
-        siblings: obj.data.siblings.map(sib => Field.from(sib)),
-      },
-      config: {
-        hasher: this.config.utxoHasher,
-        fullSync: this.config.fullSync,
-        forceUpdate: this.config.forceUpdate,
-        pubKeysToObserve: this.config.pubKeysToObserve,
-        addressesToObserve: this.config.addressesToObserve,
-      },
+  private async bootstrapWithdrawalTree(
+    treeIndex: number,
+    proof?: MerkleProof,
+  ): Promise<{ treeSql: LightRollUpTreeSql; tree: WithdrawalTree }> {
+    const hasher = this.config.withdrawalHasher
+    let data: { root: string; index: string; siblings: string[] }
+    if (proof) {
+      data = {
+        root: proof.root.toHex(),
+        index: proof.index.toHex(),
+        siblings: proof.siblings.map(s => s.toHex()),
+      }
+      if (!startingLeafProof(hasher, proof.root, proof.index, proof.siblings)) {
+        throw Error('Invalid starting leaf proof')
+      }
+    } else {
+      data = {
+        root: ([...hasher.preHash].pop() as Field).toHex(),
+        index: Field.zero.toHex(),
+        siblings: hasher.preHash.map(f => f.toHex()),
+      }
+    }
+    const treeSql = (
+      await this.db
+        .selectTable(schema.withdrawalTree.name)
+        .presetQuery('bootstrapTree', {
+          index: treeIndex,
+          zkopru: this.zkopruId,
+          data,
+        })
+        .exec()
+    ).pop() as LightRollUpTreeSql
+    const tree = WithdrawalTree.from(this.db, treeSql, {
+      hasher: this.config.withdrawalHasher,
+      forceUpdate: this.config.forceUpdate,
+      fullSync: this.config.fullSync,
     })
+    return { treeSql, tree }
   }
 }

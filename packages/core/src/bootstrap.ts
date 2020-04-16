@@ -4,10 +4,11 @@ import { Field } from '@zkopru/babyjubjub'
 
 export interface BootstrapData {
   proposalHash: string
+  blockHash: string
   utxoTreeIndex: number
-  utxoTreeBootstrap: MerkleProof
+  utxoStartingLeafProof: MerkleProof
   withdrawalTreeIndex: number
-  withdrawalTreeBootstrap: MerkleProof
+  withdrawalStartingLeafProof: MerkleProof
 }
 
 export interface BootstrapHelper {
@@ -27,15 +28,16 @@ export class HttpBootstrapHelper implements BootstrapHelper {
     )
     return {
       proposalHash: response.proposalHash,
+      blockHash: response.blockHash,
       utxoTreeIndex: response.utxoTreeIndex,
-      utxoTreeBootstrap: {
+      utxoStartingLeafProof: {
         root: Field.from(response.utxoBootstrap.root),
         index: Field.from(response.utxoBootstrap.index),
         leaf: Field.from(response.utxoBootstrap.leaf),
         siblings: response.utxoBootstrap.siblings.map(Field.from),
       },
       withdrawalTreeIndex: response.withdrawalTreeIndex,
-      withdrawalTreeBootstrap: {
+      withdrawalStartingLeafProof: {
         root: Field.from(response.withdrawalBootstrap.root),
         index: Field.from(response.withdrawalBootstrap.index),
         leaf: Field.from(response.withdrawalBootstrap.leaf),

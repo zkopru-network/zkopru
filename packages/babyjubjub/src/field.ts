@@ -104,6 +104,16 @@ export class Field {
     return Field.from(newVal)
   }
 
+  mul(n: F): Field {
+    let newVal: BigInteger
+    if (n instanceof Field) {
+      newVal = this.val.multiply(n.val)
+    } else {
+      newVal = this.val.multiply(n)
+    }
+    return Field.from(newVal)
+  }
+
   gt(n: F): boolean {
     if (n instanceof Field) {
       return this.val.greater(n.val)

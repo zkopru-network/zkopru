@@ -1,10 +1,9 @@
 import { InanoSQLInstance } from '@nano-sql/core'
-import { schema } from '@zkopru/database'
+import { schema, DepositSql, MassDepositCommitSql } from '@zkopru/database'
 import { EventEmitter } from 'events'
 import { InanoSQLObserverQuery } from '@nano-sql/core/lib/interfaces'
 import { L1Contract } from './layer1'
-import { deserializeBlockFromL1Tx } from './block'
-import { L2Chain } from './layer2'
+import { Block } from './block'
 
 export enum NetworkStatus {
   STOPPED,
@@ -22,11 +21,13 @@ export class Synchronizer extends EventEmitter {
 
   l1Contract!: L1Contract
 
-  l2Chain!: L2Chain
-
   fetching: {
     [proposalHash: string]: boolean
   }
+
+  depositSubscriber?: EventEmitter
+
+  massDepositCommitSubscriber?: EventEmitter
 
   proposalSubscriber?: EventEmitter
 
@@ -44,12 +45,11 @@ export class Synchronizer extends EventEmitter {
 
   status: NetworkStatus
 
-  constructor(db: InanoSQLInstance, l1Contract: L1Contract, l2Chain: L2Chain) {
+  constructor(db: InanoSQLInstance, zkopruId: string, l1Contract: L1Contract) {
     super()
     this.db = db
-    this.zkopruId = l2Chain.id
+    this.zkopruId = zkopruId
     this.l1Contract = l1Contract
-    this.l2Chain = l2Chain
     this.fetching = {}
     this.status = NetworkStatus.STOPPED
   }
@@ -68,6 +68,8 @@ export class Synchronizer extends EventEmitter {
     if (this.status === NetworkStatus.STOPPED) {
       this.setStatus(NetworkStatus.ON_SYNCING)
       this.listenBlockUpdate()
+      this.listenDeposits()
+      this.listenMassDepositCommit()
       this.listenNewProposals(proposalCB)
       this.listenFinalization(finalizationCB)
     }
@@ -76,6 +78,12 @@ export class Synchronizer extends EventEmitter {
   stop() {
     if (this.proposalSubscriber) {
       this.proposalSubscriber.removeAllListeners()
+    }
+    if (this.depositSubscriber) {
+      this.depositSubscriber.removeAllListeners()
+    }
+    if (this.massDepositCommitSubscriber) {
+      this.massDepositCommitSubscriber.removeAllListeners()
     }
     if (this.finalizationSubscriber) {
       this.finalizationSubscriber.removeAllListeners()
@@ -147,15 +155,83 @@ export class Synchronizer extends EventEmitter {
     // TODO: layer1 REVERT handling & challenge handling
   }
 
+  async listenDeposits(cb?: (deposit: DepositSql) => void) {
+    const query = await this.db
+      .selectTable(schema.deposit.name)
+      .presetQuery('getSyncStart', { zkopru: this.zkopruId })
+      .exec()
+    const fromBlock = query[0] ? query[0].proposedAt : 0
+    this.depositSubscriber = this.l1Contract.user.events
+      .Deposit({ fromBlock })
+      .on('connected', subId => {
+        console.log(subId)
+      })
+      .on('data', async event => {
+        const { returnValues, blockNumber } = event
+        const args: DepositSql = {
+          ...returnValues,
+          zkopru: this.zkopruId,
+          blockNumber,
+        }
+        await this.db
+          .selectTable(schema.deposit.name)
+          .presetQuery('writeNewDeposit', args)
+          .exec()
+        if (cb) cb(args)
+      })
+      .on('changed', event => {
+        // TODO
+        console.log(event)
+      })
+      .on('error', event => {
+        // TODO
+        console.log(event)
+      })
+  }
+
+  async listenMassDepositCommit(cb?: (commit: MassDepositCommitSql) => void) {
+    const query = await this.db
+      .selectTable(schema.massDeposit.name)
+      .presetQuery('getSyncStart', { zkopru: this.zkopruId })
+      .exec()
+    const fromBlock = query[0] ? query[0].proposedAt : 0
+    this.massDepositCommitSubscriber = this.l1Contract.coordinator.events
+      .MassDepositCommit({ fromBlock })
+      .on('connected', subId => {
+        console.log(subId)
+      })
+      .on('data', async event => {
+        const { returnValues, blockNumber } = event
+        const args: MassDepositCommitSql = {
+          ...returnValues,
+          zkopru: this.zkopruId,
+          blockNumber,
+        }
+        await this.db
+          .selectTable(schema.deposit.name)
+          .presetQuery('writeMassDepositCommit', args)
+          .exec()
+        if (cb) cb(args)
+      })
+      .on('changed', event => {
+        // TODO
+        console.log(event)
+      })
+      .on('error', event => {
+        // TODO
+        console.log(event)
+      })
+  }
+
   async listenNewProposals(cb?: (hash: string) => void) {
     if (this.status !== NetworkStatus.STOPPED) return
     const query = await this.db
       .selectTable(schema.block(this.zkopruId).name)
-      .presetQuery('getProposalSyncIndex')
+      .presetQuery('getProposalSyncStart')
       .exec()
-    const startFrom = query[0] ? query[0].proposedAt : 0
+    const fromBlock = query[0] ? query[0].proposedAt : 0
     this.proposalSubscriber = this.l1Contract.coordinator.events
-      .NewProposal({ fromBlock: startFrom })
+      .NewProposal({ fromBlock })
       .on('connected', subId => {
         console.log(subId)
       })
@@ -175,10 +251,11 @@ export class Synchronizer extends EventEmitter {
         this.fetch(transactionHash)
       })
       .on('changed', event => {
-        // TODO removed
+        // TODO
         console.log(event)
       })
       .on('error', err => {
+        // TODO
         console.log(err)
       })
   }
@@ -187,7 +264,7 @@ export class Synchronizer extends EventEmitter {
     if (this.status !== NetworkStatus.STOPPED) return
     const query = await this.db
       .selectTable(schema.block(this.zkopruId).name)
-      .presetQuery('getFinalizationSyncIndex')
+      .presetQuery('getFinalizationSyncStart')
       .exec()
     const startFrom = query[0] ? query[0].proposedAt : 0
     this.finalizationSubscriber = this.l1Contract.coordinator.events
@@ -197,13 +274,7 @@ export class Synchronizer extends EventEmitter {
       })
       .on('data', async event => {
         const { returnValues } = event
-        // WRITE DATABASE
-        await this.db
-          .selectTable(schema.block(this.zkopruId).name)
-          .presetQuery('markAsFinalized', {
-            hash: returnValues,
-          })
-          .exec()
+        this.emit('finalization', returnValues)
         if (cb) cb(returnValues)
       })
       .on('changed', event => {
@@ -218,8 +289,10 @@ export class Synchronizer extends EventEmitter {
   async fetch(proposalHash: string) {
     if (this.fetching[proposalHash]) return
     // console.log(returnValues, transactionHash, blockNumber)
-    const proposalData = await this.l1Contract.web3.eth.getTransaction(proposalHash)
-    const block = deserializeBlockFromL1Tx(proposalData)
+    const proposalData = await this.l1Contract.web3.eth.getTransaction(
+      proposalHash,
+    )
+    const block = Block.fromTx(proposalData)
     const { hash } = block
     await this.db
       .selectTable(schema.block(this.zkopruId).name)

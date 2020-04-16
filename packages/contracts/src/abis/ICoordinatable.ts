@@ -15,7 +15,12 @@ export const ICoordinatableABI = [
   {
     anonymous: false,
     inputs: [
-      { indexed: false, internalType: 'uint256', name: 'id', type: 'uint256' },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'index',
+        type: 'uint256',
+      },
       {
         indexed: false,
         internalType: 'bytes32',

@@ -88,7 +88,7 @@ export class FullNode extends ZkOPRUNode {
     }
     const verifier = new Verifier(verifyOption, vks)
     // If the chain needs bootstraping, fetch bootstrap data and apply
-    const synchronizer = new Synchronizer(db, l1Contract, l2Chain)
+    const synchronizer = new Synchronizer(db, l2Chain.id, l1Contract)
     return new FullNode({
       l1Contract,
       l2Chain,
