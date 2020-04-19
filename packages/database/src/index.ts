@@ -15,7 +15,7 @@ import { keystore } from './keystore-schema'
 import { hdWallet } from './hdwallet-schema'
 
 export const schema = {
-  block,
+  block: (zkopruId: string) => block(zkopruId),
   deposit,
   massDeposit,
   utxo,
@@ -24,8 +24,8 @@ export const schema = {
   chain,
   utxoTree,
   withdrawalTree,
-  utxoTreeNode,
-  withdrawalTreeNode,
+  utxoTreeNode: (treeId: string) => utxoTreeNode(treeId),
+  withdrawalTreeNode: (treeId: string) => withdrawalTreeNode(treeId),
   nullifiers,
   nullifierTreeNode,
   hdWallet,

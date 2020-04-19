@@ -31,6 +31,7 @@
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/utils": "file:../utils",
     "big-integer": "^1.6.48",
+    "bn.js": "^5.1.1",
     "express": "^4.17.1",
     "node-schedule": "^1.3.2",
     "snarkjs": "^0.1.25",

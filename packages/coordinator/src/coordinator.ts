@@ -1,6 +1,4 @@
 import { Field } from '@zkopru/babyjubjub'
-import bigInt from 'big-integer'
-
 import express, { RequestHandler } from 'express'
 import { scheduleJob, Job } from 'node-schedule'
 import { Server } from 'http'
@@ -14,6 +12,7 @@ import {
 import { InanoSQLInstance } from '@nano-sql/core'
 import { WebsocketProvider, IpcProvider } from 'web3-core'
 import { Subscription } from 'web3-core-subscriptions'
+import BN from 'bn.js'
 import { TxMemPool, TxPoolInterface } from './tx_pool'
 
 type provider = WebsocketProvider | IpcProvider
@@ -130,7 +129,7 @@ export class Coordinator {
       async () => {
         const gasPrice = await this.node.l1Contract.web3.eth.getGasPrice()
         this.bytePrice = Field.from(
-          bigInt(gasPrice).multiply(this.config.priceMultiplier),
+          new BN(gasPrice).muln(this.config.priceMultiplier),
         )
       },
     )

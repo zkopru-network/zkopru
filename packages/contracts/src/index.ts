@@ -41,8 +41,6 @@ export { IUserInteractable } from './contracts/IUserInteractable'
 export { ZkOptimisticRollUp } from './contracts/ZkOptimisticRollUp'
 
 export default class ZkOPRUContract {
-  address: string
-
   upstream: ZkOptimisticRollUp
 
   coordinator: ICoordinatable
@@ -63,7 +61,6 @@ export default class ZkOPRUContract {
   setup: ISetupWizard
 
   constructor(web3: Web3, address: string, option?: ContractOptions) {
-    this.address = address
     this.upstream = ZkOPRUContract.asZkOptimisticRollUp(web3, address, option)
     this.coordinator = ZkOPRUContract.asICoordinatable(web3, address, option)
     this.user = ZkOPRUContract.asIUserInteractable(web3, address, option)

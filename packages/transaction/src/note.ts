@@ -112,25 +112,27 @@ export class Note {
   hash(): Field {
     const firstHash = Field.from(
       poseidonHash([
-        this.eth.val,
-        this.pubKey.x.val,
-        this.pubKey.y.val,
-        this.salt.val,
-      ]),
+        this.eth.toIden3BigInt(),
+        this.pubKey.x.toIden3BigInt(),
+        this.pubKey.y.toIden3BigInt(),
+        this.salt.toIden3BigInt(),
+      ]).toString(),
     )
     const resultHash = Field.from(
       poseidonHash([
-        firstHash.val,
-        this.tokenAddr.val,
-        this.erc20Amount.val,
-        this.nft.val,
-      ]),
+        firstHash.toIden3BigInt(),
+        this.tokenAddr.toIden3BigInt(),
+        this.erc20Amount.toIden3BigInt(),
+        this.nft.toIden3BigInt(),
+      ]).toString(),
     )
     return resultHash
   }
 
   nullifier(): Field {
-    return Field.from(poseidonHash([this.hash(), this.salt.val]))
+    return Field.from(
+      poseidonHash([this.hash(), this.salt.toIden3BigInt()]).toString(),
+    )
   }
 
   encrypt(): Buffer {
@@ -139,16 +141,16 @@ export class Note {
     const tokenId = TokenUtils.getTokenId(this.tokenAddr)
     const value = this.eth || this.erc20Amount || this.nft
     const secret = [
-      this.salt.toBuffer(16),
-      Field.from(tokenId).toBuffer(1),
-      value.toBuffer(32),
+      this.salt.toBuffer('be', 16),
+      Field.from(tokenId).toBuffer('be', 1),
+      value.toBuffer('be', 32),
     ]
     const ciphertext = chacha20.encrypt(sharedKey, 0, Buffer.concat(secret))
     const encryptedMemo = Buffer.concat([
       Point.generate(ephemeralSecretKey).encode(),
       ciphertext,
     ])
-    // 32bytes ephemeral pub key + 16 bytes salt + 1 byte token id + 32 bytes value = 81 bytes
+    // 32bytes ephemeral pub key + 16 bytes salt + 1 byte token id + 32 bytes toIden3BigInt()ue = 81 bytes
     return encryptedMemo
   }
 
@@ -217,7 +219,7 @@ export class Note {
         pubKey: myPubKey,
         salt,
       })
-      if (utxoHash.equal(etherNote.hash())) {
+      if (utxoHash.eq(etherNote.hash())) {
         return etherNote
       }
     } else {
@@ -228,7 +230,7 @@ export class Note {
         pubKey: myPubKey,
         salt,
       })
-      if (utxoHash.equal(erc20Note.hash())) {
+      if (utxoHash.eq(erc20Note.hash())) {
         return erc20Note
       }
       const nftNote = Note.newNFTNote({
@@ -238,7 +240,7 @@ export class Note {
         pubKey: myPubKey,
         salt,
       })
-      if (utxoHash.equal(nftNote.hash())) {
+      if (utxoHash.eq(nftNote.hash())) {
         return nftNote
       }
     }

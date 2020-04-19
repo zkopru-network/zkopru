@@ -1,8 +1,8 @@
 import { InanoSQLInstance } from '@nano-sql/core'
 import { Field } from '@zkopru/babyjubjub'
-import bigInt, { BigInteger } from 'big-integer'
 import { schema, TreeNodeSql } from '@zkopru/database'
 import AsyncLock from 'async-lock'
+import BN from 'bn.js'
 import { Hasher } from './hasher'
 import { verifyProof, MerkleProof } from './merkle-proof'
 
@@ -119,12 +119,12 @@ export class NullifierTree implements SMT {
     }
 
     const siblings = Array(this.depth).fill(undefined)
-    const leafNodeIndex = Field.from(index).val.or(bigInt.one.shiftRight(depth))
-    let pathNodeIndex!: BigInteger
-    let siblingNodeIndex!: BigInteger
+    const leafNodeIndex = index.addPrefixBit(depth)
+    let pathNodeIndex!: BN
+    let siblingNodeIndex!: BN
     for (let level = 0; level < depth; level += 1) {
-      pathNodeIndex = leafNodeIndex.shiftRight(level)
-      siblingNodeIndex = pathNodeIndex.xor(1)
+      pathNodeIndex = leafNodeIndex.shrn(level)
+      siblingNodeIndex = pathNodeIndex.xor(new BN(1))
       const cached = siblingCache[Field.from(siblingNodeIndex).toHex()]
       siblings[level] = cached || this.hasher.preHash[level]
     }
@@ -137,18 +137,18 @@ export class NullifierTree implements SMT {
     blockHash: string,
   ): Promise<Field> {
     const nodesToUpdate: TreeNodeSql[] = []
-    const leafIndex = index.val.or(bigInt.one.shiftRight(this.depth))
+    const leafIndex = index.addPrefixBit(this.depth)
     const siblings = await this.getSiblings(index)
     let node = Field.from(val)
-    let pathIndex: BigInteger
+    let pathIndex: BN
     let hasRightSibling: boolean
     for (let level = 0; level < this.depth; level += 1) {
-      pathIndex = leafIndex.shiftRight(level)
+      pathIndex = leafIndex.shrn(level)
       nodesToUpdate.push({
         nodeIndex: Field.from(pathIndex).toHex(),
         value: node.toHex(),
       })
-      hasRightSibling = pathIndex.and(1).isZero()
+      hasRightSibling = pathIndex.isEven()
       if (hasRightSibling) {
         node = this.hasher.parentOf(siblings[level], node)
       } else {
@@ -196,7 +196,7 @@ export class NullifierTree implements SMT {
         await this.updateLeaf(leaf, SMTLeaf.EMPTY, 'TEMP')
       }
     })
-    if (!this.root.equal(prevRoot))
+    if (!this.root.eq(prevRoot))
       throw Error('Dry run should not make any change')
     return result
   }

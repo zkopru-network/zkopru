@@ -10,7 +10,7 @@ tokenIdMap[DAI] = 1
 tokenIdMap[CRYPTO_KITTIES] = 2
 
 export function getTokenId(addr: Field): number {
-  const hexAddr = padLeft(`0x${addr.val.toString(16)}`, 40)
+  const hexAddr = padLeft(`0x${addr.toString(16)}`, 40)
   const checkSumAddress = toChecksumAddress(hexAddr)
   let id = tokenIdMap[checkSumAddress]
   if (id === undefined) {

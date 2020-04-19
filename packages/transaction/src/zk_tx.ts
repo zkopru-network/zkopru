@@ -79,40 +79,40 @@ export class ZkTx {
       Uint8Array.from([this.inflow.length]),
       ...this.inflow.map(inflow =>
         Buffer.concat([
-          inflow.root.toBuffer(32),
-          inflow.nullifier.toBuffer(32),
+          inflow.root.toBuffer('be', 32),
+          inflow.nullifier.toBuffer('be', 32),
         ]),
       ),
       Uint8Array.from([this.outflow.length]),
       ...this.outflow.map(outflow =>
         Buffer.concat([
-          outflow.note.toBuffer(32),
-          outflow.outflowType.toBuffer(1),
+          outflow.note.toBuffer('be', 32),
+          outflow.outflowType.toBuffer('be', 1),
           outflow.data
             ? Buffer.concat([
-                outflow.data.to.toBuffer(20),
-                outflow.data.eth.toBuffer(32),
-                outflow.data.tokenAddr.toBuffer(20),
-                outflow.data.erc20Amount.toBuffer(32),
-                outflow.data.nft.toBuffer(32),
-                outflow.data.fee.toBuffer(32),
+                outflow.data.to.toBuffer('be', 20),
+                outflow.data.eth.toBuffer('be', 32),
+                outflow.data.tokenAddr.toBuffer('be', 20),
+                outflow.data.erc20Amount.toBuffer('be', 32),
+                outflow.data.nft.toBuffer('be', 32),
+                outflow.data.fee.toBuffer('be', 32),
               ])
             : Buffer.from([]),
         ]),
       ),
-      this.fee.toBuffer(32),
-      this.proof.pi_a[0].toBuffer(32),
-      this.proof.pi_a[1].toBuffer(32),
-      this.proof.pi_b[0][0].toBuffer(32),
-      this.proof.pi_b[0][1].toBuffer(32),
-      this.proof.pi_b[1][0].toBuffer(32),
-      this.proof.pi_b[1][1].toBuffer(32),
-      this.proof.pi_c[0].toBuffer(32),
-      this.proof.pi_c[1].toBuffer(32),
+      this.fee.toBuffer('be', 32),
+      this.proof.pi_a[0].toBuffer('be', 32),
+      this.proof.pi_a[1].toBuffer('be', 32),
+      this.proof.pi_b[0][0].toBuffer('be', 32),
+      this.proof.pi_b[0][1].toBuffer('be', 32),
+      this.proof.pi_b[1][0].toBuffer('be', 32),
+      this.proof.pi_b[1][1].toBuffer('be', 32),
+      this.proof.pi_c[0].toBuffer('be', 32),
+      this.proof.pi_c[1].toBuffer('be', 32),
       Uint8Array.from([
         this.swap ? 1 + (this.memo ? 2 : 0) : 0 + (this.memo ? 2 : 0),
       ]), // b'11' => tx has swap & memo, b'00' => no swap & no memo
-      this.swap ? this.swap.toBuffer(32) : Buffer.from([]),
+      this.swap ? this.swap.toBuffer('be', 32) : Buffer.from([]),
       this.memo ? this.memo.slice(0, 81) : Buffer.from([]),
     ])
   }
@@ -123,35 +123,41 @@ export class ZkTx {
       const encodePacked = Buffer.concat([
         ...this.inflow.map(inflow => {
           return Buffer.concat([
-            inflow.root.toBuffer(32),
-            inflow.nullifier.toBuffer(32),
+            inflow.root.toBuffer('be', 32),
+            inflow.nullifier.toBuffer('be', 32),
           ])
         }),
         ...this.outflow.map(outflow => {
           return Buffer.concat([
-            outflow.note.toBuffer(32),
-            outflow.data ? outflow.data.to.toBuffer(20) : Buffer.from([]),
-            outflow.data ? outflow.data.eth.toBuffer(32) : Buffer.from([]),
+            outflow.note.toBuffer('be', 32),
+            outflow.data ? outflow.data.to.toBuffer('be', 20) : Buffer.from([]),
             outflow.data
-              ? outflow.data.tokenAddr.toBuffer(20)
+              ? outflow.data.eth.toBuffer('be', 32)
               : Buffer.from([]),
             outflow.data
-              ? outflow.data.erc20Amount.toBuffer(32)
+              ? outflow.data.tokenAddr.toBuffer('be', 20)
               : Buffer.from([]),
-            outflow.data ? outflow.data.nft.toBuffer(32) : Buffer.from([]),
-            outflow.data ? outflow.data.fee.toBuffer(32) : Buffer.from([]),
+            outflow.data
+              ? outflow.data.erc20Amount.toBuffer('be', 32)
+              : Buffer.from([]),
+            outflow.data
+              ? outflow.data.nft.toBuffer('be', 32)
+              : Buffer.from([]),
+            outflow.data
+              ? outflow.data.fee.toBuffer('be', 32)
+              : Buffer.from([]),
           ])
         }),
-        this.swap ? this.swap.toBuffer(32) : Buffer.alloc(32),
-        this.proof.pi_a[0].toBuffer(32),
-        this.proof.pi_a[1].toBuffer(32),
-        this.proof.pi_b[0][0].toBuffer(32),
-        this.proof.pi_b[0][1].toBuffer(32),
-        this.proof.pi_b[1][0].toBuffer(32),
-        this.proof.pi_b[1][1].toBuffer(32),
-        this.proof.pi_c[0].toBuffer(32),
-        this.proof.pi_c[0].toBuffer(32),
-        this.fee.toBuffer(32),
+        this.swap ? this.swap.toBuffer('be', 32) : Buffer.alloc(32),
+        this.proof.pi_a[0].toBuffer('be', 32),
+        this.proof.pi_a[1].toBuffer('be', 32),
+        this.proof.pi_b[0][0].toBuffer('be', 32),
+        this.proof.pi_b[0][1].toBuffer('be', 32),
+        this.proof.pi_b[1][0].toBuffer('be', 32),
+        this.proof.pi_b[1][1].toBuffer('be', 32),
+        this.proof.pi_c[0].toBuffer('be', 32),
+        this.proof.pi_c[0].toBuffer('be', 32),
+        this.fee.toBuffer('be', 32),
       ])
       const hash = soliditySha3(encodePacked.toString('hex'))
       this.cache.hash = hash != null ? hash : undefined
@@ -169,29 +175,41 @@ export class ZkTx {
 
   signals(): BigInteger[] {
     const signals = [
-      this.fee.val,
-      this.swap ? this.swap.val : Field.zero.val,
-      ...this.inflow.map(inflow => inflow.root.val),
-      ...this.inflow.map(inflow => inflow.nullifier.val),
-      ...this.outflow.map(outflow => outflow.note.val),
-      ...this.outflow.map(outflow => outflow.outflowType.val),
+      this.fee.toIden3BigInt(),
+      this.swap ? this.swap.toIden3BigInt() : Field.zero.toIden3BigInt(),
+      ...this.inflow.map(inflow => inflow.root.toIden3BigInt()),
+      ...this.inflow.map(inflow => inflow.nullifier.toIden3BigInt()),
+      ...this.outflow.map(outflow => outflow.note.toIden3BigInt()),
+      ...this.outflow.map(outflow => outflow.outflowType.toIden3BigInt()),
       ...this.outflow.map(outflow =>
-        outflow.data ? outflow.data.to.val : Field.zero.val,
+        outflow.data
+          ? outflow.data.to.toIden3BigInt()
+          : Field.zero.toIden3BigInt(),
       ),
       ...this.outflow.map(outflow =>
-        outflow.data ? outflow.data.eth.val : Field.zero.val,
+        outflow.data
+          ? outflow.data.eth.toIden3BigInt()
+          : Field.zero.toIden3BigInt(),
       ),
       ...this.outflow.map(outflow =>
-        outflow.data ? outflow.data.tokenAddr.val : Field.zero.val,
+        outflow.data
+          ? outflow.data.tokenAddr.toIden3BigInt()
+          : Field.zero.toIden3BigInt(),
       ),
       ...this.outflow.map(outflow =>
-        outflow.data ? outflow.data.erc20Amount.val : Field.zero.val,
+        outflow.data
+          ? outflow.data.erc20Amount.toIden3BigInt()
+          : Field.zero.toIden3BigInt(),
       ),
       ...this.outflow.map(outflow =>
-        outflow.data ? outflow.data.nft.val : Field.zero.val,
+        outflow.data
+          ? outflow.data.nft.toIden3BigInt()
+          : Field.zero.toIden3BigInt(),
       ),
       ...this.outflow.map(outflow =>
-        outflow.data ? outflow.data.fee.val : Field.zero.val,
+        outflow.data
+          ? outflow.data.fee.toIden3BigInt()
+          : Field.zero.toIden3BigInt(),
       ),
     ]
     return signals
@@ -279,12 +297,12 @@ export class ZkTx {
   } {
     if (!this.proof) throw Error('Does not have SNARK proof')
     return {
-      pi_a: [...this.proof.pi_a.map(f => f.val), snarkjs.bigInt(1)],
+      pi_a: [...this.proof.pi_a.map(f => f.toIden3BigInt()), snarkjs.bigInt(1)],
       pi_b: [
-        ...this.proof.pi_b.map(arr => arr.map(f => f.val)),
+        ...this.proof.pi_b.map(arr => arr.map(f => f.toIden3BigInt())),
         [snarkjs.bigInt(1), snarkjs.bigInt(0)],
       ],
-      pi_c: [...this.proof.pi_c.map(f => f.val), snarkjs.bigInt(1)],
+      pi_c: [...this.proof.pi_c.map(f => f.toIden3BigInt()), snarkjs.bigInt(1)],
       protocol: 'groth',
     }
   }

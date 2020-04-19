@@ -1,5 +1,4 @@
 import { Field } from '@zkopru/babyjubjub'
-import { BigInteger } from 'big-integer'
 import { Hasher } from './hasher'
 
 export interface MerkleProof {
@@ -10,7 +9,7 @@ export interface MerkleProof {
 }
 
 export function verifyProof(hasher: Hasher, proof: MerkleProof): boolean {
-  let path = proof.index.val
+  let path = proof.index
   let node = proof.leaf
   for (let i = 0; i < proof.siblings.length; i += 1) {
     if (path.and(1).isZero()) {
@@ -20,9 +19,9 @@ export function verifyProof(hasher: Hasher, proof: MerkleProof): boolean {
       // left sibling
       node = hasher.parentOf(proof.siblings[i], node)
     }
-    path = path.shiftRight(1)
+    path = path.shrn(1)
   }
-  return node.equal(proof.root)
+  return node.eq(proof.root)
 }
 
 export function startingLeafProof(
@@ -33,17 +32,17 @@ export function startingLeafProof(
 ): boolean {
   const depth = siblings.length
   // calculate the siblings validity
-  let path: BigInteger = index.val
+  let path = index
   for (let i = 0; i < depth; i += 1) {
     if (path.and(1).isZero()) {
       // Right sibling should be a prehashed zero
-      if (!siblings[i].equal(hasher.preHash[i])) return false
+      if (!siblings[i].eq(hasher.preHash[i])) return false
     } else {
       // Left sibling should not be a prehashed zero
       // eslint-disable-next-line no-lonely-if
-      if (siblings[i].equal(hasher.preHash[i])) return false
+      if (siblings[i].eq(hasher.preHash[i])) return false
     }
-    path = path.shiftRight(1)
+    path = path.shrn(1)
   }
   return verifyProof(hasher, { root, index, leaf: hasher.preHash[0], siblings })
 }

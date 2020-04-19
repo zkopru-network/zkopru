@@ -1,8 +1,8 @@
-import bigInt, { BigNumber, BigInteger } from 'big-integer'
+import bigInt, { BigInteger } from 'big-integer'
 import * as snarkjs from 'snarkjs'
 import * as circomlib from 'circomlib'
 import createBlakeHash from 'blake-hash'
-import { Field } from './field'
+import { Field, F } from './field'
 
 export class Point {
   x: Field
@@ -12,14 +12,19 @@ export class Point {
   constructor(x: Field, y: Field) {
     this.x = x
     this.y = y
-    if (!circomlib.babyJub.inCurve([this.x.val, this.y.val])) {
+    if (
+      !circomlib.babyJub.inCurve([
+        this.x.toIden3BigInt(),
+        this.y.toIden3BigInt(),
+      ])
+    ) {
       throw new Error('Given point is not on the Babyjubjub curve')
     }
   }
 
   static zero = Point.from(0, 1)
 
-  static from(x: BigNumber, y: BigNumber) {
+  static from(x: F, y: F) {
     return new Point(Field.from(x), Field.from(y))
   }
 
@@ -30,7 +35,7 @@ export class Point {
 
   static decode(packed: Buffer): Point {
     const point = circomlib.babyJub.unpackPoint(packed)
-    return Point.from(point[0], point[1])
+    return Point.from(point[0].toString(), point[1].toString())
   }
 
   static generate(n: Field): Point {
@@ -39,7 +44,7 @@ export class Point {
 
   static fromPrivKey(key: string | Buffer): Point {
     const result = circomlib.eddsa.prv2pub(key)
-    return Point.from(result[0], result[1])
+    return Point.from(result[0].toString(), result[1].toString())
   }
 
   static getMultiplier(key: string): Field {
@@ -49,15 +54,23 @@ export class Point {
         .digest()
         .slice(0, 32),
     )
-    return Field.from(snarkjs.bigInt.leBuff2int(sBuff).shr(3))
+    return Field.from(
+      snarkjs.bigInt
+        .leBuff2int(sBuff)
+        .shr(3)
+        .toString(),
+    )
   }
 
   static isOnJubjub(x: Field, y: Field) {
-    return circomlib.babyJub.inCurve([x.val, y.val])
+    return circomlib.babyJub.inCurve([x.toIden3BigInt(), y.toIden3BigInt()])
   }
 
   encode(): Buffer {
-    return circomlib.babyJub.packPoint([this.x.val, this.y.val])
+    return circomlib.babyJub.packPoint([
+      this.x.toIden3BigInt(),
+      this.y.toIden3BigInt(),
+    ])
   }
 
   toHex(): string {
@@ -65,33 +78,33 @@ export class Point {
   }
 
   toBigIntArr(): BigInteger[] {
-    return [this.x.val, this.y.val, bigInt(1)]
+    return [this.x.toIden3BigInt(), this.y.toIden3BigInt(), bigInt(1)]
   }
 
   add(p: Point): Point {
     const result = circomlib.babyJub.addPoint(
-      [this.x.val, this.y.val],
-      [p.x.val, p.y.val],
+      [this.x.toIden3BigInt(), this.y.toIden3BigInt()],
+      [p.x.toIden3BigInt(), p.y.toIden3BigInt()],
     )
-    return Point.from(result[0], result[1])
+    return Point.from(result[0].toString(), result[1].toString())
   }
 
   mul(n: Field): Point {
     const result = circomlib.babyJub.mulPointEscalar(
-      [this.x.val, this.y.val],
+      [this.x.toIden3BigInt(), this.y.toIden3BigInt()],
       n,
     )
-    return Point.from(result[0], result[1])
+    return Point.from(result[0].toString(), result[1].toString())
   }
 
   static GENERATOR: Point = Point.from(
-    circomlib.babyJub.Generator[0],
-    circomlib.babyJub.Generator[1],
+    circomlib.babyJub.Generator[0].toString(),
+    circomlib.babyJub.Generator[1].toString(),
   )
 
   static BASE8: Point = Point.from(
-    circomlib.babyJub.Base8[0],
-    circomlib.babyJub.Base8[1],
+    circomlib.babyJub.Base8[0].toString(),
+    circomlib.babyJub.Base8[1].toString(),
   )
 
   static ORDER: bigint = circomlib.babyJub.order
@@ -117,9 +130,9 @@ export function signEdDSA({
   msg: Field
   privKey: Buffer | string
 }): EdDSA {
-  const result = circomlib.eddsa.signPoseidon(privKey, msg.val)
+  const result = circomlib.eddsa.signPoseidon(privKey, msg.toIden3BigInt())
   return {
-    R8: Point.from(result.R8[0], result.R8[1]),
+    R8: Point.from(result.R8[0].toString(), result.R8[1].toString()),
     S: result.S,
   }
 }
@@ -128,7 +141,7 @@ export function verifyEdDSA(msg: Field, sig: EdDSA, pubKey: Point): boolean {
   const result = circomlib.eddsa.verifyPoseidon(
     msg,
     { R8: [sig.R8.x, sig.R8.y], S: sig.S },
-    [pubKey.x.val, pubKey.y.val],
+    [pubKey.x.toIden3BigInt(), pubKey.y.toIden3BigInt()],
   )
   return result
 }

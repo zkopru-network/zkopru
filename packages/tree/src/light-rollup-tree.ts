@@ -1,9 +1,9 @@
 import { InanoSQLInstance } from '@nano-sql/core'
 import { Field } from '@zkopru/babyjubjub'
 import { TreeNodeSql, NoteSql } from '@zkopru/database'
-import bigInt, { BigInteger } from 'big-integer'
 import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 import { Note } from '@zkopru/transaction'
+import BN from 'bn.js'
 import { Hasher } from './hasher'
 import { MerkleProof, startingLeafProof } from './merkle-proof'
 
@@ -47,6 +47,8 @@ export abstract class LightRollUpTree {
 
   data: TreeData
 
+  depth: number
+
   constructor({
     db,
     metadata,
@@ -71,19 +73,15 @@ export abstract class LightRollUpTree {
     this.itemSchema = itemSchema
     this.treeNodeSchema = treeNodeSchema
     this.treeSchema = treeSchema
-    if (!metadata.id) throw Error('UUID is not defined')
+    this.depth = data.siblings.length
   }
 
   root(): Field {
     return Field.from(this.data.root)
   }
 
-  depth(): number {
-    return this.data.siblings.length
-  }
-
   maxSize(): Field {
-    return Field.from(bigInt.one.shiftLeft(this.depth()))
+    return Field.from(Field.one.shln(this.depth))
   }
 
   latestLeafIndex(): Field {
@@ -98,15 +96,32 @@ export abstract class LightRollUpTree {
     hash,
     index,
   }: {
-    hash: string
-    index: string
+    hash: Field
+    index?: Field
   }): Promise<MerkleProof> {
-    const depth = this.depth()
+    let leafIndex: Field
+    if (index) {
+      leafIndex = index
+    } else {
+      const indexes = await this.db
+        .selectTable(this.treeNodeSchema.name)
+        .query('select')
+        .where(['value', '=', hash])
+        .exec()
+      if (indexes.length === 0) throw Error('Leaf does not exist.')
+      else if (indexes.length > 1)
+        throw Error('Multiple leaves exist for same hash.')
+      else {
+        const leafNodeIndex: BN = Field.toBN(indexes[0].nodeIndex)
+        const prefix = new BN(1).shln(this.depth)
+        leafIndex = Field.from(leafNodeIndex.xor(prefix))
+      }
+    }
     const cachedSiblings = await this.db
       .selectTable(this.treeNodeSchema.name)
       .presetQuery('getSiblings', {
-        depth,
-        index,
+        depth: this.depth,
+        leafIndex,
       })
       .exec()
 
@@ -115,19 +130,22 @@ export abstract class LightRollUpTree {
       siblingCache[sibling.nodeIndex] = Field.from(sibling.value)
     }
 
-    if (this.metadata.start?.gt(index) || this.metadata.end?.lte(index)) {
+    if (
+      this.metadata.start?.gt(leafIndex) ||
+      this.metadata.end?.lte(leafIndex)
+    ) {
       throw Error('not in range')
     }
 
-    const siblings = Array(depth).fill(undefined)
-    const leafNodeIndex = Field.from(index).val.or(bigInt.one.shiftRight(depth))
-    let pathNodeIndex!: BigInteger
-    let siblingNodeIndex!: BigInteger
-    for (let level = 0; level < depth; level += 1) {
-      pathNodeIndex = leafNodeIndex.shiftRight(level)
-      siblingNodeIndex = pathNodeIndex.xor(1)
+    const siblings = Array(this.depth).fill(undefined)
+    const leafNodeIndex: BN = leafIndex.addPrefixBit(this.depth)
+    let pathNodeIndex!: BN
+    let siblingNodeIndex!: BN
+    for (let level = 0; level < this.depth; level += 1) {
+      pathNodeIndex = leafNodeIndex.shrn(level)
+      siblingNodeIndex = new BN(1).xor(pathNodeIndex)
 
-      if (siblingNodeIndex.gt(this.metadata.end.val.shiftRight(level))) {
+      if (siblingNodeIndex.shrn(1).gt(this.metadata.end.shrn(level))) {
         // should return pre hashed zero
         siblings[level] = this.config.hasher.preHash[level]
       } else {
@@ -140,12 +158,22 @@ export abstract class LightRollUpTree {
       }
     }
     const root = this.root()
-    return { root, index: Field.from(index), leaf: Field.from(hash), siblings }
+    return {
+      root,
+      index: Field.from(leafIndex),
+      leaf: Field.from(hash),
+      siblings,
+    }
   }
 
-  async append(...items: Item[]) {
+  async append(
+    ...items: Item[]
+  ): Promise<{
+    root: Field
+    index: Field
+    siblings: Field[]
+  }> {
     const start = this.latestLeafIndex()
-    const depth = this.depth()
     const latestSiblings = this.siblings()
     const cachedNodes: TreeNodeSql[] = []
     const itemAppendingQuery: NoteSql[] = []
@@ -177,30 +205,30 @@ export abstract class LightRollUpTree {
       }
 
       // udpate the latest siblings and save the intermediate value if it needs to be tracked
-      const leafIndex = index.val.or(bigInt.one.shiftRight(depth))
+      const leafNodeIndex = index.addPrefixBit(this.depth)
       let node = item.leafHash
       let hasRightSibling!: boolean
-      for (let level = 0; level < depth; level += 1) {
-        const pathIndex = leafIndex.shiftRight(level)
-        hasRightSibling = pathIndex.and(1).isZero()
+      for (let level = 0; level < this.depth; level += 1) {
+        const pathIndex = leafNodeIndex.shrn(level)
+        hasRightSibling = pathIndex.and(new BN(1)).isZero()
         if (
           this.config.fullSync ||
           this.shouldTrack(trackingLeaves, pathIndex)
         ) {
           cachedNodes.push({
-            nodeIndex: Field.from(pathIndex).toHex(),
-            value: node.toHex(),
+            nodeIndex: pathIndex.toString(),
+            value: node.toString(),
           })
         }
         if (
           this.config.fullSync ||
-          (this.shouldTrack(trackingLeaves, pathIndex.xor(1)) &&
+          (this.shouldTrack(trackingLeaves, pathIndex.xor(new BN(1))) &&
             !hasRightSibling)
         ) {
           // if this should track the sibling node which is not a pre-hashed zero
           cachedNodes.push({
-            nodeIndex: Field.from(pathIndex.xor(1)).toHex(),
-            value: latestSiblings[level].toHex(),
+            nodeIndex: pathIndex.xor(new BN(1)).toString(),
+            value: latestSiblings[level].toString(),
           })
         }
         if (hasRightSibling) {
@@ -237,7 +265,6 @@ export abstract class LightRollUpTree {
         },
       })
       .exec()
-
     await this.db
       .selectTable(this.itemSchema.name)
       .query('upsert', itemAppendingQuery)
@@ -246,6 +273,11 @@ export abstract class LightRollUpTree {
       .selectTable(this.treeNodeSchema.name)
       .query('upsert', cachedNodes)
       .exec()
+    return {
+      root,
+      index,
+      siblings: latestSiblings,
+    }
   }
 
   async dryAppend(
@@ -256,7 +288,6 @@ export abstract class LightRollUpTree {
     siblings: Field[]
   }> {
     const start = this.latestLeafIndex()
-    const depth = this.depth()
     const latestSiblings = this.siblings()
     let root!: Field
 
@@ -266,12 +297,12 @@ export abstract class LightRollUpTree {
       index = start.add(i)
       // if note exists, save the data and mark as an item to keep tracking
       // udpate the latest siblings and save the intermediate value if it needs to be tracked
-      const leafIndex = index.val.or(bigInt.one.shiftRight(depth))
+      const leafIndex = index.addPrefixBit(this.depth)
       let node = item.leafHash
       let hasRightSibling!: boolean
-      for (let level = 0; level < depth; level += 1) {
-        const pathIndex = leafIndex.shiftRight(level)
-        hasRightSibling = pathIndex.and(1).isZero()
+      for (let level = 0; level < this.depth; level += 1) {
+        const pathIndex = leafIndex.shrn(level)
+        hasRightSibling = pathIndex.and(new BN(1)).isZero()
         if (hasRightSibling) {
           // right empty sibling
           latestSiblings[level] = node // current node will be the next merkle proof's left sibling
@@ -367,17 +398,14 @@ export abstract class LightRollUpTree {
    * It returns true when the given node is a sibling of any leaf to keep tracking
    * @param nodeIndex Tree node's index
    */
-  private shouldTrack(trackingLeaves: Field[], nodeIndex: BigInteger): boolean {
-    const depth = this.depth()
-    let leafIndex: bigInt.BigInteger
-    let pathIndex: bigInt.BigInteger
+  private shouldTrack(trackingLeaves: Field[], nodeIndex: BN): boolean {
+    let leafIndex: BN
+    let pathIndex: BN
     for (const leaf of trackingLeaves) {
-      leafIndex = leaf.val.or(bigInt.one.shiftLeft(depth))
-      pathIndex = leafIndex.shiftRight(
-        leafIndex.bitLength().subtract(nodeIndex.bitLength()),
-      )
+      leafIndex = leaf.addPrefixBit(this.depth)
+      pathIndex = leafIndex.shrn(leafIndex.bitLength() - nodeIndex.bitLength())
       // if the node is one of the sibling for the leaf proof return true
-      if (pathIndex.xor(nodeIndex).eq(1)) return true
+      if (pathIndex.xor(nodeIndex).eqn(1)) return true
     }
     return false
   }

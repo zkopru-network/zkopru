@@ -216,7 +216,7 @@ export class TxBuilder {
       const spendingNFTNotes: Utxo[] = this.spendables.filter(utxo => {
         return (
           utxo.tokenAddr.toHex() === addr &&
-          sendingNFTs.find(nft => nft.equal(utxo.nft)) !== undefined
+          sendingNFTs.find(nft => nft.eq(utxo.nft)) !== undefined
         )
       })
       if (sendingNFTs.length !== spendingNFTNotes.length) {
@@ -224,7 +224,7 @@ export class TxBuilder {
       }
       spendingNFTNotes.sort((a, b) => (a.nft.gt(b.nft) ? 1 : -1))
       for (let i = 0; i < sendingNFTs.length; i += 1) {
-        if (!sendingNFTs[i].equal(spendingNFTNotes[i].nft))
+        if (!sendingNFTs[i].eq(spendingNFTNotes[i].nft))
           throw Error('Failed to find the exact NFT')
       }
       for (const utxo of spendingNFTNotes) {
@@ -263,7 +263,7 @@ export class TxBuilder {
         if (sendingAmount.erc721[addr] === undefined) {
           return true
         }
-        if (sendingAmount.erc721[addr].find(nft.equal) === undefined) {
+        if (sendingAmount.erc721[addr].find(nft.eq) === undefined) {
           return true
         }
         return false

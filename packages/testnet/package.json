@@ -25,7 +25,6 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@nano-sql/adapter-rocksdb": "^2.0.7",
     "@nano-sql/core": "^2.3.7",
     "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/contracts": "file:../contracts",

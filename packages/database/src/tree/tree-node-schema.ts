@@ -1,4 +1,3 @@
-import bigInt from 'big-integer'
 import { Field } from '@zkopru/babyjubjub'
 import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 
@@ -14,6 +13,9 @@ export function treeNode(treeId: string): InanoSQLTableConfig {
       'nodeIndex:string': { pk: true },
       'value:string': {},
     },
+    indexes: {
+      'value:string': {},
+    },
     queries: [
       {
         name: 'getSiblings',
@@ -25,9 +27,9 @@ export function treeNode(treeId: string): InanoSQLTableConfig {
           const { depth } = args
           const index = Field.from(args.index)
           const siblingIndexes = Array(depth).fill('')
-          const leafIndex = index.val.or(bigInt.one.shiftRight(depth))
+          const leafIndex = index.or(Field.one.shrn(depth))
           for (let level = 0; level < depth; level += 1) {
-            const pathIndex = leafIndex.shiftRight(level)
+            const pathIndex = leafIndex.shrn(level)
             const siblingIndex = pathIndex.xor(1)
             siblingIndexes[level] = Field.from(siblingIndex).toHex()
           }

@@ -8,13 +8,15 @@
     "dist"
   ],
   "_moduleAliases": {
-    "~tree": "dist"
+    "~tree": "dist",
+    "~database": "../database/dist"
   },
   "scripts": {
     "postinstall": "shx mkdir -p dist && link-module-alias",
     "build": "tsc --build tsconfig.build.json && link-module-alias",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
-    "test": "jest",
+    "test": "jest --coverage=false",
+    "test:rebuild": "yarn build && yarn test",
     "test:unit": "jest test/unit",
     "test:integration": "jest test/unit",
     "test:watch": "jest --watch",
@@ -31,6 +33,7 @@
     "@zkopru/transaction": "file:../transaction",
     "async-lock": "^1.2.2",
     "big-integer": "^1.6.48",
+    "bn.js": "^5.1.1",
     "circomlib": "^0.1.1",
     "web3-utils": "^1.2.6"
   }

@@ -332,8 +332,8 @@ export class Block {
       )
       arr.push(numOfInflowByte)
       for (let j = 0; j < this.body.txs[i].inflow.length; j += 1) {
-        arr.push(this.body.txs[i].inflow[j].nullifier.toBuffer(32))
-        arr.push(this.body.txs[i].inflow[j].root.toBuffer(32))
+        arr.push(this.body.txs[i].inflow[j].nullifier.toBuffer('be', 32))
+        arr.push(this.body.txs[i].inflow[j].root.toBuffer('be', 32))
       }
       const numOfOutflowByte = Utils.hexToBuffer(
         this.body.txs[i].outflow.length.toString(16),
@@ -341,16 +341,16 @@ export class Block {
       )
       arr.push(numOfOutflowByte)
       for (let j = 0; j < this.body.txs[i].outflow.length; j += 1) {
-        arr.push(this.body.txs[i].outflow[j].note.toBuffer(32))
-        arr.push(this.body.txs[i].outflow[j].outflowType.toBuffer(1))
+        arr.push(this.body.txs[i].outflow[j].note.toBuffer('be', 32))
+        arr.push(this.body.txs[i].outflow[j].outflowType.toBuffer('be', 1))
         const { data } = this.body.txs[i].outflow[j]
         if (data) {
-          arr.push(data.to.toBuffer(20))
-          arr.push(data.eth.toBuffer(32))
-          arr.push(data.tokenAddr.toBuffer(20))
-          arr.push(data.erc20Amount.toBuffer(32))
-          arr.push(data.nft.toBuffer(32))
-          arr.push(data.fee.toBuffer(32))
+          arr.push(data.to.toBuffer('be', 20))
+          arr.push(data.eth.toBuffer('be', 32))
+          arr.push(data.tokenAddr.toBuffer('be', 20))
+          arr.push(data.erc20Amount.toBuffer('be', 32))
+          arr.push(data.nft.toBuffer('be', 32))
+          arr.push(data.fee.toBuffer('be', 32))
         } else if (this.body.txs[i].outflow[j].outflowType.isZero()) {
           throw Error('public data should exist')
         }
@@ -361,19 +361,19 @@ export class Block {
       arr.push(swapExistenceByte)
       const { swap } = this.body.txs[i]
       if (swap) {
-        arr.push(swap.toBuffer(32))
+        arr.push(swap.toBuffer('be', 32))
       }
-      arr.push(this.body.txs[i].fee.toBuffer(32))
+      arr.push(this.body.txs[i].fee.toBuffer('be', 32))
       const { proof } = this.body.txs[i]
       if (!proof) throw Error('SNARK proof should exist')
-      arr.push(proof.pi_a[0].toBuffer(32))
-      arr.push(proof.pi_a[1].toBuffer(32))
-      arr.push(proof.pi_b[0][0].toBuffer(32))
-      arr.push(proof.pi_b[0][1].toBuffer(32))
-      arr.push(proof.pi_b[1][0].toBuffer(32))
-      arr.push(proof.pi_b[1][1].toBuffer(32))
-      arr.push(proof.pi_c[0].toBuffer(32))
-      arr.push(proof.pi_c[1].toBuffer(32))
+      arr.push(proof.pi_a[0].toBuffer('be', 32))
+      arr.push(proof.pi_a[1].toBuffer('be', 32))
+      arr.push(proof.pi_b[0][0].toBuffer('be', 32))
+      arr.push(proof.pi_b[0][1].toBuffer('be', 32))
+      arr.push(proof.pi_b[1][0].toBuffer('be', 32))
+      arr.push(proof.pi_b[1][1].toBuffer('be', 32))
+      arr.push(proof.pi_c[0].toBuffer('be', 32))
+      arr.push(proof.pi_c[1].toBuffer('be', 32))
       const { memo } = this.body.txs[i]
       const memoExistenceByte = memo
         ? Buffer.from([memo.byteLength])

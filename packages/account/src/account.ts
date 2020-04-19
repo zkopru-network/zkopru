@@ -30,7 +30,7 @@ export class ZkAccount {
   }
 
   signEdDSA(msg: Field): EdDSA {
-    return signEdDSA({ msg, privKey: this.privateKey.toBuffer() })
+    return signEdDSA({ msg, privKey: this.privateKey.toBuffer('be') })
   }
 
   toAddAccount(): AddAccount {
@@ -45,7 +45,7 @@ export class ZkAccount {
     password: string,
   ): ZkAccount {
     const account = new Accounts().decrypt(obj, password)
-    const privateKey = Field.from(account.privateKey).toBuffer()
+    const privateKey = Field.from(account.privateKey).toBuffer('be')
     return new ZkAccount(privateKey)
   }
 }

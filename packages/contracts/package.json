@@ -20,7 +20,7 @@
     "precommit": "#lint-staged",
     "compile": "truffle compile",
     "postinstall": "shx mkdir -p dist",
-    "build": "yarn compile && yarn genTS && tsc --build tsconfig.build.json && link-module-alias && yarn prettier --write src/**/*",
+    "build:": "yarn compile && yarn genTS && tsc --build tsconfig.build.json && link-module-alias && yarn prettier --write src/**/*",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "migrate:test": "truffle migrate --network test && yarn genTS",
     "tsc": "tsc --build tsconfig.build.json && link-module-alias",
