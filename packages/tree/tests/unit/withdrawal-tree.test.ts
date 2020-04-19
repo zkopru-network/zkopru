@@ -46,9 +46,6 @@ describe('withdrawal tree unit test', () => {
         schema.withdrawal,
         schema.withdrawalTree,
         schema.withdrawalTreeNode(withdrawalTreeMetadata.id),
-        schema.withdrawal,
-        schema.withdrawalTree,
-        schema.withdrawalTreeNode('unittest'),
       ],
       version: 3,
     })
@@ -107,7 +104,7 @@ describe('withdrawal tree unit test', () => {
       index: Field
       siblings: Field[]
     }
-    beforeAll(async () => {
+    it('should update its root and its value should equal to the dry run', async () => {
       prevRoot = withdrawalTree.root()
       const items: Item[] = [
         { leafHash: Field.from(1) },
@@ -115,8 +112,6 @@ describe('withdrawal tree unit test', () => {
       ]
       dryResult = await withdrawalTree.dryAppend(...items)
       result = await withdrawalTree.append(...items)
-    })
-    it('should update its root and its value should equal to the dry run', () => {
       expect(result.root.eq(prevRoot)).toBe(false)
       expect(result.root.eq(dryResult.root)).toBe(true)
       expect(result.index.eq(dryResult.index)).toBe(true)
@@ -136,18 +131,16 @@ describe('withdrawal tree unit test', () => {
       leafHash: note.hash(),
       note,
     }))
-    beforeAll(async () => {
+    it("should track Alice's utxos while not tracking Bob's", async () => {
       withdrawalTree.updateAddresses(addresses)
       await withdrawalTree.append(...items)
-    })
-    it("should track Alice's utxos while not tracking Bob's", async () => {
       const proof = await withdrawalTree.merkleProof({
         hash: items[0].leafHash,
       })
       expect(verifyProof(keccakHasher(depth), proof)).toBe(true)
     })
     it('should generate merkle proof using index together', async () => {
-      const index = withdrawalTree.latestLeafIndex().sub(2)
+      const index = withdrawalTree.latestLeafIndex().sub(3)
       const proof = await withdrawalTree.merkleProof({
         hash: items[0].leafHash,
         index,
@@ -156,11 +149,12 @@ describe('withdrawal tree unit test', () => {
     })
     it('should fail to generate a merkle proof with an invalid index', async () => {
       const index = withdrawalTree.latestLeafIndex().sub(1)
-      const proof = await withdrawalTree.merkleProof({
-        hash: items[0].leafHash,
-        index,
-      })
-      expect(verifyProof(keccakHasher(depth), proof)).toBe(false)
+      await expect(
+        withdrawalTree.merkleProof({
+          hash: items[0].leafHash,
+          index,
+        }),
+      ).rejects.toThrow('')
     })
   })
 })

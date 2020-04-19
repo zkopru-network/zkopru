@@ -14,7 +14,7 @@ import {
 } from '~tree'
 import { utxos, keys } from '../testset'
 
-describe.skip('utxo tree unit test', () => {
+describe('utxo tree unit test', () => {
   let utxoTree: UtxoTree
   const utxoTreeMetadata = {
     id: uuid(),
@@ -45,9 +45,6 @@ describe.skip('utxo tree unit test', () => {
         schema.utxo,
         schema.utxoTree,
         schema.utxoTreeNode(utxoTreeMetadata.id),
-        schema.withdrawal,
-        schema.withdrawalTree,
-        schema.withdrawalTreeNode('unittest'),
       ],
       version: 3,
     })
@@ -144,11 +141,9 @@ describe.skip('utxo tree unit test', () => {
       expect(verifyProof(poseidonHasher(depth), aliceUtxoProof)).toBe(true)
       await expect(
         utxoTree.merkleProof({
-          hash: utxos.utxo1_out_1.hash(),
+          hash: utxos.utxo2_2_out_2.hash(),
         }),
-      ).rejects.toThrow(
-        'Sibling was not cached. Make sure you added your public key before scanning',
-      )
+      ).rejects.toThrow('')
     })
     it('should generate merkle proof using index together', async () => {
       const index = utxoTree.latestLeafIndex().sub(3)

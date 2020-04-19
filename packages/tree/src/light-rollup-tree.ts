@@ -6,7 +6,6 @@ import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 import AsyncLock from 'async-lock'
 import { Note } from '@zkopru/transaction'
 import BN from 'bn.js'
-import { toHex } from 'web3-utils'
 import { Hasher } from './hasher'
 import { MerkleProof, startingLeafProof } from './merkle-proof'
 
@@ -148,7 +147,6 @@ export abstract class LightRollUpTree {
     let index = start
     for (let i = 0; i < items.length; i += 1) {
       const item = items[i]
-      index = start.add(i)
       // if note exists, save the data and mark as an item to keep tracking
       // udpate the latest siblings and save the intermediate value if it needs to be tracked
       const leafIndex = index.addPrefixBit(this.depth)
@@ -172,6 +170,8 @@ export abstract class LightRollUpTree {
       }
       // update root
       root = node
+      // update index
+      index = index.add(1)
     }
     // update the latest siblings
     return {
@@ -266,7 +266,9 @@ export abstract class LightRollUpTree {
   }> {
     const start = this.latestLeafIndex()
     const latestSiblings = this.siblings()
-    const cachedNodes: TreeNodeSql[] = []
+    const cached: {
+      [nodeIndex: string]: string
+    } = {}
     const itemAppendingQuery: NoteSql[] = []
     let root!: Field
 
@@ -275,7 +277,6 @@ export abstract class LightRollUpTree {
     let index = start
     for (let i = 0; i < items.length; i += 1) {
       const item = items[i]
-      index = start.add(i)
       // if note exists, save the data and mark as an item to keep tracking
       if (this.config.fullSync || items[i].note) {
         itemAppendingQuery.push({
@@ -306,22 +307,27 @@ export abstract class LightRollUpTree {
           this.config.fullSync ||
           this.shouldTrack(trackingLeaves, pathIndex)
         ) {
-          cachedNodes.push({
-            nodeIndex: `0x${pathIndex.toString('hex')}`,
-            value: node.toHex(),
-          })
+          cached[`0x${pathIndex.toString('hex')}`] = node.toHex()
         }
-        if (
-          this.config.fullSync ||
-          (this.shouldTrack(trackingLeaves, pathIndex.xor(new BN(1))) &&
-            !hasRightSibling)
-        ) {
-          // if this should track the sibling node which is not a pre-hashed zero
-          cachedNodes.push({
-            nodeIndex: toHex(pathIndex.xor(new BN(1))),
-            value: toHex(latestSiblings[level]),
-          })
+
+        if (index.gtn(0)) {
+          // store nodes when if the previous sibling set has a node on the tracking path,
+          // because the latest siblings are going to be updated.
+          const prevIndexPath = index.sub(1).addPrefixBit(this.depth)
+          const prevPathIndex = prevIndexPath.shrn(level)
+          const prevSibIndex = new BN(1).xor(prevPathIndex)
+          if (
+            prevSibIndex.isEven() &&
+            (this.config.fullSync ||
+              this.shouldTrack(trackingLeaves, prevSibIndex))
+          ) {
+            // if this should track the sibling node which is not a pre-hashed zero
+            cached[`0x${prevSibIndex.toString('hex')}`] = `0x${latestSiblings[
+              level
+            ].toString('hex')}`
+          }
         }
+
         if (hasRightSibling) {
           // right empty sibling
           latestSiblings[level] = node // current node will be the next merkle proof's left sibling
@@ -337,6 +343,8 @@ export abstract class LightRollUpTree {
       }
       // update root
       root = node
+      // increment index
+      index = index.add(1)
     }
     // update the latest siblings
     this.data = {
@@ -360,6 +368,15 @@ export abstract class LightRollUpTree {
     await this.db
       .selectTable(this.itemSchema.name)
       .query('upsert', itemAppendingQuery)
+      .exec()
+    const cachedNodes: TreeNodeSql[] = Object.keys(cached).map(nodeIndex => ({
+      nodeIndex,
+      value: cached[nodeIndex],
+    }))
+    await this.db
+      .selectTable(this.treeNodeSchema.name)
+      .query('delete')
+      .where(['nodeIndex', 'IN', Object.keys(cached)])
       .exec()
     await this.db
       .selectTable(this.treeNodeSchema.name)

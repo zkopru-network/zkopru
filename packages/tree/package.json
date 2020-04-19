@@ -15,7 +15,7 @@
     "postinstall": "shx mkdir -p dist && link-module-alias",
     "build": "tsc --build tsconfig.build.json && link-module-alias",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
-    "test": "jest --coverage=false",
+    "test": "jest",
     "test:rebuild": "yarn build && yarn test",
     "test:unit": "jest test/unit",
     "test:integration": "jest test/unit",
