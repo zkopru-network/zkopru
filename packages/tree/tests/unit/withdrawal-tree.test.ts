@@ -128,9 +128,9 @@ describe('withdrawal Tree Unit Test', () => {
       leafHash: note.hash(),
       note,
     }))
-    beforeAll(() => {
+    beforeAll(async () => {
       withdrawalTree.updateAddresses(addresses)
-      withdrawalTree.append(...items)
+      await withdrawalTree.append(...items)
     })
     it("should track Alice's utxos while not tracking Bob's", async () => {
       withdrawalTree.merkleProof({ hash: items[0].leafHash })

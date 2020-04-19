@@ -14,6 +14,6 @@ export { WithdrawalTree } from './withdrawal-tree'
 
 export { NullifierTree } from './nullifier-tree'
 
-export { Hasher, keccakHasher, poseidonHasher } from './hasher'
+export { Hasher, keccakHasher, poseidonHasher, genesisRoot } from './hasher'
 
 export { Grove, GroveConfig, GrovePatch } from './grove'

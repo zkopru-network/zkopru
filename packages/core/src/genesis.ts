@@ -1,4 +1,4 @@
-import { Hasher } from '@zkopru/tree'
+import { Hasher, genesisRoot } from '@zkopru/tree'
 import { Header } from './block'
 
 export const genesis = ({
@@ -12,13 +12,9 @@ export const genesis = ({
     nullifier: Hasher
   }
 }): Header => {
-  const utxoRoot = hashers.utxo.preHash[hashers.utxo.preHash.length - 1].toHex()
-  const withdrawalRoot = hashers.withdrawal.preHash[
-    hashers.withdrawal.preHash.length - 1
-  ].toHex()
-  const nullifierRoot = hashers.nullifier.preHash[
-    hashers.nullifier.preHash.length - 1
-  ].toHex()
+  const utxoRoot = genesisRoot(hashers.utxo).toHex()
+  const withdrawalRoot = genesisRoot(hashers.withdrawal).toHex()
+  const nullifierRoot = genesisRoot(hashers.nullifier).toHex()
   return {
     proposer: address,
     parentBlock: '0x0000000000000000000000000000000000000000',

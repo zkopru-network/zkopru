@@ -253,6 +253,7 @@ export abstract class LightRollUpTree {
       index,
       siblings: latestSiblings,
     }
+    this.metadata.end = this.metadata.end.addn(itemAppendingQuery.length)
     // Update database
     await this.db
       .selectTable(this.treeSchema.name)

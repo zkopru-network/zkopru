@@ -11,12 +11,17 @@ function getPreHash(
   parentOf: (left: Field, right: Field) => Field,
   depth: number,
 ): Field[] {
-  const preHash = Array<Field>(depth + 1)
+  const preHash = Array<Field>(depth)
   preHash[0] = Field.zero
   for (let level = 0; level < depth; level += 1) {
     preHash[level + 1] = parentOf(preHash[level], preHash[level])
   }
   return preHash
+}
+
+export function genesisRoot(hasher: Hasher): Field {
+  const lastSib = hasher.preHash[hasher.preHash.length - 1]
+  return hasher.parentOf(lastSib, lastSib)
 }
 
 export function keccakHasher(depth: number): Hasher {
