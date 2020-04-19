@@ -4,9 +4,17 @@ import { Field } from '@zkopru/babyjubjub'
 import { nSQL } from '@nano-sql/core'
 import { uuid } from '@nano-sql/core/lib/utilities'
 import { schema } from '@zkopru/database'
-import { UtxoTree, TreeConfig, poseidonHasher, Item, genesisRoot } from '~tree'
+import {
+  UtxoTree,
+  TreeConfig,
+  poseidonHasher,
+  Item,
+  genesisRoot,
+  verifyProof,
+} from '~tree'
+import { utxos, keys } from '../testset'
 
-describe('utxo tree unit test', () => {
+describe.skip('utxo tree unit test', () => {
   let utxoTree: UtxoTree
   const utxoTreeMetadata = {
     id: uuid(),
@@ -114,5 +122,49 @@ describe('utxo tree unit test', () => {
       })
     })
     it.todo('should have same result with its solidity version')
+  })
+  describe('tracking', () => {
+    const items: Item[] = [
+      utxos.utxo1_out_1,
+      utxos.utxo1_out_2,
+      utxos.utxo2_1_out_1,
+      utxos.utxo2_1_out_2,
+    ].map(note => ({
+      leafHash: note.hash(),
+      note,
+    }))
+    beforeAll(async () => {
+      await utxoTree.append(...items)
+      utxoTree.updatePubKeys([keys.alicePubKey])
+    })
+    it("should track Alice's utxos while not tracking Bob's", async () => {
+      const aliceUtxoProof = await utxoTree.merkleProof({
+        hash: utxos.utxo1_out_2.hash(),
+      })
+      expect(verifyProof(poseidonHasher(depth), aliceUtxoProof)).toBe(true)
+      await expect(
+        utxoTree.merkleProof({
+          hash: utxos.utxo1_out_1.hash(),
+        }),
+      ).rejects.toThrow(
+        'Sibling was not cached. Make sure you added your public key before scanning',
+      )
+    })
+    it('should generate merkle proof using index together', async () => {
+      const index = utxoTree.latestLeafIndex().sub(3)
+      const proof = await utxoTree.merkleProof({
+        hash: utxos.utxo1_out_2.hash(),
+        index,
+      })
+      expect(verifyProof(poseidonHasher(depth), proof)).toBe(true)
+    })
+    it('should fail to generate a merkle proof with an invalid index', async () => {
+      const index = utxoTree.latestLeafIndex().sub(4)
+      const proof = await utxoTree.merkleProof({
+        hash: utxos.utxo1_out_2.hash(),
+        index,
+      })
+      expect(verifyProof(poseidonHasher(depth), proof)).toBe(false)
+    })
   })
 })

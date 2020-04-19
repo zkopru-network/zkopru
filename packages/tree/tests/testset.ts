@@ -242,6 +242,7 @@ export const utxos = {
   utxo1_out_2,
   utxo2_1_in_1,
   utxo2_1_out_1,
+  utxo2_1_out_2,
   utxo2_2_in_1,
   utxo2_2_out_1,
   utxo2_2_out_2,

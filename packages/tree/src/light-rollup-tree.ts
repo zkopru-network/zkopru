@@ -1,7 +1,9 @@
+/* eslint-disable no-underscore-dangle */
 import { InanoSQLInstance } from '@nano-sql/core'
 import { Field } from '@zkopru/babyjubjub'
 import { TreeNodeSql, NoteSql } from '@zkopru/database'
 import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
+import AsyncLock from 'async-lock'
 import { Note } from '@zkopru/transaction'
 import BN from 'bn.js'
 import { toHex } from 'web3-utils'
@@ -50,6 +52,8 @@ export abstract class LightRollUpTree {
 
   depth: number
 
+  lock: AsyncLock
+
   constructor({
     db,
     metadata,
@@ -67,6 +71,7 @@ export abstract class LightRollUpTree {
     data: TreeData
     config: TreeConfig
   }) {
+    this.lock = new AsyncLock()
     this.db = db
     this.metadata = metadata
     this.data = data
@@ -94,6 +99,89 @@ export abstract class LightRollUpTree {
   }
 
   async merkleProof({
+    hash,
+    index,
+  }: {
+    hash: Field
+    index?: Field
+  }): Promise<MerkleProof> {
+    let proof!: MerkleProof
+    await this.lock.acquire('root', async () => {
+      proof = await this._merkleProof({ hash, index })
+    })
+    return proof
+  }
+
+  async append(
+    ...items: Item[]
+  ): Promise<{
+    root: Field
+    index: Field
+    siblings: Field[]
+  }> {
+    let result!: {
+      root: Field
+      index: Field
+      siblings: Field[]
+    }
+    await this.lock.acquire('root', async () => {
+      result = await this._append(...items)
+    })
+    return result
+  }
+
+  async dryAppend(
+    ...items: Item[]
+  ): Promise<{
+    root: Field
+    index: Field
+    siblings: Field[]
+  }> {
+    let start!: Field
+    let latestSiblings!: Field[]
+    await this.lock.acquire('root', async () => {
+      start = this.latestLeafIndex()
+      latestSiblings = this.siblings()
+    })
+    let root!: Field
+
+    let index = start
+    for (let i = 0; i < items.length; i += 1) {
+      const item = items[i]
+      index = start.add(i)
+      // if note exists, save the data and mark as an item to keep tracking
+      // udpate the latest siblings and save the intermediate value if it needs to be tracked
+      const leafIndex = index.addPrefixBit(this.depth)
+      let node = item.leafHash
+      let hasRightSibling!: boolean
+      for (let level = 0; level < this.depth; level += 1) {
+        const pathIndex = leafIndex.shrn(level)
+        hasRightSibling = pathIndex.and(new BN(1)).isZero()
+        if (hasRightSibling) {
+          // right empty sibling
+          latestSiblings[level] = node // current node will be the next merkle proof's left sibling
+          node = this.config.hasher.parentOf(
+            node,
+            this.config.hasher.preHash[level],
+          )
+        } else {
+          // left sibling
+          // keep current sibling
+          node = this.config.hasher.parentOf(latestSiblings[level], node)
+        }
+      }
+      // update root
+      root = node
+    }
+    // update the latest siblings
+    return {
+      root,
+      index,
+      siblings: latestSiblings,
+    }
+  }
+
+  private async _merkleProof({
     hash,
     index,
   }: {
@@ -169,7 +257,7 @@ export abstract class LightRollUpTree {
     }
   }
 
-  async append(
+  private async _append(
     ...items: Item[]
   ): Promise<{
     root: Field
@@ -277,53 +365,6 @@ export abstract class LightRollUpTree {
       .selectTable(this.treeNodeSchema.name)
       .query('upsert', cachedNodes)
       .exec()
-    return {
-      root,
-      index,
-      siblings: latestSiblings,
-    }
-  }
-
-  async dryAppend(
-    ...items: Item[]
-  ): Promise<{
-    root: Field
-    index: Field
-    siblings: Field[]
-  }> {
-    const start = this.latestLeafIndex()
-    const latestSiblings = this.siblings()
-    let root!: Field
-
-    let index = start
-    for (let i = 0; i < items.length; i += 1) {
-      const item = items[i]
-      index = start.add(i)
-      // if note exists, save the data and mark as an item to keep tracking
-      // udpate the latest siblings and save the intermediate value if it needs to be tracked
-      const leafIndex = index.addPrefixBit(this.depth)
-      let node = item.leafHash
-      let hasRightSibling!: boolean
-      for (let level = 0; level < this.depth; level += 1) {
-        const pathIndex = leafIndex.shrn(level)
-        hasRightSibling = pathIndex.and(new BN(1)).isZero()
-        if (hasRightSibling) {
-          // right empty sibling
-          latestSiblings[level] = node // current node will be the next merkle proof's left sibling
-          node = this.config.hasher.parentOf(
-            node,
-            this.config.hasher.preHash[level],
-          )
-        } else {
-          // left sibling
-          // keep current sibling
-          node = this.config.hasher.parentOf(latestSiblings[level], node)
-        }
-      }
-      // update root
-      root = node
-    }
-    // update the latest siblings
     return {
       root,
       index,
