@@ -271,7 +271,7 @@ export class Grove {
     // only the full node manages the nullifier tree
     const tree = this.nullifierTree
     if (tree) {
-      await tree.nullify(nullifiers, block)
+      await tree.nullify(block, ...nullifiers)
     }
   }
 

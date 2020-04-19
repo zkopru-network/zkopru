@@ -29,6 +29,8 @@
     "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/transaction": "file:../transaction",
     "big-integer": "^1.6.48",
-    "web3-core": "^1.2.6"
+    "bn.js": "^5.1.1",
+    "web3-core": "^1.2.6",
+    "web3-utils": "^1.2.6"
   }
 }

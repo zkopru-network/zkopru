@@ -13,8 +13,8 @@ function getPreHash(
 ): Field[] {
   const preHash = Array<Field>(depth)
   preHash[0] = Field.zero
-  for (let level = 0; level < depth; level += 1) {
-    preHash[level + 1] = parentOf(preHash[level], preHash[level])
+  for (let level = 1; level < depth; level += 1) {
+    preHash[level] = parentOf(preHash[level - 1], preHash[level - 1])
   }
   return preHash
 }

@@ -3,13 +3,13 @@ import { Field } from '@zkopru/babyjubjub'
 import { schema, TreeNodeSql } from '@zkopru/database'
 import AsyncLock from 'async-lock'
 import BN from 'bn.js'
-import { Hasher } from './hasher'
+import { Hasher, genesisRoot } from './hasher'
 import { verifyProof, MerkleProof } from './merkle-proof'
 
 export interface SMT {
   depth: number
   hasher: Hasher
-  root: Field
+  root(): Promise<Field>
   getInclusionProof(leaf: Field): Promise<MerkleProof>
   getNonInclusionProof(leaf: Field): Promise<MerkleProof>
   // exist(leaf: Hex): Promise<boolean>;
@@ -31,7 +31,7 @@ export class NullifierTree implements SMT {
 
   lock: AsyncLock
 
-  root!: Field
+  rootNode!: Field
 
   constructor({
     db,
@@ -53,17 +53,30 @@ export class NullifierTree implements SMT {
       throw Error('Hasher should have enough prehased values')
   }
 
+  async root(): Promise<Field> {
+    if (this.rootNode) return this.rootNode
+    const stored = (
+      await this.db
+        .selectTable(schema.nullifierTreeNode.name)
+        .presetQuery('getRoot')
+        .exec()
+    )[0] as TreeNodeSql
+    if (stored) return Field.from(stored.value)
+    return genesisRoot(this.hasher)
+  }
+
   async getInclusionProof(index: Field): Promise<MerkleProof> {
     let siblings!: Field[]
+    let merkleProof!: MerkleProof
     await this.lock.acquire('root', async () => {
       siblings = await this.getSiblings(index)
+      merkleProof = {
+        root: await this.root(),
+        index,
+        leaf: Field.from(SMTLeaf.FILLED),
+        siblings,
+      }
     })
-    const merkleProof: MerkleProof = {
-      root: this.root,
-      index,
-      leaf: Field.from(SMTLeaf.FILLED),
-      siblings,
-    }
     if (!verifyProof(this.hasher, merkleProof)) {
       throw Error('Generated invalid proof')
     }
@@ -72,31 +85,35 @@ export class NullifierTree implements SMT {
 
   async getNonInclusionProof(index: Field): Promise<MerkleProof> {
     let siblings!: Field[]
+    let merkleProof!: MerkleProof
     await this.lock.acquire('root', async () => {
       siblings = await this.getSiblings(index)
+      merkleProof = {
+        root: await this.root(),
+        index,
+        leaf: Field.from(SMTLeaf.EMPTY),
+        siblings,
+      }
     })
-    const merkleProof: MerkleProof = {
-      root: this.root,
-      index,
-      leaf: Field.from(SMTLeaf.EMPTY),
-      siblings,
-    }
+
     if (!verifyProof(this.hasher, merkleProof)) {
       throw Error('Generated invalid proof')
     }
     return merkleProof
   }
 
-  async nullify(leaves: Field[], blockHash: string) {
-    this.lock.acquire('root', async () => {
+  async nullify(blockHash: string, ...leaves: Field[]): Promise<Field> {
+    let result: Field = this.rootNode
+    await this.lock.acquire('root', async () => {
       for (const leaf of leaves) {
-        await this.updateLeaf(leaf, SMTLeaf.FILLED, blockHash)
+        result = await this.updateLeaf(leaf, SMTLeaf.FILLED, blockHash)
       }
     })
+    return result
   }
 
-  async recover(leaves: Field[], blockHash: string) {
-    this.lock.acquire('root', async () => {
+  async recover(blockHash: string, ...leaves: Field[]) {
+    await this.lock.acquire('root', async () => {
       for (const leaf of leaves) {
         await this.updateLeaf(leaf, SMTLeaf.EMPTY, blockHash)
       }
@@ -106,7 +123,7 @@ export class NullifierTree implements SMT {
   private async getSiblings(index: Field): Promise<Field[]> {
     const { depth } = this
     const cachedSiblings = await this.db
-      .selectTable(schema.nullifiers.name)
+      .selectTable(schema.nullifierTreeNode.name)
       .presetQuery('getSiblings', {
         depth,
         index,
@@ -124,7 +141,7 @@ export class NullifierTree implements SMT {
     let siblingNodeIndex!: BN
     for (let level = 0; level < depth; level += 1) {
       pathNodeIndex = leafNodeIndex.shrn(level)
-      siblingNodeIndex = pathNodeIndex.xor(new BN(1))
+      siblingNodeIndex = new BN(1).xor(pathNodeIndex)
       const cached = siblingCache[Field.from(siblingNodeIndex).toHex()]
       siblings[level] = cached || this.hasher.preHash[level]
     }
@@ -137,22 +154,22 @@ export class NullifierTree implements SMT {
     blockHash: string,
   ): Promise<Field> {
     const nodesToUpdate: TreeNodeSql[] = []
-    const leafIndex = index.addPrefixBit(this.depth)
+    const leafNodeIndex = index.addPrefixBit(this.depth)
     const siblings = await this.getSiblings(index)
     let node = Field.from(val)
     let pathIndex: BN
     let hasRightSibling: boolean
     for (let level = 0; level < this.depth; level += 1) {
-      pathIndex = leafIndex.shrn(level)
+      pathIndex = leafNodeIndex.shrn(level)
       nodesToUpdate.push({
         nodeIndex: Field.from(pathIndex).toHex(),
         value: node.toHex(),
       })
       hasRightSibling = pathIndex.isEven()
       if (hasRightSibling) {
-        node = this.hasher.parentOf(siblings[level], node)
-      } else {
         node = this.hasher.parentOf(node, siblings[level])
+      } else {
+        node = this.hasher.parentOf(siblings[level], node)
       }
     }
     nodesToUpdate.push({
@@ -180,24 +197,24 @@ export class NullifierTree implements SMT {
         })
         .exec()
     }
-    this.root = node
-    return this.root
+    this.rootNode = node
+    return this.rootNode
   }
 
   async dryRunNullify(...leaves: Field[]): Promise<Field> {
     let result!: Field
-    const prevRoot = Field.from(this.root)
-    this.lock.acquire('root', async () => {
+    const prevRoot = Field.from(await this.root())
+    await this.lock.acquire('root', async () => {
       for (const leaf of leaves) {
         await this.updateLeaf(leaf, SMTLeaf.FILLED, 'TEMP')
       }
-      result = this.root
+      result = await this.root()
       for (const leaf of leaves) {
         await this.updateLeaf(leaf, SMTLeaf.EMPTY, 'TEMP')
       }
+      if (!(await this.root()).eq(prevRoot))
+        throw Error('Dry run should not make any change')
     })
-    if (!this.root.eq(prevRoot))
-      throw Error('Dry run should not make any change')
     return result
   }
 }

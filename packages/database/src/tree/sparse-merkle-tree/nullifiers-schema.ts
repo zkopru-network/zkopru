@@ -4,11 +4,11 @@ export const nullifiers: InanoSQLTableConfig = {
   name: 'nullifiers',
   model: {
     'index:string': { pk: true },
-    'nullified:boolean': {},
+    'nullified:int': {},
     'blockHash:string': {},
   },
   indexes: {
-    'nullified:boolean': {},
+    'nullified:int': {},
     'blockHash:string': {},
   },
   queries: [
@@ -24,7 +24,7 @@ export const nullifiers: InanoSQLTableConfig = {
           .query('upsert', [
             {
               index,
-              nullified: true,
+              nullified: 1,
               blockHash,
             },
           ])
@@ -41,7 +41,7 @@ export const nullifiers: InanoSQLTableConfig = {
         return db
           .query('upsert', [
             {
-              nullified: false,
+              nullified: 0,
               blockHash: null,
             },
           ])

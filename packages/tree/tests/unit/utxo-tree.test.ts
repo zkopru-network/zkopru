@@ -1,11 +1,12 @@
+/* eslint-disable jest/no-disabled-tests */
 /* eslint-disable jest/no-hooks */
 import { Field } from '@zkopru/babyjubjub'
 import { nSQL } from '@nano-sql/core'
 import { uuid } from '@nano-sql/core/lib/utilities'
 import { schema } from '@zkopru/database'
-import { UtxoTree, TreeConfig, poseidonHasher, Item } from '~tree'
+import { UtxoTree, TreeConfig, poseidonHasher, Item, genesisRoot } from '~tree'
 
-describe('utxo Tree Unit Test', () => {
+describe('utxo tree unit test', () => {
   let utxoTree: UtxoTree
   const utxoTreeMetadata = {
     id: uuid(),
@@ -22,7 +23,7 @@ describe('utxo Tree Unit Test', () => {
   }
   const preHashes = poseidonHasher(depth).preHash
   const utxoTreeInitialData = {
-    root: preHashes[preHashes.length - 1],
+    root: genesisRoot(poseidonHasher(depth)),
     index: Field.zero,
     siblings: preHashes,
   }
@@ -55,10 +56,8 @@ describe('utxo Tree Unit Test', () => {
     })
   })
   describe('root()', () => {
-    it('should return the last item of the prehashed zero for its initial root', () => {
-      expect(utxoTree.root().eq(preHashes[preHashes.length - 1])).toStrictEqual(
-        true,
-      )
+    it('should return the genesis root value for its initial root', () => {
+      expect(utxoTree.root().eq(utxoTreeInitialData.root)).toStrictEqual(true)
     })
   })
   describe('dryAppend', () => {
@@ -92,7 +91,7 @@ describe('utxo Tree Unit Test', () => {
       index: Field
       siblings: Field[]
     }
-    let realResult: {
+    let result: {
       root: Field
       index: Field
       siblings: Field[]
@@ -104,13 +103,13 @@ describe('utxo Tree Unit Test', () => {
         { leafHash: Field.from(2) },
       ]
       dryResult = await utxoTree.dryAppend(...items)
-      realResult = await utxoTree.append(...items)
+      result = await utxoTree.append(...items)
     })
     it('should update its root and its value should equal to the dry run', () => {
-      expect(realResult.root.eq(prevRoot)).toBe(false)
-      expect(realResult.root.eq(dryResult.root)).toBe(true)
-      expect(realResult.index.eq(dryResult.index)).toBe(true)
-      realResult.siblings.forEach((sib, i) => {
+      expect(result.root.eq(prevRoot)).toBe(false)
+      expect(result.root.eq(dryResult.root)).toBe(true)
+      expect(result.index.eq(dryResult.index)).toBe(true)
+      result.siblings.forEach((sib, i) => {
         expect(sib.eq(dryResult.siblings[i])).toBe(true)
       })
     })

@@ -12,7 +12,7 @@ export function verifyProof(hasher: Hasher, proof: MerkleProof): boolean {
   let path = proof.index
   let node = proof.leaf
   for (let i = 0; i < proof.siblings.length; i += 1) {
-    if (path.and(1).isZero()) {
+    if (path.isEven()) {
       // right sibling
       node = hasher.parentOf(node, proof.siblings[i])
     } else {
@@ -34,7 +34,7 @@ export function startingLeafProof(
   // calculate the siblings validity
   let path = index
   for (let i = 0; i < depth; i += 1) {
-    if (path.and(1).isZero()) {
+    if (path.isEven()) {
       // Right sibling should be a prehashed zero
       if (!siblings[i].eq(hasher.preHash[i])) return false
     } else {

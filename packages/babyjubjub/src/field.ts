@@ -57,7 +57,10 @@ export class Field extends BN {
   }
 
   toHex(byteLength?: number): string {
-    return `0x${this.toBuffer('be', byteLength).toString('hex')}`
+    if (byteLength) {
+      return `0x${this.toBuffer('be', byteLength).toString('hex')}`
+    }
+    return `0x${this.toString('hex')}`
   }
 
   toIden3BigInt(): BigInteger {

@@ -1,13 +1,21 @@
+/* eslint-disable jest/no-disabled-tests */
 /* eslint-disable jest/no-hooks */
 import { Field } from '@zkopru/babyjubjub'
 import { nSQL } from '@nano-sql/core'
 import { uuid } from '@nano-sql/core/lib/utilities'
 import { schema } from '@zkopru/database'
-import { WithdrawalTree, TreeConfig, poseidonHasher, Item } from '~tree'
+import {
+  WithdrawalTree,
+  TreeConfig,
+  keccakHasher,
+  Item,
+  genesisRoot,
+  verifyProof,
+} from '~tree'
 import { utxos, address } from '../testset'
 // import { Withdrawal, Note } from '@zkopru/transaction'
 
-describe('withdrawal Tree Unit Test', () => {
+describe('withdrawal tree unit test', () => {
   let withdrawalTree: WithdrawalTree
   const withdrawalTreeMetadata = {
     id: uuid(),
@@ -18,13 +26,13 @@ describe('withdrawal Tree Unit Test', () => {
   }
   const depth = 31
   const withdrawalTreeConfig: TreeConfig = {
-    hasher: poseidonHasher(depth),
+    hasher: keccakHasher(depth),
     forceUpdate: true,
     fullSync: true,
   }
-  const preHashes = poseidonHasher(depth).preHash
+  const preHashes = keccakHasher(depth).preHash
   const withdrawalTreeInitialData = {
-    root: preHashes[preHashes.length - 1],
+    root: genesisRoot(keccakHasher(depth)),
     index: Field.zero,
     siblings: preHashes,
   }
@@ -57,9 +65,9 @@ describe('withdrawal Tree Unit Test', () => {
     })
   })
   describe('root()', () => {
-    it('should return the last item of the prehashed zero for its initial root', () => {
+    it('should return the genesis root value for its initial root', () => {
       expect(
-        withdrawalTree.root().eq(preHashes[preHashes.length - 1]),
+        withdrawalTree.root().eq(withdrawalTreeInitialData.root),
       ).toStrictEqual(true)
     })
   })
@@ -94,7 +102,7 @@ describe('withdrawal Tree Unit Test', () => {
       index: Field
       siblings: Field[]
     }
-    let realResult: {
+    let result: {
       root: Field
       index: Field
       siblings: Field[]
@@ -106,13 +114,13 @@ describe('withdrawal Tree Unit Test', () => {
         { leafHash: Field.from(2) },
       ]
       dryResult = await withdrawalTree.dryAppend(...items)
-      realResult = await withdrawalTree.append(...items)
+      result = await withdrawalTree.append(...items)
     })
     it('should update its root and its value should equal to the dry run', () => {
-      expect(realResult.root.eq(prevRoot)).toBe(false)
-      expect(realResult.root.eq(dryResult.root)).toBe(true)
-      expect(realResult.index.eq(dryResult.index)).toBe(true)
-      realResult.siblings.forEach((sib, i) => {
+      expect(result.root.eq(prevRoot)).toBe(false)
+      expect(result.root.eq(dryResult.root)).toBe(true)
+      expect(result.index.eq(dryResult.index)).toBe(true)
+      result.siblings.forEach((sib, i) => {
         expect(sib.eq(dryResult.siblings[i])).toBe(true)
       })
     })
@@ -133,7 +141,26 @@ describe('withdrawal Tree Unit Test', () => {
       await withdrawalTree.append(...items)
     })
     it("should track Alice's utxos while not tracking Bob's", async () => {
-      withdrawalTree.merkleProof({ hash: items[0].leafHash })
+      const proof = await withdrawalTree.merkleProof({
+        hash: items[0].leafHash,
+      })
+      expect(verifyProof(keccakHasher(depth), proof)).toBe(true)
+    })
+    it('should generate merkle proof using index together', async () => {
+      const index = withdrawalTree.latestLeafIndex().sub(2)
+      const proof = await withdrawalTree.merkleProof({
+        hash: items[0].leafHash,
+        index,
+      })
+      expect(verifyProof(keccakHasher(depth), proof)).toBe(true)
+    })
+    it('should fail to generate a merkle proof with an invalid index', async () => {
+      const index = withdrawalTree.latestLeafIndex().sub(1)
+      const proof = await withdrawalTree.merkleProof({
+        hash: items[0].leafHash,
+        index,
+      })
+      expect(verifyProof(keccakHasher(depth), proof)).toBe(false)
     })
   })
 })

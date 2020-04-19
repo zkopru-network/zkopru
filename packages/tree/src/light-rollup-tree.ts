@@ -4,6 +4,7 @@ import { TreeNodeSql, NoteSql } from '@zkopru/database'
 import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 import { Note } from '@zkopru/transaction'
 import BN from 'bn.js'
+import { toHex } from 'web3-utils'
 import { Hasher } from './hasher'
 import { MerkleProof, startingLeafProof } from './merkle-proof'
 
@@ -106,7 +107,7 @@ export abstract class LightRollUpTree {
       const indexes = await this.db
         .selectTable(this.treeNodeSchema.name)
         .query('select')
-        .where(['value', '=', hash])
+        .where(['value', '=', hash.toHex()])
         .exec()
       if (indexes.length === 0) throw Error('Leaf does not exist.')
       else if (indexes.length > 1)
@@ -121,7 +122,7 @@ export abstract class LightRollUpTree {
       .selectTable(this.treeNodeSchema.name)
       .presetQuery('getSiblings', {
         depth: this.depth,
-        leafIndex,
+        index: leafIndex,
       })
       .exec()
 
@@ -144,8 +145,10 @@ export abstract class LightRollUpTree {
     for (let level = 0; level < this.depth; level += 1) {
       pathNodeIndex = leafNodeIndex.shrn(level)
       siblingNodeIndex = new BN(1).xor(pathNodeIndex)
-
-      if (siblingNodeIndex.shrn(1).gt(this.metadata.end.shrn(level))) {
+      const usePreHashed: boolean = siblingNodeIndex.gt(
+        this.metadata.end.addPrefixBit(this.depth).shrn(level),
+      )
+      if (usePreHashed) {
         // should return pre hashed zero
         siblings[level] = this.config.hasher.preHash[level]
       } else {
@@ -210,14 +213,14 @@ export abstract class LightRollUpTree {
       let hasRightSibling!: boolean
       for (let level = 0; level < this.depth; level += 1) {
         const pathIndex = leafNodeIndex.shrn(level)
-        hasRightSibling = pathIndex.and(new BN(1)).isZero()
+        hasRightSibling = pathIndex.isEven()
         if (
           this.config.fullSync ||
           this.shouldTrack(trackingLeaves, pathIndex)
         ) {
           cachedNodes.push({
-            nodeIndex: pathIndex.toString(),
-            value: node.toString(),
+            nodeIndex: `0x${pathIndex.toString('hex')}`,
+            value: node.toHex(),
           })
         }
         if (
@@ -227,8 +230,8 @@ export abstract class LightRollUpTree {
         ) {
           // if this should track the sibling node which is not a pre-hashed zero
           cachedNodes.push({
-            nodeIndex: pathIndex.xor(new BN(1)).toString(),
-            value: latestSiblings[level].toString(),
+            nodeIndex: toHex(pathIndex.xor(new BN(1))),
+            value: toHex(latestSiblings[level]),
           })
         }
         if (hasRightSibling) {
@@ -253,7 +256,7 @@ export abstract class LightRollUpTree {
       index,
       siblings: latestSiblings,
     }
-    this.metadata.end = this.metadata.end.addn(itemAppendingQuery.length)
+    this.metadata.end = index
     // Update database
     await this.db
       .selectTable(this.treeSchema.name)
