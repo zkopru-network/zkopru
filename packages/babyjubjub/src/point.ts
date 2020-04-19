@@ -38,8 +38,8 @@ export class Point {
     return Point.from(point[0].toString(), point[1].toString())
   }
 
-  static generate(n: Field): Point {
-    return Point.BASE8.mul(n)
+  static generate(n: F): Point {
+    return Point.BASE8.mul(Field.from(n))
   }
 
   static fromPrivKey(key: string | Buffer): Point {
@@ -62,8 +62,11 @@ export class Point {
     )
   }
 
-  static isOnJubjub(x: Field, y: Field) {
-    return circomlib.babyJub.inCurve([x.toIden3BigInt(), y.toIden3BigInt()])
+  static isOnJubjub(x: F, y: F): boolean {
+    return circomlib.babyJub.inCurve([
+      Field.from(x).toIden3BigInt(),
+      Field.from(y).toIden3BigInt(),
+    ])
   }
 
   encode(): Buffer {
@@ -89,10 +92,10 @@ export class Point {
     return Point.from(result[0].toString(), result[1].toString())
   }
 
-  mul(n: Field): Point {
+  mul(n: F): Point {
     const result = circomlib.babyJub.mulPointEscalar(
       [this.x.toIden3BigInt(), this.y.toIden3BigInt()],
-      n,
+      Field.from(n).toIden3BigInt(),
     )
     return Point.from(result[0].toString(), result[1].toString())
   }
@@ -127,20 +130,26 @@ export function signEdDSA({
   msg,
   privKey,
 }: {
-  msg: Field
+  msg: F
   privKey: Buffer | string
 }): EdDSA {
-  const result = circomlib.eddsa.signPoseidon(privKey, msg.toIden3BigInt())
+  const result = circomlib.eddsa.signPoseidon(
+    privKey,
+    Field.from(msg).toIden3BigInt(),
+  )
   return {
     R8: Point.from(result.R8[0].toString(), result.R8[1].toString()),
-    S: result.S,
+    S: Field.from(result.S.toString()),
   }
 }
 
-export function verifyEdDSA(msg: Field, sig: EdDSA, pubKey: Point): boolean {
+export function verifyEdDSA(msg: F, sig: EdDSA, pubKey: Point): boolean {
   const result = circomlib.eddsa.verifyPoseidon(
-    msg,
-    { R8: [sig.R8.x, sig.R8.y], S: sig.S },
+    Field.from(msg).toIden3BigInt(),
+    {
+      R8: [sig.R8.x.toIden3BigInt(), sig.R8.y.toIden3BigInt()],
+      S: sig.S.toIden3BigInt(),
+    },
     [pubKey.x.toIden3BigInt(), pubKey.y.toIden3BigInt()],
   )
   return result
