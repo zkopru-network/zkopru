@@ -3,6 +3,7 @@ import express, { RequestHandler } from 'express'
 import { scheduleJob, Job } from 'node-schedule'
 import { Server } from 'http'
 import { ZkTx } from '@zkopru/transaction'
+import { logger } from '@zkopru/utils'
 import {
   VerifyOption,
   FullNode,
@@ -35,6 +36,7 @@ export interface CoordinatorInterface {
   onBlock: () => void
 }
 
+const log = logger.child({module: 'coordinator'})
 export class Coordinator {
   node: FullNode
 
@@ -68,6 +70,7 @@ export class Coordinator {
   }
 
   start() {
+    log.info('Coordinator started')
     this.node.startSync()
     this.startAPI()
     this.node.synchronizer.on(

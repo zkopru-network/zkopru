@@ -1,5 +1,6 @@
 /* eslint-disable max-classes-per-file */
 import { Hex, soliditySha3, padLeft } from 'web3-utils'
+import pino from 'pino'
 
 import * as circomruntime from 'circom_runtime'
 import * as snarkjs from 'snarkjs'
@@ -113,3 +114,12 @@ export async function genProof(
   let publicSignals
   return { proof, publicSignals }
 }
+
+export const logger = pino({
+  name: 'zkopru',
+  level: 'debug',
+  prettyPrint: {
+    translateTime: true,
+    colorize: true,
+  },
+})

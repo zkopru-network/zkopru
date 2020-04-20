@@ -6,6 +6,7 @@ import {
   UtxoSql,
 } from '@zkopru/database'
 import { Field, Point } from '@zkopru/babyjubjub'
+import { logger } from '@zkopru/utils'
 import AsyncLock from 'async-lock'
 import { Hasher } from './hasher'
 import { MerkleProof, verifyProof, startingLeafProof } from './merkle-proof'
@@ -69,6 +70,7 @@ export class Grove {
     withdrawalTreeIndex: number
     withdrawalStartingLeafProof: MerkleProof
   }) {
+    logger.info('Applied bootstrap')
     await this.lock.acquire('grove', async () => {
       const utxoBootstrapResult = await this.bootstrapUtxoTree(
         utxoTreeIndex,
@@ -84,6 +86,7 @@ export class Grove {
   }
 
   async init() {
+    logger.debug('init() called')
     await this.lock.acquire('grove', async () => {
       const utxoTreeSqls = (
         await this.db
