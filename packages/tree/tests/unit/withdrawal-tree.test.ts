@@ -13,7 +13,6 @@ import {
   verifyProof,
 } from '~tree'
 import { utxos, address } from '../testset'
-// import { Withdrawal, Note } from '@zkopru/transaction'
 
 describe('withdrawal tree unit test', () => {
   let withdrawalTree: WithdrawalTree

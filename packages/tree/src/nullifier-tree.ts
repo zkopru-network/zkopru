@@ -203,8 +203,8 @@ export class NullifierTree implements SMT {
 
   async dryRunNullify(...leaves: Field[]): Promise<Field> {
     let result!: Field
-    const prevRoot = Field.from(await this.root())
     await this.lock.acquire('root', async () => {
+      const prevRoot = Field.from(await this.root())
       for (const leaf of leaves) {
         await this.updateLeaf(leaf, SMTLeaf.FILLED, 'TEMP')
       }

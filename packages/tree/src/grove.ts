@@ -186,11 +186,24 @@ export class Grove {
       const nullifierRoot = await this.nullifierTree?.dryRunNullify(
         ...patch.nullifiers,
       )
-      result.utxoTreeIndex = utxoResult.index
-      result.utxoTreeRoot = utxoResult.root
-      result.withdrawalTreeIndex = withdrawalResult.index
-      result.withdrawalTreeRoot = withdrawalResult.root
-      result.nullifierTreeRoot = nullifierRoot
+      const utxoFixedSizeLen =
+        this.config.utxoSubTreeSize *
+        Math.ceil(patch.utxos.length / this.config.utxoSubTreeSize)
+      const withdrawalFixedSizeLen =
+        this.config.withdrawalSubTreeSize *
+        Math.ceil(patch.withdrawals.length / this.config.withdrawalSubTreeSize)
+
+      result = {
+        utxoTreeIndex: utxoResult.index
+          .addn(utxoFixedSizeLen)
+          .subn(patch.utxos.length),
+        utxoTreeRoot: utxoResult.root,
+        withdrawalTreeIndex: withdrawalResult.index
+          .addn(withdrawalFixedSizeLen)
+          .subn(patch.withdrawals.length),
+        withdrawalTreeRoot: withdrawalResult.root,
+        nullifierTreeRoot: nullifierRoot,
+      }
     })
     return result
   }
@@ -211,7 +224,11 @@ export class Grove {
   }
 
   private async appendUTXOs(utxos: Item[]): Promise<void> {
-    const fixedSizeUtxos: Item[] = Array(this.config.utxoSubTreeSize).fill({
+    const totalItemLen =
+      this.config.utxoSubTreeSize *
+      Math.ceil(utxos.length / this.config.utxoSubTreeSize)
+
+    const fixedSizeUtxos: Item[] = Array(totalItemLen).fill({
       leafHash: Field.zero,
     })
     utxos.forEach((item: Item, index: number) => {
@@ -222,7 +239,7 @@ export class Grove {
     if (
       latestTree
         .latestLeafIndex()
-        .add(this.config.utxoSubTreeSize)
+        .add(totalItemLen)
         .lt(latestTree.maxSize())
     ) {
       await latestTree.append(...fixedSizeUtxos)
@@ -236,9 +253,11 @@ export class Grove {
   }
 
   private async appendWithdrawals(withdrawals: Field[]): Promise<void> {
-    const fixedSizeWithdrawals: Item[] = Array(
-      this.config.withdrawalSubTreeSize,
-    ).fill({
+    const totalItemLen =
+      this.config.withdrawalSubTreeSize *
+      Math.ceil(withdrawals.length / this.config.withdrawalSubTreeSize)
+
+    const fixedSizeWithdrawals: Item[] = Array(totalItemLen).fill({
       leafHash: Field.zero,
     })
     withdrawals.forEach((withdrawal: Field, index: number) => {
@@ -251,7 +270,7 @@ export class Grove {
     if (
       latestTree
         .latestLeafIndex()
-        .add(this.config.withdrawalSubTreeSize)
+        .add(totalItemLen)
         .lt(latestTree.maxSize())
     ) {
       await latestTree.append(...fixedSizeWithdrawals)
@@ -392,6 +411,12 @@ export class Grove {
       forceUpdate: this.config.forceUpdate,
       fullSync: this.config.fullSync,
     })
+    // create if not exist
+    const treeNodeNameTable = schema.utxoTreeNode(treeSql.id)
+    const tables = await this.db.query('show tables').exec()
+    if (!tables.find(obj => obj.table === treeNodeNameTable.name)) {
+      await this.db.query('create table', treeNodeNameTable).exec()
+    }
     return { treeSql, tree }
   }
 
@@ -432,6 +457,12 @@ export class Grove {
       forceUpdate: this.config.forceUpdate,
       fullSync: this.config.fullSync,
     })
+    // create if not exist
+    const treeNodeNameTable = schema.withdrawalTreeNode(treeSql.id)
+    const tables = await this.db.query('show tables').exec()
+    if (!tables.find(obj => obj.table === treeNodeNameTable.name)) {
+      await this.db.query('create table', treeNodeNameTable).exec()
+    }
     return { treeSql, tree }
   }
 }

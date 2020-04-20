@@ -5,13 +5,12 @@ import { nSQL } from '@nano-sql/core'
 import { schema } from '@zkopru/database'
 import { NullifierTree, keccakHasher, genesisRoot } from '~tree'
 
-describe.skip('nullifier tree unit test', () => {
+describe('nullifier tree unit test', () => {
   let nullifierTree: NullifierTree
   const depth = 254
   const hasher = keccakHasher(depth)
   const zkopruId = 'tempzkopru'
   beforeAll(async () => {
-    // const db = nSQL()
     const dbName = 'unittest'
     await nSQL().createDatabase({
       id: dbName,
