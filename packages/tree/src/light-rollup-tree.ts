@@ -181,6 +181,27 @@ export abstract class LightRollUpTree {
     }
   }
 
+  getStartingLeafProof(): {
+    root: Field
+    index: Field
+    siblings: Field[]
+  } {
+    const index = this.latestLeafIndex()
+    const siblings: Field[] = [...this.data.siblings]
+    let path = index
+    for (let i = 0; i < this.depth; i += 1) {
+      if (path.isEven()) {
+        siblings[i] = this.config.hasher.preHash[i]
+      }
+      path = path.shrn(1)
+    }
+    return {
+      root: this.root(),
+      index,
+      siblings,
+    }
+  }
+
   private async _merkleProof({
     hash,
     index,

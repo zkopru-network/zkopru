@@ -70,11 +70,16 @@ export class Grove {
     withdrawalStartingLeafProof: MerkleProof
   }) {
     await this.lock.acquire('grove', async () => {
-      await this.bootstrapUtxoTree(utxoTreeIndex, utxoStartingLeafProof)
-      await this.bootstrapWithdrawalTree(
+      const utxoBootstrapResult = await this.bootstrapUtxoTree(
+        utxoTreeIndex,
+        utxoStartingLeafProof,
+      )
+      const withdrawalBootstrapResult = await this.bootstrapWithdrawalTree(
         withdrawalTreeIndex,
         withdrawalStartingLeafProof,
       )
+      this.utxoTrees.push(utxoBootstrapResult.tree)
+      this.withdrawalTrees.push(withdrawalBootstrapResult.tree)
     })
   }
 

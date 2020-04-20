@@ -37,10 +37,6 @@ export function startingLeafProof(
     if (path.isEven()) {
       // Right sibling should be a prehashed zero
       if (!siblings[i].eq(hasher.preHash[i])) return false
-    } else {
-      // Left sibling should not be a prehashed zero
-      // eslint-disable-next-line no-lonely-if
-      if (siblings[i].eq(hasher.preHash[i])) return false
     }
     path = path.shrn(1)
   }

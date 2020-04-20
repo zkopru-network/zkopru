@@ -10,9 +10,10 @@ import { address, keys, utxos } from '../testset'
 /* eslint-disable jest/no-hooks */
 describe('grove full sync grove()', () => {
   const zkopruId = 'someuuid'
-  let grove: Grove
+  let fullSyncGrvoe: Grove
+  let lightSyncGrove: Grove
   beforeAll(async () => {
-    const dbName = 'grovetest'
+    const dbName = 'fullSyncGrove'
     await nSQL().createDatabase({
       id: dbName,
       mode: 'TEMP',
@@ -27,8 +28,8 @@ describe('grove full sync grove()', () => {
       ],
       version: 3,
     })
-    const db: InanoSQLInstance = nSQL()
-    grove = new Grove(zkopruId, db, {
+    const db: InanoSQLInstance = nSQL().useDatabase(dbName)
+    fullSyncGrvoe = new Grove(zkopruId, db, {
       utxoTreeDepth: 31,
       withdrawalTreeDepth: 31,
       utxoSubTreeSize: 32,
@@ -42,29 +43,29 @@ describe('grove full sync grove()', () => {
       pubKeysToObserve: [keys.alicePubKey],
       addressesToObserve: [address.USER_A],
     })
-    await grove.init()
+    await fullSyncGrvoe.init()
   })
   it('should have nullifier tree when it has full sync option', async () => {
-    expect(grove.nullifierTree).toBeDefined()
+    expect(fullSyncGrvoe.nullifierTree).toBeDefined()
   })
   describe('setPubKeysToObserve()', () => {
     it('should register public keys to keep track for the inclusion proof for tx building', () => {
-      grove.setPubKeysToObserve([keys.alicePubKey])
+      fullSyncGrvoe.setPubKeysToObserve([keys.alicePubKey])
     })
   })
   describe('setAddressesToObserve()', () => {
     it('should set Ethereum address for withdrawal tracking', () => {
-      grove.setAddressesToObserve([address.USER_A])
+      fullSyncGrvoe.setAddressesToObserve([address.USER_A])
     })
   })
   describe('dryPatch', () => {
     it('should not update the grove', async () => {
       const prevResult = {
-        utxoRoot: grove.latestUTXOTree().root(),
-        utxoIndex: grove.latestUTXOTree().latestLeafIndex(),
-        withdrawalRoot: grove.latestWithdrawalTree().root(),
-        withdrawalIndex: grove.latestWithdrawalTree().latestLeafIndex(),
-        nullifierRoot: await grove.nullifierTree?.root(),
+        utxoRoot: fullSyncGrvoe.latestUTXOTree().root(),
+        utxoIndex: fullSyncGrvoe.latestUTXOTree().latestLeafIndex(),
+        withdrawalRoot: fullSyncGrvoe.latestWithdrawalTree().root(),
+        withdrawalIndex: fullSyncGrvoe.latestWithdrawalTree().latestLeafIndex(),
+        nullifierRoot: await fullSyncGrvoe.nullifierTree?.root(),
       }
       const utxosToAppend: Item[] = [
         utxos.utxo1_in_1.toWithdrawal({ to: address.USER_A, fee: 1 }),
@@ -80,13 +81,13 @@ describe('grove full sync grove()', () => {
         withdrawals: [Field.from(1), Field.from(2)],
         nullifiers: [Field.from(12), Field.from(23)],
       }
-      await grove.dryPatch(patch)
+      await fullSyncGrvoe.dryPatch(patch)
       const postResult = {
-        utxoRoot: grove.latestUTXOTree().root(),
-        utxoIndex: grove.latestUTXOTree().latestLeafIndex(),
-        withdrawalRoot: grove.latestWithdrawalTree().root(),
-        withdrawalIndex: grove.latestWithdrawalTree().latestLeafIndex(),
-        nullifierRoot: await grove.nullifierTree?.root(),
+        utxoRoot: fullSyncGrvoe.latestUTXOTree().root(),
+        utxoIndex: fullSyncGrvoe.latestUTXOTree().latestLeafIndex(),
+        withdrawalRoot: fullSyncGrvoe.latestWithdrawalTree().root(),
+        withdrawalIndex: fullSyncGrvoe.latestWithdrawalTree().latestLeafIndex(),
+        nullifierRoot: await fullSyncGrvoe.nullifierTree?.root(),
       }
       expect(prevResult.utxoRoot.eq(postResult.utxoRoot)).toBe(true)
       expect(prevResult.utxoIndex.eq(postResult.utxoIndex)).toBe(true)
@@ -117,14 +118,14 @@ describe('grove full sync grove()', () => {
         withdrawals: [Field.from(1), Field.from(2)],
         nullifiers: [Field.from(12), Field.from(23)],
       }
-      const expected = await grove.dryPatch(patch)
-      await grove.applyPatch(patch)
+      const expected = await fullSyncGrvoe.dryPatch(patch)
+      await fullSyncGrvoe.applyPatch(patch)
       const result = {
-        utxoRoot: grove.latestUTXOTree().root(),
-        utxoIndex: grove.latestUTXOTree().latestLeafIndex(),
-        withdrawalRoot: grove.latestWithdrawalTree().root(),
-        withdrawalIndex: grove.latestWithdrawalTree().latestLeafIndex(),
-        nullifierRoot: await grove.nullifierTree?.root(),
+        utxoRoot: fullSyncGrvoe.latestUTXOTree().root(),
+        utxoIndex: fullSyncGrvoe.latestUTXOTree().latestLeafIndex(),
+        withdrawalRoot: fullSyncGrvoe.latestWithdrawalTree().root(),
+        withdrawalIndex: fullSyncGrvoe.latestWithdrawalTree().latestLeafIndex(),
+        nullifierRoot: await fullSyncGrvoe.nullifierTree?.root(),
       }
       expect(result.utxoRoot.eq(expected.utxoTreeRoot)).toBe(true)
       expect(result.utxoIndex.eq(expected.utxoTreeIndex)).toBe(true)
@@ -134,6 +135,81 @@ describe('grove full sync grove()', () => {
       expect(expected.nullifierTreeRoot).toBeDefined()
       expect(
         result.nullifierRoot?.eq(expected.nullifierTreeRoot || new BN(0)),
+      ).toBe(true)
+    })
+  })
+  describe('light sync grove - applyBootstrap()', () => {
+    it('should update the grove using bootstrap data', async () => {
+      const latestUtxoTree = fullSyncGrvoe.latestUTXOTree()
+      const latestWithdrawalTree = fullSyncGrvoe.latestWithdrawalTree()
+      const bootstrapData = {
+        utxoTreeIndex: latestUtxoTree.metadata.index,
+        utxoStartingLeafProof: {
+          ...latestUtxoTree.getStartingLeafProof(),
+          leaf: Field.zero,
+        },
+        withdrawalTreeIndex: latestWithdrawalTree.metadata.index,
+        withdrawalStartingLeafProof: {
+          ...latestWithdrawalTree.getStartingLeafProof(),
+          leaf: Field.zero,
+        },
+      }
+
+      const dbName = 'ligthSyncGrove'
+      await nSQL().createDatabase({
+        id: dbName,
+        mode: 'TEMP',
+        tables: [
+          schema.utxo,
+          schema.utxoTree,
+          schema.withdrawal,
+          schema.withdrawalTree,
+          schema.nullifiers,
+          schema.nullifierTreeNode,
+          schema.block(zkopruId),
+        ],
+        version: 3,
+      })
+      const db: InanoSQLInstance = nSQL().useDatabase(dbName)
+      lightSyncGrove = new Grove(zkopruId, db, {
+        utxoTreeDepth: 31,
+        withdrawalTreeDepth: 31,
+        utxoSubTreeSize: 32,
+        withdrawalSubTreeSize: 32,
+        nullifierTreeDepth: 254,
+        utxoHasher: poseidonHasher(31),
+        withdrawalHasher: keccakHasher(31),
+        nullifierHasher: keccakHasher(254),
+        fullSync: false,
+        forceUpdate: !true,
+        pubKeysToObserve: [keys.alicePubKey],
+        addressesToObserve: [address.USER_A],
+      })
+      await lightSyncGrove.init()
+      await lightSyncGrove.applyBootstrap(bootstrapData)
+      expect(
+        lightSyncGrove
+          .latestUTXOTree()
+          .root()
+          .eq(fullSyncGrvoe.latestUTXOTree().root()),
+      ).toBe(true)
+      expect(
+        lightSyncGrove
+          .latestUTXOTree()
+          .latestLeafIndex()
+          .eq(fullSyncGrvoe.latestUTXOTree().latestLeafIndex()),
+      ).toBe(true)
+      expect(
+        lightSyncGrove
+          .latestWithdrawalTree()
+          .root()
+          .eq(fullSyncGrvoe.latestWithdrawalTree().root()),
+      ).toBe(true)
+      expect(
+        lightSyncGrove
+          .latestWithdrawalTree()
+          .latestLeafIndex()
+          .eq(fullSyncGrvoe.latestWithdrawalTree().latestLeafIndex()),
       ).toBe(true)
     })
   })
