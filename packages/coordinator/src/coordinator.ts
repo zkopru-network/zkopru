@@ -3,17 +3,27 @@ import express, { RequestHandler } from 'express'
 import { scheduleJob, Job } from 'node-schedule'
 import { Server } from 'http'
 import { ZkTx } from '@zkopru/transaction'
-import { logger } from '@zkopru/utils'
+import { logger, root } from '@zkopru/utils'
 import {
   VerifyOption,
   FullNode,
   BootstrapData,
   NetworkStatus,
+  Header,
+  Body,
+  MassMigration,
+  massMigrationHash,
+  massDepositHash,
+  MassDeposit,
+  serializeBody,
+  serializeHeader,
 } from '@zkopru/core'
 import { InanoSQLInstance } from '@nano-sql/core'
 import { WebsocketProvider, IpcProvider } from 'web3-core'
 import { Subscription } from 'web3-core-subscriptions'
 import BN from 'bn.js'
+import { schema, MassDepositCommitSql, DepositSql } from '@zkopru/database'
+import { Item } from '@zkopru/tree'
 import { TxMemPool, TxPoolInterface } from './tx_pool'
 
 type provider = WebsocketProvider | IpcProvider
@@ -36,7 +46,7 @@ export interface CoordinatorInterface {
   onBlock: () => void
 }
 
-const log = logger.child({module: 'coordinator'})
+const log = logger.child({ module: 'coordinator' })
 export class Coordinator {
   node: FullNode
 
@@ -85,7 +95,7 @@ export class Coordinator {
             if (blockHash) {
               const block = await this.node.l2Chain.getBlock(blockHash)
               if (block) {
-                this.txPool.removeFromTxPool(block.body.txs)
+                this.txPool.markAsIncluded(block.body.txs)
               }
             }
             this.startGenBlock()
@@ -198,7 +208,7 @@ export class Coordinator {
 
   private startGenBlock() {
     if (!this.genBlockJob)
-      this.genBlockJob = scheduleJob('*/5 * * * * *', this.genBlock)
+      this.genBlockJob = scheduleJob('*/5 * * * * *', this.proposeNewBlocks)
   }
 
   private stopGenBlock() {
@@ -206,12 +216,122 @@ export class Coordinator {
     this.genBlockJob = undefined
   }
 
-  private genBlock() {
+  private async proposeNewBlocks() {
+    const block = await this.genBlock()
+    if (block) {
+      const bytes = Buffer.concat([
+        serializeHeader(block.header),
+        serializeBody(block.body),
+      ])
+      await this.node.l1Contract.coordinator.methods
+        .propose(`0x${bytes.toString('hex')}`)
+        .send()
+    }
+  }
+
+  private async genBlock(): Promise<{ header: Header; body: Body } | null> {
+    const deposits: Field[] = []
+    let consumedBytes = 0
+    let aggregatedFee: Field = Field.zero
     // 1. pick mass deposits
-    // 1. pick transactions
-    this.txPool.pickTxs(this.config.maxBytes, this.config.minimumFee)
-    // 2. check the validity of the transactions
-    // 3. if there exists invalid transactions, remove them from the tx pool and try genBlock recursively
+    const commits: MassDepositCommitSql[] = (await this.config.db
+      .selectTable(schema.massDeposit.name)
+      .query('select')
+      .where(['includedIn', '=', 'NOT_INCLUDED'])
+      .exec()) as MassDepositCommitSql[]
+    commits.sort((a, b) => parseInt(a.index, 10) - parseInt(b.index, 10))
+    const allPendingDeposits: DepositSql[] = []
+    for (const commit of commits) {
+      const pendingDeposits = (await this.config.db
+        .selectTable(schema.deposit.name)
+        .presetQuery('getDeposits', {
+          commitIndex: commit.index,
+          zkopru: commit.zkopru,
+        })
+        .exec()) as DepositSql[]
+      allPendingDeposits.push(...pendingDeposits)
+    }
+    deposits.push(
+      ...allPendingDeposits.map(deposit => Field.from(deposit.note)),
+    )
+    consumedBytes += 32 * commits.length
+    aggregatedFee = aggregatedFee.add(
+      allPendingDeposits.reduce((prev, item) => prev.add(item.fee), Field.zero),
+    )
+
+    // 2. pick transactions
+    const txs = await this.txPool.pickTxs(
+      this.config.maxBytes - consumedBytes,
+      this.config.minimumFee.sub(aggregatedFee),
+    )
+    if (!txs) return null
+    aggregatedFee = aggregatedFee.add(
+      txs.map(tx => tx.fee).reduce((prev, fee) => prev.add(fee), Field.zero),
+    )
+    // TODO 3 make sure every nullifier is unique and not used before
+    // * if there exists invalid transactions, remove them from the tx pool and try genBlock recursively
+
+    const utxos = txs
+      .reduce((arr, tx) => {
+        return [
+          ...arr,
+          ...tx.outflow
+            .filter(outflow => outflow.outflowType.isZero())
+            .map(outflow => outflow.note),
+        ]
+      }, deposits)
+      .map(leafHash => ({ leafHash })) as Item[]
+
+    const withdrawals = txs.reduce((arr, tx) => {
+      return [
+        ...arr,
+        ...tx.outflow
+          .filter(outflow => outflow.outflowType.eqn(1))
+          .map(outflow => outflow.note),
+      ]
+    }, [] as Field[])
+
+    const nullifiers = txs.reduce((arr, tx) => {
+      return [...arr, ...tx.inflow.map(inflow => inflow.nullifier)]
+    }, [] as Field[])
+
+    const massMigrations: MassMigration[] = []
+    const expectedGrove = await this.node.l2Chain.grove.dryPatch({
+      utxos,
+      withdrawals,
+      nullifiers,
+    })
+
+    if (!expectedGrove.nullifierTreeRoot)
+      throw Error(
+        'Grove does not have the nullifier tree. Use full node option',
+      )
+    if (!this.node.l1Contract.web3.defaultAccount)
+      throw Error('set account first')
+    const header: Header = {
+      proposer: this.node.l1Contract.web3.defaultAccount,
+      parentBlock: this.node.l2Chain.latest.toHex(),
+      metadata: '',
+      fee: aggregatedFee.toHex(),
+      utxoRoot: expectedGrove.utxoTreeRoot.toHex(),
+      utxoIndex: expectedGrove.utxoTreeIndex.toHex(),
+      nullifierRoot: expectedGrove.nullifierTreeRoot?.toHex(),
+      withdrawalRoot: expectedGrove.withdrawalTreeRoot.toHex(),
+      withdrawalIndex: expectedGrove.withdrawalTreeIndex.toHex(),
+      txRoot: root(txs.map(tx => tx.hash())).toString(),
+      depositRoot: root(commits.map(massDepositHash)).toString(),
+      migrationRoot: root(massMigrations.map(massMigrationHash)).toString(),
+    }
+    const massDeposits: MassDeposit[] = commits.map(obj => ({
+      merged: obj.merged,
+      fee: obj.fee,
+    }))
+    const body: Body = {
+      txs,
+      massDeposits,
+      massMigrations,
+    }
+    return { header, body }
     // 4. generate a new block and propose it
   }
 }

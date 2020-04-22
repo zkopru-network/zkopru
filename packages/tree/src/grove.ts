@@ -31,7 +31,7 @@ export interface GroveConfig {
 }
 
 export interface GrovePatch {
-  header: string
+  header?: string
   utxos: Item[]
   withdrawals: Field[]
   nullifiers: Field[]
@@ -161,6 +161,7 @@ export class Grove {
 
   async applyPatch(patch: GrovePatch) {
     await this.lock.acquire('grove', async () => {
+      if (!patch.header) throw Error('header data is required to apply the patch')
       await this.appendUTXOs(patch.utxos)
       await this.appendWithdrawals(patch.withdrawals)
       await this.markAsNullified(patch.header, patch.nullifiers)

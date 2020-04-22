@@ -17,4 +17,9 @@ export {
   ERC20Migration,
   ERC721Migration,
   Finalization,
+  headerHash,
+  massDepositHash,
+  massMigrationHash,
+  serializeHeader,
+  serializeBody,
 } from './block'

@@ -1,32 +1,27 @@
 import { Field } from '@zkopru/babyjubjub'
 import { ZkTx } from '@zkopru/transaction'
+import { root } from '@zkopru/utils'
+import { Hex } from 'web3-utils'
 
 export interface TxPoolInterface {
   pendingNum(): number
   addToTxPool(zkTx: ZkTx): Promise<void>
   pickTxs(maxBytes: number, minFee: Field): Promise<ZkTx[] | null>
-  removeFromTxPool(txs: ZkTx[]): void
+  markAsIncluded(txs: ZkTx[]): void
 }
 
 export class TxMemPool implements TxPoolInterface {
-  // blockTxMap: {
-  //   [includedIn: string]: Hex[]
-  // }
+  queued: {
+    [includedIn: string]: ZkTx[]
+  }
 
   txs: {
     [proposalHash: string]: ZkTx
   }
 
-  // candidateTxRoots: string[]
-
-  // verifyingKeys: { [key: string]: {} }
-
   constructor() {
-    // this.pool = []
-    // this.blockTxMap = {
-    // [PENDING]: [],
-    // }
     this.txs = {}
+    this.queued = {}
   }
 
   pendingNum(): number {
@@ -58,7 +53,25 @@ export class TxMemPool implements TxPoolInterface {
     return picked
   }
 
-  removeFromTxPool(txs: ZkTx[]) {
+  markAsIncluded(txs: ZkTx[]) {
+    const txRoot = root(txs.map(tx => tx.hash()))
+    this.queued[txRoot] = txs
+    this.removeFromTxPool(txs)
+  }
+
+  drop(txRoot: Hex) {
+    delete this.queued[txRoot]
+  }
+
+  revert(txRoot: Hex) {
+    const txs = this.queued[txRoot]
+    if (txs) {
+      txs.forEach(this.addToTxPool)
+    }
+    delete this.queued[txRoot]
+  }
+
+  private removeFromTxPool(txs: ZkTx[]) {
     for (const tx of txs) {
       delete this.txs[tx.hash()]
     }
