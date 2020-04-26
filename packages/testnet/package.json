@@ -9,7 +9,15 @@
     "dist"
   ],
   "_moduleAliases": {
-    "~testnet": "dist"
+    "~testnet": "dist",
+    "~account": "../account/dist",
+    "~babyjubjub": "../babyjubjub/dist",
+    "~contracts": "../contracts/dist",
+    "~core": "../core/dist",
+    "~coordinator": "../coordinator/dist",
+    "~database": "../database/dist",
+    "~transaction": "../transaction/dist",
+    "~zk-wizard": "../zk-wizard/dist"
   },
   "scripts": {
     "postinstall": "shx mkdir -p dist",
@@ -26,13 +34,9 @@
   },
   "dependencies": {
     "@nano-sql/core": "^2.3.7",
-    "@zkopru/babyjubjub": "file:../babyjubjub",
-    "@zkopru/contracts": "file:../contracts",
-    "@zkopru/core": "file:../core",
-    "@zkopru/transaction": "file:../transaction",
-    "@zkopru/zk-wizard": "file:../zk-wizard",
     "big-integer": "^1.6.48",
     "fs-extra": "^9.0.0",
-    "web3": "^1.2.6"
+    "web3": "^1.2.6",
+    "web3-core": "^1.2.7"
   }
 }

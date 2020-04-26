@@ -66,15 +66,17 @@ contract Coordinatable is Layer2 {
         /// Update exit allowance period
         proposer.exitAllowance = block.number + CHALLENGE_PERIOD;
         /// Freeze the latest mass deposit for the next block proposer
-        Layer2.chain.committedDeposits[Layer2.chain.stagedDeposits.hash()] += 1;
-        emit MassDepositCommit(
-            Layer2.chain.massDepositId,
-            Layer2.chain.stagedDeposits.merged,
-            Layer2.chain.stagedDeposits.fee
-        );
-        delete Layer2.chain.stagedDeposits;
-        delete Layer2.chain.stagedSize;
-        Layer2.chain.massDepositId++;
+        if(Layer2.chain.stagedDeposits.merged != bytes32(0)) {
+            Layer2.chain.committedDeposits[Layer2.chain.stagedDeposits.hash()] += 1;
+            emit MassDepositCommit(
+                Layer2.chain.massDepositId,
+                Layer2.chain.stagedDeposits.merged,
+                Layer2.chain.stagedDeposits.fee
+            );
+            delete Layer2.chain.stagedDeposits;
+            delete Layer2.chain.stagedSize;
+            Layer2.chain.massDepositId++;
+        }
         emit NewProposal(currentBlockHash);
     }
 

@@ -1,4 +1,5 @@
-import { Accounts } from 'web3-eth-accounts'
+import Web3 from 'web3'
+// import { Accounts } from 'web3-eth-accounts'
 import { Account, EncryptedKeystoreV3Json, AddAccount } from 'web3-core'
 import { Field, Point, EdDSA, signEdDSA } from '@zkopru/babyjubjub'
 import { KeystoreSql } from '@zkopru/database'
@@ -14,7 +15,9 @@ export class ZkAccount {
 
   constructor(privateKey: Buffer) {
     this.privateKey = Field.fromBuffer(privateKey)
-    this.ethAccount = new Accounts().privateKeyToAccount(
+    // TODO web3.js typescript has a problem. Update later when the bug is resolved.
+    const web3 = new Web3()
+    this.ethAccount = web3.eth.accounts.privateKeyToAccount(
       this.privateKey.toHex(),
     )
     this.pubKey = Point.fromPrivKey(privateKey)
@@ -44,7 +47,8 @@ export class ZkAccount {
     obj: EncryptedKeystoreV3Json,
     password: string,
   ): ZkAccount {
-    const account = new Accounts().decrypt(obj, password)
+    const web3 = new Web3()
+    const account = web3.eth.accounts.decrypt(obj, password)
     const privateKey = Field.from(account.privateKey).toBuffer('be')
     return new ZkAccount(privateKey)
   }

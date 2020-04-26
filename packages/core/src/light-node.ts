@@ -96,6 +96,7 @@ export class LightNode extends ZkOPRUNode {
     bootstrapHelper: BootstrapHelper
     option?: VerifyOption
   }): Promise<LightNode> {
+    if (!provider.connected) throw Error('provider is not connected')
     const verifyOption = option || {
       header: true,
       deposit: true,

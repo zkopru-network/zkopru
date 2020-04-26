@@ -87,7 +87,10 @@ export function block(zkopruId: string): InanoSQLTableConfig {
     queries: [
       {
         name: 'addGenesisBlock',
-        args: {},
+        args: {
+          'hash:string': {},
+          'header:obj': {},
+        },
         call: (db, args) => {
           const { hash, header } = args
           return db

@@ -62,6 +62,7 @@ export class FullNode extends ZkOPRUNode {
       nullifierRollUp: true,
       snark: true,
     }
+    if (!provider.connected) throw Error('provider is not connected')
     const web3: Web3 = new Web3(provider)
     // Add zk account to the web3 object if it exists
     if (accounts) {

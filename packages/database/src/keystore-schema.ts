@@ -12,12 +12,12 @@ export const keystore: InanoSQLTableConfig = {
   name: 'keystore',
   model: {
     'id:uuid': { pk: true },
-    'pubKey: string': {}, // EdDSA pubkey for SNARK
-    'address: string': {}, // Ethereum address
-    'encrypted: obj': {}, // encrypted form of 32 bytes secret key with AES
+    'pubKey:string': {}, // EdDSA pubkey for SNARK
+    'address:string': {}, // Ethereum address
+    'encrypted:obj': {}, // encrypted form of 32 bytes secret key with AES
   },
   indexes: {
-    'pubKey: string': {}, // used as a foreign key for the utxo list
+    'pubKey:string': {}, // used as a foreign key for the utxo list
   },
   queries: [
     {

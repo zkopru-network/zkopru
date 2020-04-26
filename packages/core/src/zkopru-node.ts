@@ -128,6 +128,7 @@ export class ZkOPRUNode {
     const addressesToObserve = accounts
       ? accounts.map(account => account.address)
       : []
+
     const chainConfig: ChainConfig[] = (await db
       .selectTable(schema.chain.name)
       .presetQuery('read', {
@@ -148,6 +149,7 @@ export class ZkOPRUNode {
         pubKeysToObserve,
         addressesToObserve,
       })
+      await grove.init()
       return new L2Chain(db, grove, l2Config)
     }
     const id = uuid()
@@ -157,8 +159,13 @@ export class ZkOPRUNode {
       nullifier: keccakHasher(256),
     }
     const genesisBlock = genesis({ address, hashers })
+    const blockTable = schema.block(id)
+    const tables = await db.query('show tables').exec()
+    if (!tables.find(obj => obj.table === blockTable.name)) {
+      await db.query('create table', blockTable).exec()
+    }
     await db
-      .selectTable(schema.block(id).name)
+      .selectTable(blockTable.name)
       .presetQuery('addGenesisBlock', {
         hash: headerHash(genesisBlock),
         header: genesisBlock,

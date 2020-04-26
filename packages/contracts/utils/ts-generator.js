@@ -35,10 +35,12 @@ const importABIs = `${abis.reduce((prev, name) => {
   return `${prev}import { ${name}ABI } from './abis/${name}'\n`
 }, '')}`
 
+/**
 const exportContracts = `${ts.reduce((prev, name) => {
   if (!importExportList.includes(name)) return prev
   return `${prev}export { ${name} } from './contracts/${name}'\n`
 }, '')}`
+ */
 
 const staticClasses = `${importExportList.reduce((prev, name) => {
   if (name === 'types') return prev
@@ -102,7 +104,6 @@ fs.mkdirSync('./src', { recursive: true })
 const src = `${base}
 ${importContracts}
 ${importABIs}
-${exportContracts}
 ${ZkOPRUContract}
 `
 // const src = `${importContracts}\n${importABIs}\n${exportContracts}\n\n${exportABIs}\n`

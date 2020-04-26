@@ -5,7 +5,6 @@ import { Server } from 'http'
 import { ZkTx } from '@zkopru/transaction'
 import { logger, root } from '@zkopru/utils'
 import {
-  VerifyOption,
   FullNode,
   BootstrapData,
   NetworkStatus,
@@ -19,25 +18,18 @@ import {
   serializeHeader,
 } from '@zkopru/core'
 import { InanoSQLInstance } from '@nano-sql/core'
-import { WebsocketProvider, IpcProvider } from 'web3-core'
 import { Subscription } from 'web3-core-subscriptions'
-import BN from 'bn.js'
 import { schema, MassDepositCommitSql, DepositSql } from '@zkopru/database'
 import { Item } from '@zkopru/tree'
 import { TxMemPool, TxPoolInterface } from './tx_pool'
 
-type provider = WebsocketProvider | IpcProvider
 
 export interface CoordinatorConfig {
-  priceMultiplier: number // 32 gas is the current default price for 1 byte
   maxBytes: number
-  minimumFee: Field
   bootstrapNode: boolean
-  provider: provider
-  address: string
   db: InanoSQLInstance
-  option?: VerifyOption
   apiPort: number
+  priceMultiplier: number // gas per byte is 16, our default value is 32
 }
 
 export interface CoordinatorInterface {
@@ -46,7 +38,6 @@ export interface CoordinatorInterface {
   onBlock: () => void
 }
 
-const log = logger.child({ module: 'coordinator' })
 export class Coordinator {
   node: FullNode
 
@@ -58,7 +49,7 @@ export class Coordinator {
 
   gasPriceSubscriber?: Subscription<unknown>
 
-  bytePrice?: Field
+  gasPrice?: Field
 
   txPool: TxPoolInterface
 
@@ -70,17 +61,12 @@ export class Coordinator {
     this.node = node
     this.txPool = new TxMemPool()
     this.node = node
-    this.config = config
+    this.config = { priceMultiplier: 32, ...config }
     this.bootstrapCache = {}
   }
 
-  getMinimumFee(): Field | null {
-    if (!this.bytePrice) return null
-    return this.config.minimumFee
-  }
-
   start() {
-    log.info('Coordinator started')
+    logger.info('Coordinator started')
     this.node.startSync()
     this.startAPI()
     this.node.synchronizer.on(
@@ -140,9 +126,8 @@ export class Coordinator {
     this.gasPriceSubscriber = this.node.l1Contract.web3.eth.subscribe(
       'newBlockHeaders',
       async () => {
-        const gasPrice = await this.node.l1Contract.web3.eth.getGasPrice()
-        this.bytePrice = Field.from(
-          new BN(gasPrice).muln(this.config.priceMultiplier),
+        this.gasPrice = Field.from(
+          await this.node.l1Contract.web3.eth.getGasPrice(),
         )
       },
     )
@@ -260,11 +245,19 @@ export class Coordinator {
     )
 
     // 2. pick transactions
+    if (!this.gasPrice) {
+      logger.info('coordinator.js: Gas price is not synced yet')
+      return null
+    }
     const txs = await this.txPool.pickTxs(
       this.config.maxBytes - consumedBytes,
-      this.config.minimumFee.sub(aggregatedFee),
+      160000,
+      this.gasPrice.muln(this.config.priceMultiplier),
     )
-    if (!txs) return null
+    if (!txs) {
+      logger.info('coordinator.js: Not enough transactions to generate a block')
+      return null
+    }
     aggregatedFee = aggregatedFee.add(
       txs.map(tx => tx.fee).reduce((prev, fee) => prev.add(fee), Field.zero),
     )

@@ -28,18 +28,6 @@ import { ITxChallengeABI } from './abis/ITxChallenge'
 import { IUserInteractableABI } from './abis/IUserInteractable'
 import { ZkOptimisticRollUpABI } from './abis/ZkOptimisticRollUp'
 
-export { ICoordinatable } from './contracts/ICoordinatable'
-export { IDepositChallenge } from './contracts/IDepositChallenge'
-export { IHeaderChallenge } from './contracts/IHeaderChallenge'
-export { IMigratable } from './contracts/IMigratable'
-export { IMigrationChallenge } from './contracts/IMigrationChallenge'
-export { IRollUpChallenge } from './contracts/IRollUpChallenge'
-export { IRollUpable } from './contracts/IRollUpable'
-export { ISetupWizard } from './contracts/ISetupWizard'
-export { ITxChallenge } from './contracts/ITxChallenge'
-export { IUserInteractable } from './contracts/IUserInteractable'
-export { ZkOptimisticRollUp } from './contracts/ZkOptimisticRollUp'
-
 export default class ZkOPRUContract {
   upstream: ZkOptimisticRollUp
 

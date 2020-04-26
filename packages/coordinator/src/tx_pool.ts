@@ -6,7 +6,11 @@ import { Hex } from 'web3-utils'
 export interface TxPoolInterface {
   pendingNum(): number
   addToTxPool(zkTx: ZkTx): Promise<void>
-  pickTxs(maxBytes: number, minFee: Field): Promise<ZkTx[] | null>
+  pickTxs(
+    maxBytes: number,
+    minProposalCost: number,
+    minPricePerByte: Field,
+  ): Promise<ZkTx[] | null>
   markAsIncluded(txs: ZkTx[]): void
 }
 
@@ -33,7 +37,11 @@ export class TxMemPool implements TxPoolInterface {
     this.txs[txHash] = zkTx
   }
 
-  async pickTxs(maxBytes: number, minFee: Field): Promise<ZkTx[] | null> {
+  async pickTxs(
+    maxBytes: number,
+    minProposalCost: number,
+    minPricePerByte: Field,
+  ): Promise<ZkTx[] | null> {
     // TODO add atomic swap tx logic here
     let available = maxBytes
     const pending = this.getSortedTxs()
@@ -43,13 +51,14 @@ export class TxMemPool implements TxPoolInterface {
       const tx = pending.pop()
       if (!tx) break
       const size = tx.size()
-      if (available >= size) {
+      const expectedFee = minPricePerByte.muln(size)
+      if (available >= size && tx.fee.gte(expectedFee)) {
         available -= size
         fee = fee.add(tx.fee)
         picked.push(tx)
       }
     }
-    if (fee.lt(minFee)) return null
+    if (fee.ltn(minProposalCost)) return null
     return picked
   }
 

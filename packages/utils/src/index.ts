@@ -27,8 +27,8 @@ export function root(hashes: Hex[]): Hex {
 }
 
 export function hexToBuffer(hex: string, len?: number): Buffer {
-  if (!len) return Buffer.from(hex.split('0x').pop() || '')
-  const buff = Buffer.from(hex.split('0x').pop() || '')
+  if (!len) return Buffer.from(hex.split('0x').pop() || '', 'hex')
+  const buff = Buffer.from(hex.split('0x').pop() || '', 'hex')
   if (buff.length > len) throw Error('Exceeds the given buffer size')
   return Buffer.concat([Buffer.alloc(len - buff.length).fill(0), buff])
 }
