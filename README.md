@@ -8,6 +8,13 @@
 
 ## Development
 
+### Prerequisites
+
+You need docker & docker-compose for integration test
+
+* Get [docker](https://docs.docker.com/get-docker/)
+* Get [docker-compose](https://docs.docker.com/compose/install/)
+
 ### Testing
 
 ```shell
