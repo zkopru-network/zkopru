@@ -4,6 +4,7 @@ import Web3 from 'web3'
 import { WebsocketProvider } from 'web3-core'
 import { Docker } from 'node-docker-api'
 import { Container } from 'node-docker-api/lib/container'
+import { ReadStream } from 'fs-extra'
 import { FullNode } from '~core'
 import { schema } from '~database'
 import { Coordinator } from '~coordinator'
@@ -13,8 +14,8 @@ import { sleep } from '~testnet/utils'
 
 describe('coordinator test to run testnet', () => {
   const testName = 'coordinatortest'
-  const address = '0xaD888d0Ade988EbEe74B8D4F39BF29a8d0fe8A8D'
   const accounts: ZkAccount[] = [new ZkAccount(Buffer.from(keys.alicePrivKey))]
+  let address
   let container: Container
   let fullNode: FullNode
   let wsProvider: WebsocketProvider
@@ -32,6 +33,12 @@ describe('coordinator test to run testnet', () => {
       container = docker.container.get(testName)
     }
     await container.start()
+    const stream: ReadStream = (await container.fs.get({
+      path: '/proj/build/deployed/ZkOptimisticRollUp.json',
+    })) as ReadStream
+    const f = (await stream.read()).toString()
+    const deployed = JSON.parse(f.slice(f.indexOf('{'), f.indexOf('}') + 1))
+    address = deployed.address
     const status = await container.status()
     const containerIP = (status.data as {
       NetworkSettings: { IPAddress: string }

@@ -1,13 +1,11 @@
 const fs = require('fs')
 
-const Poseidon = artifacts.require('Poseidon')
-const ZkOPRU = artifacts.require('ZkOptimisticRollUp')
+const DeserializationTester = artifacts.require('DeserializationTester')
 
 module.exports = function migration(deployer, _, accounts) {
-  deployer.link(Poseidon, ZkOPRU)
-  deployer.deploy(ZkOPRU, accounts[0]).then(contract => {
+  deployer.deploy(DeserializationTester).then(contract => {
     const deployed = {
-      name: 'ZkOptimisticRollUp',
+      name: 'DeserializationTester',
       address: contract.address,
       network: deployer.network_id,
     }
@@ -15,6 +13,6 @@ module.exports = function migration(deployer, _, accounts) {
     if (!fs.existsSync('build/deployed')) {
       fs.mkdirSync('build/deployed')
     }
-    fs.writeFileSync('build/deployed/ZkOptimisticRollUp.json', data)
+    fs.writeFileSync('build/deployed/DeserializationTester.json', data)
   })
 }
