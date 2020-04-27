@@ -3,7 +3,7 @@ version: "3"
 services:
   testnet:
     build:
-      context: ./packages/contracts/
-      dockerfile: Dockerfile
+      context: ./containers/
+      dockerfile: Contract.dockerfile
     ports:
       - "5000:5000"
