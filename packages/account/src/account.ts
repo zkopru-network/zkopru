@@ -18,7 +18,7 @@ export class ZkAccount {
     // TODO web3.js typescript has a problem. Update later when the bug is resolved.
     const web3 = new Web3()
     this.ethAccount = web3.eth.accounts.privateKeyToAccount(
-      this.privateKey.toHex(),
+      this.privateKey.toHex(32),
     )
     this.pubKey = Point.fromPrivKey(privateKey)
     this.address = this.ethAccount.address
@@ -39,7 +39,7 @@ export class ZkAccount {
   toAddAccount(): AddAccount {
     return {
       address: this.address,
-      privateKey: this.privateKey.toHex(),
+      privateKey: this.privateKey.toHex(32),
     }
   }
 
