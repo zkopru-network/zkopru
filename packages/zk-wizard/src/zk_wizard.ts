@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { nanoSQL } from '@nano-sql/core'
+import { InanoSQLInstance } from '@nano-sql/core'
 import { Field, F, Point, EdDSA, signEdDSA } from '@zkopru/babyjubjub'
 import {
   RawTx,
@@ -22,14 +22,14 @@ export class ZkWizard {
 
   pubKey: Point
 
-  db: nanoSQL
+  db: InanoSQLInstance
 
   constructor({
     db,
     grove,
     privKey,
   }: {
-    db: nanoSQL
+    db: InanoSQLInstance
     grove: Grove
     privKey: string
   }) {
@@ -81,39 +81,6 @@ export class ZkWizard {
         )
       }
 
-      async function addMerkleProof({
-        index,
-        proof,
-        buildZkTx,
-      }: {
-        index: number
-        proof: MerkleProof
-        buildZkTx: ({
-          tx,
-          toMemo,
-          data,
-        }: {
-          tx: RawTx
-          toMemo?: number
-          data: {
-            merkleProof: { [hash: string]: MerkleProof }
-            eddsa: { [hash: string]: EdDSA }
-          }
-        }) => Promise<ZkTx>
-      }) {
-        merkleProof[index] = proof
-        if (isDataPrepared()) {
-          const zkTx = await buildZkTx({
-            tx,
-            toMemo,
-            data: { merkleProof, eddsa },
-          })
-          resolve(zkTx)
-        }
-      }
-
-      const { buildZkTx } = this
-
       tx.inflow.forEach(async (utxo, index) => {
         eddsa[index] = signEdDSA({
           msg: utxo.hash(),
@@ -121,7 +88,17 @@ export class ZkWizard {
         })
         this.grove
           .utxoMerkleProof(utxo.hash())
-          .then(proof => addMerkleProof({ index, proof, buildZkTx }))
+          .then(async proof => {
+            merkleProof[index] = proof
+            if (isDataPrepared()) {
+              const zkTx = await this.buildZkTx({
+                tx,
+                toMemo,
+                data: { merkleProof, eddsa },
+              })
+              resolve(zkTx)
+            }
+          })
           .catch(reject)
       })
     })
@@ -159,75 +136,108 @@ export class ZkWizard {
       //   ,
       // )
     }
-    const input: { [name: string]: Field } = {}
+    const input: {
+      [name: string]: string | string[] | string[][]
+    } = {}
     // inflow data
-    tx.inflow.forEach((utxo, i) => {
+    const depth = data.merkleProof[0].siblings.length
+    const spendingNotes: string[][] = Array(7)
+      .fill(undefined)
+      .map(() => [])
+    const signatures: string[][] = Array(3)
+      .fill(undefined)
+      .map(() => [])
+    const noteIndexes: string[] = []
+    const siblings: string[][] = Array(depth)
+      .fill(undefined)
+      .map(() => [])
+    const inclusionRefes: string[] = []
+    const nullifiers: string[] = []
+    for (let i = 0; i < tx.inflow.length; i += 1) {
+      const utxo = tx.inflow[i]
       // private signals
-      input[`spending_note[0][${i}]`] = utxo.eth
-      input[`spending_note[1][${i}]`] = utxo.pubKey.x
-      input[`spending_note[2][${i}]`] = utxo.pubKey.y
-      input[`spending_note[3][${i}]`] = utxo.salt
-      input[`spending_note[4][${i}]`] = utxo.tokenAddr
-      input[`spending_note[5][${i}]`] = utxo.erc20Amount
-      input[`spending_note[6][${i}]`] = utxo.nft
-      input[`signatures[0][${i}]`] = data.eddsa[i].R8.x
-      input[`signatures[1][${i}]`] = data.eddsa[i].R8.y
-      input[`signatures[2][${i}]`] = data.eddsa[i].S
-      input[`note_index[${i}]`] = data.merkleProof[i].index
-      for (let j = 0; j < this.grove.config.utxoTreeDepth; j += 1) {
-        input[`siblings[${j}][${i}]`] = data.merkleProof[i].siblings[j]
-      }
+      spendingNotes[0][i] = utxo.eth.toString()
+      spendingNotes[1][i] = utxo.pubKey.x.toString()
+      spendingNotes[2][i] = utxo.pubKey.y.toString()
+      spendingNotes[3][i] = utxo.salt.toString()
+      spendingNotes[4][i] = utxo.tokenAddr.toString()
+      spendingNotes[5][i] = utxo.erc20Amount.toString()
+      spendingNotes[6][i] = utxo.nft.toString()
+      signatures[0][i] = data.eddsa[i].R8.x.toString()
+      signatures[1][i] = data.eddsa[i].R8.y.toString()
+      signatures[2][i] = data.eddsa[i].S.toString()
+      noteIndexes[i] = data.merkleProof[i].index.toString()
+      data.merkleProof[i].siblings.forEach((sib, j) => {
+        siblings[j][i] = sib.toString()
+      })
       // public signals
-      input[`inclusion_references[${i}]`] = data.merkleProof[i].root
-      input[`nullifiers[${i}]`] = utxo.nullifier()
-    })
+      inclusionRefes[i] = data.merkleProof[i].root.toString()
+      nullifiers[i] = utxo.nullifier().toString()
+    }
     // outflow data
+    const newNotes: string[][] = Array(7)
+      .fill(undefined)
+      .map(() => [])
+    const newNoteHashes: string[] = []
+    const typeOfNewNotes: string[] = []
+    const publicData: string[][] = Array(6)
+      .fill(undefined)
+      .map(() => [])
     tx.outflow.forEach((note, i) => {
       // private signals
-      input[`new_note[0][${i}]`] = note.eth
-      input[`new_note[1][${i}]`] = note.pubKey.x
-      input[`new_note[2][${i}]`] = note.pubKey.y
-      input[`new_note[3][${i}]`] = note.salt
-      input[`new_note[4][${i}]`] = note.tokenAddr
-      input[`new_note[5][${i}]`] = note.erc20Amount
-      input[`new_note[6][${i}]`] = note.nft
-      // public signals
-      input[`new_note_hash[${i}]`] = note.hash()
-      input[`typeof_new_note[${i}]`] = Field.from(
+      newNotes[0][i] = note.eth.toString()
+      newNotes[1][i] = note.pubKey.x.toString()
+      newNotes[2][i] = note.pubKey.y.toString()
+      newNotes[3][i] = note.salt.toString()
+      newNotes[4][i] = note.tokenAddr.toString()
+      newNotes[5][i] = note.erc20Amount.toString()
+      newNotes[6][i] = note.nft.toString()
+      // public slignals
+      newNoteHashes[i] = note.hash().toString()
+      typeOfNewNotes[i] = Field.from(
         note.outflowType || OutflowType.UTXO,
-      )
-      input[`public_data[0][${i}]`] =
+      ).toString()
+      publicData[0][i] =
         note instanceof Withdrawal || note instanceof Migration
-          ? note.publicData.to
-          : Field.zero
-      input[`public_data[1][${i}]`] =
+          ? note.publicData.to.toString()
+          : Field.zero.toString()
+      publicData[1][i] =
         note instanceof Withdrawal || note instanceof Migration
-          ? note.eth
-          : Field.zero
-      input[`public_data[2][${i}]`] =
+          ? note.eth.toString()
+          : Field.zero.toString()
+      publicData[2][i] =
         note instanceof Withdrawal || note instanceof Migration
-          ? note.tokenAddr
-          : Field.zero
-      input[`public_data[3][${i}]`] =
+          ? note.tokenAddr.toString()
+          : Field.zero.toString()
+      publicData[3][i] =
         note instanceof Withdrawal || note instanceof Migration
-          ? note.erc20Amount
-          : Field.zero
-      input[`public_data[4][${i}]`] =
+          ? note.erc20Amount.toString()
+          : Field.zero.toString()
+      publicData[4][i] =
         note instanceof Withdrawal || note instanceof Migration
-          ? note.nft
-          : Field.zero
-      input[`public_data[5][${i}]`] =
+          ? note.nft.toString()
+          : Field.zero.toString()
+      publicData[5][i] =
         note instanceof Withdrawal || note instanceof Migration
-          ? note.publicData.fee
-          : Field.zero
+          ? note.publicData.fee.toString()
+          : Field.zero.toString()
     })
-    input.swap = tx.swap ? tx.swap : Field.zero
-    input.fee = tx.fee
-    const stringifiedInputs: { [name: string]: string } = {}
-    Object.keys(input).forEach(key => {
-      stringifiedInputs[key] = input[key].toString()
-    })
-    const witness = await utils.calculateWitness(circuitWasm, stringifiedInputs)
+    // private signals
+    input.spending_note = spendingNotes
+    input.signatures = signatures
+    input.note_index = noteIndexes
+    input.siblings = siblings
+    input.new_note = newNotes
+    // public signals
+    input.fee = tx.fee.toString()
+    input.swap = (tx.swap ? tx.swap : Field.zero).toString()
+    input.inclusion_references = inclusionRefes
+    input.nullifiers = nullifiers
+    input.new_note_hash = newNoteHashes
+    input.typeof_new_note = typeOfNewNotes
+    input.public_data = publicData
+    // for testing: fs.writeFileSync('./input.json', JSON.stringify(input))
+    const witness = await utils.calculateWitness(circuitWasm, input)
 
     const { proof } = await utils.genProof(provingKey, witness)
     // let { proof, publicSignals } = Utils.genProof(snarkjs.unstringifyBigInts(provingKey), witness);

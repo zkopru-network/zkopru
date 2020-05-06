@@ -26,9 +26,13 @@
   },
   "dependencies": {
     "circom_runtime": "^0.0.3",
+    "ffjavascript": "^0.1.2",
     "pino": "^6.2.0",
     "pino-pretty": "^4.0.0",
     "snarkjs": "^0.1.25",
-    "web3-utils": "^1.2.6"
+    "web3-utils": "^1.2.6",
+    "fs-extra": "^9.0.0",
+    "tar": "^6.0.2",
+    "node-docker-api": "^1.1.22"
   }
 }

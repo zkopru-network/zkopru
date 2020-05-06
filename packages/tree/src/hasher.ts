@@ -33,7 +33,7 @@ export function keccakHasher(depth: number): Hasher {
 }
 
 export function poseidonHasher(depth: number): Hasher {
-  const poseidonHash = circomlib.poseidon.createHash(3, 8, 57, 'poseidon')
+  const poseidonHash = circomlib.poseidon.createHash(3, 8, 57)
   const parentOf = (left: Field, right: Field) => {
     return Field.from(
       poseidonHash([left.toIden3BigInt(), right.toIden3BigInt()]).toString(),

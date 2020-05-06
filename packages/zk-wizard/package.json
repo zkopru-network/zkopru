@@ -32,6 +32,7 @@
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/tree": "file:../tree",
     "@zkopru/utils": "file:../utils",
+    "big-integer": "^1.6.48",
     "web3": "^1.2.6",
     "web3-core": "^1.2.6",
     "web3-eth-contract": "^1.2.6"

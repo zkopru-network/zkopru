@@ -37,6 +37,11 @@
     "big-integer": "^1.6.48",
     "fs-extra": "^9.0.0",
     "web3": "^1.2.6",
+    "node-docker-api": "^1.1.22",
     "web3-core": "^1.2.7"
+  },
+  "devDependencies": {
+    "ffjavascript": "^0.1.2",
+    "snarkjs": "^0.1.25"
   }
 }

@@ -291,7 +291,7 @@ export abstract class LightRollUpTree {
       [nodeIndex: string]: string
     } = {}
     const itemAppendingQuery: NoteSql[] = []
-    let root!: Field
+    let root: Field = this.root()
 
     const trackingLeaves: Field[] = await this.indexesOfTrackingLeaves()
 

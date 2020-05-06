@@ -5,7 +5,7 @@ import { Field, F, Point } from '@zkopru/babyjubjub'
 import * as TokenUtils from './tokens'
 import { ZkOutflow } from './zk_tx'
 
-const poseidonHash = circomlib.poseidon.createHash(6, 8, 57, 'poseidon')
+const poseidonHash = circomlib.poseidon.createHash(6, 8, 57)
 
 export enum OutflowType {
   UTXO = 0,
@@ -14,7 +14,7 @@ export enum OutflowType {
 }
 
 export class Note {
-  outflowType?: OutflowType
+  outflowType: OutflowType
 
   eth: Field
 
@@ -42,6 +42,7 @@ export class Note {
     this.tokenAddr = tokenAddr
     this.erc20Amount = erc20Amount
     this.nft = nft
+    this.outflowType = OutflowType.UTXO
   }
 
   static newEtherNote({
@@ -130,9 +131,12 @@ export class Note {
   }
 
   nullifier(): Field {
-    return Field.from(
-      poseidonHash([this.hash(), this.salt.toIden3BigInt()]).toString(),
-    )
+    const hash = poseidonHash([
+      this.hash().toIden3BigInt(),
+      this.salt.toIden3BigInt(),
+    ]).toString()
+    const val = Field.from(hash)
+    return val
   }
 
   encrypt(): Buffer {
@@ -155,7 +159,6 @@ export class Note {
   }
 
   toZkOutflow(): ZkOutflow {
-    if (!this.outflowType) throw Error('outflow type is undefined')
     const outflowType: Field = Field.from(this.outflowType)
     const outflow = {
       note: this.hash(),

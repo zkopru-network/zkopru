@@ -2,18 +2,13 @@
   "name": "@zkopru/circuits",
   "version": "0.0.1",
   "license": "GPL-3.0-or-later",
-  "files": [
-    "dist"
-  ],
   "_moduleAliases": {
     "circomlib": "../../node_modules/circomlib"
   },
   "scripts": {
-    "postinstall": "shx mkdir -p dist",
     "build": "link-module-alias",
     "circuit": "./script/compile_circuits.sh",
     "setup": "./script/snark_setup.sh",
-    "clean": "shx rm -rf build",
     "coverage:show": "live-server coverage"
   },
   "dependencies": {

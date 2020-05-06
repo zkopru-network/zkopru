@@ -285,7 +285,9 @@ export class ZkTx {
     if (swapAndMemo & (1 << 1)) {
       zkTx.memo = queue.dequeue(81)
     }
-    zkTx.cache.size = buff.length
+    zkTx.cache = {
+      size: buff.length,
+    }
     return zkTx
   }
 

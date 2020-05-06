@@ -101,19 +101,17 @@ template ZkTransaction(tree_depth, n_i, n_o) {
     }
 
     /// New note hash proof
-    component poseidon_new_note_int[n_o];
+    // component poseidon_new_note_int[n_o];
     component poseidon_new_note[n_o];
     for(var i = 0; i < n_o; i ++) {
-        poseidon_new_note_int[i] = Poseidon(4, 6, 8, 57);   // Constant
-        poseidon_new_note_int[i].inputs[0] <== new_note[0][i];
-        poseidon_new_note_int[i].inputs[1] <== new_note[1][i];
-        poseidon_new_note_int[i].inputs[2] <== new_note[2][i];
-        poseidon_new_note_int[i].inputs[3] <== new_note[3][i];
-        poseidon_new_note[i] = Poseidon(4, 6, 8, 57);   // Constant
-        poseidon_new_note[i].inputs[0] <== poseidon_new_note_int[i].out;
-        poseidon_new_note[i].inputs[1] <== new_note[4][i];
-        poseidon_new_note[i].inputs[2] <== new_note[5][i];
-        poseidon_new_note[i].inputs[3] <== new_note[6][i];
+        poseidon_new_note[i] = NoteHash();
+        poseidon_new_note[i].eth <== new_note[0][i];
+        poseidon_new_note[i].pubkey_x <== new_note[1][i];
+        poseidon_new_note[i].pubkey_y <== new_note[2][i];
+        poseidon_new_note[i].salt <== new_note[3][i];
+        poseidon_new_note[i].token_addr <== new_note[4][i];
+        poseidon_new_note[i].erc20 <== new_note[5][i];
+        poseidon_new_note[i].nft <== new_note[6][i];
         poseidon_new_note[i].out === new_note_hash[i];
     }
 

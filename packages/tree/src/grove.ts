@@ -319,7 +319,7 @@ export class Grove {
         index: utxo.index,
       })
       .exec()) as TreeNodeSql[]
-    let root!: Field
+    let root: Field = this.latestUTXOTree().root()
     const siblings = [...this.config.utxoHasher.preHash]
     cachedSiblings.forEach((obj: TreeNodeSql) => {
       const level =
@@ -332,7 +332,6 @@ export class Grove {
         siblings[level] = Field.from(obj.value)
       }
     })
-    if (!root) throw Error('Failed to find root')
     const proof = {
       root,
       index: Field.from(utxo.index),
@@ -359,7 +358,7 @@ export class Grove {
         index: withdrawal.index,
       })
       .exec()) as TreeNodeSql[]
-    let root!: Field
+    let root: Field = this.latestWithdrawalTree().root()
     const siblings = [...this.config.withdrawalHasher.preHash]
     cachedSiblings.forEach((obj: TreeNodeSql) => {
       const level =
@@ -372,7 +371,6 @@ export class Grove {
         siblings[level] = Field.from(obj.value)
       }
     })
-    if (!root) throw Error('Failed to find root')
     const proof = {
       root,
       index: Field.from(withdrawal.index),
