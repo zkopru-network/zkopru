@@ -1,5 +1,6 @@
 import { InanoSQLInstance } from '@nano-sql/core'
 import { schema, DepositSql, MassDepositCommitSql } from '@zkopru/database'
+import { logger } from '@zkopru/utils'
 import { EventEmitter } from 'events'
 import { InanoSQLObserverQuery } from '@nano-sql/core/lib/interfaces'
 import { L1Contract } from './layer1'
@@ -164,7 +165,9 @@ export class Synchronizer extends EventEmitter {
     this.depositSubscriber = this.l1Contract.user.events
       .Deposit({ fromBlock })
       .on('connected', subId => {
-        console.log(subId)
+        logger.info(
+          `synchronizer.js: Deposit listner is connected. Id: ${subId}`,
+        )
       })
       .on('data', async event => {
         const { returnValues, blockNumber } = event
@@ -181,11 +184,11 @@ export class Synchronizer extends EventEmitter {
       })
       .on('changed', event => {
         // TODO
-        console.log(event)
+        logger.info(`synchronizer.js: Deposit Event changed`, event)
       })
       .on('error', event => {
         // TODO
-        console.log(event)
+        logger.info(`synchronizer.js: Deposit Event Error occured`, event)
       })
   }
 
@@ -198,7 +201,9 @@ export class Synchronizer extends EventEmitter {
     this.massDepositCommitSubscriber = this.l1Contract.coordinator.events
       .MassDepositCommit({ fromBlock })
       .on('connected', subId => {
-        console.log(subId)
+        logger.info(
+          `synchronizer.js: MassDepositCommit listner is connected. Id: ${subId}`,
+        )
       })
       .on('data', async event => {
         const { returnValues, blockNumber } = event
@@ -215,11 +220,11 @@ export class Synchronizer extends EventEmitter {
       })
       .on('changed', event => {
         // TODO
-        console.log(event)
+        logger.info(`synchronizer.js: MassDeposit Event changed`, event)
       })
       .on('error', event => {
         // TODO
-        console.log(event)
+        logger.info(`synchronizer.js: MassDeposit Event error changed`, event)
       })
   }
 
@@ -233,7 +238,9 @@ export class Synchronizer extends EventEmitter {
     this.proposalSubscriber = this.l1Contract.coordinator.events
       .NewProposal({ fromBlock })
       .on('connected', subId => {
-        console.log(subId)
+        logger.info(
+          `synchronizer.js: NewProposal listner is connected. Id: ${subId}`,
+        )
       })
       .on('data', async event => {
         const { returnValues, blockNumber, transactionHash } = event
@@ -252,11 +259,11 @@ export class Synchronizer extends EventEmitter {
       })
       .on('changed', event => {
         // TODO
-        console.log(event)
+        logger.info(`synchronizer.js: NewProposal Event changed`, event)
       })
       .on('error', err => {
         // TODO
-        console.log(err)
+        logger.info(`synchronizer.js: NewProposal Event error occured`, err)
       })
   }
 
@@ -270,7 +277,9 @@ export class Synchronizer extends EventEmitter {
     this.finalizationSubscriber = this.l1Contract.coordinator.events
       .Finalized({ fromBlock: startFrom })
       .on('connected', subId => {
-        console.log(subId)
+        logger.info(
+          `synchronizer.js: Finalization listner is connected. Id: ${subId}`,
+        )
       })
       .on('data', async event => {
         const { returnValues } = event
@@ -279,16 +288,16 @@ export class Synchronizer extends EventEmitter {
       })
       .on('changed', event => {
         // TODO removed
-        console.log(event)
+        logger.info(`synchronizer.js: Finalization Event changed`, event)
       })
       .on('error', err => {
-        console.log(err)
+        // TODO removed
+        logger.info(`synchronizer.js: Finalization Event error occured`, err)
       })
   }
 
   async fetch(proposalHash: string) {
     if (this.fetching[proposalHash]) return
-    // console.log(returnValues, transactionHash, blockNumber)
     const proposalData = await this.l1Contract.web3.eth.getTransaction(
       proposalHash,
     )

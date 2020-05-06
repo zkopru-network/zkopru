@@ -108,8 +108,8 @@ export class Coordinator {
         app.get('/bootstrap', this.bootstrapHandler)
       }
       this.api = app.listen(this.config.apiPort, () => {
-        console.log(
-          `Coordination API is running on apiPort ${this.config.apiPort}`,
+        logger.info(
+          `coordinator.js: API is running on apiPort ${this.config.apiPort}`,
         )
       })
     }

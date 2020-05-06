@@ -10,9 +10,7 @@
   "_moduleAliases": {
     "~account": "../account/dist",
     "~coordinator": "dist",
-    "~core": "../core/dist",
-    "~database": "../database/dist",
-    "~testnet": "../testnet/dist"
+    "~database": "../database/dist"
   },
   "scripts": {
     "postinstall": "shx mkdir -p dist",

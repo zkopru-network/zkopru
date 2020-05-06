@@ -5,16 +5,22 @@ import { WebsocketProvider } from 'web3-core'
 import { Docker } from 'node-docker-api'
 import { Container } from 'node-docker-api/lib/container'
 import { ReadStream } from 'fs-extra'
-import { FullNode } from '~core'
+import { FullNode } from '@zkopru/core'
 import { schema } from '~database'
 import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
-import { keys } from '~testnet'
-import { sleep } from '~testnet/utils'
+
+function sleep(ms: number) {
+  return new Promise(res => {
+    setTimeout(res, ms)
+  })
+}
 
 describe('coordinator test to run testnet', () => {
   const testName = 'coordinatortest'
-  const accounts: ZkAccount[] = [new ZkAccount(Buffer.from(keys.alicePrivKey))]
+  const accounts: ZkAccount[] = [
+    new ZkAccount(Buffer.from('sample private key')),
+  ]
   let address
   let container: Container
   let fullNode: FullNode

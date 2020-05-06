@@ -4,12 +4,10 @@ import Web3 from 'web3'
 import { WebsocketProvider } from 'web3-core'
 import { Docker } from 'node-docker-api'
 import { Container } from 'node-docker-api/lib/container'
-import { ReadStream } from 'fs-extra'
 import { FullNode } from '~core'
-import { schema } from '~database'
-import { ZkAccount } from '~account'
-import { keys } from '~testnet'
-import { sleep } from '~testnet/utils'
+import { schema } from '@zkopru/database'
+import { ZkAccount } from '@zkopru/account'
+import { sleep, readFromContainer } from '@zkopru/utils'
 
 describe('integration test to run testnet', () => {
   const testName = 'fullnodetest'
@@ -29,19 +27,19 @@ describe('integration test to run testnet', () => {
       container = docker.container.get(testName)
     }
     await container.start()
-    const stream: ReadStream = (await container.fs.get({
-      path: '/proj/build/deployed/ZkOptimisticRollUp.json',
-    })) as ReadStream
-    const f = (await stream.read()).toString()
-    const deployed = JSON.parse(f.slice(f.indexOf('{'), f.indexOf('}') + 1))
-    address = deployed.address
+    const deployed = await readFromContainer(
+      container,
+      '/proj/build/deployed/ZkOptimisticRollUp.json',
+    )
+    address = JSON.parse(deployed.toString()).address
     const status = await container.status()
     const containerIP = (status.data as {
       NetworkSettings: { IPAddress: string }
     }).NetworkSettings.IPAddress
-    await sleep(2000)
+    sleep(2000)
     wsProvider = new Web3.providers.WebsocketProvider(
       `ws://${containerIP}:5000`,
+      { reconnect: { auto: true } },
     )
     async function waitConnection() {
       return new Promise<void>(res => {
@@ -79,7 +77,7 @@ describe('integration test to run testnet', () => {
       })
       const db: InanoSQLInstance = nSQL().useDatabase(dbName)
       const accounts: ZkAccount[] = [
-        new ZkAccount(Buffer.from(keys.alicePrivKey)),
+        new ZkAccount(Buffer.from('sample private key')),
       ]
       fullNode = await FullNode.new({
         provider: wsProvider,
