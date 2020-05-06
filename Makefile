@@ -11,3 +11,11 @@ contract-container:
 contract-testing-container:
 	$(info Make: build container and compile circuits)
 	@docker build -q -f containers/ContractTesting.dockerfile ./ -t zkopru:contract-testing
+
+circuit-container:
+	$(info Make: build container and compile circuits)
+	@docker build -f containers/Circuits.dockerfile ./ -t zkopru:circuits
+
+circuit-testing-container:
+	$(info Make: build container and compile circuits)
+	@docker build -f containers/Circuits.test.dockerfile ./ -t zkopru:circuits-test
