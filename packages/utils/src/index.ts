@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable max-classes-per-file */
 import { Hex, soliditySha3, padLeft } from 'web3-utils'
 import pino from 'pino'

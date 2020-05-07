@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 
 export enum BlockStatus {
