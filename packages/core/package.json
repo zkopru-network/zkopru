@@ -12,6 +12,7 @@
     "~account": "../account/dist",
     "~babyjubjub": "../babyjubjub/dist",
     "~database": "../database/dist",
+    "~dataset": "../dataset/dist",
     "~utils": "../utils/dist"
   },
   "scripts": {

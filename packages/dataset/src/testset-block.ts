@@ -36,7 +36,7 @@ export async function getDummyBody(): Promise<Body> {
     ],
     massMigrations: [
       {
-        destination: strToField('mm1/dest').toHex(32),
+        destination: strToField('mm1/dest').toHex(20),
         totalETH: strToField('mm1/totalETH').toHex(32),
         migratingLeaves: {
           merged: strToField('mm1/md').toHex(32),
@@ -44,13 +44,13 @@ export async function getDummyBody(): Promise<Body> {
         },
         erc20: [
           {
-            addr: strToField('mm1/erc20').toHex(32),
+            addr: strToField('mm1/erc20').toHex(20),
             amount: strToField('mm1/amount').toHex(32),
           },
         ],
         erc721: [
           {
-            addr: strToField('mm1/erc721').toHex(32),
+            addr: strToField('mm1/erc721').toHex(20),
             nfts: [
               strToField('mm1/erc721/nft1').toHex(32),
               strToField('mm1/erc721/nft2').toHex(32),

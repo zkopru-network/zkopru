@@ -125,7 +125,7 @@ export function serializeBody(body: Body): Buffer {
         arr.push(data.erc20Amount.toBuffer('be', 32))
         arr.push(data.nft.toBuffer('be', 32))
         arr.push(data.fee.toBuffer('be', 32))
-      } else if (body.txs[i].outflow[j].outflowType.isZero()) {
+      } else if (!body.txs[i].outflow[j].outflowType.isZero()) {
         throw Error('public data should exist')
       }
     }

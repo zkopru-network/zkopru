@@ -30,9 +30,13 @@ export function root(hashes: Hex[]): Hex {
 }
 
 export function hexToBuffer(hex: string, len?: number): Buffer {
-  if (!len) return Buffer.from(hex.split('0x').pop() || '', 'hex')
-  const buff = Buffer.from(hex.split('0x').pop() || '', 'hex')
-  if (buff.length > len) throw Error('Exceeds the given buffer size')
+  const rawStr = hex.split('0x').pop() || ''
+  const validHexForm = rawStr.length % 2 === 1 ? `0${rawStr}` : rawStr
+  if (!len) return Buffer.from(validHexForm, 'hex')
+  const buff = Buffer.from(validHexForm, 'hex')
+  if (buff.length > len) {
+    throw Error('Exceeds the given buffer size')
+  }
   return Buffer.concat([Buffer.alloc(len - buff.length).fill(0), buff])
 }
 
@@ -70,20 +74,20 @@ export class StringifiedHexQueue {
   }
 
   dequeue(n: number): string {
-    const dequeued = this.str.slice(this.cursor, this.cursor + n)
-    this.cursor += n
+    const dequeued = this.str.slice(this.cursor, this.cursor + n * 2)
+    this.cursor += n * 2
     return `0x${dequeued}`
   }
 
   dequeueToNumber(n: number): number {
-    const dequeued = this.str.slice(this.cursor, this.cursor + n)
-    this.cursor += n
+    const dequeued = this.str.slice(this.cursor, this.cursor + n * 2)
+    this.cursor += n * 2
     return parseInt(dequeued, 16)
   }
 
   dequeueToBuffer(n: number): Buffer {
-    const dequeued = this.str.slice(this.cursor, this.cursor + n)
-    this.cursor += n
+    const dequeued = this.str.slice(this.cursor, this.cursor + n * 2)
+    this.cursor += n * 2
     return Buffer.from(dequeued, 'hex')
   }
 
