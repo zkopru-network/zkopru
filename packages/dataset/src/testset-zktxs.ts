@@ -195,12 +195,12 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
     wasm: circuit_1_2,
     provingKey: circuit_1_2_pk,
   })
-  const tx1Path = 'data/txs/zk_tx_1.tx'
-  const tx2_1Path = 'data/txs/zk_tx_2_1.tx'
-  const tx2_2Path = 'data/txs/zk_tx_2_2.tx'
-  const tx3Path = 'data/txs/zk_tx_3.tx'
-  const tx4Path = 'data/txs/zk_tx_4.tx'
-  if (!fs.existsSync('data/txs')) await fs.mkdirp('data/txs')
+  const tx1Path = '.data/txs/zk_tx_1.tx'
+  const tx2_1Path = '.data/txs/zk_tx_2_1.tx'
+  const tx2_2Path = '.data/txs/zk_tx_2_2.tx'
+  const tx3Path = '.data/txs/zk_tx_3.tx'
+  const tx4Path = '.data/txs/zk_tx_4.tx'
+  if (!fs.existsSync('.data/txs')) await fs.mkdirp('.data/txs')
   let zk_tx_1: ZkTx
   try {
     zk_tx_1 = ZkTx.decode(fs.readFileSync(tx1Path))
