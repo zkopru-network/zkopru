@@ -3,15 +3,32 @@
   "version": "0.0.1",
   "license": "GPL-3.0-or-later",
   "_moduleAliases": {
-    "circomlib": "../../node_modules/circomlib"
+    "circomlib": "../../node_modules/circomlib",
+    "~dataset": "../dataset/dist",
+    "~utils": "../utils/dist"
   },
   "scripts": {
-    "build": "link-module-alias",
+    "postinstall": "shx mkdir -p dist",
     "circuit": "./script/compile_circuits.sh",
     "setup": "./script/snark_setup.sh",
-    "coverage:show": "live-server coverage"
+    "build": "tsc --build tsconfig.build.json",
+    "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
+    "link-modules": "link-module-alias",
+    "test": "jest",
+    "test:unit": "jest test/unit",
+    "test:watch": "jest --watch",
+    "test:ci": "jest --coverage --ci --reporters='jest-junit'",
+    "coverage": "jest --coverage",
+    "coverage:show": "live-server coverage",
+    "dev": "ts-node-dev -r tsconfig-paths/register src/index.ts",
+    "start": "node dist/index.js"
   },
   "dependencies": {
     "circomlib": "^0.1.1"
+  },
+  "devDependencies": {
+    "node-docker-api": "^1.1.22",
+    "ffjavascript": "^0.1.2",
+    "snarkjs": "^0.1.25"
   }
 }

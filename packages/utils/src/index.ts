@@ -4,8 +4,6 @@ import pino from 'pino'
 import { Container } from 'node-docker-api/lib/container'
 import { ReadStream } from 'fs-extra'
 import tar from 'tar'
-
-
 import * as circomruntime from 'circom_runtime'
 import * as snarkjs from 'snarkjs'
 import * as ffjs from 'ffjavascript'

@@ -1,6 +1,6 @@
 /* eslint-disable jest/no-hooks */
-import { Field } from '@zkopru/babyjubjub'
 import BN from 'bn.js'
+import { Field } from '~babyjubjub'
 
 describe('finite field', () => {
   let constant: Field

@@ -1,8 +1,8 @@
 /* eslint-disable jest/no-disabled-tests */
 /* eslint-disable jest/no-hooks */
-import { Field } from '@zkopru/babyjubjub'
 import { nSQL } from '@nano-sql/core'
-import { schema } from '@zkopru/database'
+import { schema } from '~database'
+import { Field } from '~babyjubjub'
 import { NullifierTree, keccakHasher, genesisRoot } from '~tree'
 
 describe('nullifier tree unit test', () => {

@@ -18,6 +18,7 @@ const common = {
     'jest/prefer-expect-assertions': 'off',
     'jest/no-test-return-statement': 'off',
     'import/prefer-default-export': 'off',
+    'import/no-extraneous-dependencies': ['error', {"devDependencies": ["**/*.test.ts", "**/*.spec.ts"]}],
     'import/extensions': 'off',
     'no-console': 'off',
     'no-iterator': 'off',

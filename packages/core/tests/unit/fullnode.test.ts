@@ -1,13 +1,13 @@
 /* eslint-disable jest/no-hooks */
 import { nSQL, InanoSQLInstance } from '@nano-sql/core'
 import Web3 from 'web3'
-import { WebsocketProvider } from 'web3-core'
 import { Docker } from 'node-docker-api'
+import { WebsocketProvider } from 'web3-core'
 import { Container } from 'node-docker-api/lib/container'
+import { schema } from '~database'
+import { ZkAccount } from '~account'
+import { sleep, readFromContainer } from '~utils'
 import { FullNode } from '~core'
-import { schema } from '@zkopru/database'
-import { ZkAccount } from '@zkopru/account'
-import { sleep, readFromContainer } from '@zkopru/utils'
 
 describe('integration test to run testnet', () => {
   const testName = 'fullnodetest'

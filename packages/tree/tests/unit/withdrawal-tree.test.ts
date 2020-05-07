@@ -1,9 +1,9 @@
 /* eslint-disable jest/no-disabled-tests */
 /* eslint-disable jest/no-hooks */
-import { Field } from '@zkopru/babyjubjub'
 import { nSQL } from '@nano-sql/core'
 import { uuid } from '@nano-sql/core/lib/utilities'
-import { schema } from '@zkopru/database'
+import { Field } from '~babyjubjub'
+import { schema } from '~database'
 import {
   WithdrawalTree,
   TreeConfig,
@@ -12,7 +12,8 @@ import {
   genesisRoot,
   verifyProof,
 } from '~tree'
-import { utxos, address } from '../testset'
+import { utxos } from '~dataset/testset-utxos'
+import { address } from '~dataset/testset-keys'
 
 describe('withdrawal tree unit test', () => {
   let withdrawalTree: WithdrawalTree

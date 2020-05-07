@@ -1,5 +1,5 @@
-import { Header, Body } from '~core'
-import { Field } from '~babyjubjub/field'
+import { Header, Body } from '@zkopru/core'
+import { Field } from '@zkopru/babyjubjub'
 import { loadZkTxs } from './testset-zktxs'
 
 function strToField(val: string): Field {

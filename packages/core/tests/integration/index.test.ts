@@ -1,4 +1,4 @@
-import { Field } from '@zkopru/babyjubjub'
+import { Field } from '~babyjubjub'
 
 describe('integration test', () => {
   it('field', () => {

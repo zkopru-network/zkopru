@@ -14,9 +14,10 @@
   },
   "scripts": {
     "postinstall": "shx mkdir -p dist",
-    "build": "tsc --build tsconfig.build.json && link-module-alias",
+    "build": "tsc --build tsconfig.build.json",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "pretest": "make -C ../../ contract-container",
+    "link-modules": "link-module-alias",
     "test": "jest",
     "test:unit": "jest test/unit",
     "test:watch": "jest --watch",
@@ -44,6 +45,7 @@
     "web3-utils": "^1.2.6"
   },
   "devDependencies": {
-    "node-docker-api": "^1.1.22"
+    "node-docker-api": "^1.1.22",
+    "fs-extra": "^9.0.0"
   }
 }

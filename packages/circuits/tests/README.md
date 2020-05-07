@@ -1,6 +1,6 @@
 # Circuit test
 
-1. The test cases are located in `packages/testnet/tests/circuits` directory.
+1. The test cases are located in `packages/circuits/tests/circuits` directory.
 
 2. To run the test cases, you should build the docker image for the testing circuits. Run
   
@@ -11,7 +11,7 @@
     on the project root path. It takes 10~15 minutes to build the circuit test environment.
 
 
-3. Then, go to `packages/testnet` directory and run 
+3. Then, go to `packages/circuits` directory and run 
 
     ```shell
     yarn test
@@ -20,7 +20,7 @@
     Or, you can run
 
     ```shell
-    lerna run test --scope=@zkopru/testnet
+    lerna run test --scope=@zkopru/dataset
     ```
 
     on your project root.
@@ -41,4 +41,4 @@
     )
     ```
 
-6. For more detail test case, check out `packages/testnet/tests/circuits/notehash.test.ts`
+6. For more details about test cases, check out `packages/circuits/tests/notehash.test.ts`

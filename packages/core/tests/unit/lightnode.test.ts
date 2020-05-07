@@ -4,10 +4,10 @@ import Web3 from 'web3'
 import { Docker } from 'node-docker-api'
 import { WebsocketProvider } from 'web3-core'
 import { Container } from 'node-docker-api/lib/container'
+import { schema } from '~database'
+import { ZkAccount } from '~account'
+import { sleep, readFromContainer } from '~utils'
 import { LightNode, HttpBootstrapHelper } from '~core'
-import { schema } from '@zkopru/database'
-import { ZkAccount } from '@zkopru/account'
-import { sleep, readFromContainer } from '@zkopru/utils'
 
 describe('integration test to run testnet', () => {
   const testName = 'lightnodetest'

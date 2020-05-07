@@ -1,11 +1,12 @@
 /* eslint-disable jest/no-disabled-tests */
 
 import { InanoSQLInstance, nSQL } from '@nano-sql/core'
-import { schema } from '@zkopru/database'
-import { Field } from '@zkopru/babyjubjub'
 import BN from 'bn.js'
+import { schema } from '~database'
+import { Field } from '~babyjubjub'
 import { Grove, poseidonHasher, keccakHasher, Item } from '~tree'
-import { address, keys, utxos } from '../testset'
+import { utxos } from '~dataset/testset-utxos'
+import { address, keys } from '~dataset/testset-keys'
 
 /* eslint-disable jest/no-hooks */
 describe('grove full sync grove()', () => {

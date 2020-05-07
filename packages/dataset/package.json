@@ -1,5 +1,5 @@
 {
-  "name": "@zkopru/testnet",
+  "name": "@zkopru/dataset",
   "version": "0.0.1",
   "license": "GPL-3.0-or-later",
   "private": true,
@@ -9,7 +9,7 @@
     "dist"
   ],
   "_moduleAliases": {
-    "~testnet": "dist",
+    "dataset": "dist",
     "~account": "../account/dist",
     "~babyjubjub": "../babyjubjub/dist",
     "~contracts": "../contracts/dist",
@@ -21,8 +21,9 @@
   },
   "scripts": {
     "postinstall": "shx mkdir -p dist",
-    "build": "tsc --build tsconfig.build.json && link-module-alias",
+    "build": "tsc --build tsconfig.build.json",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
+    "link-modules": "link-module-alias",
     "test": "jest",
     "test:unit": "jest test/unit",
     "test:watch": "jest --watch",

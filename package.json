@@ -9,7 +9,7 @@
   "scripts": {
     "postinstall": "yarn bootstrap",
     "bootstrap": "lerna bootstrap && lerna link --force-local",
-    "build": "lerna run --parallel build",
+    "build": "lerna run --parallel build && yarn link-modules",
     "build:fresh": "yarn clean && shx rm -rf packages/*/node_modules && yarn build",
     "clean": "lerna run --parallel clean && shx rm -rf packages/*/node_modules && shx rm -rf .build-cache *.log coverage junit.xml",
     "test": "lerna run test --parallel",
@@ -23,6 +23,7 @@
     "coverage:unit": "yarn test:unit --coverage",
     "coverage:integration": "yarn test:integration --coverage",
     "coverage:show": "live-server coverage",
+    "link-modules": "lerna run --parallel link-modules",
     "lint": "eslint --ext js --ext ts --ext md",
     "lint:ci": "yarn lint . --format junit",
     "lint:md": "markdownlint --ignore node_modules --ignore .git",

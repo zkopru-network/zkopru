@@ -1,9 +1,9 @@
 /* eslint-disable jest/no-disabled-tests */
 /* eslint-disable jest/no-hooks */
-import { Field } from '@zkopru/babyjubjub'
 import { nSQL } from '@nano-sql/core'
 import { uuid } from '@nano-sql/core/lib/utilities'
-import { schema } from '@zkopru/database'
+import { Field } from '~babyjubjub'
+import { schema } from '~database'
 import {
   UtxoTree,
   TreeConfig,
@@ -12,7 +12,8 @@ import {
   genesisRoot,
   verifyProof,
 } from '~tree'
-import { utxos, keys } from '../testset'
+import { utxos } from '~dataset/testset-utxos'
+import { keys } from '~dataset/testset-keys'
 
 describe('utxo tree unit test', () => {
   let utxoTree: UtxoTree

@@ -8,12 +8,16 @@
     "dist"
   ],
   "_moduleAliases": {
+    "~babyjubjub": "../babyjubjub/dist",
+    "~database": "../database/dist",
+    "~dataset": "../dataset/dist",
     "~tree": "dist"
   },
   "scripts": {
     "postinstall": "shx mkdir -p dist && link-module-alias",
-    "build": "tsc --build tsconfig.build.json && link-module-alias",
+    "build": "tsc --build tsconfig.build.json",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
+    "link-modules": "link-module-alias",
     "test": "jest",
     "test:rebuild": "yarn build && yarn test",
     "test:unit": "jest test/unit",
