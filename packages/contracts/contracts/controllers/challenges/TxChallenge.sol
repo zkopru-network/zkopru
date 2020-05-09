@@ -26,27 +26,30 @@ contract TxChallenge is Challengeable {
     function challengeInclusion(
         uint txIndex,
         uint inflowIndex,
-        bytes calldata
+        bytes calldata blockData
     ) external {
+        bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(2);
         Challenge memory result = _challengeResultOfInclusion(
             _block,
             txIndex,
             inflowIndex
         );
-        _execute(result);
+        _execute(proposalId, result);
     }
 
-    function challengeTransaction(uint index, bytes calldata) external {
+    function challengeTransaction(uint index, bytes calldata blockData) external {
+        bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(1);
         Challenge memory result = _challengeResultOfTransaction(_block, index);
-        _execute(result);
+        _execute(proposalId, result);
     }
 
-    function challengeAtomicSwap(uint index, bytes calldata) external {
+    function challengeAtomicSwap(uint index, bytes calldata blockData) external {
+        bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(1);
         Challenge memory result = _challengeAtomicSwap(_block, index);
-        _execute(result);
+        _execute(proposalId, result);
     }
 
     function challengeUsedNullifier(
@@ -54,8 +57,9 @@ contract TxChallenge is Challengeable {
         uint inflowIndex,
         bytes32[256] calldata sibling,
         bytes calldata,
-        bytes calldata
+        bytes calldata blockData
     ) external {
+        bytes32 proposalId = keccak256(blockData);
         Header memory _parentHeader = Deserializer.headerFromCalldataAt(3);
         Block memory _block = Deserializer.blockFromCalldataAt(4);
         Challenge memory result = _challengeResultOfUsedNullifier(
@@ -65,13 +69,14 @@ contract TxChallenge is Challengeable {
             inflowIndex,
             sibling
         );
-        _execute(result);
+        _execute(proposalId, result);
     }
 
-    function challengeDuplicatedNullifier(bytes32 nullifier, bytes calldata) external {
+    function challengeDuplicatedNullifier(bytes32 nullifier, bytes calldata blockData) external {
+        bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(1);
         Challenge memory result = _challengeResultOfDuplicatedNullifier(_block, nullifier);
-        _execute(result);
+        _execute(proposalId, result);
     }
 
     function isValidRef(bytes32 l2BlockHash, uint256 ref) public view returns (bool) {
@@ -101,7 +106,6 @@ contract TxChallenge is Challengeable {
         uint ref = transaction.inflow[inflowIndex].inclusionRoot;
         return Challenge(
             !isValidRef(_block.header.hash(), ref),
-            _block.submissionId,
             _block.header.proposer,
             "Inclusion reference validation"
         );
@@ -123,7 +127,6 @@ contract TxChallenge is Challengeable {
                 if(!outflow.publicData.isEmpty()) {
                     return Challenge(
                         true,
-                        _block.submissionId,
                         _block.header.proposer,
                         "Outflow should not reveal details"
                     );
@@ -132,7 +135,6 @@ contract TxChallenge is Challengeable {
                 if(outflow.publicData.amount * outflow.publicData.nft != 0) {
                     return Challenge(
                         true,
-                        _block.submissionId,
                         _block.header.proposer,
                         "ERC20 and NFT cannot both exist"
                     );
@@ -147,7 +149,6 @@ contract TxChallenge is Challengeable {
         if (!_exist(vk)) {
             return Challenge(
                 true,
-                _block.submissionId,
                 _block.header.proposer,
                 "Unsupported tx type"
             );
@@ -174,7 +175,6 @@ contract TxChallenge is Challengeable {
         if (!vk.zkSNARKs(inputs, transaction.proof)) {
             return Challenge(
                 true,
-                _block.submissionId,
                 _block.header.proposer,
                 "SNARKs failed"
             );
@@ -182,7 +182,6 @@ contract TxChallenge is Challengeable {
         /// Passed all tests. It's a valid transaction. Challenge is not accepted
         return Challenge(
             false,
-            _block.submissionId,
             _block.header.proposer,
             "Valid transaction"
         );
@@ -208,7 +207,6 @@ contract TxChallenge is Challengeable {
         }
         return Challenge(
             counterpart != 1,
-            _block.submissionId,
             _block.header.proposer,
             "Only 1 counterpart tx should exist"
         );
@@ -237,7 +235,6 @@ contract TxChallenge is Challengeable {
         );
         return Challenge(
             updatedRoot == _parentHeader.nullifierRoot,
-            _block.submissionId,
             _block.header.proposer,
             "Double spending validation"
         );
@@ -263,7 +260,6 @@ contract TxChallenge is Challengeable {
         }
         return Challenge(
             count >= 2,
-            _block.submissionId,
             _block.header.proposer,
             "Duplicated nullifier"
         );

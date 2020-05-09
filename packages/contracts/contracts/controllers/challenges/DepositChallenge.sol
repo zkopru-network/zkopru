@@ -19,11 +19,12 @@ contract DepositChallenge is Challengeable {
 
     function challengeMassDeposit(
         uint index,
-        bytes calldata
+        bytes calldata blockData
     ) external {
+        bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(1);
         Challenge memory result = _challengeMassDeposit(_block, index);
-        _execute(result);
+        _execute(proposalId, result);
     }
 
     function _challengeMassDeposit(
@@ -39,7 +40,6 @@ contract DepositChallenge is Challengeable {
             /// This mass deposit does not exist
             return Challenge(
                 true,
-                _block.submissionId,
                 _block.header.proposer,
                 "This deposit queue is not committed"
             );

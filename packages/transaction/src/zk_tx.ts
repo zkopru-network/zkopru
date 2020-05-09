@@ -222,9 +222,11 @@ export class ZkTx {
     const nIn = queue.dequeue(1)[0]
     zkTx.inflow = []
     for (let i = 0; i < nIn; i += 1) {
+      const root = Field.fromBuffer(queue.dequeue(32))
+      const nullifier = Field.fromBuffer(queue.dequeue(32))
       zkTx.inflow.push({
-        root: Field.fromBuffer(queue.dequeue(32)),
-        nullifier: Field.fromBuffer(queue.dequeue(32)),
+        root,
+        nullifier,
       })
     }
     // Outflow

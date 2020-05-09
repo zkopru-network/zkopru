@@ -17,28 +17,32 @@ contract HeaderChallenge is Challengeable {
     using Types for MassMigration[];
     using Types for Transaction[];
 
-    function challengeDepositRoot(bytes calldata) external {
+    function challengeDepositRoot(bytes calldata blockData) external {
+        bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         Challenge memory result = _challengeResultOfDepositRoot(_block);
-        _execute(result);
+        _execute(proposalId, result);
     }
 
-    function challengTxRoot(bytes calldata) external {
+    function challengTxRoot(bytes calldata blockData) external {
+        bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         Challenge memory result = _challengeResultOfTxRoot(_block);
-        _execute(result);
+        _execute(proposalId, result);
     }
 
-    function challengeMigrationRoot(bytes calldata) external {
+    function challengeMigrationRoot(bytes calldata blockData) external {
+        bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         Challenge memory result = _challengeResultOfMigrationRoot(_block);
-        _execute(result);
+        _execute(proposalId, result);
     }
 
-    function challengeTotalFee(bytes calldata) external {
+    function challengeTotalFee(bytes calldata blockData) external {
+        bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         Challenge memory result = _challengeResultOfTotalFee(_block);
-        _execute(result);
+        _execute(proposalId, result);
     }
 
     function _challengeResultOfDepositRoot(
@@ -50,7 +54,6 @@ contract HeaderChallenge is Challengeable {
     {
         return Challenge(
             _block.header.depositRoot != _block.body.massDeposits.root(),
-            _block.submissionId,
             _block.header.proposer,
             "Deposit root validation"
         );
@@ -65,7 +68,6 @@ contract HeaderChallenge is Challengeable {
     {
         return Challenge(
             _block.header.txRoot != _block.body.txs.root(),
-            _block.submissionId,
             _block.header.proposer,
             "Transaction root validation"
         );
@@ -80,7 +82,6 @@ contract HeaderChallenge is Challengeable {
     {
         return Challenge(
             _block.header.migrationRoot != _block.body.massMigrations.root(),
-            _block.submissionId,
             _block.header.proposer,
             "Transaction root validation"
         );
@@ -104,7 +105,6 @@ contract HeaderChallenge is Challengeable {
         /// FYI, fee in the massMigration is for the destination contract
         return Challenge(
             totalFee != _block.header.fee,
-            _block.submissionId,
             _block.header.proposer,
             "Total fee validation"
         );

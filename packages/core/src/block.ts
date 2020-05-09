@@ -106,8 +106,8 @@ export function serializeBody(body: Body): Buffer {
     )
     arr.push(numOfInflowByte)
     for (let j = 0; j < body.txs[i].inflow.length; j += 1) {
-      arr.push(body.txs[i].inflow[j].nullifier.toBuffer('be', 32))
       arr.push(body.txs[i].inflow[j].root.toBuffer('be', 32))
+      arr.push(body.txs[i].inflow[j].nullifier.toBuffer('be', 32))
     }
     const numOfOutflowByte = Utils.hexToBuffer(
       body.txs[i].outflow.length.toString(16),
@@ -129,14 +129,6 @@ export function serializeBody(body: Body): Buffer {
         throw Error('public data should exist')
       }
     }
-    const swapExistenceByte = body.txs[i].swap
-      ? Buffer.from([1])
-      : Buffer.from([0])
-    arr.push(swapExistenceByte)
-    const { swap } = body.txs[i]
-    if (swap) {
-      arr.push(swap.toBuffer('be', 32))
-    }
     arr.push(body.txs[i].fee.toBuffer('be', 32))
     const { proof } = body.txs[i]
     if (!proof) throw Error('SNARK proof should exist')
@@ -148,14 +140,19 @@ export function serializeBody(body: Body): Buffer {
     arr.push(proof.pi_b[1][1].toBuffer('be', 32))
     arr.push(proof.pi_c[0].toBuffer('be', 32))
     arr.push(proof.pi_c[1].toBuffer('be', 32))
+
+    const { swap } = body.txs[i]
     const { memo } = body.txs[i]
-    const memoExistenceByte = memo
-      ? Buffer.from([memo.byteLength])
-      : Buffer.from([0])
-    arr.push(memoExistenceByte)
+    const swapExist = swap ? 1 : 0
+    const memoExist = memo ? 2 : 0
+    const indicator = swapExist | memoExist
+    arr.push(Buffer.from([indicator]))
+    if (swap) {
+      arr.push(swap.toBuffer('be', 32))
+    }
     if (memo) {
+      if (memo.byteLength !== 81) throw Error('Memo field should have 81 bytes')
       arr.push(memo)
-      if (memo.byteLength > 256) throw Error('Memo field allows only 256 bytes')
     }
   }
   // Mass deposits
@@ -230,8 +227,8 @@ function deserializeTxsFrom(rawData: string): { txs: ZkTx[]; rest: string } {
     const inflow: ZkInflow[] = []
     while (inflow.length < numOfInflow) {
       inflow.push({
-        nullifier: Field.from(queue.dequeue(32)),
         root: Field.from(queue.dequeue(32)),
+        nullifier: Field.from(queue.dequeue(32)),
       })
     }
     const numOfOutflow: number = queue.dequeueToNumber(1)
@@ -256,11 +253,6 @@ function deserializeTxsFrom(rawData: string): { txs: ZkTx[]; rest: string } {
         data,
       })
     }
-    const swapExistence = queue.dequeueToNumber(1)
-    let swap: Field | undefined
-    if (swapExistence) {
-      swap = Field.from(queue.dequeue(32))
-    }
     const fee = Field.from(queue.dequeue(32))
     const proof: SNARK = {
       pi_a: [Field.from(queue.dequeue(32)), Field.from(queue.dequeue(32))],
@@ -270,10 +262,16 @@ function deserializeTxsFrom(rawData: string): { txs: ZkTx[]; rest: string } {
       ],
       pi_c: [Field.from(queue.dequeue(32)), Field.from(queue.dequeue(32))],
     }
-    const hasMemo = queue.dequeueToNumber(1)
+    const indicator = queue.dequeueToNumber(1)
+    let swap: Field | undefined
+    if ((indicator & 1) !== 0) {
+      // swap exist
+      swap = Field.from(queue.dequeue(32))
+    }
     let memo: Buffer | undefined
-    if (hasMemo) {
-      memo = queue.dequeueToBuffer(32)
+    if ((indicator & 2) !== 0) {
+      // memo exist
+      memo = queue.dequeueToBuffer(81)
     }
     txs.push(new ZkTx({ inflow, outflow, swap, fee, proof, memo }))
   }

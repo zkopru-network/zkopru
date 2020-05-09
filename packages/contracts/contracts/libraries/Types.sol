@@ -57,7 +57,6 @@ struct Withdrawable {
 }
 
 struct Finalization {
-    bytes32 submissionId;
     Header header;
     MassDeposit[] massDeposits;
     MassMigration[] massMigrations;
@@ -77,13 +76,11 @@ struct Proposal {
 
 struct Challenge {
     bool slash;
-    bytes32 proposalId;
     address proposer;
     string message;
 }
 
 struct Block {
-    bytes32 submissionId;
     Header header;
     Body body;
 }

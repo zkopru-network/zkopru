@@ -30,10 +30,10 @@ contract Challengeable is Layer2 {
         delete Layer2.chain.proposers[proposerAddr];
     }
 
-    function _execute(Challenge memory result) internal {
+    function _execute(bytes32 proposalId, Challenge memory result) internal {
         require(result.slash, result.message);
 
-        Proposal storage proposal = Layer2.chain.proposals[result.proposalId];
+        Proposal storage proposal = Layer2.chain.proposals[proposalId];
         /// Check basic challenge conditions
         _checkChallengeCondition(proposal);
         /// Since the challenge satisfies the given conditions, slash the optimistic rollup proposer

@@ -39,22 +39,23 @@ contract Coordinatable is Layer2 {
         delete Layer2.chain.proposers[proposerAddr];
     }
 
-    function propose(bytes memory) public {
+    function propose(bytes memory blockData) public {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
+        bytes32 submissionId = keccak256(blockData);
         /// The message sender address should be same with the proposer address
         require(_block.header.proposer == msg.sender, "Coordinator account is different with the message sender");
         Proposer storage proposer = Layer2.chain.proposers[msg.sender];
         /// Check permission
         require(isProposable(msg.sender), "Not allowed to propose");
         /// Duplicated proposal is not allowed
-        require(Layer2.chain.proposals[_block.submissionId].headerHash == bytes32(0), "Already submitted");
+        require(Layer2.chain.proposals[submissionId].headerHash == bytes32(0), "Already submitted");
         /** LEGACY
         /// Do not exceed maximum challenging cost
         require(_block.maxChallengeCost() < CHALLENGE_LIMIT, "Its challenge cost exceeds the limit");
         */
         /// Save opru proposal
         bytes32 currentBlockHash = _block.header.hash();
-        Layer2.chain.proposals[_block.submissionId] = Proposal(
+        Layer2.chain.proposals[submissionId] = Proposal(
             currentBlockHash,
             block.number + CHALLENGE_PERIOD,
             false
@@ -80,9 +81,9 @@ contract Coordinatable is Layer2 {
         emit NewProposal(currentBlockHash);
     }
 
-    function finalize(bytes memory) public {
-        Finalization memory finalization = Deserializer.finalizationFromCalldataAt(0);
-        Proposal storage proposal = Layer2.chain.proposals[finalization.submissionId];
+    function finalize(bytes32 submissionId, bytes memory) public {
+        Finalization memory finalization = Deserializer.finalizationFromCalldataAt(1);
+        Proposal storage proposal = Layer2.chain.proposals[submissionId];
         /// Check requirements
         require(finalization.massDeposits.root() == finalization.header.depositRoot, "Submitted different deposit root");
         require(finalization.massMigrations.root() == finalization.header.migrationRoot, "Submitted different deposit root");
@@ -122,7 +123,7 @@ contract Coordinatable is Layer2 {
         for (uint i = 0; i < finalization.massMigrations.length; i++) {
             bytes32 migrationId = keccak256(
                 abi.encodePacked(
-                    finalization.submissionId,
+                    submissionId,
                     finalization.massMigrations[i].hash()
                 )
             );

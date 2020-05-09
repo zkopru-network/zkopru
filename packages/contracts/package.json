@@ -8,6 +8,7 @@
     "dist"
   ],
   "_moduleAliases": {
+    "~babyjubjub": "../babyjubjub/dist",
     "~contracts": "dist",
     "~core": "../core/dist",
     "~dataset": "../dataset/dist"

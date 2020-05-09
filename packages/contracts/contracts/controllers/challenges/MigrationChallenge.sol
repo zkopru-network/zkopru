@@ -25,29 +25,32 @@ contract MigrationChallenge is Challengeable {
 
     function challengeMassMigrationToMassDeposit(
         address destination,
-        bytes calldata
+        bytes calldata blockData
     ) external {
+        bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(1);
         Challenge memory result = _challengeResultOfMassMigrationToMassDeposit(_block, destination);
-        _execute(result);
+        _execute(proposalId, result);
     }
 
     function challengeERC20Migration(
         address destination,
         address erc20,
-        bytes calldata
+        bytes calldata blockData
     ) external {
+        bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(2);
         Challenge memory result = _challengeResultOfERC20Migration(_block, destination, erc20);
-        _execute(result);
+        _execute(proposalId, result);
     }
 
     function challengeERC721Migration(
         address destination,
         address erc721,
         uint tokenId,
-        bytes calldata
+        bytes calldata blockData
     ) external {
+        bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(2);
         Challenge memory result = _challengeResultOfERC721Migration(
             _block,
@@ -55,7 +58,7 @@ contract MigrationChallenge is Challengeable {
             erc721,
             tokenId
         );
-        _execute(result);
+        _execute(proposalId, result);
     }
 
     function _challengeResultOfMassMigrationToMassDeposit(
@@ -72,7 +75,6 @@ contract MigrationChallenge is Challengeable {
                 if(submitted.destination != address(0)) {
                     return Challenge(
                         true,
-                        _block.submissionId,
                         _block.header.proposer,
                         "Duplicated MassMigration destination"
                     );
@@ -105,7 +107,6 @@ contract MigrationChallenge is Challengeable {
         }
         return Challenge(
             !validityOfMassDeposit,
-            _block.submissionId,
             _block.header.proposer,
             "Computed mass deposit is different with the submitted"
         );
@@ -131,7 +132,6 @@ contract MigrationChallenge is Challengeable {
                             /// There exist more than 2 of erc20 migration against the address.
                             return Challenge(
                                 true,
-                                _block.submissionId,
                                 _block.header.proposer,
                                 "Duplicated ERC20 migration dests exist"
                             );
@@ -158,7 +158,6 @@ contract MigrationChallenge is Challengeable {
         }
         return Challenge(
             erc20Amount == submitted.amount,
-            _block.submissionId,
             _block.header.proposer,
             "Migrating amount of token is invalid"
         );
@@ -185,7 +184,6 @@ contract MigrationChallenge is Challengeable {
                             /// There exist more than 2 of erc721 migration against the address.
                             return Challenge(
                                 true,
-                                _block.submissionId,
                                 _block.header.proposer,
                                 "Duplicated ERC721 migration dests exist"
                             );
@@ -204,7 +202,6 @@ contract MigrationChallenge is Challengeable {
         if(submittedNftCount > 1) {
             return Challenge(
                 true,
-                _block.submissionId,
                 _block.header.proposer,
                 "It destroys the non-fungibility"
             );
@@ -227,7 +224,6 @@ contract MigrationChallenge is Challengeable {
         }
         return Challenge(
             submittedNftCount == computedNftCount,
-            _block.submissionId,
             _block.header.proposer,
             "Invalid nft migration"
         );

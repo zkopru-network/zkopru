@@ -114,7 +114,7 @@ const formatted = prettier.format(src, {
   singleQuote: true,
   useTabs: false,
   tabWidth: 2,
-  trailingComma: 'all',
+  trailingComma: 'none',
   endOfLine: 'lf',
 })
 fs.writeFileSync('./src/index.ts', src)

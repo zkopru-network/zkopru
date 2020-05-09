@@ -1,252 +1,458 @@
 pragma solidity >= 0.6.0;
 
-import { Header, Body, Transaction, MassDeposit, MassMigration, Block, Finalization } from "./Types.sol";
+import {
+    Header,
+    Body,
+    Transaction,
+    Inflow,
+    Outflow,
+    Proof,
+    MassDeposit,
+    MassMigration,
+    ERC20Migration,
+    ERC721Migration,
+    Block,
+    PublicData,
+    Finalization
+} from "./Types.sol";
 
-library Deserializer {
-    function headerFromCalldataAt(uint paramIndex) internal pure returns (Header memory) {
-    }
-
+library Deserializer {    
     /**
      * @dev Block data will be serialized with the following structure
-     *      https://github.com/wilsonbeam/zk-optimistic-rollup/wiki/Serialization
+     *      https://github.com/wanseob/zkopru/wiki/Serialization
      * @param paramIndex The index of the block calldata parameter in the external function
      */
     function blockFromCalldataAt(uint paramIndex) internal pure returns (Block memory) {
         /// 4 means the length of the function signature in the calldata
         uint start = 4 + abi.decode(msg.data[4 + 32*paramIndex:4 + 32*(paramIndex+1)], (uint));
+        uint cp = start + 0x20; //calldata position
         Block memory _block;
-        Transaction memory txs;
+        (_block.header, cp) = dequeueHeader(cp);
+        (_block.body.txs, cp) = dequeueTxs(cp);
+        (_block.body.massDeposits, cp) = dequeueMassDeposits(cp);
+        (_block.body.massMigrations, cp) = dequeueMassMigrations(cp);
+        uint dataLen;
         assembly {
-            function copy_and_move(curr_mem_cursor, curr_call_cursor) -> new_mem_cursor, new_calldata_cursor {
-                calldatacopy(curr_mem_cursor, curr_call_cursor, 0x20)
-                new_calldata_cursor := add(curr_call_cursor, 0x20)
-                new_mem_cursor := add(curr_mem_cursor, 0x20)
-            }
-            function partial_copy_and_move(curr_mem_cursor, curr_call_cursor, len) -> new_mem_cursor, new_calldata_cursor {
-                mstore(curr_mem_cursor, 0) // initialization with zeroes
-                calldatacopy(add(curr_mem_cursor, sub(0x20, len)), curr_call_cursor, len)
-                new_calldata_cursor := add(curr_call_cursor, len)
-                new_mem_cursor := add(curr_mem_cursor, 0x20)
-            }
-            function assign_and_move(curr_mem_cursor, value) -> new_mem_cursor {
-                mstore(curr_mem_cursor, value)
-                new_mem_cursor := add(curr_mem_cursor, 0x20)
-            }
-            function skip(mem_pos, n) -> new_mem_pos {
-                new_mem_pos := add(mem_pos, mul(0x20, n))
-            }
-
-            // bytes.length
-            let starting_mem_pos := mload(0x40)
-            let mem_pos := starting_mem_pos
-            let cp := start
-            mem_pos, cp := copy_and_move(mem_pos, cp)
-            let data_len := mload(starting_mem_pos)
-            let _
-
-            // Block memory _block;
-            _block := mem_pos
-            mem_pos := skip(mem_pos, 3) // id, header, body
-
-            // Header
-            mstore(add(_block, 0x20), mem_pos) // Block.header
-            mstore(mem_pos, 0) // put zeroes into the first 32bytes
-            calldatacopy(add(mem_pos, 0x0c), cp, 0x214) // header_len := 0x214 = 0x14 + 16 * 0x20;
-            mem_pos := skip(mem_pos, 17)
-            cp := add(cp, 0x214) // skip bytes.length + header.length
-
-            // Body
-            mstore(add(_block, 0x40), mem_pos) // Block.body
-            txs := mem_pos
-            mem_pos, cp := partial_copy_and_move(mem_pos, cp, 0x02) //txs.len
-            mem_pos := skip(mem_pos, mload(txs))
-            // reserve slots for p_txs_i
-            for { let i := 0 } lt(i, mload(txs)) { i := add(i, 1) } {
-                let p_txs_i := mem_pos
-                mstore(add(txs, mul(0x20, add(i, 1))), p_txs_i) // init txs[i]
-                mem_pos := skip(mem_pos, 5)
-
-                /// Get items of Inflow[] array
-                mstore(p_txs_i, mem_pos)// init txs[i].inflow
-                mem_pos, cp := partial_copy_and_move(mem_pos, cp, 0x01) // inflow len
-                let inflow_len := mload(sub(mem_pos, 0x20))
-                let p_txs_i_inflow_j := mem_pos
-                // reserve slots for p_txs_i_inflow_j
-                mem_pos := skip(mem_pos, inflow_len)
-                for { let j := 0 } lt(j, inflow_len) { j := add(j, 1) } {
-                    // init inflow[j]
-                    mstore(p_txs_i_inflow_j, mem_pos)
-                    p_txs_i_inflow_j := add(p_txs_i_inflow_j, 0x20)
-                    mem_pos, cp := copy_and_move(mem_pos, cp) // root
-                    mem_pos, cp := copy_and_move(mem_pos, cp) // nullifier
-                }
-                /// Get items of Outflow[] array
-                mstore(add(p_txs_i, 0x20), mem_pos)// init txs[i].outflow
-                mem_pos, cp := partial_copy_and_move(mem_pos, cp, 0x01) // outflow len
-                let outflow_len := mload(sub(mem_pos, 0x20))
-                let p_txs_i_outflow_j := mem_pos
-                // reserve slots for p_txs_i_outflow_j
-                mem_pos := skip(mem_pos, outflow_len)
-                for { let j := 0 } lt(j, outflow_len) { j := add(j, 1) } {
-                    mstore(p_txs_i_outflow_j, mem_pos)
-                    mem_pos, cp := copy_and_move(mem_pos, cp) // note
-                    mem_pos, cp := partial_copy_and_move(mem_pos, cp, 0x01) // type
-                    mstore(mem_pos, add(mem_pos, 0x20)) // public data
-                    mem_pos := skip(mem_pos, 1)
-                    // init outflow[j].publicData
-                    switch mload(sub(mem_pos, 0x40))
-                    case 0 // utxo
-                    {
-                        mem_pos := assign_and_move(mem_pos, 0)
-                        mem_pos := assign_and_move(mem_pos, 0)
-                        mem_pos := assign_and_move(mem_pos, 0)
-                        mem_pos := assign_and_move(mem_pos, 0)
-                        mem_pos := assign_and_move(mem_pos, 0)
-                        mem_pos := assign_and_move(mem_pos, 0)
-                    }
-                    default // withdrawal & migration
-                    {
-                        mem_pos, cp := partial_copy_and_move(mem_pos, cp, 0x14) // to
-                        mem_pos, cp := copy_and_move(mem_pos, cp) // eth
-                        mem_pos, cp := partial_copy_and_move(mem_pos, cp, 0x14) // token
-                        mem_pos, cp := copy_and_move(mem_pos, cp) // amount
-                        mem_pos, cp := copy_and_move(mem_pos, cp) // nft
-                        mem_pos, cp := copy_and_move(mem_pos, cp) // fee
-                    }
-                    p_txs_i_outflow_j := add(p_txs_i_outflow_j, 0x20)
-                }
-                // AtomicSwap
-                _, cp := partial_copy_and_move(mem_pos, cp, 0x01) // swap existence
-                switch mload(mem_pos)
-                case 0 {
-                    mstore(add(p_txs_i, 0x40), 0)// txs[i].swap = 0
-                }
-                default
-                {
-                    _, cp := copy_and_move(mem_pos, cp)
-                    mstore(add(p_txs_i, 0x40), mload(mem_pos))// txs[i].swap = copied
-                    mem_pos := add(mem_pos, 0x20)
-                }
-                //  Fee
-                _, cp := copy_and_move(mem_pos, cp)
-                mstore(add(p_txs_i, 0x60), mload(mem_pos))// txs[i].fee
-                mem_pos := add(mem_pos, 0x20)
-                // SNARK proof
-                let p_tx_proof := mem_pos
-                mstore(add(p_txs_i, 0x80), p_tx_proof)// init txs[i].outflow
-                mem_pos := skip(mem_pos, 3)
-                mstore(p_tx_proof, mem_pos) // proof.a
-                mem_pos, cp := copy_and_move(mem_pos, cp) // a.X
-                mem_pos, cp := copy_and_move(mem_pos, cp) // a.Y
-                mstore(add(p_tx_proof, 0x20), mem_pos) // proof.b
-                mem_pos, cp := copy_and_move(mem_pos, cp) // a.X[0]
-                mem_pos, cp := copy_and_move(mem_pos, cp) // a.X[1]
-                mem_pos, cp := copy_and_move(mem_pos, cp) // b.Y[0]
-                mem_pos, cp := copy_and_move(mem_pos, cp) // b.Y[1]
-                mstore(add(p_tx_proof, 0x60), mem_pos) // proof.c
-                mem_pos, cp := copy_and_move(mem_pos, cp) // c.X
-                mem_pos, cp := copy_and_move(mem_pos, cp) // c.Y
-                // Memo
-                _, cp := partial_copy_and_move(mem_pos, cp, 0x01) //txs.len
-                let memo_len := mload(mem_pos)
-                mem_pos := add(mem_pos, 0x20)
-                calldatacopy(mem_pos, cp, memo_len)
-                mem_pos := skip(mem_pos, memo_len)
-            }
-            /**
-            let p_mass_deposits := mem_pos
-            mem_pos, cp := partial_copy_and_move(mem_pos, cp, 0x02) //massDeposits.len
-            let mass_deposits_len := mload(p_mass_deposits)
-            let p_mass_deposit_0 := mem_pos
-            // reserve slots for p_mass_deposit_i
-            mem_pos := add(mem_pos, mul(mass_deposits_len, 0x20))
-            for { let i := 0 } lt(i, mass_deposits_len) { i := add(i, 1) } {
-                let p_mass_deposit_i := mem_pos
-                mem_pos, cp := copy_and_move(mem_pos, cp) // merged
-                mem_pos, cp := copy_and_move(mem_pos, cp) // fee
-                mstore(add(p_mass_deposit_0, mul(0x20, i)), p_mass_deposit_i)
-            }
-
-            let p_mass_migrations := mem_pos
-            mem_pos, cp := partial_copy_and_move(mem_pos, cp, 0x02) //massDeposits.len
-            let mass_migrations_len := mload(p_mass_migrations)
-            let p_mass_migration_0 := mem_pos
-            // reserve slots for p_mass_migration_i
-            mem_pos := add(mem_pos, mul(mass_migrations_len, 0x20))
-            for { let i := 0 } lt(i, mass_migrations_len) { i := add(i, 1) } {
-                let p_mass_migration_i_dest := mem_pos
-                mem_pos, cp := partial_copy_and_move(mem_pos, cp, 0x14) // dest
-                let p_mass_migration_i_eth := mem_pos
-                mem_pos, cp := copy_and_move(mem_pos, cp) // eth
-                let p_mass_migration_i_mass_deposit := mem_pos
-                mem_pos, cp := copy_and_move(mem_pos, cp) // migration_i_mass_deposit_merged
-                mem_pos, cp := copy_and_move(mem_pos, cp) // migration_i_mass_deposit_fee
-
-
-                /// Get items of ERC20Migration[] array
-                let p_mm_i_erc20 := mem_pos
-                mem_pos, cp := partial_copy_and_move(mem_pos, cp, 0x01) // erc20 migration len
-                let mm_i_erc20_len := mload(p_mm_i_erc20)
-                let p_mm_i_erc20_0 := mem_pos
-                // reserve slots for p_txs_i_inflow_j
-                mem_pos := add(mem_pos, mul(mm_i_erc20_len, 0x20))
-                for { let j := 0 } lt(j, mm_i_erc20_len) { j := add(j, 1) } {
-                    // init ERC20Migration[j]
-                    let p_mm_i_erc20_j := mem_pos
-                    mem_pos, cp := partial_copy_and_move(mem_pos, cp, 0x14) // token addr
-                    mem_pos, cp := copy_and_move(mem_pos, cp) // amount
-                    mstore(add(p_mm_i_erc20_0, mul(0x20, j)), p_mm_i_erc20_j)
-                }
-
-                /// Get items of ERC721Migration[] array
-                let p_mm_i_erc721 := mem_pos
-                mem_pos, cp := partial_copy_and_move(mem_pos, cp, 0x01) // erc721 migration len
-                let mm_i_erc721_len := mload(p_mm_i_erc721)
-                let p_mm_i_erc721_0 := mem_pos
-                // reserve slots for p_txs_i_inflow_j
-                mem_pos := add(mem_pos, mul(mm_i_erc721_len, 0x20))
-                for { let j := 0 } lt(j, mm_i_erc721_len) { j := add(j, 1) } {
-                    // init ERC721Migration[j]
-                    let p_mm_i_erc721_j_addr := mem_pos
-                    mem_pos, cp := partial_copy_and_move(mem_pos, cp, 0x14) // token addr
-                    let p_mm_i_erc721_j_nft := mem_pos
-                    mem_pos, cp := partial_copy_and_move(mem_pos, cp, 0x01) // nft length
-                    for { let k := 0 } lt(k, mload(p_mm_i_erc721_j_nft)) { k := add(k, 1) } {
-                        mem_pos, cp := copy_and_move(mem_pos, cp) // nft[k]
-                    }
-                    let p_mm_i_erc721_j := mem_pos
-                    mem_pos := assign_and_move(mem_pos, mload(p_mm_i_erc721_j_addr))
-                    mem_pos := assign_and_move(mem_pos, p_mm_i_erc721_j_nft)
-                    mstore(add(p_mm_i_erc721_0, mul(0x20, j)), p_mm_i_erc721_j)
-                }
-                let p_mass_migration_i := mem_pos
-                mem_pos := assign_and_move(mem_pos, mload(p_mass_migration_i_dest))
-                mem_pos := assign_and_move(mem_pos, mload(p_mass_migration_i_eth))
-                mem_pos := assign_and_move(mem_pos, p_mass_migration_i_mass_deposit)
-                mem_pos := assign_and_move(mem_pos, p_mm_i_erc20)
-                mem_pos := assign_and_move(mem_pos, p_mm_i_erc721)
-                mstore(add(p_mass_migration_0, mul(0x20, i)), p_mass_migration_i)
-            }
-            let p_body := mem_pos
-            mem_pos := assign_and_move(mem_pos, p_txs)
-            mem_pos := assign_and_move(mem_pos, p_mass_deposits)
-            mem_pos := assign_and_move(mem_pos, p_mass_migrations)
-            let submission_id := keccak256(starting_mem_pos, sub(mem_pos, starting_mem_pos))
-            _block := mem_pos
-            mem_pos := assign_and_move(mem_pos, submission_id)
-            mem_pos := assign_and_move(mem_pos, p_header)
-            mem_pos := assign_and_move(mem_pos, p_body)
-            mstore(0x40, mem_pos)
-            if not(eq(sub(cp, start), data_len)) {
-                revert(0, 0)
-            }
-            */
+            let p := mload(0x40)
+            calldatacopy(p, start, 0x20)
+            dataLen := mload(p)
+            mstore(0x40, add(p, 0x20))
+        }
+        if(dataLen != cp - start - 0x20) {
+            revert("Serialization has a problem");
         }
         return _block;
     }
 
-    function massMigrationFromCalldataAt(uint paramIndex) internal pure returns (MassMigration memory) {
+    function dequeueHeader(uint calldataPos) internal pure returns (
+        Header memory header,
+        uint end
+    ) {
+        assembly {
+            // Header
+            mstore(header, 0) // put zeroes into the first 32bytes
+            calldatacopy(add(header, 0x0c), calldataPos, 0x174) // header_len := 0x214 = 0x14 + 16 * 0x20;
+        }
+        end = calldataPos + 0x174;
     }
+
+    function dequeueTxs(uint calldataPos) internal pure returns (
+        Transaction[] memory txs,
+        uint end
+    ) {
+        uint cp = calldataPos;
+        uint txsLen;
+        assembly {            
+            // load free memory
+            let free_mem := mload(0x40)
+            mstore(free_mem, 0)
+            calldatacopy(add(free_mem, 0x1e), cp, 0x02)
+            txsLen := mload(free_mem)
+            cp := add(cp, 0x02)
+            mstore(0x40, add(free_mem, 0x20))
+        }
+        txs = new Transaction[](txsLen);
+        for (uint i = 0; i < txsLen; i++) {
+            (txs[i], cp) = dequeueTx(cp);
+        }
+        end = cp;
+    }
+
+    function dequeueTx(uint calldataPos) internal pure returns (
+        Transaction memory transaction,
+        uint end
+    ) {
+        uint cp = calldataPos;
+        uint8 indicator;
+        (transaction.inflow, cp) = dequeueInflowArr(cp);
+        (transaction.outflow, cp) = dequeueOutflowArr(cp);
+        (transaction.fee, cp) = dequeueUint(cp);
+        (transaction.proof, cp) = dequeueProof(cp);
+        (indicator, cp) = dequeueByte(cp);
+        if (indicator & 1 != 0) {
+            // has swap
+            (transaction.swap, cp) = dequeueUint(cp);
+        }
+        if (indicator & 2 != 0) {
+            // has memo
+            (transaction.memo, cp) = dequeueMemo(cp);
+        }
+        end = cp;
+    }
+
+    function dequeueInflowArr(uint calldataPos) internal pure returns (
+        Inflow[] memory inflow,
+        uint end
+    ) {
+        uint cp = calldataPos;
+        uint inflowLen;
+        assembly {            
+            // load free memory
+            let free_mem := mload(0x40)
+            mstore(free_mem, 0)
+            calldatacopy(add(free_mem, 0x1f), cp, 0x01)
+            inflowLen := mload(free_mem)
+            cp := add(cp, 0x01)
+            mstore(0x40, add(free_mem, 0x20))
+        }
+        inflow = new Inflow[](inflowLen);
+        for (uint i = 0; i < inflowLen; i++) {
+            (inflow[i], cp) = dequeueInflow(cp);
+        }
+        end = cp;
+    }
+
+    function dequeueInflow(uint calldataPos) internal pure returns (
+        Inflow memory inflow,
+        uint end
+    ) {
+        assembly {            
+            calldatacopy(inflow, calldataPos, 0x40)
+            end := add(calldataPos, 0x40)
+        }
+    }
+
+    function dequeueOutflowArr(uint calldataPos) internal pure returns (
+        Outflow[] memory outflow,
+        uint end
+    ) {
+        uint cp = calldataPos;
+        uint outflowLen;
+        assembly {            
+            // load free memory
+            let free_mem := mload(0x40)
+            mstore(free_mem, 0)
+            calldatacopy(add(free_mem, 0x1f), cp, 0x01)
+            outflowLen := mload(free_mem)
+            cp := add(cp, 0x01)
+            mstore(0x40, add(free_mem, 0x20))
+        }
+        outflow = new Outflow[](outflowLen);
+        for (uint i = 0; i < outflowLen; i++) {
+            (outflow[i], cp) = dequeueOutflow(cp);
+        }
+        end = cp;
+    }
+
+    function dequeueOutflow(uint calldataPos) internal pure returns (
+        Outflow memory outflow,
+        uint end
+    ) {
+        uint cp = calldataPos;
+        assembly {        
+            // Outflow.note
+            calldatacopy(outflow, cp, 0x20)
+            cp := add(cp, 0x20)
+            // Outflow.outflowType
+            calldatacopy(add(outflow, 0x3f), cp, 0x01)
+            cp := add(cp, 0x01)
+        }
+        if (outflow.outflowType != 0) {
+            PublicData memory publicData;
+            assembly {        
+                // PublicData.to
+                calldatacopy(add(publicData, 0x0c), cp, 0x14)
+                cp := add(cp, 0x14)
+                // PublicData.eth
+                calldatacopy(add(publicData, 0x20), cp, 0x20)
+                cp := add(cp, 0x20)
+                // PublicData.token
+                calldatacopy(add(publicData, 0x4c), cp, 0x14)
+                cp := add(cp, 0x14)
+                // PublicData amount
+                calldatacopy(add(publicData, 0x60), cp, 0x20)
+                cp := add(cp, 0x20)
+                // PublicData.nft
+                calldatacopy(add(publicData, 0x80), cp, 0x20)
+                cp := add(cp, 0x20)
+                // PublicData.fee
+                calldatacopy(add(publicData, 0xa0), cp, 0x20)
+                cp := add(cp, 0x20)
+            }
+            outflow.publicData = publicData;
+        }
+        end = cp;
+    }
+    
+    function dequeueUint(uint calldataPos) internal pure returns (
+        uint val,
+        uint end
+    ) {
+        assembly {            
+            // load free memory
+            let free_mem := mload(0x40)
+            calldatacopy(free_mem, calldataPos, 0x20)
+            val := mload(free_mem)
+            end := add(calldataPos, 0x20)
+            mstore(0x40, add(free_mem, 0x20))
+        }
+    }
+
+    function dequeueByte(uint calldataPos) internal pure returns (
+        uint8 val,
+        uint end
+    ) {
+        assembly {            
+            // load free memory
+            let free_mem := mload(0x40)
+            mstore(free_mem, 0)
+            calldatacopy(add(free_mem, 0x1f), calldataPos, 0x01)
+            val := mload(free_mem)
+            end := add(calldataPos, 0x01)
+            mstore(0x40, add(free_mem, 0x20))
+        }
+    }
+
+    function dequeueProof(uint calldataPos) internal pure returns (
+        Proof memory proof,
+        uint end
+    ) {
+        assembly {
+            let free_mem := mload(0x40)
+            proof := free_mem
+            calldatacopy(free_mem, calldataPos, 0x100)
+            end := add(calldataPos, 0x100)
+            mstore(0x40, add(free_mem, 0x100))
+        }
+    }
+    
+    function dequeueMemo(uint calldataPos) internal pure returns (
+        bytes memory memo,
+        uint end
+    ) {
+        assembly {
+            let free_mem := mload(0x40)
+            memo := free_mem
+            mstore(memo, 0x51)
+            calldatacopy(add(memo, 0x20), calldataPos, 0x51)
+            end := add(calldataPos, 0x51)
+            mstore(0x40, add(free_mem, 0x71))
+        }
+    }
+    
+    function dequeueMassDeposits(uint calldataPos) internal pure returns (
+        MassDeposit[] memory massDeposits,
+        uint end
+    ) {
+        uint cp = calldataPos;
+        uint len;
+        assembly {            
+            // load free memory
+            let free_mem := mload(0x40)
+            mstore(free_mem, 0)
+            calldatacopy(add(free_mem, 0x1f), cp, 0x01)
+            len := mload(free_mem)
+            cp := add(cp, 0x01)
+            mstore(0x40, add(free_mem, 0x20))
+        }
+        massDeposits = new MassDeposit[](len);
+        for (uint i = 0; i < len; i++) {
+            (massDeposits[i], cp) = dequeueMassDeposit(cp);
+        }
+        end = cp;
+    }
+    
+    function dequeueMassDeposit(uint calldataPos) internal pure returns (
+        MassDeposit memory massDeposit,
+        uint end
+    ) {
+        assembly {            
+            calldatacopy(massDeposit, calldataPos, 0x40)
+            end := add(calldataPos, 0x40)
+        }
+    }
+
+    function dequeueMassMigrations(uint calldataPos) internal pure returns (
+        MassMigration[] memory massMigrations,
+        uint end
+    ) {
+        uint cp = calldataPos;
+        uint len;
+        assembly {            
+            // load free memory
+            let free_mem := mload(0x40)
+            mstore(free_mem, 0)
+            calldatacopy(add(free_mem, 0x1f), cp, 0x01)
+            len := mload(free_mem)
+            cp := add(cp, 0x01)
+            mstore(0x40, add(free_mem, 0x20))
+        }
+        massMigrations = new MassMigration[](len);
+        for (uint i = 0; i < len; i++) {
+            (massMigrations[i], cp) = dequeueMassMigration(cp);
+        }
+        end = cp;
+    }
+    
+    function dequeueMassMigration(uint calldataPos) internal pure returns (
+        MassMigration memory migration,
+        uint end
+    ) {
+        uint cp = calldataPos;
+        (migration.destination, cp) = dequeueAddress(cp);
+        (migration.totalETH, cp) = dequeueUint(cp);
+        (migration.migratingLeaves, cp) = dequeueMassDeposit(cp);
+        (migration.erc20, cp) = dequeueERC20Migrations(cp);
+        (migration.erc721, cp) = dequeueERC721Migrations(cp);
+        end = cp;
+    }
+
+    function dequeueAddress(uint calldataPos) internal pure returns (
+        address val,
+        uint end
+    ) {
+        assembly {            
+            // load free memory
+            let free_mem := mload(0x40)
+            mstore(free_mem, 0)
+            calldatacopy(add(free_mem, 0x0c), calldataPos, 0x14)
+            val := mload(free_mem)
+            end := add(calldataPos, 0x14)
+            mstore(0x40, add(free_mem, 0x20))
+        }
+    }
+
+    function dequeueERC20Migrations(uint calldataPos) internal pure returns (
+        ERC20Migration[] memory erc20,
+        uint end
+    ) {
+        uint cp = calldataPos;
+        uint len;
+        assembly {            
+            // load free memory
+            let free_mem := mload(0x40)
+            mstore(free_mem, 0)
+            calldatacopy(add(free_mem, 0x1f), cp, 0x01)
+            len := mload(free_mem)
+            cp := add(cp, 0x01)
+            mstore(0x40, add(free_mem, 0x20))
+        }
+        erc20 = new ERC20Migration[](len);
+        for (uint i = 0; i < len; i++) {
+            (erc20[i], cp) = dequeueERC20Migration(cp);
+        }
+        end = cp;
+    }
+
+    function dequeueERC20Migration(uint calldataPos) internal pure returns (
+        ERC20Migration memory migration,
+        uint end
+    ) {
+        assembly {        
+            mstore(migration, 0)
+            calldatacopy(add(migration, 0x0c), calldataPos, 0x34)
+            end := add(calldataPos, 0x34)
+        }
+    }
+    
+    function dequeueERC721Migrations(uint calldataPos) internal pure returns (
+        ERC721Migration[] memory erc721,
+        uint end
+    ) {
+        uint cp = calldataPos;
+        uint len;
+        assembly {            
+            // load free memory
+            let free_mem := mload(0x40)
+            mstore(free_mem, 0)
+            calldatacopy(add(free_mem, 0x1f), cp, 0x01)
+            len := mload(free_mem)
+            cp := add(cp, 0x01)
+            mstore(0x40, add(free_mem, 0x20))
+        }
+        erc721 = new ERC721Migration[](len);
+        for (uint i = 0; i < len; i++) {
+            (erc721[i], cp) = dequeueERC721Migration(cp);
+        }
+        end = cp;
+    }
+    
+    function dequeueERC721Migration(uint calldataPos) internal pure returns (
+        ERC721Migration memory migration,
+        uint end
+    ) {
+        uint cp = calldataPos;
+        (migration.addr, cp) = dequeueAddress(cp);
+        (migration.nfts, cp) = dequeueNfts(cp);
+        end = cp;
+    }
+    
+    function dequeueNfts(uint calldataPos) internal pure returns (
+        uint[] memory nfts,
+        uint end
+    ) {
+        uint cp = calldataPos;
+        uint len;
+        assembly {            
+            // load free memory
+            let free_mem := mload(0x40)
+            nfts := free_mem
+            mstore(nfts, 0)
+            calldatacopy(add(nfts, 0x1f), cp, 0x01)
+            len := mload(nfts)
+            cp := add(cp, 0x01)
+            let total_len_of_items := mul(0x20, len)
+            calldatacopy(add(nfts, 0x20), cp, total_len_of_items)
+            cp := add(cp, total_len_of_items)
+            mstore(0x40, add(free_mem, add(0x20, total_len_of_items)))
+        }
+        end = cp;
+    }
+
+    function headerFromCalldataAt(uint paramIndex) internal pure returns (Header memory) {
+        uint start = 4 + abi.decode(msg.data[4 + 32*paramIndex:4 + 32*(paramIndex+1)], (uint));
+        uint cp = start + 0x20; //calldata position
+        Header memory _header;
+        (_header, cp) = dequeueHeader(cp);
+        return _header;
+    }
+
+    function massMigrationFromCalldataAt(uint paramIndex) internal pure returns (MassMigration memory) {
+        uint start = 4 + abi.decode(msg.data[4 + 32*paramIndex:4 + 32*(paramIndex+1)], (uint));
+        uint cp = start + 0x20; //calldata position
+        MassMigration memory _massMigration;
+        (_massMigration, cp) = dequeueMassMigration(cp);
+        return _massMigration;
+    }
+
     function finalizationFromCalldataAt(uint paramIndex) internal pure returns (Finalization memory) {
+        /// 4 means the length of the function signature in the calldata
+        uint start = 4 + abi.decode(msg.data[4 + 32*paramIndex:4 + 32*(paramIndex+1)], (uint));
+        uint cp = start + 0x20; //calldata position
+        Finalization memory _finalization;
+        (_finalization.header, cp) = dequeueHeader(cp);
+        (_finalization.massDeposits, cp) = dequeueMassDeposits(cp);
+        (_finalization.massMigrations, cp) = dequeueMassMigrations(cp);
+        uint dataLen;
+        assembly {
+            let p := mload(0x40)
+            calldatacopy(p, start, 0x20)
+            dataLen := mload(p)
+            mstore(0x40, add(p, 0x20))
+        }
+        if(dataLen != cp - start - 0x20) {
+            revert("Serialization has a problem");
+        }
+        return _finalization;
     }
 }

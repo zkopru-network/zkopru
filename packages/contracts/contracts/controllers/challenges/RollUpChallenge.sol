@@ -29,8 +29,9 @@ contract RollUpChallenge is Challengeable {
         uint[] calldata _deposits,
         uint numOfUTXOs,
         bytes calldata,
-        bytes calldata
+        bytes calldata blockData
     ) external {
+        bytes32 proposalId = keccak256(blockData);
         Header memory _parentHeader = Deserializer.headerFromCalldataAt(3);
         Block memory _block = Deserializer.blockFromCalldataAt(4);
         Challenge memory result = _challengeResultOfUTXORollUp(
@@ -40,15 +41,16 @@ contract RollUpChallenge is Challengeable {
             numOfUTXOs,
             _deposits
         );
-        _execute(result);
+        _execute(proposalId, result);
     }
 
     function challengeNullifierRollUp(
         uint nullifierRollUpId,
         uint numOfNullifiers,
         bytes calldata,
-        bytes calldata
+        bytes calldata blockData
     ) external {
+        bytes32 proposalId = keccak256(blockData);
         Header memory _parentHeader = Deserializer.headerFromCalldataAt(2);
         Block memory _block = Deserializer.blockFromCalldataAt(3);
         Challenge memory result = _challengeResultOfNullifierRollUp(
@@ -57,15 +59,16 @@ contract RollUpChallenge is Challengeable {
             nullifierRollUpId,
             numOfNullifiers
         );
-        _execute(result);
+        _execute(proposalId, result);
     }
 
     function challengeWithdrawalRollUp(
         uint withdrawalRollUpId,
         uint numOfWithdrawals,
         bytes calldata,
-        bytes calldata
+        bytes calldata blockData
     ) external {
+        bytes32 proposalId = keccak256(blockData);
         Header memory _parentHeader = Deserializer.headerFromCalldataAt(2);
         Block memory _block = Deserializer.blockFromCalldataAt(3);
         Challenge memory result = _challengeResultOfWithdrawalRollUp(
@@ -74,7 +77,7 @@ contract RollUpChallenge is Challengeable {
             withdrawalRollUpId,
             numOfWithdrawals
         );
-        _execute(result);
+        _execute(proposalId, result);
     }
 
     /** Computes challenge here */
@@ -137,7 +140,6 @@ contract RollUpChallenge is Challengeable {
         if (_block.header.utxoIndex != (startingIndex + _utxoNum)) {
             return Challenge(
                 true,
-                _block.submissionId,
                 _block.header.proposer,
                 "UTXO tree flushed"
             );
@@ -156,7 +158,6 @@ contract RollUpChallenge is Challengeable {
         );
         return Challenge(
             !isValidRollUp,
-            _block.submissionId,
             _block.header.proposer,
             "UTXO roll up"
         );
@@ -196,7 +197,6 @@ contract RollUpChallenge is Challengeable {
 
         return Challenge(
             !isValidRollUp,
-            _block.submissionId,
             _block.header.proposer,
             "Nullifier roll up"
         );
@@ -242,7 +242,6 @@ contract RollUpChallenge is Challengeable {
         if (_block.header.withdrawalIndex != (startingIndex + numOfWithdrawals)) {
             return Challenge(
                 true,
-                _block.submissionId,
                 _block.header.proposer,
                 "Withdrawal tree flushed"
             );
@@ -266,7 +265,6 @@ contract RollUpChallenge is Challengeable {
 
         return Challenge(
             !isValidRollUp,
-            _block.submissionId,
             _block.header.proposer,
             "Withdrawal roll up"
         );

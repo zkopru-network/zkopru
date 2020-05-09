@@ -28,9 +28,10 @@ interface ICoordinatable {
     /**
      * @dev Coordinator can finalize a submitted block if it isn't slashed during the
      *      challenge period. It updates the aggregated fee and withdrawal root.
-     * @param submission Serialized newly minted block data
+     * @param submissionId Keccak256 of submitted block data
+     * @param finalization Block data without tx details
      */
-    function finalize(bytes calldata submission) external;
+    function finalize(bytes32 submissionId, bytes calldata finalization) external;
 
     /**
      * @dev Coordinators can withdraw aggregated transaction fees.
