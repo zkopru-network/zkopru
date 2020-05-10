@@ -241,5 +241,7 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
     zk_tx_4 = await aliceZkWizard.shield({ tx: txs.tx_4 })
     fs.writeFileSync(tx4Path, zk_tx_4.encode())
   }
+  await aliceZkWizard.terminate()
+  await bobZkWizard.terminate()
   return [zk_tx_1, zk_tx_2_1, zk_tx_2_2, zk_tx_3, zk_tx_4]
 }

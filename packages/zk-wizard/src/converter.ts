@@ -2,9 +2,8 @@ import * as ffjs from 'ffjavascript'
 import bigInt from 'big-integer'
 import assert from 'assert'
 
-export function witnessToBinary(witness: string[]): ArrayBuffer {
+export function witnessToBinary(witness: any[]): ArrayBuffer {
   const w = ffjs.utils.unstringifyBigInts(witness)
-  console.log('w', w)
   const size = w.length * 32
   const buff = new ArrayBuffer(size)
   const h = {
@@ -34,7 +33,7 @@ export function witnessToBinary(witness: string[]): ArrayBuffer {
   return buff
 }
 
-export function getWasmProvingKey(pk: object): ArrayBuffer {
+export function pkToBinary(pk: object): ArrayBuffer {
   const provingKey = ffjs.utils.unstringifyBigInts(pk)
   function polSize(pol: object) {
     const l = Object.keys(pol).length

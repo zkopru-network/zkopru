@@ -9,14 +9,16 @@ import {
   Migration,
 } from '@zkopru/transaction'
 import { MerkleProof, Grove } from '@zkopru/tree'
-import { calculateWitness } from './prover'
-import { getWasmProvingKey } from './converter'
+import * as ffjs from 'ffjavascript'
+import * as circomruntime from 'circom_runtime'
 import * as wasmsnark from 'wasmsnark'
+import { witnessToBinary, pkToBinary } from './converter'
+import { logger } from '@zkopru/utils'
 
 export class ZkWizard {
   circuits: { [key: string]: Buffer }
 
-  provingKeys: { [key: string]: {} }
+  wasmPK: { [key: string]: {} }
 
   grove: Grove
 
@@ -41,7 +43,7 @@ export class ZkWizard {
     this.grove = grove
     this.privKey = privKey
     this.circuits = {}
-    this.provingKeys = {}
+    this.wasmPK = {}
     this.pubKey = Point.fromPrivKey(privKey)
     this.db = db
   }
@@ -49,6 +51,12 @@ export class ZkWizard {
   async init() {
     if (!this.prover) {
       this.prover = await wasmsnark.buildBn128()
+    }
+  }
+
+  async terminate() {
+    if (this.prover) {
+      await this.prover.terminate()
     }
   }
 
@@ -64,7 +72,7 @@ export class ZkWizard {
     provingKey: {}
   }) {
     this.circuits[ZkWizard.circuitKey({ nInput, nOutput })] = wasm
-    this.provingKeys[ZkWizard.circuitKey({ nInput, nOutput })] = provingKey
+    this.wasmPK[ZkWizard.circuitKey({ nInput, nOutput })] = provingKey
   }
 
   private static circuitKey({
@@ -134,7 +142,7 @@ export class ZkWizard {
         nOutput: tx.outflow.length,
       })
     ]
-    const provingKey = this.provingKeys[
+    const provingKey = this.wasmPK[
       ZkWizard.circuitKey({
         nInput: tx.inflow.length,
         nOutput: tx.outflow.length,
@@ -248,10 +256,24 @@ export class ZkWizard {
     input.new_note_hash = newNoteHashes
     input.typeof_new_note = typeOfNewNotes
     input.public_data = publicData
+    const start = Date.now()
     // for testing: fs.writeFileSync('./input.json', JSON.stringify(input))
-    const witness = await calculateWitness(circuitWasm, input)
-    const pkBin = getWasmProvingKey(provingKey)
-    const proof = await this.prover.groth16GenProof(pkBin, witness)
+    const wc = await circomruntime.WitnessCalculatorBuilder(circuitWasm, {
+      sanityCheck: true,
+    })
+    const witness = await wc.calculateWitness(
+      ffjs.utils.unstringifyBigInts(input),
+    )
+    const wasmWitness = witnessToBinary(witness)
+    const wasmPk = pkToBinary(provingKey)
+    const intermediate = Date.now()
+    const proof = await this.prover.groth16GenProof(wasmWitness, wasmPk)
+    const end = Date.now()
+    logger.debug(
+      `Shielded (${tx.inflow.length} => ${
+        tx.outflow.length
+      }): witness - ${intermediate - start} / proof: ${end - intermediate}`,
+    )
     // let { proof, publicSignals } = Utils.genProof(snarkjs.unstringifyBigInts(provingKey), witness);
     // TODO handle genProof exception
     const zkTx: ZkTx = new ZkTx({
