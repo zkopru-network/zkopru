@@ -1,3 +1,7 @@
+/**
+ * @jest-environment node
+ */
+
 import { getDummyBody } from '../src/testset-block'
 
 describe('index', () => {

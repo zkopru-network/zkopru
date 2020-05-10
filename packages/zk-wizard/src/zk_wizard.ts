@@ -9,7 +9,9 @@ import {
   Migration,
 } from '@zkopru/transaction'
 import { MerkleProof, Grove } from '@zkopru/tree'
-import * as utils from '@zkopru/utils'
+import { calculateWitness } from './prover'
+import { getWasmProvingKey } from './converter'
+import * as wasmsnark from 'wasmsnark'
 
 export class ZkWizard {
   circuits: { [key: string]: Buffer }
@@ -23,6 +25,9 @@ export class ZkWizard {
   pubKey: Point
 
   db: InanoSQLInstance
+
+  prover: any
+  // genProof!: (witness: ArrayBuffer, provingKey: ArrayBuffer) => Promise<any>
 
   constructor({
     db,
@@ -39,6 +44,12 @@ export class ZkWizard {
     this.provingKeys = {}
     this.pubKey = Point.fromPrivKey(privKey)
     this.db = db
+  }
+
+  async init() {
+    if (!this.prover) {
+      this.prover = await wasmsnark.buildBn128()
+    }
   }
 
   addCircuit({
@@ -116,6 +127,7 @@ export class ZkWizard {
       eddsa: { [hash: string]: EdDSA }
     }
   }): Promise<ZkTx> {
+    await this.init()
     const circuitWasm = this.circuits[
       ZkWizard.circuitKey({
         nInput: tx.inflow.length,
@@ -237,9 +249,9 @@ export class ZkWizard {
     input.typeof_new_note = typeOfNewNotes
     input.public_data = publicData
     // for testing: fs.writeFileSync('./input.json', JSON.stringify(input))
-    const witness = await utils.calculateWitness(circuitWasm, input)
-
-    const { proof } = await utils.genProof(provingKey, witness)
+    const witness = await calculateWitness(circuitWasm, input)
+    const pkBin = getWasmProvingKey(provingKey)
+    const proof = await this.prover.groth16GenProof(pkBin, witness)
     // let { proof, publicSignals } = Utils.genProof(snarkjs.unstringifyBigInts(provingKey), witness);
     // TODO handle genProof exception
     const zkTx: ZkTx = new ZkTx({
