@@ -4,17 +4,11 @@ import Web3 from 'web3'
 import { WebsocketProvider } from 'web3-core'
 import { Docker } from 'node-docker-api'
 import { Container } from 'node-docker-api/lib/container'
-import { ReadStream } from 'fs-extra'
 import { FullNode } from '@zkopru/core'
 import { schema } from '~database'
 import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
-
-function sleep(ms: number) {
-  return new Promise(res => {
-    setTimeout(res, ms)
-  })
-}
+import { readFromContainer, sleep } from '~utils'
 
 describe('coordinator test to run testnet', () => {
   const testName = 'coordinatortest'
@@ -39,11 +33,11 @@ describe('coordinator test to run testnet', () => {
       container = docker.container.get(testName)
     }
     await container.start()
-    const stream: ReadStream = (await container.fs.get({
-      path: '/proj/build/deployed/ZkOptimisticRollUp.json',
-    })) as ReadStream
-    const f = (await stream.read()).toString()
-    const deployed = JSON.parse(f.slice(f.indexOf('{'), f.indexOf('}') + 1))
+    const file = await readFromContainer(
+      container,
+      '/proj/build/deployed/ZkOptimisticRollUp.json',
+    )
+    const deployed = JSON.parse(file.toString())
     address = deployed.address
     const status = await container.status()
     const containerIP = (status.data as {
