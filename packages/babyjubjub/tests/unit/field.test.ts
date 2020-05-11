@@ -37,6 +37,18 @@ describe('finite field', () => {
     expect(constant.eq(a)).toBe(true)
     expect(constant.eq(b)).toBe(true)
   })
+  it('should return same hex', () => {
+    const f = new Field('0xabcd1234abcd1234')
+    expect(f.toHex(8)).toStrictEqual('0xabcd1234abcd1234')
+  })
+  it('should return cyclic hex for a number beyond the field range', () => {
+    const f = new Field(
+      '0xabcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234',
+    )
+    expect(f.toHex(32)).not.toStrictEqual(
+      '0xabcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234',
+    )
+  })
   it('should accept Buffer obj for its constructor parameter', () => {
     const a = new Field(Buffer.from('12', 'hex'))
     const b = Field.from(Buffer.from('12', 'hex'))

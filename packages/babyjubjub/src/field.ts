@@ -20,6 +20,7 @@ export class Field extends BN {
       super(number, base, endian)
     }
     if (super.gte(r)) {
+      console.warn('Exceeds babyjubjub field range')
       return Field.from(super.sub(r))
     }
     if (super.isNeg()) {
@@ -30,6 +31,8 @@ export class Field extends BN {
   static zero = Field.from(0)
 
   static one = Field.from(1)
+
+  static MAX = r
 
   static from(x: F): Field {
     if (x === undefined) return new Field(0)
