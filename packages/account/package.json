@@ -31,6 +31,7 @@
     "@zkopru/database": "file:../database",
     "bip39": "^3.0.2",
     "hdkey": "^1.1.1",
+    "web3": "^1.2.6",
     "web3-core": "^1.2.6",
     "web3-eth-accounts": "^1.2.6"
   }

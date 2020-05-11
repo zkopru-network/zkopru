@@ -2,6 +2,8 @@
 /* eslint-disable jest/no-hooks */
 import { nSQL } from '@nano-sql/core'
 import { uuid } from '@nano-sql/core/lib/utilities'
+import BN from 'bn.js'
+import { toBN } from 'web3-utils'
 import { Field } from '~babyjubjub'
 import { schema } from '~database'
 import {
@@ -25,7 +27,7 @@ describe('withdrawal tree unit test', () => {
     end: Field.from(0),
   }
   const depth = 31
-  const withdrawalTreeConfig: TreeConfig = {
+  const withdrawalTreeConfig: TreeConfig<BN> = {
     hasher: keccakHasher(depth),
     forceUpdate: true,
     fullSync: true,
@@ -69,18 +71,15 @@ describe('withdrawal tree unit test', () => {
     })
   })
   describe('dryAppend', () => {
-    let prevRoot: Field
+    let prevRoot: BN
     let result: {
-      root: Field
-      index: Field
-      siblings: Field[]
+      root: BN
+      index: BN
+      siblings: BN[]
     }
     beforeAll(async () => {
       prevRoot = withdrawalTree.root()
-      const items: Item[] = [
-        { leafHash: Field.from(1) },
-        { leafHash: Field.from(2) },
-      ]
+      const items: Item<BN>[] = [{ leafHash: toBN(1) }, { leafHash: toBN(2) }]
       result = await withdrawalTree.dryAppend(...items)
     })
     it('should not update its root', () => {
@@ -93,23 +92,20 @@ describe('withdrawal tree unit test', () => {
     })
   })
   describe('append', () => {
-    let prevRoot: Field
+    let prevRoot: BN
     let dryResult: {
-      root: Field
-      index: Field
-      siblings: Field[]
+      root: BN
+      index: BN
+      siblings: BN[]
     }
     let result: {
-      root: Field
-      index: Field
-      siblings: Field[]
+      root: BN
+      index: BN
+      siblings: BN[]
     }
     it('should update its root and its value should equal to the dry run', async () => {
       prevRoot = withdrawalTree.root()
-      const items: Item[] = [
-        { leafHash: Field.from(1) },
-        { leafHash: Field.from(2) },
-      ]
+      const items: Item<BN>[] = [{ leafHash: toBN(1) }, { leafHash: toBN(2) }]
       dryResult = await withdrawalTree.dryAppend(...items)
       result = await withdrawalTree.append(...items)
       expect(result.root.eq(prevRoot)).toBe(false)
@@ -123,12 +119,12 @@ describe('withdrawal tree unit test', () => {
   })
   describe('tracking', () => {
     const addresses = [address.USER_A]
-    const items: Item[] = [
+    const items: Item<BN>[] = [
       utxos.utxo1_in_1.toWithdrawal({ to: address.USER_A, fee: 1 }),
       utxos.utxo1_out_1,
       utxos.utxo2_1_in_1,
     ].map(note => ({
-      leafHash: note.hash(),
+      leafHash: toBN(note.hash().toHex()),
       note,
     }))
     it("should track Alice's utxos while not tracking Bob's", async () => {
@@ -140,7 +136,7 @@ describe('withdrawal tree unit test', () => {
       expect(verifyProof(keccakHasher(depth), proof)).toBe(true)
     })
     it('should generate merkle proof using index together', async () => {
-      const index = withdrawalTree.latestLeafIndex().sub(3)
+      const index = withdrawalTree.latestLeafIndex().subn(3)
       const proof = await withdrawalTree.merkleProof({
         hash: items[0].leafHash,
         index,
@@ -148,7 +144,7 @@ describe('withdrawal tree unit test', () => {
       expect(verifyProof(keccakHasher(depth), proof)).toBe(true)
     })
     it('should fail to generate a merkle proof with an invalid index', async () => {
-      const index = withdrawalTree.latestLeafIndex().sub(1)
+      const index = withdrawalTree.latestLeafIndex().subn(1)
       await expect(
         withdrawalTree.merkleProof({
           hash: items[0].leafHash,

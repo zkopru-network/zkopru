@@ -1,4 +1,7 @@
 import { Hasher, genesisRoot } from '@zkopru/tree'
+import { Field } from '@zkopru/babyjubjub'
+import BN from 'bn.js'
+import { toHex } from 'web3-utils'
 import { Header } from './block'
 
 export const genesis = ({
@@ -7,14 +10,14 @@ export const genesis = ({
 }: {
   address: string
   hashers: {
-    utxo: Hasher
-    withdrawal: Hasher
-    nullifier: Hasher
+    utxo: Hasher<Field>
+    withdrawal: Hasher<BN>
+    nullifier: Hasher<BN>
   }
 }): Header => {
   const utxoRoot = genesisRoot(hashers.utxo).toHex()
-  const withdrawalRoot = genesisRoot(hashers.withdrawal).toHex()
-  const nullifierRoot = genesisRoot(hashers.nullifier).toHex()
+  const withdrawalRoot = toHex(genesisRoot(hashers.withdrawal))
+  const nullifierRoot = toHex(genesisRoot(hashers.nullifier))
   return {
     proposer: address,
     parentBlock: '0x0000000000000000000000000000000000000000',

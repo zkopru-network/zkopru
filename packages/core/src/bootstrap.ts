@@ -1,14 +1,15 @@
 import { fetch } from 'node-fetch'
 import { MerkleProof } from '@zkopru/tree'
 import { Field } from '@zkopru/babyjubjub'
+import BN from 'bn.js'
 
 export interface BootstrapData {
   proposalHash: string
   blockHash: string
   utxoTreeIndex: number
-  utxoStartingLeafProof: MerkleProof
+  utxoStartingLeafProof: MerkleProof<Field>
   withdrawalTreeIndex: number
-  withdrawalStartingLeafProof: MerkleProof
+  withdrawalStartingLeafProof: MerkleProof<BN>
 }
 
 export interface BootstrapHelper {

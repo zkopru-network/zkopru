@@ -7,11 +7,7 @@ const r = new BN(
   '21888242871839275222246405745257275088548364400416034343698204186575808495617',
 )
 export class Field extends BN {
-  constructor(
-    number: number | string | number[] | Uint8Array | Buffer | BN,
-    base?: number | 'hex',
-    endian?: BN.Endianness,
-  ) {
+  constructor(number: F, base?: number | 'hex', endian?: BN.Endianness) {
     if (number instanceof BN) {
       super(number.toString())
     } else if (typeof number === 'string' && number.startsWith('0x')) {
@@ -22,6 +18,7 @@ export class Field extends BN {
     if (super.gte(r)) {
       console.warn('Exceeds babyjubjub field range')
       return Field.from(super.sub(r))
+      // throw Error('babyjubjub field exceeds')
     }
     if (super.isNeg()) {
       return Field.from(super.add(r))
@@ -51,6 +48,18 @@ export class Field extends BN {
 
   static fromBuffer(buff: Buffer): Field {
     return Field.from(`0x${buff.toString('hex')}`)
+  }
+
+  static inRange(x: F): boolean {
+    let n: BN
+    if (x instanceof BN) {
+      n = x
+    } else if (typeof x === 'string' && x.startsWith('0x')) {
+      n = new BN(x.substr(2), 16)
+    } else {
+      n = new BN(x)
+    }
+    return n.lt(r)
   }
 
   addPrefixBit(bitLength: number): BN {

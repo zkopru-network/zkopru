@@ -3,15 +3,17 @@ import { Field } from '@zkopru/babyjubjub'
 import { schema, TreeNodeSql } from '@zkopru/database'
 import AsyncLock from 'async-lock'
 import BN from 'bn.js'
+import { toBN } from 'web3-utils'
+import { hexify } from '@zkopru/utils'
 import { Hasher, genesisRoot } from './hasher'
 import { verifyProof, MerkleProof } from './merkle-proof'
 
-export interface SMT {
+export interface SMT<T extends Field | BN> {
   depth: number
-  hasher: Hasher
-  root(): Promise<Field>
-  getInclusionProof(leaf: Field): Promise<MerkleProof>
-  getNonInclusionProof(leaf: Field): Promise<MerkleProof>
+  hasher: Hasher<T>
+  root(): Promise<T>
+  getInclusionProof(leaf: T): Promise<MerkleProof<T>>
+  getNonInclusionProof(leaf: T): Promise<MerkleProof<T>>
   // exist(leaf: Hex): Promise<boolean>;
 }
 
@@ -20,18 +22,18 @@ export enum SMTLeaf {
   FILLED = 1,
 }
 
-export class NullifierTree implements SMT {
+export class NullifierTree implements SMT<BN> {
   readonly db: InanoSQLInstance
 
   readonly zkopruId: string
 
   readonly depth: number
 
-  readonly hasher: Hasher
+  readonly hasher: Hasher<BN>
 
   lock: AsyncLock
 
-  rootNode!: Field
+  rootNode!: BN
 
   constructor({
     db,
@@ -40,7 +42,7 @@ export class NullifierTree implements SMT {
     depth,
   }: {
     db: InanoSQLInstance
-    hasher: Hasher
+    hasher: Hasher<BN>
     zkopruId: string
     depth: number
   }) {
@@ -53,7 +55,7 @@ export class NullifierTree implements SMT {
       throw Error('Hasher should have enough prehased values')
   }
 
-  async root(): Promise<Field> {
+  async root(): Promise<BN> {
     if (this.rootNode) return this.rootNode
     const stored = (
       await this.db
@@ -61,19 +63,19 @@ export class NullifierTree implements SMT {
         .presetQuery('getRoot')
         .exec()
     )[0] as TreeNodeSql
-    if (stored) return Field.from(stored.value)
+    if (stored) return toBN(stored.value)
     return genesisRoot(this.hasher)
   }
 
-  async getInclusionProof(index: Field): Promise<MerkleProof> {
-    let siblings!: Field[]
-    let merkleProof!: MerkleProof
+  async getInclusionProof(index: BN): Promise<MerkleProof<BN>> {
+    let siblings!: BN[]
+    let merkleProof!: MerkleProof<BN>
     await this.lock.acquire('root', async () => {
       siblings = await this.getSiblings(index)
       merkleProof = {
         root: await this.root(),
         index,
-        leaf: Field.from(SMTLeaf.FILLED),
+        leaf: toBN(SMTLeaf.FILLED),
         siblings,
       }
     })
@@ -83,15 +85,15 @@ export class NullifierTree implements SMT {
     return merkleProof
   }
 
-  async getNonInclusionProof(index: Field): Promise<MerkleProof> {
-    let siblings!: Field[]
-    let merkleProof!: MerkleProof
+  async getNonInclusionProof(index: BN): Promise<MerkleProof<BN>> {
+    let siblings!: BN[]
+    let merkleProof!: MerkleProof<BN>
     await this.lock.acquire('root', async () => {
       siblings = await this.getSiblings(index)
       merkleProof = {
         root: await this.root(),
         index,
-        leaf: Field.from(SMTLeaf.EMPTY),
+        leaf: toBN(SMTLeaf.EMPTY),
         siblings,
       }
     })
@@ -102,8 +104,8 @@ export class NullifierTree implements SMT {
     return merkleProof
   }
 
-  async nullify(blockHash: string, ...leaves: Field[]): Promise<Field> {
-    let result: Field = this.rootNode
+  async nullify(blockHash: string, ...leaves: BN[]): Promise<BN> {
+    let result: BN = this.rootNode
     await this.lock.acquire('root', async () => {
       for (const leaf of leaves) {
         result = await this.updateLeaf(leaf, SMTLeaf.FILLED, blockHash)
@@ -112,7 +114,7 @@ export class NullifierTree implements SMT {
     return result
   }
 
-  async recover(blockHash: string, ...leaves: Field[]) {
+  async recover(blockHash: string, ...leaves: BN[]) {
     await this.lock.acquire('root', async () => {
       for (const leaf of leaves) {
         await this.updateLeaf(leaf, SMTLeaf.EMPTY, blockHash)
@@ -120,7 +122,7 @@ export class NullifierTree implements SMT {
     })
   }
 
-  private async getSiblings(index: Field): Promise<Field[]> {
+  private async getSiblings(index: BN): Promise<BN[]> {
     const { depth } = this
     const cachedSiblings = await this.db
       .selectTable(schema.nullifierTreeNode.name)
@@ -132,38 +134,38 @@ export class NullifierTree implements SMT {
 
     const siblingCache = {}
     for (const sibling of cachedSiblings) {
-      siblingCache[sibling.nodeIndex] = Field.from(sibling.value)
+      siblingCache[sibling.nodeIndex] = toBN(sibling.value)
     }
 
     const siblings = Array(this.depth).fill(undefined)
-    const leafNodeIndex = index.addPrefixBit(depth)
+    const leafNodeIndex = new BN(1).shln(depth).or(index)
     let pathNodeIndex!: BN
     let siblingNodeIndex!: BN
     for (let level = 0; level < depth; level += 1) {
       pathNodeIndex = leafNodeIndex.shrn(level)
       siblingNodeIndex = new BN(1).xor(pathNodeIndex)
-      const cached = siblingCache[Field.from(siblingNodeIndex).toHex()]
+      const cached = siblingCache[hexify(siblingNodeIndex)]
       siblings[level] = cached || this.hasher.preHash[level]
     }
     return siblings
   }
 
   private async updateLeaf(
-    index: Field,
+    index: BN,
     val: SMTLeaf,
     blockHash: string,
-  ): Promise<Field> {
+  ): Promise<BN> {
     const nodesToUpdate: TreeNodeSql[] = []
-    const leafNodeIndex = index.addPrefixBit(this.depth)
+    const leafNodeIndex = new BN(1).shln(this.depth).or(index)
     const siblings = await this.getSiblings(index)
-    let node = Field.from(val)
+    let node = new BN(val)
     let pathIndex: BN
     let hasRightSibling: boolean
     for (let level = 0; level < this.depth; level += 1) {
       pathIndex = leafNodeIndex.shrn(level)
       nodesToUpdate.push({
-        nodeIndex: Field.from(pathIndex).toHex(),
-        value: node.toHex(),
+        nodeIndex: hexify(pathIndex),
+        value: hexify(node),
       })
       hasRightSibling = pathIndex.isEven()
       if (hasRightSibling) {
@@ -173,8 +175,8 @@ export class NullifierTree implements SMT {
       }
     }
     nodesToUpdate.push({
-      nodeIndex: Field.from(1).toHex(),
-      value: node.toHex(),
+      nodeIndex: hexify(new BN(1)),
+      value: hexify(node),
     })
     await this.db
       .selectTable(schema.nullifierTreeNode.name)
@@ -185,7 +187,7 @@ export class NullifierTree implements SMT {
       await this.db
         .selectTable(schema.nullifiers.name)
         .presetQuery('nullify', {
-          index: index.toHex(),
+          index: hexify(index),
           blockHash,
         })
         .exec()
@@ -201,10 +203,10 @@ export class NullifierTree implements SMT {
     return this.rootNode
   }
 
-  async dryRunNullify(...leaves: Field[]): Promise<Field> {
-    let result!: Field
+  async dryRunNullify(...leaves: BN[]): Promise<BN> {
+    let result!: BN
     await this.lock.acquire('root', async () => {
-      const prevRoot = Field.from(await this.root())
+      const prevRoot = await this.root()
       for (const leaf of leaves) {
         await this.updateLeaf(leaf, SMTLeaf.FILLED, 'TEMP')
       }

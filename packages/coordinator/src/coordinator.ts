@@ -22,6 +22,7 @@ import { Subscription } from 'web3-core-subscriptions'
 import { schema, MassDepositCommitSql, DepositSql } from '@zkopru/database'
 import { Item } from '@zkopru/tree'
 import { TxMemPool, TxPoolInterface } from './tx_pool'
+import { toHex } from 'web3-utils'
 
 
 export interface CoordinatorConfig {
@@ -273,7 +274,7 @@ export class Coordinator {
             .map(outflow => outflow.note),
         ]
       }, deposits)
-      .map(leafHash => ({ leafHash })) as Item[]
+      .map(leafHash => ({ leafHash })) as Item<Field>[]
 
     const withdrawals = txs.reduce((arr, tx) => {
       return [
@@ -308,9 +309,9 @@ export class Coordinator {
       fee: aggregatedFee.toHex(),
       utxoRoot: expectedGrove.utxoTreeRoot.toHex(),
       utxoIndex: expectedGrove.utxoTreeIndex.toHex(),
-      nullifierRoot: expectedGrove.nullifierTreeRoot?.toHex(),
-      withdrawalRoot: expectedGrove.withdrawalTreeRoot.toHex(),
-      withdrawalIndex: expectedGrove.withdrawalTreeIndex.toHex(),
+      nullifierRoot: toHex(expectedGrove.nullifierTreeRoot),
+      withdrawalRoot: toHex(expectedGrove.withdrawalTreeRoot),
+      withdrawalIndex: toHex(expectedGrove.withdrawalTreeIndex),
       txRoot: root(txs.map(tx => tx.hash())).toString(),
       depositRoot: root(commits.map(massDepositHash)).toString(),
       migrationRoot: root(massMigrations.map(massMigrationHash)).toString(),

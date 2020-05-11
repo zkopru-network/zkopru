@@ -13,8 +13,17 @@ export class ZkAccount {
 
   ethAccount: Account
 
-  constructor(privateKey: Buffer) {
-    this.privateKey = Field.fromBuffer(privateKey)
+  constructor(privateKey: Buffer | string) {
+    if (!Field.inRange(privateKey)) {
+      throw Error(
+        'The private key exceeds the babyjubjub range. Use 254 bit key',
+      )
+    }
+    if (privateKey instanceof Buffer) {
+      this.privateKey = Field.fromBuffer(privateKey)
+    } else {
+      this.privateKey = Field.from(privateKey)
+    }
     // TODO web3.js typescript has a problem. Update later when the bug is resolved.
     const web3 = new Web3()
     this.ethAccount = web3.eth.accounts.privateKeyToAccount(

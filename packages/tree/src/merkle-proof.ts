@@ -1,15 +1,19 @@
 import { Field } from '@zkopru/babyjubjub'
+import BN from 'bn.js'
 import { Hasher } from './hasher'
 
-export interface MerkleProof {
-  root: Field
-  index: Field
-  leaf: Field
-  siblings: Field[]
+export interface MerkleProof<T extends Field | BN> {
+  root: T
+  index: T
+  leaf: T
+  siblings: T[]
 }
 
-export function verifyProof(hasher: Hasher, proof: MerkleProof): boolean {
-  let path = proof.index
+export function verifyProof<T extends Field | BN>(
+  hasher: Hasher<T>,
+  proof: MerkleProof<T>,
+): boolean {
+  let path = new BN(proof.index)
   let node = proof.leaf
   for (let i = 0; i < proof.siblings.length; i += 1) {
     if (path.isEven()) {
@@ -24,15 +28,15 @@ export function verifyProof(hasher: Hasher, proof: MerkleProof): boolean {
   return node.eq(proof.root)
 }
 
-export function startingLeafProof(
-  hasher: Hasher,
-  root: Field,
-  index: Field,
-  siblings: Field[],
+export function startingLeafProof<T extends Field | BN>(
+  hasher: Hasher<T>,
+  root: T,
+  index: T,
+  siblings: T[],
 ): boolean {
   const depth = siblings.length
   // calculate the siblings validity
-  let path = index
+  let path = new BN(index)
   for (let i = 0; i < depth; i += 1) {
     if (path.isEven()) {
       // Right sibling should be a prehashed zero
@@ -40,5 +44,10 @@ export function startingLeafProof(
     }
     path = path.shrn(1)
   }
-  return verifyProof(hasher, { root, index, leaf: hasher.preHash[0], siblings })
+  return verifyProof<T>(hasher, {
+    root,
+    index,
+    leaf: hasher.preHash[0],
+    siblings,
+  })
 }

@@ -25,7 +25,7 @@ describe('utxo tree unit test', () => {
     end: Field.from(0),
   }
   const depth = 31
-  const utxoTreeConfig: TreeConfig = {
+  const utxoTreeConfig: TreeConfig<Field> = {
     hasher: poseidonHasher(depth),
     forceUpdate: true,
     fullSync: true,
@@ -75,7 +75,7 @@ describe('utxo tree unit test', () => {
     }
     beforeAll(async () => {
       prevRoot = utxoTree.root()
-      const items: Item[] = [
+      const items: Item<Field>[] = [
         { leafHash: Field.from(1) },
         { leafHash: Field.from(2) },
       ]
@@ -104,7 +104,7 @@ describe('utxo tree unit test', () => {
     }
     beforeAll(async () => {
       prevRoot = utxoTree.root()
-      const items: Item[] = [
+      const items: Item<Field>[] = [
         { leafHash: Field.from(1) },
         { leafHash: Field.from(2) },
       ]
@@ -122,7 +122,7 @@ describe('utxo tree unit test', () => {
     it.todo('should have same result with its solidity version')
   })
   describe('tracking', () => {
-    const items: Item[] = [
+    const items: Item<Field>[] = [
       utxos.utxo1_out_1,
       utxos.utxo1_out_2,
       utxos.utxo2_1_out_1,

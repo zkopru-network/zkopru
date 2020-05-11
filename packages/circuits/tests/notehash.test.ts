@@ -4,7 +4,7 @@ import { Docker } from 'node-docker-api'
 import { Container } from 'node-docker-api/lib/container'
 import * as snarkjs from 'snarkjs'
 import * as ffjs from 'ffjavascript'
-import { getZkSnarkParams, calculateWitness } from '~utils'
+import { getZkSnarkParams, calculateWitness } from '~utils/snark'
 import { utxos } from '~dataset/testset-utxos'
 
 describe('note_hash.circom', () => {

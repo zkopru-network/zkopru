@@ -8,7 +8,9 @@ import {
   TreeConfig,
 } from './light-rollup-tree'
 
-export class UtxoTree extends LightRollUpTree {
+export class UtxoTree extends LightRollUpTree<Field> {
+  zero = Field.zero
+
   pubKeysToObserve?: Point[]
 
   updatePubKeys(pubKeys: Point[]) {
@@ -36,9 +38,9 @@ export class UtxoTree extends LightRollUpTree {
     config,
   }: {
     db: InanoSQLInstance
-    metadata: TreeMetadata
-    data: TreeData
-    config: TreeConfig
+    metadata: TreeMetadata<Field>
+    data: TreeData<Field>
+    config: TreeConfig<Field>
   }): Promise<UtxoTree> {
     const initialData = await LightRollUpTree.initTreeFromDatabase({
       db,
@@ -58,7 +60,7 @@ export class UtxoTree extends LightRollUpTree {
   static from(
     db: InanoSQLInstance,
     obj: LightRollUpTreeSql,
-    config: TreeConfig,
+    config: TreeConfig<Field>,
   ): UtxoTree {
     return new UtxoTree({
       db,

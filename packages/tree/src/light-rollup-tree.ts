@@ -6,35 +6,39 @@ import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 import AsyncLock from 'async-lock'
 import { Note } from '@zkopru/transaction'
 import BN from 'bn.js'
+import { toBN } from 'web3-utils'
+import { hexify } from '@zkopru/utils'
 import { Hasher } from './hasher'
 import { MerkleProof, startingLeafProof } from './merkle-proof'
 
-export interface Item {
-  leafHash: Field
+export interface Item<T extends Field | BN> {
+  leafHash: T
   note?: Note
 }
 
-export interface TreeMetadata {
+export interface TreeMetadata<T extends Field | BN> {
   id: string
   index: number
   zkopruId: string
-  start: Field
-  end: Field
+  start: T
+  end: T
 }
 
-export interface TreeData {
-  root: Field
-  index: Field
-  siblings: Field[]
+export interface TreeData<T extends Field | BN> {
+  root: T
+  index: T
+  siblings: T[]
 }
 
-export interface TreeConfig {
-  hasher: Hasher
+export interface TreeConfig<T extends Field | BN> {
+  hasher: Hasher<T>
   forceUpdate?: boolean
   fullSync?: boolean
 }
 
-export abstract class LightRollUpTree {
+export abstract class LightRollUpTree<T extends Field | BN> {
+  zero?: T
+
   db: InanoSQLInstance
 
   itemSchema: InanoSQLTableConfig
@@ -43,11 +47,11 @@ export abstract class LightRollUpTree {
 
   treeNodeSchema: InanoSQLTableConfig // merkle-proof-cache-schema
 
-  config: TreeConfig
+  config: TreeConfig<T>
 
-  metadata: TreeMetadata
+  metadata: TreeMetadata<T>
 
-  data: TreeData
+  data: TreeData<T>
 
   depth: number
 
@@ -63,12 +67,12 @@ export abstract class LightRollUpTree {
     config,
   }: {
     db: InanoSQLInstance
-    metadata: TreeMetadata
+    metadata: TreeMetadata<T>
     itemSchema: InanoSQLTableConfig
     treeSchema: InanoSQLTableConfig
     treeNodeSchema: InanoSQLTableConfig
-    data: TreeData
-    config: TreeConfig
+    data: TreeData<T>
+    config: TreeConfig<T>
   }) {
     this.lock = new AsyncLock()
     this.db = db
@@ -81,19 +85,19 @@ export abstract class LightRollUpTree {
     this.depth = data.siblings.length
   }
 
-  root(): Field {
-    return Field.from(this.data.root)
+  root(): T {
+    return this.data.root
   }
 
-  maxSize(): Field {
-    return Field.from(Field.one.shln(this.depth))
+  maxSize(): BN {
+    return new BN(1).shln(this.depth)
   }
 
-  latestLeafIndex(): Field {
+  latestLeafIndex(): T {
     return this.data.index
   }
 
-  siblings(): Field[] {
+  siblings(): T[] {
     return [...this.data.siblings]
   }
 
@@ -101,10 +105,10 @@ export abstract class LightRollUpTree {
     hash,
     index,
   }: {
-    hash: Field
-    index?: Field
-  }): Promise<MerkleProof> {
-    let proof!: MerkleProof
+    hash: T
+    index?: T
+  }): Promise<MerkleProof<T>> {
+    let proof!: MerkleProof<T>
     await this.lock.acquire('root', async () => {
       proof = await this._merkleProof({ hash, index })
     })
@@ -112,16 +116,16 @@ export abstract class LightRollUpTree {
   }
 
   async append(
-    ...items: Item[]
+    ...items: Item<T>[]
   ): Promise<{
-    root: Field
-    index: Field
-    siblings: Field[]
+    root: T
+    index: T
+    siblings: T[]
   }> {
     let result!: {
-      root: Field
-      index: Field
-      siblings: Field[]
+      root: T
+      index: T
+      siblings: T[]
     }
     await this.lock.acquire('root', async () => {
       result = await this._append(...items)
@@ -130,26 +134,26 @@ export abstract class LightRollUpTree {
   }
 
   async dryAppend(
-    ...items: Item[]
+    ...items: Item<T>[]
   ): Promise<{
-    root: Field
-    index: Field
-    siblings: Field[]
+    root: T
+    index: T
+    siblings: T[]
   }> {
-    let start!: Field
-    let latestSiblings!: Field[]
+    let start!: T
+    let latestSiblings!: T[]
     await this.lock.acquire('root', async () => {
       start = this.latestLeafIndex()
       latestSiblings = this.siblings()
     })
-    let root!: Field
+    let root!: T
 
     let index = start
     for (let i = 0; i < items.length; i += 1) {
       const item = items[i]
       // if note exists, save the data and mark as an item to keep tracking
       // udpate the latest siblings and save the intermediate value if it needs to be tracked
-      const leafIndex = index.addPrefixBit(this.depth)
+      const leafIndex = new BN(1).shln(this.depth).or(index)
       let node = item.leafHash
       let hasRightSibling!: boolean
       for (let level = 0; level < this.depth; level += 1) {
@@ -171,7 +175,11 @@ export abstract class LightRollUpTree {
       // update root
       root = node
       // update index
-      index = index.add(1)
+      if (this.zero instanceof Field) {
+        index = Field.from(index.addn(1)) as T
+      } else {
+        index = index.addn(1) as T
+      }
     }
     // update the latest siblings
     return {
@@ -182,13 +190,13 @@ export abstract class LightRollUpTree {
   }
 
   getStartingLeafProof(): {
-    root: Field
-    index: Field
-    siblings: Field[]
+    root: T
+    index: T
+    siblings: T[]
   } {
     const index = this.latestLeafIndex()
-    const siblings: Field[] = [...this.data.siblings]
-    let path = index
+    const siblings: T[] = [...this.data.siblings]
+    let path: BN = index
     for (let i = 0; i < this.depth; i += 1) {
       if (path.isEven()) {
         siblings[i] = this.config.hasher.preHash[i]
@@ -206,25 +214,29 @@ export abstract class LightRollUpTree {
     hash,
     index,
   }: {
-    hash: Field
-    index?: Field
-  }): Promise<MerkleProof> {
-    let leafIndex: Field
+    hash: T
+    index?: T
+  }): Promise<MerkleProof<T>> {
+    let leafIndex: T
     if (index) {
       leafIndex = index
     } else {
       const indexes = await this.db
         .selectTable(this.treeNodeSchema.name)
         .query('select')
-        .where(['value', '=', hash.toHex()])
+        .where(['value', '=', hexify(hash)])
         .exec()
       if (indexes.length === 0) throw Error('Leaf does not exist.')
       else if (indexes.length > 1)
         throw Error('Multiple leaves exist for same hash.')
       else {
-        const leafNodeIndex: BN = Field.toBN(indexes[0].nodeIndex)
+        const leafNodeIndex: BN = toBN(indexes[0].nodeIndex)
         const prefix = new BN(1).shln(this.depth)
-        leafIndex = Field.from(leafNodeIndex.xor(prefix))
+        if (this.zero instanceof Field) {
+          leafIndex = Field.from(leafNodeIndex.xor(prefix)) as T
+        } else {
+          leafIndex = leafNodeIndex.xor(prefix) as T
+        }
       }
     }
     const cachedSiblings = await this.db
@@ -237,7 +249,7 @@ export abstract class LightRollUpTree {
 
     const siblingCache = {}
     for (const sibling of cachedSiblings) {
-      siblingCache[sibling.nodeIndex] = Field.from(sibling.value)
+      siblingCache[sibling.nodeIndex] = hexify(toBN(sibling.value))
     }
 
     if (
@@ -248,21 +260,29 @@ export abstract class LightRollUpTree {
     }
 
     const siblings = Array(this.depth).fill(undefined)
-    const leafNodeIndex: BN = leafIndex.addPrefixBit(this.depth)
+    const leafNodeIndex = new BN(1).shln(this.depth).or(leafIndex)
     let pathNodeIndex!: BN
     let siblingNodeIndex!: BN
     for (let level = 0; level < this.depth; level += 1) {
       pathNodeIndex = leafNodeIndex.shrn(level)
       siblingNodeIndex = new BN(1).xor(pathNodeIndex)
       const usePreHashed: boolean = siblingNodeIndex.gt(
-        this.metadata.end.addPrefixBit(this.depth).shrn(level),
+        new BN(1)
+          .shln(this.depth)
+          .or(this.metadata.end)
+          .shrn(level),
       )
       if (usePreHashed) {
         // should return pre hashed zero
         siblings[level] = this.config.hasher.preHash[level]
       } else {
         // should find the node value
-        siblings[level] = siblingCache[Field.from(siblingNodeIndex).toHex()]
+        const cached = siblingCache[hexify(siblingNodeIndex)]
+        if (this.zero instanceof Field) {
+          siblings[level] = Field.from(cached)
+        } else {
+          siblings[level] = toBN(cached)
+        }
         if (siblings[level] === undefined)
           throw Error(
             'Sibling was not cached. Make sure you added your public key before scanning',
@@ -272,18 +292,18 @@ export abstract class LightRollUpTree {
     const root = this.root()
     return {
       root,
-      index: Field.from(leafIndex),
-      leaf: Field.from(hash),
+      index: leafIndex,
+      leaf: hash,
       siblings,
     }
   }
 
   private async _append(
-    ...items: Item[]
+    ...items: Item<T>[]
   ): Promise<{
-    root: Field
-    index: Field
-    siblings: Field[]
+    root: T
+    index: T
+    siblings: T[]
   }> {
     const start = this.latestLeafIndex()
     const latestSiblings = this.siblings()
@@ -291,9 +311,9 @@ export abstract class LightRollUpTree {
       [nodeIndex: string]: string
     } = {}
     const itemAppendingQuery: NoteSql[] = []
-    let root: Field = this.root()
+    let root: T = this.root()
 
-    const trackingLeaves: Field[] = await this.indexesOfTrackingLeaves()
+    const trackingLeaves: T[] = await this.indexesOfTrackingLeaves()
 
     let index = start
     for (let i = 0; i < items.length; i += 1) {
@@ -301,9 +321,9 @@ export abstract class LightRollUpTree {
       // if note exists, save the data and mark as an item to keep tracking
       if (this.config.fullSync || items[i].note) {
         itemAppendingQuery.push({
-          hash: item.leafHash.toHex(),
+          hash: hexify(item.leafHash),
           tree: this.metadata.id,
-          index: index.toHex(),
+          index: hexify(index),
           eth: item.note?.eth.toHex(),
           pubKey: item.note?.pubKey.toHex(),
           salt: item.note?.salt.toHex(),
@@ -318,7 +338,7 @@ export abstract class LightRollUpTree {
       }
 
       // udpate the latest siblings and save the intermediate value if it needs to be tracked
-      const leafNodeIndex = index.addPrefixBit(this.depth)
+      const leafNodeIndex = new BN(1).shln(this.depth).or(index)
       let node = item.leafHash
       let hasRightSibling!: boolean
       for (let level = 0; level < this.depth; level += 1) {
@@ -328,13 +348,13 @@ export abstract class LightRollUpTree {
           this.config.fullSync ||
           this.shouldTrack(trackingLeaves, pathIndex)
         ) {
-          cached[`0x${pathIndex.toString('hex')}`] = node.toHex()
+          cached[`0x${pathIndex.toString('hex')}`] = hexify(node)
         }
 
         if (index.gtn(0)) {
           // store nodes when if the previous sibling set has a node on the tracking path,
           // because the latest siblings are going to be updated.
-          const prevIndexPath = index.sub(1).addPrefixBit(this.depth)
+          const prevIndexPath = new BN(1).shln(this.depth).or(index.subn(1))
           const prevPathIndex = prevIndexPath.shrn(level)
           const prevSibIndex = new BN(1).xor(prevPathIndex)
           if (
@@ -365,7 +385,11 @@ export abstract class LightRollUpTree {
       // update root
       root = node
       // increment index
-      index = index.add(1)
+      if (this.zero instanceof Field) {
+        index = Field.from(index.addn(1)) as T
+      } else {
+        index = index.addn(1) as T
+      }
     }
     // update the latest siblings
     this.data = {
@@ -380,9 +404,9 @@ export abstract class LightRollUpTree {
       .presetQuery('updateTree', {
         id: this.metadata.id,
         data: {
-          root: root.toHex(),
-          index: index.toHex(),
-          siblings: latestSiblings.map(sib => sib.toHex()),
+          root: hexify(root),
+          index: hexify(index),
+          siblings: latestSiblings.map(hexify),
         },
       })
       .exec()
@@ -410,7 +434,7 @@ export abstract class LightRollUpTree {
     }
   }
 
-  static async initTreeFromDatabase({
+  static async initTreeFromDatabase<T extends Field | BN>({
     db,
     treeSchema,
     metadata,
@@ -419,14 +443,14 @@ export abstract class LightRollUpTree {
   }: {
     db: InanoSQLInstance
     treeSchema: InanoSQLTableConfig
-    metadata: TreeMetadata
-    data: TreeData
-    config: TreeConfig
+    metadata: TreeMetadata<T>
+    data: TreeData<T>
+    config: TreeConfig<T>
   }): Promise<{
     db: InanoSQLInstance
-    metadata: TreeMetadata
-    data: TreeData
-    config: TreeConfig
+    metadata: TreeMetadata<T>
+    data: TreeData<T>
+    config: TreeConfig<T>
   }> {
     // Check the data has a valid merkle proof
     if (
@@ -456,21 +480,30 @@ export abstract class LightRollUpTree {
         index: metadata.index,
         zkopru: metadata.zkopruId,
         data: {
-          root: data.root.toHex(),
-          index: data.index.toHex(),
-          siblings: data.siblings.map(f => f.toHex()),
+          root: hexify(data.root),
+          index: hexify(data.index),
+          siblings: data.siblings.map(hexify),
         },
       })
       .exec()
     const { id, start, end } = queryResult[0]
     // Return tree object
+    let _start: T
+    let _end: T
+    if (metadata.start instanceof Field) {
+      _start = Field.from(start) as T
+      _end = Field.from(end) as T
+    } else {
+      _start = toBN(start) as T
+      _end = toBN(end) as T
+    }
     return {
       db,
       metadata: {
         ...metadata,
         id,
-        start: Field.from(start),
-        end: Field.from(end),
+        start: _start,
+        end: _end,
       },
       data,
       config,
@@ -481,11 +514,11 @@ export abstract class LightRollUpTree {
    * It returns true when the given node is a sibling of any leaf to keep tracking
    * @param nodeIndex Tree node's index
    */
-  private shouldTrack(trackingLeaves: Field[], nodeIndex: BN): boolean {
+  private shouldTrack(trackingLeaves: T[], nodeIndex: BN): boolean {
     let leafIndex: BN
     let pathIndex: BN
     for (const leaf of trackingLeaves) {
-      leafIndex = leaf.addPrefixBit(this.depth)
+      leafIndex = new BN(1).shln(this.depth).or(leaf)
       pathIndex = leafIndex.shrn(leafIndex.bitLength() - nodeIndex.bitLength())
       // if the node is one of the sibling for the leaf proof return true
       if (pathIndex.xor(nodeIndex).eqn(1)) return true
@@ -493,5 +526,5 @@ export abstract class LightRollUpTree {
     return false
   }
 
-  abstract async indexesOfTrackingLeaves(): Promise<Field[]>
+  abstract async indexesOfTrackingLeaves(): Promise<T[]>
 }

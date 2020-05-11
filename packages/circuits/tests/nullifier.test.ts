@@ -4,8 +4,8 @@ import { Docker } from 'node-docker-api'
 import { Container } from 'node-docker-api/lib/container'
 import * as snarkjs from 'snarkjs'
 import * as ffjs from 'ffjavascript'
-import * as utils from '~utils'
 import { utxos } from '~dataset/testset-utxos'
+import { getZkSnarkParams, calculateWitness } from '~utils/snark'
 
 describe('nullifier.circom', () => {
   let container: Container
@@ -31,12 +31,12 @@ describe('nullifier.circom', () => {
   })
   describe('nullifier()', () => {
     it('should return same nullifier with its typescript version', async () => {
-      const { wasm, pk, vk } = await utils.getZkSnarkParams(
+      const { wasm, pk, vk } = await getZkSnarkParams(
         container,
         'nullifier.test.circom',
       )
       const utxo = utxos.utxo1_out_1
-      const witness = await utils.calculateWitness(wasm, {
+      const witness = await calculateWitness(wasm, {
         note_hash: utxo.hash().toIden3BigInt(),
         note_salt: utxo.salt.toIden3BigInt(),
       })
@@ -57,12 +57,12 @@ describe('nullifier.circom', () => {
   })
   describe('nullifier from note details', () => {
     it('should return same nullifier with its typescript version', async () => {
-      const { wasm, pk, vk } = await utils.getZkSnarkParams(
+      const { wasm, pk, vk } = await getZkSnarkParams(
         container,
         'nullifier_from_note.test.circom',
       )
       const utxo = utxos.utxo1_out_1
-      const witness = await utils.calculateWitness(wasm, {
+      const witness = await calculateWitness(wasm, {
         eth: utxo.eth.toIden3BigInt(),
         pubkey_x: utxo.pubKey.x.toIden3BigInt(),
         pubkey_y: utxo.pubKey.y.toIden3BigInt(),

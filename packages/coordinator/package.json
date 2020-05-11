@@ -34,6 +34,7 @@
     "@zkopru/contracts": "file:../contracts",
     "@zkopru/core": "file:../core",
     "@zkopru/transaction": "file:../transaction",
+    "@zkopru/tree": "file:../tree",
     "@zkopru/utils": "file:../utils",
     "big-integer": "^1.6.48",
     "bn.js": "^5.1.1",

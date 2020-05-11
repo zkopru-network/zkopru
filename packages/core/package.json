@@ -42,6 +42,7 @@
     "@zkopru/utils": "file:../utils",
     "async-lock": "^1.2.2",
     "big-integer": "^1.6.48",
+    "bn.js": "^5.1.1",
     "ffjavascript": "^0.0.5",
     "node-fetch": "^2.6.0",
     "snarkjs": "^0.1.27",

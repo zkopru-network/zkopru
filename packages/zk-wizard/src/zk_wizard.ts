@@ -12,8 +12,8 @@ import { MerkleProof, Grove } from '@zkopru/tree'
 import * as ffjs from 'ffjavascript'
 import * as circomruntime from 'circom_runtime'
 import * as wasmsnark from 'wasmsnark'
-import { witnessToBinary, pkToBinary } from './converter'
 import { logger } from '@zkopru/utils'
+import { witnessToBinary, pkToBinary } from './converter'
 
 export class ZkWizard {
   circuits: { [key: string]: Buffer }
@@ -90,7 +90,7 @@ export class ZkWizard {
    */
   async shield({ tx, toMemo }: { tx: RawTx; toMemo?: number }): Promise<ZkTx> {
     return new Promise<ZkTx>((resolve, reject) => {
-      const merkleProof: { [hash: string]: MerkleProof } = {}
+      const merkleProof: { [hash: string]: MerkleProof<Field> } = {}
       const eddsa: { [hash: string]: EdDSA } = {}
 
       function isDataPrepared(): boolean {
@@ -131,7 +131,7 @@ export class ZkWizard {
     tx: RawTx
     toMemo?: number
     data: {
-      merkleProof: { [hash: string]: MerkleProof }
+      merkleProof: { [hash: string]: MerkleProof<Field> }
       eddsa: { [hash: string]: EdDSA }
     }
   }): Promise<ZkTx> {

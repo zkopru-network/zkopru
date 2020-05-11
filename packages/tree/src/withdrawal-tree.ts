@@ -1,6 +1,7 @@
-import { Field } from '@zkopru/babyjubjub'
 import { schema, LightRollUpTreeSql } from '@zkopru/database'
 import { InanoSQLInstance } from '@nano-sql/core'
+import BN from 'bn.js'
+import { toBN } from 'web3-utils'
 import {
   LightRollUpTree,
   TreeMetadata,
@@ -8,14 +9,16 @@ import {
   TreeConfig,
 } from './light-rollup-tree'
 
-export class WithdrawalTree extends LightRollUpTree {
+export class WithdrawalTree extends LightRollUpTree<BN> {
+  zero = toBN(0)
+
   addressesToObserve?: string[]
 
   updateAddresses(addresses: string[]) {
     this.addressesToObserve = addresses
   }
 
-  async indexesOfTrackingLeaves(): Promise<Field[]> {
+  async indexesOfTrackingLeaves(): Promise<BN[]> {
     const keys: string[] = this.addressesToObserve || []
     const trackingLeaves = await this.db
       .selectTable(this.itemSchema.name)
@@ -24,7 +27,7 @@ export class WithdrawalTree extends LightRollUpTree {
         keys,
       })
       .exec()
-    return trackingLeaves.map(row => Field.from(row.index))
+    return trackingLeaves.map(row => toBN(row.index))
   }
 
   static async bootstrap({
@@ -34,9 +37,9 @@ export class WithdrawalTree extends LightRollUpTree {
     config,
   }: {
     db: InanoSQLInstance
-    metadata: TreeMetadata
-    data: TreeData
-    config: TreeConfig
+    metadata: TreeMetadata<BN>
+    data: TreeData<BN>
+    config: TreeConfig<BN>
   }): Promise<WithdrawalTree> {
     const initialData = await LightRollUpTree.initTreeFromDatabase({
       db,
@@ -56,7 +59,7 @@ export class WithdrawalTree extends LightRollUpTree {
   static from(
     db: InanoSQLInstance,
     obj: LightRollUpTreeSql,
-    config: TreeConfig,
+    config: TreeConfig<BN>,
   ): WithdrawalTree {
     return new WithdrawalTree({
       db,
@@ -64,16 +67,16 @@ export class WithdrawalTree extends LightRollUpTree {
         id: obj.id,
         index: obj.index,
         zkopruId: obj.zkopru,
-        start: Field.from(obj.start),
-        end: Field.from(obj.end),
+        start: toBN(obj.start),
+        end: toBN(obj.end),
       },
       itemSchema: schema.withdrawal,
       treeSchema: schema.withdrawalTree,
       treeNodeSchema: schema.withdrawalTreeNode(obj.id),
       data: {
-        root: Field.from(obj.data.root),
-        index: Field.from(obj.data.index),
-        siblings: obj.data.siblings.map(sib => Field.from(sib)),
+        root: toBN(obj.data.root),
+        index: toBN(obj.data.index),
+        siblings: obj.data.siblings.map(toBN),
       },
       config,
     })

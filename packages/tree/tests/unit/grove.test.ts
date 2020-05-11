@@ -2,6 +2,7 @@
 
 import { InanoSQLInstance, nSQL } from '@nano-sql/core'
 import BN from 'bn.js'
+import { toBN } from 'web3-utils'
 import { schema } from '~database'
 import { Field } from '~babyjubjub'
 import { Grove, poseidonHasher, keccakHasher, Item } from '~tree'
@@ -68,7 +69,7 @@ describe('grove full sync grove()', () => {
         withdrawalIndex: fullSyncGrvoe.latestWithdrawalTree().latestLeafIndex(),
         nullifierRoot: await fullSyncGrvoe.nullifierTree?.root(),
       }
-      const utxosToAppend: Item[] = [
+      const utxosToAppend: Item<Field>[] = [
         utxos.utxo1_in_1.toWithdrawal({ to: address.USER_A, fee: 1 }),
         utxos.utxo1_out_1,
         utxos.utxo2_1_in_1,
@@ -79,8 +80,8 @@ describe('grove full sync grove()', () => {
       const patch = {
         header: 'sampleheader',
         utxos: utxosToAppend,
-        withdrawals: [Field.from(1), Field.from(2)],
-        nullifiers: [Field.from(12), Field.from(23)],
+        withdrawals: [toBN(1), toBN(2)],
+        nullifiers: [toBN(12), toBN(23)],
       }
       await fullSyncGrvoe.dryPatch(patch)
       const postResult = {
@@ -105,7 +106,7 @@ describe('grove full sync grove()', () => {
   })
   describe('applyPatch()', () => {
     it('should update the grove and have same result with the dry patch result', async () => {
-      const utxosToAppend: Item[] = [
+      const utxosToAppend: Item<Field>[] = [
         utxos.utxo1_in_1.toWithdrawal({ to: address.USER_A, fee: 1 }),
         utxos.utxo1_out_1,
         utxos.utxo2_1_in_1,
@@ -116,8 +117,8 @@ describe('grove full sync grove()', () => {
       const patch = {
         header: 'sampleheader',
         utxos: utxosToAppend,
-        withdrawals: [Field.from(1), Field.from(2)],
-        nullifiers: [Field.from(12), Field.from(23)],
+        withdrawals: [toBN(1), toBN(2)],
+        nullifiers: [toBN(12), toBN(23)],
       }
       const expected = await fullSyncGrvoe.dryPatch(patch)
       await fullSyncGrvoe.applyPatch(patch)
@@ -152,7 +153,7 @@ describe('grove full sync grove()', () => {
         withdrawalTreeIndex: latestWithdrawalTree.metadata.index,
         withdrawalStartingLeafProof: {
           ...latestWithdrawalTree.getStartingLeafProof(),
-          leaf: Field.zero,
+          leaf: toBN(0),
         },
       }
 
