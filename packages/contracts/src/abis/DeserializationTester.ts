@@ -7,8 +7,31 @@ export const DeserializationTesterABI = [
     type: 'function',
   },
   {
+    inputs: [
+      { internalType: 'uint256', name: '', type: 'uint256' },
+      { internalType: 'uint256', name: '', type: 'uint256' },
+      { internalType: 'bytes', name: '', type: 'bytes' },
+    ],
+    name: 'getProposer2',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    stateMutability: 'pure',
+    type: 'function',
+  },
+  {
     inputs: [{ internalType: 'bytes', name: '', type: 'bytes' }],
     name: 'getParentBlock',
+    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
+    stateMutability: 'pure',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'uint256', name: '', type: 'uint256' },
+      { internalType: 'uint256', name: '', type: 'uint256' },
+      { internalType: 'uint256', name: '', type: 'uint256' },
+      { internalType: 'bytes', name: '', type: 'bytes' },
+    ],
+    name: 'getParentBlock2',
     outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
     stateMutability: 'pure',
     type: 'function',
@@ -62,6 +85,23 @@ export const DeserializationTesterABI = [
     type: 'function',
   },
   {
+    inputs: [{ internalType: 'bytes', name: '', type: 'bytes' }],
+    name: 'getTxsLen',
+    outputs: [{ internalType: 'uint256', name: 'len', type: 'uint256' }],
+    stateMutability: 'pure',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
+      { internalType: 'bytes', name: '', type: 'bytes' },
+    ],
+    name: 'getTxInflowLen',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'pure',
+    type: 'function',
+  },
+  {
     inputs: [
       { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
       { internalType: 'uint256', name: 'inflowIndex', type: 'uint256' },
@@ -95,14 +135,20 @@ export const DeserializationTesterABI = [
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'uint256', name: 'txIndex', type: 'uint256' }],
+    inputs: [
+      { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
+      { internalType: 'bytes', name: '', type: 'bytes' },
+    ],
     name: 'getTxSwap',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'pure',
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'uint256', name: 'txIndex', type: 'uint256' }],
+    inputs: [
+      { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
+      { internalType: 'bytes', name: '', type: 'bytes' },
+    ],
     name: 'getProof',
     outputs: [
       { internalType: 'uint256[8]', name: 'proof', type: 'uint256[8]' },
@@ -111,9 +157,82 @@ export const DeserializationTesterABI = [
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'uint256', name: 'txIndex', type: 'uint256' }],
+    inputs: [
+      { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
+      { internalType: 'bytes', name: '', type: 'bytes' },
+    ],
     name: 'getTxFee',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'pure',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'bytes', name: '', type: 'bytes' }],
+    name: 'getMassDepositsLen',
+    outputs: [{ internalType: 'uint256', name: 'len', type: 'uint256' }],
+    stateMutability: 'pure',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'uint256', name: 'index', type: 'uint256' },
+      { internalType: 'bytes', name: '', type: 'bytes' },
+    ],
+    name: 'getMassDeposit',
+    outputs: [
+      { internalType: 'bytes32', name: 'merged', type: 'bytes32' },
+      { internalType: 'uint256', name: 'fee', type: 'uint256' },
+    ],
+    stateMutability: 'pure',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'bytes', name: '', type: 'bytes' }],
+    name: 'getMassMigrationsLen',
+    outputs: [{ internalType: 'uint256', name: 'len', type: 'uint256' }],
+    stateMutability: 'pure',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'uint256', name: 'index', type: 'uint256' },
+      { internalType: 'bytes', name: '', type: 'bytes' },
+    ],
+    name: 'getMassMigration',
+    outputs: [
+      { internalType: 'address', name: 'destination', type: 'address' },
+      { internalType: 'uint256', name: 'totalETH', type: 'uint256' },
+      { internalType: 'bytes32', name: 'merged', type: 'bytes32' },
+      { internalType: 'uint256', name: 'fee', type: 'uint256' },
+    ],
+    stateMutability: 'pure',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'uint256', name: 'index', type: 'uint256' },
+      { internalType: 'uint256', name: 'erc20Index', type: 'uint256' },
+      { internalType: 'bytes', name: '', type: 'bytes' },
+    ],
+    name: 'getERC20Migration',
+    outputs: [
+      { internalType: 'address', name: 'token', type: 'address' },
+      { internalType: 'uint256', name: 'amount', type: 'uint256' },
+    ],
+    stateMutability: 'pure',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'uint256', name: 'index', type: 'uint256' },
+      { internalType: 'uint256', name: 'erc721Index', type: 'uint256' },
+      { internalType: 'bytes', name: '', type: 'bytes' },
+    ],
+    name: 'getERC721Migration',
+    outputs: [
+      { internalType: 'address', name: 'token', type: 'address' },
+      { internalType: 'uint256[]', name: 'nfts', type: 'uint256[]' },
+    ],
     stateMutability: 'pure',
     type: 'function',
   },

@@ -3,12 +3,10 @@ pragma solidity >= 0.6.0;
 interface ISetupWizard {
     /**
      * @dev This configures a zk SNARKs verification key to support the given transaction type
-     * @param txType TxType.Transfer / TxType.Withdrawal / TxType.Migration
      * @param numOfInputs Number of inflow UTXOs
      * @param numOfOutputs Number of outflow UTXOs
      */
     function registerVk(
-        uint8 txType,
         uint8 numOfInputs,
         uint8 numOfOutputs,
         uint[2] calldata alfa1,

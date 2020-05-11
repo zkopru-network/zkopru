@@ -77,6 +77,6 @@ module.exports = function migration(deployer, _, accounts) {
       // Setup migrations
       // await wizard.allowMigrants(...)
       // Complete setup
-      await zkopru.completeSetup()
+      // await zkopru.completeSetup()
     })
 }

@@ -5,7 +5,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -13,7 +12,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -21,7 +19,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -29,7 +26,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -37,7 +33,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -45,7 +40,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -53,7 +47,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -61,7 +54,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -69,7 +61,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -77,7 +68,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -85,7 +75,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -93,7 +82,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'address', name: '', type: 'address' }],
@@ -101,7 +89,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [
@@ -111,7 +98,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'bytes32', name: 'utxoRoot', type: 'bytes32' }],
@@ -119,7 +105,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [
@@ -136,7 +121,6 @@ export const MigrationChallengeABI = [
     ],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -144,7 +128,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -152,7 +135,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [
@@ -162,7 +144,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'bytes32', name: 'header', type: 'bytes32' }],
@@ -170,7 +151,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'bytes32', name: 'proposalId', type: 'bytes32' }],
@@ -182,7 +162,6 @@ export const MigrationChallengeABI = [
     ],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'address', name: 'addr', type: 'address' }],
@@ -194,7 +173,6 @@ export const MigrationChallengeABI = [
     ],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -202,7 +180,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -213,7 +190,6 @@ export const MigrationChallengeABI = [
     ],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -221,7 +197,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'bytes32', name: 'header', type: 'bytes32' }],
@@ -229,7 +204,6 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'uint256', name: 'idx', type: 'uint256' }],
@@ -240,7 +214,6 @@ export const MigrationChallengeABI = [
     ],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'bytes32', name: 'leaf', type: 'bytes32' }],
@@ -248,12 +221,11 @@ export const MigrationChallengeABI = [
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [
       { internalType: 'address', name: 'destination', type: 'address' },
-      { internalType: 'bytes', name: '', type: 'bytes' },
+      { internalType: 'bytes', name: 'blockData', type: 'bytes' },
     ],
     name: 'challengeMassMigrationToMassDeposit',
     outputs: [],
@@ -264,7 +236,7 @@ export const MigrationChallengeABI = [
     inputs: [
       { internalType: 'address', name: 'destination', type: 'address' },
       { internalType: 'address', name: 'erc20', type: 'address' },
-      { internalType: 'bytes', name: '', type: 'bytes' },
+      { internalType: 'bytes', name: 'blockData', type: 'bytes' },
     ],
     name: 'challengeERC20Migration',
     outputs: [],
@@ -276,7 +248,7 @@ export const MigrationChallengeABI = [
       { internalType: 'address', name: 'destination', type: 'address' },
       { internalType: 'address', name: 'erc721', type: 'address' },
       { internalType: 'uint256', name: 'tokenId', type: 'uint256' },
-      { internalType: 'bytes', name: '', type: 'bytes' },
+      { internalType: 'bytes', name: 'blockData', type: 'bytes' },
     ],
     name: 'challengeERC721Migration',
     outputs: [],

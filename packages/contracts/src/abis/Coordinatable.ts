@@ -283,14 +283,17 @@ export const CoordinatableABI = [
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'bytes', name: '', type: 'bytes' }],
+    inputs: [{ internalType: 'bytes', name: 'blockData', type: 'bytes' }],
     name: 'propose',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'bytes', name: '', type: 'bytes' }],
+    inputs: [
+      { internalType: 'bytes32', name: 'submissionId', type: 'bytes32' },
+      { internalType: 'bytes', name: '', type: 'bytes' },
+    ],
     name: 'finalize',
     outputs: [],
     stateMutability: 'nonpayable',

@@ -67,7 +67,10 @@ export const ICoordinatableABI = [
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'bytes', name: 'submission', type: 'bytes' }],
+    inputs: [
+      { internalType: 'bytes32', name: 'submissionId', type: 'bytes32' },
+      { internalType: 'bytes', name: 'finalization', type: 'bytes' },
+    ],
     name: 'finalize',
     outputs: [],
     stateMutability: 'nonpayable',
