@@ -38,7 +38,6 @@ export class HDWallet {
     this.mnemonic = mnemonic
     this.seed = mnemonicToSeedSync(this.mnemonic)
     await this.save(password)
-    await this.createAccount(0)
   }
 
   async import(mnemonic: string, password: string) {
@@ -125,7 +124,9 @@ export class HDWallet {
     const account = new ZkAccount(derivedKey.privateKey)
     await this.db
       .selectTable(schema.keystore.name)
-      .presetQuery('getKeys', account.toKeystoreSqlObj(this.password))
+      .presetQuery('addKey', {
+        keystore: account.toKeystoreSqlObj(this.password),
+      })
       .exec()
     return account
   }
@@ -164,8 +165,10 @@ export class HDWallet {
     const result = await this.db
       .selectTable(schema.hdWallet.name)
       .presetQuery('save', {
-        id: this.id,
-        ...hdwallet,
+        hdWallet: {
+          id: this.id,
+          ...hdwallet,
+        },
       })
       .exec()
     return { id: result[0].id }

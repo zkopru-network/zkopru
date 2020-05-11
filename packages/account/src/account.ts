@@ -3,9 +3,12 @@ import Web3 from 'web3'
 import { Account, EncryptedKeystoreV3Json, AddAccount } from 'web3-core'
 import { Field, Point, EdDSA, signEdDSA } from '@zkopru/babyjubjub'
 import { KeystoreSql } from '@zkopru/database'
+import { hexify } from '@zkopru/utils'
 
 export class ZkAccount {
-  private privateKey: Field
+  private snarkPK: Field
+
+  private ethPK: string
 
   address: string
 
@@ -13,23 +16,17 @@ export class ZkAccount {
 
   ethAccount: Account
 
-  constructor(privateKey: Buffer | string) {
-    if (!Field.inRange(privateKey)) {
-      throw Error(
-        'The private key exceeds the babyjubjub range. Use 254 bit key',
-      )
-    }
-    if (privateKey instanceof Buffer) {
-      this.privateKey = Field.fromBuffer(privateKey)
+  constructor(pk: Buffer | string) {
+    this.ethPK = hexify(pk, 32)
+    if (pk instanceof Buffer) {
+      this.snarkPK = Field.fromBuffer(pk)
     } else {
-      this.privateKey = Field.from(privateKey)
+      this.snarkPK = Field.from(pk)
     }
     // TODO web3.js typescript has a problem. Update later when the bug is resolved.
     const web3 = new Web3()
-    this.ethAccount = web3.eth.accounts.privateKeyToAccount(
-      this.privateKey.toHex(32),
-    )
-    this.pubKey = Point.fromPrivKey(privateKey)
+    this.ethAccount = web3.eth.accounts.privateKeyToAccount(this.ethPK)
+    this.pubKey = Point.fromPrivKey(this.snarkPK.toHex(32))
     this.address = this.ethAccount.address
   }
 
@@ -42,13 +39,13 @@ export class ZkAccount {
   }
 
   signEdDSA(msg: Field): EdDSA {
-    return signEdDSA({ msg, privKey: this.privateKey.toBuffer('be') })
+    return signEdDSA({ msg, privKey: this.snarkPK.toBuffer('be') })
   }
 
   toAddAccount(): AddAccount {
     return {
       address: this.address,
-      privateKey: this.privateKey.toHex(32),
+      privateKey: this.ethPK,
     }
   }
 
@@ -58,7 +55,6 @@ export class ZkAccount {
   ): ZkAccount {
     const web3 = new Web3()
     const account = web3.eth.accounts.decrypt(obj, password)
-    const privateKey = Field.from(account.privateKey).toBuffer('be')
-    return new ZkAccount(privateKey)
+    return new ZkAccount(account.privateKey)
   }
 }

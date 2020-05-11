@@ -8,7 +8,8 @@
     "dist"
   ],
   "_moduleAliases": {
-    "~account": "dist"
+    "~account": "dist",
+    "~database": "../database/dist"
   },
   "scripts": {
     "postinstall": "shx mkdir -p dist && link-module-alias",
@@ -29,6 +30,7 @@
     "@nano-sql/core": "^2.3.7",
     "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/database": "file:../database",
+    "@zkopru/utils": "file:../utils",
     "bip39": "^3.0.2",
     "hdkey": "^1.1.1",
     "web3": "^1.2.6",
