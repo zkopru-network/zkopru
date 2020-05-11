@@ -6,7 +6,7 @@ test-env: container-contract
 # -------------------- Dev Containers -------------------- #
 contract-container:
 	$(info Make: build container and compile circuits)
-	@docker build -q -f containers/Contract.dockerfile ./ -t zkopru:contract
+	@docker build -f containers/Contract.dockerfile ./ -t zkopru:contract
 
 circuit-container:
 	$(info Make: build container and compile circuits)
