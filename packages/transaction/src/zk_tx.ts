@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { BigInteger } from 'big-integer'
-import { Hex, soliditySha3 } from 'web3-utils'
+import { soliditySha3 } from 'web3-utils'
 import * as snarkjs from 'snarkjs'
 import { Field } from '@zkopru/babyjubjub'
 import * as Utils from '@zkopru/utils'
@@ -45,7 +45,7 @@ export class ZkTx {
   memo?: Buffer
 
   cache: {
-    hash?: Hex
+    hash?: string
     size?: number
   }
 
@@ -117,7 +117,7 @@ export class ZkTx {
     ])
   }
 
-  hash(): Hex {
+  hash(): string {
     if (!this.proof) throw Error('SNARK is empty')
     if (!this.cache.hash) {
       const encodePacked = Buffer.concat([

@@ -32,9 +32,9 @@ export const keystore: InanoSQLTableConfig = {
     },
     {
       name: 'addKey',
-      args: {},
-      call: (db, args: KeystoreSql) => {
-        return db.query('upsert', [args]).emit()
+      args: { 'keystore:object': {} },
+      call: (db, args: { [keystore: string]: KeystoreSql }) => {
+        return db.query('upsert', [args.keystore]).emit()
       },
     },
   ],

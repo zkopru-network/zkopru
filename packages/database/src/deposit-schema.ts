@@ -28,7 +28,7 @@ export const deposit: InanoSQLTableConfig = {
   queries: [
     {
       name: 'getSyncStart',
-      args: {},
+      args: { 'zkopru:uuid': {} },
       call: (db, args) => {
         return db
           .query('select', ['MAX(blockNumber)'])
@@ -38,9 +38,9 @@ export const deposit: InanoSQLTableConfig = {
     },
     {
       name: 'writeNewDeposit',
-      args: {},
+      args: { 'deposit:object': {} },
       call: (db, args) => {
-        return db.query('upsert', [args as DepositSql]).emit()
+        return db.query('upsert', [args.deposit as DepositSql]).emit()
       },
     },
     {

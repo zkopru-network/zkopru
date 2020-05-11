@@ -171,16 +171,16 @@ export class Synchronizer extends EventEmitter {
       })
       .on('data', async event => {
         const { returnValues, blockNumber } = event
-        const args: DepositSql = {
+        const deposit: DepositSql = {
           ...returnValues,
           zkopru: this.zkopruId,
           blockNumber,
         }
         await this.db
           .selectTable(schema.deposit.name)
-          .presetQuery('writeNewDeposit', args)
+          .presetQuery('writeNewDeposit', { deposit })
           .exec()
-        if (cb) cb(args)
+        if (cb) cb(deposit)
       })
       .on('changed', event => {
         // TODO
@@ -207,16 +207,16 @@ export class Synchronizer extends EventEmitter {
       })
       .on('data', async event => {
         const { returnValues, blockNumber } = event
-        const args: MassDepositCommitSql = {
+        const massDeposit: MassDepositCommitSql = {
           ...returnValues,
           zkopru: this.zkopruId,
           blockNumber,
         }
         await this.db
           .selectTable(schema.deposit.name)
-          .presetQuery('writeMassDepositCommit', args)
+          .presetQuery('writeMassDepositCommit', { massDeposit })
           .exec()
-        if (cb) cb(args)
+        if (cb) cb(massDeposit)
       })
       .on('changed', event => {
         // TODO

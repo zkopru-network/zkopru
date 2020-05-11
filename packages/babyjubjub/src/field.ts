@@ -16,9 +16,8 @@ export class Field extends BN {
       super(number, base, endian)
     }
     if (super.gte(r)) {
-      console.warn('Exceeds babyjubjub field range')
+      // console.warn('Exceeds babyjubjub field range')
       return Field.from(super.sub(r))
-      // throw Error('babyjubjub field exceeds')
     }
     if (super.isNeg()) {
       return Field.from(super.add(r))

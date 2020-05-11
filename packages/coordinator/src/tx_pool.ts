@@ -1,7 +1,6 @@
 import { Field } from '@zkopru/babyjubjub'
 import { ZkTx } from '@zkopru/transaction'
 import { root } from '@zkopru/utils'
-import { Hex } from 'web3-utils'
 
 export interface TxPoolInterface {
   pendingNum(): number
@@ -68,11 +67,11 @@ export class TxMemPool implements TxPoolInterface {
     this.removeFromTxPool(txs)
   }
 
-  drop(txRoot: Hex) {
+  drop(txRoot: string) {
     delete this.queued[txRoot]
   }
 
-  revert(txRoot: Hex) {
+  revert(txRoot: string) {
     const txs = this.queued[txRoot]
     if (txs) {
       txs.forEach(this.addToTxPool)

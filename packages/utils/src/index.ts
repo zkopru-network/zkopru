@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable max-classes-per-file */
-import { Hex, soliditySha3, padLeft } from 'web3-utils'
+import { soliditySha3, padLeft } from 'web3-utils'
 import pino from 'pino'
 import { Container } from 'node-docker-api/lib/container'
 import { ReadStream } from 'fs-extra'
 import tar from 'tar'
 import BN from 'bn.js'
 
-export function root(hashes: Hex[]): Hex {
+export function root(hashes: string[]): string {
   if (hashes.length === 0) {
     return padLeft(0, 64)
   }
@@ -44,11 +44,28 @@ export function verifyingKeyIdentifier(nI: number, nO: number): string {
   return identifier
 }
 
-export function hexify(n: BN | Buffer): string {
-  if (Buffer.isBuffer(n)) {
-    return `0x${n.toString('hex')}`
+export function isHex(h: string): boolean {
+  return h === `0x${parseInt(h, 16).toString(16)}`
+}
+
+export function hexify(n: BN | Buffer | string, length?: number): string {
+  let hex: string
+  if (n instanceof BN) {
+    hex = n.toString(16)
+  } else if (typeof n === 'string') {
+    hex = isHex(n)
+      ? parseInt(n, 16).toString(16)
+      : Buffer.from(n).toString('hex')
+  } else {
+    hex = n.toString('hex')
   }
-  return `0x${n.toString(16)}`
+  if (length) {
+    if (hex.length > length * 2) {
+      throw Error('Input data exceeds the given length')
+    }
+    hex = '0'.repeat(length * 2 - hex.length) + hex
+  }
+  return `0x${hex}`
 }
 
 export class Queue {

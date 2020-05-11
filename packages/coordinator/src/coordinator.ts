@@ -3,7 +3,7 @@ import express, { RequestHandler } from 'express'
 import { scheduleJob, Job } from 'node-schedule'
 import { Server } from 'http'
 import { ZkTx } from '@zkopru/transaction'
-import { logger, root } from '@zkopru/utils'
+import { logger, root, hexify } from '@zkopru/utils'
 import {
   FullNode,
   BootstrapData,
@@ -22,7 +22,6 @@ import { Subscription } from 'web3-core-subscriptions'
 import { schema, MassDepositCommitSql, DepositSql } from '@zkopru/database'
 import { Item } from '@zkopru/tree'
 import { TxMemPool, TxPoolInterface } from './tx_pool'
-import { toHex } from 'web3-utils'
 
 
 export interface CoordinatorConfig {
@@ -309,9 +308,9 @@ export class Coordinator {
       fee: aggregatedFee.toHex(),
       utxoRoot: expectedGrove.utxoTreeRoot.toHex(),
       utxoIndex: expectedGrove.utxoTreeIndex.toHex(),
-      nullifierRoot: toHex(expectedGrove.nullifierTreeRoot),
-      withdrawalRoot: toHex(expectedGrove.withdrawalTreeRoot),
-      withdrawalIndex: toHex(expectedGrove.withdrawalTreeIndex),
+      nullifierRoot: hexify(expectedGrove.nullifierTreeRoot),
+      withdrawalRoot: hexify(expectedGrove.withdrawalTreeRoot),
+      withdrawalIndex: hexify(expectedGrove.withdrawalTreeIndex),
       txRoot: root(txs.map(tx => tx.hash())).toString(),
       depositRoot: root(commits.map(massDepositHash)).toString(),
       migrationRoot: root(massMigrations.map(massMigrationHash)).toString(),

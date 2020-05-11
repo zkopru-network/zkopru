@@ -29,7 +29,7 @@ export const massDeposit: InanoSQLTableConfig = {
   queries: [
     {
       name: 'getSyncStart',
-      args: {},
+      args: { 'zkopru:uuid': {} },
       call: (db, args) => {
         return db
           .query('select', ['MAX(blockNumber)'])
@@ -39,9 +39,11 @@ export const massDeposit: InanoSQLTableConfig = {
     },
     {
       name: 'writeMassDepositCommit',
-      args: {},
+      args: { 'massDeposit:object': {} },
       call: (db, args) => {
-        return db.query('upsert', [args as MassDepositCommitSql]).emit()
+        return db
+          .query('upsert', [args.massDeposit as MassDepositCommitSql])
+          .emit()
       },
     },
     {
@@ -49,7 +51,7 @@ export const massDeposit: InanoSQLTableConfig = {
       args: {
         'zkopru:uuid': {},
         'block:string': {},
-        'indexes:string[]': {},
+        'ids:string[]': {},
       },
       call: (db, args) => {
         return db
@@ -61,7 +63,7 @@ export const massDeposit: InanoSQLTableConfig = {
           .where([
             ['zkopru', '=', args.zkopru],
             'AND',
-            ['index', 'IN', args.indexes],
+            ['index', 'IN', args.ids],
           ])
           .emit()
       },

@@ -440,7 +440,7 @@ export class Grove {
       data = {
         root: hexify(proof.root),
         index: hexify(proof.index),
-        siblings: proof.siblings.map(hexify),
+        siblings: proof.siblings.map(sib => hexify(sib)),
       }
       if (!startingLeafProof(hasher, proof.root, proof.index, proof.siblings)) {
         throw Error('Invalid starting leaf proof')
@@ -449,7 +449,7 @@ export class Grove {
       data = {
         root: hexify([...hasher.preHash].pop() as BN),
         index: hexify(new BN(0)),
-        siblings: hasher.preHash.map(hexify),
+        siblings: hasher.preHash.map(sib => hexify(sib)),
       }
     }
     const treeSql = (

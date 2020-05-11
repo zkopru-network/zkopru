@@ -406,7 +406,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
         data: {
           root: hexify(root),
           index: hexify(index),
-          siblings: latestSiblings.map(hexify),
+          siblings: latestSiblings.map(sib => hexify(sib)),
         },
       })
       .exec()
@@ -482,7 +482,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
         data: {
           root: hexify(data.root),
           index: hexify(data.index),
-          siblings: data.siblings.map(hexify),
+          siblings: data.siblings.map(sib => hexify(sib)),
         },
       })
       .exec()

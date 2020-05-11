@@ -28,9 +28,11 @@ export const hdWallet: InanoSQLTableConfig = {
   queries: [
     {
       name: 'save',
-      args: {},
-      call: (db, args: HDWalletSql) => {
-        return db.query('upsert', [{ updated: Date.now(), ...args }]).emit()
+      args: { 'hdWallet:object': {} },
+      call: (db, args: { [hdWallet: string]: HDWalletSql }) => {
+        return db
+          .query('upsert', [{ updated: Date.now(), ...args.hdWallet }])
+          .emit()
       },
     },
   ],
