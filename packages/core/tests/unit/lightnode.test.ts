@@ -50,7 +50,8 @@ describe('integration test to run testnet', () => {
     await waitConnection()
   }, 10000)
   afterAll(async () => {
-    await container.kill()
+    await container.stop()
+    await container.delete()
     wsProvider.disconnect(0, 'close connection')
   }, 20000)
   describe('light node', () => {
