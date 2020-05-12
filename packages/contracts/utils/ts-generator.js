@@ -15,6 +15,8 @@ const importExportList = [
   'ISetupWizard',
   'ITxChallenge',
   'IUserInteractable',
+  'IERC20',
+  'IERC721',
   'ZkOptimisticRollUp',
 ]
 
@@ -55,6 +57,12 @@ const staticClasses = `${importExportList.reduce((prev, name) => {
   }
 `
 }, '')}`
+
+const exportInterfaces = `export {
+${ts.reduce((prev, name) => {
+  if (!importExportList.includes(name)) return prev
+  return `${prev}  ${name},\n`
+}, '')}}\n`
 
 const ZkOPRUContract = `export default class ZkOPRUContract {
   upstream: ZkOptimisticRollUp

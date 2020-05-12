@@ -28,7 +28,16 @@
     "dev": "ts-node-dev -r tsconfig-paths/register src/index.ts",
     "start": "node dist/index.js"
   },
-  "devDependencies": {
+  "dependencies": {
+    "@zkopru/account": "file:../account",
+    "@zkopru/babyjubjub": "file:../babyjubjub",
+    "@zkopru/contracts": "file:../contracts",
+    "@zkopru/core": "file:../core",
+    "@zkopru/coordinator": "file:../coordinator",
+    "@zkopru/database": "file:../database",
+    "@zkopru/transaction": "file:../transaction",
+    "@zkopru/utils": "file:../utils",
+    "@zkopru/zk-wizard": "file:../zk-wizard",
     "@nano-sql/core": "^2.3.7",
     "node-docker-api": "^1.1.22",
     "web3": "^1.2.7",

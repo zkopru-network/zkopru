@@ -1,3 +1,5 @@
+/* eslint-disable jest/no-disabled-tests */
+/* eslint-disable jest/no-commented-out-tests */
 /* eslint-disable jest/no-expect-resolves */
 /* eslint-disable jest/require-tothrow-message */
 /* eslint-disable @typescript-eslint/camelcase */
@@ -5,97 +7,26 @@
 /**
  * @jest-environment node
  */
-import { Docker } from 'node-docker-api'
-import { nSQL, InanoSQLInstance } from '@nano-sql/core'
-import { Container } from 'node-docker-api/lib/container'
-import Web3 from 'web3'
-import { toWei } from 'web3-utils'
-import { ZkAccount, HDWallet } from '~account'
-import { schema } from '~database'
-import { sleep, readFromContainer } from '~utils'
-import { L1Contract } from '~core/layer1'
+import { Context, initContext } from './helper/context'
+import {
+  testAliceAccount,
+  testCarlAccount,
+  testBobAccount,
+} from './helper/1_create_accounts'
+import { testRegisterVKs, testRegisterVKFails } from './helper/2_register_vks'
+import {
+  testCompleteSetup,
+  testRejectVkRegistration,
+} from './helper/3_complete_setup'
 
 describe('testnet', () => {
-  let layer1Container: Container
-  let circuitArtifactContainer: Container
-  let accounts: {
-    coordinator: ZkAccount
-    alice: ZkAccount
-    bob: ZkAccount
-    carl: ZkAccount
-  }
-  let web3: Web3
-  let zkopruAddress: string
-  let db: InanoSQLInstance
-  let contract: L1Contract
+  let context!: Context
+  const ctx = () => context
   beforeAll(async () => {
-    const docker = new Docker({ socketPath: '/var/run/docker.sock' })
-    layer1Container = await docker.container.create({
-      Image: 'zkopru:contract',
-      name: Math.random()
-        .toString(36)
-        .substring(2, 16),
-      rm: true,
-    })
-    circuitArtifactContainer = await docker.container.create({
-      Image: 'zkopru:circuits',
-      name: Math.random()
-        .toString(36)
-        .substring(2, 16),
-      rm: true,
-    })
-    await Promise.all([
-      layer1Container.start(),
-      circuitArtifactContainer.start(),
-    ])
-    const deployed = await readFromContainer(
-      layer1Container,
-      '/proj/build/deployed/ZkOptimisticRollUp.json',
-    )
-    zkopruAddress = JSON.parse(deployed.toString()).address
-    const status = await layer1Container.status()
-    const containerIP = (status.data as {
-      NetworkSettings: { IPAddress: string }
-    }).NetworkSettings.IPAddress
-    sleep(2000)
-    console.log('Running testnet on ', `${containerIP}:5000`)
-    const provider = new Web3.providers.WebsocketProvider(
-      `ws://${containerIP}:5000`,
-      { reconnect: { auto: true } },
-    )
-    async function waitConnection() {
-      return new Promise<void>(res => {
-        if (provider.connected) res()
-        provider.on('connect', res)
-      })
-    }
-    await waitConnection()
-    console.log('Websocket connection with ', `${containerIP}:5000`)
-    web3 = new Web3(provider)
-    contract = new L1Contract(web3, zkopruAddress)
-    const dbName = 'zkopruFullNodeTester'
-    await nSQL().createDatabase({
-      id: dbName,
-      mode: 'TEMP',
-      tables: [
-        schema.utxo,
-        schema.utxoTree,
-        schema.withdrawal,
-        schema.withdrawalTree,
-        schema.nullifiers,
-        schema.nullifierTreeNode,
-        schema.migration,
-        schema.deposit,
-        schema.massDeposit,
-        schema.chain,
-        schema.keystore,
-        schema.hdWallet,
-      ],
-      version: 3,
-    })
-    db = nSQL().useDatabase(dbName)
-  }, 10000)
+    context = await initContext()
+  }, 15000)
   afterAll(async () => {
+    const { layer1Container, circuitArtifactContainer, db } = context
     await layer1Container.stop()
     await layer1Container.delete()
     await circuitArtifactContainer.stop()
@@ -104,153 +35,145 @@ describe('testnet', () => {
   })
   describe('contract deployment', () => {
     it('should define zkopru address', () => {
-      expect(zkopruAddress).toBeDefined()
+      // eslint-disable-next-line jest/no-if
+      const message = ctx().zkopruAddress
+        ? 'Test environment is ready'
+        : 'Try to adjust timeout or check docker status'
+      console.log(message)
+      expect(context.zkopruAddress).toBeDefined()
     })
   })
-  describe('1: create zk snark compatible accounts', () => {
-    beforeAll(async () => {
-      const hdWallet = new HDWallet(db)
-      const mnemonic =
-        'myth like bonus scare over problem client lizard pioneer submit female collect'
-      await hdWallet.init(mnemonic, 'samplepassword')
-      const coordinator = await hdWallet.createAccount(0)
-      const alice = await hdWallet.createAccount(1)
-      const bob = await hdWallet.createAccount(2)
-      const carl = await hdWallet.createAccount(3)
-      accounts = { coordinator, alice, bob, carl }
+  describe('1: Zk Account', () => {
+    it(
+      'alice should have 100 ETH for her initial balance',
+      testAliceAccount(ctx),
+    )
+    it('bob should have 100 ETH for his initial balance', testBobAccount(ctx))
+    it('carl should have 100 ETH for his initial balance', testCarlAccount(ctx))
+  })
+  describe('2: Register verifying keys', () => {
+    it('coordinator can register vks', testRegisterVKs(ctx))
+    it('alice, bob, and carl cannot register vks', testRegisterVKFails(ctx))
+  })
+  describe('3: Complete setup', () => {
+    describe('3-1: before completeSetup() called', () => {
+      it('should allow only the coordinator', testCompleteSetup(ctx))
     })
-    it('alice should have 100 ETH for her initial balance', async () => {
-      expect(
-        await web3.eth.getBalance(accounts.alice.ethAccount.address),
-      ).toStrictEqual(toWei('100'))
-    })
-    it('bob should have 100 ETH for his initial balance', async () => {
-      expect(
-        await web3.eth.getBalance(accounts.bob.ethAccount.address),
-      ).toStrictEqual(toWei('100'))
-    })
-    it('carl should have 100 ETH for his initial balance', async () => {
-      expect(
-        await web3.eth.getBalance(accounts.carl.ethAccount.address),
-      ).toStrictEqual(toWei('100'))
+    describe('3-2: after completeSetup() called', () => {
+      it('should reject every register txs', testRejectVkRegistration(ctx))
     })
   })
-  describe('2: coordinator registers verifying keys', () => {
-    const nIn = [1, 2, 3, 4]
-    const nOut = [1, 2, 3, 4]
-    let vks!: { [nIn: number]: { [nOut: number]: any } }
-    beforeAll(async () => {
-      vks = {
-        1: {},
-        2: {},
-        3: {},
-        4: {},
-      }
-      const readVKs: (() => Promise<void>)[] = []
-      nIn.forEach(i => {
-        nOut.forEach(j => {
-          const readVK = async () => {
-            const vk = JSON.parse(
-              (
-                await readFromContainer(
-                  circuitArtifactContainer,
-                  '/proj/build/vks/zk_transaction_1_1.vk.json',
-                )
-              ).toString('utf8'),
-            )
-            vks[i][j] = vk
-          }
-          readVKs.push(readVK)
-        })
-      })
-      await Promise.all(readVKs.map(f => f()))
+  describe('4: Deposits', () => {
+    describe('users deposit assets', () => {
+      it.todo('ether: Alice, Bob, and Carl deposits Ether')
+      it.todo('erc20: Bob deposits ERC20')
+      it.todo('erc721: Carl deposits NFTs')
     })
-    it('coordinator can register vks', async () => {
-      const registerVKs: (() => Promise<void>)[] = []
-      let registeredNum = 0
-      nIn.forEach(i => {
-        nOut.forEach(j => {
-          registerVKs.push(async () => {
-            const tx = contract.setup.methods.registerVk(
-              i,
-              j,
-              vks[i][j].vk_alfa_1.slice(0, 2),
-              vks[i][j].vk_beta_2.slice(0, 2),
-              vks[i][j].vk_gamma_2.slice(0, 2),
-              vks[i][j].vk_delta_2.slice(0, 2),
-              vks[i][j].IC.map((arr: string[][]) => arr.slice(0, 2)),
-            )
-            const estimatedGas = await tx.estimateGas()
-            const receipt = await tx.send({
-              from: accounts.coordinator.address,
-              gas: estimatedGas,
-            })
-            registeredNum += 1
-            expect(receipt).toBeDefined()
-          })
-        })
-      })
-      await Promise.all(registerVKs.map(f => f()))
-      expect(registeredNum).toStrictEqual(16)
+    describe('coordinator subscribe Deposit() events', () => {
+      it.todo('Coordinator should subscribe the deposit events')
     })
-    it('alice, bob, and carl cannot register vk', async () => {
-      const sampleVk = vks[4][4]
-      const tx = contract.setup.methods.registerVk(
-        5,
-        5,
-        sampleVk.vk_alfa_1.slice(0, 2),
-        sampleVk.vk_beta_2.slice(0, 2),
-        sampleVk.vk_gamma_2.slice(0, 2),
-        sampleVk.vk_delta_2.slice(0, 2),
-        sampleVk.IC.map((arr: string[][]) => arr.slice(0, 2)),
+  })
+  describe('5: Coordinator create the first block', () => {
+    describe('coordinator creates the first block', () => {
+      it.todo('should register coordinator')
+      it.todo('should create a first block')
+      it.todo('should update the utxo tree')
+    })
+    describe('users subscribe Proposal() events', () => {
+      it.todo('light clients should subscribe new block proposal')
+    })
+  })
+  describe('6: Zk Transactions round 1', () => {
+    describe('users send zk txs to the coordinator', () => {
+      it.todo('alice creates a zk tx to send Ether to Bob')
+      it.todo('bob creates a zk tx to send ERC20 to carl')
+      it.todo('carl creates a zk tx to send ERC721 to alice')
+      it.todo('alice creates an invalid zk tx')
+    })
+    describe('coordinator creates the 2nd block including zk txs', () => {
+      it.todo('should contain 3 valid txs')
+      it.todo('should not include the invalid tx')
+      it.todo('should update the utxo tree')
+      it.todo('should update the nullifier tree')
+    })
+    describe('users subscribe Proposal() event and try to decrypt memos', () => {
+      it.todo('bob should receive Ether')
+      it.todo('carl should receive ERC20')
+      it.todo('alice should receive ERC721')
+    })
+  })
+  describe('6: Zk Transactions round 2', () => {
+    describe('users send zk txs to the coordinator', () => {
+      it.todo('alice creates a zk tx to send ERC721 to Bob')
+      it.todo('carl creates a zk tx to send ERC20 to alice')
+      it.todo('bob creates a zk tx to merge his utxos into 1 utxo')
+    })
+    describe('coordinator creates the 3rd block including zk txs', () => {
+      it.todo('should contain 3 valid txs')
+      it.todo('should not include the invalid tx')
+      it.todo('should update the utxo tree')
+      it.todo('should update the nullifier tree')
+    })
+    describe('users subscribe Proposal() event and try to decrypt memos', () => {
+      it.todo('bob should receive ERC721')
+      it.todo('alice should receive ERC20')
+    })
+  })
+  describe('7: Withdrawal', () => {
+    describe('users send zk txs to the coordinator', () => {
+      it.todo('alice sends an ERC20 withdrawal tx to the coordinator')
+      it.todo('bob sends an ERC721 withdrawal tx to the coordinator')
+      it.todo('carl sends Ether withdrawal tx to the coordinator')
+    })
+    describe('coordinator creates the 4rd block including zk txs', () => {
+      it.todo('should contain 3 valid txs')
+      it.todo('should update the withdrawal tree root')
+      it.todo('should update the utxo tree')
+      it.todo('should update the nullifier tree')
+      it.todo('should update the withdrawal tree')
+    })
+  })
+  describe('8: Instant withdrawal', () => {
+    describe('alice sends an instant withdrawal tx', () => {
+      it.todo('should pay extra fee to the coordinator')
+    })
+    describe('coordinator provides upfront payment', () => {
+      it.todo("should be paid from the coordinator's own account")
+    })
+    describe('alice gets ERC20s on the main network', () => {
+      it.todo('should top up an empty account of Alice')
+    })
+  })
+  describe('9: Finalization', () => {
+    describe('coordinator calls finalize()', () => {
+      it.todo('should update the latest block')
+      it.todo('should give reward to the coordinator')
+    })
+    describe('users subscribe Finalization() and run withdraw()', () => {
+      it.todo('bob gets ERC 721 on the main network')
+      it.todo('carl gets ERC 721 on the main network')
+      it.todo('alice fails the double-withdrawal')
+      it.todo(
+        'should pay back the upfront payment for alice to the coordinator',
       )
-      const estimatedGas = await tx.estimateGas()
-      await expect(
-        tx.send({ from: accounts.alice.address, gas: estimatedGas }),
-      ).rejects.toThrow()
-      await expect(
-        tx.send({ from: accounts.bob.address, gas: estimatedGas }),
-      ).rejects.toThrow()
-      await expect(
-        tx.send({ from: accounts.carl.address, gas: estimatedGas }),
-      ).rejects.toThrow()
     })
   })
-  describe('3: coordinator completes the setup', () => {
-    describe('3-1: coordinator can complete the setup while alice, bob, and carl fails', () => {
-      it('coordinator can complete the setup while alice, bob, and carl fails', async () => {
-        const tx = contract.setup.methods.completeSetup()
-        const gas = await tx.estimateGas()
-        await expect(
-          tx.send({ from: accounts.alice.address, gas }),
-        ).rejects.toThrow()
-        await expect(
-          tx.send({ from: accounts.bob.address, gas }),
-        ).rejects.toThrow()
-        await expect(
-          tx.send({ from: accounts.carl.address, gas }),
-        ).rejects.toThrow()
-        await expect(
-          tx.send({ from: accounts.coordinator.address, gas }),
-        ).resolves.toHaveProperty('transactionHash')
-      })
+  describe('10: Challenge', () => {
+    describe('fraud', () => {
+      it.todo('coordinator creates an invalind utxo roll up')
     })
-    describe('3-2: once the coordinator completes the setup, no one can register new keys', () => {
-      it('should reject every register txs', async () => {
-        const tx = contract.setup.methods.completeSetup()
-        await expect(
-          tx.estimateGas({ from: accounts.alice.address }),
-        ).rejects.toThrow()
-        await expect(
-          tx.estimateGas({ from: accounts.bob.address }),
-        ).rejects.toThrow()
-        await expect(
-          tx.estimateGas({ from: accounts.carl.address }),
-        ).rejects.toThrow()
-        await expect(
-          tx.estimateGas({ from: accounts.coordinator.address }),
-        ).rejects.toThrow()
-      })
+    describe('watchdog', () => {
+      it.todo('alice catches the fraud and submit a challenge')
     })
+    describe('slash', () => {
+      it.todo('coordinator gets slashed and the block gets invalidated')
+      it.todo('alice gets the challenge reward')
+    })
+    describe('revert', () => {
+      it.todo('every clients should update the revert')
+    })
+  })
+  describe('11: Migration', () => {
+    it.todo('please add test scenarios here')
   })
 })

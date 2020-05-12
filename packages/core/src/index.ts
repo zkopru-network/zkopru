@@ -23,3 +23,4 @@ export {
   serializeHeader,
   serializeBody,
 } from './block'
+export { L1Contract } from './layer1'

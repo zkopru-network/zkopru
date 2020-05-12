@@ -7,6 +7,8 @@ import { ContractOptions } from 'web3-eth-contract'
 
 import { ICoordinatable } from './contracts/ICoordinatable'
 import { IDepositChallenge } from './contracts/IDepositChallenge'
+import { IERC20 } from './contracts/IERC20'
+import { IERC721 } from './contracts/IERC721'
 import { IHeaderChallenge } from './contracts/IHeaderChallenge'
 import { IMigratable } from './contracts/IMigratable'
 import { IMigrationChallenge } from './contracts/IMigrationChallenge'
@@ -19,6 +21,8 @@ import { ZkOptimisticRollUp } from './contracts/ZkOptimisticRollUp'
 
 import { ICoordinatableABI } from './abis/ICoordinatable'
 import { IDepositChallengeABI } from './abis/IDepositChallenge'
+import { IERC20ABI } from './abis/IERC20'
+import { IERC721ABI } from './abis/IERC721'
 import { IHeaderChallengeABI } from './abis/IHeaderChallenge'
 import { IMigratableABI } from './abis/IMigratable'
 import { IMigrationChallengeABI } from './abis/IMigrationChallenge'
@@ -153,6 +157,24 @@ export default class ZkOPRUContract {
   ): IUserInteractable {
     const abi: any[] = [...IUserInteractableABI]
     return new web3.eth.Contract(abi, address, option) as IUserInteractable
+  }
+
+  static asIERC20(
+    web3: Web3,
+    address: string,
+    option?: ContractOptions,
+  ): IERC20 {
+    const abi: any[] = [...IERC20ABI]
+    return new web3.eth.Contract(abi, address, option) as IERC20
+  }
+
+  static asIERC721(
+    web3: Web3,
+    address: string,
+    option?: ContractOptions,
+  ): IERC721 {
+    const abi: any[] = [...IERC721ABI]
+    return new web3.eth.Contract(abi, address, option) as IERC721
   }
 
   static asZkOptimisticRollUp(
