@@ -8,12 +8,16 @@ import {
 } from 'bip39'
 import crypto from 'crypto'
 import HDNode from 'hdkey'
+import Web3 from 'web3'
 import { HDWalletSql, KeystoreSql, schema } from '@zkopru/database'
-import { Point, Field } from '@zkopru/babyjubjub'
+import { Field } from '@zkopru/babyjubjub'
+import { hexify } from '@zkopru/utils'
 import { ZkAccount } from './account'
 
 export const PATH = (index: number) => `m/44'/60'/0'/0/${index}`
 export class HDWallet {
+  web3: Web3
+
   db: InanoSQLInstance
 
   id?: string
@@ -24,12 +28,13 @@ export class HDWallet {
 
   private seed!: Buffer
 
-  constructor(db: InanoSQLInstance) {
+  constructor(web3: Web3, db: InanoSQLInstance) {
     this.db = db
+    this.web3 = web3
   }
 
-  static newMnemonic(): string {
-    return generateMnemonic()
+  static newMnemonic(strength?: number, list?: string[]): string {
+    return generateMnemonic(strength, undefined, list)
   }
 
   async init(mnemonic: string, password: string) {
@@ -72,12 +77,21 @@ export class HDWallet {
     let key: Buffer
     switch (kdf) {
       default:
-        key = crypto.scryptSync(password, salt, keylen, kdfParams)
+        key = crypto.scryptSync(
+          password,
+          Buffer.from(salt, 'hex'),
+          keylen,
+          kdfParams,
+        )
         break
     }
-    const decipher = crypto.createDecipheriv(algorithm, key, iv)
+    const decipher = crypto.createDecipheriv(
+      algorithm,
+      key,
+      Buffer.from(iv, 'hex'),
+    )
     const entropy =
-      decipher.update(ciphertext, 'hex', 'binary') + decipher.final('binary')
+      decipher.update(Buffer.from(ciphertext, 'hex')) + decipher.final('binary')
     const retrievedMnemonic = entropyToMnemonic(entropy)
     if (!validateMnemonic(retrievedMnemonic)) {
       throw Error('Invalid password')
@@ -90,26 +104,19 @@ export class HDWallet {
 
   async retrieveAccounts(): Promise<ZkAccount[]> {
     if (!this.seed) throw Error('Not initialized')
-    const { seed } = this
-    const keys: KeystoreSql[] = await this.db
+    const keys: KeystoreSql[] = (await this.db
       .selectTable(schema.keystore.name)
       .query('select')
-      .exec()
-    const storedPubKeys = keys.map(key => key.pubKey)
-    const candidates: Buffer[] = []
+      .exec()) as KeystoreSql[]
+    const accounts: ZkAccount[] = []
     for (let i = 0; i < keys.length; i += 1) {
-      const masterNode = HDNode.fromMasterSeed(seed)
-      const derivedKey = masterNode.derive(PATH(i))
-      try {
-        const derivedPubKey = Point.fromPrivKey(derivedKey.privateKey).toHex()
-        if (storedPubKeys.includes(derivedPubKey)) {
-          candidates.push(derivedKey.privateKey)
-        }
-      } catch (err) {
-        // skip
-      }
+      const ethAccount = this.web3.eth.accounts.decrypt(
+        keys[i].encrypted,
+        this.password,
+      )
+      accounts.push(new ZkAccount(ethAccount))
     }
-    return candidates.map(key => new ZkAccount(key))
+    return accounts
   }
 
   async createAccount(deriveIndex: number): Promise<ZkAccount> {
@@ -121,7 +128,10 @@ export class HDWallet {
     } catch (err) {
       throw Error('Jubjub does not support the derived key. Use another index')
     }
-    const account = new ZkAccount(derivedKey.privateKey)
+    const ethAccount = this.web3.eth.accounts.privateKeyToAccount(
+      hexify(derivedKey.privateKey, 32),
+    )
+    const account = new ZkAccount(ethAccount)
     await this.db
       .selectTable(schema.keystore.name)
       .presetQuery('addKey', {

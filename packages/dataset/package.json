@@ -9,11 +9,12 @@
     "dist"
   ],
   "_moduleAliases": {
-    "dataset": "dist"
+    "~dataset": "dist"
   },
   "scripts": {
     "postinstall": "shx mkdir -p dist",
     "build": "tsc --build tsconfig.build.json",
+    "build-keys": "ts-node src/build-keys.ts",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "link-modules": "link-module-alias",
     "test": "jest",
@@ -38,6 +39,7 @@
     "big-integer": "^1.6.48",
     "fs-extra": "^9.0.0",
     "web3": "^1.2.6",
+    "tar": "^6.0.2",
     "node-docker-api": "^1.1.22",
     "web3-core": "^1.2.7",
     "web3-utils": "^1.2.7"

@@ -2,9 +2,14 @@ import { InanoSQLInstance } from '@nano-sql/core'
 import { Field } from '@zkopru/babyjubjub'
 import { Grove, GrovePatch } from '@zkopru/tree'
 import AsyncLock from 'async-lock'
-import { ChainConfig, schema, BlockSql, DepositSql } from '@zkopru/database'
+import {
+  ChainConfig,
+  schema,
+  BlockSql,
+  DepositSql,
+  L1Config,
+} from '@zkopru/database'
 import { Transaction } from 'web3-core'
-import { L1Config } from './layer1'
 import { Block, Header, VerifyResult, MassDeposit } from './block'
 import { BootstrapData } from './bootstrap'
 
@@ -48,7 +53,7 @@ export class L2Chain implements ChainConfig {
 
   async getBlockSql(hash: string): Promise<BlockSql | null> {
     const queryResult = await this.db
-      .selectTable(schema.block(this.id).name)
+      .selectTable(schema.block.name)
       .presetQuery('getBlockWithHash', { hash })
       .exec()
     if (queryResult.length === 0) return null
@@ -82,14 +87,14 @@ export class L2Chain implements ChainConfig {
     block?: Block
   }> {
     const lastVerified = await this.db
-      .selectTable(schema.block(this.id).name)
+      .selectTable(schema.block.name)
       .presetQuery('getLastVerifiedBlock')
       .exec()
     if (lastVerified.length > 0) {
       const lastVerifiedBlock = lastVerified[0]
       const prevHeader = lastVerifiedBlock.header
       const lastUnverified = await this.db
-        .selectTable(schema.block(this.id).name)
+        .selectTable(schema.block.name)
         .query('select', ['header', 'proposalData', 'MIN(proposedAt)'])
         .where(['header.parentBlock', '=', prevHeader.hash])
         .exec()
@@ -132,7 +137,7 @@ export class L2Chain implements ChainConfig {
   async applyBootstrap(block: Block, bootstrapData: BootstrapData) {
     this.grove.applyBootstrap(bootstrapData)
     this.db
-      .selectTable(schema.block(this.id).name)
+      .selectTable(schema.block.name)
       .presetQuery('bootstrapBlock', { block })
       .exec()
   }
@@ -154,26 +159,26 @@ export class L2Chain implements ChainConfig {
 
   private async markAsPartiallyVerified(hash: string) {
     this.db
-      .selectTable(schema.block(this.id).name)
+      .selectTable(schema.block.name)
       .presetQuery('markAsPartiallyVerified', { hash })
       .exec()
   }
 
   private async markAsFullyVerified(hash: string) {
     this.db
-      .selectTable(schema.block(this.id).name)
+      .selectTable(schema.block.name)
       .presetQuery('markAsFullyVerified', { hash })
   }
 
   private async markAsFinalized(hash: string) {
     this.db
-      .selectTable(schema.block(this.id).name)
+      .selectTable(schema.block.name)
       .presetQuery('markAsFinalized', { hash })
   }
 
   private async markAsInvalidated(hash: string) {
     this.db
-      .selectTable(schema.block(this.id).name)
+      .selectTable(schema.block.name)
       .presetQuery('markAsInvalidated', { hash })
   }
 }

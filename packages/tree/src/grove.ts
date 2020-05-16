@@ -222,7 +222,7 @@ export class Grove {
 
   private async recordBootstrap(header: string): Promise<void> {
     await this.db
-      .selectTable(schema.block(this.zkopruId).name)
+      .selectTable(schema.block.name)
       .presetQuery('recordBootstrap', {
         hash: header,
         bootstrap: {

@@ -50,7 +50,10 @@ export async function getZkSnarkParams(
   )
   const pk = JSON.parse(
     (
-      await readFromContainer(container, `/proj/build/pks/${name}.pk.json`)
+      await readFromContainer(
+        container,
+        `/proj/build/snarkjsPKs/${name}.pk.json`,
+      )
     ).toString('utf8'),
   )
   const vk = JSON.parse(

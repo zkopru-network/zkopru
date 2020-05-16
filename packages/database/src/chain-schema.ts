@@ -5,25 +5,27 @@ export enum NodeType {
   LIGHT_NODE = 1,
 }
 
+export interface L1Config {
+  utxoTreeDepth: number
+  withdrawalTreeDepth: number
+  nullifierTreeDepth: number
+  challengePeriod: number
+  minimumStake: string
+  referenceDepth: number
+  maxUtxoPerTree: string
+  maxWithdrawalPerTree: string
+  utxoSubTreeDepth: number
+  utxoSubTreeSize: number
+  withdrawalSubTreeDepth: number
+  withdrawalSubTreeSize: number
+}
+
 export interface ChainConfig {
   id: string
   networkId: number
   chainId: number
   address: string
-  config: {
-    utxoTreeDepth: number
-    withdrawalTreeDepth: number
-    nullifierTreeDepth: number
-    challengePeriod: number
-    minimumStake: string
-    referenceDepth: number
-    maxUtxoPerTree: string
-    maxWithdrawalPerTree: string
-    utxoSubTreeDepth: number
-    utxoSubTreeSize: number
-    withdrawalSubTreeDepth: number
-    withdrawalSubTreeSize: number
-  }
+  config: L1Config
 }
 
 export const chain: InanoSQLTableConfig = {

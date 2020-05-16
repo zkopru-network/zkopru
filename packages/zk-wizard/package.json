@@ -10,6 +10,13 @@
   "_moduleAliases": {
     "~zk-wizard": "dist"
   },
+  "bin": {
+    "zk-wizard": "dist/cli.js"
+  },
+  "keywords": [
+    "cli"
+  ],
+  "preferGlobal": true,
   "scripts": {
     "postinstall": "shx mkdir -p dist",
     "build": "tsc --build tsconfig.build.json",
@@ -25,20 +32,30 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@nano-sql/adapter-leveldb": "^2.0.5",
     "@nano-sql/core": "^2.3.7",
     "@zkopru/account": "file:../account",
     "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/contracts": "file:../contracts",
     "@zkopru/core": "file:../core",
+    "@zkopru/database": "file:../database",
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/tree": "file:../tree",
     "@zkopru/utils": "file:../utils",
     "big-integer": "^1.6.48",
+    "bip39": "^3.0.2",
+    "chalk": "^4.0.0",
     "circom_runtime": "^0.0.3",
+    "cli-progress": "^3.8.2",
     "ffjavascript": "^0.1.2",
+    "follow-redirects": "^1.11.0",
+    "fs-extra": "^9.0.0",
+    "prompts": "^2.3.2",
+    "tar": "^6.0.2",
     "wasmsnark": "^0.0.10",
     "web3": "^1.2.6",
     "web3-core": "^1.2.6",
-    "web3-eth-contract": "^1.2.6"
+    "web3-eth-contract": "^1.2.6",
+    "yargs": "^15.3.1"
   }
 }

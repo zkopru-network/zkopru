@@ -9,16 +9,16 @@ import {
   Migration,
 } from '@zkopru/transaction'
 import { MerkleProof, Grove } from '@zkopru/tree'
+import path from 'path'
 import * as ffjs from 'ffjavascript'
 import * as circomruntime from 'circom_runtime'
 import * as wasmsnark from 'wasmsnark'
-import { logger } from '@zkopru/utils'
-import { witnessToBinary, pkToBinary } from './converter'
+import { logger, toArrayBuffer } from '@zkopru/utils'
+import fs from 'fs'
+import { witnessToBinary } from './converter'
 
 export class ZkWizard {
-  circuits: { [key: string]: Buffer }
-
-  wasmPK: { [key: string]: {} }
+  path: string
 
   grove: Grove
 
@@ -35,15 +35,18 @@ export class ZkWizard {
     db,
     grove,
     privKey,
+    path,
   }: {
     db: InanoSQLInstance
     grove: Grove
     privKey: string
+    path: string
   }) {
     this.grove = grove
     this.privKey = privKey
-    this.circuits = {}
-    this.wasmPK = {}
+    // this.circuits = {}
+    // this.wasmPK = {}
+    this.path = path
     this.pubKey = Point.fromPrivKey(privKey)
     this.db = db
   }
@@ -58,31 +61,6 @@ export class ZkWizard {
     if (this.prover) {
       await this.prover.terminate()
     }
-  }
-
-  addCircuit({
-    nInput,
-    nOutput,
-    wasm,
-    provingKey,
-  }: {
-    nInput: number
-    nOutput: number
-    wasm: Buffer
-    provingKey: {}
-  }) {
-    this.circuits[ZkWizard.circuitKey({ nInput, nOutput })] = wasm
-    this.wasmPK[ZkWizard.circuitKey({ nInput, nOutput })] = provingKey
-  }
-
-  private static circuitKey({
-    nInput,
-    nOutput,
-  }: {
-    nInput: number
-    nOutput: number
-  }): string {
-    return `${nInput}-${nOutput}`
   }
 
   /**
@@ -135,19 +113,21 @@ export class ZkWizard {
       eddsa: { [hash: string]: EdDSA }
     }
   }): Promise<ZkTx> {
+    const nIn = tx.inflow.length
+    const nOut = tx.outflow.length
     await this.init()
-    const circuitWasm = this.circuits[
-      ZkWizard.circuitKey({
-        nInput: tx.inflow.length,
-        nOutput: tx.outflow.length,
-      })
-    ]
-    const provingKey = this.wasmPK[
-      ZkWizard.circuitKey({
-        nInput: tx.inflow.length,
-        nOutput: tx.outflow.length,
-      })
-    ]
+    const wasmPath = path.join(
+      this.path,
+      'circuits',
+      `zk_transaction_${nIn}_${nOut}.wasm`,
+    )
+    const pkPath = path.join(
+      this.path,
+      'pks',
+      `zk_transaction_${nIn}_${nOut}.pk.bin`,
+    )
+    const circuitWasm = await fs.promises.readFile(wasmPath)
+    const provingKey = toArrayBuffer(await fs.promises.readFile(pkPath))
     if (circuitWasm === undefined || provingKey === undefined) {
       throw Error(
         `Does not support transactions for ${tx.inflow.length} inputs and ${tx.outflow.length} outputs`,
@@ -265,7 +245,7 @@ export class ZkWizard {
       ffjs.utils.unstringifyBigInts(input),
     )
     const wasmWitness = witnessToBinary(witness)
-    const wasmPk = pkToBinary(provingKey)
+    const wasmPk = provingKey // == pkToBinary(jsonProvingKey)
     const intermediate = Date.now()
     const proof = await this.prover.groth16GenProof(wasmWitness, wasmPk)
     const end = Date.now()

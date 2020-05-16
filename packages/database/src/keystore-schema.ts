@@ -3,9 +3,9 @@ import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 
 export interface KeystoreSql {
   id?: string
-  pubKey?: string
-  address?: string
-  encrypted?: EncryptedKeystoreV3Json
+  pubKey: string
+  address: string
+  encrypted: EncryptedKeystoreV3Json
 }
 
 export const keystore: InanoSQLTableConfig = {

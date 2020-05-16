@@ -7,7 +7,7 @@
 /**
  * @jest-environment node
  */
-import { Context, initContext } from './helper/context'
+import { Context, initContext, terminate } from './helper/context'
 import {
   testAliceAccount,
   testCarlAccount,
@@ -18,6 +18,7 @@ import {
   testCompleteSetup,
   testRejectVkRegistration,
 } from './helper/3_complete_setup'
+import { depositEther, depositERC20, depositERC721 } from './helper/4_deposit'
 
 describe('testnet', () => {
   let context!: Context
@@ -26,12 +27,7 @@ describe('testnet', () => {
     context = await initContext()
   }, 15000)
   afterAll(async () => {
-    const { layer1Container, circuitArtifactContainer, db } = context
-    await layer1Container.stop()
-    await layer1Container.delete()
-    await circuitArtifactContainer.stop()
-    await circuitArtifactContainer.delete()
-    await db.disconnect()
+    await terminate(ctx)
   })
   describe('contract deployment', () => {
     it('should define zkopru address', () => {
@@ -63,11 +59,11 @@ describe('testnet', () => {
       it('should reject every register txs', testRejectVkRegistration(ctx))
     })
   })
-  describe('4: Deposits', () => {
+  describe.skip('4: Deposits', () => {
     describe('users deposit assets', () => {
-      it.todo('ether: Alice, Bob, and Carl deposits Ether')
-      it.todo('erc20: Bob deposits ERC20')
-      it.todo('erc721: Carl deposits NFTs')
+      it('ether: Alice, Bob, and Carl deposits Ether', depositEther(ctx))
+      it('erc20: Bob deposits ERC20', depositERC20(ctx))
+      it('erc721: Carl deposits NFTs', depositERC721(ctx))
     })
     describe('coordinator subscribe Deposit() events', () => {
       it.todo('Coordinator should subscribe the deposit events')

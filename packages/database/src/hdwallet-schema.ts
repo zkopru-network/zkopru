@@ -9,7 +9,6 @@ export interface HDWalletSql {
   kdf: string
   kdfParams: object
   salt: string
-  updated?: string
 }
 
 export const hdWallet: InanoSQLTableConfig = {
@@ -23,16 +22,13 @@ export const hdWallet: InanoSQLTableConfig = {
     'kdf:string': {},
     'kdfParams:obj': {},
     'salt:string': {},
-    'updated:date': {},
   },
   queries: [
     {
       name: 'save',
       args: { 'hdWallet:object': {} },
-      call: (db, args: { [hdWallet: string]: HDWalletSql }) => {
-        return db
-          .query('upsert', [{ updated: Date.now(), ...args.hdWallet }])
-          .emit()
+      call: (db, args: { hdWallet: HDWalletSql }) => {
+        return db.query('upsert', [{ ...args.hdWallet }]).emit()
       },
     },
   ],

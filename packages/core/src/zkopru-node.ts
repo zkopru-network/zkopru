@@ -138,12 +138,18 @@ export class ZkOPRUNode {
       })
       .exec()) as ChainConfig[]
     const l2Config = chainConfig[0]
+    const l1Config = await l1Contract.getConfig()
+    const hashers = {
+      utxo: poseidonHasher(l1Config.utxoTreeDepth),
+      withdrawal: keccakHasher(l1Config.withdrawalTreeDepth),
+      nullifier: keccakHasher(l1Config.nullifierTreeDepth),
+    }
     if (l2Config) {
       const grove = new Grove(l2Config.id, db, {
         ...l2Config.config,
-        utxoHasher: poseidonHasher(31),
-        withdrawalHasher: keccakHasher(31),
-        nullifierHasher: keccakHasher(256),
+        utxoHasher: hashers.utxo,
+        withdrawalHasher: hashers.withdrawal,
+        nullifierHasher: hashers.nullifier,
         fullSync,
         forceUpdate: !fullSync,
         pubKeysToObserve,
@@ -153,13 +159,8 @@ export class ZkOPRUNode {
       return new L2Chain(db, grove, l2Config)
     }
     const id = uuid()
-    const hashers = {
-      utxo: poseidonHasher(31),
-      withdrawal: keccakHasher(31),
-      nullifier: keccakHasher(256),
-    }
     const genesisBlock = genesis({ address, hashers })
-    const blockTable = schema.block(id)
+    const blockTable = schema.block
     const tables = await db.query('show tables').exec()
     if (!tables.find(obj => obj.table === blockTable.name)) {
       await db.query('create table', blockTable).exec()
@@ -171,7 +172,6 @@ export class ZkOPRUNode {
         header: genesisBlock,
       })
       .exec()
-    const l1Config = await l1Contract.getConfig()
     const grove = new Grove(id, db, {
       ...l1Config,
       utxoHasher: hashers.utxo,

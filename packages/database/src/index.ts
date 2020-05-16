@@ -2,7 +2,7 @@ import { block } from './block-schema'
 import { utxo } from './output/utxo-schema'
 import { withdrawal } from './output/withdrawal-schema'
 import { migration } from './output/migration-schema'
-import { chain } from './node-schema'
+import { chain } from './chain-schema'
 import { deposit } from './deposit-schema'
 import { utxoTree } from './tree/light-rollup-tree/utxo-tree-schema'
 import { withdrawalTree } from './tree/light-rollup-tree/withdrawal-tree-schema'
@@ -15,7 +15,7 @@ import { keystore } from './keystore-schema'
 import { hdWallet } from './hdwallet-schema'
 
 export const schema = {
-  block: (zkopruId: string) => block(zkopruId),
+  block,
   deposit,
   massDeposit,
   utxo,
@@ -42,5 +42,5 @@ export { NoteSql } from './output/output-schema'
 export { TreeNodeSql } from './tree/tree-node-schema'
 export { KeystoreSql } from './keystore-schema'
 export { HDWalletSql } from './hdwallet-schema'
-export { ChainConfig, NodeType } from './node-schema'
+export { L1Config, ChainConfig, NodeType } from './chain-schema'
 export { BlockSql, BlockStatus } from './block-schema'

@@ -1,6 +1,7 @@
 /* eslint-disable jest/no-hooks */
 // import { schema } from '@zkopru/database'
 import { nSQL, InanoSQLInstance } from '@nano-sql/core'
+import Web3 from 'web3'
 import { HDWallet, ZkAccount } from '~account'
 import { schema } from '~database'
 
@@ -16,7 +17,8 @@ describe('unit test', () => {
     database = nSQL().useDatabase(dbName)
   })
   it('has same private keys and eth address with ganache default accounts', async () => {
-    const hdWallet = new HDWallet(database)
+    const web3 = new Web3()
+    const hdWallet = new HDWallet(web3, database)
     await hdWallet.init(
       'myth like bonus scare over problem client lizard pioneer submit female collect',
       'samplepassword',

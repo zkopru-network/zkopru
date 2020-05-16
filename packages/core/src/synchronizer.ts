@@ -97,7 +97,7 @@ export class Synchronizer extends EventEmitter {
 
   listenBlockUpdate() {
     this.latestProposalObserver = this.db
-      .selectTable(schema.block(this.zkopruId).name)
+      .selectTable(schema.block.name)
       .query('select', ['hash', 'MAX(proposedAt)'])
       .listen({
         debounce: 500,
@@ -113,7 +113,7 @@ export class Synchronizer extends EventEmitter {
       }
     })
     this.latestVerificationObserver = this.db
-      .selectTable(schema.block(this.zkopruId).name)
+      .selectTable(schema.block.name)
       .presetQuery('getLastVerfiedBlock')
       .listen({
         debounce: 500,
@@ -231,7 +231,7 @@ export class Synchronizer extends EventEmitter {
   async listenNewProposals(cb?: (hash: string) => void) {
     if (this.status !== NetworkStatus.STOPPED) return
     const query = await this.db
-      .selectTable(schema.block(this.zkopruId).name)
+      .selectTable(schema.block.name)
       .presetQuery('getProposalSyncStart')
       .exec()
     const fromBlock = query[0] ? query[0].proposedAt : 0
@@ -246,7 +246,7 @@ export class Synchronizer extends EventEmitter {
         const { returnValues, blockNumber, transactionHash } = event
         // WRITE DATABASE
         await this.db
-          .selectTable(schema.block(this.zkopruId).name)
+          .selectTable(schema.block.name)
           .presetQuery('writeNewProposal', {
             hash: returnValues,
             proposedAt: blockNumber,
@@ -270,7 +270,7 @@ export class Synchronizer extends EventEmitter {
   async listenFinalization(cb?: (hash: string) => void) {
     if (this.status !== NetworkStatus.STOPPED) return
     const query = await this.db
-      .selectTable(schema.block(this.zkopruId).name)
+      .selectTable(schema.block.name)
       .presetQuery('getFinalizationSyncStart')
       .exec()
     const startFrom = query[0] ? query[0].proposedAt : 0
@@ -304,7 +304,7 @@ export class Synchronizer extends EventEmitter {
     const block = Block.fromTx(proposalData)
     const { hash } = block
     await this.db
-      .selectTable(schema.block(this.zkopruId).name)
+      .selectTable(schema.block.name)
       .presetQuery('saveFetchedBlock', {
         hash,
         header: block.header,

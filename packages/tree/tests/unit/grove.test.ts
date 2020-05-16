@@ -26,7 +26,7 @@ describe('grove full sync grove()', () => {
         schema.withdrawalTree,
         schema.nullifiers,
         schema.nullifierTreeNode,
-        schema.block(zkopruId),
+        schema.block,
       ],
       version: 3,
     })
@@ -168,7 +168,7 @@ describe('grove full sync grove()', () => {
           schema.withdrawalTree,
           schema.nullifiers,
           schema.nullifierTreeNode,
-          schema.block(zkopruId),
+          schema.block,
         ],
         version: 3,
       })

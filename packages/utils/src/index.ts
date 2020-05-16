@@ -44,18 +44,20 @@ export function verifyingKeyIdentifier(nI: number, nO: number): string {
   return identifier
 }
 
-export function isHex(h: string): boolean {
-  return h === `0x${parseInt(h, 16).toString(16)}`
-}
-
 export function hexify(n: BN | Buffer | string, length?: number): string {
   let hex: string
   if (n instanceof BN) {
     hex = n.toString(16)
   } else if (typeof n === 'string') {
-    hex = isHex(n)
-      ? parseInt(n, 16).toString(16)
-      : Buffer.from(n).toString('hex')
+    if (n.startsWith('0x')) {
+      hex = n.substr(2)
+    } else {
+      try {
+        hex = new BN(n, 16).toString(16)
+      } catch (e) {
+        hex = Buffer.from(n).toString('hex')
+      }
+    }
   } else {
     hex = n.toString('hex')
   }
@@ -136,6 +138,15 @@ export async function readFromContainer(
       }),
     )
   })
+}
+
+export function toArrayBuffer(buff: Buffer): ArrayBuffer {
+  const arrayBuff = new ArrayBuffer(buff.length)
+  const view = new Uint8Array(arrayBuff)
+  for (let i = 0; i < buff.length; i += 1) {
+    view[i] = buff[i]
+  }
+  return arrayBuff
 }
 
 export const logger = pino({

@@ -39,297 +39,286 @@ export interface BlockSql {
   }
 }
 
-export function block(zkopruId: string): InanoSQLTableConfig {
-  return {
-    name: `zkopru-block-${zkopruId}`,
-    model: {
-      'hash:string': { pk: true },
-      'status:int': { default: 0 },
-      'proposedAt:int': {},
-      'proposalHash:string': {},
-      'header:obj': {
-        model: {
-          'proposer:string': {},
-          'parentBlock:string': {},
-          'metadata:string': {},
-          'fee:string': {},
-          /** UTXO roll up  */
-          'utxoRoot:string': {},
-          'utxoIndex:string': {},
+export const block: InanoSQLTableConfig = {
+  name: `zkopru-block`,
+  model: {
+    'hash:string': { pk: true },
+    'status:int': { default: 0 },
+    'proposedAt:int': {},
+    'proposalHash:string': {},
+    'header:obj': {
+      model: {
+        'proposer:string': {},
+        'parentBlock:string': {},
+        'metadata:string': {},
+        'fee:string': {},
+        /** UTXO roll up  */
+        'utxoRoot:string': {},
+        'utxoIndex:string': {},
 
-          /** Nullifier roll up  */
-          'nullifierRoot:string': {},
+        /** Nullifier roll up  */
+        'nullifierRoot:string': {},
 
-          /** Withdrawal roll up  */
-          'withdrawalRoot:string': {},
-          'withdrawalIndex:string': {},
+        /** Withdrawal roll up  */
+        'withdrawalRoot:string': {},
+        'withdrawalIndex:string': {},
 
-          /** Transactions */
-          'txRoot:string': {},
-          'depositRoot:string': {},
-          'migrationRoot:string': {},
-        },
-      },
-      'proposalData:any': {},
-      'bootstrap:obj': {
-        model: {
-          'utxoTreeIndex:number': {},
-          'utxoBootstrap:string[]': {},
-          'withdrawalTreeIndex:number': {},
-          'withdrawalBootstrap:string[]': {},
-        },
+        /** Transactions */
+        'txRoot:string': {},
+        'depositRoot:string': {},
+        'migrationRoot:string': {},
       },
     },
-    indexes: {
-      'proposedAt:int': {},
-      'status:int': {},
-      'header.parentBlock:string': {},
+    'proposalData:any': {},
+    'bootstrap:obj': {
+      model: {
+        'utxoTreeIndex:number': {},
+        'utxoBootstrap:string[]': {},
+        'withdrawalTreeIndex:number': {},
+        'withdrawalBootstrap:string[]': {},
+      },
     },
-    queries: [
-      {
-        name: 'addGenesisBlock',
-        args: {
-          'hash:string': {},
-          'header:obj': {},
-        },
-        call: (db, args) => {
-          const { hash, header } = args
-          return db
-            .query('upsert', [
-              {
-                hash,
-                header,
-                status: BlockStatus.FINALIZED,
-              },
-            ])
-            .emit()
-        },
+  },
+  indexes: {
+    'proposedAt:int': {},
+    'status:int': {},
+    'header.parentBlock:string': {},
+  },
+  queries: [
+    {
+      name: 'addGenesisBlock',
+      args: {
+        'hash:string': {},
+        'header:obj': {},
       },
-      {
-        name: 'recordBootstrap',
-        args: {
-          'hash:string': {},
-          'bootstrap:obj': {},
-        },
-        call: (db, args) => {
-          return db
-            .query('upsert', [
-              {
-                hash: args.hash,
-                bootstrap: args.bootstrap,
-              },
-            ])
-            .emit()
-        },
+      call: (db, args) => {
+        const { hash, header } = args
+        return db
+          .query('upsert', [
+            {
+              hash,
+              header,
+              status: BlockStatus.FINALIZED,
+            },
+          ])
+          .emit()
       },
-      {
-        name: 'bootstrapBlock',
-        args: {
-          'block:obj': {},
-        },
-        call: (db, args) => {
-          const { block } = args
-          return db
-            .query('upsert', [
-              {
-                ...block,
-                status: BlockStatus.FINALIZED,
-                proposalData: null,
-              },
-            ])
-            .emit()
-        },
+    },
+    {
+      name: 'recordBootstrap',
+      args: {
+        'hash:string': {},
+        'bootstrap:obj': {},
       },
-      {
-        name: 'getProposalSyncStart',
-        args: {},
-        call: (db, _) => {
-          return db
-            .query('select', ['MAX(proposedAt)'])
-            .where(['status', '<=', BlockStatus.NOT_FETCHED])
-            .emit()
-        },
+      call: (db, args) => {
+        return db
+          .query('upsert', [
+            {
+              hash: args.hash,
+              bootstrap: args.bootstrap,
+            },
+          ])
+          .emit()
       },
-      {
-        name: 'getFinalizationSyncStart',
-        args: {},
-        call: (db, _) => {
-          return db
-            .query('select', ['MAX(proposedAt)'])
-            .where(['status', '=', BlockStatus.FINALIZED])
-            .emit()
-        },
+    },
+    {
+      name: 'bootstrapBlock',
+      args: {
+        'block:obj': {},
       },
-      {
-        name: 'writeNewProposal',
-        args: {
-          'hash:string': {},
-          'proposedAt:int ': {},
-          'proposalHash:string ': {},
-        },
-        call: (db, args) => {
-          return db
-            .query('upsert', [
-              {
-                hash: args.hash,
-                proposedAt: args.proposedAt,
-                proposalHash: args.proposalHash,
-                status: BlockStatus.NOT_FETCHED,
-              },
-            ])
-            .emit()
-        },
+      call: (db, args) => {
+        const { block } = args
+        return db
+          .query('upsert', [
+            {
+              ...block,
+              status: BlockStatus.FINALIZED,
+              proposalData: null,
+            },
+          ])
+          .emit()
       },
-      {
-        name: 'saveFetchedBlock',
-        args: {
-          'hash:string': { pk: true },
-          'header:obj': {},
-          'proposalData:string': {},
-        },
-        call: (db, args) => {
-          return db
-            .query('upsert', [
-              {
-                hash: args.hash,
-                header: args.header,
-                proposalData: args.proposalData,
-                status: BlockStatus.FETCHED,
-              },
-            ])
-            .emit()
-        },
+    },
+    {
+      name: 'getProposalSyncStart',
+      args: {},
+      call: (db, _) => {
+        return db
+          .query('select', ['MAX(proposedAt)'])
+          .where(['status', '<=', BlockStatus.NOT_FETCHED])
+          .emit()
       },
-      {
-        name: 'markAsPartiallyVerified',
-        args: {
-          'hash:string': { pk: true },
-        },
-        call: (db, args) => {
-          return db
-            .query('upsert', [
-              {
-                hash: args.hash,
-                status: BlockStatus.PARTIALLY_VERIFIED,
-              },
-            ])
-            .emit()
-        },
+    },
+    {
+      name: 'getFinalizationSyncStart',
+      args: {},
+      call: (db, _) => {
+        return db
+          .query('select', ['MAX(proposedAt)'])
+          .where(['status', '=', BlockStatus.FINALIZED])
+          .emit()
       },
-      {
-        name: 'markAsFullyVerified',
-        args: {
-          'hash:string': { pk: true },
-        },
-        call: (db, args) => {
-          return db
-            .query('upsert', [
-              {
-                hash: args.hash,
-                status: BlockStatus.FULLY_VERIFIED,
-              },
-            ])
-            .where(['status', '<', BlockStatus.FINALIZED])
-            .emit()
-        },
+    },
+    {
+      name: 'writeNewProposal',
+      args: {
+        'hash:string': {},
+        'proposedAt:int ': {},
+        'proposalHash:string ': {},
       },
-      {
-        name: 'markAsFinalized',
-        args: {
-          'hash:string': { pk: true },
-        },
-        call: (db, args) => {
-          return db
-            .query('upsert', [
-              { hash: args.hash, status: BlockStatus.FINALIZED },
-            ])
-            .where(['status', '<', BlockStatus.FINALIZED])
-            .emit()
-        },
+      call: (db, args) => {
+        return db
+          .query('upsert', [
+            {
+              hash: args.hash,
+              proposedAt: args.proposedAt,
+              proposalHash: args.proposalHash,
+              status: BlockStatus.NOT_FETCHED,
+            },
+          ])
+          .emit()
       },
-      {
-        name: 'markAsInvalidated',
-        args: {
-          'hash:string': { pk: true },
-        },
-        call: (db, args) => {
-          return db
-            .query('upsert', [
-              { hash: args.hash, status: BlockStatus.INVALIDATED },
-            ])
-            .emit()
-        },
+    },
+    {
+      name: 'saveFetchedBlock',
+      args: {
+        'hash:string': { pk: true },
+        'header:obj': {},
+        'proposalData:string': {},
       },
-      {
-        name: 'markAsReverted',
-        args: {
-          'hash:string': { pk: true },
-        },
-        call: (db, args) => {
-          return db
-            .query('upsert', [
-              { hash: args.hash, status: BlockStatus.REVERTED },
-            ])
-            .emit()
-        },
+      call: (db, args) => {
+        return db
+          .query('upsert', [
+            {
+              hash: args.hash,
+              header: args.header,
+              proposalData: args.proposalData,
+              status: BlockStatus.FETCHED,
+            },
+          ])
+          .emit()
       },
-      {
-        name: 'getBlockNumForLatestProposal',
-        args: {},
-        call: (db, _) => {
-          return db.query('select', ['MAX(proposedAt)']).emit()
-        },
+    },
+    {
+      name: 'markAsPartiallyVerified',
+      args: {
+        'hash:string': { pk: true },
       },
-      {
-        name: 'getBlockWithHash',
-        args: {
-          'hash:string': {},
-        },
-        call: (db, args) => {
-          return db
-            .query('select')
-            .where(['hash', '=', args.hash])
-            .emit()
-        },
+      call: (db, args) => {
+        return db
+          .query('upsert', [
+            {
+              hash: args.hash,
+              status: BlockStatus.PARTIALLY_VERIFIED,
+            },
+          ])
+          .emit()
       },
-      {
-        name: 'getLastVerifiedBlock',
-        args: {},
-        call: (db, _) => {
-          return db
-            .query('select', [
-              'hash',
-              'proposedAt',
-              'header',
-              'MAX(proposedAt)',
-            ])
-            .where([
-              'status',
-              'IN',
-              [
-                BlockStatus.PARTIALLY_VERIFIED,
-                BlockStatus.FULLY_VERIFIED,
-                BlockStatus.FINALIZED,
-              ],
-            ])
-            .emit()
-        },
+    },
+    {
+      name: 'markAsFullyVerified',
+      args: {
+        'hash:string': { pk: true },
       },
-      {
-        name: 'getLatestBlock',
-        args: {},
-        call: (db, _) => {
-          return db
-            .query('select', [
-              'hash',
-              'proposedAt',
-              'proposalHash',
-              'header',
-              'MAX(proposedAt)',
-            ])
-            .emit()
-        },
+      call: (db, args) => {
+        return db
+          .query('upsert', [
+            {
+              hash: args.hash,
+              status: BlockStatus.FULLY_VERIFIED,
+            },
+          ])
+          .where(['status', '<', BlockStatus.FINALIZED])
+          .emit()
       },
-    ],
-  }
+    },
+    {
+      name: 'markAsFinalized',
+      args: {
+        'hash:string': { pk: true },
+      },
+      call: (db, args) => {
+        return db
+          .query('upsert', [{ hash: args.hash, status: BlockStatus.FINALIZED }])
+          .where(['status', '<', BlockStatus.FINALIZED])
+          .emit()
+      },
+    },
+    {
+      name: 'markAsInvalidated',
+      args: {
+        'hash:string': { pk: true },
+      },
+      call: (db, args) => {
+        return db
+          .query('upsert', [
+            { hash: args.hash, status: BlockStatus.INVALIDATED },
+          ])
+          .emit()
+      },
+    },
+    {
+      name: 'markAsReverted',
+      args: {
+        'hash:string': { pk: true },
+      },
+      call: (db, args) => {
+        return db
+          .query('upsert', [{ hash: args.hash, status: BlockStatus.REVERTED }])
+          .emit()
+      },
+    },
+    {
+      name: 'getBlockNumForLatestProposal',
+      args: {},
+      call: (db, _) => {
+        return db.query('select', ['MAX(proposedAt)']).emit()
+      },
+    },
+    {
+      name: 'getBlockWithHash',
+      args: {
+        'hash:string': {},
+      },
+      call: (db, args) => {
+        return db
+          .query('select')
+          .where(['hash', '=', args.hash])
+          .emit()
+      },
+    },
+    {
+      name: 'getLastVerifiedBlock',
+      args: {},
+      call: (db, _) => {
+        return db
+          .query('select', ['hash', 'proposedAt', 'header', 'MAX(proposedAt)'])
+          .where([
+            'status',
+            'IN',
+            [
+              BlockStatus.PARTIALLY_VERIFIED,
+              BlockStatus.FULLY_VERIFIED,
+              BlockStatus.FINALIZED,
+            ],
+          ])
+          .emit()
+      },
+    },
+    {
+      name: 'getLatestBlock',
+      args: {},
+      call: (db, _) => {
+        return db
+          .query('select', [
+            'hash',
+            'proposedAt',
+            'proposalHash',
+            'header',
+            'MAX(proposedAt)',
+          ])
+          .emit()
+      },
+    },
+  ],
 }

@@ -1,1 +1,1 @@
-export { ZkWizard } from './zk_wizard'
+export { ZkWizard } from './zk-wizard'
