@@ -18,24 +18,33 @@ export class IUserInteractable extends Contract {
   clone(): IUserInteractable
   methods: {
     deposit(
-      note: number | string,
+      eth: number | string,
+      salt: number | string,
+      token: string,
       amount: number | string,
-      fee: number | string,
+      nft: number | string,
       pubKey: (number | string)[],
+      fee: number | string,
     ): TransactionObject<void>
 
     withdraw(
+      eth: number | string,
+      token: string,
       amount: number | string,
-      proofHash: string | number[],
+      nft: number | string,
+      fee: number | string,
       rootIndex: number | string,
       leafIndex: number | string,
       siblings: (number | string)[],
     ): TransactionObject<void>
 
     withdrawUsingSignature(
-      amount: number | string,
       to: string,
-      proofHash: string | number[],
+      eth: number | string,
+      token: string,
+      amount: number | string,
+      nft: number | string,
+      fee: number | string,
       rootIndex: number | string,
       leafIndex: number | string,
       siblings: (number | string)[],

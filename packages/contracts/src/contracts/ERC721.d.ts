@@ -13,9 +13,9 @@ interface EventOptions {
   topics?: string[]
 }
 
-export class IERC721 extends Contract {
+export class ERC721 extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-  clone(): IERC721
+  clone(): ERC721
   methods: {
     supportsInterface(
       interfaceId: string | number[],
@@ -25,11 +25,22 @@ export class IERC721 extends Contract {
 
     ownerOf(tokenId: number | string): TransactionObject<string>
 
-    transferFrom(
-      from: string,
-      to: string,
-      tokenId: number | string,
-    ): TransactionObject<void>
+    name(): TransactionObject<string>
+
+    symbol(): TransactionObject<string>
+
+    tokenURI(tokenId: number | string): TransactionObject<string>
+
+    baseURI(): TransactionObject<string>
+
+    tokenOfOwnerByIndex(
+      owner: string,
+      index: number | string,
+    ): TransactionObject<string>
+
+    totalSupply(): TransactionObject<string>
+
+    tokenByIndex(index: number | string): TransactionObject<string>
 
     approve(to: string, tokenId: number | string): TransactionObject<void>
 
@@ -37,13 +48,19 @@ export class IERC721 extends Contract {
 
     setApprovalForAll(
       operator: string,
-      _approved: boolean,
+      approved: boolean,
     ): TransactionObject<void>
 
     isApprovedForAll(
       owner: string,
       operator: string,
     ): TransactionObject<boolean>
+
+    transferFrom(
+      from: string,
+      to: string,
+      tokenId: number | string,
+    ): TransactionObject<void>
 
     safeTransferFrom(
       from: string,

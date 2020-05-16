@@ -13,10 +13,16 @@ interface EventOptions {
   topics?: string[]
 }
 
-export class IERC20 extends Contract {
+export class ERC20 extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-  clone(): IERC20
+  clone(): ERC20
   methods: {
+    name(): TransactionObject<string>
+
+    symbol(): TransactionObject<string>
+
+    decimals(): TransactionObject<string>
+
     totalSupply(): TransactionObject<string>
 
     balanceOf(account: string): TransactionObject<string>
@@ -37,6 +43,16 @@ export class IERC20 extends Contract {
       sender: string,
       recipient: string,
       amount: number | string,
+    ): TransactionObject<boolean>
+
+    increaseAllowance(
+      spender: string,
+      addedValue: number | string,
+    ): TransactionObject<boolean>
+
+    decreaseAllowance(
+      spender: string,
+      subtractedValue: number | string,
     ): TransactionObject<boolean>
   }
   events: {

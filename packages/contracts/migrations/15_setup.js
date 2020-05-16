@@ -1,5 +1,6 @@
 const Poseidon = artifacts.require('Poseidon')
 const TestERC20 = artifacts.require('TestERC20')
+const TestERC721 = artifacts.require('TestERC721')
 const UserInteractable = artifacts.require('UserInteractable')
 const Coordinatable = artifacts.require('Coordinatable')
 const RollUpable = artifacts.require('RollUpable')
@@ -10,6 +11,7 @@ const TxChallenge = artifacts.require('TxChallenge')
 const MigrationChallenge = artifacts.require('MigrationChallenge')
 const Migratable = artifacts.require('Migratable')
 const ZkOPRU = artifacts.require('ZkOptimisticRollUp')
+const save = require('../utils/save-deployed')
 
 const instances = {}
 
@@ -20,6 +22,10 @@ module.exports = function migration(deployer, _, accounts) {
     })
     .then(erc20 => {
       instances.erc20 = erc20
+      return TestERC721.deployed()
+    })
+    .then(erc721 => {
+      instances.erc721 = erc721
       return UserInteractable.deployed()
     })
     .then(ui => {
@@ -78,5 +84,20 @@ module.exports = function migration(deployer, _, accounts) {
       // await wizard.allowMigrants(...)
       // Complete setup
       // await zkopru.completeSetup()
+      save({
+        name: 'TestERC20',
+        address: instances.erc20.address,
+        network: deployer.network_id,
+      })
+      save({
+        name: 'TestERC721',
+        address: instances.erc721.address,
+        network: deployer.network_id,
+      })
+      save({
+        name: 'ZkOptimisticRollUp',
+        address: zkopru.address,
+        network: deployer.network_id,
+      })
     })
 }

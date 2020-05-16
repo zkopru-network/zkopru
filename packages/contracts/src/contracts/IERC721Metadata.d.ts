@@ -13,17 +13,37 @@ interface EventOptions {
   topics?: string[]
 }
 
-export class IERC721 extends Contract {
+export class IERC721Metadata extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-  clone(): IERC721
+  clone(): IERC721Metadata
   methods: {
-    supportsInterface(
-      interfaceId: string | number[],
-    ): TransactionObject<boolean>
+    approve(to: string, tokenId: number | string): TransactionObject<void>
 
     balanceOf(owner: string): TransactionObject<string>
 
+    getApproved(tokenId: number | string): TransactionObject<string>
+
+    isApprovedForAll(
+      owner: string,
+      operator: string,
+    ): TransactionObject<boolean>
+
     ownerOf(tokenId: number | string): TransactionObject<string>
+
+    safeTransferFrom(
+      from: string,
+      to: string,
+      tokenId: number | string,
+    ): TransactionObject<void>
+
+    setApprovalForAll(
+      operator: string,
+      _approved: boolean,
+    ): TransactionObject<void>
+
+    supportsInterface(
+      interfaceId: string | number[],
+    ): TransactionObject<boolean>
 
     transferFrom(
       from: string,
@@ -31,25 +51,11 @@ export class IERC721 extends Contract {
       tokenId: number | string,
     ): TransactionObject<void>
 
-    approve(to: string, tokenId: number | string): TransactionObject<void>
+    name(): TransactionObject<string>
 
-    getApproved(tokenId: number | string): TransactionObject<string>
+    symbol(): TransactionObject<string>
 
-    setApprovalForAll(
-      operator: string,
-      _approved: boolean,
-    ): TransactionObject<void>
-
-    isApprovedForAll(
-      owner: string,
-      operator: string,
-    ): TransactionObject<boolean>
-
-    safeTransferFrom(
-      from: string,
-      to: string,
-      tokenId: number | string,
-    ): TransactionObject<void>
+    tokenURI(tokenId: number | string): TransactionObject<string>
   }
   events: {
     Approval: ContractEvent<{

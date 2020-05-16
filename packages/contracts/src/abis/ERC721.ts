@@ -1,4 +1,12 @@
-export const IERC721ABI = [
+export const ERC721ABI = [
+  {
+    inputs: [
+      { internalType: 'string', name: 'name', type: 'string' },
+      { internalType: 'string', name: 'symbol', type: 'string' },
+    ],
+    stateMutability: 'nonpayable',
+    type: 'constructor',
+  },
   {
     anonymous: false,
     inputs: [
@@ -69,26 +77,67 @@ export const IERC721ABI = [
   {
     inputs: [{ internalType: 'address', name: 'owner', type: 'address' }],
     name: 'balanceOf',
-    outputs: [{ internalType: 'uint256', name: 'balance', type: 'uint256' }],
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }],
     name: 'ownerOf',
-    outputs: [{ internalType: 'address', name: 'owner', type: 'address' }],
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'name',
+    outputs: [{ internalType: 'string', name: '', type: 'string' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'symbol',
+    outputs: [{ internalType: 'string', name: '', type: 'string' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }],
+    name: 'tokenURI',
+    outputs: [{ internalType: 'string', name: '', type: 'string' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'baseURI',
+    outputs: [{ internalType: 'string', name: '', type: 'string' }],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [
-      { internalType: 'address', name: 'from', type: 'address' },
-      { internalType: 'address', name: 'to', type: 'address' },
-      { internalType: 'uint256', name: 'tokenId', type: 'uint256' },
+      { internalType: 'address', name: 'owner', type: 'address' },
+      { internalType: 'uint256', name: 'index', type: 'uint256' },
     ],
-    name: 'transferFrom',
-    outputs: [],
-    stateMutability: 'nonpayable',
+    name: 'tokenOfOwnerByIndex',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'totalSupply',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'uint256', name: 'index', type: 'uint256' }],
+    name: 'tokenByIndex',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
     type: 'function',
   },
   {
@@ -104,14 +153,14 @@ export const IERC721ABI = [
   {
     inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }],
     name: 'getApproved',
-    outputs: [{ internalType: 'address', name: 'operator', type: 'address' }],
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [
       { internalType: 'address', name: 'operator', type: 'address' },
-      { internalType: 'bool', name: '_approved', type: 'bool' },
+      { internalType: 'bool', name: 'approved', type: 'bool' },
     ],
     name: 'setApprovalForAll',
     outputs: [],
@@ -134,6 +183,17 @@ export const IERC721ABI = [
       { internalType: 'address', name: 'to', type: 'address' },
       { internalType: 'uint256', name: 'tokenId', type: 'uint256' },
     ],
+    name: 'transferFrom',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'address', name: 'from', type: 'address' },
+      { internalType: 'address', name: 'to', type: 'address' },
+      { internalType: 'uint256', name: 'tokenId', type: 'uint256' },
+    ],
     name: 'safeTransferFrom',
     outputs: [],
     stateMutability: 'nonpayable',
@@ -144,7 +204,7 @@ export const IERC721ABI = [
       { internalType: 'address', name: 'from', type: 'address' },
       { internalType: 'address', name: 'to', type: 'address' },
       { internalType: 'uint256', name: 'tokenId', type: 'uint256' },
-      { internalType: 'bytes', name: 'data', type: 'bytes' },
+      { internalType: 'bytes', name: '_data', type: 'bytes' },
     ],
     name: 'safeTransferFrom',
     outputs: [],

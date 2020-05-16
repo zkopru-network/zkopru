@@ -1,8 +1,8 @@
 pragma solidity >= 0.6.0;
 
 import { Layer2 } from "../storage/Layer2.sol";
-import { IERC20 } from "../utils/IERC20.sol";
-import { IERC721 } from "../utils/IERC721.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { MassDeposit, MassMigration, Types } from "../libraries/Types.sol";
 import { Deserializer } from "../libraries/Deserializer.sol";
 

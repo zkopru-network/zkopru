@@ -13,39 +13,56 @@ interface EventOptions {
   topics?: string[]
 }
 
-export class IERC721 extends Contract {
+export class TestERC721 extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-  clone(): IERC721
+  clone(): TestERC721
   methods: {
-    supportsInterface(
-      interfaceId: string | number[],
-    ): TransactionObject<boolean>
+    approve(to: string, tokenId: number | string): TransactionObject<void>
 
     balanceOf(owner: string): TransactionObject<string>
 
-    ownerOf(tokenId: number | string): TransactionObject<string>
-
-    transferFrom(
-      from: string,
-      to: string,
-      tokenId: number | string,
-    ): TransactionObject<void>
-
-    approve(to: string, tokenId: number | string): TransactionObject<void>
+    baseURI(): TransactionObject<string>
 
     getApproved(tokenId: number | string): TransactionObject<string>
-
-    setApprovalForAll(
-      operator: string,
-      _approved: boolean,
-    ): TransactionObject<void>
 
     isApprovedForAll(
       owner: string,
       operator: string,
     ): TransactionObject<boolean>
 
+    name(): TransactionObject<string>
+
+    ownerOf(tokenId: number | string): TransactionObject<string>
+
     safeTransferFrom(
+      from: string,
+      to: string,
+      tokenId: number | string,
+    ): TransactionObject<void>
+
+    setApprovalForAll(
+      operator: string,
+      approved: boolean,
+    ): TransactionObject<void>
+
+    supportsInterface(
+      interfaceId: string | number[],
+    ): TransactionObject<boolean>
+
+    symbol(): TransactionObject<string>
+
+    tokenByIndex(index: number | string): TransactionObject<string>
+
+    tokenOfOwnerByIndex(
+      owner: string,
+      index: number | string,
+    ): TransactionObject<string>
+
+    tokenURI(tokenId: number | string): TransactionObject<string>
+
+    totalSupply(): TransactionObject<string>
+
+    transferFrom(
       from: string,
       to: string,
       tokenId: number | string,

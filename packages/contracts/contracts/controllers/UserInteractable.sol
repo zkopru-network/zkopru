@@ -1,10 +1,10 @@
 pragma solidity >= 0.6.0;
 
-import { Layer2 } from "../storage/Layer2.sol";
-import { IERC20 } from "../utils/IERC20.sol";
-import { IERC721 } from "../utils/IERC721.sol";
-import { Hash, Poseidon, MiMC } from "../libraries/Hash.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { RollUpLib } from "merkle-tree-rollup/contracts/library/RollUpLib.sol";
+import { Layer2 } from "../storage/Layer2.sol";
+import { Hash, Poseidon, MiMC } from "../libraries/Hash.sol";
 import { Withdrawable, Blockchain, Types } from "../libraries/Types.sol";
 
 contract UserInteractable is Layer2 {

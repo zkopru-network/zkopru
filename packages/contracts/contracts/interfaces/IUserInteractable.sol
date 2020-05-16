@@ -5,22 +5,31 @@ interface IUserInteractable {
 
     /**
      * @notice Users can use zkopru network by submitting a new homomorphically hiden note.
-     * @param note Should be same with the poseidon hash of (amount, fee, pubKey)
-     * @param amount Amount to deposit
-     * @param fee Amount of fee to give to the coordinator
+     * @param eth Amount of Ether to deposit
+     * @param salt 254bit salt for the privacy
+     * @param token Token address of ERC20 or ERC721. It can be undefined.
+     * @param amount Amount of ERC20 when the token param is defined and it is an ERC20
+     * @param nft NFT id when the token param is defined and it is an ERC721
      * @param pubKey EdDSA public key to use in the zkopru network
+     * @param fee Amount of fee to give to the coordinator
      */
     function deposit(
-        uint note,
+        uint eth,
+        uint salt,
+        address token,
         uint amount,
-        uint fee,
-        uint[2] calldata pubKey
+        uint nft,
+        uint[2] calldata pubKey,
+        uint fee
     ) external payable;
 
     /**
      * @notice Users can withdraw a note when your withdrawal tx is finalized
-     * @param amount Amount to withdraw out.
-     * @param proofHash Hash value of the SNARKs proof of your withdrawal transaction.
+     * @param eth Amount of Ether to withdraw out
+     * @param token Token address of ERC20 or ERC721. It can be undefined.
+     * @param amount Amount of ERC20 when the token param is defined and it is an ERC20
+     * @param nft NFT id when the token param is defined and it is an ERC721
+     * @param fee Amount of fee to give to the coordinator
      * @param rootIndex Withdrawer should submit inclusion proof. Submit which withdrawal root to use.
      *                  withdrawables[0]: daily snapshot of withdrawable tree
      *                  withdrawables[latest]: the latest withdrawal tree
@@ -29,8 +38,11 @@ interface IUserInteractable {
      * @param siblings Inclusion proof data
      */
     function withdraw(
+        uint eth,
+        address token,
         uint amount,
-        bytes32 proofHash,
+        uint nft,
+        uint fee,
         uint rootIndex,
         uint leafIndex,
         uint[] calldata siblings
@@ -38,9 +50,13 @@ interface IUserInteractable {
 
     /**
      * @notice Others can execute the withdrawal instead of the recipient account using ECDSA.
-     * @param amount Amount to withdraw out.
      * @param to Address of the ECDSA signer
-     * @param proofHash Hash value of the SNARKs proof of your withdrawal transaction.
+     * @param eth Amount of Ether to withdraw out
+     * @param token Token address of ERC20 or ERC721. It can be undefined.
+     * @param amount Amount of ERC20 when the token param is defined and it is an ERC20
+     * @param nft NFT id when the token param is defined and it is an ERC721
+     * @param amount Amount to withdraw out.
+     * @param fee Amount of fee to give to the coordinator
      * @param rootIndex Withdrawer should submit inclusion proof. Submit which withdrawal root to use.
      *                  withdrawables[0]: daily snapshot of withdrawable tree
      *                  withdrawables[latest]: the latest withdrawal tree
@@ -52,9 +68,12 @@ interface IUserInteractable {
      * @param s ECDSA signature s
      */
     function withdrawUsingSignature(
-        uint amount,
         address to,
-        bytes32 proofHash,
+        uint eth,
+        address token,
+        uint amount,
+        uint nft,
+        uint fee,
         uint rootIndex,
         uint leafIndex,
         uint[] calldata siblings,
