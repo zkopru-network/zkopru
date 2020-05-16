@@ -16,7 +16,7 @@ describe('note_hash.circom', () => {
       .substring(2, 16)
     try {
       container = await docker.container.create({
-        Image: 'zkopru:circuits-test',
+        Image: 'wanseob/zkopru-circuits-test',
         name: containerName,
         rm: true,
       })

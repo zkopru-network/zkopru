@@ -4,6 +4,7 @@
   "license": "GPL-3.0-or-later",
   "_moduleAliases": {
     "circomlib": "../../node_modules/circomlib",
+    "wasmsnark": "../../node_modules/wasmsnark",
     "~dataset": "../dataset/dist",
     "~utils": "../utils/dist"
   },
@@ -29,6 +30,7 @@
   "devDependencies": {
     "node-docker-api": "^1.1.22",
     "ffjavascript": "^0.1.2",
+    "wasmsnark": "^0.0.10",
     "snarkjs": "^0.1.25"
   }
 }
