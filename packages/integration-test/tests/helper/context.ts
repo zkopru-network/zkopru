@@ -39,11 +39,17 @@ export type Provider = () => Context
 
 export async function terminate(ctx: Provider) {
   const { layer1Container, circuitArtifactContainer, db } = ctx()
-  await layer1Container.stop()
-  await layer1Container.delete()
-  await circuitArtifactContainer.stop()
-  await circuitArtifactContainer.delete()
-  await db.disconnect()
+  await Promise.all([
+    async () => {
+      await layer1Container.stop()
+      await layer1Container.delete()
+    },
+    async () => {
+      await circuitArtifactContainer.stop()
+      await circuitArtifactContainer.delete()
+    },
+    db.disconnect(),
+  ])
 }
 
 /**

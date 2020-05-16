@@ -10,9 +10,22 @@ import { keccakHasher, poseidonHasher, Grove } from '@zkopru/tree'
 import { schema } from '@zkopru/database'
 import * as utils from '@zkopru/utils'
 import { Container } from 'node-docker-api/lib/container'
+import tar from 'tar'
 import { keys, address } from './testset-keys'
 import { utxos } from './testset-utxos'
 import { txs } from './testset-txs'
+
+export async function buildKeys(keyPath: string) {
+  if (!fs.existsSync(keyPath)) {
+    loadCircuits()
+      .then(() => {
+        tar
+          .c({}, ['keys/pks', 'keys/vks', 'keys/circuits'])
+          .pipe(fs.createWriteStream('keys.tgz'))
+      })
+      .catch(console.error)
+  }
+}
 
 export async function loadGrove(
   zkopruId: string,
@@ -74,10 +87,15 @@ export async function loadCircuits() {
   await container.start()
   const nIn = [1, 2, 3, 4]
   const nOut = [1, 2, 3, 4]
-  if (!fs.existsSync('keys/txs')) await fs.mkdirp('keys/txs')
-  if (!fs.existsSync('keys/pks')) await fs.mkdirp('keys/pks')
-  if (!fs.existsSync('keys/vks')) await fs.mkdirp('keys/vks')
-  if (!fs.existsSync('keys/circuits')) await fs.mkdirp('keys/circuits')
+  const keyPath = path.join(path.dirname(__filename), '../keys')
+  const txPath = path.join(keyPath, 'txs')
+  const pkPath = path.join(keyPath, 'pks')
+  const vkPath = path.join(keyPath, 'vks')
+  const ccPath = path.join(keyPath, 'circuits')
+  if (!fs.existsSync(txPath)) await fs.mkdirp(txPath)
+  if (!fs.existsSync(pkPath)) await fs.mkdirp(pkPath)
+  if (!fs.existsSync(vkPath)) await fs.mkdirp(vkPath)
+  if (!fs.existsSync(ccPath)) await fs.mkdirp(ccPath)
   for (const i of nIn) {
     for (const o of nOut) {
       const circuit = await utils.readFromContainer(
@@ -92,9 +110,9 @@ export async function loadCircuits() {
         container,
         `/proj/build/vks/zk_transaction_${i}_${o}.vk.json`,
       )
-      fs.writeFileSync(`keys/circuits/zk_transaction_${i}_${o}.wasm`, circuit)
-      fs.writeFileSync(`keys/pks/zk_transaction_${i}_${o}.pk.bin`, pk)
-      fs.writeFileSync(`keys/vks/zk_transaction_${i}_${o}.vk.json`, vk)
+      fs.writeFileSync(path.join(ccPath, `zk_transaction_${i}_${o}.wasm`), circuit)
+      fs.writeFileSync(path.join(pkPath, `zk_transaction_${i}_${o}.pk.bin`), pk)
+      fs.writeFileSync(path.join(vkPath, `zk_transaction_${i}_${o}.vk.json`), vk)
     }
   }
   await container.stop()
@@ -120,6 +138,8 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
   const db: InanoSQLInstance = nSQL().useDatabase(dbName)
   const { grove } = await loadGrove(zkopruId, db)
   const keyPath = path.join(path.dirname(__filename), '../keys')
+  await buildKeys(keyPath)
+
   const aliceZkWizard = new ZkWizard({
     db,
     grove,
@@ -137,7 +157,6 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
   const tx2_2Path = path.join(keyPath, 'txs/zk_tx_2_2.tx')
   const tx3Path = path.join(keyPath, 'txs/zk_tx_3.tx')
   const tx4Path = path.join(keyPath, 'txs/zk_tx_4.tx')
-  console.log('path', tx1Path)
   let zk_tx_1: ZkTx
   try {
     zk_tx_1 = ZkTx.decode(fs.readFileSync(tx1Path))

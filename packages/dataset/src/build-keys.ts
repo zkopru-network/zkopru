@@ -1,11 +1,9 @@
-import tar from 'tar'
-import fs from 'fs'
-import { loadCircuits } from './testset-zktxs'
+import path from 'path'
+import { buildKeys } from './testset-zktxs'
 
-loadCircuits()
-  .then(() => {
-    tar
-      .c({}, ['keys/pks', 'keys/vks', 'keys/circuits'])
-      .pipe(fs.createWriteStream('keys.tgz'))
-  })
-  .catch(console.error)
+(async () => {
+  const keyPath = path.join(path.dirname(__filename), '../keys')
+  await buildKeys(keyPath)
+})().catch(e => {
+  console.error(e)
+})

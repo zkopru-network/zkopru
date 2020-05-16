@@ -1,12 +1,12 @@
+/**
+ * @jest-environment node
+ */
 /* eslint-disable jest/no-disabled-tests */
 /* eslint-disable jest/no-commented-out-tests */
 /* eslint-disable jest/no-expect-resolves */
 /* eslint-disable jest/require-tothrow-message */
 /* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable jest/no-hooks */
-/**
- * @jest-environment node
- */
 import { Context, initContext, terminate } from './helper/context'
 import {
   testAliceAccount,
@@ -26,8 +26,9 @@ describe('testnet', () => {
   beforeAll(async () => {
     context = await initContext()
   }, 15000)
-  afterAll(async () => {
+  afterAll(async done => {
     await terminate(ctx)
+    done()
   })
   describe('contract deployment', () => {
     it('should define zkopru address', () => {

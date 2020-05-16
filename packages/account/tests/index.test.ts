@@ -16,6 +16,10 @@ describe('unit test', () => {
     })
     database = nSQL().useDatabase(dbName)
   })
+  afterAll(async done => {
+    await database.disconnect()
+    done()
+  })
   it('has same private keys and eth address with ganache default accounts', async () => {
     const web3 = new Web3()
     const hdWallet = new HDWallet(web3, database)

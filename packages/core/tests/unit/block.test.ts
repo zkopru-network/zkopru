@@ -1,3 +1,6 @@
+/**
+ * @jest-environment node
+ */
 import { Transaction } from 'web3-core'
 import { getDummyBody, dummyHeader } from '~dataset/testset-block'
 import { serializeHeader, serializeBody, Block, headerHash } from '~core'

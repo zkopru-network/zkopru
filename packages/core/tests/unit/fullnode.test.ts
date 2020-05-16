@@ -36,7 +36,7 @@ describe('integration test to run testnet', () => {
     const containerIP = (status.data as {
       NetworkSettings: { IPAddress: string }
     }).NetworkSettings.IPAddress
-    sleep(2000)
+    await sleep(2000)
     wsProvider = new Web3.providers.WebsocketProvider(
       `ws://${containerIP}:5000`,
       { reconnect: { auto: true } },
