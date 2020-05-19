@@ -32,5 +32,8 @@
     "ffjavascript": "^0.1.2",
     "wasmsnark": "^0.0.10",
     "snarkjs": "^0.1.25"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

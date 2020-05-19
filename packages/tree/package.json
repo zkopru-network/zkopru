@@ -39,5 +39,8 @@
     "bn.js": "^5.1.1",
     "circomlib": "^0.1.1",
     "web3-utils": "^1.2.6"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
