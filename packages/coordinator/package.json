@@ -30,10 +30,11 @@
     "test:ci": "jest --coverage --ci --reporters='jest-junit'",
     "coverage": "jest --coverage",
     "coverage:show": "live-server coverage",
-    "dev": "ts-node-dev -r tsconfig-paths/register src/index.ts",
+    "dev": "ts-node src/cli/index.ts --ws ws://localhost:5000 --config coordinator.json",
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@nano-sql/adapter-leveldb": "^2.0.5",
     "@nano-sql/core": "^2.3.7",
     "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/contracts": "file:../contracts",
@@ -43,13 +44,19 @@
     "@zkopru/utils": "file:../utils",
     "big-integer": "^1.6.48",
     "bn.js": "^5.1.1",
+    "bip39": "^3.0.2",
+    "chalk": "^4.0.0",
+    "figlet": "^1.4.0",
+    "fs-extra": "^9.0.0",
+    "prompts": "^2.3.2",
     "express": "^4.17.1",
     "node-schedule": "^1.3.2",
     "snarkjs": "^0.1.25",
     "web3": "^1.2.6",
     "web3-core": "^1.2.6",
     "web3-core-subscriptions": "^1.2.6",
-    "web3-utils": "^1.2.6"
+    "web3-utils": "^1.2.6",
+    "yargs": "^15.3.1"
   },
   "devDependencies": {
     "node-docker-api": "^1.1.22",

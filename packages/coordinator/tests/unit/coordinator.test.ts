@@ -100,10 +100,9 @@ describe('coordinator test to run testnet', () => {
     it('should be defined', async () => {
       coordinator = new Coordinator(fullNode, {
         maxBytes: 131072,
-        bootstrapNode: true,
+        bootstrap: true,
         priceMultiplier: 48, // 32 gas is the current default price for 1 byte
-        db,
-        apiPort: 8888,
+        port: 8888,
       })
       expect(coordinator).toBeDefined()
     })

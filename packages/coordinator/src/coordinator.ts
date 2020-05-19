@@ -1,6 +1,7 @@
 import { Field } from '@zkopru/babyjubjub'
 import express, { RequestHandler } from 'express'
 import { scheduleJob, Job } from 'node-schedule'
+import { EventEmitter } from 'events'
 import { Server } from 'http'
 import { ZkTx } from '@zkopru/transaction'
 import { logger, root, hexify } from '@zkopru/utils'
@@ -17,18 +18,15 @@ import {
   serializeBody,
   serializeHeader,
 } from '@zkopru/core'
-import { InanoSQLInstance } from '@nano-sql/core'
 import { Subscription } from 'web3-core-subscriptions'
 import { schema, MassDepositCommitSql, DepositSql } from '@zkopru/database'
 import { Item } from '@zkopru/tree'
 import { TxMemPool, TxPoolInterface } from './tx_pool'
 
-
 export interface CoordinatorConfig {
   maxBytes: number
-  bootstrapNode: boolean
-  db: InanoSQLInstance
-  apiPort: number
+  bootstrap: boolean
+  port: number
   priceMultiplier: number // gas per byte is 16, our default value is 32
 }
 
@@ -38,7 +36,7 @@ export interface CoordinatorInterface {
   onBlock: () => void
 }
 
-export class Coordinator {
+export class Coordinator extends EventEmitter {
   node: FullNode
 
   api?: Server
@@ -58,9 +56,9 @@ export class Coordinator {
   genBlockJob?: Job
 
   constructor(node: FullNode, config: CoordinatorConfig) {
+    super()
     this.node = node
     this.txPool = new TxMemPool()
-    this.node = node
     this.config = { priceMultiplier: 32, ...config }
     this.bootstrapCache = {}
   }
@@ -69,6 +67,7 @@ export class Coordinator {
     logger.info('Coordinator started')
     this.node.startSync()
     this.startAPI()
+    this.startSubscribeGasPrice()
     this.node.synchronizer.on(
       'status',
       async (status: NetworkStatus, blockHash?: string) => {
@@ -93,35 +92,44 @@ export class Coordinator {
         }
       },
     )
+    this.emit('start')
   }
 
-  stop() {
-    this.node.stopSync()
-    this.stopAPI()
+  async stop(): Promise<void> {
+    return new Promise(res => {
+      this.node.synchronizer.on('status', status => {
+        if (status === NetworkStatus.STOPPED) {
+          this.emit('stop')
+          res()
+        }
+      })
+      if (this.api) {
+        this.api.close(() => {
+          this.node.stopSync()
+        })
+      } else {
+        this.node.stopSync()
+      }
+    })
   }
 
-  startAPI() {
+  private startAPI() {
     if (!this.api) {
       const app = express()
       app.post('/tx', this.txHandler)
-      if (this.config.bootstrapNode) {
+      if (this.config.bootstrap) {
         app.get('/bootstrap', this.bootstrapHandler)
       }
-      this.api = app.listen(this.config.apiPort, () => {
+      app.get('/price', this.bytePriceHandler)
+      this.api = app.listen(this.config.port, () => {
         logger.info(
-          `coordinator.js: API is running on apiPort ${this.config.apiPort}`,
+          `coordinator.js: API is running on apiPort ${this.config.port}`,
         )
       })
     }
   }
 
-  stopAPI() {
-    if (this.api) {
-      this.api.close()
-    }
-  }
-
-  startSubscribeGasPrice() {
+  private startSubscribeGasPrice() {
     if (this.gasPriceSubscriber) return
     this.gasPriceSubscriber = this.node.l1Contract.web3.eth.subscribe(
       'newBlockHeaders',
@@ -133,7 +141,7 @@ export class Coordinator {
     )
   }
 
-  txHandler: RequestHandler = async (req, res) => {
+  private txHandler: RequestHandler = async (req, res) => {
     const tx = ZkTx.decode(req.body)
     const result = await this.node.verifier.snarkVerifier.verifyTx(tx)
     if (result) {
@@ -144,7 +152,7 @@ export class Coordinator {
     }
   }
 
-  bootstrapHandler: RequestHandler = async (
+  private bootstrapHandler: RequestHandler = async (
     req,
     res,
   ): Promise<BootstrapData> => {
@@ -187,8 +195,11 @@ export class Coordinator {
     }
   }
 
-  bytePriceHandler: RequestHandler = async (req, res) => {
-    console.log(req, res)
+  private bytePriceHandler: RequestHandler = async (_, res) => {
+    const weiPerByte: string | undefined = this.gasPrice
+      ?.muln(this.config.priceMultiplier)
+      .toString(10)
+    res.send({ weiPerByte })
   }
 
   private startGenBlock() {
@@ -219,7 +230,7 @@ export class Coordinator {
     let consumedBytes = 0
     let aggregatedFee: Field = Field.zero
     // 1. pick mass deposits
-    const commits: MassDepositCommitSql[] = (await this.config.db
+    const commits: MassDepositCommitSql[] = (await this.node.db
       .selectTable(schema.massDeposit.name)
       .query('select')
       .where(['includedIn', '=', 'NOT_INCLUDED'])
@@ -227,7 +238,7 @@ export class Coordinator {
     commits.sort((a, b) => parseInt(a.index, 10) - parseInt(b.index, 10))
     const allPendingDeposits: DepositSql[] = []
     for (const commit of commits) {
-      const pendingDeposits = (await this.config.db
+      const pendingDeposits = (await this.node.db
         .selectTable(schema.deposit.name)
         .presetQuery('getDeposits', {
           commitIndex: commit.index,
