@@ -1,6 +1,6 @@
 {
   "name": "@zkopru/circuits",
-  "version": "0.0.1",
+  "version": "0.0.2-alpha.0",
   "license": "GPL-3.0-or-later",
   "_moduleAliases": {
     "circomlib": "../../node_modules/circomlib",
@@ -28,10 +28,10 @@
     "circomlib": "^0.1.1"
   },
   "devDependencies": {
-    "node-docker-api": "^1.1.22",
     "ffjavascript": "^0.1.2",
-    "wasmsnark": "^0.0.10",
-    "snarkjs": "^0.1.25"
+    "node-docker-api": "^1.1.22",
+    "snarkjs": "^0.1.25",
+    "wasmsnark": "^0.0.10"
   },
   "publishConfig": {
     "access": "public"
