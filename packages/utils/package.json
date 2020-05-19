@@ -28,6 +28,7 @@
   "dependencies": {
     "circom_runtime": "^0.0.3",
     "ffjavascript": "^0.1.2",
+    "prompts": "^2.3.2",
     "pino": "^6.2.0",
     "pino-pretty": "^4.0.0",
     "bn.js": "^5.1.1",

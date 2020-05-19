@@ -7,6 +7,8 @@ import { ReadStream } from 'fs-extra'
 import tar from 'tar'
 import BN from 'bn.js'
 
+export { PromptApp } from './prompt'
+
 export function root(hashes: string[]): string {
   if (hashes.length === 0) {
     return padLeft(0, 64)
