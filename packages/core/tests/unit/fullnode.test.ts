@@ -96,6 +96,6 @@ describe('integration test to run testnet', () => {
         },
       })
       expect(fullNode).toBeDefined()
-    })
+    }, 10000)
   })
 })

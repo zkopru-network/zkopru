@@ -95,6 +95,6 @@ describe('integration test to run testnet', () => {
         },
       })
       expect(lightNode).toBeDefined()
-    })
+    }, 10000)
   })
 })

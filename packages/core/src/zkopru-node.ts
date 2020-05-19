@@ -12,6 +12,8 @@ import { Synchronizer } from './synchronizer'
 import { genesis } from './genesis'
 
 export class ZkOPRUNode {
+  db: InanoSQLInstance
+
   l1Contract: L1Contract
 
   l2Chain: L2Chain
@@ -27,6 +29,7 @@ export class ZkOPRUNode {
   verifyOption: VerifyOption
 
   constructor({
+    db,
     l1Contract,
     l2Chain,
     verifier,
@@ -35,6 +38,7 @@ export class ZkOPRUNode {
     accounts,
     verifyOption,
   }: {
+    db: InanoSQLInstance
     l1Contract: L1Contract
     l2Chain: L2Chain
     verifier: Verifier
@@ -43,6 +47,7 @@ export class ZkOPRUNode {
     accounts?: ZkAccount[]
     verifyOption: VerifyOption
   }) {
+    this.db = db
     this.l1Contract = l1Contract
     this.l2Chain = l2Chain
     this.verifier = verifier

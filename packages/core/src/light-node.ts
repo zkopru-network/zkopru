@@ -16,6 +16,7 @@ type provider = WebsocketProvider | IpcProvider
 
 export class LightNode extends ZkOPRUNode {
   constructor({
+    db,
     l1Contract,
     l2Chain,
     verifier,
@@ -24,6 +25,7 @@ export class LightNode extends ZkOPRUNode {
     accounts,
     verifyOption,
   }: {
+    db: InanoSQLInstance
     l1Contract: L1Contract
     l2Chain: L2Chain
     verifier: Verifier
@@ -33,6 +35,7 @@ export class LightNode extends ZkOPRUNode {
     verifyOption: VerifyOption
   }) {
     super({
+      db,
       l1Contract,
       l2Chain,
       verifier,
@@ -136,6 +139,7 @@ export class LightNode extends ZkOPRUNode {
     // If the chain needs bootstraping, fetch bootstrap data and apply
     const synchronizer = new Synchronizer(db, l2Chain.id, l1Contract)
     return new LightNode({
+      db,
       l1Contract,
       l2Chain,
       verifier,

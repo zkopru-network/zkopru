@@ -17,36 +17,44 @@ export class L1Contract extends ZkOPRUContract {
   }
 
   async getVKs(): Promise<{ [txSig: string]: VerifyingKey }> {
-    const NUM_OF_INPUTS = 10
-    const NUM_OF_OUTPUTS = 10
+    const NUM_OF_INPUTS = 4
+    const NUM_OF_OUTPUTS = 4
     const vks: { [txSig: string]: VerifyingKey } = {}
-    const promises: (() => Promise<void>)[] = []
+    const tasks: (() => Promise<void>)[] = []
+    // const stringify = (val: unknown) => bigInt(val).toString(10)
     for (let nI = 1; nI <= NUM_OF_INPUTS; nI += 1) {
       for (let nO = 1; nO <= NUM_OF_OUTPUTS; nO += 1) {
-        promises.push(async () => {
+        tasks.push(async () => {
           const vk = await this.upstream.methods.getVk(nI, nO).call()
           const sig = verifyingKeyIdentifier(nI, nO)
           const vk_alfa_1 = [
             bigInt(vk.alfa1[0]),
             bigInt(vk.alfa1[1]),
-            bigInt(1),
+            bigInt('1'),
           ]
           const vk_beta_2 = [
             [bigInt(vk.beta2[0][0]), bigInt(vk.beta2[0][1])],
             [bigInt(vk.beta2[1][1]), bigInt(vk.beta2[1][1])],
-            [bigInt(1), bigInt(0)],
+            [bigInt('1'), bigInt('0')],
           ]
           const vk_gamma_2 = [
             [bigInt(vk.gamma2[0][0]), bigInt(vk.gamma2[0][1])],
             [bigInt(vk.gamma2[1][1]), bigInt(vk.gamma2[1][1])],
-            [bigInt(1), bigInt(0)],
+            [bigInt('1'), bigInt('0')],
           ]
           const vk_delta_2 = [
             [bigInt(vk.delta2[0][0]), bigInt(vk.delta2[0][1])],
             [bigInt(vk.delta2[1][1]), bigInt(vk.delta2[1][1])],
-            [bigInt(1), bigInt(0)],
+            [bigInt('1'), bigInt('0')],
           ]
-          const vk_alfabeta_12 = ffjs.bn128.pairing(vk_alfa_1, vk_beta_2)
+          const vk_alfabeta_12 = ffjs.bn128.pairing(
+            ffjs.utils.unstringifyBigInts(
+              ffjs.utils.stringifyBigInts(vk_alfa_1),
+            ),
+            ffjs.utils.unstringifyBigInts(
+              ffjs.utils.stringifyBigInts(vk_beta_2),
+            ),
+          )
           const IC = vk.ic.map(ic => [bigInt(ic[0]), bigInt(ic[1]), bigInt(1)])
           vks[sig] = {
             protocol: 'groth',
@@ -61,7 +69,7 @@ export class L1Contract extends ZkOPRUContract {
         })
       }
     }
-    await Promise.all(promises)
+    await Promise.all(tasks.map(task => task()))
     return vks
   }
 
@@ -79,7 +87,7 @@ export class L1Contract extends ZkOPRUContract {
     let withdrawalSubTreeDepth!: number
     let withdrawalSubTreeSize!: number
     // const utxoTreeDepth = await this.upstream.methods
-    await Promise.all([
+    const tasks = [
       async () => {
         utxoTreeDepth = parseInt(
           await this.upstream.methods.UTXO_SUB_TREE_DEPTH().call(),
@@ -145,8 +153,8 @@ export class L1Contract extends ZkOPRUContract {
           .MAX_WITHDRAWAL_PER_TREE()
           .call()
       },
-    ])
-
+    ]
+    await Promise.all(tasks.map(task => task()))
     return {
       utxoTreeDepth,
       withdrawalTreeDepth,

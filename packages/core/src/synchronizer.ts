@@ -114,7 +114,7 @@ export class Synchronizer extends EventEmitter {
     })
     this.latestVerificationObserver = this.db
       .selectTable(schema.block.name)
-      .presetQuery('getLastVerfiedBlock')
+      .presetQuery('getLastVerifiedBlock')
       .listen({
         debounce: 500,
         compareFn: (rowsA, rowsB) => {
