@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.build.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "../../.build-cache/cli-wallet.tsbuildinfo"
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../zk-wizard/tsconfig.build.json", "prepend": false },
+  ]
+}

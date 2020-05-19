@@ -1,5 +1,5 @@
 {
-  "name": "@zkopru/zk-wizard",
+  "name": "@zkopru/cli-wallet",
   "version": "0.0.1",
   "license": "GPL-3.0-or-later",
   "main": "dist/index.js",
@@ -10,6 +10,12 @@
   "_moduleAliases": {
     "~zk-wizard": "dist"
   },
+  "bin": {
+    "cli-wallet": "dist/index.js"
+  },
+  "keywords": [
+    "cli"
+  ],
   "preferGlobal": true,
   "scripts": {
     "postinstall": "shx mkdir -p dist",
@@ -22,10 +28,11 @@
     "test:ci": "jest --coverage --ci --reporters='jest-junit'",
     "coverage": "jest --coverage",
     "coverage:show": "live-server coverage",
-    "dev": "ts-node-dev -r tsconfig-paths/register src/index.ts",
+    "dev": "ts-node src/index.ts --ws ws://localhost:5000 -f",
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@nano-sql/adapter-leveldb": "^2.0.5",
     "@nano-sql/core": "^2.3.7",
     "@zkopru/account": "file:../account",
     "@zkopru/babyjubjub": "file:../babyjubjub",
@@ -35,13 +42,19 @@
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/tree": "file:../tree",
     "@zkopru/utils": "file:../utils",
+    "@zkopru/zk-wizard": "file:../zk-wizard",
     "big-integer": "^1.6.48",
-    "circom_runtime": "^0.0.3",
-    "ffjavascript": "^0.1.2",
+    "bip39": "^3.0.2",
+    "chalk": "^4.0.0",
+    "cli-progress": "^3.8.2",
+    "figlet": "^1.4.0",
+    "follow-redirects": "^1.11.0",
     "fs-extra": "^9.0.0",
-    "wasmsnark": "^0.0.10",
+    "prompts": "^2.3.2",
+    "tar": "^6.0.2",
     "web3": "^1.2.6",
     "web3-core": "^1.2.6",
-    "web3-eth-contract": "^1.2.6"
+    "web3-eth-contract": "^1.2.6",
+    "yargs": "^15.3.1"
   }
 }
