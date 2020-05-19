@@ -14,7 +14,7 @@ contract Configurated {
     uint constant public MAX_UTXO_PER_TREE = (1 << UTXO_TREE_DEPTH);
     uint constant public WITHDRAWAL_TREE_DEPTH = 31;
     uint constant public MAX_WITHDRAWAL_PER_TREE = (1 << WITHDRAWAL_TREE_DEPTH);
-    uint constant public NULLIFIER_TREE_DEPTH = 256;
+    uint constant public NULLIFIER_TREE_DEPTH = 254;
 
     uint constant public UTXO_SUB_TREE_DEPTH = 5; // 32 items at once
     uint constant public UTXO_SUB_TREE_SIZE = 1 << UTXO_SUB_TREE_DEPTH;
