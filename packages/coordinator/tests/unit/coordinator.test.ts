@@ -25,7 +25,7 @@ describe('coordinator test to run testnet', () => {
     const docker = new Docker({ socketPath: '/var/run/docker.sock' })
     try {
       container = await docker.container.create({
-        Image: 'wanseob/zkopru-contract',
+        Image: 'wanseob/zkopru-contract:0.0.1',
         name: testName,
         rm: true,
       })

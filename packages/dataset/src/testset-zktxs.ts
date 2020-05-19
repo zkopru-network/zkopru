@@ -77,7 +77,7 @@ export async function loadCircuits() {
   let container: Container
   try {
     container = await docker.container.create({
-      Image: 'wanseob/zkopru-circuits',
+      Image: 'wanseob/zkopru-circuits:0.0.1',
       name: containerName,
       rm: true,
     })

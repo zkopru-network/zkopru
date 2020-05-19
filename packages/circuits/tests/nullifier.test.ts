@@ -16,7 +16,7 @@ describe('nullifier.circom', () => {
       .substring(2, 16)
     try {
       container = await docker.container.create({
-        Image: 'wanseob/zkopru-circuits-test',
+        Image: 'wanseob/zkopru-circuits-test:0.0.1',
         name: containerName,
         rm: true,
       })

@@ -98,14 +98,14 @@ const initZkWizard = async (name: string, account: ZkAccount) => {
 export async function initContext() {
   const docker = new Docker({ socketPath: '/var/run/docker.sock' })
   const layer1Container = await docker.container.create({
-    Image: 'wanseob/zkopru-contract-integration-test',
+    Image: 'wanseob/zkopru-contract-integration-test:0.0.1',
     name: Math.random()
       .toString(36)
       .substring(2, 16),
     rm: true,
   })
   const circuitArtifactContainer = await docker.container.create({
-    Image: 'wanseob/zkopru-circuits',
+    Image: 'wanseob/zkopru-circuits:0.0.1',
     name: Math.random()
       .toString(36)
       .substring(2, 16),

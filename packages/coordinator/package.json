@@ -8,7 +8,7 @@
     "dist"
   ],
   "bin": {
-    "zk-wizard": "dist/cli.js"
+    "zkopru-coordinator": "dist/cli/index.js"
   },
   "keywords": [
     "zkopru, coordinator, cli, verifier"
