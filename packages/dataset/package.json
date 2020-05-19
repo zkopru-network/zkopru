@@ -11,7 +11,7 @@
     "~dataset": "dist"
   },
   "scripts": {
-    "postinstall": "shx mkdir -p dist",
+    "prebuild": "shx mkdir -p dist",
     "build": "tsc --build tsconfig.build.json",
     "build-keys": "node dist/build-keys.js",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",

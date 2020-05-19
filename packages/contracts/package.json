@@ -21,9 +21,9 @@
     "web3-eth-contract": "^1.2.6"
   },
   "scripts": {
+    "pregenTS": "shx mkdir -p dist",
     "precommit": "#lint-staged",
     "compile": "truffle compile",
-    "postinstall": "shx mkdir -p dist",
     "build:contract": "yarn compile && yarn genTS && tsc --build tsconfig.build.json && yarn prettier --write src/**/*",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "link-modules": "link-module-alias",
