@@ -38,18 +38,19 @@ export interface Context {
 export type Provider = () => Context
 
 export async function terminate(ctx: Provider) {
-  const { layer1Container, circuitArtifactContainer, db } = ctx()
-  await Promise.all([
-    async () => {
-      await layer1Container.stop()
-      await layer1Container.delete()
-    },
-    async () => {
-      await circuitArtifactContainer.stop()
-      await circuitArtifactContainer.delete()
-    },
-    db.disconnect(),
-  ])
+  const { layer1Container, circuitArtifactContainer } = ctx()
+  await Promise.all(
+    [
+      async () => {
+        await layer1Container.stop()
+        await layer1Container.delete()
+      },
+      async () => {
+        await circuitArtifactContainer.stop()
+        await circuitArtifactContainer.delete()
+      },
+    ].map(task => task()),
+  )
 }
 
 /**
@@ -97,7 +98,7 @@ const initZkWizard = async (name: string, account: ZkAccount) => {
 export async function initContext() {
   const docker = new Docker({ socketPath: '/var/run/docker.sock' })
   const layer1Container = await docker.container.create({
-    Image: 'wanseob/zkopru-contract',
+    Image: 'wanseob/zkopru-contract-integration-test',
     name: Math.random()
       .toString(36)
       .substring(2, 16),

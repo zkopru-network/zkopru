@@ -44,16 +44,11 @@ module.exports = {
     },
     integrationtest: {
       host: '127.0.0.1',
-      port: 8545,
-      network_id: '20200406',
-    },
-    docker: {
-      host: '127.0.0.1',
       port: 5000,
       network_id: '20200406',
     },
-    insidedocker: {
-      host: '0.0.0.0',
+    testnet: {
+      host: '127.0.0.1',
       port: 5000,
       network_id: '20200406',
     },
