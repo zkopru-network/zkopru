@@ -1,4 +1,7 @@
-import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
+import {
+  InanoSQLTableConfig,
+  InanoSQLFKActions,
+} from '@nano-sql/core/lib/interfaces'
 
 export interface MassDepositCommitSql {
   index: string
@@ -16,7 +19,7 @@ export const massDeposit: InanoSQLTableConfig = {
     'index:string': {},
     'merged:string': {},
     'fee:string': {},
-    'zkopru:uuid': { foreignKey: 'zkopru:id', immutable: true },
+    'zkopru:uuid': {},
     'blockNumber:int': {},
     'includedIn:string': { default: 'NOT_INCLUDED' },
   },
@@ -25,6 +28,12 @@ export const massDeposit: InanoSQLTableConfig = {
     'index:string': {},
     'merged:string': {},
     'fee:string': {},
+    'zkopru:uuid': {
+      foreignKey: {
+        target: 'zkopru.id',
+        onDelete: InanoSQLFKActions.CASCADE,
+      },
+    },
   },
   queries: [
     {

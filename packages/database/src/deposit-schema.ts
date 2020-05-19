@@ -1,4 +1,7 @@
-import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
+import {
+  InanoSQLTableConfig,
+  InanoSQLFKActions,
+} from '@nano-sql/core/lib/interfaces'
 
 export interface DepositSql {
   id?: string
@@ -16,14 +19,24 @@ export const deposit: InanoSQLTableConfig = {
     'id:uuid': { pk: true },
     'note:string': {},
     'fee:string': {},
-    'queuedAt:string': { foreignKey: 'massDeposit:index' },
-    'zkopru:uuid': { foreignKey: 'zkopru:id', immutable: true },
+    'queuedAt:string': {},
+    'zkopru:uuid': {},
     'blockNumber:int': {},
     'l2Block:string': {},
   },
   indexes: {
-    'queuedAt:int': {},
-    'zkopru:uuid': {},
+    'queuedAt:int': {
+      foreignKey: {
+        target: 'massDeposit.index',
+        onDelete: InanoSQLFKActions.CASCADE,
+      },
+    },
+    'zkopru:uuid': {
+      foreignKey: {
+        target: 'zkopru.id',
+        onDelete: InanoSQLFKActions.CASCADE,
+      },
+    },
   },
   queries: [
     {

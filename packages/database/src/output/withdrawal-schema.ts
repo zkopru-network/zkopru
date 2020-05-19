@@ -1,4 +1,7 @@
-import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
+import {
+  InanoSQLTableConfig,
+  InanoSQLFKActions,
+} from '@nano-sql/core/lib/interfaces'
 
 export interface WithdrawalSql {
   hash: string
@@ -18,7 +21,7 @@ export const withdrawal: InanoSQLTableConfig = {
   name: 'withdrawal',
   model: {
     'hash:string': { pk: true },
-    'tree:uuid': { foreignKey: 'utxoTree:id', notNull: false }, // deposit will not have the tree uuid at first
+    'tree:uuid': {}, // deposit will not have the tree uuid at first
     'index:string': { notNull: false },
     'to:string': {},
     'fee:string': {},
@@ -34,6 +37,12 @@ export const withdrawal: InanoSQLTableConfig = {
     'pubKey:string': {},
     'status:int': {},
     'to:string': {},
+    'tree:uuid': {
+      foreignKey: {
+        target: 'utxoTree.id',
+        onDelete: InanoSQLFKActions.CASCADE,
+      },
+    },
   },
   queries: [
     {

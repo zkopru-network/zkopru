@@ -71,7 +71,23 @@ export const chain: InanoSQLTableConfig = {
         'networkId:int': {},
         'chainId:int': {},
         'address:string': {},
-        'config:obj': {},
+        'config:obj': {
+          model: {
+            'utxoTreeDepth:int': {},
+            'withdrawalTreeDepth:int': {},
+            'nullifierTreeDepth:int': {},
+            'utxoPreHashes:string[]': {},
+            'withdrawalPreHashes:string[]': {},
+            'nullifierPreHashes:string[]': {},
+            'challengePeriod:int': {},
+            'challengeLimit:int': {},
+            'minimumStake:string': {},
+            'referenceDepth:int': {},
+            'poolSize:string': {},
+            'subTreeDepth:int': {},
+            'subTreeSize:int': {},
+          },
+        },
       },
       call: (db, args) => {
         return db
@@ -114,7 +130,23 @@ export const chain: InanoSQLTableConfig = {
         'networkId:int': {},
         'chainId:int': {},
         'address:string': {},
-        'config:obj': {},
+        'config:obj': {
+          model: {
+            'utxoTreeDepth:int': {},
+            'withdrawalTreeDepth:int': {},
+            'nullifierTreeDepth:int': {},
+            'utxoPreHashes:string[]': {},
+            'withdrawalPreHashes:string[]': {},
+            'nullifierPreHashes:string[]': {},
+            'challengePeriod:int': {},
+            'challengeLimit:int': {},
+            'minimumStake:string': {},
+            'referenceDepth:int': {},
+            'poolSize:string': {},
+            'subTreeDepth:int': {},
+            'subTreeSize:int': {},
+          },
+        },
       },
       call: (db, args) => {
         return db

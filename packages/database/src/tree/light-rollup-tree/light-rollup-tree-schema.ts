@@ -1,4 +1,4 @@
-import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
+import { InanoSQLTableConfig, InanoSQLFKActions } from '@nano-sql/core/lib/interfaces'
 
 export interface LightRollUpTreeSql {
   id: string
@@ -19,7 +19,7 @@ export const lightRollUpTree: InanoSQLTableConfig = {
   model: {
     'id:uuid': { pk: true },
     'index:int': { immutable: true },
-    'zkopru:uuid': { foreignKey: 'zkopru:id', immutable: true },
+    'zkopru:uuid': {},
     'block:string': {},
     'start:string': {},
     'end:string': {},
@@ -33,7 +33,12 @@ export const lightRollUpTree: InanoSQLTableConfig = {
   },
   indexes: {
     'index:int': {},
-    'zkopru:uuid': {},
+    'zkopru:uuid': {
+      foreignKey: {
+        target: 'zkopru.id',
+        onDelete: InanoSQLFKActions.CASCADE,
+      },
+    },
   },
   queries: [
     {

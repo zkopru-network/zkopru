@@ -1,5 +1,8 @@
 import { UtxoStatus } from '@zkopru/transaction'
-import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
+import {
+  InanoSQLTableConfig,
+  InanoSQLFKActions,
+} from '@nano-sql/core/lib/interfaces'
 
 export interface UtxoSql {
   hash: string
@@ -18,7 +21,7 @@ export const utxo: InanoSQLTableConfig = {
   name: 'utxo',
   model: {
     'hash:string': { pk: true },
-    'tree:uuid': { foreignKey: 'utxoTree:id', notNull: false }, // deposit will not have the tree uuid at first
+    'tree:uuid': {}, // deposit will not have the tree uuid at first
     'index:string': { notNull: false },
     'eth:string': {},
     'pubKey:string': { notNull: false },
@@ -31,6 +34,12 @@ export const utxo: InanoSQLTableConfig = {
   indexes: {
     'pubKey:string': {},
     'status:int': {},
+    'tree:uuid': {
+      foreignKey: {
+        target: 'utxoTree.id',
+        onDelete: InanoSQLFKActions.CASCADE,
+      },
+    },
   },
   queries: [
     {
