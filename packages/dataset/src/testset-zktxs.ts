@@ -15,6 +15,62 @@ import { keys, address } from './testset-keys'
 import { utxos } from './testset-utxos'
 import { txs } from './testset-txs'
 
+export async function loadCircuits() {
+  const docker = new Docker({ socketPath: '/var/run/docker.sock' })
+  const containerName = Math.random()
+    .toString(36)
+    .substring(2, 16)
+  let container: Container
+  try {
+    container = await docker.container.create({
+      Image: 'wanseob/zkopru-circuits:0.0.1',
+      name: containerName,
+      rm: true,
+    })
+  } catch {
+    container = docker.container.get(containerName)
+  }
+  await container.start()
+  const nIn = [1, 2, 3, 4]
+  const nOut = [1, 2, 3, 4]
+  const keyPath = path.join(path.dirname(__filename), '../keys')
+  const txPath = path.join(keyPath, 'txs')
+  const pkPath = path.join(keyPath, 'pks')
+  const vkPath = path.join(keyPath, 'vks')
+  const ccPath = path.join(keyPath, 'circuits')
+  if (!fs.existsSync(txPath)) await fs.mkdirp(txPath)
+  if (!fs.existsSync(pkPath)) await fs.mkdirp(pkPath)
+  if (!fs.existsSync(vkPath)) await fs.mkdirp(vkPath)
+  if (!fs.existsSync(ccPath)) await fs.mkdirp(ccPath)
+  for (const i of nIn) {
+    for (const o of nOut) {
+      const circuit = await utils.readFromContainer(
+        container,
+        `/proj/build/circuits/zk_transaction_${i}_${o}.wasm`,
+      )
+      const pk = await utils.readFromContainer(
+        container,
+        `/proj/build/pks/zk_transaction_${i}_${o}.pk.bin`,
+      )
+      const vk = await utils.readFromContainer(
+        container,
+        `/proj/build/vks/zk_transaction_${i}_${o}.vk.json`,
+      )
+      fs.writeFileSync(
+        path.join(ccPath, `zk_transaction_${i}_${o}.wasm`),
+        circuit,
+      )
+      fs.writeFileSync(path.join(pkPath, `zk_transaction_${i}_${o}.pk.bin`), pk)
+      fs.writeFileSync(
+        path.join(vkPath, `zk_transaction_${i}_${o}.vk.json`),
+        vk,
+      )
+    }
+  }
+  await container.stop()
+  await container.delete()
+}
+
 export async function buildKeys(keyPath: string) {
   if (!fs.existsSync(keyPath)) {
     loadCircuits()
@@ -69,56 +125,6 @@ export async function loadGrove(
   return { grove }
 }
 
-export async function loadCircuits() {
-  const docker = new Docker({ socketPath: '/var/run/docker.sock' })
-  const containerName = Math.random()
-    .toString(36)
-    .substring(2, 16)
-  let container: Container
-  try {
-    container = await docker.container.create({
-      Image: 'wanseob/zkopru-circuits:0.0.1',
-      name: containerName,
-      rm: true,
-    })
-  } catch {
-    container = docker.container.get(containerName)
-  }
-  await container.start()
-  const nIn = [1, 2, 3, 4]
-  const nOut = [1, 2, 3, 4]
-  const keyPath = path.join(path.dirname(__filename), '../keys')
-  const txPath = path.join(keyPath, 'txs')
-  const pkPath = path.join(keyPath, 'pks')
-  const vkPath = path.join(keyPath, 'vks')
-  const ccPath = path.join(keyPath, 'circuits')
-  if (!fs.existsSync(txPath)) await fs.mkdirp(txPath)
-  if (!fs.existsSync(pkPath)) await fs.mkdirp(pkPath)
-  if (!fs.existsSync(vkPath)) await fs.mkdirp(vkPath)
-  if (!fs.existsSync(ccPath)) await fs.mkdirp(ccPath)
-  for (const i of nIn) {
-    for (const o of nOut) {
-      const circuit = await utils.readFromContainer(
-        container,
-        `/proj/build/circuits/zk_transaction_${i}_${o}.wasm`,
-      )
-      const pk = await utils.readFromContainer(
-        container,
-        `/proj/build/pks/zk_transaction_${i}_${o}.pk.bin`,
-      )
-      const vk = await utils.readFromContainer(
-        container,
-        `/proj/build/vks/zk_transaction_${i}_${o}.vk.json`,
-      )
-      fs.writeFileSync(path.join(ccPath, `zk_transaction_${i}_${o}.wasm`), circuit)
-      fs.writeFileSync(path.join(pkPath, `zk_transaction_${i}_${o}.pk.bin`), pk)
-      fs.writeFileSync(path.join(vkPath, `zk_transaction_${i}_${o}.vk.json`), vk)
-    }
-  }
-  await container.stop()
-  await container.delete()
-}
-
 export async function loadZkTxs(): Promise<ZkTx[]> {
   const zkopruId = 'someuuid'
   const dbName = 'test-database'
@@ -141,13 +147,11 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
   await buildKeys(keyPath)
 
   const aliceZkWizard = new ZkWizard({
-    db,
     grove,
     privKey: keys.alicePrivKey,
     path: keyPath,
   })
   const bobZkWizard = new ZkWizard({
-    db,
     grove,
     privKey: keys.bobPrivKey,
     path: keyPath,

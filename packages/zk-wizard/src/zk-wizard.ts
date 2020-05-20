@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { InanoSQLInstance } from '@nano-sql/core'
 import { Field, F, Point, EdDSA, signEdDSA } from '@zkopru/babyjubjub'
 import {
   RawTx,
@@ -26,18 +25,14 @@ export class ZkWizard {
 
   pubKey: Point
 
-  db: InanoSQLInstance
-
   prover: any
   // genProof!: (witness: ArrayBuffer, provingKey: ArrayBuffer) => Promise<any>
 
   constructor({
-    db,
     grove,
     privKey,
     path,
   }: {
-    db: InanoSQLInstance
     grove: Grove
     privKey: string
     path: string
@@ -48,7 +43,6 @@ export class ZkWizard {
     // this.wasmPK = {}
     this.path = path
     this.pubKey = Point.fromPrivKey(privKey)
-    this.db = db
   }
 
   async init() {
