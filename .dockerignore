@@ -1,0 +1,8 @@
+**/build
+**/node_modules
+**/coverage
+**/db
+**/keys
+**/keys.tgz
+.git
+.build-cache
