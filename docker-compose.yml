@@ -13,3 +13,6 @@ services:
       dockerfile: ./containers/Coordinator.dockerfile
     ports:
       - "8888:8888"
+    links:
+      - 'testnet:testnet'
+    command: 'node /proj/packages/coordinator/dist/cli/index.js --ws ws://testnet:5000 --config /proj/packages/coordinator/coordinator.json'

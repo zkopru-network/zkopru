@@ -27,6 +27,7 @@ coordinator-container:
 
 # ------------ Pull containers fro docker hub ------------- #
 pull-dev-images:
-	@docker pull wanseob/zkopru-contract
-	@docker pull wanseob/zkopru-circuits
-	@docker pull wanseob/zkopru-circuits-test
+	@docker pull wanseob/zkopru-contract:0.0.1
+	@docker pull wanseob/zkopru-contract-integration-test:0.0.1
+	@docker pull wanseob/zkopru-circuits:0.0.1
+	@docker pull wanseob/zkopru-circuits-test:0.0.1
