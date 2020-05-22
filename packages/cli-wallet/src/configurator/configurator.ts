@@ -2,19 +2,26 @@ import Web3 from 'web3'
 import { InanoSQLInstance } from '@nano-sql/core/lib/interfaces'
 import { ZkOPRUNode, NetworkStatus } from '@zkopru/core'
 import { ZkAccount, HDWallet } from '@zkopru/account'
-import { ZkWizard } from '@zkopru/zk-wizard'
 import { WebsocketProvider } from 'web3-core'
 import { PromptApp } from '@zkopru/utils'
+import { HDWalletSql } from '@zkopru/database'
+import { ZkWallet } from '../zk-wallet'
 
 export interface Config {
   fullnode: boolean
   develop: boolean
   address: string
-  bootstrap: string
+  coordinator: string
   websocket: string
   keys: string
   db: string
+  config?: string
   mnemonic?: string
+  erc20?: string[]
+  erc721?: string[]
+  seedKeystore?: HDWalletSql
+  password?: string
+  accountNumber?: number
 }
 
 export enum Menu {
@@ -24,7 +31,7 @@ export enum Menu {
   LOAD_DATABASE,
   LOAD_HDWALLET,
   CONFIG_TRACKING_ACCOUNT,
-  SELECT_ACCOUNT,
+  SAVE_CONFIG,
   SHOW_UTXOS,
   LOAD_NODE,
   NODE_SYNC,
@@ -43,8 +50,10 @@ export interface Context {
   wallet?: HDWallet
   account?: ZkAccount
   node?: ZkOPRUNode
-  wizard?: ZkWizard
   accounts?: ZkAccount[]
+  zkWallet?: ZkWallet
+  passwordHash?: string
+  isInitialSetup?: boolean
 }
 
-export default abstract class App extends PromptApp<Context, Config> {}
+export default abstract class Configurator extends PromptApp<Context, Config> {}

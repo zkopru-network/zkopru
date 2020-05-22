@@ -4,9 +4,9 @@ import fs from 'fs-extra'
 import tar from 'tar'
 import { SingleBar } from 'cli-progress'
 import { https } from 'follow-redirects'
-import App, { Context, Menu } from '../app'
+import Configurator, { Context, Menu } from '../configurator'
 
-const { print, goTo } = App
+const { print, goTo } = Configurator
 
 export const downloadKeys = async (url: string, path: string) => {
   return new Promise((resolve, reject) => {
@@ -41,7 +41,9 @@ export const downloadKeys = async (url: string, path: string) => {
   })
 }
 
-export default class DownloadKeys extends App {
+export default class DownloadKeys extends Configurator {
+  static code = Menu.DOWNLOAD_KEYS
+
   async run(context: Context): Promise<Context> {
     print(chalk.blue)('Downloading keys')
     const pwd = path.join(process.cwd(), this.config.keys)

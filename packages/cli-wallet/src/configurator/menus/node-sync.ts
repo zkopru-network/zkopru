@@ -1,14 +1,17 @@
 import chalk from 'chalk'
 import { NetworkStatus } from '@zkopru/core'
-import App, { Context, Menu } from '../app'
+import Configurator, { Context, Menu } from '../configurator'
 
-const { print, goTo } = App
+const { print, goTo } = Configurator
 
-export default class NodeSync extends App {
+export default class NodeSync extends Configurator {
+  static code = Menu.NODE_SYNC
+
   // eslint-disable-next-line class-methods-use-this
   async run(context: Context): Promise<Context> {
     const { node } = context
     if (!node) throw Error('ZKOPRU node is not defined')
+    print(chalk.blue)('Synchronizing... ')
     return new Promise<Context>((res, rej) => {
       node.synchronizer.on('status', (status: NetworkStatus) => {
         switch (status) {
@@ -17,10 +20,10 @@ export default class NodeSync extends App {
             break
           case NetworkStatus.LIVE:
             print(chalk.green)('ZKOPRU network is on live')
-            res(goTo(context, Menu.SELECT_ACCOUNT))
+            res(goTo(context, Menu.SAVE_CONFIG))
             break
           case NetworkStatus.ON_SYNCING:
-            print(chalk.green)('Synchronizing ZKOPRU network')
+            print(chalk.blue)('Synchronizing ZKOPRU network')
             break
           case NetworkStatus.FULLY_SYNCED:
             print(chalk.green)('Synchronizing is fully synced')
@@ -35,6 +38,7 @@ export default class NodeSync extends App {
             break
         }
       })
+      node.startSync()
     })
   }
 }

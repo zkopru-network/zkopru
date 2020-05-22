@@ -6,9 +6,9 @@ import { InanoSQLInstance, nSQL } from '@nano-sql/core'
 import { schema, ChainConfig } from '@zkopru/database'
 import { InanoSQLAdapter } from '@nano-sql/core/lib/interfaces'
 import { L1Contract } from '@zkopru/core'
-import App, { Context, Menu } from '../app'
+import Configurator, { Context, Menu } from '../configurator'
 
-const { print, goTo } = App
+const { print, goTo } = Configurator
 
 async function initDB({
   name,
@@ -69,9 +69,7 @@ async function initDB({
       })
       .exec()) as ChainConfig[]
     zkopruId = createResult[0].id
-    console.log('create result', createResult[0])
   } else {
-    console.log('query result', queryResult[0])
     zkopruId = queryResult[0].id
   }
   return {
@@ -80,7 +78,9 @@ async function initDB({
   }
 }
 
-export default class LoadDatabase extends App {
+export default class LoadDatabase extends Configurator {
+  static code = Menu.LOAD_DATABASE
+
   async run(context: Context): Promise<Context> {
     print(chalk.blue)('Loading database')
     if (!context.web3) {

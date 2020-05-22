@@ -2,11 +2,13 @@ import chalk from 'chalk'
 import { HDWallet, ZkAccount } from '@zkopru/account'
 import { validateMnemonic, wordlists } from 'bip39'
 import { HDWalletSql } from '@zkopru/database'
-import App, { Context, Menu } from '../app'
+import Configurator, { Context, Menu } from '../configurator'
 
-const { print, goTo } = App
+const { print, goTo } = Configurator
 
-export default class LoadHDWallet extends App {
+export default class LoadHDWallet extends Configurator {
+  static code = Menu.LOAD_HDWALLET
+
   async run(context: Context): Promise<Context> {
     if (!context.db) {
       throw Error('Database is not loaded')
@@ -16,8 +18,13 @@ export default class LoadHDWallet extends App {
     }
     const { web3, db } = context
     const wallet = new HDWallet(web3, db)
-    const existingWallets = await wallet.list()
-    if (existingWallets.length === 0) {
+    let existingWallets!: HDWalletSql[]
+    if (!this.config.seedKeystore) {
+      existingWallets = await wallet.list()
+    }
+    const createNewWallet: boolean =
+      !this.config.seedKeystore && existingWallets.length === 0
+    if (createNewWallet) {
       let mnemonic: string
       if (this.config.mnemonic) {
         print()('Using imported mnemonic words')
@@ -97,16 +104,29 @@ export default class LoadHDWallet extends App {
             return result
           }
         }
-        const { password } = await this.ask({
-          type: 'password',
-          name: 'password',
-          message: 'Type password',
-        })
-        await wallet.init(mnemonic, password)
+        let confirmed = false
+        let confirmedPassword!: string
+        do {
+          const { password } = await this.ask({
+            type: 'password',
+            name: 'password',
+            message: 'password',
+          })
+          const { retyped } = await this.ask({
+            type: 'password',
+            name: 'retyped',
+            message: 'confirm password',
+          })
+          confirmed = password === retyped
+          confirmedPassword = password
+        } while (!confirmed)
+        await wallet.init(mnemonic, confirmedPassword)
       }
     } else {
       let existing!: HDWalletSql
-      if (existingWallets.length === 1) {
+      if (this.config.seedKeystore) {
+        existing = this.config.seedKeystore
+      } else if (existingWallets.length === 1) {
         existing = existingWallets[0] as HDWalletSql
       } else if (existingWallets.length > 1) {
         const { idx } = await this.ask({
@@ -127,11 +147,13 @@ export default class LoadHDWallet extends App {
         }
         existing = existingWallets[idx]
       }
-      const { password } = await this.ask({
-        type: 'password',
-        name: 'password',
-        message: 'Type password',
-      })
+      const { password } = this.config.password
+        ? this.config
+        : await this.ask({
+            type: 'password',
+            name: 'password',
+            message: 'Type password',
+          })
       try {
         await wallet.load(existing, password)
       } catch (err) {
@@ -146,6 +168,10 @@ export default class LoadHDWallet extends App {
       const account = await wallet.createAccount(0)
       accounts = [account]
     }
-    return { ...goTo(context, Menu.CONFIG_TRACKING_ACCOUNT), wallet }
+    return {
+      ...goTo(context, Menu.CONFIG_TRACKING_ACCOUNT),
+      wallet,
+      isInitialSetup: createNewWallet,
+    }
   }
 }

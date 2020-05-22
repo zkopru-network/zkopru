@@ -1,15 +1,14 @@
-import chalk from 'chalk'
 import { ZkAccount } from '@zkopru/account'
-import App, { Context, Menu } from '../app'
+import App, { AppMenu, Context } from '../app'
 
 const { goTo } = App
 
-export default class SelectAccount extends App {
+export default class TopMenu extends App {
+  static code = AppMenu.TOP_MENU
+
+  // eslint-disable-next-line class-methods-use-this
   async run(context: Context): Promise<Context> {
-    if (!context.wallet) {
-      throw Error(chalk.red('Wallet is not loaded'))
-    }
-    const accounts: ZkAccount[] = await context.wallet.retrieveAccounts()
+    const accounts: ZkAccount[] = await this.zkWallet.wallet.retrieveAccounts()
     const { idx } = await this.ask({
       type: 'select',
       name: 'idx',
@@ -27,10 +26,11 @@ export default class SelectAccount extends App {
     })
     switch (idx) {
       case -1:
-        return { ...goTo(context, Menu.EXIT) }
+        return { ...goTo(context, AppMenu.EXIT) }
       default:
+        this.zkWallet.setAccount(idx)
         return {
-          ...goTo(context, Menu.ACCOUNT_DETAIL),
+          ...goTo(context, AppMenu.ACCOUNT_DETAIL),
           account: accounts[idx],
         }
     }

@@ -5,11 +5,13 @@ import {
   LightNode,
   HttpBootstrapHelper,
 } from '@zkopru/core'
-import App, { Context, Menu } from '../app'
+import Configurator, { Context, Menu } from '../configurator'
 
-const { print, goTo } = App
+const { print, goTo } = Configurator
 
-export default class LoadNode extends App {
+export default class LoadNode extends Configurator {
+  static code = Menu.LOAD_NODE
+
   // eslint-disable-next-line class-methods-use-this
   async run(context: Context): Promise<Context> {
     if (!context.provider) throw Error('Websocket provider does not exist')
@@ -19,7 +21,7 @@ export default class LoadNode extends App {
       throw Error('Websocket provider is not connected')
     let node: ZkOPRUNode
     const { provider, db, accounts } = context
-    const { address, bootstrap } = this.config
+    const { address, coordinator: bootstrap } = this.config
     if (this.config.fullnode) {
       node = await FullNode.new({
         provider,
@@ -47,7 +49,6 @@ export default class LoadNode extends App {
       print(chalk.blue)(`Bootstrap light node from ${bootstrap}`)
       await node.bootstrap()
     }
-    node.startSync()
     return { ...goTo(context, Menu.NODE_SYNC), node }
   }
 }
