@@ -100,6 +100,9 @@ export class HDWallet {
     this.password = password
     this.mnemonic = retrievedMnemonic
     this.seed = mnemonicToSeedSync(this.mnemonic)
+    if (!(await this.list()).map(obj => obj.id).includes(id)) {
+      await this.save(password)
+    }
   }
 
   async retrieveAccounts(): Promise<ZkAccount[]> {
