@@ -62,7 +62,7 @@ export class Synchronizer extends EventEmitter {
     }
   }
 
-  async sync(
+  sync(
     proposalCB?: (hash: string) => void,
     finalizationCB?: (hash: string) => void,
   ) {

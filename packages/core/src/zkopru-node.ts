@@ -3,6 +3,7 @@ import { InanoSQLInstance } from '@nano-sql/core'
 import { uuid } from '@nano-sql/core/lib/utilities'
 import { ChainConfig, schema, BlockStatus } from '@zkopru/database'
 import { Grove, poseidonHasher, keccakHasher, verifyProof } from '@zkopru/tree'
+import { logger } from '@zkopru/utils'
 import { L1Contract } from './layer1'
 import { Verifier, VerifyOption } from './verifier'
 import { L2Chain } from './layer2'
@@ -58,12 +59,14 @@ export class ZkOPRUNode {
   }
 
   startSync() {
-    this.synchronizer.sync()
+    logger.info('start sync')
     this.synchronizer.on('newBlock', this.processUnverifiedBlocks)
     this.synchronizer.on('finalization', this.finalizeBlock)
+    this.synchronizer.sync()
   }
 
   stopSync() {
+    logger.info('stop sync')
     this.synchronizer.stop()
     this.synchronizer.off('newBlock', this.processUnverifiedBlocks)
   }
@@ -161,7 +164,7 @@ export class ZkOPRUNode {
         addressesToObserve,
       })
       await grove.init()
-      return new L2Chain(db, grove, l2Config)
+      return new L2Chain(db, l1Config.genesisBlock, grove, l2Config)
     }
     const id = uuid()
     const genesisBlock = genesis({ address, hashers })
@@ -188,7 +191,7 @@ export class ZkOPRUNode {
       addressesToObserve,
     })
     await grove.init()
-    return new L2Chain(db, grove, {
+    return new L2Chain(db, l1Config.genesisBlock, grove, {
       id,
       networkId,
       chainId,

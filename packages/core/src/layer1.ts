@@ -74,6 +74,7 @@ export class L1Contract extends ZkOPRUContract {
   }
 
   async getConfig(): Promise<L1Config> {
+    let genesisBlock!: string
     let utxoTreeDepth!: number
     let withdrawalTreeDepth!: number
     let nullifierTreeDepth!: number
@@ -89,14 +90,17 @@ export class L1Contract extends ZkOPRUContract {
     // const utxoTreeDepth = await this.upstream.methods
     const tasks = [
       async () => {
+        genesisBlock = await this.upstream.methods.latest().call()
+      },
+      async () => {
         utxoTreeDepth = parseInt(
-          await this.upstream.methods.UTXO_SUB_TREE_DEPTH().call(),
+          await this.upstream.methods.UTXO_TREE_DEPTH().call(),
           10,
         )
       },
       async () => {
         withdrawalTreeDepth = parseInt(
-          await this.upstream.methods.WITHDRAWAL_SUB_TREE_DEPTH().call(),
+          await this.upstream.methods.WITHDRAWAL_TREE_DEPTH().call(),
           10,
         )
       },
@@ -126,7 +130,7 @@ export class L1Contract extends ZkOPRUContract {
       },
       async () => {
         withdrawalSubTreeDepth = parseInt(
-          await this.upstream.methods.WITHDRAWAL_SUB_TREE_SIZE().call(),
+          await this.upstream.methods.WITHDRAWAL_SUB_TREE_DEPTH().call(),
           10,
         )
       },
@@ -156,6 +160,7 @@ export class L1Contract extends ZkOPRUContract {
     ]
     await Promise.all(tasks.map(task => task()))
     return {
+      genesisBlock,
       utxoTreeDepth,
       withdrawalTreeDepth,
       nullifierTreeDepth,

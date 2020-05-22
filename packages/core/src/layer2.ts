@@ -1,5 +1,4 @@
 import { InanoSQLInstance } from '@nano-sql/core'
-import { Field } from '@zkopru/babyjubjub'
 import { Grove, GrovePatch } from '@zkopru/tree'
 import AsyncLock from 'async-lock'
 import {
@@ -37,9 +36,14 @@ export class L2Chain implements ChainConfig {
 
   db: InanoSQLInstance
 
-  latest: Field
+  latest: string
 
-  constructor(db: InanoSQLInstance, grove: Grove, chainConfig: ChainConfig) {
+  constructor(
+    db: InanoSQLInstance,
+    genesisBlock: string,
+    grove: Grove,
+    chainConfig: ChainConfig,
+  ) {
     this.db = db
     this.grove = grove
     this.id = chainConfig.id
@@ -47,7 +51,7 @@ export class L2Chain implements ChainConfig {
     this.chainId = chainConfig.chainId
     this.address = chainConfig.address
     this.config = chainConfig.config
-    this.latest = Field.zero
+    this.latest = genesisBlock
     this.lock = new AsyncLock()
   }
 
