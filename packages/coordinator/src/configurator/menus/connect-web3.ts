@@ -1,10 +1,12 @@
 import chalk from 'chalk'
 import Web3 from 'web3'
-import App, { Context, Menu } from '../app'
+import Configurator, { Context, Menu } from '../configurator'
 
-const { print, goTo } = App
+const { print, goTo } = Configurator
 
-export default class ConnectWeb3 extends App {
+export default class ConnectWeb3 extends Configurator {
+  static code = Menu.CONNECT_WEB3
+
   async run(context: Context): Promise<Context> {
     print(chalk.blue)('Connecting to the Ethereum network')
     const provider = new Web3.providers.WebsocketProvider(
@@ -20,6 +22,7 @@ export default class ConnectWeb3 extends App {
         provider.on('connect', res)
       })
     }
+    provider.connect()
     await waitConnection()
     print(chalk.blue)(`Connected via ${this.config.websocket}`)
     return { ...goTo(context, Menu.CONFIG_ACCOUNT), web3, provider }

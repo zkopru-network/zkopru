@@ -18,10 +18,12 @@ import {
   serializeBody,
   serializeHeader,
 } from '@zkopru/core'
+import { Account } from 'web3-core'
 import { Subscription } from 'web3-core-subscriptions'
 import { schema, MassDepositCommitSql, DepositSql } from '@zkopru/database'
 import { Item } from '@zkopru/tree'
 import { TxMemPool, TxPoolInterface } from './tx_pool'
+import { TransactionObject, Tx } from './types/contract'
 
 export interface CoordinatorConfig {
   maxBytes: number
@@ -45,6 +47,8 @@ export class Coordinator extends EventEmitter {
     [hash: string]: BootstrapData
   }
 
+  account: Account
+
   gasPriceSubscriber?: Subscription<unknown>
 
   gasPrice?: Field
@@ -55,8 +59,9 @@ export class Coordinator extends EventEmitter {
 
   genBlockJob?: Job
 
-  constructor(node: FullNode, config: CoordinatorConfig) {
+  constructor(node: FullNode, account: Account, config: CoordinatorConfig) {
     super()
+    this.account = account
     this.node = node
     this.txPool = new TxMemPool()
     this.config = { priceMultiplier: 32, ...config }
@@ -105,12 +110,79 @@ export class Coordinator extends EventEmitter {
       })
       if (this.api) {
         this.api.close(() => {
-          this.node.stopSync()
+          if (this.node.synchronizer.status === NetworkStatus.STOPPED) {
+            res()
+          } else {
+            this.node.stopSync()
+          }
         })
+      } else if (this.node.synchronizer.status === NetworkStatus.STOPPED) {
+        res()
       } else {
         this.node.stopSync()
       }
     })
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async registerVk(nIn: number, nOut: number, vk: any): Promise<any> {
+    const tx = this.node.l1Contract.setup.methods.registerVk(
+      nIn,
+      nOut,
+      vk.vk_alfa_1.slice(0, 2),
+      vk.vk_beta_2.slice(0, 2),
+      vk.vk_gamma_2.slice(0, 2),
+      vk.vk_delta_2.slice(0, 2),
+      vk.IC.map(arr => arr.slice(0, 2)),
+    )
+    return this.sendTx(tx)
+  }
+
+  async completeSetup(): Promise<any> {
+    const tx = this.node.l1Contract.setup.methods.completeSetup()
+    return this.sendTx(tx)
+  }
+
+  async registerAsCoordinator(): Promise<any> {
+    const { minimumStake } = this.node.l2Chain.config
+    const tx = this.node.l1Contract.coordinator.methods.register()
+    return this.sendTx(tx, { value: minimumStake })
+    // return this.sendTx(tx)
+  }
+
+  async deregister(): Promise<any> {
+    const tx = this.node.l1Contract.coordinator.methods.deregister()
+    return this.sendTx(tx)
+  }
+
+  private async sendTx(tx: TransactionObject<void>, option?: Tx) {
+    let gas!: number
+    let gasPrice!: string
+    await Promise.all(
+      [
+        async () => {
+          try {
+            gas = await tx.estimateGas({
+              from: this.account.address,
+              ...option,
+            })
+          } catch (err) {
+            logger.error(err)
+            throw Error('It may get reverted so did not send the transaction')
+          }
+        },
+        async () => {
+          gasPrice = await this.node.l1Contract.web3.eth.getGasPrice()
+        },
+      ].map(fetchTask => fetchTask()),
+    )
+    const receipt = await tx.send({
+      from: this.account.address,
+      gas,
+      gasPrice,
+      ...option,
+    })
+    return receipt
   }
 
   private startAPI() {
@@ -148,18 +220,20 @@ export class Coordinator extends EventEmitter {
       await this.txPool.addToTxPool(tx)
       res.send(result)
     } else {
-      throw Error('Tx handler does not exist. run start() first')
+      logger.info('Coordinator is not running. Run start()')
+      res.status(500).send('Coordinator is not running')
     }
   }
 
-  private bootstrapHandler: RequestHandler = async (
-    req,
-    res,
-  ): Promise<BootstrapData> => {
+  private bootstrapHandler: RequestHandler = async (req, res) => {
     const { hash } = req.query
+    logger.info(`bootstrap called for ${hash}`)
     let hashForBootstrapBlock: string
-    if (typeof hash !== 'string')
-      throw Error('Api accepts only a single string obj')
+    if (typeof hash !== 'string') {
+      logger.info('Api accepts only a single string obj')
+      res.status(500).send('API accepts only a single string')
+      return
+    }
     if (hash) {
       hashForBootstrapBlock = hash
     } else {
@@ -171,11 +245,19 @@ export class Coordinator extends EventEmitter {
       res.send(this.bootstrapCache[hashForBootstrapBlock])
     }
     const block = await this.node.l2Chain.getBlockSql(hashForBootstrapBlock)
-    if (!block) throw Error('Requested block is not found')
-    if (!block.bootstrap) {
-      throw Error('Bootstrap for requested block is not found')
+    if (!block) {
+      const message = `Failed to find the requested block ${hash}`
+      logger.info(message)
+      res.status(500).send(message)
+      return
     }
-    return {
+    if (!block.bootstrap) {
+      const message = `Bootstrap for the requested block ${hash} does not exist`
+      logger.info(message)
+      res.status(500).send(message)
+      return
+    }
+    res.send({
       proposalHash: block.proposalHash,
       blockHash: block.hash,
       utxoTreeIndex: block.bootstrap.utxoTreeIndex,
@@ -192,7 +274,7 @@ export class Coordinator extends EventEmitter {
         leaf: Field.zero,
         siblings: block.bootstrap.withdrawalBootstrap.map(Field.from),
       },
-    }
+    })
   }
 
   private bytePriceHandler: RequestHandler = async (_, res) => {
@@ -314,7 +396,7 @@ export class Coordinator extends EventEmitter {
       throw Error('set account first')
     const header: Header = {
       proposer: this.node.l1Contract.web3.defaultAccount,
-      parentBlock: this.node.l2Chain.latest.toHex(),
+      parentBlock: this.node.l2Chain.latest,
       metadata: '',
       fee: aggregatedFee.toHex(),
       utxoRoot: expectedGrove.utxoTreeRoot.toHex(),

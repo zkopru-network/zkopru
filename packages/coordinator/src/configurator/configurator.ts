@@ -1,7 +1,7 @@
 import Web3 from 'web3'
 import { InanoSQLInstance } from '@nano-sql/core/lib/interfaces'
 import { NetworkStatus } from '@zkopru/core'
-import { WebsocketProvider, EncryptedKeystoreV3Json } from 'web3-core'
+import { Account, WebsocketProvider, EncryptedKeystoreV3Json } from 'web3-core'
 import { PromptApp } from '@zkopru/utils'
 import { Coordinator } from '..'
 
@@ -37,7 +37,7 @@ export interface Context {
   db?: InanoSQLInstance
   coordinator?: Coordinator
   keystore?: EncryptedKeystoreV3Json
-  password?: string
+  account?: Account
 }
 
-export default abstract class App extends PromptApp<Context, Config> {}
+export default abstract class Configurator extends PromptApp<Context, Config> {}

@@ -8,7 +8,7 @@
     "dist"
   ],
   "bin": {
-    "zkopru-coordinator": "dist/cli/index.js"
+    "zkopru-coordinator": "dist/cli.js"
   },
   "keywords": [
     "zkopru, coordinator, cli, verifier"
@@ -30,7 +30,8 @@
     "test:ci": "jest --coverage --ci --reporters='jest-junit'",
     "coverage": "jest --coverage",
     "coverage:show": "live-server coverage",
-    "dev": "ts-node src/cli/index.ts --ws ws://localhost:5000 --config coordinator.json",
+    "dev": "ts-node src/cli.ts --ws ws://localhost:5000",
+    "dev:config": "ts-node src/cli.ts --ws ws://localhost:5000 --config coordinator.json",
     "start": "node dist/index.js"
   },
   "dependencies": {

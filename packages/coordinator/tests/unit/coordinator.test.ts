@@ -98,7 +98,7 @@ describe('coordinator test to run testnet', () => {
   }, 20000)
   describe('coordinator', () => {
     it('should be defined', async () => {
-      coordinator = new Coordinator(fullNode, {
+      coordinator = new Coordinator(fullNode, accounts[0].ethAccount, {
         maxBytes: 131072,
         bootstrap: true,
         priceMultiplier: 48, // 32 gas is the current default price for 1 byte
