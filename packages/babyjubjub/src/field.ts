@@ -38,6 +38,11 @@ export class Field extends BN {
     return new Field(x)
   }
 
+  static strictFrom(x: F): Field {
+    if (!Field.inRange(x)) throw Error('Not in range')
+    return Field.from(x)
+  }
+
   static toBN(x: F): BN {
     if (typeof x === 'string' && x.startsWith('0x')) {
       return new BN(x.substr(2), 16)
