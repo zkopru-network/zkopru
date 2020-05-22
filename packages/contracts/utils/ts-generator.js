@@ -17,6 +17,7 @@ const importExportList = [
   'IUserInteractable',
   'IERC20',
   'IERC721',
+  'IERC721Enumerable',
   'ZkOptimisticRollUp',
 ]
 

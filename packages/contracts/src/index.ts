@@ -9,6 +9,7 @@ import { ICoordinatable } from './contracts/ICoordinatable'
 import { IDepositChallenge } from './contracts/IDepositChallenge'
 import { IERC20 } from './contracts/IERC20'
 import { IERC721 } from './contracts/IERC721'
+import { IERC721Enumerable } from './contracts/IERC721Enumerable'
 import { IHeaderChallenge } from './contracts/IHeaderChallenge'
 import { IMigratable } from './contracts/IMigratable'
 import { IMigrationChallenge } from './contracts/IMigrationChallenge'
@@ -23,6 +24,7 @@ import { ICoordinatableABI } from './abis/ICoordinatable'
 import { IDepositChallengeABI } from './abis/IDepositChallenge'
 import { IERC20ABI } from './abis/IERC20'
 import { IERC721ABI } from './abis/IERC721'
+import { IERC721EnumerableABI } from './abis/IERC721Enumerable'
 import { IHeaderChallengeABI } from './abis/IHeaderChallenge'
 import { IMigratableABI } from './abis/IMigratable'
 import { IMigrationChallengeABI } from './abis/IMigrationChallenge'
@@ -175,6 +177,15 @@ export default class ZkOPRUContract {
   ): IERC721 {
     const abi: any[] = [...IERC721ABI]
     return new web3.eth.Contract(abi, address, option) as IERC721
+  }
+
+  static asIERC721Enumerable(
+    web3: Web3,
+    address: string,
+    option?: ContractOptions,
+  ): IERC721Enumerable {
+    const abi: any[] = [...IERC721EnumerableABI]
+    return new web3.eth.Contract(abi, address, option) as IERC721Enumerable
   }
 
   static asZkOptimisticRollUp(

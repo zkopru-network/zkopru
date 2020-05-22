@@ -28,16 +28,10 @@ contract Layer2Controller is Layer2 {
      *          - IMigratable.sol
      */
     fallback () external payable {
-        bytes4 sig = abi.decode(msg.data[:4], (bytes4));
-        address addr = proxied[sig];
-        assembly {
-            let freememstart := mload(0x40)
-            calldatacopy(freememstart, 0, calldatasize())
-            let success := delegatecall(not(0), addr, freememstart, calldatasize(), freememstart, 32)
-            switch success
-            case 0 { revert(freememstart, 32) }
-            default { return(freememstart, 32) }
-        }
+        address addr = proxied[msg.sig];
+        require(addr != address(0), "There is no proxy contract");
+        (bool success, bytes memory result) = addr.delegatecall(msg.data);
+        require(success, string(result));
     }
 
     /**
@@ -46,14 +40,8 @@ contract Layer2Controller is Layer2 {
     receive() external payable {
         bytes4 sig = ICoordinatable(0).register.selector;
         address addr = proxied[sig];
-        assembly {
-            let freememstart := mload(0x40)
-            calldatacopy(freememstart, 0, calldatasize())
-            let success := delegatecall(not(0), addr, freememstart, calldatasize(), freememstart, 32)
-            switch success
-            case 0 { revert(freememstart, 32) }
-            default { return(freememstart, 32) }
-        }
+        (bool success, bytes memory result) = addr.delegatecall(msg.data);
+        require(success, string(result));
     }
 
     function _connectCoordinatable(address addr) internal {
