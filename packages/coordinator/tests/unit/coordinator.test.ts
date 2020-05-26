@@ -9,9 +9,10 @@ import { schema } from '~database'
 import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
 import { readFromContainer, sleep } from '~utils'
+import { randomHex } from 'web3-utils'
 
 describe('coordinator test to run testnet', () => {
-  const testName = 'coordinatortest'
+  const testName = `${randomHex(32)}`
   const accounts: ZkAccount[] = [
     new ZkAccount(Buffer.from('sample private key')),
   ]
@@ -29,7 +30,7 @@ describe('coordinator test to run testnet', () => {
         name: testName,
         rm: true,
       })
-    } catch {
+    } catch (err) {
       container = docker.container.get(testName)
     }
     await container.start()
@@ -43,9 +44,10 @@ describe('coordinator test to run testnet', () => {
     const containerIP = (status.data as {
       NetworkSettings: { IPAddress: string }
     }).NetworkSettings.IPAddress
-    await sleep(2000)
+    await sleep(3000)
     wsProvider = new Web3.providers.WebsocketProvider(
       `ws://${containerIP}:5000`,
+      { reconnect: { auto: true } },
     )
     async function waitConnection() {
       return new Promise<void>(res => {
@@ -54,7 +56,7 @@ describe('coordinator test to run testnet', () => {
       })
     }
     await waitConnection()
-    const dbName = 'zkopruFullNodeTester'
+    const dbName = 'coordinatortest'
     await nSQL().createDatabase({
       id: dbName,
       mode: 'TEMP',
@@ -90,12 +92,12 @@ describe('coordinator test to run testnet', () => {
         snark: true,
       },
     })
-  }, 10000)
+  }, 60000)
   afterAll(async () => {
     await container.stop()
     await container.delete()
     wsProvider.disconnect(0, 'close connection')
-  }, 20000)
+  }, 60000)
   describe('coordinator', () => {
     it('should be defined', async () => {
       coordinator = new Coordinator(fullNode, accounts[0].ethAccount, {

@@ -131,7 +131,7 @@ export async function initContext() {
   const containerIP = (status.data as {
     NetworkSettings: { IPAddress: string }
   }).NetworkSettings.IPAddress
-  sleep(2000)
+  await sleep(2000)
   console.log('Running testnet on ', `${containerIP}:5000`)
   const provider = new Web3.providers.WebsocketProvider(
     `ws://${containerIP}:5000`,

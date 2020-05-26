@@ -8,5 +8,5 @@ describe('index', () => {
   it('run', async () => {
     const body = await getDummyBody()
     expect(body).toBeDefined()
-  }, 1200000)
+  }, 600000)
 })

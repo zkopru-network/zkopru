@@ -48,7 +48,7 @@ describe('integration test to run testnet', () => {
       })
     }
     await waitConnection()
-  }, 10000)
+  }, 60000)
   afterAll(async () => {
     await container.stop()
     await container.delete()
@@ -96,6 +96,6 @@ describe('integration test to run testnet', () => {
         },
       })
       expect(fullNode).toBeDefined()
-    }, 10000)
+    }, 60000)
   })
 })

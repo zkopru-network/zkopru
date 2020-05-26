@@ -37,4 +37,4 @@ RUN lerna clean -y --loglevel silent && lerna bootstrap
 
 COPY ./packages/coordinator/coordinator.docker.json /proj/packages/coordinator/coordinator.json
 EXPOSE 8888
-CMD ["node", "/proj/packages/coordinator/dist/cli/index.js", "--ws ws://localhost:5000", "--config /proj/packages/coordinator/coordinator.json"]
+CMD ["node", "/proj/packages/coordinator/dist/cli.js", "--ws ws://localhost:5000", "--config /proj/packages/coordinator/coordinator.json"]

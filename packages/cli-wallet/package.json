@@ -11,7 +11,7 @@
     "~zk-wizard": "dist"
   },
   "bin": {
-    "cli-wallet": "dist/cli.js"
+    "zkopru-wallet": "dist/cli.js"
   },
   "keywords": [
     "cli"
