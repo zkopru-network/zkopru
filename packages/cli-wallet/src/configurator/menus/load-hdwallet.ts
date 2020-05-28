@@ -170,6 +170,7 @@ export default class LoadHDWallet extends Configurator {
     }
     return {
       ...goTo(context, Menu.CONFIG_TRACKING_ACCOUNT),
+      accounts,
       wallet,
       isInitialSetup: createNewWallet,
     }

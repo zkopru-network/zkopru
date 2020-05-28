@@ -72,15 +72,13 @@ const main = async () => {
   let config: Config = argv
   if (argv.config) {
     config = {
-      ...JSON.parse(fs.readFileSync(argv.config).toString('utf8')),
       ...argv,
+      ...JSON.parse(fs.readFileSync(argv.config).toString('utf8')),
     }
     if (!config.seedKeystore)
       throw Error('You should setup the keystore in the config file')
   }
-  console.log('config is ', config)
   const zkWallet = await getZkWallet(config)
-  console.log('get zkwallet', zkWallet)
   await runCliApp(zkWallet)
 }
 ;(async () => {
