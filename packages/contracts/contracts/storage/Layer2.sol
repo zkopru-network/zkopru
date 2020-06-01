@@ -32,6 +32,10 @@ contract Layer2 is Configurated {
         return chain.latest;
     }
 
+    function proposedBlocks() public view returns (uint256) {
+        return chain.proposedBlocks;
+    }
+
     function parentOf(bytes32 header) public view returns (bytes32) {
         return chain.parentOf[header];
     }

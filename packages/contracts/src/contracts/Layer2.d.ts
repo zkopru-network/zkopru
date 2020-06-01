@@ -45,6 +45,8 @@ export class Layer2 extends Contract {
 
     latest(): TransactionObject<string>
 
+    proposedBlocks(): TransactionObject<string>
+
     parentOf(header: string | number[]): TransactionObject<string>
 
     utxoRootOf(header: string | number[]): TransactionObject<string>

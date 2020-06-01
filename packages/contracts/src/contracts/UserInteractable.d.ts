@@ -88,6 +88,8 @@ export class UserInteractable extends Contract {
       2: boolean
     }>
 
+    proposedBlocks(): TransactionObject<string>
+
     proposers(
       addr: string,
     ): TransactionObject<{

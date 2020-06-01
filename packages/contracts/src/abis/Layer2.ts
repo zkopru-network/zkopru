@@ -98,6 +98,13 @@ export const Layer2ABI = [
     type: 'function',
   },
   {
+    inputs: [],
+    name: 'proposedBlocks',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
     inputs: [{ internalType: 'bytes32', name: 'header', type: 'bytes32' }],
     name: 'parentOf',
     outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],

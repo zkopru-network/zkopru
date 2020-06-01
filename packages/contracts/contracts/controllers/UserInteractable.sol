@@ -105,12 +105,12 @@ contract UserInteractable is Layer2 {
         inputs[6] = nft;
         uint note = Poseidon.poseidon(inputs);
         /// Receive token
-        if(amount != 0) {
+        if (token != address(0) && amount != 0) {
             try IERC20(token).transferFrom(msg.sender, address(this), amount) {
             } catch {
                 revert("Transfer ERC20 failed");
             }
-        } else {
+        } else if (token != address(0)) {
             try IERC721(token).transferFrom(msg.sender, address(this), nft) {
             } catch {
                 revert("Transfer NFT failed");

@@ -24,6 +24,7 @@ struct Blockchain {
     /** For migrations */
     mapping(bytes32=>bool) migrations;
     // MassMigration[] migrations; // legacy
+    uint proposedBlocks;
 }
 
 struct MassDeposit {

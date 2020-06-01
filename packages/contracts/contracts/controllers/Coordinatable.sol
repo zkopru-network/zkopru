@@ -17,7 +17,7 @@ import { Deserializer } from "../libraries/Deserializer.sol";
 contract Coordinatable is Layer2 {
     using Types for *;
 
-    event NewProposal(bytes32 blockHash);
+    event NewProposal(uint256 proposalNum);
     event Finalized(bytes32 blockHash);
     event MassDepositCommit(uint index, bytes32 merged, uint256 fee);
 
@@ -78,7 +78,8 @@ contract Coordinatable is Layer2 {
             delete Layer2.chain.stagedSize;
             Layer2.chain.massDepositId++;
         }
-        emit NewProposal(currentBlockHash);
+        Layer2.chain.proposedBlocks++;
+        emit NewProposal(Layer2.chain.proposedBlocks);
     }
 
     function finalize(bytes32 submissionId, bytes memory) public {

@@ -84,6 +84,8 @@ export class RollUpable extends Contract {
       2: boolean
     }>
 
+    proposedBlocks(): TransactionObject<string>
+
     proposers(
       addr: string,
     ): TransactionObject<{

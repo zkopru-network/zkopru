@@ -37,9 +37,9 @@ export const CoordinatableABI = [
     inputs: [
       {
         indexed: false,
-        internalType: 'bytes32',
-        name: 'blockHash',
-        type: 'bytes32',
+        internalType: 'uint256',
+        name: 'proposalNum',
+        type: 'uint256',
       },
     ],
     name: 'NewProposal',
@@ -206,6 +206,13 @@ export const CoordinatableABI = [
       { internalType: 'uint256', name: 'challengeDue', type: 'uint256' },
       { internalType: 'bool', name: 'slashed', type: 'bool' },
     ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'proposedBlocks',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
   },
