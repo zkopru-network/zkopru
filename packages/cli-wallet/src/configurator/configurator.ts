@@ -5,7 +5,6 @@ import { ZkAccount, HDWallet } from '@zkopru/account'
 import { WebsocketProvider } from 'web3-core'
 import { PromptApp } from '@zkopru/utils'
 import { HDWalletSql } from '@zkopru/database'
-import { ZkWallet } from '../zk-wallet'
 
 export interface Config {
   fullnode: boolean
@@ -34,9 +33,7 @@ export enum Menu {
   SAVE_CONFIG,
   SHOW_UTXOS,
   LOAD_NODE,
-  NODE_SYNC,
-  ACCOUNT_DETAIL,
-  SHOW_TOP_MENU,
+  COMPLETE,
   EXIT,
 }
 
@@ -48,10 +45,8 @@ export interface Context {
   provider?: WebsocketProvider
   db?: InanoSQLInstance
   wallet?: HDWallet
-  account?: ZkAccount
   node?: ZkOPRUNode
   accounts?: ZkAccount[]
-  zkWallet?: ZkWallet
   passwordHash?: string
   isInitialSetup?: boolean
 }

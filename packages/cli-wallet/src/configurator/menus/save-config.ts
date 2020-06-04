@@ -10,7 +10,7 @@ export default class SaveConfig extends Configurator {
   static code = Menu.SAVE_CONFIG
 
   async run(context: Context): Promise<Context> {
-    if (!context.isInitialSetup) return { ...goTo(context, Menu.LOAD_NODE) }
+    if (!context.isInitialSetup) return { ...goTo(context, Menu.COMPLETE) }
 
     const { save } = await this.ask({
       type: 'confirm',
@@ -19,7 +19,7 @@ export default class SaveConfig extends Configurator {
       message: 'Do you want to save this configuration?',
     })
     if (!save) {
-      return { ...goTo(context, Menu.LOAD_NODE) }
+      return { ...goTo(context, Menu.COMPLETE) }
     }
     let exported = false
     let seedKeystore!: HDWalletSql
@@ -66,6 +66,6 @@ export default class SaveConfig extends Configurator {
     }
     fs.writeFileSync(configPath, JSON.stringify(newConfig))
     print(chalk.blue)('Successfully created wallet.json')
-    return { ...goTo(context, Menu.LOAD_NODE) }
+    return { ...goTo(context, Menu.COMPLETE) }
   }
 }

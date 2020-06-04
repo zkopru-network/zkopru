@@ -58,7 +58,6 @@ async function initDB({
   if (queryResult.length === 0) {
     const layer1: L1Contract = new L1Contract(web3, address)
     const config = await layer1.getConfig()
-    console.log('retrieved config', config)
     const createResult = (await db
       .selectTable(schema.chain.name)
       .presetQuery('create', {

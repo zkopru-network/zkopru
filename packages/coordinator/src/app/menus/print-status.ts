@@ -32,7 +32,7 @@ export default class PrintStatus extends App {
     print(chalk.blue)(`  Deposits: ${result.merged} / Fee: ${result.fee} wei`)
     print(chalk.blue)(``)
     print(chalk.blueBright)('Layer2 status')
-    print(chalk.blue)(`  Latest block: ${l2Chain.latest}`)
+    print(chalk.blue)(`  Latest block: ${await l2Chain.getLatestBlockHash()}`)
     print(chalk.blue)(`  Pending txs: ${txPool.pendingNum()}`)
     print(chalk.blue)(``)
     return {

@@ -49,6 +49,6 @@ export default class LoadNode extends Configurator {
       print(chalk.blue)(`Bootstrap light node from ${bootstrap}`)
       await node.bootstrap()
     }
-    return { ...goTo(context, Menu.NODE_SYNC), node }
+    return { ...goTo(context, Menu.SAVE_CONFIG), node }
   }
 }

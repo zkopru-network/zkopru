@@ -5,6 +5,7 @@ import { InanoSQLInstance } from '@nano-sql/core'
 import { HDWallet, ZkAccount } from '@zkopru/account'
 import { ZkOPRUNode, L1Contract } from '@zkopru/core'
 import { logger } from '@zkopru/utils'
+import fetch from 'node-fetch'
 
 export interface Balance {
   eth: string
@@ -21,9 +22,11 @@ export class ZkWallet {
 
   wallet: HDWallet
 
-  account: ZkAccount
-
   node: ZkOPRUNode
+
+  coordinator: string
+
+  account?: ZkAccount
 
   accounts: ZkAccount[]
 
@@ -47,15 +50,17 @@ export class ZkWallet {
     accounts,
     erc20,
     erc721,
+    coordinator,
   }: {
     zkopruId: string
     db: InanoSQLInstance
     wallet: HDWallet
-    account: ZkAccount
+    account?: ZkAccount
     node: ZkOPRUNode
     accounts: ZkAccount[]
     erc20: string[]
     erc721: string[]
+    coordinator: string
   }) {
     this.zkopruId = zkopruId
     this.db = db
@@ -65,6 +70,7 @@ export class ZkWallet {
     this.account = account
     this.erc20 = erc20
     this.erc721 = erc721
+    this.coordinator = coordinator
     this.cached = {
       layer1: {},
     }
@@ -200,10 +206,15 @@ export class ZkWallet {
     return []
   }
 
-  async depositEther(eth: F, fee: F, to?: Point) {
+  async depositEther(eth: F, fee: F, to?: Point): Promise<boolean> {
+    if (!this.account) {
+      console.log(this.account)
+      logger.error('Account is not set')
+      return false
+    }
     if (!this.cached.layer1.balance) {
       logger.error('fetch balance first')
-      return
+      return false
     }
     if (
       Field.strictFrom(this.cached.layer1.balance.eth).lt(
@@ -211,19 +222,30 @@ export class ZkWallet {
       )
     ) {
       logger.error('Not enough Ether')
-      return
+      return false
     }
     const note = Note.newEtherNote({
       eth,
       pubKey: to || this.account.pubKey,
     })
-    await this.deposit(note, Field.strictFrom(fee))
+    const result = await this.deposit(note, Field.strictFrom(fee))
+    return result
   }
 
-  async depositERC20(eth: F, addr: string, amount: F, fee: F, to?: Point) {
+  async depositERC20(
+    eth: F,
+    addr: string,
+    amount: F,
+    fee: F,
+    to?: Point,
+  ): Promise<boolean> {
+    if (!this.account) {
+      logger.error('Account is not set')
+      return false
+    }
     if (!this.cached.layer1.balance) {
       logger.error('fetch balance first')
-      return
+      return false
     }
     if (
       Field.strictFrom(this.cached.layer1.balance.eth).lt(
@@ -231,7 +253,7 @@ export class ZkWallet {
       )
     ) {
       logger.error('Not enough Ether')
-      return
+      return false
     }
     if (
       Field.strictFrom(this.cached.layer1.balance.erc20[addr]).lt(
@@ -239,7 +261,7 @@ export class ZkWallet {
       )
     ) {
       logger.error('Not enough ERC20 balance')
-      return
+      return false
     }
     const note = Note.newERC20Note({
       eth,
@@ -247,13 +269,24 @@ export class ZkWallet {
       tokenAddr: addr,
       erc20Amount: amount,
     })
-    await this.deposit(note, Field.strictFrom(fee))
+    const result = await this.deposit(note, Field.strictFrom(fee))
+    return result
   }
 
-  async depositERC721(eth: F, addr: string, nft: F, fee: F, to?: Point) {
+  async depositERC721(
+    eth: F,
+    addr: string,
+    nft: F,
+    fee: F,
+    to?: Point,
+  ): Promise<boolean> {
+    if (!this.account) {
+      logger.error('Account is not set')
+      return false
+    }
     if (!this.cached.layer1.balance) {
       logger.error('fetch balance first')
-      return
+      return false
     }
     if (
       Field.strictFrom(this.cached.layer1.balance.eth).lt(
@@ -261,7 +294,7 @@ export class ZkWallet {
       )
     ) {
       logger.error('Not enough Ether')
-      return
+      return false
     }
     const note = Note.newNFTNote({
       eth,
@@ -269,20 +302,54 @@ export class ZkWallet {
       tokenAddr: addr,
       nft,
     })
-    await this.deposit(note, Field.strictFrom(fee))
+    const result = await this.deposit(note, Field.strictFrom(fee))
+    return result
   }
 
-  private async deposit(note: Note, fee: Field) {
-    await this.node.l1Contract.user.methods
-      .deposit(
-        note.eth.toString(),
-        note.salt.toString(),
-        note.tokenAddr.toHex(20),
-        note.erc20Amount.toString(),
-        note.nft.toString(),
-        [note.pubKey.x.toString(), note.pubKey.y.toString()],
-        fee.toString(),
-      )
-      .send({ from: this.account.address })
+  async fetchPrice(): Promise<string> {
+    const response = await fetch(`${this.coordinator}/price`)
+    if (response.ok) {
+      const { weiPerByte } = await response.json()
+      return weiPerByte
+    }
+    throw Error(`${response.text()}`)
+  }
+
+  private async deposit(note: Note, fee: Field): Promise<boolean> {
+    if (!this.account) {
+      logger.error('Account is not set')
+      return false
+    }
+    const tx = this.node.l1Contract.user.methods.deposit(
+      note.eth.toString(),
+      note.salt.toString(),
+      note.tokenAddr.toHex(20),
+      note.erc20Amount.toString(),
+      note.nft.toString(),
+      [note.pubKey.x.toString(), note.pubKey.y.toString()],
+      fee.toString(),
+    )
+    console.log('value, ', note.eth.add(fee).toString())
+    const receipt = await this.node.l1Contract.sendTx(tx, {
+      from: this.account.address,
+      value: note.eth.add(fee).toString(),
+    })
+    const cachedUtxo: UtxoSql = {
+      hash: note.hash().toHex(),
+      eth: note.eth.toHex(),
+      pubKey: note.pubKey.toHex(),
+      salt: note.salt.toHex(),
+      tokenAddr: note.tokenAddr.toHex(),
+      erc20Amount: note.erc20Amount.toHex(),
+      nft: note.nft.toHex(),
+      status: UtxoStatus.NON_INCLUDED,
+    }
+    await this.db
+      .selectTable(schema.utxo.name)
+      .query('upsert', [cachedUtxo])
+      .exec()
+    // TODO check what web3 methods returns when it failes
+    if (receipt) return true
+    return false
   }
 }

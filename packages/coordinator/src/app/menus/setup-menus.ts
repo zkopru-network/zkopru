@@ -21,6 +21,10 @@ export default class SetupMenu extends App {
           value: AppMenu.REGISTER_AS_COORDINATOR,
         },
         {
+          title: 'Commit the latest deposits',
+          value: AppMenu.COMMIT_DEPOSITS,
+        },
+        {
           title: 'Deregister',
           value: AppMenu.DEREGISTER,
         },

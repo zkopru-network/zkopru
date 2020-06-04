@@ -11,6 +11,7 @@ export interface TxPoolInterface {
     minPricePerByte: Field,
   ): Promise<ZkTx[] | null>
   markAsIncluded(txs: ZkTx[]): void
+  pendingTxs(): ZkTx[]
 }
 
 export class TxMemPool implements TxPoolInterface {
@@ -19,7 +20,7 @@ export class TxMemPool implements TxPoolInterface {
   }
 
   txs: {
-    [proposalHash: string]: ZkTx
+    [proposalTx: string]: ZkTx
   }
 
   constructor() {
@@ -29,6 +30,10 @@ export class TxMemPool implements TxPoolInterface {
 
   pendingNum(): number {
     return Object.keys(this.txs).length
+  }
+
+  pendingTxs(): ZkTx[] {
+    return Object.values(this.txs)
   }
 
   async addToTxPool(zkTx: ZkTx): Promise<void> {

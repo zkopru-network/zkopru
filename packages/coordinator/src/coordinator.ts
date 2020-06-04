@@ -2,9 +2,8 @@ import { Field } from '@zkopru/babyjubjub'
 import express, { RequestHandler } from 'express'
 import { scheduleJob, Job } from 'node-schedule'
 import { EventEmitter } from 'events'
-import { Server } from 'http'
 import { ZkTx } from '@zkopru/transaction'
-import { logger, root, hexify } from '@zkopru/utils'
+import { logger, root, bnToBytes32, bnToUint256 } from '@zkopru/utils'
 import {
   FullNode,
   BootstrapData,
@@ -17,13 +16,16 @@ import {
   MassDeposit,
   serializeBody,
   serializeHeader,
+  headerHash,
 } from '@zkopru/core'
 import { Account } from 'web3-core'
 import { Subscription } from 'web3-core-subscriptions'
 import { schema, MassDepositCommitSql, DepositSql } from '@zkopru/database'
 import { Item } from '@zkopru/tree'
+import { Server } from 'http'
+import chalk from 'chalk'
+import { Address, Bytes32, Uint256 } from 'soltypes'
 import { TxMemPool, TxPoolInterface } from './tx_pool'
-import { TransactionObject, Tx } from './types/contract'
 
 export interface CoordinatorConfig {
   maxBytes: number
@@ -75,12 +77,12 @@ export class Coordinator extends EventEmitter {
     this.startSubscribeGasPrice()
     this.node.synchronizer.on(
       'status',
-      async (status: NetworkStatus, blockHash?: string) => {
+      async (status: NetworkStatus, blockHash?: Bytes32) => {
         // udpate the txpool using the newly proposed hash
         // if the hash does not exist in the tx pool's block list
         // create an observer to fetch the block data from database
         switch (status) {
-          case NetworkStatus.FULLY_SYNCED:
+          case NetworkStatus.SYNCED:
             // It tries to propose a block until any block is proposed to the layer1
             if (blockHash) {
               const block = await this.node.l2Chain.getBlock(blockHash)
@@ -135,54 +137,32 @@ export class Coordinator extends EventEmitter {
       vk.vk_delta_2.slice(0, 2),
       vk.IC.map(arr => arr.slice(0, 2)),
     )
-    return this.sendTx(tx)
+    return this.node.l1Contract.sendTx(tx, { from: this.account.address })
   }
 
   async completeSetup(): Promise<any> {
     const tx = this.node.l1Contract.setup.methods.completeSetup()
-    return this.sendTx(tx)
+    return this.node.l1Contract.sendTx(tx, { from: this.account.address })
+  }
+
+  async commitMassDeposit(): Promise<any> {
+    const tx = this.node.l1Contract.coordinator.methods.commitMassDeposit()
+    return this.node.l1Contract.sendTx(tx, { from: this.account.address })
   }
 
   async registerAsCoordinator(): Promise<any> {
     const { minimumStake } = this.node.l2Chain.config
     const tx = this.node.l1Contract.coordinator.methods.register()
-    return this.sendTx(tx, { value: minimumStake })
+    return this.node.l1Contract.sendTx(tx, {
+      value: minimumStake,
+      from: this.account.address,
+    })
     // return this.sendTx(tx)
   }
 
   async deregister(): Promise<any> {
     const tx = this.node.l1Contract.coordinator.methods.deregister()
-    return this.sendTx(tx)
-  }
-
-  private async sendTx(tx: TransactionObject<void>, option?: Tx) {
-    let gas!: number
-    let gasPrice!: string
-    await Promise.all(
-      [
-        async () => {
-          try {
-            gas = await tx.estimateGas({
-              from: this.account.address,
-              ...option,
-            })
-          } catch (err) {
-            logger.error(err)
-            throw Error('It may get reverted so did not send the transaction')
-          }
-        },
-        async () => {
-          gasPrice = await this.node.l1Contract.web3.eth.getGasPrice()
-        },
-      ].map(fetchTask => fetchTask()),
-    )
-    const receipt = await tx.send({
-      from: this.account.address,
-      gas,
-      gasPrice,
-      ...option,
-    })
-    return receipt
+    return this.node.l1Contract.sendTx(tx, { from: this.account.address })
   }
 
   private startAPI() {
@@ -244,7 +224,8 @@ export class Coordinator extends EventEmitter {
     if (this.bootstrapCache[hashForBootstrapBlock]) {
       res.send(this.bootstrapCache[hashForBootstrapBlock])
     }
-    const block = await this.node.l2Chain.getBlockSql(hashForBootstrapBlock)
+    const blockHash = Bytes32.from(hashForBootstrapBlock)
+    const block = await this.node.l2Chain.getBlockSql(blockHash)
     if (!block) {
       const message = `Failed to find the requested block ${hash}`
       logger.info(message)
@@ -258,7 +239,7 @@ export class Coordinator extends EventEmitter {
       return
     }
     res.send({
-      proposalHash: block.proposalHash,
+      proposalTx: block.proposalTx,
       blockHash: block.hash,
       utxoTreeIndex: block.bootstrap.utxoTreeIndex,
       utxoStartingLeafProof: {
@@ -286,7 +267,9 @@ export class Coordinator extends EventEmitter {
 
   private startGenBlock() {
     if (!this.genBlockJob)
-      this.genBlockJob = scheduleJob('*/5 * * * * *', this.proposeNewBlocks)
+      this.genBlockJob = scheduleJob('*/5 * * * * *', () =>
+        this.proposeNewBlocks(),
+      )
   }
 
   private stopGenBlock() {
@@ -295,19 +278,52 @@ export class Coordinator extends EventEmitter {
   }
 
   private async proposeNewBlocks() {
+    if (!this.gasPrice) {
+      logger.info('Skip gen block. Gas price is not synced yet')
+      return
+    }
+    logger.info('Generating block')
     const block = await this.genBlock()
-    if (block) {
-      const bytes = Buffer.concat([
-        serializeHeader(block.header),
-        serializeBody(block.body),
-      ])
-      await this.node.l1Contract.coordinator.methods
-        .propose(`0x${bytes.toString('hex')}`)
-        .send()
+    const bytes = Buffer.concat([
+      serializeHeader(block.header),
+      serializeBody(block.body),
+    ])
+    const blockData = `0x${bytes.toString('hex')}`
+    let expectedGas: number
+    try {
+      expectedGas = await this.node.l1Contract.coordinator.methods
+        .propose(blockData)
+        .estimateGas({
+          from: this.account.address,
+        })
+    } catch (err) {
+      logger.error(`Skip gen block. propose() fails`)
+      console.log(err)
+      return
+    }
+    const expectedFee = this.gasPrice.muln(expectedGas)
+    if (block.fee.lte(expectedFee)) {
+      logger.info(
+        `Skip gen block. Aggregated fee is not enough yet ${block.fee} / ${expectedFee}`,
+      )
+    } else {
+      logger.info(
+        chalk.green(`Proposed a new block: ${headerHash(block.header)}`),
+      )
+      console.log('proposed raw data', blockData)
+      await this.node.l1Contract.coordinator.methods.propose(blockData).send({
+        from: this.account.address,
+        gas: expectedGas,
+        gasPrice: this.gasPrice.toString(),
+      })
     }
   }
 
-  private async genBlock(): Promise<{ header: Header; body: Body } | null> {
+  private async genBlock(): Promise<{
+    header: Header
+    body: Body
+    fee: Field
+  }> {
     const deposits: Field[] = []
     let consumedBytes = 0
     let aggregatedFee: Field = Field.zero
@@ -318,42 +334,51 @@ export class Coordinator extends EventEmitter {
       .where(['includedIn', '=', 'NOT_INCLUDED'])
       .exec()) as MassDepositCommitSql[]
     commits.sort((a, b) => parseInt(a.index, 10) - parseInt(b.index, 10))
-    const allPendingDeposits: DepositSql[] = []
-    for (const commit of commits) {
-      const pendingDeposits = (await this.node.db
+    const pendingDeposits = (await this.node.db
+      .selectTable(schema.deposit.name)
+      .presetQuery('getDeposits', {
+        commitIndexes: commits.map(commit => commit.index),
+      })
+      .exec()) as DepositSql[]
+    pendingDeposits.sort((a, b) => {
+      if (a.blockNumber !== b.blockNumber) {
+        return a.blockNumber - b.blockNumber
+      }
+      if (a.transactionIndex !== b.transactionIndex) {
+        return a.transactionIndex - b.transactionIndex
+      }
+      return a.logIndex - b.logIndex
+    })
+    console.log(
+      'FUCK',
+      await this.node.db
         .selectTable(schema.deposit.name)
-        .presetQuery('getDeposits', {
-          commitIndex: commit.index,
-          zkopru: commit.zkopru,
-        })
-        .exec()) as DepositSql[]
-      allPendingDeposits.push(...pendingDeposits)
-    }
-    deposits.push(
-      ...allPendingDeposits.map(deposit => Field.from(deposit.note)),
+        .query('select')
+        .exec(),
     )
+    console.log('retrieved', pendingDeposits)
+    deposits.push(...pendingDeposits.map(deposit => Field.from(deposit.note)))
+    logger.info(`Pending deposits: ${pendingDeposits.length}`)
     consumedBytes += 32 * commits.length
     aggregatedFee = aggregatedFee.add(
-      allPendingDeposits.reduce((prev, item) => prev.add(item.fee), Field.zero),
+      pendingDeposits.reduce((prev, item) => prev.add(item.fee), Field.zero),
     )
 
     // 2. pick transactions
     if (!this.gasPrice) {
-      logger.info('coordinator.js: Gas price is not synced yet')
-      return null
+      throw Error('coordinator.js: Gas price is not synced')
     }
-    const txs = await this.txPool.pickTxs(
-      this.config.maxBytes - consumedBytes,
-      160000,
-      this.gasPrice.muln(this.config.priceMultiplier),
-    )
-    if (!txs) {
-      logger.info('coordinator.js: Not enough transactions to generate a block')
-      return null
-    }
+    const txs =
+      (await this.txPool.pickTxs(
+        this.config.maxBytes - consumedBytes,
+        160000,
+        this.gasPrice.muln(this.config.priceMultiplier),
+      )) || []
     aggregatedFee = aggregatedFee.add(
       txs.map(tx => tx.fee).reduce((prev, fee) => prev.add(fee), Field.zero),
     )
+    logger.info(`Picked txs: ${txs.length}`)
+    logger.info(`Pending txs: ${this.txPool.pendingNum()}`)
     // TODO 3 make sure every nullifier is unique and not used before
     // * if there exists invalid transactions, remove them from the tx pool and try genBlock recursively
 
@@ -377,6 +402,7 @@ export class Coordinator extends EventEmitter {
       ]
     }, [] as Field[])
 
+    logger.info(`Withdrawals: ${withdrawals.length}`)
     const nullifiers = txs.reduce((arr, tx) => {
       return [...arr, ...tx.inflow.map(inflow => inflow.nullifier)]
     }, [] as Field[])
@@ -388,36 +414,40 @@ export class Coordinator extends EventEmitter {
       nullifiers,
     })
 
-    if (!expectedGrove.nullifierTreeRoot)
+    if (!expectedGrove.nullifierTreeRoot) {
       throw Error(
         'Grove does not have the nullifier tree. Use full node option',
       )
-    if (!this.node.l1Contract.web3.defaultAccount)
-      throw Error('set account first')
-    const header: Header = {
-      proposer: this.node.l1Contract.web3.defaultAccount,
-      parentBlock: this.node.l2Chain.latest,
-      metadata: '',
-      fee: aggregatedFee.toHex(),
-      utxoRoot: expectedGrove.utxoTreeRoot.toHex(),
-      utxoIndex: expectedGrove.utxoTreeIndex.toHex(),
-      nullifierRoot: hexify(expectedGrove.nullifierTreeRoot),
-      withdrawalRoot: hexify(expectedGrove.withdrawalTreeRoot),
-      withdrawalIndex: hexify(expectedGrove.withdrawalTreeIndex),
-      txRoot: root(txs.map(tx => tx.hash())).toString(),
-      depositRoot: root(commits.map(massDepositHash)).toString(),
-      migrationRoot: root(massMigrations.map(massMigrationHash)).toString(),
+    }
+    const latest = await this.node.l2Chain.getLatestBlockHash()
+    if (!latest) {
+      throw Error('Layer 2 chain is not synced. No genesis block')
     }
     const massDeposits: MassDeposit[] = commits.map(obj => ({
-      merged: obj.merged,
-      fee: obj.fee,
+      merged: Bytes32.from(obj.merged),
+      fee: Uint256.from(obj.fee),
     }))
+    const header: Header = {
+      proposer: Address.from(this.account.address),
+      parentBlock: latest,
+      metadata: Bytes32.from(
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+      ),
+      fee: aggregatedFee.toUint256(),
+      utxoRoot: expectedGrove.utxoTreeRoot.toUint256(),
+      utxoIndex: expectedGrove.utxoTreeIndex.toUint256(),
+      nullifierRoot: bnToBytes32(expectedGrove.nullifierTreeRoot),
+      withdrawalRoot: bnToBytes32(expectedGrove.withdrawalTreeRoot),
+      withdrawalIndex: bnToUint256(expectedGrove.withdrawalTreeIndex),
+      txRoot: Bytes32.from(root(txs.map(tx => tx.hash()))),
+      depositRoot: Bytes32.from(root(massDeposits.map(massDepositHash))),
+      migrationRoot: Bytes32.from(root(massMigrations.map(massMigrationHash))),
+    }
     const body: Body = {
       txs,
       massDeposits,
       massMigrations,
     }
-    return { header, body }
-    // 4. generate a new block and propose it
+    return { header, body, fee: aggregatedFee }
   }
 }

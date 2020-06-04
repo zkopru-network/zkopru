@@ -79,10 +79,11 @@ const main = async () => {
       throw Error('You should setup the keystore in the config file')
   }
   const zkWallet = await getZkWallet(config)
-  await runCliApp(zkWallet)
+  if (zkWallet) await runCliApp(zkWallet)
 }
 ;(async () => {
   await main()
 })().catch(e => {
   console.error(e)
+  process.exit()
 })

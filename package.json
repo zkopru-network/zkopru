@@ -120,7 +120,7 @@
     "tsconfig-paths": "^3.9.0",
     "typechain": "^1.0.5",
     "typechain-target-web3-v1": "^1.0.4",
-    "typescript": "^3.4.3"
+    "typescript": "3.8.3"
   },
   "publishConfig": {
     "access": "public"

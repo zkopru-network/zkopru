@@ -10,6 +10,7 @@ import PrintStatus from './menus/print-status'
 import SetupMenu from './menus/setup-menus'
 import Layer1Details from './menus/layer1-details'
 import CoordinatorInfo from './menus/coordinator-info'
+import CommitDeposits from './menus/setup/commit-deposits'
 
 export async function runCliApp(
   coordinator: Coordinator,
@@ -27,6 +28,7 @@ export async function runCliApp(
   menus[SetupMenu.code] = new SetupMenu(coordinator, onCancel)
   menus[RegisterVk.code] = new RegisterVk(coordinator, onCancel)
   menus[CompleteSetup.code] = new CompleteSetup(coordinator, onCancel)
+  menus[CommitDeposits.code] = new CommitDeposits(coordinator, onCancel)
   menus[RegisterAsCoordinator.code] = new RegisterAsCoordinator(
     coordinator,
     onCancel,

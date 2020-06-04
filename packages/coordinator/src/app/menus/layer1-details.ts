@@ -11,7 +11,6 @@ export default class Layer1Details extends App {
     const { l1Contract } = this.coordinator.node
     const l1Config = await l1Contract.getConfig()
     print(chalk.blueBright)('Layer 1 configuration')
-    print(chalk.blue)(`   genesis block                     : ${l1Config.genesisBlock}`)
     print(chalk.blue)(`   utxo tree depth                   : ${l1Config.utxoTreeDepth}`)
     print(chalk.blue)(`   withdraw tree depth               : ${l1Config.withdrawalTreeDepth}`)
     print(chalk.blue)(`   nullifier tree depth              : ${l1Config.nullifierTreeDepth}`)

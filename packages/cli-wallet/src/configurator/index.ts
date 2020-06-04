@@ -2,6 +2,7 @@
 
 /* eslint-disable no-case-declarations */
 import { NetworkStatus } from '@zkopru/core'
+import assert from 'assert'
 import { Menu, Context, Config } from './configurator'
 import Splash from './menus/splash'
 import ConnectWeb3 from './menus/connect-web3'
@@ -10,7 +11,6 @@ import LoadDatabase from './menus/load-database'
 import LoadHDWallet from './menus/load-hdwallet'
 import LoadNode from './menus/load-node'
 import TrackingAccount from './menus/config-tracking-accounts'
-import NodeSync from './menus/node-sync'
 import SaveConfig from './menus/save-config'
 import { ZkWallet } from '../zk-wallet'
 
@@ -21,7 +21,7 @@ const defaultOnCancel = () => {
 export async function getZkWallet(
   config: Config,
   onError?: () => Promise<void>,
-): Promise<ZkWallet> {
+): Promise<ZkWallet | undefined> {
   const onCancel = onError || defaultOnCancel
   let context: Context = {
     menu: Menu.SPLASH,
@@ -35,9 +35,8 @@ export async function getZkWallet(
   menus[Menu.LOAD_HDWALLET] = new LoadHDWallet(config, onCancel)
   menus[Menu.CONFIG_TRACKING_ACCOUNT] = new TrackingAccount(config, onCancel)
   menus[Menu.LOAD_NODE] = new LoadNode(config, onCancel)
-  menus[Menu.NODE_SYNC] = new NodeSync(config, onCancel)
   menus[Menu.SAVE_CONFIG] = new SaveConfig(config, onCancel)
-  while (context.menu !== Menu.EXIT) {
+  while (context.menu !== Menu.COMPLETE) {
     const menu = menus[context.menu]
     if (menu) {
       context = await menu.run(context)
@@ -45,6 +44,23 @@ export async function getZkWallet(
       break
     }
   }
-  if (!context.zkWallet) throw Error('Wallet is not configured')
-  return context.zkWallet
+  if (context.menu === Menu.EXIT) return undefined
+  const { zkopruId, db, wallet, node, accounts } = context
+  const { erc20, erc721, coordinator } = config
+  assert(zkopruId, 'zkopruid')
+  assert(db, 'db')
+  assert(wallet, 'wallet')
+  assert(accounts, 'accounts')
+  assert(node, 'node')
+  const zkWallet = new ZkWallet({
+    zkopruId,
+    db,
+    wallet,
+    node,
+    accounts,
+    erc20: erc20 || [],
+    erc721: erc721 || [],
+    coordinator,
+  })
+  return zkWallet
 }

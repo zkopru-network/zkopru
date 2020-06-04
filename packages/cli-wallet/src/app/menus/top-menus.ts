@@ -19,13 +19,22 @@ export default class TopMenu extends App {
           value: i,
         })),
         {
-          title: 'quit',
+          title: 'Create new account',
           value: -1,
+        },
+        {
+          title: 'Quit',
+          value: -2,
         },
       ],
     })
+    let reRun: Context
     switch (idx) {
       case -1:
+        await this.zkWallet.wallet.createAccount(accounts.length)
+        reRun = await this.run(context)
+        return reRun
+      case -2:
         return { ...goTo(context, AppMenu.EXIT) }
       default:
         this.zkWallet.setAccount(idx)

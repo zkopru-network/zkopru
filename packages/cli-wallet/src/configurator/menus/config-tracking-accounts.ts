@@ -19,12 +19,12 @@ export default class TrackingAccount extends Configurator {
           context.wallet?.createAccount(index),
         ),
       )
-      return { ...goTo(context, Menu.SAVE_CONFIG) }
+      return { ...goTo(context, Menu.LOAD_NODE) }
     }
     const accounts: ZkAccount[] = await context.wallet.retrieveAccounts()
     accounts.forEach((account, i) => print()(`${i}: ${account.address}`))
     if (!context.isInitialSetup) {
-      return { ...goTo(context, Menu.SAVE_CONFIG), accounts }
+      return { ...goTo(context, Menu.LOAD_NODE), accounts }
     }
     const { idx } = await this.ask({
       type: 'select',
@@ -48,7 +48,7 @@ export default class TrackingAccount extends Configurator {
         reRun = await this.run(context)
         return reRun
       case 1:
-        return { ...goTo(context, Menu.SAVE_CONFIG), accounts }
+        return { ...goTo(context, Menu.LOAD_NODE), accounts }
       default:
         return { ...goTo(context, Menu.EXIT), accounts }
     }
