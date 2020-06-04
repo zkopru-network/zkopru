@@ -11,32 +11,37 @@ export enum BlockStatus {
   REVERTED = 6,
 }
 
+export interface HeaderSql {
+  proposer: string
+  parentBlock: string
+  metadata: string
+  fee: string
+  utxoRoot: string
+  utxoIndex: string
+  nullifierRoot: string
+  withdrawalRoot: string
+  withdrawalIndex: string
+  txRoot: string
+  depositRoot: string
+  migrationRoot: string
+}
+
+export interface BootstrapSql {
+  utxoTreeIndex: number
+  utxoBootstrap: string[]
+  withdrawalTreeIndex: number
+  withdrawalBootstrap: string[]
+}
+
 export interface BlockSql {
   hash: string
   status?: number
+  proposalNum?: number
   proposedAt: number
-  proposalHash: string
-  header: {
-    proposer: string
-    parentBlock: string
-    metadata: string
-    fee: string
-    utxoRoot: string
-    utxoIndex: string
-    nullifierRoot: string
-    withdrawalRoot: string
-    withdrawalIndex: string
-    txRoot: string
-    depositRoot: string
-    migrationRoot: string
-  }
+  proposalTx: string
+  header: HeaderSql
   proposalData?: object
-  bootstrap?: {
-    utxoTreeIndex: number
-    utxoBootstrap: string[]
-    withdrawalTreeIndex: number
-    withdrawalBootstrap: string[]
-  }
+  bootstrap?: BootstrapSql
 }
 
 export const block: InanoSQLTableConfig = {
@@ -44,8 +49,9 @@ export const block: InanoSQLTableConfig = {
   model: {
     'hash:string': { pk: true },
     'status:int': { default: 0 },
+    'proposalNum:int': {},
     'proposedAt:int': {},
-    'proposalHash:string': {},
+    'proposalTx:string': {},
     'header:obj': {
       model: {
         'proposer:string': {},
@@ -69,18 +75,20 @@ export const block: InanoSQLTableConfig = {
         'migrationRoot:string': {},
       },
     },
-    'proposalData:any': {},
+    'proposalData:obj': {},
     'bootstrap:obj': {
       model: {
-        'utxoTreeIndex:number': {},
+        'utxoTreeIndex:int': {},
         'utxoBootstrap:string[]': {},
-        'withdrawalTreeIndex:number': {},
+        'withdrawalTreeIndex:int': {},
         'withdrawalBootstrap:string[]': {},
       },
     },
+    'reverted:boolean': { default: false },
   },
   indexes: {
     'proposedAt:int': {},
+    'proposalNum:int': {},
     'status:int': {},
     'header.parentBlock:string': {},
   },
@@ -89,15 +97,21 @@ export const block: InanoSQLTableConfig = {
       name: 'addGenesisBlock',
       args: {
         'hash:string': {},
-        'header:obj': {},
+        'header:object': {},
+        'proposedAt:int': {},
+        'proposalTx:string': {},
       },
       call: (db, args) => {
-        const { hash, header } = args
+        const { hash, header, proposedAt, proposalTx } = args
+        console.log('adding genesis block', hash, header)
         return db
           .query('upsert', [
             {
               hash,
               header,
+              proposalNum: 0,
+              proposedAt,
+              proposalTx,
               status: BlockStatus.FINALIZED,
             },
           ])
@@ -133,7 +147,6 @@ export const block: InanoSQLTableConfig = {
             {
               ...block,
               status: BlockStatus.FINALIZED,
-              proposalData: null,
             },
           ])
           .emit()
@@ -162,17 +175,20 @@ export const block: InanoSQLTableConfig = {
     {
       name: 'writeNewProposal',
       args: {
-        'hash:string': {},
-        'proposedAt:int ': {},
-        'proposalHash:string ': {},
+        'blockHash:string': {},
+        'proposalNum:int': {},
+        'proposedAt:int': {},
+        'proposalTx:string': {},
       },
       call: (db, args) => {
+        console.log('DB write args', args)
         return db
           .query('upsert', [
             {
-              hash: args.hash,
+              hash: args.blockHash,
+              proposalNum: args.proposalNum,
               proposedAt: args.proposedAt,
-              proposalHash: args.proposalHash,
+              proposalTx: args.proposalTx,
               status: BlockStatus.NOT_FETCHED,
             },
           ])
@@ -184,7 +200,7 @@ export const block: InanoSQLTableConfig = {
       args: {
         'hash:string': { pk: true },
         'header:obj': {},
-        'proposalData:string': {},
+        'proposalData:obj': {},
       },
       call: (db, args) => {
         return db
@@ -264,7 +280,9 @@ export const block: InanoSQLTableConfig = {
       },
       call: (db, args) => {
         return db
-          .query('upsert', [{ hash: args.hash, status: BlockStatus.REVERTED }])
+          .query('upsert', [
+            { hash: args.hash, status: BlockStatus.REVERTED, reverted: true },
+          ])
           .emit()
       },
     },
@@ -272,7 +290,7 @@ export const block: InanoSQLTableConfig = {
       name: 'getBlockNumForLatestProposal',
       args: {},
       call: (db, _) => {
-        return db.query('select', ['MAX(proposedAt)']).emit()
+        return db.query('select', ['MAX(proposalNum)']).emit()
       },
     },
     {
@@ -292,7 +310,12 @@ export const block: InanoSQLTableConfig = {
       args: {},
       call: (db, _) => {
         return db
-          .query('select', ['hash', 'proposedAt', 'header', 'MAX(proposedAt)'])
+          .query('select', [
+            'hash',
+            'proposalNum',
+            'header',
+            'MAX(proposalNum)',
+          ])
           .where([
             'status',
             'IN',
@@ -306,16 +329,30 @@ export const block: InanoSQLTableConfig = {
       },
     },
     {
+      name: 'getLastProcessedBlock',
+      args: {},
+      call: (db, _) => {
+        return db
+          .query('select', [
+            'hash',
+            'header',
+            'MAX(proposalNum) AS proposalNum',
+          ])
+          .where(['status', '>', BlockStatus.FETCHED])
+          .emit()
+      },
+    },
+    {
       name: 'getLatestBlock',
       args: {},
       call: (db, _) => {
         return db
           .query('select', [
             'hash',
-            'proposedAt',
-            'proposalHash',
+            'proposalNum',
+            'proposalTx',
             'header',
-            'MAX(proposedAt)',
+            'MAX(proposalNum)',
           ])
           .emit()
       },

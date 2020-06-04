@@ -1,14 +1,12 @@
-import {
-  InanoSQLTableConfig,
-  InanoSQLFKActions,
-} from '@nano-sql/core/lib/interfaces'
+import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 
 export interface DepositSql {
-  id?: string
   note: string
   fee: string
   queuedAt: string
   zkopru: string
+  transactionIndex: number
+  logIndex: number
   blockNumber: number
   l2Block?: string
 }
@@ -16,27 +14,18 @@ export interface DepositSql {
 export const deposit: InanoSQLTableConfig = {
   name: 'deposit',
   model: {
-    'id:uuid': { pk: true },
-    'note:string': {},
+    'note:string': { pk: true },
     'fee:string': {},
     'queuedAt:string': {},
+    'logIndex:int': {},
+    'transactionIndex:int': {},
     'zkopru:uuid': {},
     'blockNumber:int': {},
     'l2Block:string': {},
   },
   indexes: {
-    'queuedAt:int': {
-      foreignKey: {
-        target: 'massDeposit.index',
-        onDelete: InanoSQLFKActions.CASCADE,
-      },
-    },
-    'zkopru:uuid': {
-      foreignKey: {
-        target: 'zkopru.id',
-        onDelete: InanoSQLFKActions.CASCADE,
-      },
-    },
+    'queuedAt:string': {},
+    'zkopru:uuid': {},
   },
   queries: [
     {
@@ -59,17 +48,12 @@ export const deposit: InanoSQLTableConfig = {
     {
       name: 'getDeposits',
       args: {
-        'commitIndex:string': {},
-        'zkopru:uuid': {},
+        'commitIndexes:string[]': {},
       },
       call: (db, args) => {
         return db
           .query('select')
-          .where([
-            ['queuedAt', '=', args.commitIndex],
-            'AND',
-            ['zkopru', '=', args.zkopru],
-          ])
+          .where(['queuedAt', 'IN', [...args.commitIndexes]])
           .emit()
       },
     },

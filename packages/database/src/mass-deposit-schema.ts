@@ -12,16 +12,17 @@ export interface MassDepositCommitSql {
   includedIn?: string
 }
 
+const NOT_INCLUDED = 'NOT_INCLUDED'
+
 export const massDeposit: InanoSQLTableConfig = {
   name: 'massDeposit',
   model: {
-    'id:uuid': { pk: true },
-    'index:string': {},
+    'index:string': { pk: true },
     'merged:string': {},
     'fee:string': {},
     'zkopru:uuid': {},
     'blockNumber:int': {},
-    'includedIn:string': { default: 'NOT_INCLUDED' },
+    'includedIn:string': { default: NOT_INCLUDED },
   },
   indexes: {
     'includedIn:string': {},
@@ -50,8 +51,9 @@ export const massDeposit: InanoSQLTableConfig = {
       name: 'writeMassDepositCommit',
       args: { 'massDeposit:object': {} },
       call: (db, args) => {
+        const massDeposit = args.massDeposit as MassDepositCommitSql
         return db
-          .query('upsert', [args.massDeposit as MassDepositCommitSql])
+          .query('upsert', [{ ...massDeposit, includedIn: NOT_INCLUDED }])
           .emit()
       },
     },
@@ -85,6 +87,7 @@ export const massDeposit: InanoSQLTableConfig = {
         'zkopru:uuid': {},
       },
       call: (db, args) => {
+        console.log('received args, ', args)
         return db
           .query('select', ['index', 'MIN(blockNumber)'])
           .where([

@@ -3,11 +3,12 @@ import {
   InanoSQLTableConfig,
   InanoSQLFKActions,
 } from '@nano-sql/core/lib/interfaces'
+import { NoteSql } from './output-schema'
 
-export interface UtxoSql {
+export interface UtxoSql extends NoteSql {
   hash: string
-  tree: string
-  index: string
+  tree?: string
+  index?: string
   eth?: string
   pubKey?: string
   salt?: string
@@ -21,7 +22,7 @@ export const utxo: InanoSQLTableConfig = {
   name: 'utxo',
   model: {
     'hash:string': { pk: true },
-    'tree:uuid': {}, // deposit will not have the tree uuid at first
+    'tree:uuid': { notNull: false }, // deposit will not have the tree uuid at first
     'index:string': { notNull: false },
     'eth:string': {},
     'pubKey:string': { notNull: false },

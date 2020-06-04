@@ -2,8 +2,9 @@ import {
   InanoSQLTableConfig,
   InanoSQLFKActions,
 } from '@nano-sql/core/lib/interfaces'
+import { NoteSql } from './output-schema'
 
-export interface MigrationSql {
+export interface MigrationSql extends NoteSql {
   hash: string
   tree: string
   index: string

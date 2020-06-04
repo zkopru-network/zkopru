@@ -6,7 +6,6 @@ export enum NodeType {
 }
 
 export interface L1Config {
-  genesisBlock: string
   utxoTreeDepth: number
   withdrawalTreeDepth: number
   nullifierTreeDepth: number

@@ -1,7 +1,7 @@
 export interface NoteSql {
   hash: string
-  tree: string
-  index: string
+  tree?: string
+  index?: string
   eth?: string
   pubKey?: string
   salt?: string
