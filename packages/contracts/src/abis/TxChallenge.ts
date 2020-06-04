@@ -107,6 +107,13 @@ export const TxChallengeABI = [
     type: 'function',
   },
   {
+    inputs: [],
+    name: 'genesis',
+    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
     inputs: [
       { internalType: 'uint8', name: 'numOfInputs', type: 'uint8' },
       { internalType: 'uint8', name: 'numOfOutputs', type: 'uint8' },
@@ -264,7 +271,7 @@ export const TxChallengeABI = [
     inputs: [
       { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
       { internalType: 'uint256', name: 'inflowIndex', type: 'uint256' },
-      { internalType: 'bytes32[256]', name: 'sibling', type: 'bytes32[256]' },
+      { internalType: 'bytes32[254]', name: 'sibling', type: 'bytes32[254]' },
       { internalType: 'bytes', name: '', type: 'bytes' },
       { internalType: 'bytes', name: 'blockData', type: 'bytes' },
     ],

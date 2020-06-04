@@ -24,7 +24,7 @@ interface ITxChallenge {
      * @param sibling The sibling data of the nullifier.
      * @param submission The proposal data which is exactly same with the submitted.
      */
-    function challengeUsedNullifier(uint txIndex, uint inflowIndex, bytes32[256] calldata sibling, bytes calldata submission) external;
+    function challengeUsedNullifier(uint txIndex, uint inflowIndex, bytes32[254] calldata sibling, bytes calldata submission) external;
 
     /**
      * @dev Challenge when a nullifier used twice in a same block.

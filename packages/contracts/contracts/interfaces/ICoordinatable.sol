@@ -1,7 +1,7 @@
 pragma solidity >= 0.6.0;
 
 interface ICoordinatable {
-    event NewProposal(bytes32 blockHash);
+    event NewProposal(uint256 proposalNum, bytes32 blockHash);    
     event Finalized(bytes32 blockHash);
     event MassDepositCommit(uint index, bytes32 merged, uint256 fee);
 
@@ -38,6 +38,14 @@ interface ICoordinatable {
      * @param amount Amount to withdraw.
      */
     function withdrawReward(uint amount) external;
+
+    /**
+     * @dev Coordinator can commit mass deposits. The pending deposits will be automatically
+     *      committed by propose() block. But to start the first propose() block, there
+     *      should be enough pending deposits, and the coordinator will commit them using
+     *      this standalone function.
+     */
+    function commitMassDeposit() external;
 
     /**
      * @dev You can override this function to implement your own consensus logic.

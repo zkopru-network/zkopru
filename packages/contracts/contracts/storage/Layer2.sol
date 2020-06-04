@@ -5,12 +5,12 @@ import { Pairing } from "../libraries/Pairing.sol";
 import { SNARKsVerifier } from "../libraries/SNARKs.sol";
 import { Configurated } from "./Configurated.sol";
 
-import { SMT256 } from "smt-rollup/contracts/SMT.sol";
-import { OPRU, SplitRollUp } from "merkle-tree-rollup/contracts/library/Types.sol";
+import { SMT254 } from "../libraries/SMT.sol";
+import { OPRU, SplitRollUp } from "../libraries/Tree.sol";
 
 struct RollUpProofs {
     SplitRollUp[] ofUTXORollUp;
-    SMT256.OPRU[] ofNullifierRollUp;
+    SMT254.OPRU[] ofNullifierRollUp;
     SplitRollUp[] ofWithdrawalRollUp;
     mapping(uint8=>mapping(uint=>address)) permittedTo;
 }
@@ -27,6 +27,10 @@ contract Layer2 is Configurated {
 
     /** Roll up proofs for challenge */
     RollUpProofs proof;
+
+    function genesis() public view returns (bytes32) {
+        return chain.genesis;
+    }
 
     function latest() public view returns (bytes32) {
         return chain.latest;

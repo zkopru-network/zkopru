@@ -6,6 +6,37 @@ export const ZkOptimisticRollUpABI = [
     stateMutability: 'nonpayable',
     type: 'constructor',
   },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'bytes32',
+        name: 'blockHash',
+        type: 'bytes32',
+      },
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'proposer',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'fromBlock',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'bytes32',
+        name: 'parentBlock',
+        type: 'bytes32',
+      },
+    ],
+    name: 'GenesisBlock',
+    type: 'event',
+  },
   { stateMutability: 'payable', type: 'fallback' },
   {
     inputs: [],
@@ -111,6 +142,13 @@ export const ZkOptimisticRollUpABI = [
     inputs: [{ internalType: 'bytes32', name: 'utxoRoot', type: 'bytes32' }],
     name: 'finalizedUTXOs',
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'genesis',
+    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
     stateMutability: 'view',
     type: 'function',
   },

@@ -16,7 +16,7 @@ import {
     Finalization
 } from "./Types.sol";
 
-library Deserializer {    
+library Deserializer {
     /**
      * @dev Block data will be serialized with the following structure
      *      https://github.com/wanseob/zkopru/wiki/Serialization
@@ -31,16 +31,21 @@ library Deserializer {
         (_block.body.txs, cp) = dequeueTxs(cp);
         (_block.body.massDeposits, cp) = dequeueMassDeposits(cp);
         (_block.body.massMigrations, cp) = dequeueMassMigrations(cp);
-        uint dataLen;
+        uint size;
+        bytes32 checksum;
         assembly {
             let p := mload(0x40)
             calldatacopy(p, start, 0x20)
-            dataLen := mload(p)
+            size := mload(p)
+            p := add(p, 0x20)
+            calldatacopy(p, add(start, 0x20), size)
+            checksum := keccak256(p, size)
             mstore(0x40, add(p, 0x20))
         }
-        if(dataLen != cp - start - 0x20) {
+        if(size != cp - start - 0x20) {
             revert("Serialization has a problem");
         }
+        _block.checksum = checksum;
         return _block;
     }
 
@@ -196,6 +201,20 @@ library Deserializer {
     
     function dequeueUint(uint calldataPos) internal pure returns (
         uint val,
+        uint end
+    ) {
+        assembly {            
+            // load free memory
+            let free_mem := mload(0x40)
+            calldatacopy(free_mem, calldataPos, 0x20)
+            val := mload(free_mem)
+            end := add(calldataPos, 0x20)
+            mstore(0x40, add(free_mem, 0x20))
+        }
+    }
+
+    function dequeueBytes32(uint calldataPos) internal pure returns (
+        bytes32 val,
         uint end
     ) {
         assembly {            
@@ -440,6 +459,7 @@ library Deserializer {
         uint start = 4 + abi.decode(msg.data[4 + 32*paramIndex:4 + 32*(paramIndex+1)], (uint));
         uint cp = start + 0x20; //calldata position
         Finalization memory _finalization;
+        (_finalization.proposalChecksum, cp) = dequeueBytes32(cp);
         (_finalization.header, cp) = dequeueHeader(cp);
         (_finalization.massDeposits, cp) = dequeueMassDeposits(cp);
         (_finalization.massMigrations, cp) = dequeueMassMigrations(cp);

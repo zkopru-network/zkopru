@@ -30,6 +30,8 @@ export class ICoordinatable extends Contract {
 
     withdrawReward(amount: number | string): TransactionObject<void>
 
+    commitMassDeposit(): TransactionObject<void>
+
     isProposable(proposerAddr: string): TransactionObject<boolean>
   }
   events: {
@@ -42,7 +44,12 @@ export class ICoordinatable extends Contract {
       1: string
       2: string
     }>
-    NewProposal: ContractEvent<string>
+    NewProposal: ContractEvent<{
+      proposalNum: string
+      blockHash: string
+      0: string
+      1: string
+    }>
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
 }

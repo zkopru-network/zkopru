@@ -5,7 +5,7 @@ export const MigratableABI = [
       {
         indexed: false,
         internalType: 'bytes32',
-        name: 'submissionId',
+        name: 'checksum',
         type: 'bytes32',
       },
       {
@@ -129,6 +129,13 @@ export const MigratableABI = [
     inputs: [{ internalType: 'bytes32', name: 'utxoRoot', type: 'bytes32' }],
     name: 'finalizedUTXOs',
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'genesis',
+    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
     stateMutability: 'view',
     type: 'function',
   },
@@ -257,7 +264,7 @@ export const MigratableABI = [
   },
   {
     inputs: [
-      { internalType: 'bytes32', name: 'submissionId', type: 'bytes32' },
+      { internalType: 'bytes32', name: 'checksum', type: 'bytes32' },
       { internalType: 'bytes', name: '', type: 'bytes' },
     ],
     name: 'migrateTo',
@@ -267,7 +274,7 @@ export const MigratableABI = [
   },
   {
     inputs: [
-      { internalType: 'bytes32', name: 'submissionId', type: 'bytes32' },
+      { internalType: 'bytes32', name: 'checksum', type: 'bytes32' },
       { internalType: 'bytes32', name: 'merged', type: 'bytes32' },
       { internalType: 'uint256', name: 'fee', type: 'uint256' },
     ],

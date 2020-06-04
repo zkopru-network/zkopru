@@ -25,7 +25,7 @@ export const ITxChallengeABI = [
     inputs: [
       { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
       { internalType: 'uint256', name: 'inflowIndex', type: 'uint256' },
-      { internalType: 'bytes32[256]', name: 'sibling', type: 'bytes32[256]' },
+      { internalType: 'bytes32[254]', name: 'sibling', type: 'bytes32[254]' },
       { internalType: 'bytes', name: 'submission', type: 'bytes' },
     ],
     name: 'challengeUsedNullifier',

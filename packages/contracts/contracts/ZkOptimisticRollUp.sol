@@ -7,12 +7,19 @@ import { SNARKsVerifier } from "./libraries/SNARKs.sol";
 import { Header, Types } from "./libraries/Types.sol";
 import { Pairing } from "./libraries/Pairing.sol";
 import { Hash } from "./libraries/Hash.sol";
-import { SMT256 } from "smt-rollup/contracts/SMT.sol";
+import { SMT254 } from "./libraries/SMT.sol";
 
 contract ZkOptimisticRollUp is Layer2Controller {
     using Types for Header;
 
     address setupWizard;
+
+    event GenesisBlock(
+        bytes32 blockHash,
+        address proposer,
+        uint fromBlock,
+        bytes32 parentBlock
+    );
 
     constructor(address _setupWizard) public {
         setupWizard = _setupWizard;
@@ -82,18 +89,21 @@ contract ZkOptimisticRollUp is Layer2Controller {
         }
     }
 
-    function init() internal {
+    function completeSetup() public onlySetupWizard {
+        delete setupWizard;
+        require(Layer2.chain.latest == bytes32(0), "Already initialized");
         uint[] memory poseidonPreHashes = Hash.poseidonPrehashedZeroes();
         uint utxoRoot = poseidonPreHashes[poseidonPreHashes.length - 1];
         uint[] memory keccakPreHashes = Hash.keccakPrehashedZeroes();
         uint withdrawalRoot = keccakPreHashes[keccakPreHashes.length - 1];
         bytes32 nullifierRoot = bytes32(0);
-        for (uint i = 0; i < 256; i++) {
+        for (uint i = 0; i < NULLIFIER_TREE_DEPTH; i++) {
             nullifierRoot = keccak256(abi.encodePacked(nullifierRoot, nullifierRoot));
         }
+        bytes32 parentBlock = blockhash(block.number - 1);
         Header memory header = Header(
-            address(this),
-            bytes32(0),
+            msg.sender,
+            parentBlock,
             bytes32(0),
             uint256(0),
             utxoRoot,
@@ -107,12 +117,15 @@ contract ZkOptimisticRollUp is Layer2Controller {
         );
         bytes32 genesis = header.hash();
         Layer2.chain.latest = genesis;
+        Layer2.chain.genesis = genesis;
         Layer2.chain.withdrawables.push(); /// withdrawables[0]: daily snapshot
         Layer2.chain.withdrawables.push(); /// withdrawables[0]: initial withdrawable tree
-    }
-
-    function completeSetup() public onlySetupWizard {
-        init();
-        delete setupWizard;
+        emit GenesisBlock(
+            genesis,
+            msg.sender,
+            block.number,
+            parentBlock
+        );
+        Layer2.chain.proposedBlocks++;
     }
 }

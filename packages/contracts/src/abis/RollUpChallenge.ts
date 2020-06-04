@@ -107,6 +107,13 @@ export const RollUpChallengeABI = [
     type: 'function',
   },
   {
+    inputs: [],
+    name: 'genesis',
+    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
     inputs: [
       { internalType: 'uint8', name: 'numOfInputs', type: 'uint8' },
       { internalType: 'uint8', name: 'numOfOutputs', type: 'uint8' },

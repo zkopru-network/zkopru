@@ -42,9 +42,9 @@ export const IRollUpableABI = [
       { internalType: 'uint256', name: 'id', type: 'uint256' },
       { internalType: 'bytes32[]', name: 'leaves', type: 'bytes32[]' },
       {
-        internalType: 'bytes32[256][]',
+        internalType: 'bytes32[254][]',
         name: 'siblings',
-        type: 'bytes32[256][]',
+        type: 'bytes32[254][]',
       },
     ],
     name: 'updateProofOfNullifierRollUp',

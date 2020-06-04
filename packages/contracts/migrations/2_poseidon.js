@@ -29,15 +29,26 @@ module.exports = function migration(deployer) {
   return deployer.then(async () => {
     const contractsDir = path.join(__dirname, '..', 'build/contracts')
     const artifactor = new Artifactor(contractsDir)
-    const poseidonContractName = 'Poseidon'
+    const poseidon3 = 'Poseidon3'
+    const poseidon6 = 'Poseidon6'
     await artifactor
       .save({
-        contractName: poseidonContractName,
+        contractName: poseidon3,
+        abi: poseidonGenContract.abi,
+        unlinked_binary: poseidonGenContract.createCode(3, 8, 57, SEED),
+      })
+      .then(async () => {
+        const Poseidon = artifacts.require(poseidon3)
+        await deployer.deploy(Poseidon)
+      })
+    await artifactor
+      .save({
+        contractName: poseidon6,
         abi: poseidonGenContract.abi,
         unlinked_binary: poseidonGenContract.createCode(6, 8, 57, SEED),
       })
       .then(async () => {
-        const Poseidon = artifacts.require(poseidonContractName)
+        const Poseidon = artifacts.require(poseidon6)
         await deployer.deploy(Poseidon)
       })
   })

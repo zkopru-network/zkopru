@@ -3,6 +3,7 @@ pragma solidity >= 0.6.0;
 import { Pairing } from "./Pairing.sol";
 
 struct Blockchain {
+    bytes32 genesis;
     bytes32 latest;
     /** For inclusion reference */
     mapping(bytes32=>bytes32) parentOf; // childBlockHash=>parentBlockHash
@@ -58,6 +59,7 @@ struct Withdrawable {
 }
 
 struct Finalization {
+    bytes32 proposalChecksum;
     Header header;
     MassDeposit[] massDeposits;
     MassMigration[] massMigrations;
@@ -82,6 +84,7 @@ struct Challenge {
 }
 
 struct Block {
+    bytes32 checksum;
     Header header;
     Body body;
 }
@@ -167,7 +170,6 @@ library Types {
     }
 
     function hash(Header memory header) internal pure returns (bytes32) {
-        /** This commented out code can't be compiled because the stack is too deep.
         return keccak256(
             abi.encodePacked(
                 header.proposer,
@@ -184,14 +186,6 @@ library Types {
                 header.migrationRoot
             )
         );
-        */
-        bytes32 headerHash;
-        uint LEN = 20 + 16 * 32;
-        assembly {
-            // Skip the padding bytes for the proposer address
-            headerHash := keccak256(add(header, 0x0c), LEN)
-        }
-        return headerHash;
     }
 
     function hash(Transaction memory transaction) internal pure returns (bytes32) {

@@ -43,6 +43,8 @@ export class Layer2 extends Contract {
 
     allowedMigrants(arg0: string): TransactionObject<boolean>
 
+    genesis(): TransactionObject<string>
+
     latest(): TransactionObject<string>
 
     proposedBlocks(): TransactionObject<string>

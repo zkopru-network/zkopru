@@ -49,6 +49,7 @@ contract Layer2Controller is Layer2 {
         _connect(addr, ICoordinatable(0).deregister.selector);
         _connect(addr, ICoordinatable(0).propose.selector);
         _connect(addr, ICoordinatable(0).finalize.selector);
+        _connect(addr, ICoordinatable(0).commitMassDeposit.selector);
         _connect(addr, ICoordinatable(0).withdrawReward.selector);
         _connect(addr, ICoordinatable(0).isProposable.selector);
     }

@@ -49,6 +49,8 @@ export class Migratable extends Contract {
 
     finalizedUTXOs(utxoRoot: string | number[]): TransactionObject<boolean>
 
+    genesis(): TransactionObject<string>
+
     getVk(
       numOfInputs: number | string,
       numOfOutputs: number | string,
@@ -122,19 +124,19 @@ export class Migratable extends Contract {
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
 
     migrateTo(
-      submissionId: string | number[],
+      checksum: string | number[],
       arg1: string | number[],
     ): TransactionObject<void>
 
     acceptMigration(
-      submissionId: string | number[],
+      checksum: string | number[],
       merged: string | number[],
       fee: number | string,
     ): TransactionObject<void>
   }
   events: {
     NewMassMigration: ContractEvent<{
-      submissionId: string
+      checksum: string
       network: string
       merged: string
       fee: string

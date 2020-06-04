@@ -10,22 +10,22 @@ import { Deserializer } from "../libraries/Deserializer.sol";
 contract Migratable is Layer2 {
     using Types for *;
 
-    event NewMassMigration(bytes32 submissionId, address network, bytes32 merged, uint fee);
+    event NewMassMigration(bytes32 checksum, address network, bytes32 merged, uint fee);
 
     function migrateTo(
-        bytes32 submissionId,
+        bytes32 checksum,
         bytes calldata
     ) external {
         MassMigration memory migration = Deserializer.massMigrationFromCalldataAt(1);
         address to = migration.destination;
-        bytes32 migrationId = keccak256(abi.encodePacked(submissionId, migration.hash()));
+        bytes32 migrationId = keccak256(abi.encodePacked(checksum, migration.hash()));
         require(chain.migrations[migrationId], "MassMigration does not exist");
         try Migratable(to).acceptMigration(
             migrationId,
             migration.migratingLeaves.merged,
             migration.migratingLeaves.fee
         ) {
-            // TODO: Handle out of gas due to the push pattern => ex: slash proposer using submissionId?
+            // TODO: Handle out of gas due to the push pattern => ex: slash proposer using checksum?
             // send ETH first
             payable(to).transfer(migration.totalETH);
             // send ERC20
@@ -49,9 +49,9 @@ contract Migratable is Layer2 {
         }
     }
 
-    function acceptMigration(bytes32 submissionId, bytes32 merged, uint fee) external virtual {
+    function acceptMigration(bytes32 checksum, bytes32 merged, uint fee) external virtual {
         require(Layer2.allowedMigrants[msg.sender], "Not an allowed departure");
         Layer2.chain.committedDeposits[MassDeposit(merged,fee).hash()] += 1;
-        emit NewMassMigration(submissionId, msg.sender, merged, fee);
+        emit NewMassMigration(checksum, msg.sender, merged, fee);
     }
 }

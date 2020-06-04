@@ -25,7 +25,7 @@ interface IRollUpable {
     /**
      * @dev Challenger appends items to the nullifier tree and record the intermediate result on the storage.
      */
-    function updateProofOfNullifierRollUp(uint id, bytes32[] calldata leaves, bytes32[256][] calldata siblings) external;
+    function updateProofOfNullifierRollUp(uint id, bytes32[] calldata leaves, bytes32[254][] calldata siblings) external;
 
     /**
      * @dev Challenger appends items to the withdrawal tree and record the intermediate result on the storage

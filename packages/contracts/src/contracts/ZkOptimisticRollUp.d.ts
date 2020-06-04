@@ -49,6 +49,8 @@ export class ZkOptimisticRollUp extends Contract {
 
     finalizedUTXOs(utxoRoot: string | number[]): TransactionObject<boolean>
 
+    genesis(): TransactionObject<string>
+
     getVk(
       numOfInputs: number | string,
       numOfOutputs: number | string,
@@ -154,6 +156,16 @@ export class ZkOptimisticRollUp extends Contract {
     completeSetup(): TransactionObject<void>
   }
   events: {
+    GenesisBlock: ContractEvent<{
+      blockHash: string
+      proposer: string
+      fromBlock: string
+      parentBlock: string
+      0: string
+      1: string
+      2: string
+      3: string
+    }>
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
 }

@@ -3,7 +3,7 @@ pragma solidity >= 0.6.0;
 import { Layer2 } from "../../storage/Layer2.sol";
 import { Challengeable } from "../Challengeable.sol";
 import { SNARKsVerifier } from "../../libraries/SNARKs.sol";
-import { SMT256 } from "smt-rollup/contracts/SMT.sol";
+import { SMT254 } from "../../libraries/SMT.sol";
 import {
     Block,
     Challenge,
@@ -19,7 +19,7 @@ import {
 import { Deserializer } from "../../libraries/Deserializer.sol";
 
 contract MigrationChallenge is Challengeable {
-    using SMT256 for SMT256.OPRU;
+    using SMT254 for SMT254.OPRU;
     using SNARKsVerifier for SNARKsVerifier.VerifyingKey;
     using Types for Outflow;
 

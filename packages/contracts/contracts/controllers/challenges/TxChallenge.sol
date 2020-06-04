@@ -3,7 +3,7 @@ pragma solidity >= 0.6.0;
 import { Layer2 } from "../../storage/Layer2.sol";
 import { Challengeable } from "../Challengeable.sol";
 import { SNARKsVerifier } from "../../libraries/SNARKs.sol";
-import { SMT256 } from "smt-rollup/contracts/SMT.sol";
+import { SMT254 } from "../../libraries/SMT.sol";
 import {
     Block,
     Header,
@@ -20,7 +20,7 @@ contract TxChallenge is Challengeable {
     using Types for Header;
     using Types for Outflow;
     using Types for PublicData;
-    using SMT256 for SMT256.OPRU;
+    using SMT254 for SMT254.OPRU;
     using SNARKsVerifier for SNARKsVerifier.VerifyingKey;
 
     function challengeInclusion(
@@ -55,7 +55,7 @@ contract TxChallenge is Challengeable {
     function challengeUsedNullifier(
         uint txIndex,
         uint inflowIndex,
-        bytes32[256] calldata sibling,
+        bytes32[254] calldata sibling,
         bytes calldata,
         bytes calldata blockData
     ) external {
@@ -217,7 +217,7 @@ contract TxChallenge is Challengeable {
         Header memory _parentHeader,
         uint txIndex,
         uint inflowIndex,
-        bytes32[256] memory sibling
+        bytes32[254] memory sibling
     )
         internal
         pure
@@ -225,10 +225,10 @@ contract TxChallenge is Challengeable {
     {
         bytes32 usedNullifier = _block.body.txs[txIndex].inflow[inflowIndex].nullifier;
         bytes32[] memory nullifiers = new bytes32[](1);
-        bytes32[256][] memory siblings = new bytes32[256][](1);
+        bytes32[254][] memory siblings = new bytes32[254][](1);
         nullifiers[0] = usedNullifier;
         siblings[0] = sibling;
-        bytes32 updatedRoot = SMT256.rollUp(
+        bytes32 updatedRoot = SMT254.rollUp(
             _parentHeader.nullifierRoot,
             nullifiers,
             siblings

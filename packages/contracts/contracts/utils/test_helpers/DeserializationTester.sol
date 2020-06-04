@@ -4,7 +4,6 @@ import { Deserializer } from "../../libraries/Deserializer.sol";
 import { Block, Inflow, Outflow, PublicData, Proof } from "../../libraries/Types.sol";
 
 contract DeserializationTester {
-
     function getProposer(bytes calldata) external pure returns (address) {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         return _block.header.proposer;

@@ -2,10 +2,10 @@ pragma solidity >= 0.6.0;
 
 import { Layer2 } from "../../storage/Layer2.sol";
 import { Challengeable } from "../Challengeable.sol";
-import { SplitRollUp } from "merkle-tree-rollup/contracts/library/Types.sol";
-import { SubTreeRollUpLib } from "merkle-tree-rollup/contracts/library/SubTreeRollUpLib.sol";
-import { RollUpLib } from "merkle-tree-rollup/contracts/library/RollUpLib.sol";
-import { SMT256 } from "smt-rollup/contracts/SMT.sol";
+import { SplitRollUp } from "../../libraries/Tree.sol";
+import { SubTreeRollUpLib } from "../../libraries/Tree.sol";
+import { RollUpLib } from "../../libraries/Tree.sol";
+import { SMT254 } from "../../libraries//SMT.sol";
 import {
     Block,
     Challenge,
@@ -20,7 +20,7 @@ import { Deserializer } from "../../libraries/Deserializer.sol";
 
 contract RollUpChallenge is Challengeable {
     using SubTreeRollUpLib for SplitRollUp;
-    using SMT256 for SMT256.OPRU;
+    using SMT254 for SMT254.OPRU;
     using Types for Outflow;
     using Types for Header;
 
@@ -188,7 +188,7 @@ contract RollUpChallenge is Challengeable {
         require(index == numOfNullifiers, "Invalid length of the nullifiers");
 
         /// Get rolled up root
-        SMT256.OPRU memory proof = Layer2.proof.ofNullifierRollUp[nullifierRollUpId];
+        SMT254.OPRU memory proof = Layer2.proof.ofNullifierRollUp[nullifierRollUpId];
         bool isValidRollUp = proof.verify(
             _parentHeader.nullifierRoot,
             _block.header.nullifierRoot,

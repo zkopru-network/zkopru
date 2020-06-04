@@ -1,17 +1,17 @@
 pragma solidity >= 0.6.0;
 
 import { Layer2 } from "../storage/Layer2.sol";
-import { OPRU, SplitRollUp } from "merkle-tree-rollup/contracts/library/Types.sol";
-import { RollUpLib } from "merkle-tree-rollup/contracts/library/RollUpLib.sol";
-import { SubTreeRollUpLib } from "merkle-tree-rollup/contracts/library/SubTreeRollUpLib.sol";
-import { SMT256 } from "smt-rollup/contracts/SMT.sol";
+import { OPRU, SplitRollUp } from "../libraries/Tree.sol";
+import { RollUpLib } from "../libraries/Tree.sol";
+import { SubTreeRollUpLib } from "../libraries/Tree.sol";
+import { SMT254 } from "../libraries/SMT.sol";
 import { Hash } from "../libraries/Hash.sol";
 
 
 contract RollUpable is Layer2 {
     // using RollUpLib for *;
     using SubTreeRollUpLib for *;
-    using SMT256 for SMT256.OPRU;
+    using SMT254 for SMT254.OPRU;
 
     enum RollUpType { UTXO, Nullifier, Withdrawal}
 
@@ -45,7 +45,7 @@ contract RollUpable is Layer2 {
     }
 
     function newProofOfNullifierRollUp(bytes32 prevRoot) external {
-        SMT256.OPRU storage rollUp = Layer2.proof.ofNullifierRollUp.push();
+        SMT254.OPRU storage rollUp = Layer2.proof.ofNullifierRollUp.push();
         rollUp.prev = prevRoot;
         rollUp.next = prevRoot;
         rollUp.mergedLeaves = bytes32(0);
@@ -83,12 +83,12 @@ contract RollUpable is Layer2 {
     function updateProofOfNullifierRollUp(
         uint id,
         bytes32[] calldata leaves,
-        bytes32[256][] calldata siblings
+        bytes32[254][] calldata siblings
     )
         external
         requirePermission(RollUpType.Nullifier, id)
     {
-        SMT256.OPRU storage rollUp = Layer2.proof.ofNullifierRollUp[id];
+        SMT254.OPRU storage rollUp = Layer2.proof.ofNullifierRollUp[id];
         rollUp.update(leaves, siblings);
     }
 

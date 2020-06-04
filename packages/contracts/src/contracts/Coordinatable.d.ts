@@ -49,6 +49,8 @@ export class Coordinatable extends Contract {
 
     finalizedUTXOs(utxoRoot: string | number[]): TransactionObject<boolean>
 
+    genesis(): TransactionObject<string>
+
     getVk(
       numOfInputs: number | string,
       numOfOutputs: number | string,
@@ -125,12 +127,11 @@ export class Coordinatable extends Contract {
 
     deregister(): TransactionObject<void>
 
-    propose(blockData: string | number[]): TransactionObject<void>
+    propose(arg0: string | number[]): TransactionObject<void>
 
-    finalize(
-      submissionId: string | number[],
-      arg1: string | number[],
-    ): TransactionObject<void>
+    commitMassDeposit(): TransactionObject<void>
+
+    finalize(arg0: string | number[]): TransactionObject<void>
 
     withdrawReward(amount: number | string): TransactionObject<void>
 
@@ -146,7 +147,12 @@ export class Coordinatable extends Contract {
       1: string
       2: string
     }>
-    NewProposal: ContractEvent<string>
+    NewProposal: ContractEvent<{
+      proposalNum: string
+      blockHash: string
+      0: string
+      1: string
+    }>
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
 }

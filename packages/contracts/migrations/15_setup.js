@@ -3,7 +3,6 @@ const fs = require('fs')
 const path = require('path')
 const save = require('../utils/save-deployed')
 
-const Poseidon = artifacts.require('Poseidon')
 const TestERC20 = artifacts.require('TestERC20')
 const TestERC721 = artifacts.require('TestERC721')
 const UserInteractable = artifacts.require('UserInteractable')

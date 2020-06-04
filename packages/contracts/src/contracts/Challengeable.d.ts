@@ -49,6 +49,8 @@ export class Challengeable extends Contract {
 
     finalizedUTXOs(utxoRoot: string | number[]): TransactionObject<boolean>
 
+    genesis(): TransactionObject<string>
+
     getVk(
       numOfInputs: number | string,
       numOfOutputs: number | string,

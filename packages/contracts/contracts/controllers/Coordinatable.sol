@@ -1,7 +1,9 @@
 pragma solidity >= 0.6.0;
 
 import { Layer2 } from "../storage/Layer2.sol";
+import { Hash } from "../libraries/Hash.sol";
 import {
+    Header,
     Proposer,
     Blockchain,
     Block,
@@ -17,7 +19,7 @@ import { Deserializer } from "../libraries/Deserializer.sol";
 contract Coordinatable is Layer2 {
     using Types for *;
 
-    event NewProposal(uint256 proposalNum);
+    event NewProposal(uint256 proposalNum, bytes32 blockHash);
     event Finalized(bytes32 blockHash);
     event MassDepositCommit(uint index, bytes32 merged, uint256 fee);
 
@@ -39,23 +41,22 @@ contract Coordinatable is Layer2 {
         delete Layer2.chain.proposers[proposerAddr];
     }
 
-    function propose(bytes memory blockData) public {
+    function propose(bytes memory) public {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
-        bytes32 submissionId = keccak256(blockData);
         /// The message sender address should be same with the proposer address
         require(_block.header.proposer == msg.sender, "Coordinator account is different with the message sender");
         Proposer storage proposer = Layer2.chain.proposers[msg.sender];
         /// Check permission
         require(isProposable(msg.sender), "Not allowed to propose");
         /// Duplicated proposal is not allowed
-        require(Layer2.chain.proposals[submissionId].headerHash == bytes32(0), "Already submitted");
+        require(Layer2.chain.proposals[_block.checksum].headerHash == bytes32(0), "Already submitted");
         /** LEGACY
         /// Do not exceed maximum challenging cost
         require(_block.maxChallengeCost() < CHALLENGE_LIMIT, "Its challenge cost exceeds the limit");
         */
         /// Save opru proposal
         bytes32 currentBlockHash = _block.header.hash();
-        Layer2.chain.proposals[submissionId] = Proposal(
+        Layer2.chain.proposals[_block.checksum] = Proposal(
             currentBlockHash,
             block.number + CHALLENGE_PERIOD,
             false
@@ -67,6 +68,12 @@ contract Coordinatable is Layer2 {
         /// Update exit allowance period
         proposer.exitAllowance = block.number + CHALLENGE_PERIOD;
         /// Freeze the latest mass deposit for the next block proposer
+        commitMassDeposit();
+        emit NewProposal(Layer2.chain.proposedBlocks, currentBlockHash);
+        Layer2.chain.proposedBlocks++;
+    }
+
+    function commitMassDeposit() public {
         if(Layer2.chain.stagedDeposits.merged != bytes32(0)) {
             Layer2.chain.committedDeposits[Layer2.chain.stagedDeposits.hash()] += 1;
             emit MassDepositCommit(
@@ -78,13 +85,11 @@ contract Coordinatable is Layer2 {
             delete Layer2.chain.stagedSize;
             Layer2.chain.massDepositId++;
         }
-        Layer2.chain.proposedBlocks++;
-        emit NewProposal(Layer2.chain.proposedBlocks);
     }
 
-    function finalize(bytes32 submissionId, bytes memory) public {
-        Finalization memory finalization = Deserializer.finalizationFromCalldataAt(1);
-        Proposal storage proposal = Layer2.chain.proposals[submissionId];
+    function finalize(bytes memory) public {
+        Finalization memory finalization = Deserializer.finalizationFromCalldataAt(0);
+        Proposal storage proposal = Layer2.chain.proposals[finalization.proposalChecksum];
         /// Check requirements
         require(finalization.massDeposits.root() == finalization.header.depositRoot, "Submitted different deposit root");
         require(finalization.massMigrations.root() == finalization.header.migrationRoot, "Submitted different deposit root");
@@ -124,7 +129,7 @@ contract Coordinatable is Layer2 {
         for (uint i = 0; i < finalization.massMigrations.length; i++) {
             bytes32 migrationId = keccak256(
                 abi.encodePacked(
-                    submissionId,
+                    finalization.proposalChecksum,
                     finalization.massMigrations[i].hash()
                 )
             );
@@ -152,10 +157,10 @@ contract Coordinatable is Layer2 {
     function isProposable(address proposerAddr) public view returns (bool) {
         Proposer memory  proposer = Layer2.chain.proposers[proposerAddr];
         /// You can add more consensus logic here
-        if (proposer.stake <= MINIMUM_STAKE) {
-            return false;
-        } else {
+        if (proposer.stake >= MINIMUM_STAKE) {
             return true;
+        } else {
+            return false;
         }
     }
 }

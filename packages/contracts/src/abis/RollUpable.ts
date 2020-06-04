@@ -121,6 +121,13 @@ export const RollUpableABI = [
     type: 'function',
   },
   {
+    inputs: [],
+    name: 'genesis',
+    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
     inputs: [
       { internalType: 'uint8', name: 'numOfInputs', type: 'uint8' },
       { internalType: 'uint8', name: 'numOfOutputs', type: 'uint8' },
@@ -286,9 +293,9 @@ export const RollUpableABI = [
       { internalType: 'uint256', name: 'id', type: 'uint256' },
       { internalType: 'bytes32[]', name: 'leaves', type: 'bytes32[]' },
       {
-        internalType: 'bytes32[256][]',
+        internalType: 'bytes32[254][]',
         name: 'siblings',
-        type: 'bytes32[256][]',
+        type: 'bytes32[254][]',
       },
     ],
     name: 'updateProofOfNullifierRollUp',
