@@ -1,36 +1,38 @@
-import { Hasher, genesisRoot } from '@zkopru/tree'
-import { Field } from '@zkopru/babyjubjub'
-import { hexify } from '@zkopru/utils'
+import { L1Config } from '@zkopru/database'
+import { genesisRoot, poseidonHasher, keccakHasher } from '@zkopru/tree'
+import { bnToBytes32 } from '@zkopru/utils'
+import { Address, Bytes32 } from 'soltypes'
 import BN from 'bn.js'
 import { Header } from './block'
 
 export const genesis = ({
   address,
-  hashers,
+  parent,
+  config,
 }: {
-  address: string
-  hashers: {
-    utxo: Hasher<Field>
-    withdrawal: Hasher<BN>
-    nullifier: Hasher<BN>
-  }
+  address: Address
+  parent: Bytes32
+  config: L1Config
 }): Header => {
-  const utxoRoot = genesisRoot(hashers.utxo).toHex()
-  const withdrawalRoot = hexify(genesisRoot(hashers.withdrawal))
-  const nullifierRoot = hexify(genesisRoot(hashers.nullifier))
+  const utxoHasher = poseidonHasher(config.utxoTreeDepth)
+  const withdrawalHasher = keccakHasher(config.withdrawalTreeDepth)
+  const nullifierHasher = keccakHasher(config.nullifierTreeDepth)
+  const utxoRoot = genesisRoot(utxoHasher).toUint256()
+  const withdrawalRoot = bnToBytes32(genesisRoot(withdrawalHasher))
+  const nullifierRoot = bnToBytes32(genesisRoot(nullifierHasher))
+  const zeroBytes = bnToBytes32(new BN(0))
   return {
     proposer: address,
-    parentBlock: '0x0000000000000000000000000000000000000000',
-    metadata:
-      '0x0000000000000000000000000000000000000000000000000000000000000000',
-    fee: '0',
+    parentBlock: parent,
+    metadata: zeroBytes,
+    fee: zeroBytes.toUint(),
     utxoRoot,
-    utxoIndex: '0',
+    utxoIndex: zeroBytes.toUint(),
     nullifierRoot,
     withdrawalRoot,
-    withdrawalIndex: '0',
-    txRoot: '0x00',
-    depositRoot: '0x00',
-    migrationRoot: '0x00',
+    withdrawalIndex: zeroBytes.toUint(),
+    txRoot: zeroBytes,
+    depositRoot: zeroBytes,
+    migrationRoot: zeroBytes,
   }
 }

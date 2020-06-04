@@ -4,6 +4,7 @@ import { InanoSQLInstance } from '@nano-sql/core'
 import Web3 from 'web3'
 import { BlockStatus } from '@zkopru/database'
 import { verifyProof } from '@zkopru/tree'
+import { Bytes32 } from 'soltypes'
 import { L1Contract } from './layer1'
 import { Verifier, VerifyOption } from './verifier'
 import { L2Chain } from './layer2'
@@ -57,7 +58,9 @@ export class LightNode extends ZkOPRUNode {
   async bootstrap() {
     if (!this.bootstrapHelper) return
     const latest = await this.l1Contract.upstream.methods.latest().call()
-    const latestBlockFromDB = await this.l2Chain.getBlockSql(latest)
+    const latestBlockFromDB = await this.l2Chain.getBlockSql(
+      Bytes32.from(latest),
+    )
     if (
       latestBlockFromDB &&
       latestBlockFromDB.status &&
@@ -67,10 +70,10 @@ export class LightNode extends ZkOPRUNode {
     }
     const bootstrapData = await this.bootstrapHelper.fetchBootstrapData(latest)
     const proposalData = await this.l1Contract.web3.eth.getTransaction(
-      bootstrapData.proposalHash,
+      bootstrapData.proposalTx,
     )
     const block = Block.fromTx(proposalData)
-    const headerProof = headerHash(block.header) === latest
+    const headerProof = headerHash(block.header).eq(Bytes32.from(latest))
     const utxoMerkleProof = verifyProof(
       this.l2Chain.grove.config.utxoHasher,
       bootstrapData.utxoStartingLeafProof,

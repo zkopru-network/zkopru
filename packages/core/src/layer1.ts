@@ -1,19 +1,25 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import ZkOPRUContract from '@zkopru/contracts'
 import { L1Config } from '@zkopru/database'
-import { verifyingKeyIdentifier } from '@zkopru/utils'
+import { verifyingKeyIdentifier, logger } from '@zkopru/utils'
 import Web3 from 'web3'
 import { ContractOptions } from 'web3-eth-contract'
 import bigInt from 'big-integer'
 import * as ffjs from 'ffjavascript'
 import { VerifyingKey } from './snark'
+import { TransactionObject, Tx } from './types/contract'
 
 export class L1Contract extends ZkOPRUContract {
   web3: Web3
 
+  address: string
+
+  config?: L1Config
+
   constructor(web3: Web3, address: string, option?: ContractOptions) {
     super(web3, address, option)
     this.web3 = web3
+    this.address = address
   }
 
   async getVKs(): Promise<{ [txSig: string]: VerifyingKey }> {
@@ -74,7 +80,7 @@ export class L1Contract extends ZkOPRUContract {
   }
 
   async getConfig(): Promise<L1Config> {
-    let genesisBlock!: string
+    if (this.config) return this.config
     let utxoTreeDepth!: number
     let withdrawalTreeDepth!: number
     let nullifierTreeDepth!: number
@@ -87,11 +93,9 @@ export class L1Contract extends ZkOPRUContract {
     let utxoSubTreeSize!: number
     let withdrawalSubTreeDepth!: number
     let withdrawalSubTreeSize!: number
-    // const utxoTreeDepth = await this.upstream.methods
+    /** test start */
+    /** test ends */
     const tasks = [
-      async () => {
-        genesisBlock = await this.upstream.methods.latest().call()
-      },
       async () => {
         utxoTreeDepth = parseInt(
           await this.upstream.methods.UTXO_TREE_DEPTH().call(),
@@ -159,8 +163,7 @@ export class L1Contract extends ZkOPRUContract {
       },
     ]
     await Promise.all(tasks.map(task => task()))
-    return {
-      genesisBlock,
+    this.config = {
       utxoTreeDepth,
       withdrawalTreeDepth,
       nullifierTreeDepth,
@@ -174,5 +177,34 @@ export class L1Contract extends ZkOPRUContract {
       maxUtxoPerTree,
       maxWithdrawalPerTree,
     }
+    return this.config
+  }
+
+  async sendTx(tx: TransactionObject<void>, option?: Tx) {
+    let gas!: number
+    let gasPrice!: string
+    await Promise.all(
+      [
+        async () => {
+          try {
+            gas = await tx.estimateGas({
+              ...option,
+            })
+          } catch (err) {
+            logger.error(err)
+            throw Error('It may get reverted so did not send the transaction')
+          }
+        },
+        async () => {
+          gasPrice = await this.web3.eth.getGasPrice()
+        },
+      ].map(fetchTask => fetchTask()),
+    )
+    const receipt = await tx.send({
+      gas,
+      gasPrice,
+      ...option,
+    })
+    return receipt
   }
 }

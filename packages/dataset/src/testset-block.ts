@@ -1,5 +1,6 @@
 import { Header, Body } from '@zkopru/core'
 import { Field } from '@zkopru/babyjubjub'
+import { Address } from 'soltypes'
 import { loadZkTxs } from './testset-zktxs'
 
 function strToField(val: string): Field {
@@ -7,18 +8,18 @@ function strToField(val: string): Field {
 }
 
 export const dummyHeader: Header = {
-  proposer: strToField('proposer').toHex(20),
-  parentBlock: strToField('parentBlock').toHex(32),
-  metadata: strToField('metadata').toHex(32),
-  fee: strToField('totalFee').toHex(32),
-  utxoRoot: strToField('utxoRoot').toHex(32),
-  utxoIndex: strToField('utxoIndex').toHex(32),
-  nullifierRoot: strToField('nullifierRoot').toHex(32),
-  withdrawalRoot: strToField('withdrawalRoot').toHex(32),
-  withdrawalIndex: strToField('withdrawalIndex').toHex(32),
-  txRoot: strToField('txRoot').toHex(32),
-  depositRoot: strToField('depositRoot').toHex(32),
-  migrationRoot: strToField('migrationRoot').toHex(32),
+  proposer: Address.from(strToField('proposer').toHex(20)),
+  parentBlock: strToField('parentBlock').toBytes32(),
+  metadata: strToField('metadata').toBytes32(),
+  fee: strToField('totalFee').toUint256(),
+  utxoRoot: strToField('utxoRoot').toUint256(),
+  utxoIndex: strToField('utxoIndex').toUint256(),
+  nullifierRoot: strToField('nullifierRoot').toBytes32(),
+  withdrawalRoot: strToField('withdrawalRoot').toBytes32(),
+  withdrawalIndex: strToField('withdrawalIndex').toUint256(),
+  txRoot: strToField('txRoot').toBytes32(),
+  depositRoot: strToField('depositRoot').toBytes32(),
+  migrationRoot: strToField('migrationRoot').toBytes32(),
 }
 
 export async function getDummyBody(): Promise<Body> {
@@ -26,35 +27,35 @@ export async function getDummyBody(): Promise<Body> {
     txs: await loadZkTxs(),
     massDeposits: [
       {
-        merged: strToField('md1/merged').toHex(32),
-        fee: strToField('md1/fee').toHex(32),
+        merged: strToField('md1/merged').toBytes32(),
+        fee: strToField('md1/fee').toUint256(),
       },
       {
-        merged: strToField('md2/merged').toHex(32),
-        fee: strToField('md2/fee').toHex(32),
+        merged: strToField('md2/merged').toBytes32(),
+        fee: strToField('md2/fee').toUint256(),
       },
     ],
     massMigrations: [
       {
-        destination: strToField('mm1/dest').toHex(20),
-        totalETH: strToField('mm1/totalETH').toHex(32),
+        destination: Address.from(strToField('mm1/dest').toHex(20)),
+        totalETH: strToField('mm1/totalETH').toUint256(),
         migratingLeaves: {
-          merged: strToField('mm1/md').toHex(32),
-          fee: strToField('mm1/fee').toHex(32),
+          merged: strToField('mm1/md').toBytes32(),
+          fee: strToField('mm1/fee').toUint256(),
         },
         erc20: [
           {
-            addr: strToField('mm1/erc20').toHex(20),
-            amount: strToField('mm1/amount').toHex(32),
+            addr: Address.from(strToField('mm1/erc20').toHex(20)),
+            amount: strToField('mm1/amount').toUint256(),
           },
         ],
         erc721: [
           {
-            addr: strToField('mm1/erc721').toHex(20),
+            addr: Address.from(strToField('mm1/erc721').toHex(20)),
             nfts: [
-              strToField('mm1/erc721/nft1').toHex(32),
-              strToField('mm1/erc721/nft2').toHex(32),
-              strToField('mm1/erc721/nft3').toHex(32),
+              strToField('mm1/erc721/nft1').toUint256(),
+              strToField('mm1/erc721/nft2').toUint256(),
+              strToField('mm1/erc721/nft3').toUint256(),
             ],
           },
         ],

@@ -314,6 +314,8 @@ export class Grove {
       .exec()
     const utxo: UtxoSql = queryResult.pop() as UtxoSql
     if (!utxo) throw Error('Failed to find the utxo')
+    if (!utxo.tree) throw Error('It is not included in a block yet')
+    if (!utxo.index) throw Error('It is not included in a block yet')
 
     const cachedSiblings = (await this.db
       .selectTable(schema.utxoTreeNode(utxo.tree).name)
@@ -353,6 +355,8 @@ export class Grove {
       .exec()
     const withdrawal: UtxoSql = queryResult.pop() as UtxoSql
     if (!withdrawal) throw Error('Failed to find the withdrawal')
+    if (!withdrawal.tree) throw Error('It is not included in a block yet')
+    if (!withdrawal.index) throw Error('It is not included in a block yet')
 
     const cachedSiblings = (await this.db
       .selectTable(schema.withdrawalTreeNode(withdrawal.tree).name)

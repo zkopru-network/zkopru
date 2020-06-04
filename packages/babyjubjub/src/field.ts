@@ -1,5 +1,6 @@
 import BN from 'bn.js'
 import bigInt, { BigInteger } from 'big-integer'
+import { Bytes32, Uint256 } from 'soltypes'
 
 export type F = number | string | number[] | Uint8Array | Buffer | BN
 
@@ -77,6 +78,14 @@ export class Field extends BN {
       return `0x${this.toBuffer('be', byteLength).toString('hex')}`
     }
     return `0x${this.toString('hex')}`
+  }
+
+  toBytes32(): Bytes32 {
+    return new Bytes32(`0x${this.toString(16, 64)}`)
+  }
+
+  toUint256(): Uint256 {
+    return this.toBytes32().toUint()
   }
 
   toIden3BigInt(): BigInteger {

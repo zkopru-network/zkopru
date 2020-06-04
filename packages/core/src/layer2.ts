@@ -9,13 +9,15 @@ import {
   L1Config,
 } from '@zkopru/database'
 import { Transaction } from 'web3-core'
-import { Block, Header, VerifyResult, MassDeposit } from './block'
+import { Bytes32 } from 'soltypes'
+import { logger } from '@zkopru/utils'
+import { Block, Header, VerifyResult, MassDeposit, sqlToHeader } from './block'
 import { BootstrapData } from './bootstrap'
 
 export interface Patch {
   result: VerifyResult
-  block: string
-  massDeposits?: string[]
+  block: Bytes32
+  massDeposits?: Bytes32[]
   treePatch?: GrovePatch
 }
 
@@ -36,14 +38,9 @@ export class L2Chain implements ChainConfig {
 
   db: InanoSQLInstance
 
-  latest: string
+  latest?: string
 
-  constructor(
-    db: InanoSQLInstance,
-    genesisBlock: string,
-    grove: Grove,
-    chainConfig: ChainConfig,
-  ) {
+  constructor(db: InanoSQLInstance, grove: Grove, chainConfig: ChainConfig) {
     this.db = db
     this.grove = grove
     this.id = chainConfig.id
@@ -51,39 +48,87 @@ export class L2Chain implements ChainConfig {
     this.chainId = chainConfig.chainId
     this.address = chainConfig.address
     this.config = chainConfig.config
-    this.latest = genesisBlock
     this.lock = new AsyncLock()
   }
 
-  async getBlockSql(hash: string): Promise<BlockSql | null> {
+  async getBlockSql(hash: Bytes32): Promise<BlockSql | null> {
     const queryResult = await this.db
       .selectTable(schema.block.name)
-      .presetQuery('getBlockWithHash', { hash })
+      .presetQuery('getBlockWithHash', { hash: hash.toString() })
       .exec()
     if (queryResult.length === 0) return null
     return queryResult[0] as BlockSql
   }
 
-  async getBlock(hash: string): Promise<Block | null> {
+  async getLatestBlockHash(): Promise<Bytes32 | null> {
+    const lastVerified = await this.db
+      .selectTable(schema.block.name)
+      .presetQuery('getLastVerifiedBlock')
+      .exec()
+    const lastVerifiedBlock = lastVerified[0]
+    return lastVerifiedBlock.hash ? Bytes32.from(lastVerifiedBlock.hash) : null
+  }
+
+  async getBlock(hash: Bytes32): Promise<Block | null> {
     const blockSql = await this.getBlockSql(hash)
     if (!blockSql) return null
     const txData = blockSql.proposalData as Transaction
     if (!txData) return null
+    console.log('txData is', txData)
     return Block.fromTx(txData)
   }
 
   async getDeposits(massDeposit: MassDeposit): Promise<DepositSql[]> {
     const commitIndexArr = await this.db
       .selectTable(schema.massDeposit.name)
-      .presetQuery('getCommitIndex', { ...massDeposit, zkopru: this.id })
+      .presetQuery('getCommitIndex', {
+        merged: massDeposit.merged.toString(),
+        fee: massDeposit.fee.toString(),
+        zkopru: this.id,
+      })
       .exec()
-    const commitIndex = commitIndexArr[0]
+    const commitIndex = commitIndexArr[0].index
+    console.log(
+      'retrieved,',
+      await this.db
+        .selectTable(schema.massDeposit.name)
+        .query('select')
+        .exec(),
+    )
+    console.log(
+      'queried',
+      massDeposit.merged.toString(),
+      massDeposit.fee.toString(),
+      this.id,
+    )
+    console.log('commitIndex is', commitIndex)
     if (!commitIndex) throw Error('Failed to find the mass deposit')
-    const deposits = await this.db
+    console.log(
+      'raw select deposit',
+      await this.db
+        .selectTable(schema.deposit.name)
+        .query('select')
+        // .where(['queuedAt', 'IN', ['0']])
+        .exec(),
+    )
+    const deposits = (await this.db
       .selectTable(schema.deposit.name)
-      .presetQuery('getDeposits', { commitIndex, zkopru: this.id })
-      .exec()
-    return deposits as DepositSql[]
+      .presetQuery('getDeposits', {
+        commitIndexes: [commitIndex.toString()],
+        zkopru: this.id,
+      })
+      .exec()) as DepositSql[]
+    console.log('unsorted deposits', deposits)
+    deposits.sort((a, b) => {
+      if (a.blockNumber !== b.blockNumber) {
+        return a.blockNumber - b.blockNumber
+      }
+      if (a.transactionIndex !== b.transactionIndex) {
+        return a.transactionIndex - b.transactionIndex
+      }
+      return a.logIndex - b.logIndex
+    })
+    return deposits
   }
 
   async getOldestUnverifiedBlock(): Promise<{
@@ -94,26 +139,23 @@ export class L2Chain implements ChainConfig {
       .selectTable(schema.block.name)
       .presetQuery('getLastVerifiedBlock')
       .exec()
-    if (lastVerified.length > 0) {
-      const lastVerifiedBlock = lastVerified[0]
-      const prevHeader = lastVerifiedBlock.header
-      const lastUnverified = await this.db
-        .selectTable(schema.block.name)
-        .query('select', ['header', 'proposalData', 'MIN(proposedAt)'])
-        .where(['header.parentBlock', '=', prevHeader.hash])
-        .exec()
-      const block = Block.fromTx(lastUnverified[0].proposalData)
-      if (lastUnverified.length > 0) {
-        return {
-          prevHeader,
-          block,
-        }
-      }
+    const lastVerifiedBlock = lastVerified[0] as BlockSql
+    const prevHeader = sqlToHeader(lastVerifiedBlock.header)
+    const lastUnverified = await this.db
+      .selectTable(schema.block.name)
+      .query('select', ['header', 'proposalData', 'MIN(proposalNum)'])
+      .where(['header.parentBlock', '=', lastVerifiedBlock.hash])
+      .exec()
+    if (!lastUnverified[0].proposalData) return {}
+    const block = Block.fromTx(lastUnverified[0].proposalData)
+    return {
+      prevHeader,
+      block,
     }
-    return {}
   }
 
   async applyPatch(patch: Patch) {
+    logger.info('layer2.ts: applyPatch()')
     const { result, block, treePatch, massDeposits } = patch
     // Apply tree patch
     if (treePatch) {
@@ -146,43 +188,43 @@ export class L2Chain implements ChainConfig {
       .exec()
   }
 
-  async finalize(hash: string) {
+  async finalize(hash: Bytes32) {
     await this.markAsFinalized(hash)
   }
 
-  private async markMassDepositsAsIncludedIn(ids: string[], block: string) {
+  private async markMassDepositsAsIncludedIn(ids: Bytes32[], block: Bytes32) {
     this.db
       .selectTable(schema.massDeposit.name)
       .presetQuery('markAsIncludedIn', {
         zkopru: this.id,
-        block,
-        ids,
+        block: block.toString(),
+        ids: ids.map(val => val.toString()),
       })
       .exec()
   }
 
-  private async markAsPartiallyVerified(hash: string) {
+  private async markAsPartiallyVerified(hash: Bytes32) {
     this.db
       .selectTable(schema.block.name)
-      .presetQuery('markAsPartiallyVerified', { hash })
+      .presetQuery('markAsPartiallyVerified', { hash: hash.toString() })
       .exec()
   }
 
-  private async markAsFullyVerified(hash: string) {
+  private async markAsFullyVerified(hash: Bytes32) {
     this.db
       .selectTable(schema.block.name)
-      .presetQuery('markAsFullyVerified', { hash })
+      .presetQuery('markAsFullyVerified', { hash: hash.toString() })
   }
 
-  private async markAsFinalized(hash: string) {
+  private async markAsFinalized(hash: Bytes32) {
     this.db
       .selectTable(schema.block.name)
-      .presetQuery('markAsFinalized', { hash })
+      .presetQuery('markAsFinalized', { hash: hash.toString() })
   }
 
-  private async markAsInvalidated(hash: string) {
+  private async markAsInvalidated(hash: Bytes32) {
     this.db
       .selectTable(schema.block.name)
-      .presetQuery('markAsInvalidated', { hash })
+      .presetQuery('markAsInvalidated', { hash: hash.toString() })
   }
 }

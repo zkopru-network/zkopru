@@ -4,7 +4,7 @@ import { Field } from '@zkopru/babyjubjub'
 import BN from 'bn.js'
 
 export interface BootstrapData {
-  proposalHash: string
+  proposalTx: string
   blockHash: string
   utxoTreeIndex: number
   utxoStartingLeafProof: MerkleProof<Field>
@@ -30,7 +30,7 @@ export class HttpBootstrapHelper implements BootstrapHelper {
       console.log('json', response.json())
       console.log('body', response.body)
       return {
-        proposalHash: body.proposalHash,
+        proposalTx: body.proposalTx,
         blockHash: body.blockHash,
         utxoTreeIndex: body.utxoTreeIndex,
         utxoStartingLeafProof: {

@@ -15,6 +15,7 @@ describe('block.ts', () => {
       serializeHeader(header),
       serializeBody(body),
     ])
+    const dummySelector = 'aaaaaaaa'
     const dummyTx: Transaction = {
       hash: 'dummyhash',
       nonce: 1,
@@ -26,7 +27,7 @@ describe('block.ts', () => {
       value: 'dummyvalue',
       gasPrice: 'dummygas',
       gas: 11,
-      input: `0x${serializedBlock.toString('hex')}`,
+      input: `0x${dummySelector}${serializedBlock.toString('hex')}`,
     }
     const deserializedBlock = Block.fromTx(dummyTx)
     expect(deserializedBlock).toBeDefined()

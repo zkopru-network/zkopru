@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
+// eslint-disable-next-line max-classes-per-file
 import {
   ZkTx,
   ZkInflow,
@@ -6,31 +7,32 @@ import {
   PublicData,
   SNARK,
 } from '@zkopru/transaction'
-import { BlockSql, BlockStatus } from '@zkopru/database'
+import { BlockSql, BlockStatus, HeaderSql } from '@zkopru/database'
 import * as Utils from '@zkopru/utils'
 import { Field } from '@zkopru/babyjubjub'
 import { Transaction } from 'web3-core'
 import { soliditySha3 } from 'web3-utils'
+import { Bytes32, Uint256, Address } from 'soltypes'
 // import { soliditySha3 } from 'web3-utils'
 
 export interface MassDeposit {
-  merged: string
-  fee: string
+  merged: Bytes32
+  fee: Uint256
 }
 
 export interface ERC20Migration {
-  addr: string
-  amount: string
+  addr: Address
+  amount: Uint256
 }
 
 export interface ERC721Migration {
-  addr: string
-  nfts: string[]
+  addr: Address
+  nfts: Uint256[]
 }
 
 export interface MassMigration {
-  destination: string
-  totalETH: string
+  destination: Address
+  totalETH: Uint256
   migratingLeaves: MassDeposit
   erc20: ERC20Migration[]
   erc721: ERC721Migration[]
@@ -42,18 +44,18 @@ export interface Proposal {
 }
 
 export interface Header {
-  proposer: string
-  parentBlock: string
-  metadata: string
-  fee: string
-  utxoRoot: string
-  utxoIndex: string
-  nullifierRoot: string
-  withdrawalRoot: string
-  withdrawalIndex: string
-  txRoot: string
-  depositRoot: string
-  migrationRoot: string
+  proposer: Address
+  parentBlock: Bytes32
+  metadata: Bytes32
+  fee: Uint256
+  utxoRoot: Uint256
+  utxoIndex: Uint256
+  nullifierRoot: Bytes32
+  withdrawalRoot: Bytes32
+  withdrawalIndex: Uint256
+  txRoot: Bytes32
+  depositRoot: Bytes32
+  migrationRoot: Bytes32
 }
 
 export interface Body {
@@ -63,7 +65,7 @@ export interface Body {
 }
 
 export interface Finalization {
-  submissionId: string
+  proposalChecksum: Bytes32
   header: Header
   massDeposits: MassDeposit[]
   massMigration: MassMigration[]
@@ -75,44 +77,65 @@ export enum VerifyResult {
   FULLY_VERIFIED,
 }
 
+export function headerToSql(header: Header): HeaderSql {
+  const sql: HeaderSql = {} as HeaderSql
+  Object.keys(header).forEach(key => {
+    sql[key] = header[key].toString()
+  })
+  return sql
+}
+
+export function sqlToHeader(sql: HeaderSql): Header {
+  return {
+    proposer: Address.from(sql.proposer),
+    parentBlock: Bytes32.from(sql.parentBlock),
+    metadata: Bytes32.from(sql.metadata),
+    fee: Uint256.from(sql.fee),
+    utxoRoot: Uint256.from(sql.utxoRoot),
+    utxoIndex: Uint256.from(sql.utxoIndex),
+    nullifierRoot: Bytes32.from(sql.nullifierRoot),
+    withdrawalRoot: Bytes32.from(sql.withdrawalRoot),
+    withdrawalIndex: Uint256.from(sql.withdrawalIndex),
+    txRoot: Bytes32.from(sql.txRoot),
+    depositRoot: Bytes32.from(sql.depositRoot),
+    migrationRoot: Bytes32.from(sql.migrationRoot),
+  }
+}
+
 export function serializeHeader(header: Header): Buffer {
   // Header
-  const headerBytes = Buffer.concat([
-    Utils.hexToBuffer(header.proposer, 20),
-    Utils.hexToBuffer(header.parentBlock, 32),
-    Utils.hexToBuffer(header.metadata, 32),
-    Utils.hexToBuffer(header.fee, 32),
-    Utils.hexToBuffer(header.utxoRoot, 32),
-    Utils.hexToBuffer(header.utxoIndex, 32),
-    Utils.hexToBuffer(header.nullifierRoot, 32),
-    Utils.hexToBuffer(header.withdrawalRoot, 32),
-    Utils.hexToBuffer(header.withdrawalIndex, 32),
-    Utils.hexToBuffer(header.txRoot, 32),
-    Utils.hexToBuffer(header.depositRoot, 32),
-    Utils.hexToBuffer(header.migrationRoot, 32),
-  ])
+  const headerBytes = Buffer.concat(
+    [
+      header.proposer,
+      header.parentBlock,
+      header.metadata,
+      header.fee,
+      header.utxoRoot,
+      header.utxoIndex,
+      header.nullifierRoot,
+      header.withdrawalRoot,
+      header.withdrawalIndex,
+      header.txRoot,
+      header.depositRoot,
+      header.migrationRoot,
+    ].map(val => val.toBuffer()),
+  )
   return headerBytes
 }
 
 export function serializeBody(body: Body): Buffer {
   const arr: Buffer[] = []
   // Txs
-  const txLenBytes = Utils.hexToBuffer(body.txs.length.toString(16), 2)
+  const txLenBytes = Utils.numToBuffer(body.txs.length, 2)
   arr.push(txLenBytes)
   for (let i = 0; i < body.txs.length; i += 1) {
-    const numOfInflowByte = Utils.hexToBuffer(
-      body.txs[i].inflow.length.toString(16),
-      1,
-    )
+    const numOfInflowByte = Utils.numToBuffer(body.txs[i].inflow.length, 1)
     arr.push(numOfInflowByte)
     for (let j = 0; j < body.txs[i].inflow.length; j += 1) {
       arr.push(body.txs[i].inflow[j].root.toBuffer('be', 32))
       arr.push(body.txs[i].inflow[j].nullifier.toBuffer('be', 32))
     }
-    const numOfOutflowByte = Utils.hexToBuffer(
-      body.txs[i].outflow.length.toString(16),
-      1,
-    )
+    const numOfOutflowByte = Utils.numToBuffer(body.txs[i].outflow.length, 1)
     arr.push(numOfOutflowByte)
     for (let j = 0; j < body.txs[i].outflow.length; j += 1) {
       arr.push(body.txs[i].outflow[j].note.toBuffer('be', 32))
@@ -156,41 +179,33 @@ export function serializeBody(body: Body): Buffer {
     }
   }
   // Mass deposits
-  const massDepositLenBytes = Utils.hexToBuffer(
-    body.massDeposits.length.toString(16),
-    1,
-  )
+  const massDepositLenBytes = Utils.numToBuffer(body.massDeposits.length, 1)
   arr.push(massDepositLenBytes)
   for (let i = 0; i < body.massDeposits.length; i += 1) {
-    arr.push(Utils.hexToBuffer(body.massDeposits[i].merged, 32))
-    arr.push(Utils.hexToBuffer(body.massDeposits[i].fee, 32))
+    arr.push(body.massDeposits[i].merged.toBuffer())
+    arr.push(body.massDeposits[i].fee.toBuffer())
   }
   // Mass migrations
-  const massMigrationLenBytes = Utils.hexToBuffer(
-    body.massMigrations.length.toString(16),
-    1,
-  )
+  const massMigrationLenBytes = Utils.numToBuffer(body.massMigrations.length, 1)
   arr.push(massMigrationLenBytes)
   for (let i = 0; i < body.massMigrations.length; i += 1) {
-    arr.push(Utils.hexToBuffer(body.massMigrations[i].destination, 20))
-    arr.push(Utils.hexToBuffer(body.massMigrations[i].totalETH, 32))
-    arr.push(
-      Utils.hexToBuffer(body.massMigrations[i].migratingLeaves.merged, 32),
-    )
-    arr.push(Utils.hexToBuffer(body.massMigrations[i].migratingLeaves.fee, 32))
+    arr.push(body.massMigrations[i].destination.toBuffer())
+    arr.push(body.massMigrations[i].totalETH.toBuffer())
+    arr.push(body.massMigrations[i].migratingLeaves.merged.toBuffer())
+    arr.push(body.massMigrations[i].migratingLeaves.fee.toBuffer())
     const { erc20, erc721 } = body.massMigrations[i]
-    arr.push(Utils.hexToBuffer(erc20.length.toString(16), 1))
+    arr.push(Utils.numToBuffer(erc20.length, 1))
     for (let j = 0; j < erc20.length; j += 1) {
-      arr.push(Utils.hexToBuffer(erc20[j].addr, 20))
-      arr.push(Utils.hexToBuffer(erc20[j].amount, 32))
+      arr.push(erc20[j].addr.toBuffer())
+      arr.push(erc20[j].amount.toBuffer())
     }
-    arr.push(Utils.hexToBuffer(erc721.length.toString(16), 1))
+    arr.push(Utils.numToBuffer(erc721.length, 1))
     for (let j = 0; j < erc721.length; j += 1) {
-      arr.push(Utils.hexToBuffer(erc721[j].addr, 20))
+      arr.push(erc721[j].addr.toBuffer())
       const { nfts } = erc721[j]
-      arr.push(Utils.hexToBuffer(nfts.length.toString(16), 1))
+      arr.push(Utils.numToBuffer(nfts.length, 1))
       for (let k = 0; k < nfts.length; k += 1) {
-        arr.push(Utils.hexToBuffer(nfts[k], 32))
+        arr.push(nfts[k].toBuffer())
       }
     }
   }
@@ -202,18 +217,18 @@ function deserializeHeaderFrom(
 ): { header: Header; rest: string } {
   const queue = new Utils.StringifiedHexQueue(rawData)
   const header: Header = {
-    proposer: queue.dequeue(20),
-    parentBlock: queue.dequeue(32),
-    metadata: queue.dequeue(32),
-    fee: queue.dequeue(32),
-    utxoRoot: queue.dequeue(32),
-    utxoIndex: queue.dequeue(32),
-    nullifierRoot: queue.dequeue(32),
-    withdrawalRoot: queue.dequeue(32),
-    withdrawalIndex: queue.dequeue(32),
-    txRoot: queue.dequeue(32),
-    depositRoot: queue.dequeue(32),
-    migrationRoot: queue.dequeue(32),
+    proposer: queue.dequeueToAddress(),
+    parentBlock: queue.dequeueToBytes32(),
+    metadata: queue.dequeueToBytes32(),
+    fee: queue.dequeueToUint256(),
+    utxoRoot: queue.dequeueToUint256(),
+    utxoIndex: queue.dequeueToUint256(),
+    nullifierRoot: queue.dequeueToBytes32(),
+    withdrawalRoot: queue.dequeueToBytes32(),
+    withdrawalIndex: queue.dequeueToUint256(),
+    txRoot: queue.dequeueToBytes32(),
+    depositRoot: queue.dequeueToBytes32(),
+    migrationRoot: queue.dequeueToBytes32(),
   }
   return { header, rest: queue.dequeueAll() }
 }
@@ -285,9 +300,10 @@ function deserializeMassDeposits(
   const mdLength: number = queue.dequeueToNumber(1)
   const massDeposits: MassDeposit[] = []
   while (massDeposits.length < mdLength) {
+    console.log('deserializa mass deposit rest', queue.str.slice(0, 128))
     massDeposits.push({
-      merged: queue.dequeue(32),
-      fee: queue.dequeue(32),
+      merged: queue.dequeueToBytes32(),
+      fee: queue.dequeueToUint256(),
     })
   }
   return { massDeposits, rest: queue.dequeueAll() }
@@ -303,15 +319,15 @@ function deserializeMassMigrations(
     const destination = queue.dequeue(20)
     const totalETH = queue.dequeue(32)
     const migratingLeaves: MassDeposit = {
-      merged: queue.dequeue(32),
-      fee: queue.dequeue(32),
+      merged: queue.dequeueToBytes32(),
+      fee: queue.dequeueToUint256(),
     }
     const erc20MigrationLength = queue.dequeueToNumber(1)
     const erc20Migrations: ERC20Migration[] = []
     while (erc20Migrations.length < erc20MigrationLength) {
       erc20Migrations.push({
-        addr: queue.dequeue(20),
-        amount: queue.dequeue(32),
+        addr: queue.dequeueToAddress(),
+        amount: queue.dequeueToUint256(),
       })
     }
     const erc721MigrationLength = queue.dequeueToNumber(1)
@@ -324,13 +340,13 @@ function deserializeMassMigrations(
         nfts.push(queue.dequeue(32))
       }
       erc721Migrations.push({
-        addr,
-        nfts,
+        addr: Address.from(addr),
+        nfts: nfts.map(Uint256.from),
       })
     }
     massMigrations.push({
-      destination,
-      totalETH,
+      destination: Address.from(destination),
+      totalETH: Uint256.from(totalETH),
       migratingLeaves,
       erc20: erc20Migrations,
       erc721: erc721Migrations,
@@ -339,55 +355,58 @@ function deserializeMassMigrations(
   return { massMigrations, rest: queue.dequeueAll() }
 }
 
-export function headerHash(header: Header): string {
-  const concatenated = Buffer.concat([
-    Utils.hexToBuffer(header.proposer, 20),
-    Utils.hexToBuffer(header.parentBlock, 32),
-    Utils.hexToBuffer(header.metadata, 32),
-    Utils.hexToBuffer(header.fee, 32),
-    Utils.hexToBuffer(header.utxoRoot, 32),
-    Utils.hexToBuffer(header.utxoIndex, 32),
-    Utils.hexToBuffer(header.nullifierRoot, 32),
-    Utils.hexToBuffer(header.withdrawalRoot, 32),
-    Utils.hexToBuffer(header.withdrawalIndex, 32),
-    Utils.hexToBuffer(header.txRoot, 32),
-    Utils.hexToBuffer(header.depositRoot, 32),
-    Utils.hexToBuffer(header.migrationRoot, 32),
-  ])
+export function headerHash(header: Header): Bytes32 {
+  const concatenated = Buffer.concat(
+    [
+      header.proposer,
+      header.parentBlock,
+      header.metadata,
+      header.fee,
+      header.utxoRoot,
+      header.utxoIndex,
+      header.nullifierRoot,
+      header.withdrawalRoot,
+      header.withdrawalIndex,
+      header.txRoot,
+      header.depositRoot,
+      header.migrationRoot,
+    ].map(val => val.toBuffer()),
+  )
   const result = soliditySha3(`0x${concatenated.toString('hex')}`)
   if (!result) throw Error('Failed to get header hash')
-  return result
+  return Bytes32.from(result)
 }
 
 export function massDepositHash(massDeposit: MassDeposit): string {
-  const concatenated = Buffer.concat([
-    Utils.hexToBuffer(massDeposit.merged, 32),
-    Utils.hexToBuffer(massDeposit.fee, 32),
-  ])
+  const concatenated = Buffer.concat(
+    [massDeposit.merged, massDeposit.fee].map(val => val.toBuffer()),
+  )
   const result = soliditySha3(`0x${concatenated.toString('hex')}`)
   if (!result) throw Error('Failed to get header hash')
   return result
 }
 
 export function massMigrationHash(massMigration: MassMigration): string {
-  let concatenated = Buffer.concat([
-    Utils.hexToBuffer(massMigration.destination, 32),
-    Utils.hexToBuffer(massMigration.migratingLeaves.merged, 32),
-    Utils.hexToBuffer(massMigration.migratingLeaves.fee, 32),
-  ])
+  let concatenated = Buffer.concat(
+    [
+      massMigration.destination,
+      massMigration.migratingLeaves.merged,
+      massMigration.migratingLeaves.fee,
+    ].map(val => val.toBuffer()),
+  )
   for (let i = 0; i < massMigration.erc20.length; i += 1) {
     concatenated = Buffer.concat([
       concatenated,
-      Utils.hexToBuffer(massMigration.erc20[i].addr, 20),
-      Utils.hexToBuffer(massMigration.erc20[i].amount, 20),
+      massMigration.erc20[i].addr.toBuffer(),
+      massMigration.erc20[i].amount.toBuffer(),
     ])
   }
   for (let i = 0; i < massMigration.erc721.length; i += 1) {
     concatenated = Buffer.concat([
       concatenated,
-      Utils.hexToBuffer(massMigration.erc721[i].addr, 20),
+      massMigration.erc721[i].addr.toBuffer(),
       massMigration.erc721[i].nfts.reduce((buff, nft) => {
-        return Buffer.concat([buff, Utils.hexToBuffer(nft, 32)])
+        return Buffer.concat([buff, nft.toBuffer()])
       }, Buffer.from([])),
     ])
   }
@@ -397,15 +416,17 @@ export function massMigrationHash(massMigration: MassMigration): string {
 }
 
 export class Block {
-  hash: string
+  hash: Bytes32
 
   status: BlockStatus
 
-  proposedAt?: number
+  proposalNum?: number
 
-  parent: string
+  proposedAt: number
 
-  proposalHash: string
+  parent: Bytes32
+
+  proposalTx: Bytes32
 
   header: Header
 
@@ -414,43 +435,46 @@ export class Block {
   proposalData?: Transaction
 
   bootstrap?: {
-    utxoTreeIndex: number
-    utxoBootstrap: string[]
-    withdrawalTreeIndex: number
-    withdrawalBootstrap: string[]
+    utxoTreeIndex: Uint256
+    utxoBootstrap: Uint256[]
+    withdrawalTreeIndex: Uint256
+    withdrawalBootstrap: Bytes32[]
   }
 
   constructor({
     hash,
     status,
+    proposalNum,
     proposedAt,
     parent,
-    proposalHash,
+    proposalTx,
     header,
     body,
     proposalData,
     bootstrap,
   }: {
-    hash: string
+    hash: Bytes32
     status: BlockStatus
     proposedAt: number
-    parent: string
-    proposalHash: string
+    parent: Bytes32
+    proposalTx: Bytes32
     header: Header
     body: Body
+    proposalNum?: number
     proposalData?: Transaction
     bootstrap?: {
-      utxoTreeIndex: number
-      utxoBootstrap: string[]
-      withdrawalTreeIndex: number
-      withdrawalBootstrap: string[]
+      utxoTreeIndex: Uint256
+      utxoBootstrap: Uint256[]
+      withdrawalTreeIndex: Uint256
+      withdrawalBootstrap: Bytes32[]
     }
   }) {
     this.hash = hash
     this.status = status
+    this.proposalNum = proposalNum
     this.proposedAt = proposedAt
     this.parent = parent
-    this.proposalHash = proposalHash
+    this.proposalTx = proposalTx
     this.header = header
     this.body = body
     this.proposalData = proposalData
@@ -458,14 +482,36 @@ export class Block {
   }
 
   toSqlObj(): BlockSql {
+    const header = {} as HeaderSql
+    Object.keys(this.header).forEach(key => {
+      header[key] = this.header[key].toString()
+    })
     return {
-      hash: this.hash,
+      hash: this.hash.toString(),
       status: this.status,
+      proposalNum: this.proposalNum,
       proposedAt: this.proposedAt || 0,
-      proposalHash: this.proposalHash,
-      header: this.header,
+      proposalTx: this.proposalTx.toString(),
+      header,
       proposalData: this.proposalData ? this.proposalData : undefined,
-      bootstrap: this.bootstrap ? this.bootstrap : undefined,
+      bootstrap: this.bootstrap
+        ? {
+            utxoTreeIndex: parseInt(
+              this.bootstrap.utxoTreeIndex.toString(),
+              10,
+            ),
+            utxoBootstrap: this.bootstrap.utxoBootstrap.map(val =>
+              val.toString(),
+            ),
+            withdrawalTreeIndex: parseInt(
+              this.bootstrap.withdrawalTreeIndex.toString(),
+              10,
+            ),
+            withdrawalBootstrap: this.bootstrap.withdrawalBootstrap.map(val =>
+              val.toString(),
+            ),
+          }
+        : undefined,
     }
   }
 
@@ -480,7 +526,17 @@ export class Block {
   }
 
   static fromTx(tx: Transaction): Block {
-    const deserializedHeader = deserializeHeaderFrom(tx.input)
+    const queue = new Utils.StringifiedHexQueue(tx.input)
+    // remove function selector
+    queue.dequeue(4)
+    // remove param position
+    queue.dequeue(32)
+    // remove bytes length
+    const length = queue.dequeue(32)
+    console.log('length is ', length)
+    const rawData = queue.dequeueAll()
+    console.log('raw data is...', rawData)
+    const deserializedHeader = deserializeHeaderFrom(rawData)
     const deserializedTxs = deserializeTxsFrom(deserializedHeader.rest)
     const deserializedMassDeposits = deserializeMassDeposits(
       deserializedTxs.rest,
@@ -491,6 +547,7 @@ export class Block {
     const { header } = deserializedHeader
     const { txs } = deserializedTxs
     const { massDeposits } = deserializedMassDeposits
+    console.log('mass deposits,...', massDeposits)
     const { massMigrations } = deserializedMassMigrations
     const body: Body = {
       txs,
@@ -502,7 +559,7 @@ export class Block {
       status: BlockStatus.FETCHED,
       proposedAt: tx.blockNumber || 0,
       parent: header.parentBlock,
-      proposalHash: tx.hash,
+      proposalTx: Bytes32.from(tx.hash),
       proposalData: tx,
       header,
       body,

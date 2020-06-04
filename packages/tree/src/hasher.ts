@@ -13,17 +13,18 @@ function getPreHash<T extends Field | BN>(
   parentOf: (left: T, right: T) => T,
   depth: number,
 ): T[] {
-  const preHash = Array<T>(depth)
-  preHash[0] = zero
-  for (let level = 1; level < depth; level += 1) {
-    preHash[level] = parentOf(preHash[level - 1], preHash[level - 1])
+  const preHash: T[] = []
+  preHash.push(zero)
+  for (let level = 0; level < depth; level += 1) {
+    const topValue = preHash[preHash.length - 1]
+    preHash.push(parentOf(topValue, topValue))
   }
   return preHash
 }
 
 export function genesisRoot<T extends Field | BN>(hasher: Hasher<T>): T {
   const lastSib = hasher.preHash[hasher.preHash.length - 1]
-  return hasher.parentOf(lastSib, lastSib)
+  return lastSib
 }
 
 export function keccakHasher(depth: number): Hasher<BN> {

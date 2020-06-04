@@ -1,8 +1,9 @@
-import { verifyingKeyIdentifier } from '@zkopru/utils'
+import { verifyingKeyIdentifier, logger } from '@zkopru/utils'
 // import { Point } from '@zkopru/babyjubjub'
-import { DepositSql } from '@zkopru/database'
+import { DepositSql, schema } from '@zkopru/database'
+import { Bytes32, Uint256 } from 'soltypes'
 import { soliditySha3 } from 'web3-utils'
-import bigInt from 'big-integer'
+import BN from 'bn.js'
 import { Block, Header, VerifyResult } from './block'
 import { VerifyingKey } from './snark'
 import { L1Contract } from './layer1'
@@ -44,6 +45,7 @@ export class Verifier {
     prevHeader: Header
     block: Block
   }): Promise<Patch> {
+    logger.info(`Verifying ${block.hash}`)
     if (this.option.header) {
       await this.verifyHeader(block)
     }
@@ -51,13 +53,28 @@ export class Verifier {
     // deposit verification
     for (const massDeposit of block.body.massDeposits) {
       const deposits: DepositSql[] = await layer2.getDeposits(massDeposit)
+      console.log('massdeposit...', massDeposit)
+      console.log('deposits...', deposits)
+      console.log(
+        'select...',
+        await layer2.db
+          .selectTable(schema.deposit.name)
+          .query('select')
+          .exec(),
+      )
       let merged
-      let fee = bigInt.zero
+      let fee = new BN(0)
       for (const deposit of deposits) {
         merged = soliditySha3(merged || 0, deposit.note) || ''
-        fee = bigInt(deposit.fee).add(fee)
+        fee = fee.add(Uint256.from(deposit.fee).toBN())
       }
-      if (merged !== massDeposit.merged || fee.neq(massDeposit.fee)) {
+      console.log('computed merged', merged)
+      console.log('committed merged', massDeposit.merged)
+      console.log('deposits', deposits)
+      if (
+        !Bytes32.from(merged).eq(massDeposit.merged) ||
+        !massDeposit.fee.toBN().eq(fee)
+      ) {
         throw Error('Failed to match the deposit leaves with the proposal.')
       }
     }

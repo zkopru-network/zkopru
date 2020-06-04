@@ -38,6 +38,7 @@
     "big-integer": "^1.6.48",
     "fs-extra": "^9.0.0",
     "node-docker-api": "^1.1.22",
+    "soltypes": "^1.1.2",
     "tar": "^6.0.2",
     "web3": "^1.2.6",
     "web3-core": "^1.2.7",

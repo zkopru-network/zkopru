@@ -146,7 +146,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       start = this.latestLeafIndex()
       latestSiblings = this.siblings()
     })
-    let root!: T
+    let root: T = this.root()
 
     let index = start
     for (let i = 0; i < items.length; i += 1) {

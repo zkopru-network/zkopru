@@ -4,6 +4,7 @@ import { soliditySha3, padLeft } from 'web3-utils'
 import pino from 'pino'
 import { Container } from 'node-docker-api/lib/container'
 import { ReadStream } from 'fs-extra'
+import { Bytes32, Uint256, Address } from 'soltypes'
 import tar from 'tar'
 import BN from 'bn.js'
 
@@ -46,9 +47,12 @@ export function verifyingKeyIdentifier(nI: number, nO: number): string {
   return identifier
 }
 
-export function hexify(n: BN | Buffer | string, length?: number): string {
+export function hexify(
+  n: BN | Buffer | string | number,
+  length?: number,
+): string {
   let hex: string
-  if (n instanceof BN) {
+  if (n instanceof BN || typeof n === 'number') {
     hex = n.toString(16)
   } else if (typeof n === 'string') {
     if (n.startsWith('0x')) {
@@ -70,6 +74,24 @@ export function hexify(n: BN | Buffer | string, length?: number): string {
     hex = '0'.repeat(length * 2 - hex.length) + hex
   }
   return `0x${hex}`
+}
+
+export function numToBuffer(
+  decimal: BN | string | number,
+  len?: number,
+): Buffer {
+  if (typeof decimal === 'string' && decimal.startsWith('0x')) {
+    throw Error('It starts with 0x. This is not a number')
+  }
+  return hexToBuffer(hexify(decimal), len)
+}
+
+export function bnToBytes32(n: BN): Bytes32 {
+  return Bytes32.from(`0x${n.toString(16, 64)}`)
+}
+
+export function bnToUint256(n: BN): Uint256 {
+  return bnToBytes32(n).toUint()
 }
 
 export class Queue {
@@ -103,6 +125,18 @@ export class StringifiedHexQueue {
     const dequeued = this.str.slice(this.cursor, this.cursor + n * 2)
     this.cursor += n * 2
     return `0x${dequeued}`
+  }
+
+  dequeueToAddress(): Address {
+    return Address.from(this.dequeue(20))
+  }
+
+  dequeueToBytes32(): Bytes32 {
+    return Bytes32.from(this.dequeue(32))
+  }
+
+  dequeueToUint256(): Uint256 {
+    return this.dequeueToBytes32().toUint()
   }
 
   dequeueToNumber(n: number): number {
