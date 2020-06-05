@@ -1,24 +1,19 @@
 /* eslint-disable jest/no-hooks */
 // import { schema } from '@zkopru/database'
-import { nSQL, InanoSQLInstance } from '@nano-sql/core'
 import Web3 from 'web3'
 import { HDWallet, ZkAccount } from '~account'
-import { schema } from '~database'
+import { DB } from '~prisma'
 
 describe('unit test', () => {
-  let database: InanoSQLInstance
+  let database: DB
+  let killMockupDB: () => Promise<void>
   beforeAll(async () => {
-    const dbName = 'hdwallet-test'
-    await nSQL().createDatabase({
-      id: dbName,
-      mode: 'TEMP',
-      tables: [schema.hdWallet, schema.keystore],
-    })
-    database = nSQL().useDatabase(dbName)
+    const { instance, terminate } = await DB.mockup()
+    database = instance
+    killMockupDB = terminate
   })
-  afterAll(async done => {
-    await database.disconnect()
-    done()
+  afterAll(async () => {
+    await killMockupDB()
   })
   it('has same private keys and eth address with ganache default accounts', async () => {
     const web3 = new Web3()
@@ -27,18 +22,15 @@ describe('unit test', () => {
       'myth like bonus scare over problem client lizard pioneer submit female collect',
       'samplepassword',
     )
-    const accounts: ZkAccount[] = [
-      await hdWallet.createAccount(0),
-      await hdWallet.createAccount(1),
-      await hdWallet.createAccount(2),
-      await hdWallet.createAccount(3),
-      await hdWallet.createAccount(4),
-      await hdWallet.createAccount(5),
-      await hdWallet.createAccount(6),
-      await hdWallet.createAccount(7),
-      await hdWallet.createAccount(8),
-      await hdWallet.createAccount(9),
-    ]
+    const accounts: ZkAccount[] = []
+    await Promise.all(
+      Array(10)
+        .fill(0)
+        .map((_, i) => async () => {
+          accounts[i] = await hdWallet.createAccount(i)
+        })
+        .map(f => f()),
+    )
     const ganacheAddress = [
       '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1',
       '0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0',
@@ -54,5 +46,5 @@ describe('unit test', () => {
     expect(ganacheAddress).toStrictEqual(
       accounts.map(account => account.address),
     )
-  })
+  }, 30000)
 })

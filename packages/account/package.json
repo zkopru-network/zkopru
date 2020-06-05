@@ -9,7 +9,7 @@
   ],
   "_moduleAliases": {
     "~account": "dist",
-    "~database": "../database/dist"
+    "~prisma": "../prisma/dist"
   },
   "scripts": {
     "prebuild": "shx mkdir -p dist",
@@ -29,13 +29,16 @@
   "dependencies": {
     "@nano-sql/core": "^2.3.7",
     "@zkopru/babyjubjub": "file:../babyjubjub",
-    "@zkopru/database": "file:../database",
+    "@zkopru/prisma": "file:../prisma",
     "@zkopru/utils": "file:../utils",
     "bip39": "^3.0.2",
     "hdkey": "^1.1.1",
     "web3": "^1.2.6",
     "web3-core": "^1.2.6",
     "web3-eth-accounts": "^1.2.6"
+  },
+  "devDependencies": {
+    "uuid": "^8.1.0"
   },
   "publishConfig": {
     "access": "public"

@@ -2,7 +2,7 @@ import Web3 from 'web3'
 // import { Accounts } from 'web3-eth-accounts'
 import { Account, EncryptedKeystoreV3Json, AddAccount } from 'web3-core'
 import { Field, Point, EdDSA, signEdDSA } from '@zkopru/babyjubjub'
-import { KeystoreSql } from '@zkopru/database'
+import { Keystore } from '@zkopru/prisma'
 import { hexify } from '@zkopru/utils'
 
 export class ZkAccount {
@@ -36,11 +36,11 @@ export class ZkAccount {
     this.pubKey = Point.fromPrivKey(this.snarkPK.toHex(32))
   }
 
-  toKeystoreSqlObj(password: string): KeystoreSql {
+  toKeystoreSqlObj(password: string): Keystore {
     return {
-      pubKey: this.pubKey.encode().toString(),
+      pubKey: hexify(this.pubKey.encode()),
       address: this.address,
-      encrypted: this.ethAccount.encrypt(password),
+      encrypted: JSON.stringify(this.ethAccount.encrypt(password)),
     }
   }
 

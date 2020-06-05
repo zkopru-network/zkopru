@@ -1,4 +1,3 @@
-import { InanoSQLInstance } from '@nano-sql/core'
 import {
   generateMnemonic,
   mnemonicToSeedSync,
@@ -9,16 +8,16 @@ import {
 import crypto from 'crypto'
 import HDNode from 'hdkey'
 import Web3 from 'web3'
-import { HDWalletSql, KeystoreSql, schema } from '@zkopru/database'
 import { Field } from '@zkopru/babyjubjub'
 import { hexify } from '@zkopru/utils'
+import { DB, EncryptedWallet, Keystore } from '@zkopru/prisma'
 import { ZkAccount } from './account'
 
 export const PATH = (index: number) => `m/44'/60'/0'/0/${index}`
 export class HDWallet {
   web3: Web3
 
-  db: InanoSQLInstance
+  db: DB
 
   id?: string
 
@@ -28,7 +27,7 @@ export class HDWallet {
 
   private seed!: Buffer
 
-  constructor(web3: Web3, db: InanoSQLInstance) {
+  constructor(web3: Web3, db: DB) {
     this.db = db
     this.web3 = web3
   }
@@ -55,25 +54,14 @@ export class HDWallet {
     this.id = id
   }
 
-  async list(): Promise<HDWalletSql[]> {
-    const rows = await this.db
-      .selectTable(schema.hdWallet.name)
-      .query('select')
-      .exec()
-    return rows as HDWalletSql[]
+  async list(): Promise<EncryptedWallet[]> {
+    const wallets = await this.db.prisma.encryptedWallet.findMany()
+    return wallets
   }
 
-  async load(wallet: HDWalletSql, password: string) {
-    const {
-      id,
-      algorithm,
-      iv,
-      ciphertext,
-      keylen,
-      kdf,
-      kdfParams,
-      salt,
-    } = wallet
+  async load(wallet: EncryptedWallet, password: string) {
+    const { id, algorithm, iv, ciphertext, keylen, kdf, N, r, p, salt } = wallet
+    const kdfParams = { N, r, p }
     let key: Buffer
     switch (kdf) {
       default:
@@ -107,14 +95,11 @@ export class HDWallet {
 
   async retrieveAccounts(): Promise<ZkAccount[]> {
     if (!this.seed) throw Error('Not initialized')
-    const keys: KeystoreSql[] = (await this.db
-      .selectTable(schema.keystore.name)
-      .query('select')
-      .exec()) as KeystoreSql[]
+    const keys: Keystore[] = await this.db.prisma.keystore.findMany()
     const accounts: ZkAccount[] = []
     for (let i = 0; i < keys.length; i += 1) {
       const ethAccount = this.web3.eth.accounts.decrypt(
-        keys[i].encrypted,
+        JSON.parse(keys[i].encrypted),
         this.password,
       )
       accounts.push(new ZkAccount(ethAccount))
@@ -135,16 +120,15 @@ export class HDWallet {
       hexify(derivedKey.privateKey, 32),
     )
     const account = new ZkAccount(ethAccount)
-    await this.db
-      .selectTable(schema.keystore.name)
-      .presetQuery('addKey', {
-        keystore: account.toKeystoreSqlObj(this.password),
-      })
-      .exec()
+    const data = account.toKeystoreSqlObj(this.password)
+    console.log('data', data)
+    await this.db.prisma.keystore.create({
+      data: account.toKeystoreSqlObj(this.password),
+    })
     return account
   }
 
-  export(password: string): HDWalletSql {
+  export(password: string): EncryptedWallet {
     if (!this.mnemonic) throw Error('Not initialized')
     const entropy: string = mnemonicToEntropy(this.mnemonic)
     const algorithm = 'aes-256-cbc'
@@ -161,29 +145,33 @@ export class HDWallet {
     const cipher = crypto.createCipheriv(algorithm, key, iv)
     const ciphertext =
       cipher.update(entropy, 'binary', 'hex') + cipher.final('hex')
-    const hdwallet: HDWalletSql = {
+    const hdwallet: EncryptedWallet = {
       ciphertext,
       iv: iv.toString('hex'),
       algorithm,
       keylen,
       kdf,
-      kdfParams,
+      N: kdfParams.N,
+      r: kdfParams.r,
+      p: kdfParams.p,
       salt: salt.toString('hex'),
-    }
+    } as EncryptedWallet
     return hdwallet
   }
 
   async save(password: string): Promise<{ id: string }> {
     const hdwallet = this.export(password)
-    const result = await this.db
-      .selectTable(schema.hdWallet.name)
-      .presetQuery('save', {
-        hdWallet: {
-          id: this.id,
-          ...hdwallet,
-        },
+    let result: EncryptedWallet
+    if (!this.id) {
+      console.log('create..')
+      result = await this.db.prisma.encryptedWallet.create({ data: hdwallet })
+    } else {
+      console.log('update..', this.id)
+      result = await this.db.prisma.encryptedWallet.update({
+        where: { id: this.id },
+        data: hdwallet,
       })
-      .exec()
-    return { id: result[0].id }
+    }
+    return { id: result.id }
   }
 }
