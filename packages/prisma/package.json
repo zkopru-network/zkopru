@@ -13,6 +13,7 @@
   "scripts": {
     "build:prisma": "prisma generate",
     "migrate-save": "prisma migrate save --experimental",
+    "migrate-up": "prisma migrate up --experimental",
     "prebuild": "shx mkdir -p dist",
     "build": "tsc --build tsconfig.build.json",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",

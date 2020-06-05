@@ -4,12 +4,12 @@ generator client {
 
 datasource sqlite {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
+  url = "***"
 }
 
 //  datasource posgres {
 //    provider = "postgres"
-//    url      = env("POSTGRES_URL")
+//    url = "***"
 //  }
 
 model EncryptedWallet {

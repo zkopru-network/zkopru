@@ -10,12 +10,24 @@ export enum TreeSpecies {
   WITHDRAWAL = 1,
 }
 
+export enum BlockStatus {
+  NOT_FETCHED = 0,
+  FETCHED = 1,
+  PARTIALLY_VERIFIED = 2,
+  FULLY_VERIFIED = 3,
+  FINALIZED = 4,
+  INVALIDATED = 5,
+  REVERTED = 6,
+}
+
 export {
   LightTree,
   TreeNode,
   Nullifier,
   Keystore,
   EncryptedWallet,
+  Block,
+  Header,
 } from '@prisma/client'
 
 export class DB {
@@ -58,7 +70,7 @@ export class DB {
     const dbPath = `${path.join(path.resolve('.'), dbName)}`
     const predefined = `${path.join(
       path.resolve(__dirname),
-      '../prisma/schema1.db',
+      '../prisma/schema.db',
     )}`
     console.log('predefiend, ', predefined)
     fs.promises.copyFile(predefined, dbPath)
