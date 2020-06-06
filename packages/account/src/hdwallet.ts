@@ -121,7 +121,6 @@ export class HDWallet {
     )
     const account = new ZkAccount(ethAccount)
     const data = account.toKeystoreSqlObj(this.password)
-    console.log('data', data)
     await this.db.prisma.keystore.create({
       data: account.toKeystoreSqlObj(this.password),
     })
@@ -163,10 +162,8 @@ export class HDWallet {
     const hdwallet = this.export(password)
     let result: EncryptedWallet
     if (!this.id) {
-      console.log('create..')
       result = await this.db.prisma.encryptedWallet.create({ data: hdwallet })
     } else {
-      console.log('update..', this.id)
       result = await this.db.prisma.encryptedWallet.update({
         where: { id: this.id },
         data: hdwallet,
