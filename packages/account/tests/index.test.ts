@@ -1,5 +1,4 @@
 /* eslint-disable jest/no-hooks */
-// import { schema } from '@zkopru/database'
 import Web3 from 'web3'
 import { HDWallet, ZkAccount } from '~account'
 import { DB, MockupDB } from '~prisma'

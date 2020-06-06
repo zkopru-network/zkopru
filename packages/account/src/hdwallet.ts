@@ -120,7 +120,6 @@ export class HDWallet {
       hexify(derivedKey.privateKey, 32),
     )
     const account = new ZkAccount(ethAccount)
-    const data = account.toKeystoreSqlObj(this.password)
     await this.db.prisma.keystore.create({
       data: account.toKeystoreSqlObj(this.password),
     })
