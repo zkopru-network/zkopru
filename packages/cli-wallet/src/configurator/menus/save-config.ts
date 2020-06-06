@@ -1,8 +1,8 @@
 import chalk from 'chalk'
 import path from 'path'
 import fs from 'fs'
-import { HDWalletSql } from '@zkopru/database'
 import Configurator, { Context, Menu } from '../configurator'
+import { EncryptedWallet } from '.prisma/client'
 
 const { print, goTo } = Configurator
 
@@ -22,7 +22,7 @@ export default class SaveConfig extends Configurator {
       return { ...goTo(context, Menu.COMPLETE) }
     }
     let exported = false
-    let seedKeystore!: HDWalletSql
+    let seedKeystore!: EncryptedWallet
     if (!context.wallet) throw Error('Wallet is not configured')
     do {
       const { password } = await this.ask({

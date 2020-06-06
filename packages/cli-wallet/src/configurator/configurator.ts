@@ -1,10 +1,9 @@
 import Web3 from 'web3'
-import { InanoSQLInstance } from '@nano-sql/core/lib/interfaces'
 import { ZkOPRUNode, NetworkStatus } from '@zkopru/core'
 import { ZkAccount, HDWallet } from '@zkopru/account'
 import { WebsocketProvider } from 'web3-core'
 import { PromptApp } from '@zkopru/utils'
-import { HDWalletSql } from '@zkopru/database'
+import { DB, EncryptedWallet } from '@zkopru/prisma'
 
 export interface Config {
   fullnode: boolean
@@ -13,12 +12,13 @@ export interface Config {
   coordinator: string
   websocket: string
   keys: string
-  db: string
+  sqlite?: string
+  postgres?: string
   config?: string
   mnemonic?: string
   erc20?: string[]
   erc721?: string[]
-  seedKeystore?: HDWalletSql
+  seedKeystore?: EncryptedWallet
   password?: string
   accountNumber?: number
 }
@@ -43,7 +43,7 @@ export interface Context {
   zkopruId?: string
   web3?: Web3
   provider?: WebsocketProvider
-  db?: InanoSQLInstance
+  db?: DB
   wallet?: HDWallet
   node?: ZkOPRUNode
   accounts?: ZkAccount[]

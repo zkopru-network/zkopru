@@ -53,9 +53,11 @@ const { argv }: { argv: Config } = yargs
       default: 'keys',
       describe: 'Path to store SNARK keys',
     },
-    db: {
+    sqlite: {
       type: 'string',
-      default: 'db',
+    },
+    postgres: {
+      type: 'string',
     },
     mnemonic: {
       type: 'string',

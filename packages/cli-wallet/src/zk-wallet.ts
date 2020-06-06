@@ -1,11 +1,10 @@
 import { Utxo, Note, UtxoStatus, Sum } from '@zkopru/transaction'
 import { Field, F, Point } from '@zkopru/babyjubjub'
-import { schema, UtxoSql } from '@zkopru/database'
-import { InanoSQLInstance } from '@nano-sql/core'
 import { HDWallet, ZkAccount } from '@zkopru/account'
 import { ZkOPRUNode, L1Contract } from '@zkopru/core'
 import { logger } from '@zkopru/utils'
 import fetch from 'node-fetch'
+import { DB, NoteType } from '@zkopru/prisma'
 
 export interface Balance {
   eth: string
@@ -18,7 +17,7 @@ export interface Balance {
 export class ZkWallet {
   zkopruId: string
 
-  db: InanoSQLInstance
+  db: DB
 
   wallet: HDWallet
 
@@ -53,7 +52,7 @@ export class ZkWallet {
     coordinator,
   }: {
     zkopruId: string
-    db: InanoSQLInstance
+    db: DB
     wallet: HDWallet
     account?: ZkAccount
     node: ZkOPRUNode
@@ -85,13 +84,11 @@ export class ZkWallet {
   }
 
   async getSpendableUtxos(account: ZkAccount): Promise<Utxo[]> {
-    const utxoSqls: UtxoSql[] = (await this.db
-      .selectTable(schema.utxo.name)
-      .presetQuery('getSpendables', {
-        zkopru: this.zkopruId,
-        pubKeys: [account.pubKey.toHex()],
-      })
-      .exec()) as UtxoSql[]
+    const utxoSqls = await this.db.prisma.note.findMany({
+      where: {
+        pubKey: { in: [account.pubKey.toHex()] },
+      },
+    })
     const utxos: Utxo[] = []
     utxoSqls.forEach(obj => {
       if (!obj.eth) throw Error('should have Ether data')
@@ -334,20 +331,19 @@ export class ZkWallet {
       from: this.account.address,
       value: note.eth.add(fee).toString(),
     })
-    const cachedUtxo: UtxoSql = {
-      hash: note.hash().toHex(),
-      eth: note.eth.toHex(),
-      pubKey: note.pubKey.toHex(),
-      salt: note.salt.toHex(),
-      tokenAddr: note.tokenAddr.toHex(),
-      erc20Amount: note.erc20Amount.toHex(),
-      nft: note.nft.toHex(),
-      status: UtxoStatus.NON_INCLUDED,
-    }
-    await this.db
-      .selectTable(schema.utxo.name)
-      .query('upsert', [cachedUtxo])
-      .exec()
+    await this.db.prisma.note.create({
+      data: {
+        hash: note.hash().toHex(),
+        eth: note.eth.toHex(),
+        pubKey: note.pubKey.toHex(),
+        salt: note.salt.toHex(),
+        tokenAddr: note.tokenAddr.toHex(),
+        erc20Amount: note.erc20Amount.toHex(),
+        nft: note.nft.toHex(),
+        status: UtxoStatus.NON_INCLUDED,
+        noteType: NoteType.UTXO,
+      },
+    })
     // TODO check what web3 methods returns when it failes
     if (receipt) return true
     return false

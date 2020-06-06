@@ -1,7 +1,7 @@
 import chalk from 'chalk'
 import { HDWallet, ZkAccount } from '@zkopru/account'
 import { validateMnemonic, wordlists } from 'bip39'
-import { HDWalletSql } from '@zkopru/database'
+import { EncryptedWallet } from '@zkopru/prisma'
 import Configurator, { Context, Menu } from '../configurator'
 
 const { print, goTo } = Configurator
@@ -18,7 +18,7 @@ export default class LoadHDWallet extends Configurator {
     }
     const { web3, db } = context
     const wallet = new HDWallet(web3, db)
-    let existingWallets!: HDWalletSql[]
+    let existingWallets!: EncryptedWallet[]
     if (!this.config.seedKeystore) {
       existingWallets = await wallet.list()
     }
@@ -123,11 +123,11 @@ export default class LoadHDWallet extends Configurator {
         await wallet.init(mnemonic, confirmedPassword)
       }
     } else {
-      let existing!: HDWalletSql
+      let existing!: EncryptedWallet
       if (this.config.seedKeystore) {
         existing = this.config.seedKeystore
       } else if (existingWallets.length === 1) {
-        existing = existingWallets[0] as HDWalletSql
+        existing = existingWallets[0] as EncryptedWallet
       } else if (existingWallets.length > 1) {
         const { idx } = await this.ask({
           type: 'select',
