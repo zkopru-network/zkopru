@@ -24,15 +24,23 @@ export async function runCliApp(
   }
   const { node } = zkWallet
   let isReady = false
-  node.synchronizer.on('status', (status: NetworkStatus) => {
+  node.on('status', (status: NetworkStatus) => {
     switch (status) {
       case NetworkStatus.ON_SYNCING:
         if (isReady) print(chalk.blue)('Synchronizing ZKOPRU network')
         isReady = false
         break
+      case NetworkStatus.FULLY_SYNCED:
+        if (isReady) print(chalk.blue)('Network is fully synced')
+        isReady = true
+        break
       case NetworkStatus.SYNCED:
         if (!isReady) print(chalk.green)('Synchronizing is fully synced')
         isReady = true
+        break
+      case NetworkStatus.ON_PROCESSING:
+        if (!isReady) print(chalk.green)('On processing..')
+        isReady = false
         break
       case NetworkStatus.ON_ERROR:
         if (isReady) print(chalk.red)('Error occured during synchronization')
