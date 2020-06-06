@@ -1,19 +1,13 @@
 import { Docker } from 'node-docker-api'
-import { nSQL, InanoSQLInstance } from '@nano-sql/core'
 import { Container } from 'node-docker-api/lib/container'
 import Web3 from 'web3'
+import { MockupDB, DB } from '~prisma'
 import { ZkAccount, HDWallet } from '~account'
-import { schema } from '~database'
 import { sleep, readFromContainer } from '~utils'
 import { L1Contract } from '~core'
 import ZkOPRUContract from '~contracts'
 import { IERC20 } from '~contracts/contracts/IERC20'
 import { IERC721 } from '~contracts/contracts/IERC721'
-/**
-import { ZkWizard } from '~zk-wizard'
-import { Grove } from '~tree/grove'
-import { poseidonHasher, keccakHasher } from '~tree/hasher'
- */
 
 type VKs = { [nIn: number]: { [nOut: number]: any } }
 
@@ -29,7 +23,7 @@ export interface Context {
   vks: VKs
   web3: Web3
   zkopruAddress: string
-  db: InanoSQLInstance
+  mockup: MockupDB
   contract: L1Contract
   erc20: IERC20
   erc721: IERC721
@@ -38,7 +32,7 @@ export interface Context {
 export type Provider = () => Context
 
 export async function terminate(ctx: Provider) {
-  const { layer1Container, circuitArtifactContainer } = ctx()
+  const { layer1Container, circuitArtifactContainer, mockup } = ctx()
   await Promise.all(
     [
       async () => {
@@ -49,51 +43,12 @@ export async function terminate(ctx: Provider) {
         await circuitArtifactContainer.stop()
         await circuitArtifactContainer.delete()
       },
+      async () => {
+        await mockup.terminate()
+      },
     ].map(task => task()),
   )
 }
-
-/**
-const initZkWizard = async (name: string, account: ZkAccount) => {
-  const zkopruId = uuid()
-  const dbName = name
-  await nSQL().createDatabase({
-    id: dbName,
-    mode: 'TEMP',
-    tables: [
-      schema.utxo,
-      schema.utxoTree,
-      schema.withdrawal,
-      schema.withdrawalTree,
-      schema.nullifiers,
-      schema.nullifierTreeNode,
-      schema.block(zkopruId),
-    ], // TODO make the core package handle this
-  })
-  const db: InanoSQLInstance = nSQL().useDatabase(dbName)
-  const grove = new Grove(zkopruId, db, {
-    utxoTreeDepth: 31,
-    withdrawalTreeDepth: 31,
-    nullifierTreeDepth: 254,
-    utxoSubTreeSize: 32,
-    withdrawalSubTreeSize: 32,
-    utxoHasher: poseidonHasher(31),
-    withdrawalHasher: keccakHasher(31),
-    nullifierHasher: keccakHasher(254),
-    fullSync: true,
-    forceUpdate: true,
-    pubKeysToObserve: [account.pubKey],
-    addressesToObserve: [account.address],
-  })
-  await grove.init()
-  const wizard = new ZkWizard({
-    db,
-    grove,
-    privKey: account.ethPK,
-  })
-  wizard.addCircuit()
-}
-*/
 
 export async function initContext() {
   const docker = new Docker({ socketPath: '/var/run/docker.sock' })
@@ -151,28 +106,8 @@ export async function initContext() {
   const getERC721 = ZkOPRUContract.asIERC721
   const erc20 = getERC20(web3, erc20Address)
   const erc721 = getERC721(web3, erc721Address)
-  const dbName = 'zkopruFullNodeTester'
-  await nSQL().createDatabase({
-    id: dbName,
-    mode: 'TEMP',
-    tables: [
-      schema.utxo,
-      schema.utxoTree,
-      schema.withdrawal,
-      schema.withdrawalTree,
-      schema.nullifiers,
-      schema.nullifierTreeNode,
-      schema.migration,
-      schema.deposit,
-      schema.massDeposit,
-      schema.chain,
-      schema.keystore,
-      schema.hdWallet,
-    ],
-    version: 3,
-  })
-  const db = nSQL().useDatabase(dbName)
-  const hdWallet = new HDWallet(web3, db)
+  const mockup = await DB.mockup()
+  const hdWallet = new HDWallet(web3, mockup.db)
   const mnemonic =
     'myth like bonus scare over problem client lizard pioneer submit female collect'
   await hdWallet.init(mnemonic, 'samplepassword')
@@ -213,7 +148,7 @@ export async function initContext() {
     accounts,
     web3,
     zkopruAddress,
-    db,
+    mockup,
     contract,
     vks,
     erc20,
