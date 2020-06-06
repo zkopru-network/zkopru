@@ -20,6 +20,12 @@ export enum BlockStatus {
   REVERTED = 6,
 }
 
+export enum NoteType {
+  UTXO = 0,
+  WITHDRAWAL = 1,
+  MIGRATION = 2,
+}
+
 export const NULLIFIER_TREE_ID = 'nullifier-tree'
 
 export {
@@ -36,6 +42,7 @@ export {
   Deposit,
   MassDeposit,
   Proposal,
+  Note,
 } from '@prisma/client'
 
 export interface MockupDB {
@@ -75,15 +82,16 @@ export class DB {
     },
   }
 
-  static async mockup(): Promise<MockupDB> {
-    const dbName = `${v4()}.db`
-    const dbPath = `${path.join(path.resolve('.'), dbName)}`
+  static async mockup(name?: string): Promise<MockupDB> {
+    const dbName = name || `${v4()}.db`
+    const dbPath = path.join(path.resolve('.'), dbName)
+    const dirPath = path.join(dbPath, '../')
+    fs.mkdirSync(dirPath, { recursive: true })
     const predefined = `${path.join(
       path.resolve(__dirname),
       '../prisma/dev.db',
     )}`
-    console.log('predefiend, ', predefined)
-    fs.promises.copyFile(predefined, dbPath)
+    await fs.promises.copyFile(predefined, dbPath)
     const db = new DB({
       datasources: {
         sqlite: `file://${dbPath}`,
@@ -95,4 +103,15 @@ export class DB {
     }
     return { db, terminate }
   }
+
+  /**
+  static getMigrator(): Migrate {
+    const schemaPath = `${path.join(
+      path.resolve(__dirname),
+      '../prisma/schema.prisma',
+    )}`
+    const migrate = new Migrate(schemaPath)
+    return migrate
+  }
+  */
 }

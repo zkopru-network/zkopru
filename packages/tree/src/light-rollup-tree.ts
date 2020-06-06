@@ -90,6 +90,35 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     return [...this.data.siblings]
   }
 
+  async includedInBlock(hash: string) {
+    await this.db.prisma.lightTree.update({
+      where: {
+        species_treeIndex: {
+          species: this.species,
+          treeIndex: this.metadata.index,
+        },
+      },
+      data: {
+        block: hash,
+      },
+    })
+  }
+
+  async init() {
+    const saveResult = await this.db.prisma.lightTree.create({
+      data: {
+        species: this.species,
+        treeIndex: this.metadata.index,
+        start: hexify(this.metadata.start),
+        end: hexify(this.metadata.end),
+        root: hexify(this.data.root),
+        index: hexify(this.data.index),
+        siblings: hexify(JSON.stringify(this.data.siblings)),
+      },
+    })
+    this.metadata.id = saveResult.id
+  }
+
   async merkleProof({
     hash,
     index,
@@ -421,24 +450,22 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       const note = {
         hash: hexify(candidate.leafHash),
         index: hexify(index),
-        eth: candidate.note?.eth.toHex(),
-        pubKey: candidate.note?.pubKey.toHex(),
-        salt: candidate.note?.salt.toHex(),
-        tokenAddr: candidate.note?.tokenAddr.toHex(),
-        erc20Amount: candidate.note?.erc20Amount.toHex(),
-        nft: candidate.note?.nft.toHex(),
+        eth: candidate.note?.eth.toHex() || null,
+        pubKey: candidate.note?.pubKey.toHex() || null,
+        salt: candidate.note?.salt.toHex() || null,
+        tokenAddr: candidate.note?.tokenAddr.toHex() || null,
+        erc20Amount: candidate.note?.erc20Amount.toHex() || null,
+        nft: candidate.note?.nft.toHex() || null,
       }
       await this.db.prisma.note.upsert({
         where: { hash: note.hash },
         update: note,
         create: {
           ...note,
+          noteType: this.species,
           tree: {
             connect: {
-              species_treeIndex: {
-                species: this.metadata.species,
-                treeIndex: this.metadata.index,
-              },
+              id: this.metadata.id,
             },
           },
         },

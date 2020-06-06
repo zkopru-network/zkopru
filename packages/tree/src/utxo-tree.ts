@@ -32,10 +32,7 @@ export class UtxoTree extends LightRollUpTree<Field> {
 
     const trackingLeaves = await this.db.prisma.note.findMany({
       where: {
-        tree: {
-          treeIndex: this.metadata.index,
-          species: TreeSpecies.UTXO,
-        },
+        treeId: this.metadata.id,
         pubKey: { in: keys },
       },
     })

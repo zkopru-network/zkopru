@@ -45,6 +45,7 @@ describe('withdrawal tree unit test', () => {
       data: withdrawalTreeInitialData,
       config: withdrawalTreeConfig,
     })
+    await withdrawalTree.init()
   })
   afterAll(async () => {
     await mockup.terminate()

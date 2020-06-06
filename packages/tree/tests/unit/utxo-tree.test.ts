@@ -1,5 +1,6 @@
 /* eslint-disable jest/no-disabled-tests */
 /* eslint-disable jest/no-hooks */
+import { v4 } from 'uuid'
 import { Field } from '~babyjubjub'
 import {
   UtxoTree,
@@ -16,7 +17,7 @@ import { DB, TreeSpecies, MockupDB } from '~prisma'
 describe('utxo tree unit test', () => {
   let utxoTree: UtxoTree
   const utxoTreeMetadata = {
-    id: '1',
+    id: v4(),
     index: 1,
     species: TreeSpecies.UTXO,
     start: Field.from(0),
@@ -44,6 +45,7 @@ describe('utxo tree unit test', () => {
       data: utxoTreeInitialData,
       config: utxoTreeConfig,
     })
+    await utxoTree.init()
   })
   afterAll(async () => {
     await mockup.terminate()

@@ -33,12 +33,12 @@ describe('nullifier tree unit test', () => {
       await expect(
         nullifierTree.getInclusionProof(toBN(12345)),
       ).rejects.toThrow('Generated invalid proof')
-    })
+    }, 60000)
     it('should be able to generate an inclusion proof for an existing item', async () => {
       await nullifierTree.nullify(toBN(123456))
       const proof = await nullifierTree.getInclusionProof(toBN(123456))
       expect(proof).toBeDefined()
-    })
+    }, 60000)
   })
   describe('getNonInclusionProof()', () => {
     it('should not be able to generate a non-inclusion proof for an existing item', async () => {
@@ -46,11 +46,11 @@ describe('nullifier tree unit test', () => {
       await expect(
         nullifierTree.getNonInclusionProof(toBN(1234567)),
       ).rejects.toThrow('Generated invalid proof')
-    })
+    }, 60000)
     it('should be able to generate a non-inclusion proof for an non-existing item', async () => {
       const proof = await nullifierTree.getNonInclusionProof(toBN(12345678))
       expect(proof).toBeDefined()
-    })
+    }, 30000)
   })
   describe('recover()', () => {
     it('should not update when you call recover() against an empty leaf', async () => {
