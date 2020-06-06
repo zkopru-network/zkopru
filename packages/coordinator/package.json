@@ -16,7 +16,6 @@
   "_moduleAliases": {
     "~account": "../account/dist",
     "~coordinator": "dist",
-    "~database": "../database/dist",
     "~prisma": "../prisma/dist",
     "~utils": "../utils/dist"
   },

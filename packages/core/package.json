@@ -11,7 +11,6 @@
     "~core": "dist",
     "~account": "../account/dist",
     "~babyjubjub": "../babyjubjub/dist",
-    "~database": "../database/dist",
     "~dataset": "../dataset/dist",
     "~utils": "../utils/dist"
   },
@@ -31,7 +30,6 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@nano-sql/core": "^2.3.7",
     "@zkopru/account": "file:../account",
     "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/contracts": "file:../contracts",

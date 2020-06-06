@@ -33,8 +33,6 @@
     "start": "node dist/cli.js"
   },
   "dependencies": {
-    "@nano-sql/adapter-leveldb": "^2.0.5",
-    "@nano-sql/core": "^2.3.7",
     "@zkopru/account": "file:../account",
     "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/contracts": "file:../contracts",
