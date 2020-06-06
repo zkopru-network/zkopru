@@ -1,9 +1,8 @@
 /* eslint-disable jest/no-disabled-tests */
 
-import { InanoSQLInstance, nSQL } from '@nano-sql/core'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
-import { schema } from '~database'
+import { DB, MockupDB } from '~prisma'
 import { Field } from '~babyjubjub'
 import { Grove, poseidonHasher, keccakHasher, Item } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
@@ -11,27 +10,12 @@ import { address, keys } from '~dataset/testset-keys'
 
 /* eslint-disable jest/no-hooks */
 describe('grove full sync grove()', () => {
-  const zkopruId = 'someuuid'
   let fullSyncGrvoe: Grove
   let lightSyncGrove: Grove
+  let mockup: MockupDB
   beforeAll(async () => {
-    const dbName = 'fullSyncGrove'
-    await nSQL().createDatabase({
-      id: dbName,
-      mode: 'TEMP',
-      tables: [
-        schema.utxo,
-        schema.utxoTree,
-        schema.withdrawal,
-        schema.withdrawalTree,
-        schema.nullifiers,
-        schema.nullifierTreeNode,
-        schema.block,
-      ],
-      version: 3,
-    })
-    const db: InanoSQLInstance = nSQL().useDatabase(dbName)
-    fullSyncGrvoe = new Grove(zkopruId, db, {
+    mockup = await DB.mockup()
+    fullSyncGrvoe = new Grove(mockup.db, {
       utxoTreeDepth: 31,
       withdrawalTreeDepth: 31,
       utxoSubTreeSize: 32,
@@ -46,6 +30,9 @@ describe('grove full sync grove()', () => {
       addressesToObserve: [address.USER_A],
     })
     await fullSyncGrvoe.init()
+  })
+  afterAll(async () => {
+    await mockup.terminate()
   })
   it('should have nullifier tree when it has full sync option', async () => {
     expect(fullSyncGrvoe.nullifierTree).toBeDefined()
@@ -102,7 +89,7 @@ describe('grove full sync grove()', () => {
       expect(
         prevResult.nullifierRoot?.eq(postResult.nullifierRoot || new BN(0)),
       ).toBe(true)
-    })
+    }, 60000)
   })
   describe('applyPatch()', () => {
     it('should update the grove and have same result with the dry patch result', async () => {
@@ -115,7 +102,6 @@ describe('grove full sync grove()', () => {
         note,
       }))
       const patch = {
-        header: 'sampleheader',
         utxos: utxosToAppend,
         withdrawals: [toBN(1), toBN(2)],
         nullifiers: [toBN(12), toBN(23)],
@@ -138,7 +124,7 @@ describe('grove full sync grove()', () => {
       expect(
         result.nullifierRoot?.eq(expected.nullifierTreeRoot || new BN(0)),
       ).toBe(true)
-    })
+    }, 300000)
   })
   describe('light sync grove - applyBootstrap()', () => {
     it('should update the grove using bootstrap data', async () => {
@@ -157,23 +143,8 @@ describe('grove full sync grove()', () => {
         },
       }
 
-      const dbName = 'ligthSyncGrove'
-      await nSQL().createDatabase({
-        id: dbName,
-        mode: 'TEMP',
-        tables: [
-          schema.utxo,
-          schema.utxoTree,
-          schema.withdrawal,
-          schema.withdrawalTree,
-          schema.nullifiers,
-          schema.nullifierTreeNode,
-          schema.block,
-        ],
-        version: 3,
-      })
-      const db: InanoSQLInstance = nSQL().useDatabase(dbName)
-      lightSyncGrove = new Grove(zkopruId, db, {
+      const mockup = await DB.mockup()
+      lightSyncGrove = new Grove(mockup.db, {
         utxoTreeDepth: 31,
         withdrawalTreeDepth: 31,
         utxoSubTreeSize: 32,
@@ -213,6 +184,7 @@ describe('grove full sync grove()', () => {
           .latestLeafIndex()
           .eq(fullSyncGrvoe.latestWithdrawalTree().latestLeafIndex()),
       ).toBe(true)
+      await mockup.terminate()
     })
   })
 })

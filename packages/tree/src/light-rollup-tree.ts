@@ -1,13 +1,12 @@
+/* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable no-underscore-dangle */
-import { InanoSQLInstance } from '@nano-sql/core'
 import { Field } from '@zkopru/babyjubjub'
-import { TreeNodeSql, NoteSql } from '@zkopru/database'
-import { InanoSQLTableConfig } from '@nano-sql/core/lib/interfaces'
 import AsyncLock from 'async-lock'
 import { Note } from '@zkopru/transaction'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { hexify } from '@zkopru/utils'
+import { DB, TreeSpecies } from '@zkopru/prisma'
 import { Hasher } from './hasher'
 import { MerkleProof, startingLeafProof } from './merkle-proof'
 
@@ -18,8 +17,8 @@ export interface Item<T extends Field | BN> {
 
 export interface TreeMetadata<T extends Field | BN> {
   id: string
+  species: number
   index: number
-  zkopruId: string
   start: T
   end: T
 }
@@ -39,13 +38,9 @@ export interface TreeConfig<T extends Field | BN> {
 export abstract class LightRollUpTree<T extends Field | BN> {
   zero?: T
 
-  db: InanoSQLInstance
+  species: TreeSpecies
 
-  itemSchema: InanoSQLTableConfig
-
-  treeSchema: InanoSQLTableConfig
-
-  treeNodeSchema: InanoSQLTableConfig // merkle-proof-cache-schema
+  db: DB
 
   config: TreeConfig<T>
 
@@ -59,29 +54,23 @@ export abstract class LightRollUpTree<T extends Field | BN> {
 
   constructor({
     db,
+    species,
     metadata,
-    itemSchema,
-    treeSchema,
-    treeNodeSchema,
     data,
     config,
   }: {
-    db: InanoSQLInstance
+    db: DB
+    species: TreeSpecies
     metadata: TreeMetadata<T>
-    itemSchema: InanoSQLTableConfig
-    treeSchema: InanoSQLTableConfig
-    treeNodeSchema: InanoSQLTableConfig
     data: TreeData<T>
     config: TreeConfig<T>
   }) {
     this.lock = new AsyncLock()
+    this.species = species
     this.db = db
     this.metadata = metadata
     this.data = data
     this.config = config
-    this.itemSchema = itemSchema
-    this.treeNodeSchema = treeNodeSchema
-    this.treeSchema = treeSchema
     this.depth = data.siblings.length
   }
 
@@ -221,16 +210,18 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     if (index) {
       leafIndex = index
     } else {
-      const indexes = await this.db
-        .selectTable(this.treeNodeSchema.name)
-        .query('select')
-        .where(['value', '=', hexify(hash)])
-        .exec()
-      if (indexes.length === 0) throw Error('Leaf does not exist.')
-      else if (indexes.length > 1)
+      const leafCandidates = await this.db.prisma.treeNode.findMany({
+        where: {
+          value: hexify(hash),
+          treeId: this.metadata.id,
+        },
+        take: 1,
+      })
+      if (leafCandidates.length === 0) throw Error('Leaf does not exist.')
+      else if (leafCandidates.length > 1)
         throw Error('Multiple leaves exist for same hash.')
       else {
-        const leafNodeIndex: BN = toBN(indexes[0].nodeIndex)
+        const leafNodeIndex: BN = toBN(leafCandidates[0].nodeIndex)
         const prefix = new BN(1).shln(this.depth)
         if (this.zero instanceof Field) {
           leafIndex = Field.from(leafNodeIndex.xor(prefix)) as T
@@ -239,26 +230,18 @@ export abstract class LightRollUpTree<T extends Field | BN> {
         }
       }
     }
-    const cachedSiblings = await this.db
-      .selectTable(this.treeNodeSchema.name)
-      .presetQuery('getSiblings', {
-        depth: this.depth,
-        index: leafIndex,
-      })
-      .exec()
-
-    const siblingCache = {}
-    for (const sibling of cachedSiblings) {
-      siblingCache[sibling.nodeIndex] = hexify(toBN(sibling.value))
+    const siblings = await this._getSiblings(leafIndex)
+    const root = this.root()
+    return {
+      root,
+      index: leafIndex,
+      leaf: hash,
+      siblings,
     }
+  }
 
-    if (
-      this.metadata.start?.gt(leafIndex) ||
-      this.metadata.end?.lte(leafIndex)
-    ) {
-      throw Error('not in range')
-    }
-
+  private async _getSiblings(leafIndex: T): Promise<T[]> {
+    const cachedSiblings = await this._getCachedSiblings(leafIndex)
     const siblings = Array(this.depth).fill(undefined)
     const leafNodeIndex = new BN(1).shln(this.depth).or(leafIndex)
     let pathNodeIndex!: BN
@@ -277,7 +260,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
         siblings[level] = this.config.hasher.preHash[level]
       } else {
         // should find the node value
-        const cached = siblingCache[hexify(siblingNodeIndex)]
+        const cached = cachedSiblings[hexify(siblingNodeIndex)]
         if (this.zero instanceof Field) {
           siblings[level] = Field.from(cached)
         } else {
@@ -289,13 +272,28 @@ export abstract class LightRollUpTree<T extends Field | BN> {
           )
       }
     }
-    const root = this.root()
-    return {
-      root,
-      index: leafIndex,
-      leaf: hash,
-      siblings,
+    return siblings
+  }
+
+  private async _getCachedSiblings(
+    leafIndex: T,
+  ): Promise<{ [index: string]: string }> {
+    const cachedSiblings = await this.db.preset.getCachedSiblings(
+      this.depth,
+      this.metadata.id,
+      leafIndex,
+    )
+    const siblingCache = {}
+    for (const sibling of cachedSiblings) {
+      siblingCache[sibling.nodeIndex] = hexify(toBN(sibling.value))
     }
+    if (
+      this.metadata.start?.gt(leafIndex) ||
+      this.metadata.end?.lte(leafIndex)
+    ) {
+      throw Error('not in range')
+    }
+    return siblingCache
   }
 
   private async _append(
@@ -310,7 +308,8 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     const cached: {
       [nodeIndex: string]: string
     } = {}
-    const itemAppendingQuery: NoteSql[] = []
+
+    const candidates: Item<T>[] = []
     let root: T = this.root()
 
     const trackingLeaves: T[] = await this.indexesOfTrackingLeaves()
@@ -319,18 +318,8 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     for (let i = 0; i < items.length; i += 1) {
       const item = items[i]
       // if note exists, save the data and mark as an item to keep tracking
-      if (this.config.fullSync || items[i].note) {
-        itemAppendingQuery.push({
-          hash: hexify(item.leafHash),
-          tree: this.metadata.id,
-          index: hexify(index),
-          eth: item.note?.eth.toHex(),
-          pubKey: item.note?.pubKey.toHex(),
-          salt: item.note?.salt.toHex(),
-          tokenAddr: item.note?.tokenAddr.toHex(),
-          erc20Amount: item.note?.erc20Amount.toHex(),
-          nft: item.note?.nft.toHex(),
-        })
+      if (this.config.fullSync || item.note) {
+        candidates.push(item)
       }
 
       if (items[i].note) {
@@ -399,34 +388,81 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     }
     this.metadata.end = index
     // Update database
-    await this.db
-      .selectTable(this.treeSchema.name)
-      .presetQuery('updateTree', {
-        id: this.metadata.id,
-        data: {
-          root: hexify(root),
-          index: hexify(index),
-          siblings: latestSiblings.map(sib => hexify(sib)),
+    // update rollup snapshot
+    const rollUpSync = {
+      start: hexify(start),
+      end: hexify(index),
+    }
+    const rollUpSnapshot = {
+      root: hexify(root),
+      index: hexify(index),
+      siblings: JSON.stringify(latestSiblings.map(sib => hexify(sib))),
+    }
+    await this.db.prisma.lightTree.upsert({
+      where: {
+        species_treeIndex: {
+          species: this.species,
+          treeIndex: this.metadata.index,
+        },
+      },
+      update: {
+        ...rollUpSync,
+        ...rollUpSnapshot,
+      },
+      create: {
+        ...rollUpSync,
+        ...rollUpSnapshot,
+        species: this.species,
+        treeIndex: this.metadata.index,
+      },
+    })
+    // insert notes
+    for (const candidate of candidates) {
+      const note = {
+        hash: hexify(candidate.leafHash),
+        index: hexify(index),
+        eth: candidate.note?.eth.toHex(),
+        pubKey: candidate.note?.pubKey.toHex(),
+        salt: candidate.note?.salt.toHex(),
+        tokenAddr: candidate.note?.tokenAddr.toHex(),
+        erc20Amount: candidate.note?.erc20Amount.toHex(),
+        nft: candidate.note?.nft.toHex(),
+      }
+      await this.db.prisma.note.upsert({
+        where: { hash: note.hash },
+        update: note,
+        create: {
+          ...note,
+          tree: {
+            connect: {
+              species_treeIndex: {
+                species: this.metadata.species,
+                treeIndex: this.metadata.index,
+              },
+            },
+          },
         },
       })
-      .exec()
-    await this.db
-      .selectTable(this.itemSchema.name)
-      .query('upsert', itemAppendingQuery)
-      .exec()
-    const cachedNodes: TreeNodeSql[] = Object.keys(cached).map(nodeIndex => ({
-      nodeIndex,
-      value: cached[nodeIndex],
-    }))
-    await this.db
-      .selectTable(this.treeNodeSchema.name)
-      .query('delete')
-      .where(['nodeIndex', 'IN', Object.keys(cached)])
-      .exec()
-    await this.db
-      .selectTable(this.treeNodeSchema.name)
-      .query('upsert', cachedNodes)
-      .exec()
+    }
+    // update cached nodes
+    for (const nodeIndex of Object.keys(cached)) {
+      await this.db.prisma.treeNode.upsert({
+        where: {
+          treeId_nodeIndex: {
+            treeId: this.metadata.id,
+            nodeIndex,
+          },
+        },
+        update: {
+          value: cached[nodeIndex],
+        },
+        create: {
+          treeId: this.metadata.id,
+          nodeIndex,
+          value: cached[nodeIndex],
+        },
+      })
+    }
     return {
       root,
       index,
@@ -436,18 +472,19 @@ export abstract class LightRollUpTree<T extends Field | BN> {
 
   static async initTreeFromDatabase<T extends Field | BN>({
     db,
-    treeSchema,
+    species,
     metadata,
     data,
     config,
   }: {
-    db: InanoSQLInstance
-    treeSchema: InanoSQLTableConfig
+    db: DB
+    species: TreeSpecies
     metadata: TreeMetadata<T>
     data: TreeData<T>
     config: TreeConfig<T>
   }): Promise<{
-    db: InanoSQLInstance
+    db: DB
+    species: TreeSpecies
     metadata: TreeMetadata<T>
     data: TreeData<T>
     config: TreeConfig<T>
@@ -459,34 +496,41 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       throw Error('bootstrapped with invalid merkle proof')
     }
     // If it does not have force update config, check existing merkle tree
-    const existingTreeQuery = await db
-      .selectTable(treeSchema.name)
-      .presetQuery('getTree', { index: metadata.index })
-      .exec()
-    if (!config.forceUpdate) {
-      if (
-        existingTreeQuery.length > 0 &&
-        data.index.lte(existingTreeQuery[0].data.index)
-      ) {
-        throw Error('Bootstrap is behind the database. Use forceUpdate config')
-      }
+    const where = {
+      species_treeIndex: {
+        species,
+        treeIndex: metadata.index,
+      },
     }
-
+    const exisingTree = await db.prisma.lightTree.findOne({
+      where,
+    })
+    if (
+      !config.forceUpdate &&
+      data.index.lte(toBN(exisingTree?.index || '0'))
+    ) {
+      throw Error('Bootstrap is behind the database. Use forceUpdate config')
+    }
     // Create or update the merkle tree using the "bootstrapTree" preset query
-    const queryResult = await db
-      .selectTable(treeSchema.name)
-      .presetQuery('bootstrapTree', {
-        id: existingTreeQuery.length > 0 ? existingTreeQuery[0].id : undefined,
-        index: metadata.index,
-        zkopru: metadata.zkopruId,
-        data: {
-          root: hexify(data.root),
-          index: hexify(data.index),
-          siblings: data.siblings.map(sib => hexify(sib)),
-        },
-      })
-      .exec()
-    const { id, start, end } = queryResult[0]
+    const tree = {
+      species,
+      treeIndex: metadata.index,
+      // rollup sync data
+      start: hexify(data.index),
+      end: hexify(data.index),
+      // rollup snapshot data
+      root: hexify(data.root),
+      index: hexify(data.index),
+      siblings: JSON.stringify(data.siblings.map(sib => hexify(sib))),
+    }
+    const newTree = await db.prisma.lightTree.upsert({
+      where,
+      update: tree,
+      create: {
+        ...tree,
+      },
+    })
+    const { start, end, treeIndex } = newTree
     // Return tree object
     let _start: T
     let _end: T
@@ -499,9 +543,10 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     }
     return {
       db,
+      species,
       metadata: {
         ...metadata,
-        id,
+        index: treeIndex,
         start: _start,
         end: _end,
       },

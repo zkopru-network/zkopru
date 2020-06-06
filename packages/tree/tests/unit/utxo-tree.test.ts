@@ -1,9 +1,6 @@
 /* eslint-disable jest/no-disabled-tests */
 /* eslint-disable jest/no-hooks */
-import { nSQL } from '@nano-sql/core'
-import { uuid } from '@nano-sql/core/lib/utilities'
 import { Field } from '~babyjubjub'
-import { schema } from '~database'
 import {
   UtxoTree,
   TreeConfig,
@@ -14,13 +11,14 @@ import {
 } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
 import { keys } from '~dataset/testset-keys'
+import { DB, TreeSpecies, MockupDB } from '~prisma'
 
 describe('utxo tree unit test', () => {
   let utxoTree: UtxoTree
   const utxoTreeMetadata = {
-    id: uuid(),
+    id: '1',
     index: 1,
-    zkopruId: 'tempzkopru',
+    species: TreeSpecies.UTXO,
     start: Field.from(0),
     end: Field.from(0),
   }
@@ -36,30 +34,19 @@ describe('utxo tree unit test', () => {
     index: Field.zero,
     siblings: preHashes,
   }
+  let mockup: MockupDB
   beforeAll(async () => {
     // const db = nSQL()
-    const dbName = 'unittest'
-    await nSQL().createDatabase({
-      id: dbName,
-      mode: 'TEMP',
-      tables: [
-        schema.utxo,
-        schema.utxoTree,
-        schema.utxoTreeNode(utxoTreeMetadata.id),
-      ],
-      version: 3,
-    })
-    const db = nSQL()
-    db.useDatabase(dbName)
+    mockup = await DB.mockup()
     utxoTree = new UtxoTree({
-      db,
+      db: mockup.db,
       metadata: utxoTreeMetadata,
-      itemSchema: schema.utxo,
-      treeSchema: schema.utxoTree,
-      treeNodeSchema: schema.utxoTreeNode(utxoTreeMetadata.id),
       data: utxoTreeInitialData,
       config: utxoTreeConfig,
     })
+  })
+  afterAll(async () => {
+    await mockup.terminate()
   })
   describe('root()', () => {
     it('should return the genesis root value for its initial root', () => {

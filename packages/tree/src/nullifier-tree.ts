@@ -1,10 +1,10 @@
-import { InanoSQLInstance } from '@nano-sql/core'
+/* eslint-disable @typescript-eslint/camelcase */
 import { Field } from '@zkopru/babyjubjub'
-import { schema, TreeNodeSql } from '@zkopru/database'
 import AsyncLock from 'async-lock'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { hexify } from '@zkopru/utils'
+import { DB, TreeNode, Nullifier, NULLIFIER_TREE_ID } from '@zkopru/prisma'
 import { Hasher, genesisRoot } from './hasher'
 import { verifyProof, MerkleProof } from './merkle-proof'
 
@@ -23,9 +23,7 @@ export enum SMTLeaf {
 }
 
 export class NullifierTree implements SMT<BN> {
-  readonly db: InanoSQLInstance
-
-  readonly zkopruId: string
+  readonly db: DB
 
   readonly depth: number
 
@@ -38,18 +36,15 @@ export class NullifierTree implements SMT<BN> {
   constructor({
     db,
     hasher,
-    zkopruId,
     depth,
   }: {
-    db: InanoSQLInstance
+    db: DB
     hasher: Hasher<BN>
-    zkopruId: string
     depth: number
   }) {
     this.lock = new AsyncLock()
     this.db = db
     this.hasher = hasher
-    this.zkopruId = zkopruId
     this.depth = depth
     if (hasher.preHash.length < depth)
       throw Error('Hasher should have enough prehased values')
@@ -57,13 +52,16 @@ export class NullifierTree implements SMT<BN> {
 
   async root(): Promise<BN> {
     if (this.rootNode) return this.rootNode
-    const stored = (
-      await this.db
-        .selectTable(schema.nullifierTreeNode.name)
-        .presetQuery('getRoot')
-        .exec()
-    )[0] as TreeNodeSql
-    if (stored) return toBN(stored.value)
+    const rootNode = await this.db.prisma.treeNode.findOne({
+      select: { value: true },
+      where: {
+        treeId_nodeIndex: {
+          treeId: NULLIFIER_TREE_ID,
+          nodeIndex: Field.one.toHex(),
+        },
+      },
+    })
+    if (rootNode) return toBN(rootNode.value)
     return genesisRoot(this.hasher)
   }
 
@@ -104,39 +102,35 @@ export class NullifierTree implements SMT<BN> {
     return merkleProof
   }
 
-  async nullify(blockHash: string, ...leaves: BN[]): Promise<BN> {
+  async nullify(...leaves: BN[]): Promise<BN> {
     let result: BN = this.rootNode
     await this.lock.acquire('root', async () => {
       for (const leaf of leaves) {
-        result = await this.updateLeaf(leaf, SMTLeaf.FILLED, blockHash)
+        result = await this.updateLeaf(leaf, SMTLeaf.FILLED)
       }
     })
     return result
   }
 
-  async recover(blockHash: string, ...leaves: BN[]) {
+  async recover(...leaves: BN[]) {
     await this.lock.acquire('root', async () => {
       for (const leaf of leaves) {
-        await this.updateLeaf(leaf, SMTLeaf.EMPTY, blockHash)
+        await this.updateLeaf(leaf, SMTLeaf.EMPTY)
       }
     })
   }
 
   private async getSiblings(index: BN): Promise<BN[]> {
     const { depth } = this
-    const cachedSiblings = await this.db
-      .selectTable(schema.nullifierTreeNode.name)
-      .presetQuery('getSiblings', {
-        depth,
-        index,
-      })
-      .exec()
-
+    const cachedSiblings = await this.db.preset.getCachedSiblings(
+      depth,
+      NULLIFIER_TREE_ID,
+      index,
+    )
     const siblingCache = {}
     for (const sibling of cachedSiblings) {
-      siblingCache[sibling.nodeIndex] = toBN(sibling.value)
+      siblingCache[sibling.nodeIndex] = hexify(toBN(sibling.value))
     }
-
     const siblings = Array(this.depth).fill(undefined)
     const leafNodeIndex = new BN(1).shln(depth).or(index)
     let pathNodeIndex!: BN
@@ -150,12 +144,8 @@ export class NullifierTree implements SMT<BN> {
     return siblings
   }
 
-  private async updateLeaf(
-    index: BN,
-    val: SMTLeaf,
-    blockHash: string,
-  ): Promise<BN> {
-    const nodesToUpdate: TreeNodeSql[] = []
+  private async updateLeaf(index: BN, val: SMTLeaf): Promise<BN> {
+    const nodesToUpdate: TreeNode[] = []
     const leafNodeIndex = new BN(1).shln(this.depth).or(index)
     const siblings = await this.getSiblings(index)
     let node = new BN(val)
@@ -164,6 +154,7 @@ export class NullifierTree implements SMT<BN> {
     for (let level = 0; level < this.depth; level += 1) {
       pathIndex = leafNodeIndex.shrn(level)
       nodesToUpdate.push({
+        treeId: NULLIFIER_TREE_ID,
         nodeIndex: hexify(pathIndex),
         value: hexify(node),
       })
@@ -175,29 +166,41 @@ export class NullifierTree implements SMT<BN> {
       }
     }
     nodesToUpdate.push({
+      treeId: NULLIFIER_TREE_ID,
       nodeIndex: hexify(new BN(1)),
       value: hexify(node),
     })
-    await this.db
-      .selectTable(schema.nullifierTreeNode.name)
-      .query('upsert', nodesToUpdate)
-      .exec()
+
+    // need batch query here..
+    for (const node of nodesToUpdate) {
+      await this.db.prisma.treeNode.upsert({
+        where: {
+          treeId_nodeIndex: {
+            treeId: node.treeId,
+            nodeIndex: node.nodeIndex,
+          },
+        },
+        update: node,
+        create: node,
+      })
+    }
 
     if (val === SMTLeaf.FILLED) {
-      await this.db
-        .selectTable(schema.nullifiers.name)
-        .presetQuery('nullify', {
-          index: hexify(index),
-          blockHash,
-        })
-        .exec()
+      const nullifier: Nullifier = {
+        index: hexify(index),
+        nullified: true,
+      }
+      await this.db.prisma.nullifier.upsert({
+        where: {
+          index: nullifier.index,
+        },
+        create: nullifier,
+        update: nullifier,
+      })
     } else {
-      await this.db
-        .selectTable(schema.nullifiers.name)
-        .presetQuery('recover', {
-          blockHash,
-        })
-        .exec()
+      await this.db.prisma.nullifier.deleteMany({
+        where: { index: hexify(index) },
+      })
     }
     this.rootNode = node
     return this.rootNode
@@ -208,11 +211,11 @@ export class NullifierTree implements SMT<BN> {
     await this.lock.acquire('root', async () => {
       const prevRoot = await this.root()
       for (const leaf of leaves) {
-        await this.updateLeaf(leaf, SMTLeaf.FILLED, 'TEMP')
+        await this.updateLeaf(leaf, SMTLeaf.FILLED)
       }
       result = await this.root()
       for (const leaf of leaves) {
-        await this.updateLeaf(leaf, SMTLeaf.EMPTY, 'TEMP')
+        await this.updateLeaf(leaf, SMTLeaf.EMPTY)
       }
       if (!(await this.root()).eq(prevRoot))
         throw Error('Dry run should not make any change')

@@ -1,11 +1,9 @@
 /* eslint-disable jest/no-disabled-tests */
 /* eslint-disable jest/no-hooks */
-import { nSQL } from '@nano-sql/core'
-import { uuid } from '@nano-sql/core/lib/utilities'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { Field } from '~babyjubjub'
-import { schema } from '~database'
+import { DB, TreeSpecies, MockupDB } from '~prisma'
 import {
   WithdrawalTree,
   TreeConfig,
@@ -20,9 +18,9 @@ import { address } from '~dataset/testset-keys'
 describe('withdrawal tree unit test', () => {
   let withdrawalTree: WithdrawalTree
   const withdrawalTreeMetadata = {
-    id: uuid(),
+    id: '2',
     index: 1,
-    zkopruId: 'tempzkopru',
+    species: TreeSpecies.WITHDRAWAL,
     start: Field.from(0),
     end: Field.from(0),
   }
@@ -38,30 +36,18 @@ describe('withdrawal tree unit test', () => {
     index: Field.zero,
     siblings: preHashes,
   }
+  let mockup: MockupDB
   beforeAll(async () => {
-    // const db = nSQL()
-    const dbName = 'unittest'
-    await nSQL().createDatabase({
-      id: dbName,
-      mode: 'TEMP',
-      tables: [
-        schema.withdrawal,
-        schema.withdrawalTree,
-        schema.withdrawalTreeNode(withdrawalTreeMetadata.id),
-      ],
-      version: 3,
-    })
-    const db = nSQL()
-    db.useDatabase(dbName)
+    mockup = await DB.mockup()
     withdrawalTree = new WithdrawalTree({
-      db,
+      db: mockup.db,
       metadata: withdrawalTreeMetadata,
-      itemSchema: schema.withdrawal,
-      treeSchema: schema.withdrawalTree,
-      treeNodeSchema: schema.withdrawalTreeNode(withdrawalTreeMetadata.id),
       data: withdrawalTreeInitialData,
       config: withdrawalTreeConfig,
     })
+  })
+  afterAll(async () => {
+    await mockup.terminate()
   })
   describe('root()', () => {
     it('should return the genesis root value for its initial root', () => {

@@ -1,6 +1,5 @@
 import { Field, Point } from '@zkopru/babyjubjub'
-import { schema, LightRollUpTreeSql } from '@zkopru/database'
-import { InanoSQLInstance } from '@nano-sql/core'
+import { DB, LightTree, TreeSpecies } from '@zkopru/prisma'
 import {
   LightRollUpTree,
   TreeMetadata,
@@ -9,6 +8,15 @@ import {
 } from './light-rollup-tree'
 
 export class UtxoTree extends LightRollUpTree<Field> {
+  constructor(conf: {
+    db: DB
+    metadata: TreeMetadata<Field>
+    data: TreeData<Field>
+    config: TreeConfig<Field>
+  }) {
+    super({ ...conf, species: TreeSpecies.UTXO })
+  }
+
   zero = Field.zero
 
   pubKeysToObserve?: Point[]
@@ -21,14 +29,19 @@ export class UtxoTree extends LightRollUpTree<Field> {
     const keys: string[] = this.pubKeysToObserve
       ? this.pubKeysToObserve.map(point => point.toHex())
       : []
-    const trackingLeaves = await this.db
-      .selectTable(this.itemSchema.name)
-      .presetQuery('utxosToTrack', {
-        tree: this.metadata.id,
-        keys,
-      })
-      .exec()
-    return trackingLeaves.map(row => Field.from(row.index))
+
+    const trackingLeaves = await this.db.prisma.note.findMany({
+      where: {
+        tree: {
+          treeIndex: this.metadata.index,
+          species: TreeSpecies.UTXO,
+        },
+        pubKey: { in: keys },
+      },
+    })
+    return trackingLeaves
+      .filter(leaf => leaf.index !== null)
+      .map(leaf => Field.from(leaf.index as string))
   }
 
   static async bootstrap({
@@ -37,47 +50,35 @@ export class UtxoTree extends LightRollUpTree<Field> {
     data,
     config,
   }: {
-    db: InanoSQLInstance
+    db: DB
     metadata: TreeMetadata<Field>
     data: TreeData<Field>
     config: TreeConfig<Field>
   }): Promise<UtxoTree> {
     const initialData = await LightRollUpTree.initTreeFromDatabase({
       db,
+      species: TreeSpecies.UTXO,
       metadata,
       data,
       config,
-      treeSchema: schema.utxoTree,
     })
-    return new UtxoTree({
-      ...initialData,
-      itemSchema: schema.utxo,
-      treeSchema: schema.utxoTree,
-      treeNodeSchema: schema.utxoTreeNode(metadata.id),
-    })
+    return new UtxoTree({ ...initialData })
   }
 
-  static from(
-    db: InanoSQLInstance,
-    obj: LightRollUpTreeSql,
-    config: TreeConfig<Field>,
-  ): UtxoTree {
+  static from(db: DB, obj: LightTree, config: TreeConfig<Field>): UtxoTree {
     return new UtxoTree({
       db,
       metadata: {
         id: obj.id,
-        index: obj.index,
-        zkopruId: obj.zkopru,
+        species: obj.species,
+        index: obj.treeIndex,
         start: Field.from(obj.start),
         end: Field.from(obj.end),
       },
-      itemSchema: schema.utxo,
-      treeSchema: schema.utxoTree,
-      treeNodeSchema: schema.utxoTreeNode(obj.id),
       data: {
-        root: Field.from(obj.data.root),
-        index: Field.from(obj.data.index),
-        siblings: obj.data.siblings.map(sib => Field.from(sib)),
+        root: Field.from(obj.root),
+        index: Field.from(obj.index),
+        siblings: JSON.parse(obj.siblings).map(sib => Field.from(sib)),
       },
       config,
     })
