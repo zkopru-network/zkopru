@@ -2,22 +2,19 @@
 // import { schema } from '@zkopru/database'
 import Web3 from 'web3'
 import { HDWallet, ZkAccount } from '~account'
-import { DB } from '~prisma'
+import { DB, MockupDB } from '~prisma'
 
 describe('unit test', () => {
-  let database: DB
-  let killMockupDB: () => Promise<void>
+  let mockup: MockupDB
   beforeAll(async () => {
-    const { instance, terminate } = await DB.mockup()
-    database = instance
-    killMockupDB = terminate
+    mockup = await DB.mockup()
   })
   afterAll(async () => {
-    await killMockupDB()
+    await mockup.terminate()
   })
   it('has same private keys and eth address with ganache default accounts', async () => {
     const web3 = new Web3()
-    const hdWallet = new HDWallet(web3, database)
+    const hdWallet = new HDWallet(web3, mockup.db)
     await hdWallet.init(
       'myth like bonus scare over problem client lizard pioneer submit female collect',
       'samplepassword',
