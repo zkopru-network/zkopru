@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { nSQL, InanoSQLInstance } from '@nano-sql/core'
 import { Docker } from 'node-docker-api'
 import fs from 'fs-extra'
 import path from 'path'
@@ -7,10 +6,10 @@ import { Field } from '@zkopru/babyjubjub'
 import { ZkTx } from '@zkopru/transaction'
 import { ZkWizard } from '@zkopru/zk-wizard'
 import { keccakHasher, poseidonHasher, Grove } from '@zkopru/tree'
-import { schema } from '@zkopru/database'
 import * as utils from '@zkopru/utils'
 import { Container } from 'node-docker-api/lib/container'
 import tar from 'tar'
+import { DB } from '@zkopru/prisma'
 import { keys, address } from './testset-keys'
 import { utxos } from './testset-utxos'
 import { txs } from './testset-txs'
@@ -83,11 +82,8 @@ export async function buildKeys(keyPath: string) {
   }
 }
 
-export async function loadGrove(
-  zkopruId: string,
-  db: InanoSQLInstance,
-): Promise<{ grove: Grove }> {
-  const grove = new Grove(zkopruId, db, {
+export async function loadGrove(db: DB): Promise<{ grove: Grove }> {
+  const grove = new Grove(db, {
     utxoTreeDepth: 31,
     withdrawalTreeDepth: 31,
     nullifierTreeDepth: 254,
@@ -126,23 +122,8 @@ export async function loadGrove(
 }
 
 export async function loadZkTxs(): Promise<ZkTx[]> {
-  const zkopruId = 'someuuid'
-  const dbName = 'test-database'
-  await nSQL().createDatabase({
-    id: 'test-database',
-    mode: 'TEMP',
-    tables: [
-      schema.block,
-      schema.utxo,
-      schema.utxoTree,
-      schema.withdrawal,
-      schema.withdrawalTree,
-      schema.nullifiers,
-      schema.nullifierTreeNode,
-    ], // TODO make the core package handle this
-  })
-  const db: InanoSQLInstance = nSQL().useDatabase(dbName)
-  const { grove } = await loadGrove(zkopruId, db)
+  const mockupDB = await DB.mockup()
+  const { grove } = await loadGrove(mockupDB.db)
   const keyPath = path.join(path.dirname(__filename), '../keys')
   await buildKeys(keyPath)
 
@@ -198,5 +179,6 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
   }
   await aliceZkWizard.terminate()
   await bobZkWizard.terminate()
+  await mockupDB.terminate()
   return [zk_tx_1, zk_tx_2_1, zk_tx_2_2, zk_tx_3, zk_tx_4]
 }
