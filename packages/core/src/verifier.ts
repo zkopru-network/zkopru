@@ -1,6 +1,6 @@
 import { verifyingKeyIdentifier, logger } from '@zkopru/utils'
+import { Deposit as DepositSql } from '@zkopru/prisma'
 // import { Point } from '@zkopru/babyjubjub'
-import { DepositSql, schema } from '@zkopru/database'
 import { Bytes32, Uint256 } from 'soltypes'
 import { soliditySha3 } from 'web3-utils'
 import BN from 'bn.js'
@@ -55,13 +55,6 @@ export class Verifier {
       const deposits: DepositSql[] = await layer2.getDeposits(massDeposit)
       console.log('massdeposit...', massDeposit)
       console.log('deposits...', deposits)
-      console.log(
-        'select...',
-        await layer2.db
-          .selectTable(schema.deposit.name)
-          .query('select')
-          .exec(),
-      )
       let merged
       let fee = new BN(0)
       for (const deposit of deposits) {

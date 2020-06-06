@@ -2,6 +2,7 @@
  * @jest-environment node
  */
 import { Transaction } from 'web3-core'
+import { hexify } from '@zkopru/utils'
 import { getDummyBody, dummyHeader } from '~dataset/testset-block'
 import { serializeHeader, serializeBody, Block, headerHash } from '~core'
 
@@ -16,6 +17,9 @@ describe('block.ts', () => {
       serializeBody(body),
     ])
     const dummySelector = 'aaaaaaaa'
+    const lengthToHex = hexify(serializedBlock.length, 32).slice(2)
+    const paramPosition = hexify(32, 32).slice(2)
+    console.log('length to hex', lengthToHex)
     const dummyTx: Transaction = {
       hash: 'dummyhash',
       nonce: 1,
@@ -27,7 +31,9 @@ describe('block.ts', () => {
       value: 'dummyvalue',
       gasPrice: 'dummygas',
       gas: 11,
-      input: `0x${dummySelector}${serializedBlock.toString('hex')}`,
+      input: `0x${dummySelector}${paramPosition}${lengthToHex}${serializedBlock.toString(
+        'hex',
+      )}`,
     }
     const deserializedBlock = Block.fromTx(dummyTx)
     expect(deserializedBlock).toBeDefined()

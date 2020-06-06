@@ -1,8 +1,8 @@
-import { L1Config } from '@zkopru/database'
 import { genesisRoot, poseidonHasher, keccakHasher } from '@zkopru/tree'
 import { bnToBytes32 } from '@zkopru/utils'
 import { Address, Bytes32 } from 'soltypes'
 import BN from 'bn.js'
+import { Config } from '@zkopru/prisma'
 import { Header } from './block'
 
 export const genesis = ({
@@ -12,7 +12,7 @@ export const genesis = ({
 }: {
   address: Address
   parent: Bytes32
-  config: L1Config
+  config: Config
 }): Header => {
   const utxoHasher = poseidonHasher(config.utxoTreeDepth)
   const withdrawalHasher = keccakHasher(config.withdrawalTreeDepth)

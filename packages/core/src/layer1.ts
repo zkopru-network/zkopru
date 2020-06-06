@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import ZkOPRUContract from '@zkopru/contracts'
-import { L1Config } from '@zkopru/database'
-import { verifyingKeyIdentifier, logger } from '@zkopru/utils'
+import { Config } from '@zkopru/prisma'
+import { verifyingKeyIdentifier, logger, hexify } from '@zkopru/utils'
 import Web3 from 'web3'
 import { ContractOptions } from 'web3-eth-contract'
 import bigInt from 'big-integer'
 import * as ffjs from 'ffjavascript'
+import { soliditySha3 } from 'web3-utils'
 import { VerifyingKey } from './snark'
 import { TransactionObject, Tx } from './types/contract'
 
@@ -14,7 +15,7 @@ export class L1Contract extends ZkOPRUContract {
 
   address: string
 
-  config?: L1Config
+  config?: Config
 
   constructor(web3: Web3, address: string, option?: ContractOptions) {
     super(web3, address, option)
@@ -79,8 +80,10 @@ export class L1Contract extends ZkOPRUContract {
     return vks
   }
 
-  async getConfig(): Promise<L1Config> {
+  async getConfig(): Promise<Config> {
     if (this.config) return this.config
+    let networkId!: number
+    let chainId!: number
     let utxoTreeDepth!: number
     let withdrawalTreeDepth!: number
     let nullifierTreeDepth!: number
@@ -96,6 +99,12 @@ export class L1Contract extends ZkOPRUContract {
     /** test start */
     /** test ends */
     const tasks = [
+      async () => {
+        networkId = await this.web3.eth.net.getId()
+      },
+      async () => {
+        chainId = await this.web3.eth.getChainId()
+      },
       async () => {
         utxoTreeDepth = parseInt(
           await this.upstream.methods.UTXO_TREE_DEPTH().call(),
@@ -163,7 +172,17 @@ export class L1Contract extends ZkOPRUContract {
       },
     ]
     await Promise.all(tasks.map(task => task()))
+    const zkopruId = soliditySha3(
+      hexify(networkId, 32),
+      hexify(chainId, 32),
+      hexify(this.address, 20),
+    )
+    if (!zkopruId) throw Error('hash error to get zkopru id')
     this.config = {
+      id: zkopruId,
+      networkId,
+      chainId,
+      address: this.address,
       utxoTreeDepth,
       withdrawalTreeDepth,
       nullifierTreeDepth,

@@ -1,19 +1,17 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import { ZkAccount } from '@zkopru/account'
-import { InanoSQLInstance } from '@nano-sql/core'
-import { uuid } from '@nano-sql/core/lib/utilities'
-import { ChainConfig, schema, BlockStatus } from '@zkopru/database'
-import { Grove, poseidonHasher, keccakHasher, verifyProof } from '@zkopru/tree'
+import { DB } from '@zkopru/prisma'
+import { Grove, poseidonHasher, keccakHasher } from '@zkopru/tree'
 import { logger } from '@zkopru/utils'
 import { Bytes32 } from 'soltypes'
 import { L1Contract } from './layer1'
 import { Verifier, VerifyOption } from './verifier'
 import { L2Chain } from './layer2'
 import { BootstrapHelper } from './bootstrap'
-import { headerHash, Block } from './block'
 import { Synchronizer } from './synchronizer'
 
 export class ZkOPRUNode {
-  db: InanoSQLInstance
+  db: DB
 
   l1Contract: L1Contract
 
@@ -43,7 +41,7 @@ export class ZkOPRUNode {
     accounts,
     verifyOption,
   }: {
-    db: InanoSQLInstance
+    db: DB
     l1Contract: L1Contract
     l2Chain: L2Chain
     verifier: Verifier
@@ -82,38 +80,6 @@ export class ZkOPRUNode {
     this.synchronizer.stop()
   }
 
-  async bootstrap() {
-    if (!this.bootstrapHelper) return
-    const latest = await this.l1Contract.upstream.methods.latest().call()
-    const latestBlockFromDB = await this.l2Chain.getBlockSql(
-      Bytes32.from(latest),
-    )
-    if (
-      latestBlockFromDB &&
-      latestBlockFromDB.status &&
-      latestBlockFromDB.status >= BlockStatus.PARTIALLY_VERIFIED
-    ) {
-      return
-    }
-    const bootstrapData = await this.bootstrapHelper.fetchBootstrapData(latest)
-    const proposalData = await this.l1Contract.web3.eth.getTransaction(
-      bootstrapData.proposalTx,
-    )
-    const block = Block.fromTx(proposalData)
-    const headerProof = headerHash(block.header).eq(Bytes32.from(latest))
-    const utxoMerkleProof = verifyProof(
-      this.l2Chain.grove.config.utxoHasher,
-      bootstrapData.utxoStartingLeafProof,
-    )
-    const withdrawalMerkleProof = verifyProof(
-      this.l2Chain.grove.config.withdrawalHasher,
-      bootstrapData.withdrawalStartingLeafProof,
-    )
-    if (headerProof && utxoMerkleProof && withdrawalMerkleProof) {
-      await this.l2Chain.applyBootstrap(block, bootstrapData)
-    }
-  }
-
   async processUnverifiedBlocks() {
     logger.info('processUnverifiedBlocks()')
     // prevHeader should be a verified one
@@ -136,12 +102,11 @@ export class ZkOPRUNode {
   }
 
   static async getOrInitChain(
-    db: InanoSQLInstance,
+    db: DB,
     l1Contract: L1Contract,
     networkId: number,
     chainId: number,
     address: string,
-    fullSync: boolean,
     accounts?: ZkAccount[],
   ): Promise<L2Chain> {
     logger.info('Get or init chain')
@@ -153,42 +118,23 @@ export class ZkOPRUNode {
       ? accounts.map(account => account.address)
       : []
 
-    const chainConfig: ChainConfig[] = (await db
-      .selectTable(schema.chain.name)
-      .presetQuery('read', {
-        networkId,
-        chainId,
-        address,
-      })
-      .exec()) as ChainConfig[]
-    const l2Config = chainConfig[0]
-    const l1Config = await l1Contract.getConfig()
+    const savedConfig = await db.prisma.config.findOne({
+      where: {
+        networkId_chainId_address: {
+          networkId,
+          chainId,
+          address,
+        },
+      },
+    })
+    const config = savedConfig || (await l1Contract.getConfig())
     const hashers = {
-      utxo: poseidonHasher(l1Config.utxoTreeDepth),
-      withdrawal: keccakHasher(l1Config.withdrawalTreeDepth),
-      nullifier: keccakHasher(l1Config.nullifierTreeDepth),
+      utxo: poseidonHasher(config.utxoTreeDepth),
+      withdrawal: keccakHasher(config.withdrawalTreeDepth),
+      nullifier: keccakHasher(config.nullifierTreeDepth),
     }
-    const tables = await db.query('show tables').exec()
-    if (!tables.find(obj => obj.table === schema.block.name)) {
-      await db.query('create table', schema.block).exec()
-    }
-    if (l2Config) {
-      const grove = new Grove(l2Config.id, db, {
-        ...l1Config,
-        utxoHasher: hashers.utxo,
-        withdrawalHasher: hashers.withdrawal,
-        nullifierHasher: hashers.nullifier,
-        fullSync,
-        forceUpdate: !fullSync,
-        pubKeysToObserve,
-        addressesToObserve,
-      })
-      await grove.init()
-      return new L2Chain(db, grove, l2Config)
-    }
-    const id = uuid()
-    const grove = new Grove(id, db, {
-      ...l1Config,
+    const grove = new Grove(db, {
+      ...config,
       utxoHasher: hashers.utxo,
       withdrawalHasher: hashers.withdrawal,
       nullifierHasher: hashers.nullifier,
@@ -198,12 +144,6 @@ export class ZkOPRUNode {
       addressesToObserve,
     })
     await grove.init()
-    return new L2Chain(db, grove, {
-      id,
-      networkId,
-      chainId,
-      address,
-      config: l1Config,
-    })
+    return new L2Chain(db, grove, config)
   }
 }

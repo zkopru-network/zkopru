@@ -7,12 +7,17 @@ import {
   PublicData,
   SNARK,
 } from '@zkopru/transaction'
-import { BlockSql, BlockStatus, HeaderSql } from '@zkopru/database'
+import {
+  Block as BlockSql,
+  Header as HeaderSql,
+  BootstrapCreateInput,
+} from '@zkopru/prisma'
 import * as Utils from '@zkopru/utils'
 import { Field } from '@zkopru/babyjubjub'
-import { Transaction } from 'web3-core'
 import { soliditySha3 } from 'web3-utils'
 import { Bytes32, Uint256, Address } from 'soltypes'
+import { Transaction } from 'web3-core'
+import assert from 'assert'
 // import { soliditySha3 } from 'web3-utils'
 
 export interface MassDeposit {
@@ -36,11 +41,6 @@ export interface MassMigration {
   migratingLeaves: MassDeposit
   erc20: ERC20Migration[]
   erc721: ERC721Migration[]
-}
-
-export interface Proposal {
-  header: Header
-  body: Body
 }
 
 export interface Header {
@@ -300,7 +300,6 @@ function deserializeMassDeposits(
   const mdLength: number = queue.dequeueToNumber(1)
   const massDeposits: MassDeposit[] = []
   while (massDeposits.length < mdLength) {
-    console.log('deserializa mass deposit rest', queue.str.slice(0, 128))
     massDeposits.push({
       merged: queue.dequeueToBytes32(),
       fee: queue.dequeueToUint256(),
@@ -317,7 +316,7 @@ function deserializeMassMigrations(
   const massMigrations: MassMigration[] = []
   while (massMigrations.length < mmLength) {
     const destination = queue.dequeue(20)
-    const totalETH = queue.dequeue(32)
+    const totalETH = queue.dequeueToUint256()
     const migratingLeaves: MassDeposit = {
       merged: queue.dequeueToBytes32(),
       fee: queue.dequeueToUint256(),
@@ -335,18 +334,18 @@ function deserializeMassMigrations(
     while (erc721Migrations.length < erc721MigrationLength) {
       const addr = queue.dequeue(20)
       const nftLen = queue.dequeueToNumber(1)
-      const nfts: string[] = []
+      const nfts: Uint256[] = []
       while (nfts.length < nftLen) {
-        nfts.push(queue.dequeue(32))
+        nfts.push(queue.dequeueToUint256())
       }
       erc721Migrations.push({
         addr: Address.from(addr),
-        nfts: nfts.map(Uint256.from),
+        nfts,
       })
     }
     massMigrations.push({
       destination: Address.from(destination),
-      totalETH: Uint256.from(totalETH),
+      totalETH,
       migratingLeaves,
       erc20: erc20Migrations,
       erc721: erc721Migrations,
@@ -418,21 +417,11 @@ export function massMigrationHash(massMigration: MassMigration): string {
 export class Block {
   hash: Bytes32
 
-  status: BlockStatus
-
-  proposalNum?: number
-
-  proposedAt: number
-
-  parent: Bytes32
-
-  proposalTx: Bytes32
-
   header: Header
 
   body: Body
 
-  proposalData?: Transaction
+  verified?: boolean
 
   bootstrap?: {
     utxoTreeIndex: Uint256
@@ -443,25 +432,15 @@ export class Block {
 
   constructor({
     hash,
-    status,
-    proposalNum,
-    proposedAt,
-    parent,
-    proposalTx,
+    verified,
     header,
     body,
-    proposalData,
     bootstrap,
   }: {
     hash: Bytes32
-    status: BlockStatus
-    proposedAt: number
-    parent: Bytes32
-    proposalTx: Bytes32
+    verified?: boolean
     header: Header
     body: Body
-    proposalNum?: number
-    proposalData?: Transaction
     bootstrap?: {
       utxoTreeIndex: Uint256
       utxoBootstrap: Uint256[]
@@ -470,49 +449,62 @@ export class Block {
     }
   }) {
     this.hash = hash
-    this.status = status
-    this.proposalNum = proposalNum
-    this.proposedAt = proposedAt
-    this.parent = parent
-    this.proposalTx = proposalTx
+    this.verified = verified
     this.header = header
     this.body = body
-    this.proposalData = proposalData
     this.bootstrap = bootstrap
   }
 
   toSqlObj(): BlockSql {
-    const header = {} as HeaderSql
-    Object.keys(this.header).forEach(key => {
-      header[key] = this.header[key].toString()
-    })
     return {
       hash: this.hash.toString(),
-      status: this.status,
-      proposalNum: this.proposalNum,
-      proposedAt: this.proposedAt || 0,
-      proposalTx: this.proposalTx.toString(),
-      header,
-      proposalData: this.proposalData ? this.proposalData : undefined,
-      bootstrap: this.bootstrap
-        ? {
-            utxoTreeIndex: parseInt(
-              this.bootstrap.utxoTreeIndex.toString(),
-              10,
-            ),
-            utxoBootstrap: this.bootstrap.utxoBootstrap.map(val =>
-              val.toString(),
-            ),
-            withdrawalTreeIndex: parseInt(
-              this.bootstrap.withdrawalTreeIndex.toString(),
-              10,
-            ),
-            withdrawalBootstrap: this.bootstrap.withdrawalBootstrap.map(val =>
-              val.toString(),
-            ),
-          }
-        : undefined,
+      verified: this.verified || null,
     }
+  }
+
+  getHeaderSql(): HeaderSql {
+    return {
+      hash: this.hash.toString(),
+      proposer: this.header.proposer.toString(),
+      parentBlock: this.header.parentBlock.toString(),
+      metadata: this.header.metadata.toString(),
+      fee: this.header.fee.toString(),
+      utxoRoot: this.header.utxoRoot.toString(),
+      utxoIndex: this.header.utxoIndex.toString(),
+      nullifierRoot: this.header.nullifierRoot.toString(),
+      withdrawalRoot: this.header.withdrawalRoot.toString(),
+      withdrawalIndex: this.header.withdrawalIndex.toString(),
+      txRoot: this.header.txRoot.toString(),
+      depositRoot: this.header.depositRoot.toString(),
+      migrationRoot: this.header.migrationRoot.toString(),
+    }
+  }
+
+  getSqlObjs(): {
+    block: BlockSql
+    header: HeaderSql
+    bootstrap: BootstrapCreateInput | undefined
+  } {
+    const hash = this.hash.toString()
+    const block = this.toSqlObj()
+    const header = this.getHeaderSql()
+    const bootstrap = this.bootstrap
+      ? {
+          blockHash: hash,
+          utxoTreeIndex: parseInt(this.bootstrap.utxoTreeIndex.toString(), 10),
+          utxoBootstrap: JSON.stringify(
+            this.bootstrap.utxoBootstrap.map(val => val.toString()),
+          ),
+          withdrawalTreeIndex: parseInt(
+            this.bootstrap.withdrawalTreeIndex.toString(),
+            10,
+          ),
+          withdrawalBootstrap: JSON.stringify(
+            this.bootstrap.withdrawalBootstrap.map(val => val.toString()),
+          ),
+        }
+      : undefined
+    return { block, header, bootstrap }
   }
 
   serializeBlock(): Buffer {
@@ -525,17 +517,16 @@ export class Block {
     return Buffer.concat(arr)
   }
 
-  static fromTx(tx: Transaction): Block {
+  static fromTx(tx: Transaction, verified?: boolean): Block {
+    // if (!proposal.proposalData) throw Error('Not fetched yet')
+    // const tx = JSON.parse(proposal.proposalData) as Transaction
     const queue = new Utils.StringifiedHexQueue(tx.input)
     // remove function selector
-    queue.dequeue(4)
-    // remove param position
-    queue.dequeue(32)
-    // remove bytes length
-    const length = queue.dequeue(32)
-    console.log('length is ', length)
+    const selector = queue.dequeue(4)
+    const paramPosition = queue.dequeue(32)
+    const bytesLength = queue.dequeue(32)
+    assert([selector, paramPosition, bytesLength])
     const rawData = queue.dequeueAll()
-    console.log('raw data is...', rawData)
     const deserializedHeader = deserializeHeaderFrom(rawData)
     const deserializedTxs = deserializeTxsFrom(deserializedHeader.rest)
     const deserializedMassDeposits = deserializeMassDeposits(
@@ -547,7 +538,6 @@ export class Block {
     const { header } = deserializedHeader
     const { txs } = deserializedTxs
     const { massDeposits } = deserializedMassDeposits
-    console.log('mass deposits,...', massDeposits)
     const { massMigrations } = deserializedMassMigrations
     const body: Body = {
       txs,
@@ -556,11 +546,7 @@ export class Block {
     }
     return new Block({
       hash: headerHash(header),
-      status: BlockStatus.FETCHED,
-      proposedAt: tx.blockNumber || 0,
-      parent: header.parentBlock,
-      proposalTx: Bytes32.from(tx.hash),
-      proposalData: tx,
+      verified,
       header,
       body,
     })

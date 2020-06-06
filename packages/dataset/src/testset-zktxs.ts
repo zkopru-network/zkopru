@@ -102,7 +102,6 @@ export async function loadGrove(db: DB): Promise<{ grove: Grove }> {
   const size = latestTree ? latestTree.latestLeafIndex() : Field.zero
   if (size.eqn(0)) {
     await grove.applyPatch({
-      header: 'temp',
       utxos: [
         utxos.utxo1_in_1,
         utxos.utxo2_1_in_1,

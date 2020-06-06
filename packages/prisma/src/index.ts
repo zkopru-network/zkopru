@@ -31,6 +31,7 @@ export {
   Block,
   Header,
   Bootstrap,
+  BootstrapCreateInput,
   Config,
   Deposit,
   MassDeposit,

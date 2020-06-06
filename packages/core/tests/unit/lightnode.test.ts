@@ -1,10 +1,9 @@
 /* eslint-disable jest/no-hooks */
-import { nSQL, InanoSQLInstance } from '@nano-sql/core'
 import Web3 from 'web3'
 import { Docker } from 'node-docker-api'
 import { WebsocketProvider } from 'web3-core'
 import { Container } from 'node-docker-api/lib/container'
-import { schema } from '~database'
+import { MockupDB, DB } from '@zkopru/prisma'
 import { ZkAccount } from '~account'
 import { sleep, readFromContainer } from '~utils'
 import { LightNode, HttpBootstrapHelper } from '~core'
@@ -15,7 +14,9 @@ describe('integration test to run testnet', () => {
   let container: Container
   let lightNode: LightNode
   let wsProvider: WebsocketProvider
+  let mockup: MockupDB
   beforeAll(async () => {
+    mockup = await DB.mockup()
     const docker = new Docker({ socketPath: '/var/run/docker.sock' })
     try {
       container = await docker.container.create({
@@ -52,36 +53,18 @@ describe('integration test to run testnet', () => {
   afterAll(async () => {
     await container.stop()
     await container.delete()
+    await mockup.terminate()
     wsProvider.disconnect(0, 'close connection')
   }, 20000)
   describe('light node', () => {
     it('should be defined', async () => {
-      const dbName = 'zkopruLightNodeTester'
-      await nSQL().createDatabase({
-        id: dbName,
-        mode: 'TEMP',
-        tables: [
-          schema.utxo,
-          schema.utxoTree,
-          schema.withdrawal,
-          schema.withdrawalTree,
-          schema.migration,
-          schema.deposit,
-          schema.massDeposit,
-          schema.chain,
-          schema.keystore,
-          schema.hdWallet,
-        ],
-        version: 3,
-      })
-      const db: InanoSQLInstance = nSQL().useDatabase(dbName)
       const accounts: ZkAccount[] = [
         new ZkAccount(Buffer.from('sample private key')),
       ]
       lightNode = await LightNode.new({
         provider: wsProvider,
         address,
-        db,
+        db: mockup.db,
         accounts,
         bootstrapHelper: new HttpBootstrapHelper('http://localhost:8888'),
         option: {

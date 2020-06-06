@@ -1,9 +1,8 @@
 import { ZkAccount } from '@zkopru/account'
 import { WebsocketProvider, IpcProvider } from 'web3-core'
-import { InanoSQLInstance } from '@nano-sql/core'
 import Web3 from 'web3'
-import { BlockStatus } from '@zkopru/database'
 import { verifyProof } from '@zkopru/tree'
+import { DB } from '@zkopru/prisma'
 import { Bytes32 } from 'soltypes'
 import { L1Contract } from './layer1'
 import { Verifier, VerifyOption } from './verifier'
@@ -26,7 +25,7 @@ export class LightNode extends ZkOPRUNode {
     accounts,
     verifyOption,
   }: {
-    db: InanoSQLInstance
+    db: DB
     l1Contract: L1Contract
     l2Chain: L2Chain
     verifier: Verifier
@@ -58,20 +57,15 @@ export class LightNode extends ZkOPRUNode {
   async bootstrap() {
     if (!this.bootstrapHelper) return
     const latest = await this.l1Contract.upstream.methods.latest().call()
-    const latestBlockFromDB = await this.l2Chain.getBlockSql(
-      Bytes32.from(latest),
-    )
-    if (
-      latestBlockFromDB &&
-      latestBlockFromDB.status &&
-      latestBlockFromDB.status >= BlockStatus.PARTIALLY_VERIFIED
-    ) {
+    const latestBlockFromDB = await this.l2Chain.getBlock(Bytes32.from(latest))
+    if (latestBlockFromDB && latestBlockFromDB.verified) {
       return
     }
     const bootstrapData = await this.bootstrapHelper.fetchBootstrapData(latest)
     const proposalData = await this.l1Contract.web3.eth.getTransaction(
-      bootstrapData.proposalTx,
+      bootstrapData.proposal.proposalTx,
     )
+    console.log('bootstrap should give proposal num and etc', proposalData)
     const block = Block.fromTx(proposalData)
     const headerProof = headerHash(block.header).eq(Bytes32.from(latest))
     const utxoMerkleProof = verifyProof(
@@ -97,7 +91,7 @@ export class LightNode extends ZkOPRUNode {
   }: {
     provider: provider
     address: string
-    db: InanoSQLInstance
+    db: DB
     accounts: ZkAccount[]
     bootstrapHelper: BootstrapHelper
     option?: VerifyOption
@@ -131,7 +125,6 @@ export class LightNode extends ZkOPRUNode {
       networkId,
       chainId,
       address,
-      false,
       accounts,
     )
     let vks = {}
@@ -140,7 +133,7 @@ export class LightNode extends ZkOPRUNode {
     }
     const verifier = new Verifier(verifyOption, vks)
     // If the chain needs bootstraping, fetch bootstrap data and apply
-    const synchronizer = new Synchronizer(db, l2Chain.id, l1Contract)
+    const synchronizer = new Synchronizer(db, l2Chain.config, l1Contract)
     return new LightNode({
       db,
       l1Contract,

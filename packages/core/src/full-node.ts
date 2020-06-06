@@ -1,6 +1,6 @@
 import { ZkAccount } from '@zkopru/account'
 import { WebsocketProvider, IpcProvider } from 'web3-core'
-import { InanoSQLInstance } from '@nano-sql/core'
+import { DB } from '@zkopru/prisma'
 import Web3 from 'web3'
 import { L1Contract } from './layer1'
 import { Verifier, VerifyOption } from './verifier'
@@ -22,7 +22,7 @@ export class FullNode extends ZkOPRUNode {
     accounts,
     verifyOption,
   }: {
-    db: InanoSQLInstance
+    db: DB
     l1Contract: L1Contract
     l2Chain: L2Chain
     verifier: Verifier
@@ -52,7 +52,7 @@ export class FullNode extends ZkOPRUNode {
   }: {
     provider: provider
     address: string
-    db: InanoSQLInstance
+    db: DB
     accounts?: ZkAccount[]
     option?: VerifyOption
   }): Promise<FullNode> {
@@ -83,7 +83,6 @@ export class FullNode extends ZkOPRUNode {
       networkId,
       chainId,
       address,
-      true,
       accounts,
     )
     let vks = {}
@@ -92,7 +91,7 @@ export class FullNode extends ZkOPRUNode {
     }
     const verifier = new Verifier(verifyOption, vks)
     // If the chain needs bootstraping, fetch bootstrap data and apply
-    const synchronizer = new Synchronizer(db, l2Chain.id, l1Contract)
+    const synchronizer = new Synchronizer(db, l2Chain.config, l1Contract)
     return new FullNode({
       db,
       l1Contract,
