@@ -17,6 +17,7 @@
       "~core/*": ["core/src/*"],
       "~database/*": ["database/src/*"],
       "~dataset/*": ["dataset/src/*"],
+      "~prisma/*": ["prisma/src/*"],
       "~transaction/*": ["transaction/src/*"],
       "~tree/*": ["tree/src/*"],
       "~utils/*": ["utils/src/*"],

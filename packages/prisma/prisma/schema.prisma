@@ -32,11 +32,11 @@ model Keystore {
 }
 
 model Config {
-  id String @id @default(uuid())
+  id String @unique
   networkId Int
   chainId Int
   address String
-  txoTreeDepth Int
+  utxoTreeDepth Int
   withdrawalTreeDepth Int
   nullifierTreeDepth Int
   challengePeriod Int
@@ -48,29 +48,27 @@ model Config {
   utxoSubTreeSize Int
   withdrawalSubTreeDepth Int
   withdrawalSubTreeSize Int
-  chain ZkOPRUChain @relation(fields: [id], references: [id])
+  @@id([networkId, chainId, address])
 }
 
-model ZkOPRUChain {
-  id String @id @default(uuid())
-  config Config?
-  nullifierTree NullifierTree
-  // utxoTrees UtxoTree[]
-  // withdrawalTrees WithdrawalTree[]
-  blocks Block[]
+model Proposal {
+  hash String @id
+  proposalNum Int
+  proposedAt Int
+  proposalTx String // tx hash
+  proposalData String? // stringified json
+  fetched String?
+  finalized Boolean?
+  invalidated Boolean?
+  block Block? @relation(fields: [fetched], references: [hash])
 }
 
 model Block {
   hash String @id
+  verified Boolean?
   header Header @relation(fields: [hash], references: [hash])
-  status Int // NOT_FETCHED = 0 / FETCHED = 1 / PARTIALLY_VERIFEID = 2 / FULLY_VERIFIED = 3 / FINALIZED = 4 / INVALIDATED = 5 / REVERTED = 6
-  proposalNum Int
-  proposedAt Int
-  proposalTx String // tx hash
-  proposalData String // stringified json
-  bootstrap Bootstrap @relation(fields: [hash], references: [hash])
-  chainId String?
-  chain ZkOPRUChain? @relation(fields: [chainId], references: [id])
+  proposal Proposal
+  bootstrap Bootstrap?
 }
 
 model Header {
@@ -90,13 +88,15 @@ model Header {
 }
 
 model Bootstrap {
-  hash String @id
+  id String @id @default(uuid())
+  blockHash String? @unique
   utxoTreeIndex Int
   // utxoBootstrap String[]
   utxoBootstrap String // jsonified arr : sqlite does not support arr
   withdrawalTreeIndex Int
   // withdrawalBootstrap String[]
   withdrawalBootstrap String //jsonified arr : sqlite does not support arr
+  block Block? @relation(fields: [blockHash], references: [hash])
 }
 
 model MassDeposit {
@@ -105,8 +105,6 @@ model MassDeposit {
   fee String
   blockNumber Int
   includedIn String?
-  block Block? @relation(fields: [includedIn], references: [hash])
-  deposits Deposit[]
 }
 
 model Deposit {
@@ -115,15 +113,12 @@ model Deposit {
   transactionIndex Int
   logIndex Int
   blockNumber Int
-  queuedAt String?
-  includedIn String?
-  massDeposit MassDeposit? @relation(fields: [queuedAt], references: [index])
+  queuedAt String
 }
 
 model Nullifier {
   index String @id
   nullified Boolean
-  blockHash String
 }
 
 model Note {
@@ -139,8 +134,9 @@ model Note {
   withdrawOutTo String?
   fee String?
   status Int?
-  treeId String?
-  tree LightTree? @relation(fields: [treeId], references: [id])
+  noteType Int?
+  treeIndex Int?
+  tree LightTree? @relation(fields: [noteType, treeIndex], references: [species, treeIndex])
 }
 
 model TreeNode {
@@ -152,10 +148,9 @@ model TreeNode {
 }
 
 model LightTree {
-  id String @id @default(uuid())
+  id String @default(uuid()) @unique
   species Int // 0: utxo 1: withdrawal
   treeIndex Int
-  zkopru String
   block String?
   // rollup sync data
   start String
@@ -164,16 +159,13 @@ model LightTree {
   root String
   index String
   siblings String // stringified str[]
-  chain ZkOPRUChain @relation(fields: [zkopru], references: [id])
-  @@index([species, treeIndex])
+  @@id([species, treeIndex])
 }
 
 model NullifierTree {
   id String @id @default(uuid())
-  zkopru String
   treeIndex Int @unique
   block String?
   root String
   siblings String // stringified str[]
-  chain ZkOPRUChain @relation(fields: [zkopru], references: [id])
 }

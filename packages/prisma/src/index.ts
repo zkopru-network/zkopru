@@ -20,6 +20,8 @@ export enum BlockStatus {
   REVERTED = 6,
 }
 
+export const NULLIFIER_TREE_ID = 'nullifier-tree'
+
 export {
   LightTree,
   TreeNode,
@@ -28,7 +30,17 @@ export {
   EncryptedWallet,
   Block,
   Header,
+  Bootstrap,
+  Config,
+  Deposit,
+  MassDeposit,
+  Proposal,
 } from '@prisma/client'
+
+export interface MockupDB {
+  db: DB
+  terminate: () => Promise<void>
+}
 
 export class DB {
   constructor(option?: PrismaClientOptions) {
@@ -62,27 +74,24 @@ export class DB {
     },
   }
 
-  static async mockup(): Promise<{
-    instance: DB
-    terminate: () => Promise<void>
-  }> {
+  static async mockup(): Promise<MockupDB> {
     const dbName = `${v4()}.db`
     const dbPath = `${path.join(path.resolve('.'), dbName)}`
     const predefined = `${path.join(
       path.resolve(__dirname),
-      '../prisma/schema.db',
+      '../prisma/dev.db',
     )}`
     console.log('predefiend, ', predefined)
     fs.promises.copyFile(predefined, dbPath)
-    const instance = new DB({
+    const db = new DB({
       datasources: {
         sqlite: `file://${dbPath}`,
       },
     })
     const terminate = async () => {
       fs.unlinkSync(dbPath)
-      await instance.prisma.disconnect()
+      await db.prisma.disconnect()
     }
-    return { instance, terminate }
+    return { db, terminate }
   }
 }

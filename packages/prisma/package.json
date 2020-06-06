@@ -14,8 +14,9 @@
     "build:prisma": "prisma generate",
     "migrate-save": "prisma migrate save --experimental",
     "migrate-up": "prisma migrate up --experimental",
+    "gen-mockup": "yarn migrate-save && yarn migrate-up",
     "prebuild": "shx mkdir -p dist",
-    "build": "tsc --build tsconfig.build.json",
+    "build": "yarn build:prisma && tsc --build tsconfig.build.json",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "link-modules": "link-module-alias",
     "test": "jest",
@@ -44,6 +45,7 @@
     "access": "public"
   },
   "devDependencies": {
+    "@prisma/cli": "^2.0.0-beta.8",
     "@types/sqlite3": "^3.1.6"
   }
 }
