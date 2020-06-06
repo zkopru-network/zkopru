@@ -15,8 +15,6 @@ export interface Balance {
 }
 
 export class ZkWallet {
-  zkopruId: string
-
   db: DB
 
   wallet: HDWallet
@@ -41,7 +39,6 @@ export class ZkWallet {
   }
 
   constructor({
-    zkopruId,
     db,
     wallet,
     account,
@@ -51,7 +48,6 @@ export class ZkWallet {
     erc721,
     coordinator,
   }: {
-    zkopruId: string
     db: DB
     wallet: HDWallet
     account?: ZkAccount
@@ -61,7 +57,6 @@ export class ZkWallet {
     erc721: string[]
     coordinator: string
   }) {
-    this.zkopruId = zkopruId
     this.db = db
     this.wallet = wallet
     this.node = node

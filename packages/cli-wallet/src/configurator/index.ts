@@ -45,15 +45,13 @@ export async function getZkWallet(
     }
   }
   if (context.menu === Menu.EXIT) return undefined
-  const { zkopruId, db, wallet, node, accounts } = context
+  const { db, wallet, node, accounts } = context
   const { erc20, erc721, coordinator } = config
-  assert(zkopruId, 'zkopruid')
   assert(db, 'db')
   assert(wallet, 'wallet')
   assert(accounts, 'accounts')
   assert(node, 'node')
   const zkWallet = new ZkWallet({
-    zkopruId,
     db,
     wallet,
     node,

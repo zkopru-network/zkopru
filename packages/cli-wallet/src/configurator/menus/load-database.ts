@@ -134,6 +134,7 @@ export default class LoadDatabase extends Configurator {
           type: 'text',
           name: 'dbName',
           message: 'Provide sqlite db here',
+          initial: 'zkopru.db',
         })
         const { db } = await DB.mockup(dbName)
         database = db

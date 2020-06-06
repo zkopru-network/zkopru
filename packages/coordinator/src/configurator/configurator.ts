@@ -32,7 +32,6 @@ export enum Menu {
 export interface Context {
   menu: Menu
   networkStatus: NetworkStatus
-  zkopruId?: string
   web3?: Web3
   provider?: WebsocketProvider
   db?: DB

@@ -1,5 +1,6 @@
 build
 db
+zkopru.db
 .data
 **/*/.data
 temp

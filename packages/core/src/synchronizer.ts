@@ -338,7 +338,6 @@ export class Synchronizer extends EventEmitter {
           index: Uint256.from(returnValues.index).toString(),
           merged: Bytes32.from(returnValues.merged).toString(),
           fee: Uint256.from(returnValues.fee).toString(),
-          zkopruId: this.config.id,
           blockNumber,
           includedIn: null,
         }
