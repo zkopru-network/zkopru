@@ -20,8 +20,8 @@ import {
 } from '@zkopru/core'
 import { Account } from 'web3-core'
 import { Subscription } from 'web3-core-subscriptions'
-import { schema, MassDepositCommitSql, DepositSql } from '@zkopru/database'
 import { Item } from '@zkopru/tree'
+import { MassDeposit as MassDepositSql } from '@zkopru/prisma'
 import { Server } from 'http'
 import chalk from 'chalk'
 import { Address, Bytes32, Uint256 } from 'soltypes'
@@ -225,7 +225,14 @@ export class Coordinator extends EventEmitter {
       res.send(this.bootstrapCache[hashForBootstrapBlock])
     }
     const blockHash = Bytes32.from(hashForBootstrapBlock)
-    const block = await this.node.l2Chain.getBlockSql(blockHash)
+    const block = await this.node.l2Chain.getBlock(blockHash)
+    const proposal = await this.node.l2Chain.getProposal(blockHash)
+    if (!proposal) {
+      const message = `Failed to find a proposal for the requested  ${hash}`
+      logger.info(message)
+      res.status(500).send(message)
+      return
+    }
     if (!block) {
       const message = `Failed to find the requested block ${hash}`
       logger.info(message)
@@ -239,21 +246,21 @@ export class Coordinator extends EventEmitter {
       return
     }
     res.send({
-      proposalTx: block.proposalTx,
+      proposalTx: proposal.proposalTx,
       blockHash: block.hash,
       utxoTreeIndex: block.bootstrap.utxoTreeIndex,
       utxoStartingLeafProof: {
-        root: Field.from(block.header.utxoRoot),
-        index: Field.from(block.header.utxoIndex),
-        leaf: Field.zero,
-        siblings: block.bootstrap.utxoBootstrap.map(Field.from),
+        root: block.header.utxoRoot.toString(),
+        index: block.header.utxoIndex.toString(),
+        leaf: Field.zero.toHex(),
+        siblings: block.bootstrap.utxoBootstrap.map(s => s.toString()),
       },
       withdrawalTreeIndex: block.bootstrap.withdrawalTreeIndex,
       withdrawalStartingLeafProof: {
-        root: Field.from(block.header.withdrawalRoot),
-        index: Field.from(block.header.withdrawalIndex),
+        root: block.header.withdrawalRoot.toString(),
+        index: block.header.withdrawalIndex.toString(),
         leaf: Field.zero,
-        siblings: block.bootstrap.withdrawalBootstrap.map(Field.from),
+        siblings: block.bootstrap.withdrawalBootstrap.map(s => s.toString()),
       },
     })
   }
@@ -328,18 +335,23 @@ export class Coordinator extends EventEmitter {
     let consumedBytes = 0
     let aggregatedFee: Field = Field.zero
     // 1. pick mass deposits
-    const commits: MassDepositCommitSql[] = (await this.node.db
-      .selectTable(schema.massDeposit.name)
-      .query('select')
-      .where(['includedIn', '=', 'NOT_INCLUDED'])
-      .exec()) as MassDepositCommitSql[]
+    const commits: MassDepositSql[] = await this.node.db.prisma.massDeposit.findMany(
+      {
+        where: {
+          includedIn: {
+            equals: 'NOT_INCLUDED',
+          },
+        },
+      },
+    )
     commits.sort((a, b) => parseInt(a.index, 10) - parseInt(b.index, 10))
-    const pendingDeposits = (await this.node.db
-      .selectTable(schema.deposit.name)
-      .presetQuery('getDeposits', {
-        commitIndexes: commits.map(commit => commit.index),
-      })
-      .exec()) as DepositSql[]
+    const pendingDeposits = await this.node.db.prisma.deposit.findMany({
+      where: {
+        queuedAt: {
+          in: commits.map(commit => commit.index),
+        },
+      },
+    })
     pendingDeposits.sort((a, b) => {
       if (a.blockNumber !== b.blockNumber) {
         return a.blockNumber - b.blockNumber
@@ -349,13 +361,6 @@ export class Coordinator extends EventEmitter {
       }
       return a.logIndex - b.logIndex
     })
-    console.log(
-      'FUCK',
-      await this.node.db
-        .selectTable(schema.deposit.name)
-        .query('select')
-        .exec(),
-    )
     console.log('retrieved', pendingDeposits)
     deposits.push(...pendingDeposits.map(deposit => Field.from(deposit.note)))
     logger.info(`Pending deposits: ${pendingDeposits.length}`)

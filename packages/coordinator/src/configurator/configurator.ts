@@ -1,15 +1,16 @@
 import Web3 from 'web3'
-import { InanoSQLInstance } from '@nano-sql/core/lib/interfaces'
 import { NetworkStatus } from '@zkopru/core'
 import { Account, WebsocketProvider, EncryptedKeystoreV3Json } from 'web3-core'
 import { PromptApp } from '@zkopru/utils'
+import { DB } from '@zkopru/prisma'
 import { Coordinator } from '..'
 
 export interface Config {
   address: string
   bootstrap: boolean
   websocket: string
-  db: string
+  sqlite?: string
+  postgres?: string
   maxBytes: number
   priceMultiplier: number
   port: number
@@ -34,7 +35,7 @@ export interface Context {
   zkopruId?: string
   web3?: Web3
   provider?: WebsocketProvider
-  db?: InanoSQLInstance
+  db?: DB
   coordinator?: Coordinator
   keystore?: EncryptedKeystoreV3Json
   account?: Account

@@ -1,79 +1,39 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import chalk from 'chalk'
-import fs from 'fs-extra'
+import fs from 'fs'
 import Web3 from 'web3'
-import { LevelDB } from '@nano-sql/adapter-leveldb'
-import { InanoSQLInstance, nSQL } from '@nano-sql/core'
-import { schema, ChainConfig } from '@zkopru/database'
-import { InanoSQLAdapter } from '@nano-sql/core/lib/interfaces'
 import { L1Contract } from '@zkopru/core'
+import { DB } from '@zkopru/prisma'
 import Configurator, { Context, Menu } from '../configurator'
 
 const { print, goTo } = Configurator
 
 async function initDB({
-  name,
-  dbAdapter,
+  db,
   web3,
   address,
 }: {
-  name: string
-  dbAdapter: string | InanoSQLAdapter
+  db: DB
   web3: Web3
   address: string
-}): Promise<{
-  db: InanoSQLInstance
-  zkopruId: string
-}> {
-  await nSQL().createDatabase({
-    id: name,
-    mode: dbAdapter,
-    tables: [
-      schema.chain,
-      schema.hdWallet,
-      schema.keystore,
-      schema.block,
-      schema.deposit,
-      schema.massDeposit,
-      schema.utxo,
-      schema.withdrawal,
-      schema.migration,
-      schema.utxoTree,
-      schema.withdrawalTree,
-      schema.nullifiers,
-      schema.nullifierTreeNode,
-    ],
-  })
-  const db = nSQL().useDatabase(name)
+}) {
   const networkId = await web3.eth.net.getId()
   const chainId = await web3.eth.getChainId()
-  const queryResult = await db
-    .selectTable(schema.chain.name)
-    .presetQuery('read', {
-      networkId,
-      chainId,
-      address,
-    })
-    .exec()
-  let zkopruId: string
-  if (queryResult.length === 0) {
-    const layer1: L1Contract = new L1Contract(web3, address)
-    const config = await layer1.getConfig()
-    const createResult = (await db
-      .selectTable(schema.chain.name)
-      .presetQuery('create', {
+  const config = await db.prisma.config.findOne({
+    where: {
+      networkId_chainId_address: {
         networkId,
-        chainId,
         address,
-        config,
-      })
-      .exec()) as ChainConfig[]
-    zkopruId = createResult[0].id
-  } else {
-    zkopruId = queryResult[0].id
-  }
-  return {
-    db,
-    zkopruId,
+        chainId,
+      },
+    },
+  })
+  if (!config) {
+    const layer1: L1Contract = new L1Contract(web3, address)
+    const configFromContract = await layer1.getConfig()
+    await db.prisma.config.create({
+      data: configFromContract,
+    })
   }
 }
 
@@ -85,16 +45,104 @@ export default class LoadDatabase extends Configurator {
     if (!context.web3) {
       throw Error(chalk.red('Web3 does not exist'))
     }
-    fs.mkdirpSync(this.config.db)
-    // const dbAdapter = 'PERM'
-    const dbAdapter = new LevelDB(this.config.db)
-    const { zkopruId, db } = await initDB({
-      name: `zkopru-cli-wallet-full-node`,
-      dbAdapter,
+    let database: DB
+    if (this.config.postgres) {
+      database = new DB({
+        datasources: {
+          postgres: this.config.postgres,
+        },
+      })
+    } else if (this.config.sqlite) {
+      const dbPath = this.config.sqlite
+      if (!fs.existsSync(dbPath)) {
+        // create new dataabase
+        const { db } = await DB.mockup(dbPath)
+        database = db
+      } else {
+        // database exists
+        database = new DB({ datasources: { sqlite: dbPath } })
+      }
+    } else {
+      // no configuration. try to create new one
+      const enum DBType {
+        POSTGRES,
+        SQLITE,
+      }
+      const { dbType } = await this.ask({
+        type: 'select',
+        name: 'dbType',
+        message: 'You should configure database',
+        choices: [
+          {
+            title: 'Postgres(recommended)',
+            value: DBType.POSTGRES,
+          },
+          {
+            title: 'Sqlite',
+            value: DBType.SQLITE,
+          },
+        ],
+      })
+
+      if (dbType === DBType.POSTGRES) {
+        print(chalk.blue)('Creating a postgresql connection')
+        print(chalk.yellow)('Fetch schema files')
+        print(chalk.yellow)('1. Install postgres.')
+        print(chalk.yellow)('2. Run postgres daemon.')
+        print(chalk.yellow)('3. set up database')
+        print(chalk.yellow)('4. provide db connection info')
+        // TODO provide migrate option later
+        // TODO provide detail database setup guide
+        const { host } = await this.ask({
+          type: 'text',
+          name: 'host',
+          message: 'Host? ex: localhost',
+        })
+        const { port } = await this.ask({
+          type: 'number',
+          name: 'port',
+          message: 'Port number?',
+          initial: 5432,
+        })
+        const { user } = await this.ask({
+          type: 'text',
+          name: 'user',
+          message: 'Username',
+        })
+        const { password } = await this.ask({
+          type: 'password',
+          name: 'password',
+          message: 'Password',
+        })
+        const { dbName } = await this.ask({
+          type: 'text',
+          name: 'dbName',
+          message: 'DB Name',
+          initial: 'zkopru',
+        })
+        database = new DB({
+          datasources: {
+            postgres: `postgresql://${user}:${password}@${host}:${port}/${dbName}`,
+          },
+        })
+      } else {
+        print(chalk.blue)('Creating a sqlite3 connection')
+        print(chalk.yellow)('Provide file path to store sqlite db')
+        print(chalk.yellow)('ex: ./zkopru.db')
+        const { dbName } = await this.ask({
+          type: 'text',
+          name: 'dbName',
+          message: 'Provide sqlite db here',
+        })
+        const { db } = await DB.mockup(dbName)
+        database = db
+      }
+    }
+    await initDB({
+      db: database,
       web3: context.web3,
       address: this.config.address,
     })
-    print(chalk.blue)(`Loaded LevelDB from ${this.config.db}`)
-    return { ...goTo(context, Menu.LOAD_COORDINATOR), db, zkopruId }
+    return { ...goTo(context, Menu.LOAD_COORDINATOR), db: database }
   }
 }

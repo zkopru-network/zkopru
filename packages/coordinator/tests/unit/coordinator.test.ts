@@ -1,15 +1,14 @@
 /* eslint-disable jest/no-hooks */
-import { nSQL, InanoSQLInstance } from '@nano-sql/core'
 import Web3 from 'web3'
 import { WebsocketProvider } from 'web3-core'
 import { Docker } from 'node-docker-api'
 import { Container } from 'node-docker-api/lib/container'
 import { FullNode } from '@zkopru/core'
-import { schema } from '~database'
+import { randomHex } from 'web3-utils'
 import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
 import { readFromContainer, sleep } from '~utils'
-import { randomHex } from 'web3-utils'
+import { MockupDB, DB } from '~prisma'
 
 describe('coordinator test to run testnet', () => {
   const testName = `${randomHex(32)}`
@@ -20,9 +19,10 @@ describe('coordinator test to run testnet', () => {
   let container: Container
   let fullNode: FullNode
   let wsProvider: WebsocketProvider
-  let db: InanoSQLInstance
+  let mockup: MockupDB
   let coordinator: Coordinator
   beforeAll(async () => {
+    mockup = await DB.mockup()
     const docker = new Docker({ socketPath: '/var/run/docker.sock' })
     try {
       container = await docker.container.create({
@@ -56,31 +56,10 @@ describe('coordinator test to run testnet', () => {
       })
     }
     await waitConnection()
-    const dbName = 'coordinatortest'
-    await nSQL().createDatabase({
-      id: dbName,
-      mode: 'TEMP',
-      tables: [
-        schema.utxo,
-        schema.utxoTree,
-        schema.withdrawal,
-        schema.withdrawalTree,
-        schema.nullifiers,
-        schema.nullifierTreeNode,
-        schema.migration,
-        schema.deposit,
-        schema.massDeposit,
-        schema.chain,
-        schema.keystore,
-        schema.hdWallet,
-      ],
-      version: 3,
-    })
-    db = nSQL().useDatabase(dbName)
     fullNode = await FullNode.new({
       provider: wsProvider,
       address,
-      db,
+      db: mockup.db,
       accounts,
       option: {
         header: true,
@@ -96,6 +75,7 @@ describe('coordinator test to run testnet', () => {
   afterAll(async () => {
     await container.stop()
     await container.delete()
+    await mockup.terminate()
     wsProvider.disconnect(0, 'close connection')
   }, 60000)
   describe('coordinator', () => {

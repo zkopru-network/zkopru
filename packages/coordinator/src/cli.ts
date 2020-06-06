@@ -27,9 +27,11 @@ const { argv } = yargs
       alias: 'ws',
       default: 'ws://ws.zkopru.network',
     },
-    db: {
+    sqlite: {
       type: 'string',
-      default: 'db',
+    },
+    postgres: {
+      type: 'string',
     },
     maxBytes: {
       type: 'number',
