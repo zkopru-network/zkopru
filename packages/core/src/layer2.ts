@@ -51,6 +51,18 @@ export class L2Chain {
     return Block.fromTx(tx, proposal.block?.verified || false)
   }
 
+  async getProposal(hash: Bytes32) {
+    const proposal = await this.db.prisma.proposal.findOne({
+      where: {
+        hash: hash.toString(),
+      },
+      include: {
+        block: true,
+      },
+    })
+    return proposal
+  }
+
   async getLatestVerifiedBlock(): Promise<Block | null> {
     const lastVerifiedProposal: Proposal | undefined = (
       await this.db.prisma.proposal.findMany({
