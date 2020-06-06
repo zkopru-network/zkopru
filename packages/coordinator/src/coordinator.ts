@@ -3,6 +3,7 @@ import express, { RequestHandler } from 'express'
 import { scheduleJob, Job } from 'node-schedule'
 import { EventEmitter } from 'events'
 import { ZkTx } from '@zkopru/transaction'
+import { Item } from '@zkopru/tree'
 import { logger, root, bnToBytes32, bnToUint256 } from '@zkopru/utils'
 import {
   FullNode,
@@ -20,7 +21,6 @@ import {
 } from '@zkopru/core'
 import { Account } from 'web3-core'
 import { Subscription } from 'web3-core-subscriptions'
-import { Item } from '@zkopru/tree'
 import { MassDeposit as MassDepositSql } from '@zkopru/prisma'
 import { Server } from 'http'
 import chalk from 'chalk'
@@ -75,7 +75,7 @@ export class Coordinator extends EventEmitter {
     this.node.startSync()
     this.startAPI()
     this.startSubscribeGasPrice()
-    this.node.synchronizer.on(
+    this.node.on(
       'status',
       async (status: NetworkStatus, blockHash?: Bytes32) => {
         // udpate the txpool using the newly proposed hash
@@ -104,7 +104,7 @@ export class Coordinator extends EventEmitter {
 
   async stop(): Promise<void> {
     return new Promise(res => {
-      this.node.synchronizer.on('status', status => {
+      this.node.on('status', status => {
         if (status === NetworkStatus.STOPPED) {
           this.emit('stop')
           res()
@@ -112,13 +112,13 @@ export class Coordinator extends EventEmitter {
       })
       if (this.api) {
         this.api.close(() => {
-          if (this.node.synchronizer.status === NetworkStatus.STOPPED) {
+          if (this.node.status === NetworkStatus.STOPPED) {
             res()
           } else {
             this.node.stopSync()
           }
         })
-      } else if (this.node.synchronizer.status === NetworkStatus.STOPPED) {
+      } else if (this.node.status === NetworkStatus.STOPPED) {
         res()
       } else {
         this.node.stopSync()
@@ -331,6 +331,7 @@ export class Coordinator extends EventEmitter {
     body: Body
     fee: Field
   }> {
+    // TODO use node lock
     const deposits: Field[] = []
     let consumedBytes = 0
     let aggregatedFee: Field = Field.zero
@@ -412,6 +413,11 @@ export class Coordinator extends EventEmitter {
       return [...arr, ...tx.inflow.map(inflow => inflow.nullifier)]
     }, [] as Field[])
 
+    const latest = await this.node.latestBlock()
+    if (!latest) {
+      throw Error('Layer 2 chain is not synced. No genesis block')
+    }
+    // TODO acquire lock during gen block
     const massMigrations: MassMigration[] = []
     const expectedGrove = await this.node.l2Chain.grove.dryPatch({
       utxos,
@@ -424,17 +430,13 @@ export class Coordinator extends EventEmitter {
         'Grove does not have the nullifier tree. Use full node option',
       )
     }
-    const latest = await this.node.l2Chain.getLatestBlockHash()
-    if (!latest) {
-      throw Error('Layer 2 chain is not synced. No genesis block')
-    }
     const massDeposits: MassDeposit[] = commits.map(obj => ({
       merged: Bytes32.from(obj.merged),
       fee: Uint256.from(obj.fee),
     }))
     const header: Header = {
       proposer: Address.from(this.account.address),
-      parentBlock: latest,
+      parentBlock: Bytes32.from(latest),
       metadata: Bytes32.from(
         '0x0000000000000000000000000000000000000000000000000000000000000000',
       ),

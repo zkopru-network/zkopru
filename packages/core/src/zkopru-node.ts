@@ -1,16 +1,31 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { ZkAccount } from '@zkopru/account'
-import { DB } from '@zkopru/prisma'
+import { DB, Proposal } from '@zkopru/prisma'
 import { Grove, poseidonHasher, keccakHasher } from '@zkopru/tree'
 import { logger } from '@zkopru/utils'
-import { Bytes32 } from 'soltypes'
+import { Uint256 } from 'soltypes'
+import AsyncLock from 'async-lock'
+import { scheduleJob, Job } from 'node-schedule'
+import { EventEmitter } from 'events'
 import { L1Contract } from './layer1'
 import { Verifier, VerifyOption } from './verifier'
 import { L2Chain } from './layer2'
 import { BootstrapHelper } from './bootstrap'
 import { Synchronizer } from './synchronizer'
+import { Block } from './block'
 
-export class ZkOPRUNode {
+export enum NetworkStatus {
+  STOPPED = 'stopped',
+  ON_SYNCING = 'on syncing',
+  ON_PROCESSING = 'processing',
+  SYNCED = 'synced',
+  FULLY_SYNCED = 'fully synced',
+  ON_ERROR = 'on error',
+}
+
+export class ZkOPRUNode extends EventEmitter {
+  lock: AsyncLock
+
   db: DB
 
   l1Contract: L1Contract
@@ -27,9 +42,19 @@ export class ZkOPRUNode {
 
   verifyOption: VerifyOption
 
-  newBlockListner?: () => Promise<void>
+  cronJobs: Job[]
 
-  finalizationListener?: (val: string) => Promise<void>
+  fetching: {
+    [proposalTx: string]: boolean
+  }
+
+  runningSerialProcessing = false
+
+  status: NetworkStatus
+
+  latestProposed?: number
+
+  latestProcessed?: number
 
   constructor({
     db,
@@ -50,6 +75,7 @@ export class ZkOPRUNode {
     accounts?: ZkAccount[]
     verifyOption: VerifyOption
   }) {
+    super()
     this.db = db
     this.l1Contract = l1Contract
     this.l2Chain = l2Chain
@@ -58,33 +84,57 @@ export class ZkOPRUNode {
     this.bootstrapHelper = bootstrapHelper
     this.accounts = accounts
     this.verifyOption = verifyOption
+    this.status = NetworkStatus.STOPPED
+    this.lock = new AsyncLock()
+    this.cronJobs = []
+    this.fetching = {}
+  }
+
+  private setStatus(status: NetworkStatus) {
+    if (this.status !== status) {
+      this.status = status
+      // this.emit('status', status, this.latestProposedHash)
+      logger.info(`sync status: ${status}`)
+      this.emit('status', status)
+    }
   }
 
   startSync() {
     logger.info('start sync')
-    this.newBlockListner = () => this.processUnverifiedBlocks()
-    this.finalizationListener = hash => this.finalizeBlock(Bytes32.from(hash))
-    this.synchronizer.on('newBlock', this.newBlockListner)
-    this.synchronizer.on('finalization', this.finalizationListener)
+    this.setStatus(NetworkStatus.ON_SYNCING)
     this.synchronizer.sync()
+    this.cronJobs = [
+      scheduleJob('*/1 * * * * *', () => {
+        this.updateStatus()
+        this.fetchUnfetchedProposals()
+        this.processUnverifiedBlocks()
+        this.checkBlockUpdate()
+      }),
+    ]
   }
 
   stopSync() {
     logger.info('stop sync')
-    if (this.newBlockListner) {
-      this.synchronizer.off('newBlock', this.newBlockListner)
+    while (this.cronJobs.length > 0) {
+      ;(this.cronJobs.pop() as Job).cancel()
     }
-    if (this.finalizationListener) {
-      this.synchronizer.off('finalization', this.finalizationListener)
-    }
+    this.setStatus(NetworkStatus.STOPPED)
     this.synchronizer.stop()
   }
 
-  async processUnverifiedBlocks() {
-    logger.info('processUnverifiedBlocks()')
-    // prevHeader should be a verified one
+  async processUnverifiedBlocks(recursive?: boolean) {
+    if (this.runningSerialProcessing && !recursive) {
+      // Skip cron job calling becaus it is processing blocks recursively
+      return
+    }
     const { prevHeader, block } = await this.l2Chain.getOldestUnverifiedBlock()
-    if (!block) return
+    if (!block) {
+      // if once it processed all blocks, it will stop its recursive call
+      this.runningSerialProcessing = false
+      return
+    }
+    // Once it finds an unverified block, starts recursive processing
+    this.runningSerialProcessing = true
     if (!prevHeader)
       throw Error('Unexpected runtime error occured during the verification.')
     const patch = await this.verifier.verifyBlock({
@@ -93,12 +143,140 @@ export class ZkOPRUNode {
       prevHeader,
       block,
     })
-
-    await this.l2Chain.applyPatch(patch)
+    await this.l2Chain.applyPatchAndMarkAsVerified(patch)
+    this.processUnverifiedBlocks(true)
   }
 
-  async finalizeBlock(hash: Bytes32) {
-    this.l2Chain.finalize(hash)
+  async latestBlock(): Promise<string | null> {
+    if (this.status === NetworkStatus.FULLY_SYNCED) {
+      const latestHash = await this.l2Chain.getLatestVerified()
+      return latestHash
+    }
+    return null
+  }
+
+  checkBlockUpdate() {
+    this.lock.acquire('db', async () => {
+      const proposals = await this.db.prisma.proposal.findMany({
+        orderBy: {
+          proposalNum: 'desc',
+        },
+        take: 1,
+      })
+      if (proposals[0]?.proposalNum) {
+        this.setLatestProposed(proposals[0]?.proposalNum)
+      }
+      const verifiedProposals = await this.db.prisma.proposal.findMany({
+        where: {
+          block: {
+            verified: true,
+          },
+        },
+        orderBy: {
+          proposalNum: 'desc',
+        },
+        take: 1,
+      })
+      if (verifiedProposals[0]) {
+        this.setLatestProcessed(verifiedProposals[0].proposalNum + 1)
+      }
+    })
+  }
+
+  private setLatestProposed(proposalNum: number) {
+    if (proposalNum && this.latestProposed !== proposalNum) {
+      this.latestProposed = proposalNum
+    }
+  }
+
+  private setLatestProcessed(proposalNum: number) {
+    if (this.latestProcessed !== proposalNum) {
+      this.latestProcessed = proposalNum
+    }
+  }
+
+  async updateStatus() {
+    let unfetched!: number
+    let unverified!: number
+    await this.lock.acquire('db', async () => {
+      unfetched = await this.db.prisma.proposal.count({
+        where: { fetched: null },
+      })
+      unverified = await this.db.prisma.block.count({
+        where: { verified: { not: true } },
+      })
+    })
+    const haveFetchedAll = unfetched === 0
+    const haveVerifiedAll = unverified === 0
+    if (!haveFetchedAll) {
+      this.setStatus(NetworkStatus.ON_SYNCING)
+    } else if (!haveVerifiedAll) {
+      this.setStatus(NetworkStatus.ON_PROCESSING)
+    } else {
+      const layer1ProposedBlocks = Uint256.from(
+        await this.l1Contract.upstream.methods.proposedBlocks().call(),
+      )
+      if (layer1ProposedBlocks.toBN().eqn(this.latestProcessed || 0)) {
+        this.setStatus(NetworkStatus.FULLY_SYNCED)
+      } else if (
+        layer1ProposedBlocks.toBN().ltn((this.latestProcessed || 0) + 2)
+      ) {
+        this.setStatus(NetworkStatus.SYNCED)
+      } else {
+        this.setStatus(NetworkStatus.ON_SYNCING)
+      }
+    }
+  }
+
+  async fetchUnfetchedProposals() {
+    const MAX_FETCH_JOB = 10
+    const availableFetchJob = Math.max(
+      MAX_FETCH_JOB - Object.keys(this.fetching).length,
+      0,
+    )
+    if (availableFetchJob === 0) return
+    let candidates!: Proposal[]
+    await this.lock.acquire('db', async () => {
+      candidates = await this.db.prisma.proposal.findMany({
+        where: { fetched: null },
+        orderBy: {
+          proposalNum: 'asc',
+        },
+        take: availableFetchJob,
+      })
+    })
+
+    candidates.forEach(candidate => {
+      this.fetch(candidate.proposalTx)
+    })
+  }
+
+  async fetch(proposalTx: string) {
+    logger.info('fetched block proposal')
+    if (this.fetching[proposalTx]) return
+    const proposalData = await this.l1Contract.web3.eth.getTransaction(
+      proposalTx,
+    )
+    const block = Block.fromTx(proposalData)
+    const header = block.getHeaderSql()
+    await this.lock.acquire('db', async () => {
+      await this.db.prisma.proposal.update({
+        where: {
+          hash: header.hash,
+        },
+        data: {
+          block: {
+            create: {
+              header: {
+                create: header,
+              },
+            },
+          },
+          proposalData: JSON.stringify(proposalData),
+        },
+      })
+    })
+    delete this.fetching[proposalTx]
   }
 
   static async getOrInitChain(
@@ -110,7 +288,6 @@ export class ZkOPRUNode {
     accounts?: ZkAccount[],
   ): Promise<L2Chain> {
     logger.info('Get or init chain')
-    console.log('get or init chain called')
     const pubKeysToObserve = accounts
       ? accounts.map(account => account.pubKey)
       : []

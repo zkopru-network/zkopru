@@ -1,8 +1,8 @@
-export { ZkOPRUNode } from './zkopru-node'
+export { ZkOPRUNode, NetworkStatus } from './zkopru-node'
 export { FullNode } from './full-node'
 export { LightNode } from './light-node'
 export { Verifier, VerifyOption } from './verifier'
-export { NetworkStatus, Synchronizer } from './synchronizer'
+export { Synchronizer } from './synchronizer'
 export {
   BootstrapData,
   BootstrapHelper,

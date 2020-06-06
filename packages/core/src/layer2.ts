@@ -7,7 +7,7 @@ import {
 } from '@zkopru/prisma'
 import { Grove, GrovePatch } from '@zkopru/tree'
 import AsyncLock from 'async-lock'
-import { Bytes32 } from 'soltypes'
+import { Bytes32, Address, Uint256 } from 'soltypes'
 import { logger } from '@zkopru/utils'
 import { Block, Header, VerifyResult, MassDeposit } from './block'
 import { BootstrapData } from './bootstrap'
@@ -27,8 +27,6 @@ export class L2Chain {
   grove: Grove
 
   db: DB
-
-  latest?: string
 
   constructor(db: DB, grove: Grove, config: Config) {
     this.db = db
@@ -63,7 +61,7 @@ export class L2Chain {
     return proposal
   }
 
-  async getLatestVerifiedBlock(): Promise<Block | null> {
+  async getLatestVerified(): Promise<string | null> {
     const lastVerifiedProposal: Proposal | undefined = (
       await this.db.prisma.proposal.findMany({
         where: {
@@ -75,21 +73,17 @@ export class L2Chain {
           proposalNum: 'desc',
         },
         include: {
-          block: true,
+          block: {
+            include: {
+              header: true,
+            },
+          },
         },
         take: 1,
       })
     ).pop()
-    if (lastVerifiedProposal && lastVerifiedProposal.proposalData) {
-      const tx = JSON.parse(lastVerifiedProposal.proposalData)
-      return Block.fromTx(tx)
-    }
+    if (lastVerifiedProposal) return lastVerifiedProposal.hash
     return null
-  }
-
-  async getLatestBlockHash(): Promise<Bytes32 | null> {
-    const lastVerified = await this.getLatestVerifiedBlock()
-    return lastVerified ? lastVerified.hash : null
   }
 
   async getDeposits(massDeposit: MassDeposit): Promise<DepositSql[]> {
@@ -129,31 +123,39 @@ export class L2Chain {
     prevHeader?: Header
     block?: Block
   }> {
-    const lastVerified = await this.getLatestVerifiedBlock()
+    const lastVerified = await this.getLatestVerified()
     if (!lastVerified) return {}
 
-    const prevHeader = lastVerified?.header
     const unverifiedProposals = await this.db.prisma.proposal.findMany({
       where: {
-        block: {
-          header: {
-            parentBlock: lastVerified.hash.toString(),
-          },
-          verified: null,
-        },
+        block: { header: { parentBlock: lastVerified }, verified: null },
       },
-      orderBy: {
-        proposalNum: 'asc',
-      },
+      orderBy: { proposalNum: 'asc' },
       take: 1,
-      include: {
-        block: true,
-      },
+      include: { block: true },
     })
     const unverifiedProposal = unverifiedProposals.pop()
 
     if (!unverifiedProposal || !unverifiedProposal.proposalData) return {}
 
+    const lastVerifiedHeader = await this.db.prisma.header.findOne({
+      where: { hash: lastVerified },
+    })
+    if (!lastVerifiedHeader) throw Error('Header not exist error.')
+    const prevHeader = {
+      proposer: Address.from(lastVerifiedHeader.proposer),
+      parentBlock: Bytes32.from(lastVerifiedHeader.parentBlock),
+      metadata: Bytes32.from(lastVerifiedHeader.metadata),
+      fee: Uint256.from(lastVerifiedHeader.fee),
+      utxoRoot: Uint256.from(lastVerifiedHeader.utxoRoot),
+      utxoIndex: Uint256.from(lastVerifiedHeader.utxoIndex),
+      nullifierRoot: Bytes32.from(lastVerifiedHeader.nullifierRoot),
+      withdrawalRoot: Bytes32.from(lastVerifiedHeader.withdrawalRoot),
+      withdrawalIndex: Uint256.from(lastVerifiedHeader.withdrawalIndex),
+      txRoot: Bytes32.from(lastVerifiedHeader.txRoot),
+      depositRoot: Bytes32.from(lastVerifiedHeader.depositRoot),
+      migrationRoot: Bytes32.from(lastVerifiedHeader.migrationRoot),
+    }
     const tx = JSON.parse(unverifiedProposal.proposalData)
     const block = Block.fromTx(tx)
     return {
@@ -162,7 +164,7 @@ export class L2Chain {
     }
   }
 
-  async applyPatch(patch: Patch) {
+  async applyPatchAndMarkAsVerified(patch: Patch) {
     logger.info('layer2.ts: applyPatch()')
     const { result, block, treePatch, massDeposits } = patch
     // Apply tree patch
@@ -208,13 +210,6 @@ export class L2Chain {
           create: headerSql,
         },
       },
-    })
-  }
-
-  async finalize(hash: Bytes32) {
-    await this.db.prisma.proposal.update({
-      where: { hash: hash.toString() },
-      data: { finalized: true },
     })
   }
 

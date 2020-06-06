@@ -2,36 +2,24 @@
 import { logger } from '@zkopru/utils'
 import {
   DB,
-  Config,
   Header as HeaderSql,
   Deposit as DepositSql,
   MassDeposit as MassDepositSql,
+  Proposal,
 } from '@zkopru/prisma'
 import { EventEmitter } from 'events'
-import { scheduleJob, Job } from 'node-schedule'
 import { Bytes32, Address, Uint256 } from 'soltypes'
+import AsyncLock from 'async-lock'
 import { L1Contract } from './layer1'
-import { Block, headerHash } from './block'
+import { headerHash } from './block'
 import { genesis } from './genesis'
 
-export enum NetworkStatus {
-  STOPPED = 'stopped',
-  ON_SYNCING = 'on syncing',
-  ON_PROCESSING = 'processing',
-  SYNCED = 'synced',
-  ON_ERROR = 'on error',
-}
-
-export class Synchronizer extends EventEmitter {
-  config: Config
+export class Synchronizer {
+  lock: AsyncLock
 
   db: DB
 
   l1Contract!: L1Contract
-
-  fetching: {
-    [proposalTx: string]: boolean
-  }
 
   depositSubscriber?: EventEmitter
 
@@ -41,55 +29,27 @@ export class Synchronizer extends EventEmitter {
 
   finalizationSubscriber?: EventEmitter
 
-  private latestProposedHash?: string
+  isListening: boolean
 
-  private latestProposed?: number
-
-  private latestProcessed?: number
-
-  private cronJobs: Job[]
-
-  status: NetworkStatus
-
-  constructor(db: DB, config: Config, l1Contract: L1Contract) {
-    super()
+  constructor(db: DB, l1Contract: L1Contract) {
+    this.lock = new AsyncLock()
     this.db = db
-    this.config = config
     this.l1Contract = l1Contract
-    this.fetching = {}
-    this.status = NetworkStatus.STOPPED
-    this.cronJobs = []
-  }
-
-  setStatus(status: NetworkStatus) {
-    if (this.status !== status) {
-      this.status = status
-      this.emit('status', status, this.latestProposedHash)
-      logger.info(`sync status: ${status}`)
-    }
+    this.isListening = false
   }
 
   sync(
     proposalCB?: (hash: string) => void,
     finalizationCB?: (hash: string) => void,
   ) {
-    if (this.status === NetworkStatus.STOPPED) {
-      this.setStatus(NetworkStatus.ON_SYNCING)
+    if (!this.isListening) {
       this.listenGenesis()
       this.listenDeposits()
       this.listenMassDepositCommit()
       this.listenNewProposals(proposalCB)
       this.listenFinalization(finalizationCB)
+      this.isListening = true
     }
-    this.cronJobs = [
-      scheduleJob('*/5 * * * * *', () => {
-        this.updateStatus()
-        this.fetchUnfetchedProposals()
-      }),
-      scheduleJob('*/1 * * * * *', () => {
-        this.checkBlockUpdate()
-      }),
-    ]
   }
 
   stop() {
@@ -105,103 +65,15 @@ export class Synchronizer extends EventEmitter {
     if (this.finalizationSubscriber) {
       this.finalizationSubscriber.removeAllListeners()
     }
-    while (this.cronJobs.length > 0) {
-      ;(this.cronJobs.pop() as Job).cancel()
-    }
-    this.setStatus(NetworkStatus.STOPPED)
-  }
-
-  checkBlockUpdate() {
-    this.db.prisma.proposal
-      .findMany({
-        orderBy: {
-          proposalNum: 'desc',
-        },
-        take: 1,
-      })
-      .then(proposals => {
-        if (proposals[0]?.proposalNum) {
-          this.setLatestProposed(proposals[0]?.proposalNum)
-        }
-      })
-    this.db.prisma.proposal
-      .findMany({
-        where: {
-          block: {
-            verified: true,
-          },
-        },
-        orderBy: {
-          proposalNum: 'desc',
-        },
-        take: 1,
-      })
-      .then(proposals => {
-        if (proposals[0]?.proposalNum) {
-          this.setLatestProcessed(proposals[0]?.proposalNum)
-        }
-      })
-  }
-
-  private setLatestProposed(proposalNum: number) {
-    if (proposalNum && this.latestProposed !== proposalNum) {
-      this.latestProposed = proposalNum
-    }
-  }
-
-  private setLatestProcessed(proposalNum: number) {
-    if (proposalNum && this.latestProcessed !== proposalNum) {
-      this.latestProcessed = proposalNum
-    }
-  }
-
-  async updateStatus() {
-    const knownBlocks = this.latestProposed
-    const processedBlocks = this.latestProcessed
-    const unfetched = await this.db.prisma.proposal.count({
-      where: {
-        proposalData: {
-          not: null,
-        },
-      },
-    })
-    const haveFetchedAll = unfetched > 0
-    const haveProcessedAll = processedBlocks === knownBlocks
-    if (!haveFetchedAll) {
-      this.setStatus(NetworkStatus.ON_SYNCING)
-    } else if (!haveProcessedAll) {
-      this.setStatus(NetworkStatus.ON_PROCESSING)
-    } else {
-      this.setStatus(NetworkStatus.SYNCED)
-    }
-  }
-
-  async fetchUnfetchedProposals() {
-    const MAX_FETCH_JOB = 10
-    const availableFetchJob = Math.max(
-      MAX_FETCH_JOB - Object.keys(this.fetching).length,
-      0,
-    )
-    if (availableFetchJob === 0) return
-    const candidates = await this.db.prisma.proposal.findMany({
-      where: {
-        proposalData: {
-          not: null,
-        },
-      },
-      orderBy: {
-        proposalNum: 'asc',
-      },
-      take: availableFetchJob,
-    })
-    candidates.forEach(candidate => {
-      this.fetch(candidate.proposalTx)
-    })
+    this.isListening = false
   }
 
   async listenGenesis() {
-    const numOfGenesisBlock = await this.db.prisma.proposal.count({
-      where: { proposalNum: 0 },
+    let numOfGenesisBlock!: number
+    await this.lock.acquire('db', async () => {
+      numOfGenesisBlock = await this.db.prisma.proposal.count({
+        where: { proposalNum: 0 },
+      })
     })
     if (numOfGenesisBlock === 0) {
       logger.info('No genesis block. Trying to fetch')
@@ -239,40 +111,40 @@ export class Synchronizer extends EventEmitter {
             depositRoot: genesisHeader.depositRoot.toString(),
             migrationRoot: genesisHeader.migrationRoot.toString(),
           }
-          await this.db.prisma.proposal.create({
-            data: {
-              hash: blockHash,
-              block: {
-                create: {
-                  header: {
-                    create: header,
+
+          await this.lock.acquire('db', async () => {
+            await this.db.prisma.proposal.create({
+              data: {
+                hash: blockHash,
+                block: {
+                  create: {
+                    header: {
+                      create: header,
+                    },
+                    verified: true,
                   },
-                  verified: true,
                 },
+                proposalNum: 0,
+                proposedAt: blockNumber,
+                proposalTx: transactionHash,
+                finalized: true,
+                invalidated: false,
+                proposalData: '',
               },
-              proposalNum: 0,
-              proposedAt: blockNumber,
-              proposalTx: transactionHash,
-              finalized: true,
-              invalidated: false,
-              proposalData: '',
-            },
+            })
           })
           genesisListener.removeAllListeners()
-          if (!this.latestProposed) {
-            this.setLatestProposed(0)
-          }
-          if (!this.latestProcessed) {
-            this.setLatestProcessed(0)
-          }
         })
     }
   }
 
   async listenDeposits(cb?: (deposit: DepositSql) => void) {
-    const lastDeposits = await this.db.prisma.deposit.findMany({
-      orderBy: { blockNumber: 'desc' },
-      take: 1,
+    let lastDeposits!: DepositSql[]
+    await this.lock.acquire('db', async () => {
+      lastDeposits = await this.db.prisma.deposit.findMany({
+        orderBy: { blockNumber: 'desc' },
+        take: 1,
+      })
     })
     const fromBlock = lastDeposits[0]?.blockNumber || 0
     console.log('new deposit from block', fromBlock)
@@ -294,14 +166,15 @@ export class Synchronizer extends EventEmitter {
           blockNumber,
         }
         logger.info(`synchronizer.js: NewDeposit(${deposit.note})`)
-        console.log('deposit detail', deposit)
-        await this.db.prisma.deposit.upsert({
-          where: { note: deposit.note },
-          update: deposit,
-          create: deposit,
+        await this.lock.acquire('db', async done => {
+          await this.db.prisma.deposit.upsert({
+            where: { note: deposit.note },
+            update: deposit,
+            create: deposit,
+          })
+          done()
         })
         if (cb) cb(deposit)
-        console.log('deposit succeeded')
       })
       .on('changed', event => {
         // TODO
@@ -314,12 +187,15 @@ export class Synchronizer extends EventEmitter {
   }
 
   async listenMassDepositCommit(cb?: (commit: MassDepositSql) => void) {
-    const lastMassDeposit = await this.db.prisma.massDeposit.findMany({
-      orderBy: { blockNumber: 'desc' },
-      take: 1,
+    let lastMassDeposit!: MassDepositSql[]
+    await this.lock.acquire('db', async () => {
+      lastMassDeposit = await this.db.prisma.massDeposit.findMany({
+        orderBy: { blockNumber: 'desc' },
+        take: 1,
+      })
     })
     const fromBlock = lastMassDeposit[0]?.blockNumber || 0
-    console.log('mass deposit from block', fromBlock)
+    logger.info('sync mass deposits from block', fromBlock)
     this.massDepositCommitSubscriber = this.l1Contract.coordinator.events
       .MassDepositCommit({ fromBlock })
       .on('connected', subId => {
@@ -342,12 +218,14 @@ export class Synchronizer extends EventEmitter {
           includedIn: null,
         }
         console.log('massdeposit commit is', massDeposit)
-        await this.db.prisma.massDeposit.upsert({
-          where: {
-            index: massDeposit.index,
-          },
-          create: massDeposit,
-          update: {},
+        await this.lock.acquire('db', async () => {
+          await this.db.prisma.massDeposit.upsert({
+            where: {
+              index: massDeposit.index,
+            },
+            create: massDeposit,
+            update: {},
+          })
         })
         if (cb) cb(massDeposit)
         console.log('massdeposit commit succeeded')
@@ -363,9 +241,12 @@ export class Synchronizer extends EventEmitter {
   }
 
   async listenNewProposals(cb?: (hash: string) => void) {
-    const lastProposal = await this.db.prisma.proposal.findMany({
-      orderBy: { proposedAt: 'desc' },
-      take: 1,
+    let lastProposal!: Proposal[]
+    await this.lock.acquire('db', async () => {
+      lastProposal = await this.db.prisma.proposal.findMany({
+        orderBy: { proposedAt: 'desc' },
+        take: 1,
+      })
     })
     const fromBlock = lastProposal[0]?.proposedAt || 0
     console.log('listenNewProposal fromBlock: ', fromBlock)
@@ -390,16 +271,16 @@ export class Synchronizer extends EventEmitter {
           proposalTx: transactionHash,
         }
         console.log('newProposal', newProposal)
-        await this.db.prisma.proposal.upsert({
-          where: {
-            hash: newProposal.hash,
-          },
-          create: newProposal,
-          update: newProposal,
+        await this.lock.acquire('db', async () => {
+          await this.db.prisma.proposal.upsert({
+            where: {
+              hash: newProposal.hash,
+            },
+            create: newProposal,
+            update: newProposal,
+          })
         })
         if (cb) cb(blockHash)
-        // FETCH DETAILS
-        this.fetch(transactionHash)
       })
       .on('changed', event => {
         // TODO
@@ -412,12 +293,13 @@ export class Synchronizer extends EventEmitter {
   }
 
   async listenFinalization(cb?: (hash: string) => void) {
-    if (this.status !== NetworkStatus.STOPPED) return
-
-    const lastFinalized = await this.db.prisma.proposal.findMany({
-      where: { finalized: true },
-      orderBy: { proposedAt: 'desc' },
-      take: 1,
+    let lastFinalized!: Proposal[]
+    await this.lock.acquire('db', async () => {
+      lastFinalized = await this.db.prisma.proposal.findMany({
+        where: { finalized: true },
+        orderBy: { proposedAt: 'desc' },
+        take: 1,
+      })
     })
     const fromBlock = lastFinalized[0]?.proposedAt || 0
     this.finalizationSubscriber = this.l1Contract.coordinator.events
@@ -429,7 +311,10 @@ export class Synchronizer extends EventEmitter {
       })
       .on('data', async event => {
         const { returnValues } = event
-        this.emit('finalization', returnValues)
+        await this.db.prisma.proposal.update({
+          where: { hash: Bytes32.from(returnValues).toString() },
+          data: { finalized: true },
+        })
         if (cb) cb(returnValues)
       })
       .on('changed', event => {
@@ -440,32 +325,5 @@ export class Synchronizer extends EventEmitter {
         // TODO removed
         logger.info(`synchronizer.js: Finalization Event error occured`, err)
       })
-  }
-
-  async fetch(proposalTx: string) {
-    logger.info('fetched block proposal')
-    if (this.fetching[proposalTx]) return
-    const proposalData = await this.l1Contract.web3.eth.getTransaction(
-      proposalTx,
-    )
-    const block = Block.fromTx(proposalData)
-    const header = block.getHeaderSql()
-    await this.db.prisma.proposal.update({
-      where: {
-        hash: header.hash,
-      },
-      data: {
-        block: {
-          create: {
-            header: {
-              create: header,
-            },
-          },
-        },
-        proposalData: JSON.stringify(proposalData),
-      },
-    })
-    delete this.fetching[proposalTx]
-    this.emit('newBlock', block)
   }
 }

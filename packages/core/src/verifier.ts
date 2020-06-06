@@ -53,17 +53,12 @@ export class Verifier {
     // deposit verification
     for (const massDeposit of block.body.massDeposits) {
       const deposits: DepositSql[] = await layer2.getDeposits(massDeposit)
-      console.log('massdeposit...', massDeposit)
-      console.log('deposits...', deposits)
       let merged
       let fee = new BN(0)
       for (const deposit of deposits) {
         merged = soliditySha3(merged || 0, deposit.note) || ''
         fee = fee.add(Uint256.from(deposit.fee).toBN())
       }
-      console.log('computed merged', merged)
-      console.log('committed merged', massDeposit.merged)
-      console.log('deposits', deposits)
       if (
         !Bytes32.from(merged).eq(massDeposit.merged) ||
         !massDeposit.fee.toBN().eq(fee)

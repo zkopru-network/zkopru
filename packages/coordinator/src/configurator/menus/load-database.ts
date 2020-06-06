@@ -4,6 +4,7 @@ import fs from 'fs'
 import Web3 from 'web3'
 import { L1Contract } from '@zkopru/core'
 import { DB } from '@zkopru/prisma'
+import path from 'path'
 import Configurator, { Context, Menu } from '../configurator'
 
 const { print, goTo } = Configurator
@@ -135,8 +136,24 @@ export default class LoadDatabase extends Configurator {
           message: 'Provide sqlite db here',
           initial: 'zkopru.db',
         })
-        const { db } = await DB.mockup(dbName)
-        database = db
+        if (!fs.existsSync(dbName)) {
+          const { db } = await DB.mockup(dbName)
+          database = db
+        } else {
+          const { overwrite } = await this.ask({
+            type: 'confirm',
+            name: 'overwrite',
+            message: 'DB already exists. Do you want to overwrite?',
+            initial: true,
+          })
+          if (overwrite) {
+            const { db } = await DB.mockup(dbName)
+            database = db
+          } else {
+            const dbPath = path.join(path.resolve('.'), dbName)
+            database = new DB({ datasources: { sqlite: `file://${dbPath}` } })
+          }
+        }
       }
     }
     await initDB({

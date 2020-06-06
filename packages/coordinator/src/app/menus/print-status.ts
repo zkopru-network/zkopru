@@ -8,7 +8,6 @@ export default class PrintStatus extends App {
 
   async run(context: Context): Promise<Context> {
     const { l1Contract } = this.coordinator.node
-    const { l2Chain } = this.coordinator.node
     const { txPool } = this.coordinator
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let result: any = {}
@@ -32,7 +31,9 @@ export default class PrintStatus extends App {
     print(chalk.blue)(`  Deposits: ${result.merged} / Fee: ${result.fee} wei`)
     print(chalk.blue)(``)
     print(chalk.blueBright)('Layer2 status')
-    print(chalk.blue)(`  Latest block: ${await l2Chain.getLatestBlockHash()}`)
+    print(chalk.blue)(
+      `  Latest block: ${await this.coordinator.node.latestBlock()}`,
+    )
     print(chalk.blue)(`  Pending txs: ${txPool.pendingNum()}`)
     print(chalk.blue)(``)
     return {
