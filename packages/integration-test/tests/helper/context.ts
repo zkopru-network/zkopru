@@ -5,7 +5,7 @@ import { MockupDB, DB } from '~prisma'
 import { ZkAccount, HDWallet } from '~account'
 import { sleep, readFromContainer } from '~utils'
 import { L1Contract } from '~core'
-import ZkOPRUContract from '~contracts'
+import { Layer1 } from '~contracts'
 import { IERC20 } from '~contracts/contracts/IERC20'
 import { IERC721 } from '~contracts/contracts/IERC721'
 
@@ -102,10 +102,8 @@ export async function initContext() {
   console.log('Websocket connection with ', `${containerIP}:5000`)
   const web3 = new Web3(provider)
   const contract = new L1Contract(web3, zkopruAddress)
-  const getERC20 = ZkOPRUContract.asIERC20
-  const getERC721 = ZkOPRUContract.asIERC721
-  const erc20 = getERC20(web3, erc20Address)
-  const erc721 = getERC721(web3, erc721Address)
+  const erc20 = Layer1.getERC20(web3, erc20Address)
+  const erc721 = Layer1.getERC721(web3, erc721Address)
   const mockup = await DB.mockup()
   const hdWallet = new HDWallet(web3, mockup.db)
   const mnemonic =

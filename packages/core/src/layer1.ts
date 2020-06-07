@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import ZkOPRUContract from '@zkopru/contracts'
+import { ZkOPRUContract } from '@zkopru/contracts'
 import { Config } from '@zkopru/prisma'
 import { verifyingKeyIdentifier, logger, hexify } from '@zkopru/utils'
 import Web3 from 'web3'

@@ -1,7 +1,8 @@
 import { Utxo, Note, UtxoStatus, Sum } from '@zkopru/transaction'
 import { Field, F, Point } from '@zkopru/babyjubjub'
+import { Layer1 } from '@zkopru/contracts'
 import { HDWallet, ZkAccount } from '@zkopru/account'
-import { ZkOPRUNode, L1Contract } from '@zkopru/core'
+import { ZkOPRUNode } from '@zkopru/core'
 import { logger } from '@zkopru/utils'
 import fetch from 'node-fetch'
 import { DB, NoteType } from '@zkopru/prisma'
@@ -149,7 +150,7 @@ export class ZkWallet {
     if (erc20Addrs) {
       promises.push(
         ...erc20Addrs.map(addr => async () => {
-          balance.erc20[addr] = await L1Contract.asIERC20(web3, addr)
+          balance.erc20[addr] = await Layer1.getERC20(web3, addr)
             .methods.balanceOf(account.address)
             .call()
         }),
@@ -158,7 +159,7 @@ export class ZkWallet {
     if (erc721Addrs) {
       promises.push(
         ...erc721Addrs.map(addr => async () => {
-          balance.erc721[addr] = await L1Contract.asIERC721(web3, addr)
+          balance.erc721[addr] = await Layer1.getIERC721Enumerable(web3, addr)
             .methods.balanceOf(account.address)
             .call()
         }),
@@ -178,7 +179,10 @@ export class ZkWallet {
     const nfts: string[] = []
     const { web3 } = this.node.l1Contract
     // 0x4f6ccce7 = tokenOfOwnerByIndex func sig
-    const supportEnumeration = await L1Contract.asIERC721(web3, erc721Addr)
+    const supportEnumeration = await Layer1.getIERC721Enumerable(
+      web3,
+      erc721Addr,
+    )
       .methods.supportsInterface('0x4f6ccce7')
       .call()
     if (supportEnumeration) {
@@ -186,7 +190,7 @@ export class ZkWallet {
         ...Array(balance)
           .fill(0)
           .map((_, i) => async () => {
-            nfts[i] = await L1Contract.asIERC721Enumerable(web3, erc721Addr)
+            nfts[i] = await Layer1.getIERC721Enumerable(web3, erc721Addr)
               .methods.tokenOfOwnerByIndex(account.address, i)
               .call()
           }),

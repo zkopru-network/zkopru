@@ -4,7 +4,22 @@ const fs = require('fs')
 // eslint-disable-next-line import/no-extraneous-dependencies
 const prettier = require('prettier')
 
-const importExportList = [
+const ts = fs
+  .readdirSync('./src/contracts')
+  .map(filename => filename.split('.d.ts')[0])
+const abis = fs
+  .readdirSync('./src/abis')
+  .map(filename => filename.split('.ts')[0])
+
+const importContracts = list =>
+  `${ts.reduce((prev, name) => {
+    if (!list.includes(name)) return prev
+    return `${prev}import { ${name} } from './contracts/${name}'\n`
+  }, '')}`
+
+const zkopruTS = `import Web3 from 'web3'
+import { ContractOptions } from 'web3-eth-contract'
+${importContracts([
   'ICoordinatable',
   'IDepositChallenge',
   'IHeaderChallenge',
@@ -15,57 +30,11 @@ const importExportList = [
   'ISetupWizard',
   'ITxChallenge',
   'IUserInteractable',
-  'IERC20',
-  'IERC721',
-  'IERC721Enumerable',
   'ZkOptimisticRollUp',
-]
+])}
+import { Layer1 } from './layer1'
 
-const ts = fs
-  .readdirSync('./src/contracts')
-  .map(filename => filename.split('.d.ts')[0])
-const abis = fs
-  .readdirSync('./src/abis')
-  .map(filename => filename.split('.ts')[0])
-
-const importContracts = `${ts.reduce((prev, name) => {
-  if (!importExportList.includes(name)) return prev
-  return `${prev}import { ${name} } from './contracts/${name}'\n`
-}, '')}`
-
-const importABIs = `${abis.reduce((prev, name) => {
-  if (!importExportList.includes(name)) return prev
-  return `${prev}import { ${name}ABI } from './abis/${name}'\n`
-}, '')}`
-
-/**
-const exportContracts = `${ts.reduce((prev, name) => {
-  if (!importExportList.includes(name)) return prev
-  return `${prev}export { ${name} } from './contracts/${name}'\n`
-}, '')}`
- */
-
-const staticClasses = `${importExportList.reduce((prev, name) => {
-  if (name === 'types') return prev
-  return `${prev}
-  static as${name}(
-    web3: Web3,
-    address: string,
-    option?: ContractOptions,
-  ): ${name} {
-    const abi: any[] = [...${name}ABI]
-    return new web3.eth.Contract(abi, address, option) as ${name}
-  }
-`
-}, '')}`
-
-const exportInterfaces = `export {
-${ts.reduce((prev, name) => {
-  if (!importExportList.includes(name)) return prev
-  return `${prev}  ${name},\n`
-}, '')}}\n`
-
-const ZkOPRUContract = `export default class ZkOPRUContract {
+export class ZkOPRUContract {
   upstream: ZkOptimisticRollUp
 
   coordinator: ICoordinatable
@@ -86,44 +55,94 @@ const ZkOPRUContract = `export default class ZkOPRUContract {
   setup: ISetupWizard
 
   constructor(web3: Web3, address: string, option?: ContractOptions) {
-    this.upstream = ZkOPRUContract.asZkOptimisticRollUp(web3, address, option)
-    this.coordinator = ZkOPRUContract.asICoordinatable(web3, address, option)
-    this.user = ZkOPRUContract.asIUserInteractable(web3, address, option)
-    this.migrator = ZkOPRUContract.asIMigratable(web3, address, option)
+    this.upstream = Layer1.getZkOptimisticRollUp(web3, address, option)
+    this.coordinator = Layer1.getICoordinatable(web3, address, option)
+    this.user = Layer1.getIUserInteractable(web3, address, option)
+    this.migrator = Layer1.getIMigratable(web3, address, option)
     this.challenger = {
-      deposit: ZkOPRUContract.asIDepositChallenge(web3, address, option),
-      migration: ZkOPRUContract.asIMigrationChallenge(web3, address, option),
-      header: ZkOPRUContract.asIHeaderChallenge(web3, address, option),
-      tx: ZkOPRUContract.asITxChallenge(web3, address, option),
-      rollUp: ZkOPRUContract.asIRollUpChallenge(web3, address, option),
-      rollUpProof: ZkOPRUContract.asIRollUpable(web3, address, option),
+      deposit: Layer1.getIDepositChallenge(web3, address, option),
+      migration: Layer1.getIMigrationChallenge(web3, address, option),
+      header: Layer1.getIHeaderChallenge(web3, address, option),
+      tx: Layer1.getITxChallenge(web3, address, option),
+      rollUp: Layer1.getIRollUpChallenge(web3, address, option),
+      rollUpProof: Layer1.getIRollUpable(web3, address, option),
     }
-    this.setup = ZkOPRUContract.asISetupWizard(web3, address, option)
+    this.setup = Layer1.getISetupWizard(web3, address, option)
   }
-${staticClasses}}`
+}`
 
-const base = `/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable max-classes-per-file */
+const list = [
+  'ICoordinatable',
+  'IDepositChallenge',
+  'IHeaderChallenge',
+  'IMigratable',
+  'IMigrationChallenge',
+  'IRollUpChallenge',
+  'IRollUpable',
+  'ISetupWizard',
+  'ITxChallenge',
+  'IUserInteractable',
+  'ERC20',
+  'ERC721',
+  'IERC721Enumerable',
+  'ZkOptimisticRollUp',
+]
+const importABIs = list =>
+  `${abis.reduce((prev, name) => {
+    if (!list.includes(name)) return prev
+    return `${prev}import { ${name}ABI } from './abis/${name}'\n`
+  }, '')}`
 
+const staticClasses = list =>
+  `${list.reduce((prev, name) => {
+    if (name === 'types') return prev
+    return `${prev}
+  static get${name}(
+    web3: Web3,
+    address: string,
+    option?: ContractOptions,
+  ): ${name} {
+    const abi: any[] = [...${name}ABI]
+    return new web3.eth.Contract(abi, address, option) as ${name}
+  }
+`
+  }, '')}`
+
+const layer1TS = `/* eslint-disable @typescript-eslint/no-explicit-any */
 import Web3 from 'web3'
 import { ContractOptions } from 'web3-eth-contract'
+${importContracts(list)}
+${importABIs(list)}
+
+export class Layer1 {
+${staticClasses(list)}
+}
 `
+
 fs.mkdirSync('./src', { recursive: true })
 
-const src = `${base}
-${importContracts}
-${importABIs}
-${ZkOPRUContract}
-`
-// const src = `${importContracts}\n${importABIs}\n${exportContracts}\n\n${exportABIs}\n`
-const formatted = prettier.format(src, {
-  semi: false,
-  parser: 'typescript',
-  singleQuote: true,
-  useTabs: false,
-  tabWidth: 2,
-  trailingComma: 'none',
-  endOfLine: 'lf',
-})
-fs.writeFileSync('./src/index.ts', src)
+fs.writeFileSync(
+  './src/layer1.ts',
+  prettier.format(layer1TS, {
+    semi: false,
+    parser: 'typescript',
+    singleQuote: true,
+    useTabs: false,
+    tabWidth: 2,
+    trailingComma: 'all',
+    endOfLine: 'lf',
+  }),
+)
+
+fs.writeFileSync(
+  './src/zkopru.ts',
+  prettier.format(zkopruTS, {
+    semi: false,
+    parser: 'typescript',
+    singleQuote: true,
+    useTabs: false,
+    tabWidth: 2,
+    trailingComma: 'all',
+    endOfLine: 'lf',
+  }),
+)
