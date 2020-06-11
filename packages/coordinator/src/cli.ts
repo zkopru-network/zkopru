@@ -6,7 +6,7 @@ import fs from 'fs-extra'
 import { logger } from '@zkopru/utils'
 import { Config } from './configurator/configurator'
 import { getCoordinator } from './configurator'
-import { runCliApp } from './app'
+import { CooridnatorDashboard } from './app'
 
 const { argv } = yargs
   .scriptName('zkopru-coordinator')
@@ -77,7 +77,9 @@ const main = async () => {
     })
   }
   logger.info('Run interactive mode')
-  await runCliApp(coordinator)
+  const dashboard = new CooridnatorDashboard(coordinator, () => process.exit())
+  dashboard.render()
+  await dashboard.run()
 }
 ;(async () => {
   await main()

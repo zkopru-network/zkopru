@@ -3,6 +3,7 @@
 /* eslint-disable no-case-declarations */
 import { NetworkStatus } from '@zkopru/core'
 import assert from 'assert'
+import { PromptApp } from '../prompt'
 import { Menu, Context, Config } from './configurator'
 import Splash from './menus/splash'
 import ConnectWeb3 from './menus/connect-web3'
@@ -27,19 +28,26 @@ export async function getZkWallet(
     menu: Menu.SPLASH,
     networkStatus: NetworkStatus.STOPPED,
   }
-  const menus = {}
-  menus[Menu.SPLASH] = new Splash(config, onCancel)
-  menus[Menu.CONNECT_WEB3] = new ConnectWeb3(config, onCancel)
-  menus[Menu.DOWNLOAD_KEYS] = new DownloadKeys(config, onCancel)
-  menus[Menu.LOAD_DATABASE] = new LoadDatabase(config, onCancel)
-  menus[Menu.LOAD_HDWALLET] = new LoadHDWallet(config, onCancel)
-  menus[Menu.CONFIG_TRACKING_ACCOUNT] = new TrackingAccount(config, onCancel)
-  menus[Menu.LOAD_NODE] = new LoadNode(config, onCancel)
-  menus[Menu.SAVE_CONFIG] = new SaveConfig(config, onCancel)
-  while (context.menu !== Menu.COMPLETE) {
-    const menu = menus[context.menu]
-    if (menu) {
-      context = await menu.run(context)
+  const apps: { [key: number]: PromptApp<Context, Config> } = {}
+  const option = {
+    base: config,
+    onCancel,
+  }
+  apps[Menu.SPLASH] = new Splash(option)
+  apps[Menu.CONNECT_WEB3] = new ConnectWeb3(option)
+  apps[Menu.DOWNLOAD_KEYS] = new DownloadKeys(option)
+  apps[Menu.LOAD_DATABASE] = new LoadDatabase(option)
+  apps[Menu.LOAD_HDWALLET] = new LoadHDWallet(option)
+  apps[Menu.CONFIG_TRACKING_ACCOUNT] = new TrackingAccount(option)
+  apps[Menu.LOAD_NODE] = new LoadNode(option)
+  apps[Menu.SAVE_CONFIG] = new SaveConfig(option)
+  let next = Menu.SPLASH
+  while (next !== Menu.COMPLETE) {
+    const app = apps[next]
+    if (app) {
+      const result = await app.run(context)
+      next = result.next
+      context = result.context
     } else {
       break
     }

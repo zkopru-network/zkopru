@@ -3,9 +3,10 @@
 /* eslint-disable no-case-declarations */
 import yargs from 'yargs'
 import fs from 'fs'
+import { logStream } from '@zkopru/utils'
 import { Config } from './configurator/configurator'
 import { getZkWallet } from './configurator'
-import { runCliApp } from './app'
+import { WalletDashboard } from './app'
 
 const { argv }: { argv: Config } = yargs
   .scriptName('zk-wizard')
@@ -71,6 +72,9 @@ const { argv }: { argv: Config } = yargs
   .help()
 
 const main = async () => {
+  const writeStream = fs.createWriteStream('./LOG')
+  logStream.addStream(writeStream)
+  // blessed.screen.render()
   let config: Config = argv
   if (argv.config) {
     config = {
@@ -81,10 +85,14 @@ const main = async () => {
       throw Error('You should setup the keystore in the config file')
   }
   const zkWallet = await getZkWallet(config)
-  if (zkWallet) await runCliApp(zkWallet)
+  if (!zkWallet) return
+  const dashboard = new WalletDashboard(zkWallet, () => process.exit())
+  dashboard.render()
+  await dashboard.run()
 }
 ;(async () => {
   await main()
+  process.exit()
 })().catch(e => {
   console.error(e)
   process.exit()

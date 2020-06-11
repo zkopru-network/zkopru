@@ -1,14 +1,12 @@
 import { ZkAccount } from '@zkopru/account'
 import App, { AppMenu, Context } from '../app'
 
-const { goTo } = App
-
 export default class TopMenu extends App {
   static code = AppMenu.TOP_MENU
 
   // eslint-disable-next-line class-methods-use-this
-  async run(context: Context): Promise<Context> {
-    const accounts: ZkAccount[] = await this.zkWallet.wallet.retrieveAccounts()
+  async run(context: Context): Promise<{ context: Context; next: number }> {
+    const accounts: ZkAccount[] = await this.base.wallet.retrieveAccounts()
     const { idx } = await this.ask({
       type: 'select',
       name: 'idx',
@@ -28,19 +26,19 @@ export default class TopMenu extends App {
         },
       ],
     })
-    let reRun: Context
+    let reRun: { context: Context; next: number }
     switch (idx) {
       case -1:
-        await this.zkWallet.wallet.createAccount(accounts.length)
+        await this.base.wallet.createAccount(accounts.length)
         reRun = await this.run(context)
         return reRun
       case -2:
-        return { ...goTo(context, AppMenu.EXIT) }
+        return { context, next: AppMenu.EXIT }
       default:
-        this.zkWallet.setAccount(idx)
+        this.base.setAccount(accounts[idx])
         return {
-          ...goTo(context, AppMenu.ACCOUNT_DETAIL),
-          account: accounts[idx],
+          context: { ...context, account: accounts[idx] },
+          next: AppMenu.ACCOUNT_DETAIL,
         }
     }
   }

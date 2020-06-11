@@ -1,10 +1,10 @@
-import { PromptApp } from '@zkopru/utils'
 import { ZkAccount } from '@zkopru/account'
 import { Sum } from '@zkopru/transaction'
 import { ZkWallet, Balance } from '../zk-wallet'
+import { Dashboard } from '../dashboard'
+import { PromptApp } from '../prompt'
 
 export enum AppMenu {
-  TOP_MENU,
   ON_SYNCING,
   ACCOUNT_DETAIL,
   DEPOSIT,
@@ -13,11 +13,11 @@ export enum AppMenu {
   DEPOSIT_ERC721,
   TRANSFER,
   WITHDRAW,
-  EXIT,
+  TOP_MENU = Dashboard.START_CODE,
+  EXIT = Dashboard.EXIT_CODE,
 }
 
 export interface Context {
-  menu: AppMenu
   account?: ZkAccount
   address?: string
   isReady: boolean
@@ -25,11 +25,4 @@ export interface Context {
   spendables?: Sum
 }
 
-export default abstract class App extends PromptApp<Context, ZkWallet> {
-  zkWallet: ZkWallet
-
-  constructor(zkWallet: ZkWallet, onCancel: () => Promise<void>) {
-    super(zkWallet, onCancel)
-    this.zkWallet = zkWallet
-  }
-}
+export default abstract class App extends PromptApp<Context, ZkWallet> {}

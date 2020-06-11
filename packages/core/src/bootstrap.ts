@@ -3,6 +3,7 @@ import { MerkleProof } from '@zkopru/tree'
 import { Field } from '@zkopru/babyjubjub'
 import BN from 'bn.js'
 import { Proposal } from '@zkopru/prisma'
+import { logger } from '@zkopru/utils'
 
 export interface BootstrapData {
   proposal: Proposal
@@ -28,8 +29,8 @@ export class HttpBootstrapHelper implements BootstrapHelper {
     const response = await fetch(`${this.endpoint}/bootstrap?hash=${latest}`)
     if (response.ok) {
       const body: any = await response.json()
-      console.log('json', response.json())
-      console.log('body', response.body)
+      logger.debug(`json ${response.json()}`)
+      logger.debut(`body ${response.body}`)
       return {
         proposal: body.proposal,
         blockHash: body.blockHash,

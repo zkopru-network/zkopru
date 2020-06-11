@@ -2,29 +2,31 @@ import chalk from 'chalk'
 import { ZkAccount } from '@zkopru/account'
 import Configurator, { Context, Menu } from '../configurator'
 
-const { print, goTo } = Configurator
-
 export default class TrackingAccount extends Configurator {
   static code = Menu.CONFIG_TRACKING_ACCOUNT
 
-  async run(context: Context): Promise<Context> {
+  async run(context: Context): Promise<{ context: Context; next: number }> {
     if (!context.wallet) {
       throw Error(chalk.red('Wallet is not loaded'))
     }
-    print(chalk.blue)('Configure accounts to keep tracking')
-    print(chalk.blue)('My account list')
-    if (this.config.accountNumber) {
+    if (this.base.accountNumber) {
       await Promise.all(
-        Array(this.config.accountNumber).map((_, index) =>
+        Array(this.base.accountNumber).map((_, index) =>
           context.wallet?.createAccount(index),
         ),
       )
-      return { ...goTo(context, Menu.LOAD_NODE) }
+      return { context, next: Menu.LOAD_NODE }
     }
+    let message = ``
+    message = `${message}${this.print(chalk.blue('List of tracking accounts'))}`
     const accounts: ZkAccount[] = await context.wallet.retrieveAccounts()
-    accounts.forEach((account, i) => print()(`${i}: ${account.address}`))
+    message = accounts.reduce(
+      (val, account, idx) => `${val}\n${idx}: ${account.address}`,
+      message,
+    )
+    this.print(message)
     if (!context.isInitialSetup) {
-      return { ...goTo(context, Menu.LOAD_NODE), accounts }
+      return { context: { ...context, accounts }, next: Menu.LOAD_NODE }
     }
     const { idx } = await this.ask({
       type: 'select',
@@ -41,16 +43,16 @@ export default class TrackingAccount extends Configurator {
         },
       ],
     })
-    let reRun: Context
+    let reRun: { context: Context; next: number }
     switch (idx) {
       case 0:
         await context.wallet.createAccount(accounts.length)
         reRun = await this.run(context)
         return reRun
       case 1:
-        return { ...goTo(context, Menu.LOAD_NODE), accounts }
+        return { context: { ...context, accounts }, next: Menu.LOAD_NODE }
       default:
-        return { ...goTo(context, Menu.EXIT), accounts }
+        return { context: { ...context, accounts }, next: Menu.EXIT }
     }
   }
 }

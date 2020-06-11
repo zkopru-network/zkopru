@@ -7,13 +7,11 @@ import {
 } from '@zkopru/core'
 import Configurator, { Context, Menu } from '../configurator'
 
-const { print, goTo } = Configurator
-
 export default class LoadNode extends Configurator {
   static code = Menu.LOAD_NODE
 
   // eslint-disable-next-line class-methods-use-this
-  async run(context: Context): Promise<Context> {
+  async run(context: Context): Promise<{ context: Context; next: number }> {
     if (!context.provider) throw Error('Websocket provider does not exist')
     if (!context.db) throw Error('Database does not exist')
     if (!context.accounts) throw Error('Wallet is not set')
@@ -21,8 +19,8 @@ export default class LoadNode extends Configurator {
       throw Error('Websocket provider is not connected')
     let node: ZkOPRUNode
     const { provider, db, accounts } = context
-    const { address, coordinator: bootstrap } = this.config
-    if (this.config.fullnode) {
+    const { address, coordinator: bootstrap } = this.base
+    if (this.base.fullnode) {
       node = await FullNode.new({
         provider,
         address,
@@ -46,9 +44,12 @@ export default class LoadNode extends Configurator {
           snark: false,
         },
       })
-      print(chalk.blue)(`Bootstrap light node from ${bootstrap}`)
+      this.print(chalk.blue(`Bootstrap light node from ${bootstrap}`))
       await (node as LightNode).bootstrap()
     }
-    return { ...goTo(context, Menu.SAVE_CONFIG), node }
+    return {
+      context: { ...context, node },
+      next: Menu.SAVE_CONFIG,
+    }
   }
 }

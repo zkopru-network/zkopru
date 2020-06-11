@@ -2,8 +2,8 @@ import Web3 from 'web3'
 import { ZkOPRUNode, NetworkStatus } from '@zkopru/core'
 import { ZkAccount, HDWallet } from '@zkopru/account'
 import { WebsocketProvider } from 'web3-core'
-import { PromptApp } from '@zkopru/utils'
 import { DB, EncryptedWallet } from '@zkopru/prisma'
+import { PromptApp } from '../prompt'
 
 export interface Config {
   fullnode: boolean

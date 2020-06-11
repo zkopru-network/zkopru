@@ -1974,6 +1974,13 @@
   dependencies:
     "@babel/types" "^7.3.0"
 
+"@types/blessed@^0.1.17":
+  version "0.1.17"
+  resolved "https://registry.yarnpkg.com/@types/blessed/-/blessed-0.1.17.tgz#15b3280a6b8729f3c270a762ccafc8514ac5120d"
+  integrity sha512-BKvUtnrXksNdK0fOYV/9HJGkjCcAvOGMSCJsiHaBFyBeyqHwy2OHK32r5XNI+q0eXuAuGqtPOnDetHnbZoYqag==
+  dependencies:
+    "@types/node" "*"
+
 "@types/bn.js@^4.11.3", "@types/bn.js@^4.11.4":
   version "4.11.6"
   resolved "https://registry.yarnpkg.com/@types/bn.js/-/bn.js-4.11.6.tgz#c306c70d9358aaea33cd4eda092a742b9505967c"
@@ -2208,6 +2215,13 @@
   resolved "https://registry.yarnpkg.com/@types/normalize-package-data/-/normalize-package-data-2.4.0.tgz#e486d0d97396d79beedd0a6e33f4534ff6b4973e"
   integrity sha512-f5j5b/Gf71L+dbqxIpQ4Z2WlmI/mPJ0fOkGGmFgtb6sAu97EPczzbS3/tJKxmcYDj55OX6ssqwDAWOHIYDRDGA==
 
+"@types/pino-multi-stream@^5.0.0":
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/@types/pino-multi-stream/-/pino-multi-stream-5.0.0.tgz#3b221f98bc885397d0e80d60a137fd2493fcb601"
+  integrity sha512-34EF4OzU8UP5ca+lezcRW0aJw0s39t1THWCM8FgYsflAYL92TpRXw6CJ0nousUO9Tv3yqIWX7KeCXDEM1sm+Rg==
+  dependencies:
+    "@types/pino" "*"
+
 "@types/pino-std-serializers@*":
   version "2.4.1"
   resolved "https://registry.yarnpkg.com/@types/pino-std-serializers/-/pino-std-serializers-2.4.1.tgz#f8bd52a209c8b3c97d1533b1ba27f57c816382bf"
@@ -2215,7 +2229,7 @@
   dependencies:
     "@types/node" "*"
 
-"@types/pino@^6.0.0":
+"@types/pino@*", "@types/pino@^6.0.0":
   version "6.0.1"
   resolved "https://registry.yarnpkg.com/@types/pino/-/pino-6.0.1.tgz#7a841dd7bb6b70190e99f10c603e80191ad4d6fc"
   integrity sha512-GkOWuzB1vs6yhx8j9LxwE4LG6NANwpIjxg2q/Iev0cegOtoX8NGNI7PaJ3nTE75/vW5LANFXmuBOEWXbTGdxgQ==
@@ -2434,9 +2448,9 @@
 "@zkopru/account@file:packages/account":
   version "0.0.4"
   dependencies:
-    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-account-0.0.4-62e9f6cc-8795-424a-9f02-d5395dea49e6-1591523390651/node_modules/@zkopru/babyjubjub"
-    "@zkopru/prisma" "file:../../../.cache/yarn/v6/npm-@zkopru-account-0.0.4-62e9f6cc-8795-424a-9f02-d5395dea49e6-1591523390651/node_modules/@zkopru/prisma"
-    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-account-0.0.4-62e9f6cc-8795-424a-9f02-d5395dea49e6-1591523390651/node_modules/@zkopru/utils"
+    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-account-0.0.4-a2071cdc-c6ec-4a7f-bd8a-52408ca59077-1591894191246/node_modules/@zkopru/babyjubjub"
+    "@zkopru/prisma" "file:../../../.cache/yarn/v6/npm-@zkopru-account-0.0.4-a2071cdc-c6ec-4a7f-bd8a-52408ca59077-1591894191246/node_modules/@zkopru/prisma"
+    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-account-0.0.4-a2071cdc-c6ec-4a7f-bd8a-52408ca59077-1591894191246/node_modules/@zkopru/utils"
     bip39 "^3.0.2"
     hdkey "^1.1.1"
     web3 "^1.2.6"
@@ -2466,15 +2480,16 @@
 "@zkopru/coordinator@file:packages/coordinator":
   version "0.0.4"
   dependencies:
-    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-0.0.4-b83760d6-57cd-43bd-b2bf-5d93eff2828c-1591523390657/node_modules/@zkopru/babyjubjub"
-    "@zkopru/contracts" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-0.0.4-b83760d6-57cd-43bd-b2bf-5d93eff2828c-1591523390657/node_modules/@zkopru/contracts"
-    "@zkopru/core" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-0.0.4-b83760d6-57cd-43bd-b2bf-5d93eff2828c-1591523390657/node_modules/@zkopru/core"
-    "@zkopru/prisma" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-0.0.4-b83760d6-57cd-43bd-b2bf-5d93eff2828c-1591523390657/node_modules/@zkopru/prisma"
-    "@zkopru/transaction" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-0.0.4-b83760d6-57cd-43bd-b2bf-5d93eff2828c-1591523390657/node_modules/@zkopru/transaction"
-    "@zkopru/tree" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-0.0.4-b83760d6-57cd-43bd-b2bf-5d93eff2828c-1591523390657/node_modules/@zkopru/tree"
-    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-0.0.4-b83760d6-57cd-43bd-b2bf-5d93eff2828c-1591523390657/node_modules/@zkopru/utils"
+    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-0.0.4-77301cdc-d333-4a3f-be55-b6e053d4da30-1591894191252/node_modules/@zkopru/babyjubjub"
+    "@zkopru/contracts" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-0.0.4-77301cdc-d333-4a3f-be55-b6e053d4da30-1591894191252/node_modules/@zkopru/contracts"
+    "@zkopru/core" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-0.0.4-77301cdc-d333-4a3f-be55-b6e053d4da30-1591894191252/node_modules/@zkopru/core"
+    "@zkopru/prisma" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-0.0.4-77301cdc-d333-4a3f-be55-b6e053d4da30-1591894191252/node_modules/@zkopru/prisma"
+    "@zkopru/transaction" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-0.0.4-77301cdc-d333-4a3f-be55-b6e053d4da30-1591894191252/node_modules/@zkopru/transaction"
+    "@zkopru/tree" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-0.0.4-77301cdc-d333-4a3f-be55-b6e053d4da30-1591894191252/node_modules/@zkopru/tree"
+    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-0.0.4-77301cdc-d333-4a3f-be55-b6e053d4da30-1591894191252/node_modules/@zkopru/utils"
     big-integer "^1.6.48"
     bip39 "^3.0.2"
+    blessed "^0.1.81"
     bn.js "^5.1.1"
     chalk "^4.0.0"
     express "^4.17.1"
@@ -2493,13 +2508,13 @@
 "@zkopru/core@file:packages/core":
   version "0.0.4"
   dependencies:
-    "@zkopru/account" "file:../../../.cache/yarn/v6/npm-@zkopru-core-0.0.4-43d8ef1b-1d85-4327-9294-7d8a7ffa1f5d-1591523390653/node_modules/@zkopru/account"
-    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-core-0.0.4-43d8ef1b-1d85-4327-9294-7d8a7ffa1f5d-1591523390653/node_modules/@zkopru/babyjubjub"
-    "@zkopru/contracts" "file:../../../.cache/yarn/v6/npm-@zkopru-core-0.0.4-43d8ef1b-1d85-4327-9294-7d8a7ffa1f5d-1591523390653/node_modules/@zkopru/contracts"
-    "@zkopru/prisma" "file:../../../.cache/yarn/v6/npm-@zkopru-core-0.0.4-43d8ef1b-1d85-4327-9294-7d8a7ffa1f5d-1591523390653/node_modules/@zkopru/prisma"
-    "@zkopru/transaction" "file:../../../.cache/yarn/v6/npm-@zkopru-core-0.0.4-43d8ef1b-1d85-4327-9294-7d8a7ffa1f5d-1591523390653/node_modules/@zkopru/transaction"
-    "@zkopru/tree" "file:../../../.cache/yarn/v6/npm-@zkopru-core-0.0.4-43d8ef1b-1d85-4327-9294-7d8a7ffa1f5d-1591523390653/node_modules/@zkopru/tree"
-    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-core-0.0.4-43d8ef1b-1d85-4327-9294-7d8a7ffa1f5d-1591523390653/node_modules/@zkopru/utils"
+    "@zkopru/account" "file:../../../.cache/yarn/v6/npm-@zkopru-core-0.0.4-42edeffe-c7dd-4994-8d7f-33db4c54059c-1591894191249/node_modules/@zkopru/account"
+    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-core-0.0.4-42edeffe-c7dd-4994-8d7f-33db4c54059c-1591894191249/node_modules/@zkopru/babyjubjub"
+    "@zkopru/contracts" "file:../../../.cache/yarn/v6/npm-@zkopru-core-0.0.4-42edeffe-c7dd-4994-8d7f-33db4c54059c-1591894191249/node_modules/@zkopru/contracts"
+    "@zkopru/prisma" "file:../../../.cache/yarn/v6/npm-@zkopru-core-0.0.4-42edeffe-c7dd-4994-8d7f-33db4c54059c-1591894191249/node_modules/@zkopru/prisma"
+    "@zkopru/transaction" "file:../../../.cache/yarn/v6/npm-@zkopru-core-0.0.4-42edeffe-c7dd-4994-8d7f-33db4c54059c-1591894191249/node_modules/@zkopru/transaction"
+    "@zkopru/tree" "file:../../../.cache/yarn/v6/npm-@zkopru-core-0.0.4-42edeffe-c7dd-4994-8d7f-33db4c54059c-1591894191249/node_modules/@zkopru/tree"
+    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-core-0.0.4-42edeffe-c7dd-4994-8d7f-33db4c54059c-1591894191249/node_modules/@zkopru/utils"
     async-lock "^1.2.2"
     big-integer "^1.6.48"
     bn.js "^5.1.1"
@@ -2519,8 +2534,8 @@
   dependencies:
     "@prisma/client" "^2.0.0-beta.8"
     "@prisma/migrate" "^2.0.0-beta.8"
-    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-prisma-0.0.4-ec4ab8a7-767f-449c-a840-1cdaf71bec90-1591523390649/node_modules/@zkopru/babyjubjub"
-    "@zkopru/transaction" "file:../../../.cache/yarn/v6/npm-@zkopru-prisma-0.0.4-ec4ab8a7-767f-449c-a840-1cdaf71bec90-1591523390649/node_modules/@zkopru/transaction"
+    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-prisma-0.0.4-ce52a704-93d9-4241-81e8-e0967be333dd-1591894191244/node_modules/@zkopru/babyjubjub"
+    "@zkopru/transaction" "file:../../../.cache/yarn/v6/npm-@zkopru-prisma-0.0.4-ce52a704-93d9-4241-81e8-e0967be333dd-1591894191244/node_modules/@zkopru/transaction"
     big-integer "^1.6.48"
     bn.js "^5.1.1"
     sqlite3 "^4.2.0"
@@ -2531,8 +2546,8 @@
 "@zkopru/transaction@file:packages/transaction":
   version "0.0.4"
   dependencies:
-    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-transaction-0.0.4-f887aa11-4857-4d4c-b0e0-4d5f9470d85b-1591523390654/node_modules/@zkopru/babyjubjub"
-    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-transaction-0.0.4-f887aa11-4857-4d4c-b0e0-4d5f9470d85b-1591523390654/node_modules/@zkopru/utils"
+    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-transaction-0.0.4-43b00187-fb7d-4428-9a7c-20900c301b2c-1591894191248/node_modules/@zkopru/babyjubjub"
+    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-transaction-0.0.4-43b00187-fb7d-4428-9a7c-20900c301b2c-1591894191248/node_modules/@zkopru/utils"
     big-integer "^1.6.48"
     chacha20 "^0.1.4"
     circomlib "^0.1.1"
@@ -2542,9 +2557,9 @@
 "@zkopru/tree@file:packages/tree":
   version "0.0.4"
   dependencies:
-    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-tree-0.0.4-040a5e9c-be95-468b-85b2-bfc40dcf5425-1591523390655/node_modules/@zkopru/babyjubjub"
-    "@zkopru/prisma" "file:../../../.cache/yarn/v6/npm-@zkopru-tree-0.0.4-040a5e9c-be95-468b-85b2-bfc40dcf5425-1591523390655/node_modules/@zkopru/prisma"
-    "@zkopru/transaction" "file:../../../.cache/yarn/v6/npm-@zkopru-tree-0.0.4-040a5e9c-be95-468b-85b2-bfc40dcf5425-1591523390655/node_modules/@zkopru/transaction"
+    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-tree-0.0.4-802e130d-d612-4074-ac13-6f63ef4f71df-1591894191248/node_modules/@zkopru/babyjubjub"
+    "@zkopru/prisma" "file:../../../.cache/yarn/v6/npm-@zkopru-tree-0.0.4-802e130d-d612-4074-ac13-6f63ef4f71df-1591894191248/node_modules/@zkopru/prisma"
+    "@zkopru/transaction" "file:../../../.cache/yarn/v6/npm-@zkopru-tree-0.0.4-802e130d-d612-4074-ac13-6f63ef4f71df-1591894191248/node_modules/@zkopru/transaction"
     async-lock "^1.2.2"
     big-integer "^1.6.48"
     bn.js "^5.1.1"
@@ -2562,7 +2577,6 @@
     node-docker-api "^1.1.22"
     pino "^6.2.0"
     pino-pretty "^4.0.0"
-    prompts "^2.3.2"
     snarkjs "^0.1.25"
     soltypes "^1.1.2"
     tar "^6.0.2"
@@ -2571,13 +2585,13 @@
 "@zkopru/zk-wizard@file:packages/zk-wizard":
   version "0.0.4"
   dependencies:
-    "@zkopru/account" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-0.0.4-123b49a7-be71-4b80-bd5d-f19ca3e894d6-1591523390656/node_modules/@zkopru/account"
-    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-0.0.4-123b49a7-be71-4b80-bd5d-f19ca3e894d6-1591523390656/node_modules/@zkopru/babyjubjub"
-    "@zkopru/contracts" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-0.0.4-123b49a7-be71-4b80-bd5d-f19ca3e894d6-1591523390656/node_modules/@zkopru/contracts"
-    "@zkopru/core" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-0.0.4-123b49a7-be71-4b80-bd5d-f19ca3e894d6-1591523390656/node_modules/@zkopru/core"
-    "@zkopru/transaction" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-0.0.4-123b49a7-be71-4b80-bd5d-f19ca3e894d6-1591523390656/node_modules/@zkopru/transaction"
-    "@zkopru/tree" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-0.0.4-123b49a7-be71-4b80-bd5d-f19ca3e894d6-1591523390656/node_modules/@zkopru/tree"
-    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-0.0.4-123b49a7-be71-4b80-bd5d-f19ca3e894d6-1591523390656/node_modules/@zkopru/utils"
+    "@zkopru/account" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-0.0.4-ecdf44b7-b731-4c4c-b787-f9b96d7154f9-1591894191251/node_modules/@zkopru/account"
+    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-0.0.4-ecdf44b7-b731-4c4c-b787-f9b96d7154f9-1591894191251/node_modules/@zkopru/babyjubjub"
+    "@zkopru/contracts" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-0.0.4-ecdf44b7-b731-4c4c-b787-f9b96d7154f9-1591894191251/node_modules/@zkopru/contracts"
+    "@zkopru/core" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-0.0.4-ecdf44b7-b731-4c4c-b787-f9b96d7154f9-1591894191251/node_modules/@zkopru/core"
+    "@zkopru/transaction" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-0.0.4-ecdf44b7-b731-4c4c-b787-f9b96d7154f9-1591894191251/node_modules/@zkopru/transaction"
+    "@zkopru/tree" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-0.0.4-ecdf44b7-b731-4c4c-b787-f9b96d7154f9-1591894191251/node_modules/@zkopru/tree"
+    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-0.0.4-ecdf44b7-b731-4c4c-b787-f9b96d7154f9-1591894191251/node_modules/@zkopru/utils"
     big-integer "^1.6.48"
     circom_runtime "^0.0.3"
     ffjavascript "^0.1.2"
@@ -3363,6 +3377,11 @@ blakejs@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/blakejs/-/blakejs-1.1.0.tgz#69df92ef953aa88ca51a32df6ab1c54a155fc7a5"
   integrity sha1-ad+S75U6qIylGjLfarHFShVfx6U=
+
+blessed@^0.1.81:
+  version "0.1.81"
+  resolved "https://registry.yarnpkg.com/blessed/-/blessed-0.1.81.tgz#f962d687ec2c369570ae71af843256e6d0ca1129"
+  integrity sha1-+WLWh+wsNpVwrnGvhDJW5tDKESk=
 
 bluebird@^3.5.0, bluebird@^3.5.1, bluebird@^3.5.3, bluebird@^3.5.5:
   version "3.7.2"
@@ -10193,6 +10212,16 @@ node-addon-api@^2.0.0:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/node-addon-api/-/node-addon-api-2.0.1.tgz#4fd0931bf6d7e48b219ff3e6abc73cbb0252b7a3"
   integrity sha512-2WVfwRfIr1AVn3dRq4yRc2Hn35ND+mPJH6inC6bjpYCZVrpXPB4j3T6i//OGVfqVsR1t/X/axRulDsheq4F0LQ==
+
+node-ansiparser@^2.2.0:
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/node-ansiparser/-/node-ansiparser-2.2.0.tgz#b724d3e5e3fa5a854256bb63aceb091e720793ad"
+  integrity sha1-tyTT5eP6WoVCVrtjrOsJHnIHk60=
+
+node-ansiterminal@^0.2.1-beta:
+  version "0.2.1-beta"
+  resolved "https://registry.yarnpkg.com/node-ansiterminal/-/node-ansiterminal-0.2.1-beta.tgz#f5b684f7f1375f20cc703d95fb33e27cf46ef290"
+  integrity sha1-9baE9/E3XyDMcD2V+zPifPRu8pA=
 
 node-docker-api@^1.1.22:
   version "1.1.22"

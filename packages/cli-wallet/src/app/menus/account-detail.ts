@@ -1,39 +1,46 @@
-import chalk from 'chalk'
 import { fromWei } from 'web3-utils'
 import { Balance } from '../../zk-wallet'
 import App, { AppMenu, Context } from '../app'
-
-const { goTo, print } = App
 
 export default class AccountDetail extends App {
   static code = AppMenu.ACCOUNT_DETAIL
 
   // eslint-disable-next-line class-methods-use-this
-  async run(context: Context): Promise<Context> {
+  async run(context: Context): Promise<{ context: Context; next: number }> {
     if (!context.account) throw Error('Acocunt is not set')
-    const balance: Balance = await this.zkWallet.getLayer1Assets(
-      context.account,
+    const balance: Balance = await this.base.getLayer1Assets(context.account)
+    const spendables = await this.base.getSpendables(context.account)
+    const messages: string[] = []
+    const { eth, erc20, erc721 } = balance
+    messages.push(`Layer 1`)
+    messages.push(`   Ether: ${fromWei(eth, 'ether')}`)
+    messages.push(`   ERC20: ${Object.keys(erc20).length === 0 ? 'N/A' : ''}`)
+    messages.push(
+      ...Object.keys(erc20).map(addr => `      ${addr}: ${erc20[addr]}`),
     )
-    const spendables = await this.zkWallet.getSpendables(context.account)
-    print(chalk.yellowBright)('Layer 1')
-    print(chalk.greenBright)(`   Ether: ${fromWei(balance.eth, 'ether')}`)
-    Object.keys(balance.erc20).forEach(addr => {
-      print(chalk.greenBright)(`    ERC20 @ ${addr} : ${balance.erc20[addr]}`)
-    })
-    Object.keys(balance.erc721).forEach(addr => {
-      print(chalk.greenBright)(`    ERC721 @ ${addr} : ${balance.erc721[addr]}`)
-    })
-    print()()
-    print(chalk.yellowBright)('Layer 2')
-    print(chalk.greenBright)(
-      `   Ether: ${fromWei(spendables.eth, 'ether')} Ether`,
+    messages.push(`   ERC721: ${Object.keys(erc721).length === 0 ? 'N/A' : ''}`)
+    messages.push(
+      ...Object.keys(erc721).map(addr => `      ${addr}: ${erc721[addr]}`),
     )
-    Object.keys(spendables.erc20).forEach(addr => {
-      print(chalk.greenBright)(`    ERC20 @ ${addr} : ${balance.erc721[addr]}`)
-    })
-    Object.keys(spendables.erc721).forEach(addr => {
-      print(chalk.greenBright)(`    ERC721 @ ${addr} : ${balance.erc721[addr]}`)
-    })
+    messages.push(`Layer 2`)
+    messages.push(`   Ether: ${fromWei(eth, 'ether')}`)
+    messages.push(
+      `   ERC20: ${Object.keys(spendables.erc20).length === 0 ? 'N/A' : ''}`,
+    )
+    messages.push(
+      ...Object.keys(spendables.erc20).map(
+        addr => `    ${addr} : ${spendables.erc20[addr]}`,
+      ),
+    )
+    messages.push(
+      `   ERC721: ${Object.keys(spendables.erc721).length === 0 ? 'N/A' : ''}`,
+    )
+    messages.push(
+      ...Object.keys(spendables.erc721).map(
+        addr => `    ${addr} : ${spendables.erc721[addr]}`,
+      ),
+    )
+    this.print(messages.join('\n'))
     const { choice } = await this.ask({
       type: 'select',
       name: 'choice',
@@ -46,6 +53,6 @@ export default class AccountDetail extends App {
         { title: 'Withdraw', value: AppMenu.WITHDRAW },
       ],
     })
-    return { ...goTo(context, choice), balance, spendables }
+    return { next: choice, context: { ...context, balance, spendables } }
   }
 }

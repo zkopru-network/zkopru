@@ -1,14 +1,12 @@
 import chalk from 'chalk'
 import App, { AppMenu, Context } from '../app'
 
-const { goTo, print } = App
-
 export default class PrintStatus extends App {
   static code = AppMenu.PRINT_STATUS
 
-  async run(context: Context): Promise<Context> {
-    const { l1Contract } = this.coordinator.node
-    const { txPool } = this.coordinator
+  async run(context: Context): Promise<{ context: Context; next: number }> {
+    const { l1Contract } = this.base.node
+    const { txPool } = this.base
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let result: any = {}
     await Promise.all(
@@ -26,18 +24,18 @@ export default class PrintStatus extends App {
         },
       ].map(f => f()),
     )
-    print(chalk.blueBright)('Layer1 status')
-    print(chalk.blue)(`  Latest block: ${result.latest}`)
-    print(chalk.blue)(`  Deposits: ${result.merged} / Fee: ${result.fee} wei`)
-    print(chalk.blue)(``)
-    print(chalk.blueBright)('Layer2 status')
-    print(chalk.blue)(
-      `  Latest block: ${await this.coordinator.node.latestBlock()}`,
+    this.print(
+      `${chalk.blueBright('Layer1 status')}${chalk.blue(`
+    Latest block: ${result.latest}
+    Deposits: ${result.merged} / Fee: ${result.fee} wei`)}${chalk.blueBright(
+        'Layer2 status',
+      )}${chalk.blue(`
+    Latest block: ${await this.base.node.latestBlock()}
+    Pending txs: ${txPool.pendingNum()}`)}`,
     )
-    print(chalk.blue)(`  Pending txs: ${txPool.pendingNum()}`)
-    print(chalk.blue)(``)
     return {
-      ...goTo(context, AppMenu.TOP_MENU),
+      context,
+      next: AppMenu.TOP_MENU,
     }
   }
 }

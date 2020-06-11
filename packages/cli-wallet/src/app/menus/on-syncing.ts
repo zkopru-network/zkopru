@@ -2,16 +2,14 @@ import chalk from 'chalk'
 import { sleep } from '@zkopru/utils'
 import App, { AppMenu, Context } from '../app'
 
-const { print, goTo } = App
-
 export default class OnSyncing extends App {
   static code = AppMenu.ON_SYNCING
 
   // eslint-disable-next-line class-methods-use-this
-  async run(context: Context): Promise<Context> {
-    print(chalk.yellow)('On syncing...')
+  async run(context: Context): Promise<{ context: Context; next: number }> {
+    this.print(chalk.yellow('On syncing...'))
     await sleep(1000)
-    return { ...goTo(context, AppMenu.TOP_MENU) }
+    return { context, next: AppMenu.TOP_MENU }
     // const { idx } = await this.ask({
     //   type: 'select',
     //   name: 'idx',

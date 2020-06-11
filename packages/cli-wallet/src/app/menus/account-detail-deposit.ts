@@ -2,17 +2,13 @@ import { fromWei } from 'web3-utils'
 import App, { AppMenu, Context } from '../app'
 import { Balance } from '../../zk-wallet'
 
-const { goTo } = App
-
 export default class Deposit extends App {
   static code = AppMenu.DEPOSIT
 
   // eslint-disable-next-line class-methods-use-this
-  async run(context: Context): Promise<Context> {
+  async run(context: Context): Promise<{ context: Context; next: number }> {
     if (!context.account) throw Error('Acocunt is not set')
-    const balance: Balance = await this.zkWallet.getLayer1Assets(
-      context.account,
-    )
+    const balance: Balance = await this.base.getLayer1Assets(context.account)
     const { choice } = await this.ask({
       type: 'select',
       name: 'choice',
@@ -34,6 +30,9 @@ export default class Deposit extends App {
         })),
       ],
     })
-    return { ...goTo(context, choice.menu), address: choice.address }
+    return {
+      next: choice.menu,
+      context: { ...context, address: choice.address },
+    }
   }
 }

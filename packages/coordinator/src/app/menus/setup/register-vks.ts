@@ -3,13 +3,11 @@ import path from 'path'
 import chalk from 'chalk'
 import App, { AppMenu, Context } from '../../app'
 
-const { goTo } = App
-
 export default class RegisterVk extends App {
   static code = AppMenu.REGISTER_VK
 
   // eslint-disable-next-line class-methods-use-this
-  async run(context: Context): Promise<Context> {
+  async run(context: Context): Promise<{ context: Context; next: number }> {
     const startingPath = path.resolve('.')
     let currentPath: string = startingPath
     do {
@@ -53,9 +51,7 @@ export default class RegisterVk extends App {
       message: 'Number of outputs',
     })
     const vk = JSON.parse(fs.readFileSync(currentPath, 'utf8'))
-    await this.coordinator.registerVk(nIn, nOut, vk)
-    return {
-      ...goTo(context, AppMenu.SETUP_MENU),
-    }
+    await this.base.registerVk(nIn, nOut, vk)
+    return { context, next: AppMenu.SETUP_MENU }
   }
 }

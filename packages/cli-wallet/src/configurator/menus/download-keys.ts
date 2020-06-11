@@ -4,14 +4,18 @@ import fs from 'fs-extra'
 import tar from 'tar'
 import { SingleBar } from 'cli-progress'
 import { https } from 'follow-redirects'
+import { Writable } from 'stream'
 import Configurator, { Context, Menu } from '../configurator'
 
-const { print, goTo } = Configurator
-
-export const downloadKeys = async (url: string, path: string) => {
+export const downloadKeys = async (
+  url: string,
+  path: string,
+  stream?: Writable,
+) => {
   return new Promise((resolve, reject) => {
     const bar = new SingleBar({
       format: `Downloading snark keys | [{bar}] | {percentage}% | {value}/{total} KiB | ETA: {eta}s`,
+      stream,
     })
     let fileLength = 0
     let downloaded = 0
@@ -44,20 +48,33 @@ export const downloadKeys = async (url: string, path: string) => {
 export default class DownloadKeys extends Configurator {
   static code = Menu.DOWNLOAD_KEYS
 
-  async run(context: Context): Promise<Context> {
-    print(chalk.blue)('Downloading keys')
-    const pwd = path.join(process.cwd(), this.config.keys)
+  async run(context: Context): Promise<{ context: Context; next: number }> {
+    this.print(chalk.blue('Downloading keys'))
+    const pwd = path.join(process.cwd(), this.base.keys)
     if (fs.existsSync(pwd)) {
-      return goTo(context, Menu.LOAD_DATABASE)
+      return {
+        context,
+        next: Menu.LOAD_DATABASE,
+      }
     }
     fs.mkdirpSync(pwd)
     try {
-      await downloadKeys('https://d2xnpw7ihgc4iv.cloudfront.net/keys.tgz', pwd)
-      print(chalk.green)('Download completed')
-      return goTo(context, Menu.LOAD_DATABASE)
+      await downloadKeys(
+        'https://d2xnpw7ihgc4iv.cloudfront.net/keys.tgz',
+        pwd,
+        this.infoStream,
+      )
+      this.print(chalk.green('Download completed'))
+      return {
+        context,
+        next: Menu.LOAD_DATABASE,
+      }
     } catch (err) {
-      print(chalk.red)('Download failed', err)
-      return goTo(context, Menu.EXIT)
+      this.print(chalk.red('Download failed', err))
+      return {
+        context,
+        next: Menu.EXIT,
+      }
     }
   }
 }

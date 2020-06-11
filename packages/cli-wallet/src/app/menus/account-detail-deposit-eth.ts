@@ -1,18 +1,17 @@
 import { toBN, fromWei, toWei } from 'web3-utils'
 import assert from 'assert'
 import chalk from 'chalk'
+import { logger } from '@zkopru/utils'
 import App, { AppMenu, Context } from '../app'
-
-const { print, goTo } = App
 
 export default class DepositEther extends App {
   static code = AppMenu.DEPOSIT_ETHER
 
   // eslint-disable-next-line class-methods-use-this
-  async run(context: Context): Promise<Context> {
+  async run(context: Context): Promise<{ context: Context; next: number }> {
     if (!context.account) throw Error('Acocunt is not set')
     const { balance } = context
-    // const weiPerByte = await this.zkWallet.fetchPrice()
+    // const weiPerByte = await this.base.fetchPrice()
     assert(balance, 'Balance is defined')
     // print(chalk.blue)(`Price per byte: ${fromWei(weiPerByte, 'gwei')} gwei`)
     const { amount } = await this.ask({
@@ -27,12 +26,17 @@ export default class DepositEther extends App {
       initial: 0,
       message: 'How much ETH do you want pay for the fee?',
     })
+    logger.info(amount)
+    logger.info(fee)
     const amountWei: string = toWei(amount).toString()
     const feeWei: string = toWei(fee).toString()
     const total = toBN(amountWei).add(toBN(feeWei))
     if (toBN(balance.eth).lt(total)) {
-      print(chalk.red)('Not enough balance. Try again')
+      this.print(chalk.red('Not enough balance. Try again'))
     }
+    logger.info(amountWei)
+    logger.info(feeWei)
+    logger.info(total, 'total')
     const { confirmed } = await this.ask({
       type: 'confirm',
       name: 'confirmed',
@@ -45,9 +49,9 @@ export default class DepositEther extends App {
       ),
     })
     if (!confirmed) {
-      return { ...goTo(context, AppMenu.DEPOSIT) }
+      return { context, next: AppMenu.DEPOSIT }
     }
-    const success = await this.zkWallet.depositEther(amountWei, feeWei)
+    const success = await this.base.depositEther(amountWei, feeWei)
     if (!success) {
       const { tryAgain } = await this.ask({
         type: 'confirm',
@@ -56,13 +60,15 @@ export default class DepositEther extends App {
         message: 'Failed to deposit your balance. Do you want to try again?',
       })
       if (!tryAgain) {
-        return { ...goTo(context, AppMenu.DEPOSIT_ETHER) }
+        return { context, next: AppMenu.DEPOSIT_ETHER }
       }
     } else {
-      print(chalk.green)(
-        'Successfully deposited. You need to wait the coordinator include your deposit into a block.',
+      this.print(
+        chalk.green(
+          'Successfully deposited. You need to wait the coordinator include your deposit into a block.',
+        ),
       )
     }
-    return { ...goTo(context, AppMenu.DEPOSIT) }
+    return { context, next: AppMenu.DEPOSIT }
   }
 }

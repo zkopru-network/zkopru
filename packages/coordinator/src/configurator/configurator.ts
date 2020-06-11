@@ -1,8 +1,8 @@
 import Web3 from 'web3'
 import { NetworkStatus } from '@zkopru/core'
 import { Account, WebsocketProvider, EncryptedKeystoreV3Json } from 'web3-core'
-import { PromptApp } from '@zkopru/utils'
 import { DB } from '@zkopru/prisma'
+import { PromptApp } from '../prompt'
 import { Coordinator } from '..'
 
 export interface Config {
@@ -30,7 +30,6 @@ export enum Menu {
 }
 
 export interface Context {
-  menu: Menu
   networkStatus: NetworkStatus
   web3?: Web3
   provider?: WebsocketProvider

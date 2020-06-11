@@ -4,12 +4,10 @@ import { validateMnemonic, wordlists } from 'bip39'
 import { EncryptedWallet } from '@zkopru/prisma'
 import Configurator, { Context, Menu } from '../configurator'
 
-const { print, goTo } = Configurator
-
 export default class LoadHDWallet extends Configurator {
   static code = Menu.LOAD_HDWALLET
 
-  async run(context: Context): Promise<Context> {
+  async run(context: Context): Promise<{ context: Context; next: number }> {
     if (!context.db) {
       throw Error('Database is not loaded')
     }
@@ -19,16 +17,16 @@ export default class LoadHDWallet extends Configurator {
     const { web3, db } = context
     const wallet = new HDWallet(web3, db)
     let existingWallets!: EncryptedWallet[]
-    if (!this.config.seedKeystore) {
+    if (!this.base.seedKeystore) {
       existingWallets = await wallet.list()
     }
     const createNewWallet: boolean =
-      !this.config.seedKeystore && existingWallets.length === 0
+      !this.base.seedKeystore && existingWallets.length === 0
     if (createNewWallet) {
       let mnemonic: string
-      if (this.config.mnemonic) {
-        print()('Using imported mnemonic words')
-        mnemonic = this.config.mnemonic || ''
+      if (this.base.mnemonic) {
+        this.print('Using imported mnemonic words')
+        mnemonic = this.base.mnemonic || ''
       } else {
         const { create } = await this.ask({
           type: 'select',
@@ -69,7 +67,7 @@ export default class LoadHDWallet extends Configurator {
         const wordList = wordlists[language]
         if (create) {
           mnemonic = HDWallet.newMnemonic(strength, wordList)
-          print()('MNEMONIC: ', mnemonic)
+          this.print(`MNEMONIC: ${mnemonic}`)
           const { proceed } = await this.ask({
             type: 'confirm',
             initial: true,
@@ -78,11 +76,14 @@ export default class LoadHDWallet extends Configurator {
               'You should write down this mnemonic words on your note. Proceed?',
           })
           if (!proceed) {
-            return { ...goTo(context, Menu.EXIT) }
+            return {
+              context,
+              next: Menu.EXIT,
+            }
           }
         } else {
           const words: string[] = []
-          print()('Please type mnemonic words sequentially.')
+          this.print('Please type mnemonic words sequentially.')
           while (words.length !== length) {
             const { word } = await this.ask({
               type: 'text',
@@ -92,12 +93,14 @@ export default class LoadHDWallet extends Configurator {
             if (wordList.includes(word)) {
               words.push(word)
             } else {
-              print()('Invalid mnemonic word. Try again.')
+              this.print('Invalid mnemonic word. Try again.')
             }
           }
           mnemonic = words.join(' ')
           if (validateMnemonic(mnemonic)) {
-            print(chalk.green)('Great! Imported mnemonic keys successfully.')
+            this.print(
+              chalk.green('Great! Imported mnemonic keys successfully.'),
+            )
           } else {
             console.error('Imported mnemonic is not valid.')
             const result = await this.run(context)
@@ -124,8 +127,8 @@ export default class LoadHDWallet extends Configurator {
       }
     } else {
       let existing!: EncryptedWallet
-      if (this.config.seedKeystore) {
-        existing = this.config.seedKeystore
+      if (this.base.seedKeystore) {
+        existing = this.base.seedKeystore
       } else if (existingWallets.length === 1) {
         existing = existingWallets[0] as EncryptedWallet
       } else if (existingWallets.length > 1) {
@@ -139,16 +142,18 @@ export default class LoadHDWallet extends Configurator {
           })),
         })
         if (idx < 0 || idx >= existingWallets.length) {
-          print(chalk.red)(
-            `You should select between 0 - ${existingWallets.length - 1}`,
+          this.print(
+            chalk.red(
+              `You should select between 0 - ${existingWallets.length - 1}`,
+            ),
           )
           const result = await this.run(context)
           return result
         }
         existing = existingWallets[idx]
       }
-      const { password } = this.config.password
-        ? this.config
+      const { password } = this.base.password
+        ? this.base
         : await this.ask({
             type: 'password',
             name: 'password',
@@ -158,7 +163,7 @@ export default class LoadHDWallet extends Configurator {
         await wallet.load(existing, password)
       } catch (err) {
         console.error(err)
-        print()('Failed to load wallet. Try again')
+        this.print('Failed to load wallet. Try again')
         const result = await this.run(context)
         return result
       }
@@ -169,10 +174,13 @@ export default class LoadHDWallet extends Configurator {
       accounts = [account]
     }
     return {
-      ...goTo(context, Menu.CONFIG_TRACKING_ACCOUNT),
-      accounts,
-      wallet,
-      isInitialSetup: createNewWallet,
+      context: {
+        ...context,
+        accounts,
+        wallet,
+        isInitialSetup: createNewWallet,
+      },
+      next: Menu.CONFIG_TRACKING_ACCOUNT,
     }
   }
 }

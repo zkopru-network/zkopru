@@ -23,21 +23,27 @@ export async function getCoordinator(
   onError?: () => Promise<void>,
 ): Promise<Coordinator> {
   const onCancel = onError || defaultOnCancel
+  let next = Menu.SPLASH
   let context: Context = {
-    menu: Menu.SPLASH,
     networkStatus: NetworkStatus.STOPPED,
   }
-  const menus = {}
-  menus[Menu.SPLASH] = new Splash(config, onCancel)
-  menus[Menu.CONNECT_WEB3] = new ConnectWeb3(config, onCancel)
-  menus[Menu.CONFIG_ACCOUNT] = new ConfigureAccount(config, onCancel)
-  menus[Menu.SAVE_CONFIG] = new SaveConfig(config, onCancel)
-  menus[Menu.LOAD_DATABASE] = new LoadDatabase(config, onCancel)
-  menus[Menu.LOAD_COORDINATOR] = new LoadCoordinator(config, onCancel)
-  while (context.menu !== Menu.COMPLETE_SETUP) {
-    const menu = menus[context.menu]
-    if (menu) {
-      context = await menu.run(context)
+  const apps = {}
+  const option = {
+    base: config,
+    onCancel,
+  }
+  apps[Menu.SPLASH] = new Splash(option)
+  apps[Menu.CONNECT_WEB3] = new ConnectWeb3(option)
+  apps[Menu.CONFIG_ACCOUNT] = new ConfigureAccount(option)
+  apps[Menu.SAVE_CONFIG] = new SaveConfig(option)
+  apps[Menu.LOAD_DATABASE] = new LoadDatabase(option)
+  apps[Menu.LOAD_COORDINATOR] = new LoadCoordinator(option)
+  while (next !== Menu.COMPLETE_SETUP) {
+    const app = apps[next]
+    if (app) {
+      const result = await app.run(context)
+      next = result.next
+      context = result.context
     } else {
       break
     }

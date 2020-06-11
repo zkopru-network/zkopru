@@ -4,6 +4,7 @@ import { Deposit as DepositSql } from '@zkopru/prisma'
 import { Bytes32, Uint256 } from 'soltypes'
 import { soliditySha3 } from 'web3-utils'
 import BN from 'bn.js'
+import assert from 'assert'
 import { Block, Header, VerifyResult } from './block'
 import { VerifyingKey } from './snark'
 import { L1Contract } from './layer1'
@@ -67,7 +68,9 @@ export class Verifier {
       }
     }
 
-    console.log(this, layer1, layer2, block, this.option, prevHeader)
+    assert(layer1)
+    assert(prevHeader)
+    // console.log(this, layer1, layer2, block, this.option, prevHeader)
     const verificationResult = true
     const fullVerification = Object.values(this.option).reduce(
       (prev, curr) => (prev ? curr : prev),
@@ -86,7 +89,9 @@ export class Verifier {
   }
 
   async verifyHeader(block: Block) {
-    console.log(block, this)
+    assert(block)
+    assert(this)
+    // console.log(block, this)
     // onChallenge({ block })
   }
 

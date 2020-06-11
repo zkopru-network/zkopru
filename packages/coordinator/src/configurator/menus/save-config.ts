@@ -3,12 +3,10 @@ import path from 'path'
 import fs from 'fs'
 import Configurator, { Context, Menu } from '../configurator'
 
-const { print, goTo } = Configurator
-
 export default class SaveConfig extends Configurator {
   static code = Menu.SAVE_CONFIG
 
-  async run(context: Context): Promise<Context> {
+  async run(context: Context): Promise<{ context: Context; next: number }> {
     const { save } = await this.ask({
       type: 'confirm',
       initial: true,
@@ -16,7 +14,7 @@ export default class SaveConfig extends Configurator {
       message: 'Do you want to save this configuration?',
     })
     if (!save) {
-      return { ...goTo(context, Menu.LOAD_DATABASE) }
+      return { context, next: Menu.LOAD_DATABASE }
     }
     let password!: string
     const { savePassword } = await this.ask({
@@ -68,12 +66,12 @@ export default class SaveConfig extends Configurator {
       }
     } while (!pathConfirmed)
     const newConfig = {
-      ...this.config,
+      ...this.base,
       keystore: context.keystore,
       password: savePassword ? password : undefined,
     }
     fs.writeFileSync(configPath, JSON.stringify(newConfig))
-    print(chalk.blue)('Successfully created coordinator.json')
-    return { ...goTo(context, Menu.LOAD_DATABASE) }
+    console.log(chalk.blue('Successfully created coordinator.json'))
+    return { context, next: Menu.LOAD_DATABASE }
   }
 }

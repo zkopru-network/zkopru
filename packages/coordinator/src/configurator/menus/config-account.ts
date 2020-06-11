@@ -2,30 +2,28 @@ import chalk from 'chalk'
 import { Account } from 'web3-core'
 import Configurator, { Context, Menu } from '../configurator'
 
-const { print, goTo } = Configurator
-
 export default class ConfigureAccount extends Configurator {
   static code = Menu.CONFIG_ACCOUNT
 
-  async run(context: Context): Promise<Context> {
-    print(chalk.blue)('Setting up the coordinator account')
+  async run(context: Context): Promise<{ context: Context; next: number }> {
+    console.log(chalk.blue('Setting up the coordinator account'))
     if (!context.web3) throw Error('Web3 is not loaded')
-    if (this.config.keystore) {
-      if (!this.config.password) throw Error('Password is not configured')
+    if (this.base.keystore) {
+      if (!this.base.password) throw Error('Password is not configured')
       const account = context.web3.eth.accounts.decrypt(
-        this.config.keystore,
-        this.config.password,
+        this.base.keystore,
+        this.base.password,
       )
       context.web3.eth.personal.importRawKey(
         account.privateKey,
-        this.config.password,
+        this.base.password,
       )
       context.web3.eth.personal.unlockAccount(
         account.address,
-        this.config.password,
+        this.base.password,
         0,
       )
-      return { ...goTo(context, Menu.LOAD_DATABASE), account }
+      return { context: { ...context, account }, next: Menu.LOAD_DATABASE }
     }
     const { choice } = await this.ask({
       type: 'select',
@@ -58,29 +56,31 @@ export default class ConfigureAccount extends Configurator {
           })
           pk = privateKey
         } catch (e) {
-          print(chalk.red)(
-            'Invalid private key, you should prefix 0x and the private key should be 32 bytes value. Your total length of the string should be 66',
+          console.log(
+            chalk.red(
+              'Invalid private key, you should prefix 0x and the private key should be 32 bytes value. Your total length of the string should be 66',
+            ),
           )
         }
       }
       account = context.web3.eth.accounts.privateKeyToAccount(pk)
       context.web3.eth.accounts.wallet.add(account)
     }
-    print(chalk.bold)(`Configured account`)
-    print()(`Account: ${account.address}`)
-    print()(`Private key: ${account.privateKey}`)
+    console.log(chalk.bold(`Configured account`))
+    console.log(`Account: ${account.address}`)
+    console.log(`Private key: ${account.privateKey}`)
     let confirmed = false
     let confirmedPassword!: string
     do {
-      const { password } = this.config.password
-        ? this.config
+      const { password } = this.base.password
+        ? this.base
         : await this.ask({
             type: 'password',
             name: 'password',
             message: 'password',
           })
-      const { retyped } = this.config.password
-        ? { retyped: this.config.password }
+      const { retyped } = this.base.password
+        ? { retyped: this.base.password }
         : await this.ask({
             type: 'password',
             name: 'retyped',
@@ -92,9 +92,8 @@ export default class ConfigureAccount extends Configurator {
 
     const keystore = account.encrypt(confirmedPassword)
     return {
-      ...goTo(context, Menu.SAVE_CONFIG),
-      keystore,
-      account,
+      context: { ...context, keystore, account },
+      next: Menu.SAVE_CONFIG,
     }
   }
 }

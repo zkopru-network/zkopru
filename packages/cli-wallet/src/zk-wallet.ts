@@ -204,7 +204,6 @@ export class ZkWallet {
 
   async depositEther(eth: F, fee: F, to?: Point): Promise<boolean> {
     if (!this.account) {
-      console.log(this.account)
       logger.error('Account is not set')
       return false
     }
@@ -325,7 +324,6 @@ export class ZkWallet {
       [note.pubKey.x.toString(), note.pubKey.y.toString()],
       fee.toString(),
     )
-    console.log('value, ', note.eth.add(fee).toString())
     const receipt = await this.node.l1Contract.sendTx(tx, {
       from: this.account.address,
       value: note.eth.add(fee).toString(),

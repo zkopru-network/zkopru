@@ -7,8 +7,6 @@ import { DB } from '@zkopru/prisma'
 import path from 'path'
 import Configurator, { Context, Menu } from '../configurator'
 
-const { print, goTo } = Configurator
-
 async function initDB({
   db,
   web3,
@@ -41,20 +39,20 @@ async function initDB({
 export default class LoadDatabase extends Configurator {
   static code = Menu.LOAD_DATABASE
 
-  async run(context: Context): Promise<Context> {
-    print(chalk.blue)('Loading database')
+  async run(context: Context): Promise<{ context: Context; next: number }> {
+    console.log(chalk.blue('Loading database'))
     if (!context.web3) {
       throw Error(chalk.red('Web3 does not exist'))
     }
     let database: DB
-    if (this.config.postgres) {
+    if (this.base.postgres) {
       database = new DB({
         datasources: {
-          postgres: this.config.postgres,
+          postgres: this.base.postgres,
         },
       })
-    } else if (this.config.sqlite) {
-      const dbPath = this.config.sqlite
+    } else if (this.base.sqlite) {
+      const dbPath = this.base.sqlite
       if (!fs.existsSync(dbPath)) {
         // create new dataabase
         const { db } = await DB.mockup(dbPath)
@@ -86,12 +84,12 @@ export default class LoadDatabase extends Configurator {
       })
 
       if (dbType === DBType.POSTGRES) {
-        print(chalk.blue)('Creating a postgresql connection')
-        print(chalk.yellow)('Fetch schema files')
-        print(chalk.yellow)('1. Install postgres.')
-        print(chalk.yellow)('2. Run postgres daemon.')
-        print(chalk.yellow)('3. set up database')
-        print(chalk.yellow)('4. provide db connection info')
+        console.log(chalk.blue('Creating a postgresql connection'))
+        console.log(chalk.yellow('Fetch schema files'))
+        console.log(chalk.yellow('1. Install postgres.'))
+        console.log(chalk.yellow('2. Run postgres daemon.'))
+        console.log(chalk.yellow('3. set up database'))
+        console.log(chalk.yellow('4. provide db connection info'))
         // TODO provide migrate option later
         // TODO provide detail database setup guide
         const { host } = await this.ask({
@@ -127,9 +125,9 @@ export default class LoadDatabase extends Configurator {
           },
         })
       } else {
-        print(chalk.blue)('Creating a sqlite3 connection')
-        print(chalk.yellow)('Provide file path to store sqlite db')
-        print(chalk.yellow)('ex: ./zkopru.db')
+        console.log(chalk.blue('Creating a sqlite3 connection'))
+        console.log(chalk.yellow('Provide file path to store sqlite db'))
+        console.log(chalk.yellow('ex: ./zkopru.db'))
         const { dbName } = await this.ask({
           type: 'text',
           name: 'dbName',
@@ -159,8 +157,11 @@ export default class LoadDatabase extends Configurator {
     await initDB({
       db: database,
       web3: context.web3,
-      address: this.config.address,
+      address: this.base.address,
     })
-    return { ...goTo(context, Menu.LOAD_COORDINATOR), db: database }
+    return {
+      context: { ...context, db: database },
+      next: Menu.LOAD_COORDINATOR,
+    }
   }
 }

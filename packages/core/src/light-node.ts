@@ -65,7 +65,7 @@ export class LightNode extends ZkOPRUNode {
     const proposalData = await this.l1Contract.web3.eth.getTransaction(
       bootstrapData.proposal.proposalTx,
     )
-    console.log('bootstrap should give proposal num and etc', proposalData)
+    // console.log('bootstrap should give proposal num and etc', proposalData)
     const block = Block.fromTx(proposalData)
     const headerProof = headerHash(block.header).eq(Bytes32.from(latest))
     const utxoMerkleProof = verifyProof(

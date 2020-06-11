@@ -4,13 +4,11 @@ import fs from 'fs'
 import Configurator, { Context, Menu } from '../configurator'
 import { EncryptedWallet } from '.prisma/client'
 
-const { print, goTo } = Configurator
-
 export default class SaveConfig extends Configurator {
   static code = Menu.SAVE_CONFIG
 
-  async run(context: Context): Promise<Context> {
-    if (!context.isInitialSetup) return { ...goTo(context, Menu.COMPLETE) }
+  async run(context: Context): Promise<{ context: Context; next: number }> {
+    if (!context.isInitialSetup) return { context, next: Menu.COMPLETE }
 
     const { save } = await this.ask({
       type: 'confirm',
@@ -19,7 +17,7 @@ export default class SaveConfig extends Configurator {
       message: 'Do you want to save this configuration?',
     })
     if (!save) {
-      return { ...goTo(context, Menu.COMPLETE) }
+      return { context, next: Menu.COMPLETE }
     }
     let exported = false
     let seedKeystore!: EncryptedWallet
@@ -60,12 +58,12 @@ export default class SaveConfig extends Configurator {
       }
     } while (!pathConfirmed)
     const newConfig = {
-      ...this.config,
+      ...this.base,
       seedKeystore,
       accountNumber: context.accounts?.length,
     }
     fs.writeFileSync(configPath, JSON.stringify(newConfig))
-    print(chalk.blue)('Successfully created wallet.json')
-    return { ...goTo(context, Menu.COMPLETE) }
+    this.print(chalk.blue('Successfully created wallet.json'))
+    return { context, next: Menu.COMPLETE }
   }
 }

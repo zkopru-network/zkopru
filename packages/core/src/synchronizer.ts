@@ -83,8 +83,8 @@ export class Synchronizer {
           const { returnValues, blockNumber, transactionHash } = event
           // WRITE DATABASE
           const { blockHash, proposer, parentBlock } = returnValues
-          console.log('genesis hash: ', blockHash)
-          console.log('genesis data: ', returnValues)
+          logger.info(`genesis hash: ${blockHash}`)
+          logger.info(`genesis data: ${returnValues}`)
 
           // GENESIS BLOCK
           const config = await this.l1Contract.getConfig()
@@ -147,7 +147,7 @@ export class Synchronizer {
       })
     })
     const fromBlock = lastDeposits[0]?.blockNumber || 0
-    console.log('new deposit from block', fromBlock)
+    logger.info('new deposit from block', fromBlock)
     this.depositSubscriber = this.l1Contract.user.events
       .Deposit({ fromBlock })
       .on('connected', subId => {
@@ -217,7 +217,7 @@ export class Synchronizer {
           blockNumber,
           includedIn: null,
         }
-        console.log('massdeposit commit is', massDeposit)
+        logger.info('massdeposit commit is', massDeposit)
         await this.lock.acquire('db', async () => {
           await this.db.prisma.massDeposit.upsert({
             where: {
@@ -228,7 +228,7 @@ export class Synchronizer {
           })
         })
         if (cb) cb(massDeposit)
-        console.log('massdeposit commit succeeded')
+        logger.info('massdeposit commit succeeded')
       })
       .on('changed', event => {
         // TODO
@@ -249,7 +249,7 @@ export class Synchronizer {
       })
     })
     const fromBlock = lastProposal[0]?.proposedAt || 0
-    console.log('listenNewProposal fromBlock: ', fromBlock)
+    logger.info('listenNewProposal fromBlock: ', fromBlock)
     this.proposalSubscriber = this.l1Contract.coordinator.events
       .NewProposal({ fromBlock })
       .on('connected', subId => {
@@ -261,16 +261,16 @@ export class Synchronizer {
         const { returnValues, blockNumber, transactionHash } = event
         // WRITE DATABASE
         const { proposalNum, blockHash } = returnValues
-        console.log('newProposal: ', returnValues)
-        console.log('blocknumber: ', blockNumber)
-        console.log('transactionHash: ', transactionHash)
+        logger.info(`newProposal: ${returnValues}`)
+        logger.info(`blocknumber: ${blockNumber}`)
+        logger.info(`transactionHash: ${transactionHash}`)
         const newProposal = {
           hash: Bytes32.from(blockHash).toString(),
           proposalNum: parseInt(proposalNum, 10),
           proposedAt: blockNumber,
           proposalTx: transactionHash,
         }
-        console.log('newProposal', newProposal)
+        logger.info(`newProposal ${newProposal}`)
         await this.lock.acquire('db', async () => {
           await this.db.prisma.proposal.upsert({
             where: {

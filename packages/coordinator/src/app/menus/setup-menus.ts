@@ -1,12 +1,10 @@
 import App, { AppMenu, Context } from '../app'
 
-const { goTo } = App
-
 export default class SetupMenu extends App {
   static code = AppMenu.SETUP_MENU
 
   // eslint-disable-next-line class-methods-use-this
-  async run(context: Context): Promise<Context> {
+  async run(context: Context): Promise<{ context: Context; next: number }> {
     const { code } = await this.ask({
       type: 'select',
       name: 'code',
@@ -40,9 +38,7 @@ export default class SetupMenu extends App {
     })
     switch (code) {
       default:
-        return {
-          ...goTo(context, code),
-        }
+        return { context, next: code }
     }
   }
 }

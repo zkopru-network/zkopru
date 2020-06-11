@@ -33,7 +33,6 @@
     "node-docker-api": "^1.1.22",
     "pino": "^6.2.0",
     "pino-pretty": "^4.0.0",
-    "prompts": "^2.3.2",
     "snarkjs": "^0.1.25",
     "soltypes": "^1.1.2",
     "tar": "^6.0.2",

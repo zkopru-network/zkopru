@@ -305,7 +305,6 @@ export class Coordinator extends EventEmitter {
         })
     } catch (err) {
       logger.error(`Skip gen block. propose() fails`)
-      console.log(err)
       return
     }
     const expectedFee = this.gasPrice.muln(expectedGas)
@@ -317,7 +316,6 @@ export class Coordinator extends EventEmitter {
       logger.info(
         chalk.green(`Proposed a new block: ${headerHash(block.header)}`),
       )
-      console.log('proposed raw data', blockData)
       await this.node.l1Contract.coordinator.methods.propose(blockData).send({
         from: this.account.address,
         gas: expectedGas,
@@ -362,7 +360,6 @@ export class Coordinator extends EventEmitter {
       }
       return a.logIndex - b.logIndex
     })
-    console.log('retrieved', pendingDeposits)
     deposits.push(...pendingDeposits.map(deposit => Field.from(deposit.note)))
     logger.info(`Pending deposits: ${pendingDeposits.length}`)
     consumedBytes += 32 * commits.length

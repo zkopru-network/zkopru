@@ -1,14 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable max-classes-per-file */
 import { soliditySha3, padLeft } from 'web3-utils'
-import pino from 'pino'
 import { Container } from 'node-docker-api/lib/container'
 import { ReadStream } from 'fs-extra'
 import { Bytes32, Uint256, Address } from 'soltypes'
 import tar from 'tar'
 import BN from 'bn.js'
 
-export { PromptApp } from './prompt'
+export { logger, logStream } from './logger'
 
 export function root(hashes: string[]): string {
   if (hashes.length === 0) {
@@ -184,15 +183,6 @@ export function toArrayBuffer(buff: Buffer): ArrayBuffer {
   }
   return arrayBuff
 }
-
-export const logger = pino({
-  name: 'zkopru',
-  level: 'debug',
-  prettyPrint: {
-    translateTime: true,
-    colorize: true,
-  },
-})
 
 export function sleep(ms: number) {
   return new Promise(res => {

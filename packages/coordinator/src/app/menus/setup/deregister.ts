@@ -1,28 +1,25 @@
 import chalk from 'chalk'
 import { TransactionReceipt } from 'web3-core'
+import { logger } from '@zkopru/utils'
 import App, { AppMenu, Context } from '../../app'
-
-const { goTo, print } = App
 
 export default class Deregister extends App {
   static code = AppMenu.DEREGISTER
 
-  async run(context: Context): Promise<Context> {
-    print(chalk.blue)('Deregistering...')
+  async run(context: Context): Promise<{ context: Context; next: number }> {
+    this.print('Deregistering...')
     let receipt!: TransactionReceipt
     try {
-      receipt = await this.coordinator.deregister()
+      receipt = await this.base.deregister()
     } catch (err) {
-      print(chalk.red)(err)
+      logger.error(err)
     } finally {
       if (receipt && receipt.status) {
-        print(chalk.green)('Successfully deregistered')
+        this.print(chalk.green('Successfully deregistered'))
       } else {
-        print(chalk.red)('Failed to deregister')
+        this.print(chalk.red('Failed to deregister'))
       }
     }
-    return {
-      ...goTo(context, AppMenu.SETUP_MENU),
-    }
+    return { context, next: AppMenu.SETUP_MENU }
   }
 }
