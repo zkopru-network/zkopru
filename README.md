@@ -7,10 +7,10 @@
 [WIP]
 
 
-## How to run cli-wallet of zkopru?
+## How to run wallet of zkopru?
 
 ```shell
-npm install -g @zkopru/cli-wallet
+npm install -g @zkopru/wallet
 zkopru-wallet
 ```
 
@@ -82,12 +82,12 @@ zkopru-coordinator
     This will give you a cli menu to operate coordinator locally.
 
 
-4. Go to the cli-wallet package and run wallet with a pre-configured test account.
+4. Go to the wallet package and run wallet with a pre-configured test account.
 
     ```shell
-    cd packages/cli-wallet && yarn dev:config
+    cd packages/wallet && yarn dev:config
     ```
-    This will give you a cli menu to run cli-wallet locally.
+    This will give you a cli menu to run wallet locally.
 
 
 ### Optional commands

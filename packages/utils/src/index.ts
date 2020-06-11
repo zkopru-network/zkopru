@@ -9,6 +9,8 @@ import BN from 'bn.js'
 
 export { logger, logStream } from './logger'
 
+export { PromptApp } from './prompt'
+
 export function root(hashes: string[]): string {
   if (hashes.length === 0) {
     return padLeft(0, 64)

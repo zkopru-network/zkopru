@@ -4,6 +4,8 @@ db
 zkopru.db
 .data
 **/*/.data
+**/*/*.db
+**/*/*.db-journal
 temp
 **/*/package-lock.json
 reports
