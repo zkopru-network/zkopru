@@ -2,7 +2,7 @@
 
 /* eslint-disable no-case-declarations */
 import fs from 'fs'
-import { logStream } from '@zkopru/utils'
+import { logStream, logger } from '@zkopru/utils'
 import { Config } from './configurator/configurator'
 import { getZkWallet } from './configurator'
 import { WalletDashboard } from './app'
@@ -31,6 +31,6 @@ const main = async () => {
   await main()
   process.exit()
 })().catch(e => {
-  console.error(e)
+  logger.error(e)
   process.exit()
 })

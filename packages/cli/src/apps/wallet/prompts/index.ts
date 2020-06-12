@@ -12,6 +12,7 @@ export enum AppMenu {
   DEPOSIT_ERC20,
   DEPOSIT_ERC721,
   TRANSFER,
+  TRANSFER_ETH,
   WITHDRAW,
   TOP_MENU = Dashboard.START_CODE,
   EXIT = Dashboard.EXIT_CODE,

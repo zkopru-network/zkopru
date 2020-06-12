@@ -33,5 +33,6 @@ const main = async () => {
   await main()
   process.exit()
 })().catch(e => {
-  console.error(e)
+  logger.error(e)
+  process.exit()
 })

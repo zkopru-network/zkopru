@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { Field, F, Point, EdDSA, signEdDSA } from '@zkopru/babyjubjub'
+import { ZkAccount } from '@zkopru/account'
+import { Field, F, EdDSA } from '@zkopru/babyjubjub'
 import {
   RawTx,
   ZkTx,
@@ -21,28 +22,12 @@ export class ZkWizard {
 
   grove: Grove
 
-  privKey: string
-
-  pubKey: Point
-
   prover: any
   // genProof!: (witness: ArrayBuffer, provingKey: ArrayBuffer) => Promise<any>
 
-  constructor({
-    grove,
-    privKey,
-    path,
-  }: {
-    grove: Grove
-    privKey: string
-    path: string
-  }) {
+  constructor({ grove, path }: { grove: Grove; path: string }) {
     this.grove = grove
-    this.privKey = privKey
-    // this.circuits = {}
-    // this.wasmPK = {}
     this.path = path
-    this.pubKey = Point.fromPrivKey(privKey)
   }
 
   async init() {
@@ -60,7 +45,15 @@ export class ZkWizard {
   /**
    * @param toMemo n-th outflow will be encrypted
    */
-  async shield({ tx, toMemo }: { tx: RawTx; toMemo?: number }): Promise<ZkTx> {
+  async shield({
+    tx,
+    account,
+    toMemo,
+  }: {
+    tx: RawTx
+    account: ZkAccount
+    toMemo?: number
+  }): Promise<ZkTx> {
     return new Promise<ZkTx>((resolve, reject) => {
       const merkleProof: { [hash: string]: MerkleProof<Field> } = {}
       const eddsa: { [hash: string]: EdDSA } = {}
@@ -73,10 +66,7 @@ export class ZkWizard {
       }
 
       tx.inflow.forEach(async (utxo, index) => {
-        eddsa[index] = signEdDSA({
-          msg: utxo.hash(),
-          privKey: this.privKey,
-        })
+        eddsa[index] = account.signEdDSA(utxo.hash())
         this.grove
           .utxoMerkleProof(utxo.hash())
           .then(async proof => {

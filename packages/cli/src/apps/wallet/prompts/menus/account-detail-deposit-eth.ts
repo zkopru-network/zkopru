@@ -1,7 +1,7 @@
 import { toBN, fromWei, toWei } from 'web3-utils'
 import assert from 'assert'
 import chalk from 'chalk'
-import { logger } from '@zkopru/utils'
+import { parseStringToUnit } from '@zkopru/utils'
 import App, { AppMenu, Context } from '..'
 
 export default class DepositEther extends App {
@@ -11,32 +11,43 @@ export default class DepositEther extends App {
   async run(context: Context): Promise<{ context: Context; next: number }> {
     if (!context.account) throw Error('Acocunt is not set')
     const { balance } = context
-    // const weiPerByte = await this.base.fetchPrice()
     assert(balance, 'Balance is defined')
     // print(chalk.blue)(`Price per byte: ${fromWei(weiPerByte, 'gwei')} gwei`)
-    const { amount } = await this.ask({
-      type: 'text',
-      name: 'amount',
-      initial: 0,
-      message: 'How much ETH do you want to deposit?',
-    })
-    const { fee } = await this.ask({
-      type: 'text',
-      name: 'fee',
-      initial: 0,
-      message: 'How much ETH do you want pay for the fee?',
-    })
-    logger.info(amount)
-    logger.info(fee)
-    const amountWei: string = toWei(amount).toString()
-    const feeWei: string = toWei(fee).toString()
-    const total = toBN(amountWei).add(toBN(feeWei))
-    if (toBN(balance.eth).lt(total)) {
-      this.print(chalk.red('Not enough balance. Try again'))
-    }
-    logger.info(amountWei)
-    logger.info(feeWei)
-    logger.info(total, 'total')
+    let amountWei: string
+    let feeWei: string
+    let hasEnoughBalance = false
+    do {
+      const { amount } = await this.ask({
+        type: 'text',
+        name: 'amount',
+        initial: 0,
+        message: 'How much ETH do you want to deposit?',
+      })
+      const parsedEth = parseStringToUnit(amount, 'ether')
+      amountWei = toWei(parsedEth.val, parsedEth.unit).toString()
+      const messages: string[] = []
+      messages.push(`Amount: ${amount} ETH`)
+      messages.push(`    = ${amountWei} wei`)
+      this.print(messages.join('\n'))
+      const { fee } = await this.ask({
+        type: 'text',
+        name: 'fee',
+        initial: 0,
+        message: 'How much ETH do you want to pay for the fee?',
+      })
+      const parsedFee = parseStringToUnit(amount, 'ether')
+      feeWei = toWei(parsedFee.val, parsedFee.unit).toString()
+      messages.push(`Fee: ${fee} ETH`)
+      messages.push(`    = ${feeWei} wei`)
+      this.print(messages.join('\n'))
+      const total = toBN(amountWei).add(toBN(feeWei))
+      if (toBN(balance.eth).lt(total)) {
+        this.print(chalk.red('Not enough balance. Try again'))
+      } else {
+        hasEnoughBalance = true
+      }
+    } while (!hasEnoughBalance)
+
     const { confirmed } = await this.ask({
       type: 'confirm',
       name: 'confirmed',

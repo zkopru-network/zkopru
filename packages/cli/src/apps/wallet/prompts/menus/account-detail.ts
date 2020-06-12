@@ -7,12 +7,15 @@ export default class AccountDetail extends App {
 
   // eslint-disable-next-line class-methods-use-this
   async run(context: Context): Promise<{ context: Context; next: number }> {
-    if (!context.account) throw Error('Acocunt is not set')
-    const balance: Balance = await this.base.getLayer1Assets(context.account)
-    const spendables = await this.base.getSpendables(context.account)
+    const wallet = this.base
+    const { account } = context
+    if (!account) throw Error('Acocunt is not set')
+    const balance: Balance = await wallet.getLayer1Assets(account)
+    const spendables = await wallet.getSpendables(account)
     const messages: string[] = []
     const { eth, erc20, erc721 } = balance
     messages.push(`Layer 1`)
+    messages.push(`   Address: ${account.address}`)
     messages.push(`   Ether: ${fromWei(eth, 'ether')}`)
     messages.push(`   ERC20: ${Object.keys(erc20).length === 0 ? 'N/A' : ''}`)
     messages.push(
@@ -23,7 +26,8 @@ export default class AccountDetail extends App {
       ...Object.keys(erc721).map(addr => `      ${addr}: ${erc721[addr]}`),
     )
     messages.push(`Layer 2`)
-    messages.push(`   Ether: ${fromWei(eth, 'ether')}`)
+    messages.push(`   Pub key: ${account.pubKey.toHex()}`)
+    messages.push(`   Ether: ${fromWei(spendables.eth, 'ether')}`)
     messages.push(
       `   ERC20: ${Object.keys(spendables.erc20).length === 0 ? 'N/A' : ''}`,
     )
@@ -53,6 +57,6 @@ export default class AccountDetail extends App {
         { title: 'Withdraw', value: AppMenu.WITHDRAW },
       ],
     })
-    return { next: choice, context: { ...context, balance, spendables } }
+    return { next: choice, context: { ...context, balance } }
   }
 }

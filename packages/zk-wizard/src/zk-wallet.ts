@@ -1,11 +1,12 @@
-import { Utxo, Note, UtxoStatus, Sum } from '@zkopru/transaction'
+import { Utxo, Note, UtxoStatus, Sum, RawTx } from '@zkopru/transaction'
 import { Field, F, Point } from '@zkopru/babyjubjub'
 import { Layer1 } from '@zkopru/contracts'
 import { HDWallet, ZkAccount } from '@zkopru/account'
 import { ZkOPRUNode } from '@zkopru/core'
 import { DB, NoteType } from '@zkopru/prisma'
 import { logger } from '@zkopru/utils'
-import fetch from 'node-fetch'
+import fetch, { Response } from 'node-fetch'
+import { ZkWizard } from './zk-wizard'
 
 export interface Balance {
   eth: string
@@ -25,6 +26,8 @@ export class ZkWallet {
   coordinator: string
 
   account?: ZkAccount
+
+  wizard: ZkWizard
 
   accounts: ZkAccount[]
 
@@ -48,6 +51,7 @@ export class ZkWallet {
     erc20,
     erc721,
     coordinator,
+    snarkKeyPath,
   }: {
     db: DB
     wallet: HDWallet
@@ -57,18 +61,23 @@ export class ZkWallet {
     erc20: string[]
     erc721: string[]
     coordinator: string
+    snarkKeyPath: string
   }) {
     this.db = db
     this.wallet = wallet
     this.node = node
     this.accounts = accounts
-    this.account = account
     this.erc20 = erc20
     this.erc721 = erc721
     this.coordinator = coordinator
     this.cached = {
       layer1: {},
     }
+    if (account) this.setAccount(account)
+    this.wizard = new ZkWizard({
+      grove: this.node.l2Chain.grove,
+      path: snarkKeyPath,
+    })
   }
 
   setAccount(account: number | ZkAccount) {
@@ -305,9 +314,29 @@ export class ZkWallet {
     const response = await fetch(`${this.coordinator}/price`)
     if (response.ok) {
       const { weiPerByte } = await response.json()
-      return weiPerByte
+      if (weiPerByte) return weiPerByte
     }
-    throw Error(`${response.text()}`)
+    throw Error(`${response}`)
+  }
+
+  async sendTx(
+    tx: RawTx,
+    account?: ZkAccount,
+    toMemo?: number,
+  ): Promise<Response> {
+    if (toMemo && !tx.outflow[toMemo]) throw Error('Invalid index')
+    const from = account || this.account
+    if (!from) throw Error('Account is not set')
+    const zkTx = await this.wizard.shield({
+      tx,
+      account: from,
+      toMemo,
+    })
+    const response = await fetch(`${this.coordinator}/tx`, {
+      method: 'post',
+      body: zkTx.encode(),
+    })
+    return response
   }
 
   private async deposit(note: Note, fee: Field): Promise<boolean> {
