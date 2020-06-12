@@ -26,6 +26,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@zkopru/utils": "file:../utils",
     "big-integer": "^1.6.48",
     "blake-hash": "^1.1.0",
     "bn.js": "^5.1.1",

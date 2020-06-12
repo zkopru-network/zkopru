@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable max-classes-per-file */
-import { soliditySha3, padLeft } from 'web3-utils'
+import { soliditySha3, padLeft, Unit } from 'web3-utils'
 import { Container } from 'node-docker-api/lib/container'
 import { ReadStream } from 'fs-extra'
 import { Bytes32, Uint256, Address } from 'soltypes'
@@ -10,6 +10,82 @@ import BN from 'bn.js'
 export { logger, logStream } from './logger'
 
 export { PromptApp } from './prompt'
+
+const units: Unit[] = [
+  'noether',
+  'wei',
+  'kwei',
+  'Kwei',
+  'babbage',
+  'femtoether',
+  'mwei',
+  'Mwei',
+  'lovelace',
+  'picoether',
+  'gwei',
+  'Gwei',
+  'shannon',
+  'nanoether',
+  'nano',
+  'szabo',
+  'microether',
+  'micro',
+  'finney',
+  'milliether',
+  'milli',
+  'ether',
+  'kether',
+  'grand',
+  'mether',
+  'gether',
+  'tether',
+]
+
+export function parseStringToUnit(
+  str: string,
+  defaultUnit?: Unit,
+): { val: string; unit: Unit } {
+  for (const unit of units) {
+    const splitted = str.split(unit)
+    if (splitted.length > 1) {
+      const val = parseFloat(splitted[0].trim()).toString()
+      return {
+        val,
+        unit,
+      }
+    }
+  }
+  return {
+    val: parseFloat(str).toString(),
+    unit: defaultUnit || 'ether',
+  }
+}
+
+export function txSizeCalculator(
+  inflowNum: number,
+  outflowNum: number,
+  crossLayerOutflowNum: number,
+  hasSwap?: boolean,
+  noMemo?: boolean,
+): number {
+  let size = 0
+  size += 1 // inflow num length
+  size += inflowNum * 32 // inflow root
+  size += inflowNum * 32 // inflow nullifier
+  size += 1 // outflow num length
+  size += outflowNum * 32 // outflow note hash
+  size += outflowNum * 1 // outflow type identifier
+  size += crossLayerOutflowNum * 20 // cross-layer outflow has 'to' address data
+  size += crossLayerOutflowNum * 32 // cross-layer outflow has 'th data
+  size += crossLayerOutflowNum * 20 // cross-layer outflow has token address data
+  size += crossLayerOutflowNum * 32 // cross-layer outflow has token amount
+  size += crossLayerOutflowNum * 32 // cross-layer outflow has nft id
+  size += crossLayerOutflowNum * 32 // cross-layer outflow has fee
+  size += 1 // swap & memo indicator
+  size += hasSwap ? 32 : 0 // note hash to swap with
+  size += noMemo ? 0 : 81 // note hash to swap
+  return size
+}
 
 export function root(hashes: string[]): string {
   if (hashes.length === 0) {

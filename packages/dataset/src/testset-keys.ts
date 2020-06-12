@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { Point } from '@zkopru/babyjubjub'
 import { TokenUtils } from '@zkopru/transaction'
+import { hexify } from '@zkopru/utils'
 
-const alicePrivKey = "I am Alice's private key"
+const alicePrivKey = hexify("I am Alice's private key")
 const alicePubKey: Point = Point.fromPrivKey(alicePrivKey)
-const bobPrivKey = "I am Bob's private key"
+const bobPrivKey = hexify("I am Bob's private key")
 const bobPubKey: Point = Point.fromPrivKey(bobPrivKey)
 
 const KITTY_1 =

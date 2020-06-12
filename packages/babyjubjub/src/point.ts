@@ -1,3 +1,4 @@
+import { hexToBuffer, hexify } from '@zkopru/utils'
 import bigInt, { BigInteger } from 'big-integer'
 import * as snarkjs from 'snarkjs'
 import * as circomlib from 'circomlib'
@@ -29,7 +30,7 @@ export class Point {
   }
 
   static fromHex(hex: string) {
-    const buffer = Buffer.from(hex, 'hex')
+    const buffer = hexToBuffer(hex)
     return Point.decode(buffer)
   }
 
@@ -43,7 +44,8 @@ export class Point {
   }
 
   static fromPrivKey(key: string | Buffer): Point {
-    const result = circomlib.eddsa.prv2pub(key)
+    const buff: Buffer = typeof key === 'string' ? hexToBuffer(key) : key
+    const result = circomlib.eddsa.prv2pub(buff)
     return Point.from(result[0].toString(), result[1].toString())
   }
 
@@ -77,7 +79,7 @@ export class Point {
   }
 
   toHex(): string {
-    return this.encode().toString('hex')
+    return hexify(this.encode())
   }
 
   toBigIntArr(): BigInteger[] {
@@ -133,8 +135,10 @@ export function signEdDSA({
   msg: F
   privKey: Buffer | string
 }): EdDSA {
+  const buff: Buffer =
+    typeof privKey === 'string' ? hexToBuffer(privKey) : privKey
   const result = circomlib.eddsa.signPoseidon(
-    privKey,
+    buff,
     Field.from(msg).toIden3BigInt(),
   )
   return {

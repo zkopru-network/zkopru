@@ -2,6 +2,7 @@
 import { Docker } from 'node-docker-api'
 import fs from 'fs-extra'
 import path from 'path'
+import { ZkAccount } from '@zkopru/account'
 import { Field } from '@zkopru/babyjubjub'
 import { ZkTx } from '@zkopru/transaction'
 import { ZkWizard } from '@zkopru/zk-wizard'
@@ -126,14 +127,10 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
   const keyPath = path.join(path.dirname(__filename), '../keys')
   await buildKeys(keyPath)
 
-  const aliceZkWizard = new ZkWizard({
+  const alice = new ZkAccount(keys.alicePrivKey)
+  const bob = new ZkAccount(keys.bobPrivKey)
+  const zkWizard = new ZkWizard({
     grove,
-    privKey: keys.alicePrivKey,
-    path: keyPath,
-  })
-  const bobZkWizard = new ZkWizard({
-    grove,
-    privKey: keys.bobPrivKey,
     path: keyPath,
   })
   const tx1Path = path.join(keyPath, 'txs/zk_tx_1.tx')
@@ -145,39 +142,46 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
   try {
     zk_tx_1 = ZkTx.decode(fs.readFileSync(tx1Path))
   } catch (err) {
-    zk_tx_1 = await aliceZkWizard.shield({ tx: txs.tx_1 })
+    zk_tx_1 = await zkWizard.shield({ tx: txs.tx_1, account: alice, toMemo: 0 })
     fs.writeFileSync(tx1Path, zk_tx_1.encode())
   }
   let zk_tx_2_1: ZkTx
   try {
     zk_tx_2_1 = ZkTx.decode(fs.readFileSync(tx2_1Path))
   } catch (err) {
-    zk_tx_2_1 = await aliceZkWizard.shield({ tx: txs.tx_2_1 })
+    zk_tx_2_1 = await zkWizard.shield({
+      tx: txs.tx_2_1,
+      account: bob,
+      toMemo: 1,
+    })
     fs.writeFileSync(tx2_1Path, zk_tx_2_1.encode())
   }
   let zk_tx_2_2: ZkTx
   try {
     zk_tx_2_2 = ZkTx.decode(fs.readFileSync(tx2_2Path))
   } catch (err) {
-    zk_tx_2_2 = await bobZkWizard.shield({ tx: txs.tx_2_2 })
+    zk_tx_2_2 = await zkWizard.shield({
+      tx: txs.tx_2_2,
+      account: bob,
+      toMemo: 1,
+    })
     fs.writeFileSync(tx2_2Path, zk_tx_2_2.encode())
   }
   let zk_tx_3: ZkTx
   try {
     zk_tx_3 = ZkTx.decode(fs.readFileSync(tx3Path))
   } catch (err) {
-    zk_tx_3 = await aliceZkWizard.shield({ tx: txs.tx_3 })
+    zk_tx_3 = await zkWizard.shield({ tx: txs.tx_3, account: alice })
     fs.writeFileSync(tx3Path, zk_tx_3.encode())
   }
   let zk_tx_4: ZkTx
   try {
     zk_tx_4 = ZkTx.decode(fs.readFileSync(tx4Path))
   } catch (err) {
-    zk_tx_4 = await aliceZkWizard.shield({ tx: txs.tx_4 })
+    zk_tx_4 = await zkWizard.shield({ tx: txs.tx_4, account: alice })
     fs.writeFileSync(tx4Path, zk_tx_4.encode())
   }
-  await aliceZkWizard.terminate()
-  await bobZkWizard.terminate()
+  await zkWizard.terminate()
   await mockupDB.terminate()
   return [zk_tx_1, zk_tx_2_1, zk_tx_2_2, zk_tx_3, zk_tx_4]
 }
