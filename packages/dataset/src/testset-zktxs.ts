@@ -2,7 +2,6 @@
 import { Docker } from 'node-docker-api'
 import fs from 'fs-extra'
 import path from 'path'
-import { ZkAccount } from '@zkopru/account'
 import { Field } from '@zkopru/babyjubjub'
 import { ZkTx } from '@zkopru/transaction'
 import { ZkWizard } from '@zkopru/zk-wizard'
@@ -11,7 +10,7 @@ import * as utils from '@zkopru/utils'
 import { Container } from 'node-docker-api/lib/container'
 import tar from 'tar'
 import { DB } from '@zkopru/prisma'
-import { keys, address } from './testset-keys'
+import { accounts, address } from './testset-keys'
 import { utxos } from './testset-utxos'
 import { txs } from './testset-txs'
 
@@ -95,7 +94,7 @@ export async function loadGrove(db: DB): Promise<{ grove: Grove }> {
     nullifierHasher: keccakHasher(254),
     fullSync: true,
     forceUpdate: true,
-    pubKeysToObserve: [keys.alicePubKey, keys.bobPubKey],
+    pubKeysToObserve: [accounts.alice.pubKey, accounts.bob.pubKey],
     addressesToObserve: [address.USER_A],
   })
   await grove.init()
@@ -127,8 +126,6 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
   const keyPath = path.join(path.dirname(__filename), '../keys')
   await buildKeys(keyPath)
 
-  const alice = new ZkAccount(keys.alicePrivKey)
-  const bob = new ZkAccount(keys.bobPrivKey)
   const zkWizard = new ZkWizard({
     grove,
     path: keyPath,
@@ -142,7 +139,11 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
   try {
     zk_tx_1 = ZkTx.decode(fs.readFileSync(tx1Path))
   } catch (err) {
-    zk_tx_1 = await zkWizard.shield({ tx: txs.tx_1, account: alice, toMemo: 0 })
+    zk_tx_1 = await zkWizard.shield({
+      tx: txs.tx_1,
+      account: accounts.alice,
+      toMemo: 0,
+    })
     fs.writeFileSync(tx1Path, zk_tx_1.encode())
   }
   let zk_tx_2_1: ZkTx
@@ -151,7 +152,7 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
   } catch (err) {
     zk_tx_2_1 = await zkWizard.shield({
       tx: txs.tx_2_1,
-      account: bob,
+      account: accounts.alice,
       toMemo: 1,
     })
     fs.writeFileSync(tx2_1Path, zk_tx_2_1.encode())
@@ -162,7 +163,7 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
   } catch (err) {
     zk_tx_2_2 = await zkWizard.shield({
       tx: txs.tx_2_2,
-      account: bob,
+      account: accounts.bob,
       toMemo: 1,
     })
     fs.writeFileSync(tx2_2Path, zk_tx_2_2.encode())
@@ -171,14 +172,14 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
   try {
     zk_tx_3 = ZkTx.decode(fs.readFileSync(tx3Path))
   } catch (err) {
-    zk_tx_3 = await zkWizard.shield({ tx: txs.tx_3, account: alice })
+    zk_tx_3 = await zkWizard.shield({ tx: txs.tx_3, account: accounts.alice })
     fs.writeFileSync(tx3Path, zk_tx_3.encode())
   }
   let zk_tx_4: ZkTx
   try {
     zk_tx_4 = ZkTx.decode(fs.readFileSync(tx4Path))
   } catch (err) {
-    zk_tx_4 = await zkWizard.shield({ tx: txs.tx_4, account: alice })
+    zk_tx_4 = await zkWizard.shield({ tx: txs.tx_4, account: accounts.alice })
     fs.writeFileSync(tx4Path, zk_tx_4.encode())
   }
   await zkWizard.terminate()

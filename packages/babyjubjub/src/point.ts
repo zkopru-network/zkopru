@@ -128,6 +128,18 @@ export interface EdDSA {
   S: Field
 }
 
+export function verifyEdDSA(msg: F, sig: EdDSA, pubKey: Point): boolean {
+  const result = circomlib.eddsa.verifyPoseidon(
+    Field.from(msg).toIden3BigInt(),
+    {
+      R8: [sig.R8.x.toIden3BigInt(), sig.R8.y.toIden3BigInt()],
+      S: sig.S.toIden3BigInt(),
+    },
+    [pubKey.x.toIden3BigInt(), pubKey.y.toIden3BigInt()],
+  )
+  return result
+}
+
 export function signEdDSA({
   msg,
   privKey,
@@ -145,16 +157,4 @@ export function signEdDSA({
     R8: Point.from(result.R8[0].toString(), result.R8[1].toString()),
     S: Field.from(result.S.toString()),
   }
-}
-
-export function verifyEdDSA(msg: F, sig: EdDSA, pubKey: Point): boolean {
-  const result = circomlib.eddsa.verifyPoseidon(
-    Field.from(msg).toIden3BigInt(),
-    {
-      R8: [sig.R8.x.toIden3BigInt(), sig.R8.y.toIden3BigInt()],
-      S: sig.S.toIden3BigInt(),
-    },
-    [pubKey.x.toIden3BigInt(), pubKey.y.toIden3BigInt()],
-  )
-  return result
 }

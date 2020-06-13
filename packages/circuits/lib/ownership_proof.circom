@@ -9,8 +9,8 @@ template OwnershipProof() {
     component eddsa = EdDSAPoseidonVerifier()
     eddsa.enabled <== 1;
     eddsa.M <== note;
-    eddsa.Ax <== pub_key[0]sig[0];
-    eddsa.Ay <== pub_key[1]sig[1];
+    eddsa.Ax <== pub_key[0];
+    eddsa.Ay <== pub_key[1];
     eddsa.R8x <== sig[0];
     eddsa.R8y <== sig[1];
     eddsa.S <== sig[2];

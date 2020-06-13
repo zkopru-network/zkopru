@@ -1,9 +1,10 @@
 import Web3 from 'web3'
 // import { Accounts } from 'web3-eth-accounts'
 import { Account, EncryptedKeystoreV3Json, AddAccount } from 'web3-core'
-import { Field, Point, EdDSA, signEdDSA } from '@zkopru/babyjubjub'
+import { Field, Point, EdDSA, signEdDSA, verifyEdDSA } from '@zkopru/babyjubjub'
 import { Keystore } from '@zkopru/prisma'
 import { hexify } from '@zkopru/utils'
+import assert from 'assert'
 
 export class ZkAccount {
   private snarkPK: Field
@@ -45,7 +46,9 @@ export class ZkAccount {
   }
 
   signEdDSA(msg: Field): EdDSA {
-    return signEdDSA({ msg, privKey: this.snarkPK.toBuffer('be') })
+    const signature = signEdDSA({ msg, privKey: this.snarkPK.toHex(32) })
+    assert(verifyEdDSA(msg, signature, this.pubKey))
+    return signature
   }
 
   toAddAccount(): AddAccount {

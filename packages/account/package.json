@@ -9,6 +9,7 @@
   ],
   "_moduleAliases": {
     "~account": "dist",
+    "~utils": "../utils/dist",
     "~prisma": "../prisma/dist"
   },
   "scripts": {
