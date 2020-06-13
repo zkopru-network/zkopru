@@ -27,13 +27,13 @@
     "coverage": "jest --coverage",
     "coverage:show": "live-server coverage",
     "dev": "ts-node-dev -r tsconfig-paths/register src/index.ts",
+    "studio": "prisma studio --experimental",
     "start": "node dist/index.js"
   },
   "dependencies": {
     "@prisma/client": "^2.0.0-beta.8",
     "@prisma/migrate": "^2.0.0-beta.8",
     "@zkopru/babyjubjub": "file:../babyjubjub",
-    "@zkopru/transaction": "file:../transaction",
     "big-integer": "^1.6.48",
     "bn.js": "^5.1.1",
     "sqlite3": "^4.2.0",

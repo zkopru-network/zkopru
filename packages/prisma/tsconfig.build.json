@@ -9,7 +9,6 @@
   },
   "include": ["src"],
   "references": [
-    { "path": "../babyjubjub/tsconfig.build.json", "prepend": false },
-    { "path": "../transaction/tsconfig.build.json", "prepend": false }
+    { "path": "../babyjubjub/tsconfig.build.json", "prepend": false }
   ]
 }
