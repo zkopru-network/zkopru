@@ -34,6 +34,14 @@ export interface GrovePatch {
   nullifiers: BN[]
 }
 
+export interface GroveSnapshot {
+  utxoTreeIndex: Field
+  utxoTreeRoot: Field
+  withdrawalTreeIndex: BN
+  withdrawalTreeRoot: BN
+  nullifierTreeRoot?: BN
+}
+
 export class Grove {
   lock: AsyncLock
 
@@ -131,6 +139,15 @@ export class Grove {
     })
   }
 
+  async getSnapshot(): Promise<GroveSnapshot> {
+    const result = await this.dryPatch({
+      utxos: [],
+      withdrawals: [],
+      nullifiers: [],
+    })
+    return result
+  }
+
   setPubKeysToObserve(points: Point[]) {
     this.config.pubKeysToObserve = points
     this.utxoTrees.forEach(tree => tree.updatePubKeys(points))
@@ -160,22 +177,8 @@ export class Grove {
     })
   }
 
-  async dryPatch(
-    patch: GrovePatch,
-  ): Promise<{
-    utxoTreeIndex: Field
-    utxoTreeRoot: Field
-    withdrawalTreeIndex: BN
-    withdrawalTreeRoot: BN
-    nullifierTreeRoot?: BN
-  }> {
-    let result!: {
-      utxoTreeIndex: Field
-      utxoTreeRoot: Field
-      withdrawalTreeIndex: BN
-      withdrawalTreeRoot: BN
-      nullifierTreeRoot?: BN
-    }
+  async dryPatch(patch: GrovePatch): Promise<GroveSnapshot> {
+    let result!: GroveSnapshot
     await this.lock.acquire('grove', async () => {
       const utxoResult = await this.latestUTXOTree().dryAppend(...patch.utxos)
       const withdrawalResult = await this.latestWithdrawalTree().dryAppend(

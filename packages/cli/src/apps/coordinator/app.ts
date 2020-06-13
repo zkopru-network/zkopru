@@ -12,6 +12,7 @@ import Layer1Details from './prompts/layer1-details'
 import CoordinatorInfo from './prompts/coordinator-info'
 import CommitDeposits from './prompts/setup/commit-deposits'
 import RegisterVk from './prompts/setup/register-vks'
+import StopAutoCoordination from './prompts/stop-auto-coordinate'
 
 export class CooridnatorDashboard extends Dashboard<Context, Coordinator> {
   constructor(coordinator: Coordinator, onCancel: () => Promise<void>) {
@@ -31,6 +32,10 @@ export class CooridnatorDashboard extends Dashboard<Context, Coordinator> {
     )
     this.addPromptApp(Deregister.code, new Deregister(option))
     this.addPromptApp(AutoCoordinate.code, new AutoCoordinate(option))
+    this.addPromptApp(
+      StopAutoCoordination.code,
+      new StopAutoCoordination(option),
+    )
     this.addPromptApp(PrintStatus.code, new PrintStatus(option))
     this.addPromptApp(Layer1Details.code, new Layer1Details(option))
     this.addPromptApp(CoordinatorInfo.code, new CoordinatorInfo(option))

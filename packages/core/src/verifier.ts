@@ -1,15 +1,22 @@
-import { verifyingKeyIdentifier, logger } from '@zkopru/utils'
+import { verifyingKeyIdentifier, logger, root } from '@zkopru/utils'
 import { Deposit as DepositSql } from '@zkopru/prisma'
 // import { Point } from '@zkopru/babyjubjub'
 import { Bytes32, Uint256 } from 'soltypes'
 import { soliditySha3 } from 'web3-utils'
 import BN from 'bn.js'
-import assert from 'assert'
-import { Block, Header, VerifyResult } from './block'
+import { DryPatchResult } from '@zkopru/tree'
+import {
+  Block,
+  Header,
+  VerifyResult,
+  headerHash,
+  massDepositHash,
+  massMigrationHash,
+} from './block'
 import { VerifyingKey } from './snark'
-import { L1Contract } from './layer1'
 import { SNARKVerifier } from './snark-verifier'
 import { L2Chain, Patch } from './layer2'
+import { Challenge, ChallengeCode } from './challenge'
 
 export interface VerifyOption {
   header: boolean
@@ -36,23 +43,41 @@ export class Verifier {
   }
 
   async verifyBlock({
-    layer1,
     layer2,
     prevHeader,
     block,
   }: {
-    layer1: L1Contract
     layer2: L2Chain
     prevHeader: Header
     block: Block
-  }): Promise<Patch> {
+  }): Promise<{ patch?: Patch; challenge?: Challenge }> {
     logger.info(`Verifying ${block.hash}`)
-    if (this.option.header) {
-      await this.verifyHeader(block)
+    // check current node status is equal to the prev header
+    if (!headerHash(prevHeader).eq(block.header.parentBlock))
+      throw Error('differnet parent hash')
+    const snapShot = await layer2.grove.getSnapshot()
+    switch (true) {
+      case !prevHeader.utxoIndex.toBN().eq(snapShot.utxoTreeIndex):
+      case !prevHeader.utxoRoot.toBN().eq(snapShot.utxoTreeRoot):
+      case !prevHeader.withdrawalIndex.toBN().eq(snapShot.withdrawalTreeIndex):
+      case !prevHeader.withdrawalRoot.toBN().eq(snapShot.withdrawalTreeRoot):
+      case !snapShot.nullifierTreeRoot?.eq(prevHeader.nullifierRoot.toBN()):
+        throw Error('Current grove does not fit for prev header')
+      default:
+        break
     }
-    // implement every challenge logics here
+    // verify and gen challenge codes here
+    const treePatch = await layer2.getGrovePatch(block)
+    const dryPatchResult = await layer2.grove.dryPatch(treePatch)
+    if (this.option.header) {
+      const code = Verifier.verifyHeader(block, dryPatchResult)
+      if (code) {
+        return { challenge: { code } }
+      }
+    }
     // deposit verification
-    for (const massDeposit of block.body.massDeposits) {
+    for (let i = 0; i < block.body.massDeposits.length; i += 1) {
+      const massDeposit = block.body.massDeposits[i]
       const deposits: DepositSql[] = await layer2.getDeposits(massDeposit)
       let merged
       let fee = new BN(0)
@@ -64,13 +89,14 @@ export class Verifier {
         !Bytes32.from(merged).eq(massDeposit.merged) ||
         !massDeposit.fee.toBN().eq(fee)
       ) {
-        throw Error('Failed to match the deposit leaves with the proposal.')
+        return {
+          challenge: { code: 'challengeMassDeposit', data: { index: i } },
+        }
       }
     }
+    // migration verification
+    // tx verification
 
-    assert(layer1)
-    assert(prevHeader)
-    // console.log(this, layer1, layer2, block, this.option, prevHeader)
     const verificationResult = true
     const fullVerification = Object.values(this.option).reduce(
       (prev, curr) => (prev ? curr : prev),
@@ -84,15 +110,63 @@ export class Verifier {
     } else {
       result = VerifyResult.INVALIDATED
     }
-    // TODO return other patches here
-    return { result, block: block.hash }
+    return {
+      patch: {
+        result,
+        block: block.hash,
+        massDeposits: block.body.massDeposits.map(massDepositHash),
+        treePatch,
+      },
+    }
   }
 
-  async verifyHeader(block: Block) {
-    assert(block)
-    assert(this)
-    // console.log(block, this)
-    // onChallenge({ block })
+  static verifyHeader(
+    block: Block,
+    patchResult: DryPatchResult,
+  ): ChallengeCode | undefined {
+    const depositFee = block.body.massDeposits.reduce(
+      (acc, md) => acc.add(md.fee.toBN()),
+      new BN(0),
+    )
+    const migrationFee = block.body.massMigrations.reduce(
+      (acc, mm) => acc.add(mm.migratingLeaves.fee.toBN()),
+      new BN(0),
+    )
+    const txFee = block.body.txs.reduce((acc, tx) => acc.add(tx.fee), new BN(0))
+    const totalFee = depositFee.add(migrationFee).add(txFee)
+
+    switch (true) {
+      case !totalFee.eq(block.header.fee.toBN()):
+        return 'challengeTotalFee'
+      case !block.header.utxoIndex.toBN().eq(patchResult.utxoTreeIndex):
+      case !block.header.utxoRoot.toBN().eq(patchResult.utxoTreeRoot):
+        return 'challengeUTXORollUp'
+      case !block.header.withdrawalIndex
+        .toBN()
+        .eq(patchResult.withdrawalTreeIndex):
+      case !block.header.withdrawalRoot
+        .toBN()
+        .eq(patchResult.withdrawalTreeRoot):
+        return 'challengeWithdrawalRollUp'
+      case !patchResult.nullifierTreeRoot?.eq(
+        block.header.nullifierRoot.toBN(),
+      ):
+        return 'challengeNullifierRollUp'
+      case root(block.body.massDeposits.map(massDepositHash)).eq(
+        block.header.depositRoot,
+      ):
+        return 'challengeDepositRoot'
+      case root(block.body.massMigrations.map(massMigrationHash)).eq(
+        block.header.migrationRoot,
+      ):
+        return 'challengeMigrationRoot'
+      case root(block.body.txs.map(tx => tx.hash())).eq(
+        block.header.migrationRoot,
+      ):
+        return 'challengeTxRoot'
+      default:
+        return undefined
+    }
   }
 
   async verifyTxs(block: Block): Promise<{ result: boolean; index?: number }> {

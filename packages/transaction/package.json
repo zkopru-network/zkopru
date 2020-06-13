@@ -27,9 +27,11 @@
   },
   "dependencies": {
     "@zkopru/babyjubjub": "file:../babyjubjub",
+    "@zkopru/prisma": "file:../prisma",
     "@zkopru/utils": "file:../utils",
     "big-integer": "^1.6.48",
     "chacha20": "^0.1.4",
+    "soltypes": "^1.1.2",
     "circomlib": "^0.1.1",
     "snarkjs": "^0.1.25",
     "web3-utils": "^1.2.6"

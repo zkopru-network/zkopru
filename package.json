@@ -30,6 +30,7 @@
     "coverage:integration": "yarn test:integration --coverage",
     "coverage:show": "live-server coverage",
     "link-modules": "lerna run --parallel link-modules",
+    "studio": "cd packages/prisma && prisma studio --experimental",
     "lint": "eslint --ext js --ext ts --ext md",
     "lint:ci": "yarn lint . --format junit",
     "lint:md": "markdownlint --ignore node_modules --ignore .git",

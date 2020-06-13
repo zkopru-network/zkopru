@@ -210,7 +210,7 @@ export class Synchronizer {
           returnValues.merged,
           returnValues.fee)}`,
         )
-        const massDeposit = {
+        const massDeposit: MassDepositSql = {
           index: Uint256.from(returnValues.index).toString(),
           merged: Bytes32.from(returnValues.merged).toString(),
           fee: Uint256.from(returnValues.fee).toString(),

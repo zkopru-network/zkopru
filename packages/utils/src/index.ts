@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable max-classes-per-file */
-import { soliditySha3, padLeft, Unit } from 'web3-utils'
+import { soliditySha3, Unit } from 'web3-utils'
 import { Container } from 'node-docker-api/lib/container'
 import { ReadStream } from 'fs-extra'
 import { Bytes32, Uint256, Address } from 'soltypes'
@@ -87,21 +87,24 @@ export function txSizeCalculator(
   return size
 }
 
-export function root(hashes: string[]): string {
+export function root(hashes: Bytes32[]): Bytes32 {
   if (hashes.length === 0) {
-    return padLeft(0, 64)
+    return Bytes32.from('0')
   }
   if (hashes.length === 1) {
     return hashes[0]
   }
-  const parents: string[] = []
+  const parents: Bytes32[] = []
   const numOfParentNodes = Math.ceil(hashes.length / 2)
   const hasEmptyLeaf = hashes.length % 2 === 1
   for (let i = 0; i < numOfParentNodes; i += 1) {
     if (hasEmptyLeaf && i === numOfParentNodes - 1) {
-      parents[i] = soliditySha3(hashes[i * 2]) || ''
+      parents[i] = Bytes32.from(soliditySha3(hashes[i * 2].toString()) || '')
     } else {
-      parents[i] = soliditySha3(hashes[i * 2], hashes[i * 2 + 1]) || ''
+      parents[i] = Bytes32.from(
+        soliditySha3(hashes[i * 2].toString(), hashes[i * 2 + 1].toString()) ||
+          '',
+      )
     }
   }
   return root(parents)
@@ -185,6 +188,25 @@ export class Queue {
     const dequeued = this.buffer.slice(this.cursor, this.cursor + n)
     this.cursor += n
     return dequeued
+  }
+}
+
+export function mergeDeposits(
+  deposits: { note: Bytes32; fee: Uint256 }[],
+): {
+  merged: Bytes32
+  fee: Uint256
+} {
+  let fee = new BN(0)
+  let merged = ''
+  for (const deposit of deposits) {
+    merged = soliditySha3(merged, deposit.note.toString()) || ''
+    fee = fee.add(deposit.fee.toBN())
+    if (merged === '') throw Error('web3-utils keccak256 throws Error')
+  }
+  return {
+    merged: Bytes32.from(merged),
+    fee: Uint256.from(fee.toString(10)),
   }
 }
 

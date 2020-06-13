@@ -89,6 +89,19 @@ zkopru-coordinator
     ```
     This will give you a cli menu to run wallet locally.
 
+### How to
+
+[WIP]
+
+* update contracts
+* update database schema
+  ```shell
+  yarn build:prisma
+  ```
+* run prisma studio
+* check logs
+* run testnet
+
 
 ### Optional commands
 

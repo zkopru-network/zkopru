@@ -338,7 +338,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       [nodeIndex: string]: string
     } = {}
 
-    const candidates: Item<T>[] = []
+    const itemsToSave: Item<T>[] = []
     let root: T = this.root()
 
     const trackingLeaves: T[] = await this.indexesOfTrackingLeaves()
@@ -348,7 +348,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       const item = items[i]
       // if note exists, save the data and mark as an item to keep tracking
       if (this.config.fullSync || item.note) {
-        candidates.push(item)
+        itemsToSave.push(item)
       }
 
       if (items[i].note) {
@@ -446,7 +446,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       },
     })
     // insert notes
-    for (const candidate of candidates) {
+    for (const candidate of itemsToSave) {
       const note = {
         hash: hexify(candidate.leafHash),
         index: hexify(index),

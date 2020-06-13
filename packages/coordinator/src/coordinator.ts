@@ -83,6 +83,7 @@ export class Coordinator extends EventEmitter {
         // create an observer to fetch the block data from database
         switch (status) {
           case NetworkStatus.SYNCED:
+          case NetworkStatus.FULLY_SYNCED:
             // It tries to propose a block until any block is proposed to the layer1
             if (blockHash) {
               const block = await this.node.l2Chain.getBlock(blockHash)
@@ -181,8 +182,11 @@ export class Coordinator extends EventEmitter {
     }
   }
 
-  private startSubscribeGasPrice() {
+  private async startSubscribeGasPrice() {
     if (this.gasPriceSubscriber) return
+    this.gasPrice = Field.from(
+      await this.node.l1Contract.web3.eth.getGasPrice(),
+    )
     this.gasPriceSubscriber = this.node.l1Contract.web3.eth.subscribe(
       'newBlockHeaders',
       async () => {
@@ -273,6 +277,7 @@ export class Coordinator extends EventEmitter {
   }
 
   private startGenBlock() {
+    logger.info('Started to generate blocks')
     if (!this.genBlockJob)
       this.genBlockJob = scheduleJob('*/5 * * * * *', () =>
         this.proposeNewBlocks(),
@@ -280,6 +285,7 @@ export class Coordinator extends EventEmitter {
   }
 
   private stopGenBlock() {
+    logger.info('Stopped to generate blocks')
     if (this.genBlockJob) this.genBlockJob.cancel()
     this.genBlockJob = undefined
   }
@@ -305,6 +311,7 @@ export class Coordinator extends EventEmitter {
         })
     } catch (err) {
       logger.error(`Skip gen block. propose() fails`)
+      logger.error(blockData)
       return
     }
     const expectedFee = this.gasPrice.muln(expectedGas)
@@ -337,9 +344,7 @@ export class Coordinator extends EventEmitter {
     const commits: MassDepositSql[] = await this.node.db.prisma.massDeposit.findMany(
       {
         where: {
-          includedIn: {
-            equals: 'NOT_INCLUDED',
-          },
+          includedIn: null,
         },
       },
     )
@@ -443,9 +448,9 @@ export class Coordinator extends EventEmitter {
       nullifierRoot: bnToBytes32(expectedGrove.nullifierTreeRoot),
       withdrawalRoot: bnToBytes32(expectedGrove.withdrawalTreeRoot),
       withdrawalIndex: bnToUint256(expectedGrove.withdrawalTreeIndex),
-      txRoot: Bytes32.from(root(txs.map(tx => tx.hash()))),
-      depositRoot: Bytes32.from(root(massDeposits.map(massDepositHash))),
-      migrationRoot: Bytes32.from(root(massMigrations.map(massMigrationHash))),
+      txRoot: root(txs.map(tx => tx.hash())),
+      depositRoot: root(massDeposits.map(massDepositHash)),
+      migrationRoot: root(massMigrations.map(massMigrationHash)),
     }
     const body: Body = {
       txs,

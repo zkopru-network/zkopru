@@ -16,4 +16,4 @@ export { NullifierTree } from './nullifier-tree'
 
 export { Hasher, keccakHasher, poseidonHasher, genesisRoot } from './hasher'
 
-export { Grove, GroveConfig, GrovePatch } from './grove'
+export { Grove, GroveConfig, GrovePatch, GroveSnapshot as DryPatchResult } from './grove'

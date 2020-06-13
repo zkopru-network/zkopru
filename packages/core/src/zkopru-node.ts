@@ -137,13 +137,21 @@ export class ZkOPRUNode extends EventEmitter {
     this.runningSerialProcessing = true
     if (!prevHeader)
       throw Error('Unexpected runtime error occured during the verification.')
-    const patch = await this.verifier.verifyBlock({
-      layer1: this.l1Contract,
-      layer2: this.l2Chain,
-      prevHeader,
-      block,
-    })
-    await this.l2Chain.applyPatchAndMarkAsVerified(patch)
+
+    try {
+      const { patch, challenge } = await this.verifier.verifyBlock({
+        layer2: this.l2Chain,
+        prevHeader,
+        block,
+      })
+      if (patch) await this.l2Chain.applyPatchAndMarkAsVerified(patch)
+      // implement challenge here & mark as invalidated
+      if (challenge) logger.warn(challenge)
+    } catch (err) {
+      // TODO needs to provide roll back & resync option
+      // sync & process error
+      logger.error(err)
+    }
     this.processUnverifiedBlocks(true)
   }
 

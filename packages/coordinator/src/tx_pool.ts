@@ -38,7 +38,7 @@ export class TxMemPool implements TxPoolInterface {
 
   async addToTxPool(zkTx: ZkTx): Promise<void> {
     const txHash = zkTx.hash()
-    this.txs[txHash] = zkTx
+    this.txs[txHash.toString()] = zkTx
   }
 
   async pickTxs(
@@ -68,7 +68,7 @@ export class TxMemPool implements TxPoolInterface {
 
   markAsIncluded(txs: ZkTx[]) {
     const txRoot = root(txs.map(tx => tx.hash()))
-    this.queued[txRoot] = txs
+    this.queued[txRoot.toString()] = txs
     this.removeFromTxPool(txs)
   }
 
@@ -86,7 +86,7 @@ export class TxMemPool implements TxPoolInterface {
 
   private removeFromTxPool(txs: ZkTx[]) {
     for (const tx of txs) {
-      delete this.txs[tx.hash()]
+      delete this.txs[tx.hash().toString()]
     }
   }
 

@@ -376,16 +376,16 @@ export function headerHash(header: Header): Bytes32 {
   return Bytes32.from(result)
 }
 
-export function massDepositHash(massDeposit: MassDeposit): string {
+export function massDepositHash(massDeposit: MassDeposit): Bytes32 {
   const concatenated = Buffer.concat(
     [massDeposit.merged, massDeposit.fee].map(val => val.toBuffer()),
   )
   const result = soliditySha3(`0x${concatenated.toString('hex')}`)
   if (!result) throw Error('Failed to get header hash')
-  return result
+  return Bytes32.from(result)
 }
 
-export function massMigrationHash(massMigration: MassMigration): string {
+export function massMigrationHash(massMigration: MassMigration): Bytes32 {
   let concatenated = Buffer.concat(
     [
       massMigration.destination,
@@ -411,7 +411,7 @@ export function massMigrationHash(massMigration: MassMigration): string {
   }
   const result = soliditySha3(`0x${concatenated.toString('hex')}`)
   if (!result) throw Error('Failed to get header hash')
-  return result
+  return Bytes32.from(result)
 }
 
 export class Block {

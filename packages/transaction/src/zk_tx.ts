@@ -4,6 +4,7 @@ import { soliditySha3 } from 'web3-utils'
 import * as snarkjs from 'snarkjs'
 import { Field } from '@zkopru/babyjubjub'
 import * as Utils from '@zkopru/utils'
+import { Bytes32 } from 'soltypes'
 
 export interface ZkInflow {
   nullifier: Field
@@ -45,7 +46,7 @@ export class ZkTx {
   memo?: Buffer
 
   cache: {
-    hash?: string
+    hash?: Bytes32
     size?: number
   }
 
@@ -117,7 +118,7 @@ export class ZkTx {
     ])
   }
 
-  hash(): string {
+  hash(): Bytes32 {
     if (!this.proof) throw Error('SNARK is empty')
     if (!this.cache.hash) {
       const encodePacked = Buffer.concat([
@@ -159,8 +160,10 @@ export class ZkTx {
         this.proof.pi_c[0].toBuffer('be', 32),
         this.fee.toBuffer('be', 32),
       ])
-      const hash = soliditySha3(encodePacked.toString('hex'))
-      this.cache.hash = hash != null ? hash : undefined
+      const hash = Bytes32.from(
+        soliditySha3(encodePacked.toString('hex')) || '',
+      )
+      this.cache.hash = hash
     }
     if (!this.cache.hash) throw Error('Failed to compute hash')
     return this.cache.hash

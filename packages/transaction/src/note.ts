@@ -2,6 +2,7 @@ import { randomHex } from 'web3-utils'
 import * as circomlib from 'circomlib'
 import * as chacha20 from 'chacha20'
 import { Field, F, Point } from '@zkopru/babyjubjub'
+import { Note as NoteSql } from '@zkopru/prisma'
 import * as TokenUtils from './tokens'
 import { ZkOutflow } from './zk_tx'
 
@@ -191,6 +192,20 @@ export class Note {
       obj.nft,
       new Point(obj.pubKey.x, obj.pubKey.y),
     )
+  }
+
+  static fromSql(obj: NoteSql): Note | undefined {
+    const { eth, salt, tokenAddr, erc20Amount, nft, pubKey } = obj
+    if (eth && salt && tokenAddr && erc20Amount && nft && pubKey)
+      return new Note(
+        Field.from(eth),
+        Field.from(salt),
+        Field.from(tokenAddr),
+        Field.from(erc20Amount),
+        Field.from(nft),
+        Point.fromHex(pubKey),
+      )
+    return undefined
   }
 
   static decrypt({

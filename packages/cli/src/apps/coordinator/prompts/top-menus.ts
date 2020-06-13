@@ -27,6 +27,10 @@ export default class TopMenu extends App {
           value: AppMenu.AUTO_COORDINATE,
         },
         {
+          title: 'Stop auto coordination',
+          value: AppMenu.STOP_AUTO_COORDINATION,
+        },
+        {
           title: 'Setup menu',
           value: AppMenu.SETUP_MENU,
         },
