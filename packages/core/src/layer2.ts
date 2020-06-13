@@ -112,9 +112,14 @@ export class L2Chain {
       },
       take: 1,
     })
+    // logger.info()
     const nonIncludedMassDepositCommit = commits.pop()
-    if (!nonIncludedMassDepositCommit)
+    if (!nonIncludedMassDepositCommit) {
+      logger.info('faield to find mass deposit')
+      logger.info(massDeposit.merged.toString())
+      logger.info(`fee ${massDeposit.fee.toString()}`)
       throw Error('Failed to find the mass deposit')
+    }
 
     const deposits = await this.db.prisma.deposit.findMany({
       where: {
@@ -366,6 +371,7 @@ export class L2Chain {
   }
 
   async getGrovePatch(block: Block): Promise<GrovePatch> {
+    logger.info(`get grove patch for block ${block.hash.toString()}`)
     const header = block.hash.toString()
     const utxos: Item<Field>[] = []
     const withdrawals: BN[] = []

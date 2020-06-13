@@ -6,7 +6,7 @@ import { Note } from '@zkopru/transaction'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { hexify } from '@zkopru/utils'
-import { DB, TreeSpecies } from '@zkopru/prisma'
+import { DB, TreeSpecies, Note as NoteSql } from '@zkopru/prisma'
 import { Hasher } from './hasher'
 import { MerkleProof, startingLeafProof } from './merkle-proof'
 
@@ -109,11 +109,18 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       data: {
         species: this.species,
         treeIndex: this.metadata.index,
-        start: hexify(this.metadata.start),
-        end: hexify(this.metadata.end),
-        root: hexify(this.data.root),
-        index: hexify(this.data.index),
-        siblings: hexify(JSON.stringify(this.data.siblings)),
+        start: this.metadata.start.toString(10),
+        end: this.metadata.end.toString(10),
+        root:
+          this.data.root instanceof Field
+            ? this.data.root.toString(10)
+            : hexify(this.data.root),
+        index: this.data.index.toString(10),
+        siblings: JSON.stringify(
+          this.data.siblings.map(sib =>
+            sib instanceof Field ? sib.toString(10) : hexify(sib),
+          ),
+        ),
       },
     })
     this.metadata.id = saveResult.id
@@ -338,17 +345,37 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       [nodeIndex: string]: string
     } = {}
 
-    const itemsToSave: Item<T>[] = []
+    const itemsToSave: NoteSql[] = []
     let root: T = this.root()
 
     const trackingLeaves: T[] = await this.indexesOfTrackingLeaves()
 
-    let index = start
     for (let i = 0; i < items.length; i += 1) {
       const item = items[i]
+      const index = (item.leafHash instanceof Field
+        ? Field.from(i).add(start)
+        : new BN(i).add(start)) as T
       // if note exists, save the data and mark as an item to keep tracking
-      if (this.config.fullSync || item.note) {
-        itemsToSave.push(item)
+      if (!item.leafHash.isZero() && (this.config.fullSync || item.note)) {
+        let noteSql
+        if (item.note) {
+          noteSql = {
+            hash: item.leafHash.toString(10),
+            index: index.toString(10),
+            eth: item.note.eth.toString(10),
+            pubKey: item.note.pubKey.toHex(),
+            salt: item.note.salt.toString(10),
+            tokenAddr: item.note.tokenAddr.toHex(20),
+            erc20Amount: item.note?.erc20Amount.toString(10),
+            nft: item.note?.nft.toString(10),
+          }
+        } else {
+          noteSql = {
+            hash: item.leafHash.toString(10),
+            index: index.toString(10),
+          }
+        }
+        itemsToSave.push(noteSql)
       }
 
       if (items[i].note) {
@@ -402,30 +429,29 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       }
       // update root
       root = node
-      // increment index
-      if (this.zero instanceof Field) {
-        index = Field.from(index.addn(1)) as T
-      } else {
-        index = index.addn(1) as T
-      }
     }
+    const end: T = start.addn(items.length) as T
     // update the latest siblings
     this.data = {
       root,
-      index,
+      index: end,
       siblings: latestSiblings,
     }
-    this.metadata.end = index
+    this.metadata.end = end
     // Update database
     // update rollup snapshot
     const rollUpSync = {
-      start: hexify(start),
-      end: hexify(index),
+      start: start.toString(10),
+      end: end.toString(10),
     }
     const rollUpSnapshot = {
-      root: hexify(root),
-      index: hexify(index),
-      siblings: JSON.stringify(latestSiblings.map(sib => hexify(sib))),
+      root: root instanceof Field ? root.toUint256().toString() : hexify(root),
+      index: end.toString(10),
+      siblings: JSON.stringify(
+        latestSiblings.map(sib =>
+          sib instanceof Field ? sib.toUint256().toString() : hexify(sib),
+        ),
+      ),
     }
     await this.db.prisma.lightTree.upsert({
       where: {
@@ -446,32 +472,23 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       },
     })
     // insert notes
-    for (const candidate of itemsToSave) {
-      const note = {
-        hash: hexify(candidate.leafHash),
-        index: hexify(index),
-        eth: candidate.note?.eth.toHex() || null,
-        pubKey: candidate.note?.pubKey.toHex() || null,
-        salt: candidate.note?.salt.toHex() || null,
-        tokenAddr: candidate.note?.tokenAddr.toHex() || null,
-        erc20Amount: candidate.note?.erc20Amount.toHex() || null,
-        nft: candidate.note?.nft.toHex() || null,
-      }
+    // TODO prisma batch transaction
+    for (const noteSql of itemsToSave) {
       await this.db.prisma.note.upsert({
-        where: { hash: note.hash },
-        update: note,
+        where: { hash: noteSql.hash },
+        update: {
+          ...noteSql,
+          tree: { connect: { id: this.metadata.id } },
+        },
         create: {
-          ...note,
+          ...noteSql,
           noteType: this.species,
-          tree: {
-            connect: {
-              id: this.metadata.id,
-            },
-          },
+          tree: { connect: { id: this.metadata.id } },
         },
       })
     }
     // update cached nodes
+    // TODO prisma batch transaction
     for (const nodeIndex of Object.keys(cached)) {
       await this.db.prisma.treeNode.upsert({
         where: {
@@ -492,7 +509,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     }
     return {
       root,
-      index,
+      index: end,
       siblings: latestSiblings,
     }
   }
@@ -543,12 +560,17 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       species,
       treeIndex: metadata.index,
       // rollup sync data
-      start: hexify(data.index),
-      end: hexify(data.index),
+      start: data.index.toString(10),
+      end: data.index.toString(10),
       // rollup snapshot data
-      root: hexify(data.root),
-      index: hexify(data.index),
-      siblings: JSON.stringify(data.siblings.map(sib => hexify(sib))),
+      root:
+        data.root instanceof Field ? data.root.toString(10) : hexify(data.root),
+      index: data.index.toString(10),
+      siblings: JSON.stringify(
+        data.siblings.map(sib =>
+          sib instanceof Field ? sib.toString(10) : hexify(sib),
+        ),
+      ),
     }
     const newTree = await db.prisma.lightTree.upsert({
       where,

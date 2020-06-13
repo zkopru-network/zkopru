@@ -404,11 +404,11 @@ export class Grove {
       siblings = hasher.preHash
     }
     const data = {
-      root: root.toHex(),
-      index: index.toHex(),
-      siblings: JSON.stringify(siblings.map(f => f.toHex())),
-      start: index.toHex(),
-      end: index.toHex(),
+      root: root.toString(10),
+      index: index.toString(10),
+      siblings: JSON.stringify(siblings.map(f => f.toString(10))),
+      start: index.toString(10),
+      end: index.toString(10),
     }
     const treeSql = await this.db.prisma.lightTree.upsert({
       where: {
@@ -459,10 +459,10 @@ export class Grove {
     }
     const data = {
       root: hexify(root),
-      index: hexify(index),
+      index: index.toString(10),
       siblings: JSON.stringify(siblings.map(val => hexify(val))),
-      start: hexify(index),
-      end: hexify(index),
+      start: index.toString(10),
+      end: index.toString(10),
     }
     const treeSql = await this.db.prisma.lightTree.upsert({
       where: {

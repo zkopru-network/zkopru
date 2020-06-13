@@ -1,7 +1,7 @@
 import { toBN, fromWei, toWei } from 'web3-utils'
 import assert from 'assert'
 import chalk from 'chalk'
-import { parseStringToUnit } from '@zkopru/utils'
+import { parseStringToUnit, logger } from '@zkopru/utils'
 import App, { AppMenu, Context } from '..'
 
 export default class DepositEther extends App {
@@ -62,7 +62,12 @@ export default class DepositEther extends App {
     if (!confirmed) {
       return { context, next: AppMenu.DEPOSIT }
     }
-    const success = await this.base.depositEther(amountWei, feeWei)
+    let success = false
+    try {
+      success = await this.base.depositEther(amountWei, feeWei)
+    } catch (err) {
+      logger.error(err)
+    }
     if (!success) {
       const { tryAgain } = await this.ask({
         type: 'confirm',

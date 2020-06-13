@@ -152,15 +152,15 @@ export class Verifier {
         block.header.nullifierRoot.toBN(),
       ):
         return 'challengeNullifierRollUp'
-      case root(block.body.massDeposits.map(massDepositHash)).eq(
+      case !root(block.body.massDeposits.map(massDepositHash)).eq(
         block.header.depositRoot,
       ):
         return 'challengeDepositRoot'
-      case root(block.body.massMigrations.map(massMigrationHash)).eq(
+      case !root(block.body.massMigrations.map(massMigrationHash)).eq(
         block.header.migrationRoot,
       ):
         return 'challengeMigrationRoot'
-      case root(block.body.txs.map(tx => tx.hash())).eq(
+      case !root(block.body.txs.map(tx => tx.hash())).eq(
         block.header.migrationRoot,
       ):
         return 'challengeTxRoot'

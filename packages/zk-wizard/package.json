@@ -35,6 +35,7 @@
     "@zkopru/tree": "file:../tree",
     "@zkopru/utils": "file:../utils",
     "big-integer": "^1.6.48",
+    "soltypes": "^1.2.0",
     "circom_runtime": "^0.0.3",
     "ffjavascript": "^0.1.2",
     "fs-extra": "^9.0.0",

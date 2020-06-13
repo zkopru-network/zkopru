@@ -5,6 +5,7 @@ import { HDWallet, ZkAccount } from '@zkopru/account'
 import { ZkOPRUNode } from '@zkopru/core'
 import { DB, NoteType } from '@zkopru/prisma'
 import { logger } from '@zkopru/utils'
+import { Bytes32 } from 'soltypes'
 import fetch, { Response } from 'node-fetch'
 import { ZkWizard } from './zk-wizard'
 
@@ -345,13 +346,16 @@ export class ZkWallet {
       return false
     }
     const tx = this.node.l1Contract.user.methods.deposit(
-      note.eth.toString(),
-      note.salt.toString(),
-      note.tokenAddr.toHex(20),
-      note.erc20Amount.toString(),
-      note.nft.toString(),
-      [note.pubKey.x.toString(), note.pubKey.y.toString()],
-      fee.toString(),
+      note.eth.toUint256().toString(),
+      note.salt.toUint256().toString(),
+      note.tokenAddr.toAddress().toString(),
+      note.erc20Amount.toUint256().toString(),
+      note.nft.toUint256().toString(),
+      [
+        note.pubKey.x.toUint256().toString(),
+        note.pubKey.y.toUint256().toString(),
+      ],
+      fee.toUint256().toString(),
     )
     const receipt = await this.node.l1Contract.sendTx(tx, {
       from: this.account.address,
@@ -359,13 +363,16 @@ export class ZkWallet {
     })
     await this.db.prisma.note.create({
       data: {
-        hash: note.hash().toHex(),
-        eth: note.eth.toHex(),
-        pubKey: note.pubKey.toHex(),
-        salt: note.salt.toHex(),
-        tokenAddr: note.tokenAddr.toHex(),
-        erc20Amount: note.erc20Amount.toHex(),
-        nft: note.nft.toHex(),
+        hash: note
+          .hash()
+          .toUint256()
+          .toString(),
+        eth: note.eth.toUint256().toString(),
+        pubKey: Bytes32.from(note.pubKey.toHex()).toString(),
+        salt: note.salt.toUint256().toString(),
+        tokenAddr: note.tokenAddr.toAddress().toString(),
+        erc20Amount: note.erc20Amount.toUint256().toString(),
+        nft: note.nft.toUint256().toString(),
         status: UtxoStatus.NON_INCLUDED,
         noteType: NoteType.UTXO,
       },

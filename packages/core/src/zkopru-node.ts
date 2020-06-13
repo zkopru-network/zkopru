@@ -144,15 +144,18 @@ export class ZkOPRUNode extends EventEmitter {
         prevHeader,
         block,
       })
-      if (patch) await this.l2Chain.applyPatchAndMarkAsVerified(patch)
-      // implement challenge here & mark as invalidated
-      if (challenge) logger.warn(challenge)
+      if (patch) {
+        await this.l2Chain.applyPatchAndMarkAsVerified(patch)
+        this.processUnverifiedBlocks(true)
+      } else if (challenge) {
+        // implement challenge here & mark as invalidated
+        logger.warn(challenge)
+      }
     } catch (err) {
       // TODO needs to provide roll back & resync option
       // sync & process error
       logger.error(err)
     }
-    this.processUnverifiedBlocks(true)
   }
 
   async latestBlock(): Promise<string | null> {

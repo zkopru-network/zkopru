@@ -89,7 +89,9 @@ export function txSizeCalculator(
 
 export function root(hashes: Bytes32[]): Bytes32 {
   if (hashes.length === 0) {
-    return Bytes32.from('0')
+    return Bytes32.from(
+      '0x0000000000000000000000000000000000000000000000000000000000000000',
+    )
   }
   if (hashes.length === 1) {
     return hashes[0]

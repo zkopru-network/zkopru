@@ -1,6 +1,6 @@
 import BN from 'bn.js'
 import bigInt, { BigInteger } from 'big-integer'
-import { Bytes32, Uint256 } from 'soltypes'
+import { Bytes32, Uint256, Address } from 'soltypes'
 
 export type F = number | string | number[] | Uint8Array | Buffer | BN
 
@@ -86,6 +86,10 @@ export class Field extends BN {
 
   toUint256(): Uint256 {
     return this.toBytes32().toUint()
+  }
+
+  toAddress(): Address {
+    return new Address(`0x${this.toString(16, 40)}`)
   }
 
   toIden3BigInt(): BigInteger {

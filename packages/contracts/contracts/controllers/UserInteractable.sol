@@ -95,15 +95,18 @@ contract UserInteractable is Layer2 {
 
         ///TODO: require(fee >= specified fee);
         /// Validate the note is same with the hash result
-        uint[] memory inputs = new uint[](7);
-        inputs[0] = eth;
-        inputs[1] = pubKey[0];
-        inputs[2] = pubKey[1];
-        inputs[3] = salt;
-        inputs[4] = uint(token);
-        inputs[5] = amount;
-        inputs[6] = nft;
-        uint note = Poseidon6.poseidon(inputs);
+        uint[] memory firstHashInputs = new uint[](4);
+        firstHashInputs[0] = eth;
+        firstHashInputs[1] = pubKey[0];
+        firstHashInputs[2] = pubKey[1];
+        firstHashInputs[3] = salt;
+        uint firstHash = Poseidon6.poseidon(firstHashInputs);
+        uint[] memory resultHashInputs = new uint[](4);
+        resultHashInputs[0] = firstHash;
+        resultHashInputs[1] = uint(token);
+        resultHashInputs[2] = amount;
+        resultHashInputs[3] = nft;
+        uint note = Poseidon6.poseidon(resultHashInputs);
         /// Receive token
         if (token != address(0) && amount != 0) {
             try IERC20(token).transferFrom(msg.sender, address(this), amount) {

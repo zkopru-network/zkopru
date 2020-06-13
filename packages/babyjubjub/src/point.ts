@@ -79,7 +79,7 @@ export class Point {
   }
 
   toHex(): string {
-    return hexify(this.encode())
+    return hexify(this.encode(), 32)
   }
 
   toBigIntArr(): BigInteger[] {

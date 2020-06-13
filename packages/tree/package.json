@@ -35,6 +35,7 @@
     "@zkopru/transaction": "file:../transaction",
     "async-lock": "^1.2.2",
     "big-integer": "^1.6.48",
+    "soltypes": "^1.2.0",
     "bn.js": "^5.1.1",
     "circomlib": "^0.1.1",
     "uuid": "^8.1.0",

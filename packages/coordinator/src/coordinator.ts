@@ -296,7 +296,17 @@ export class Coordinator extends EventEmitter {
       return
     }
     logger.info('Generating block')
-    const block = await this.genBlock()
+    let block: {
+      header: Header
+      body: Body
+      fee: Field
+    }
+    try {
+      block = await this.genBlock()
+    } catch (err) {
+      logger.error('Failed to gen block', err)
+      return
+    }
     const bytes = Buffer.concat([
       serializeHeader(block.header),
       serializeBody(block.body),
@@ -417,7 +427,7 @@ export class Coordinator extends EventEmitter {
 
     const latest = await this.node.latestBlock()
     if (!latest) {
-      throw Error('Layer 2 chain is not synced. No genesis block')
+      throw Error('Layer 2 chain is not synced yet.')
     }
     // TODO acquire lock during gen block
     const massMigrations: MassMigration[] = []
