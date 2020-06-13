@@ -328,16 +328,21 @@ export class ZkWallet {
     if (toMemo && !tx.outflow[toMemo]) throw Error('Invalid index')
     const from = account || this.account
     if (!from) throw Error('Account is not set')
-    const zkTx = await this.wizard.shield({
-      tx,
-      account: from,
-      toMemo,
-    })
-    const response = await fetch(`${this.coordinator}/tx`, {
-      method: 'post',
-      body: zkTx.encode(),
-    })
-    return response
+    try {
+      const zkTx = await this.wizard.shield({
+        tx,
+        account: from,
+        toMemo,
+      })
+      const response = await fetch(`${this.coordinator}/tx`, {
+        method: 'post',
+        body: zkTx.encode(),
+      })
+      return response
+    } catch (err) {
+      logger.error(err)
+      throw err
+    }
   }
 
   private async deposit(note: Note, fee: Field): Promise<boolean> {

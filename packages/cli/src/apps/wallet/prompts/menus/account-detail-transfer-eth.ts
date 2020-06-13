@@ -31,7 +31,7 @@ export default class TransferEth extends App {
     messages.push(`Account: ${account.pubKey.toHex()}`)
     messages.push(`Spendable ETH: ${fromWei(spendableAmount.eth, 'ether')}`)
     messages.push(
-      `Recommended byte per price: ${fromWei(weiPerByte, 'ether')} / byte`,
+      `Recommended fee per byte: ${fromWei(weiPerByte, 'gwei')} gwei / byte`,
     )
     messages.push(
       `You may spend ${regularPrice} ETH to send a 566 bytes size tx.`,
@@ -123,6 +123,7 @@ export default class TransferEth extends App {
       await wallet.sendTx(tx, account, encryptTo)
     } catch (err) {
       logger.error(err)
+      logger.error(tx)
     }
     return { context, next: AppMenu.TRANSFER }
   }

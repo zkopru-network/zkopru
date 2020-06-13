@@ -1,6 +1,7 @@
 import { Field, F, Point } from '@zkopru/babyjubjub'
 import { txSizeCalculator, logger } from '@zkopru/utils'
 import { fromWei } from 'web3-utils'
+import assert from 'assert'
 import { Utxo } from './utxo'
 import { Sum } from './note-sum'
 import { Note, OutflowType } from './note'
@@ -226,9 +227,9 @@ export class TxBuilder {
 
     const changes: Utxo[] = []
     // Start to calculate ERC20 changes
-    const spendingAmount = Sum.from(spendings)
-    Object.keys(spendingAmount.erc20).forEach(addr => {
-      const change = spendingAmount.erc20[addr].sub(sendingAmount.erc20[addr])
+    const spendingAmount = () => Sum.from(spendings)
+    Object.keys(spendingAmount().erc20).forEach(addr => {
+      const change = spendingAmount().erc20[addr].sub(sendingAmount.erc20[addr])
       if (!change.isZero()) {
         changes.push(
           Utxo.from(
@@ -244,8 +245,8 @@ export class TxBuilder {
     })
     // Start to calculate ERC721 changes
     const extraNFTs: { [addr: string]: Field[] } = {}
-    Object.keys(spendingAmount.erc721).forEach(addr => {
-      extraNFTs[addr] = spendingAmount.erc721[addr].filter(nft => {
+    Object.keys(spendingAmount().erc721).forEach(addr => {
+      extraNFTs[addr] = spendingAmount().erc721[addr].filter(nft => {
         if (sendingAmount.erc721[addr] === undefined) {
           return true
         }
@@ -309,7 +310,9 @@ export class TxBuilder {
     }
 
     // Calculate ETH change
-    const changeETH = spendingAmount.eth.sub(getRequiredETH())
+    assert(spendingAmount().eth.gte(getRequiredETH()), 'not enough eth')
+    const changeETH = spendingAmount().eth.sub(getRequiredETH())
+    const finalFee = getTxFee()
     if (!changeETH.isZero()) {
       changes.push(
         Utxo.from(Note.newEtherNote({ eth: changeETH, pubKey: this.changeTo })),
@@ -318,11 +321,29 @@ export class TxBuilder {
 
     const inflow = [...spendings]
     const outflow = [...this.sendings, ...changes]
+    const inflowSum = Sum.from(inflow)
+    const outflowSum = Sum.from(outflow)
+    assert(inflowSum.eth.eq(outflowSum.eth.add(finalFee)), 'inflow != outflow')
+    for (const addr of Object.keys(inflowSum.erc20)) {
+      assert(
+        inflowSum.erc20[addr].eq(outflowSum.erc20[addr]),
+        'erc20 in-out is different',
+      )
+    }
+    for (const addr of Object.keys(inflowSum.erc721)) {
+      const inflowNFTs = JSON.stringify(
+        inflowSum.erc721[addr].map(f => f.toString()),
+      )
+      const outflowNFTs = JSON.stringify(
+        outflowSum.erc721[addr].map(f => f.toString()),
+      )
+      assert(inflowNFTs === outflowNFTs, 'nft in-out is different')
+    }
     return {
       inflow,
       outflow,
       swap: this.swap,
-      fee: this.feePerByte,
+      fee: finalFee,
     }
   }
 
