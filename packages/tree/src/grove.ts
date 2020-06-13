@@ -307,7 +307,7 @@ export class Grove {
   async utxoMerkleProof(hash: Field): Promise<MerkleProof<Field>> {
     const utxo = await this.db.prisma.note.findOne({
       where: {
-        hash: hash.toHex(),
+        hash: hash.toString(10),
       },
       include: { tree: true },
     })
