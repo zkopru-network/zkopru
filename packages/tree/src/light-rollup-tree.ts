@@ -87,7 +87,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
   }
 
   siblings(): T[] {
-    return [...this.data.siblings]
+    return [...this.data.siblings].slice(0, this.depth)
   }
 
   async includedInBlock(hash: string) {

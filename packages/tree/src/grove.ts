@@ -5,7 +5,7 @@ import AsyncLock from 'async-lock'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { DB, TreeSpecies, LightTree, TreeNode } from '@zkopru/prisma'
-import { Hasher } from './hasher'
+import { Hasher, genesisRoot } from './hasher'
 import { MerkleProof, verifyProof, startingLeafProof } from './merkle-proof'
 import { Item } from './light-rollup-tree'
 import { UtxoTree } from './utxo-tree'
@@ -339,7 +339,8 @@ export class Grove {
       leaf: Field.from(utxo.hash),
       siblings,
     }
-    verifyProof(this.config.utxoHasher, proof)
+    const isValid = verifyProof(this.config.utxoHasher, proof)
+    if (!isValid) throw Error('Failed to generate utxo merkle proof')
     return proof
   }
 
@@ -399,7 +400,7 @@ export class Grove {
         throw Error('Invalid starting leaf proof')
       }
     } else {
-      root = [...hasher.preHash].pop() as Field
+      root = genesisRoot(hasher)
       index = Field.zero
       siblings = hasher.preHash
     }
@@ -453,7 +454,8 @@ export class Grove {
         throw Error('Invalid starting leaf proof')
       }
     } else {
-      root = [...hasher.preHash].pop() as BN
+      // NTODO
+      root = genesisRoot(hasher)
       index = new BN(0)
       siblings = hasher.preHash
     }

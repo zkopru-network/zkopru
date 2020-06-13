@@ -11,7 +11,7 @@ import {
   verifyProof,
 } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
-import { keys } from '~dataset/testset-keys'
+import { accounts } from '~dataset/testset-keys'
 import { DB, TreeSpecies, MockupDB } from '~prisma'
 
 describe('utxo tree unit test', () => {
@@ -122,7 +122,7 @@ describe('utxo tree unit test', () => {
     }))
     beforeAll(async () => {
       await utxoTree.append(...items)
-      utxoTree.updatePubKeys([keys.alicePubKey])
+      utxoTree.updatePubKeys([accounts.alice.pubKey])
     })
     it("should track Alice's utxos while not tracking Bob's", async () => {
       const aliceUtxoProof = await utxoTree.merkleProof({

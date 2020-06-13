@@ -6,7 +6,7 @@ import { DB, MockupDB } from '~prisma'
 import { Field } from '~babyjubjub'
 import { Grove, poseidonHasher, keccakHasher, Item } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
-import { address, keys } from '~dataset/testset-keys'
+import { address, accounts } from '~dataset/testset-keys'
 
 /* eslint-disable jest/no-hooks */
 describe('grove full sync grove()', () => {
@@ -26,7 +26,7 @@ describe('grove full sync grove()', () => {
       nullifierHasher: keccakHasher(254),
       fullSync: true,
       forceUpdate: !false,
-      pubKeysToObserve: [keys.alicePubKey],
+      pubKeysToObserve: [accounts.alice.pubKey],
       addressesToObserve: [address.USER_A],
     })
     await fullSyncGrvoe.init()
@@ -39,7 +39,7 @@ describe('grove full sync grove()', () => {
   })
   describe('setPubKeysToObserve()', () => {
     it('should register public keys to keep track for the inclusion proof for tx building', () => {
-      fullSyncGrvoe.setPubKeysToObserve([keys.alicePubKey])
+      fullSyncGrvoe.setPubKeysToObserve([accounts.alice.pubKey])
     })
   })
   describe('setAddressesToObserve()', () => {
@@ -155,7 +155,7 @@ describe('grove full sync grove()', () => {
         nullifierHasher: keccakHasher(254),
         fullSync: false,
         forceUpdate: !true,
-        pubKeysToObserve: [keys.alicePubKey],
+        pubKeysToObserve: [accounts.alice.pubKey],
         addressesToObserve: [address.USER_A],
       })
       await lightSyncGrove.init()
