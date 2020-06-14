@@ -7,6 +7,7 @@ import { DB, NoteType } from '@zkopru/prisma'
 import { logger } from '@zkopru/utils'
 import { Bytes32 } from 'soltypes'
 import fetch, { Response } from 'node-fetch'
+import assert from 'assert'
 import { ZkWizard } from './zk-wizard'
 
 export interface Balance {
@@ -334,9 +335,12 @@ export class ZkWallet {
         account: from,
         toMemo,
       })
+      const { verifier } = this.node
+      const snarkValid = await verifier.snarkVerifier.verifyTx(zkTx)
+      assert(snarkValid, 'generated snark proof is invalid')
       const response = await fetch(`${this.coordinator}/tx`, {
         method: 'post',
-        body: zkTx.encode(),
+        body: zkTx.encode().toString('hex'),
       })
       return response
     } catch (err) {

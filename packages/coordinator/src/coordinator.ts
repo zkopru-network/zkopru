@@ -169,6 +169,7 @@ export class Coordinator extends EventEmitter {
   private startAPI() {
     if (!this.api) {
       const app = express()
+      app.use(express.text())
       app.post('/tx', this.txHandler)
       if (this.config.bootstrap) {
         app.get('/bootstrap', this.bootstrapHandler)
@@ -198,10 +199,14 @@ export class Coordinator extends EventEmitter {
   }
 
   private txHandler: RequestHandler = async (req, res) => {
-    const tx = ZkTx.decode(req.body)
-    const result = await this.node.verifier.snarkVerifier.verifyTx(tx)
+    const txData = req.body
+    logger.info(`tx data is${txData}`)
+    logger.info(txData)
+    const zkTx = ZkTx.decode(Buffer.from(txData, 'hex'))
+    // const zkTx = ZkTx.decode(txData)
+    const result = await this.node.verifier.snarkVerifier.verifyTx(zkTx)
     if (result) {
-      await this.txPool.addToTxPool(tx)
+      await this.txPool.addToTxPool(zkTx)
       res.send(result)
     } else {
       logger.info('Coordinator is not running. Run start()')

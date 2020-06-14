@@ -2,13 +2,15 @@
 
 /* eslint-disable no-case-declarations */
 import fs from 'fs-extra'
-import { logger } from '@zkopru/utils'
+import { logStream, logger } from '@zkopru/utils'
 import { argv } from './parser'
 import { Config } from './configurator/configurator'
 import { getCoordinator } from './configurator'
 import { CooridnatorDashboard } from './app'
 
 const main = async () => {
+  const writeStream = fs.createWriteStream('./COORDINATOR_LOG')
+  logStream.addStream(writeStream)
   let config: Config = argv
   if (argv.config) {
     config = JSON.parse(fs.readFileSync(argv.config).toString('utf8'))

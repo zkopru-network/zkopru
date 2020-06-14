@@ -9,7 +9,7 @@ import { WalletDashboard } from './app'
 import { argv } from './parser'
 
 const main = async () => {
-  const writeStream = fs.createWriteStream('./LOG')
+  const writeStream = fs.createWriteStream('./WALLET_LOG')
   logStream.addStream(writeStream)
   // blessed.screen.render()
   let config: Config = argv
