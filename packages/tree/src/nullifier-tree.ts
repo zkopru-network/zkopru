@@ -4,7 +4,7 @@ import AsyncLock from 'async-lock'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { hexify } from '@zkopru/utils'
-import { DB, TreeNode, Nullifier, NULLIFIER_TREE_ID } from '@zkopru/prisma'
+import { DB, TreeNode, NULLIFIER_TREE_ID } from '@zkopru/prisma'
 import { Hasher, genesisRoot } from './hasher'
 import { verifyProof, MerkleProof } from './merkle-proof'
 
@@ -51,7 +51,7 @@ export class NullifierTree implements SMT<BN> {
   }
 
   async root(): Promise<BN> {
-    if (this.rootNode) return this.rootNode
+    if (this.rootNode) return new BN(this.rootNode)
     const rootNode = await this.db.prisma.treeNode.findOne({
       select: { value: true },
       where: {
@@ -103,13 +103,13 @@ export class NullifierTree implements SMT<BN> {
   }
 
   async nullify(...leaves: BN[]): Promise<BN> {
-    let result: BN = this.rootNode
+    let root: BN = this.rootNode
     await this.lock.acquire('root', async () => {
       for (const leaf of leaves) {
-        result = await this.updateLeaf(leaf, SMTLeaf.FILLED)
+        root = await this.updateLeaf(leaf, SMTLeaf.FILLED)
       }
     })
-    return result
+    return root
   }
 
   async recover(...leaves: BN[]) {
@@ -184,24 +184,6 @@ export class NullifierTree implements SMT<BN> {
         create: node,
       })
     }
-
-    if (val === SMTLeaf.FILLED) {
-      const nullifier: Nullifier = {
-        index: hexify(index),
-        nullified: true,
-      }
-      await this.db.prisma.nullifier.upsert({
-        where: {
-          index: nullifier.index,
-        },
-        create: nullifier,
-        update: nullifier,
-      })
-    } else {
-      await this.db.prisma.nullifier.deleteMany({
-        where: { index: hexify(index) },
-      })
-    }
     this.rootNode = node
     return this.rootNode
   }
@@ -209,15 +191,29 @@ export class NullifierTree implements SMT<BN> {
   async dryRunNullify(...leaves: BN[]): Promise<BN> {
     let result!: BN
     await this.lock.acquire('root', async () => {
-      const prevRoot = await this.root()
+      const originalRoot = await this.root()
+      let prevRoot: BN = originalRoot
+      const nullified: BN[] = []
+      let duplicated: BN | undefined
+      // nullify items
       for (const leaf of leaves) {
-        await this.updateLeaf(leaf, SMTLeaf.FILLED)
+        const newRoot = await this.updateLeaf(leaf, SMTLeaf.FILLED)
+        if (newRoot.eq(prevRoot)) {
+          duplicated = leaf
+          break
+        }
+        prevRoot = newRoot
+        nullified.push(leaf)
       }
       result = await this.root()
-      for (const leaf of leaves) {
+      // recover nullified items
+      for (const leaf of nullified) {
         await this.updateLeaf(leaf, SMTLeaf.EMPTY)
       }
-      if (!(await this.root()).eq(prevRoot))
+      // emit errors if there were some problems
+      if (duplicated)
+        throw Error(`Already used nullifier: ${duplicated.toString()}`)
+      if (!(await this.root()).eq(originalRoot))
         throw Error('Dry run should not make any change')
     })
     return result

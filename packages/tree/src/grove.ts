@@ -178,35 +178,44 @@ export class Grove {
   }
 
   async dryPatch(patch: GrovePatch): Promise<GroveSnapshot> {
-    let result!: GroveSnapshot
-    await this.lock.acquire('grove', async () => {
-      const utxoResult = await this.latestUTXOTree().dryAppend(...patch.utxos)
-      const withdrawalResult = await this.latestWithdrawalTree().dryAppend(
-        ...patch.withdrawals.map(leafHash => ({ leafHash })),
-      )
-      const nullifierRoot = await this.nullifierTree?.dryRunNullify(
-        ...patch.nullifiers,
-      )
-      const utxoFixedSizeLen =
-        this.config.utxoSubTreeSize *
-        Math.ceil(patch.utxos.length / this.config.utxoSubTreeSize)
-      const withdrawalFixedSizeLen =
-        this.config.withdrawalSubTreeSize *
-        Math.ceil(patch.withdrawals.length / this.config.withdrawalSubTreeSize)
+    return new Promise<GroveSnapshot>((res, rej) => {
+      let result!: GroveSnapshot
+      this.lock
+        .acquire('grove', async () => {
+          const utxoResult = await this.latestUTXOTree().dryAppend(
+            ...patch.utxos,
+          )
+          const withdrawalResult = await this.latestWithdrawalTree().dryAppend(
+            ...patch.withdrawals.map(leafHash => ({ leafHash })),
+          )
+          const nullifierRoot = await this.nullifierTree?.dryRunNullify(
+            ...patch.nullifiers,
+          )
+          const utxoFixedSizeLen =
+            this.config.utxoSubTreeSize *
+            Math.ceil(patch.utxos.length / this.config.utxoSubTreeSize)
+          const withdrawalFixedSizeLen =
+            this.config.withdrawalSubTreeSize *
+            Math.ceil(
+              patch.withdrawals.length / this.config.withdrawalSubTreeSize,
+            )
 
-      result = {
-        utxoTreeIndex: utxoResult.index
-          .addn(utxoFixedSizeLen)
-          .subn(patch.utxos.length),
-        utxoTreeRoot: utxoResult.root,
-        withdrawalTreeIndex: withdrawalResult.index
-          .addn(withdrawalFixedSizeLen)
-          .subn(patch.withdrawals.length),
-        withdrawalTreeRoot: withdrawalResult.root,
-        nullifierTreeRoot: nullifierRoot,
-      }
+          result = {
+            utxoTreeIndex: utxoResult.index
+              .addn(utxoFixedSizeLen)
+              .subn(patch.utxos.length),
+            utxoTreeRoot: utxoResult.root,
+            withdrawalTreeIndex: withdrawalResult.index
+              .addn(withdrawalFixedSizeLen)
+              .subn(patch.withdrawals.length),
+            withdrawalTreeRoot: withdrawalResult.root,
+            nullifierTreeRoot: nullifierRoot,
+          }
+          return result
+        })
+        .then(res)
+        .catch(rej)
     })
-    return result
   }
 
   private async recordBootstrap(header?: string): Promise<void> {

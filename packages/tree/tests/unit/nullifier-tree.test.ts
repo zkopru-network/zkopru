@@ -1,3 +1,4 @@
+/* eslint-disable jest/require-tothrow-message */
 /* eslint-disable jest/no-disabled-tests */
 /* eslint-disable jest/no-hooks */
 import { toBN } from 'web3-utils'
@@ -84,11 +85,15 @@ describe('nullifier tree unit test', () => {
       await nullifierTree.dryRunNullify(...nullifiers)
       expect((await nullifierTree.root()).eq(prevRoot)).toBe(true)
     }, 30000)
+    it('should emit error when it uses an already spent nullifier', async () => {
+      const nullifiers: BN[] = [toBN(1), toBN(1)]
+      await expect(nullifierTree.dryRunNullify(...nullifiers)).rejects.toThrow()
+    }, 30000)
   })
   describe('append', () => {
     it('should update its root and its value should equal to the dry run', async () => {
       const prevRoot = await nullifierTree.root()
-      const nullifiers: BN[] = [toBN(1), toBN(2)]
+      const nullifiers: BN[] = [toBN(3), toBN(4)]
       const dryResult = await nullifierTree.dryRunNullify(...nullifiers)
       const result = await nullifierTree.nullify(...nullifiers)
       expect(result.eq(prevRoot)).toBe(false)

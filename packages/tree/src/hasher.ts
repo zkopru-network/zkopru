@@ -1,6 +1,7 @@
 import { soliditySha3 } from 'web3-utils'
 import * as circomlib from 'circomlib'
 import { Field } from '@zkopru/babyjubjub'
+import { hexify } from '@zkopru/utils'
 import BN from 'bn.js'
 
 export interface Hasher<T extends Field | BN> {
@@ -29,7 +30,7 @@ export function genesisRoot<T extends Field | BN>(hasher: Hasher<T>): T {
 
 export function keccakHasher(depth: number): Hasher<BN> {
   const parentOf = (left: BN, right: BN) => {
-    const val = soliditySha3(left.toString(), right.toString()) || '0x'
+    const val = soliditySha3(hexify(left, 32), hexify(right, 32)) || '0x'
     return new BN(val.substr(2), 16)
   }
   const preHash = getPreHash<BN>(new BN(0), parentOf, depth)
