@@ -80,10 +80,8 @@ export default class TransferEth extends App {
         message: `Fee per byte. ex) ${gweiPerByte} gwei`,
       })
       const confirmedWei = parseStringToUnit(fee, 'gwei')
-      confirmedWeiPerByte = toWei(
-        confirmedWei.val,
-        confirmedWei.unit,
-      ).toString()
+      confirmedWeiPerByte = toWei(confirmedWei.val, confirmedWei.unit)
+      logger.info(`confirmedWeiPerByte: ${confirmedWeiPerByte}`)
       msgs.push(`Wei per byte: ${fromWei(confirmedWeiPerByte, 'ether')} ETH`)
       msgs.push(`    = ${fromWei(confirmedWeiPerByte, 'gwei')} gwei`)
       this.print(messages.join('\n'))

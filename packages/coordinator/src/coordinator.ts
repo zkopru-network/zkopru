@@ -18,6 +18,7 @@ import {
   serializeBody,
   serializeHeader,
   headerHash,
+  Block,
 } from '@zkopru/core'
 import { Account } from 'web3-core'
 import { Subscription } from 'web3-core-subscriptions'
@@ -75,31 +76,24 @@ export class Coordinator extends EventEmitter {
     this.node.startSync()
     this.startAPI()
     this.startSubscribeGasPrice()
-    this.node.on(
-      'status',
-      async (status: NetworkStatus, blockHash?: Bytes32) => {
-        // udpate the txpool using the newly proposed hash
-        // if the hash does not exist in the tx pool's block list
-        // create an observer to fetch the block data from database
-        switch (status) {
-          case NetworkStatus.SYNCED:
-          case NetworkStatus.FULLY_SYNCED:
-            // It tries to propose a block until any block is proposed to the layer1
-            if (blockHash) {
-              const block = await this.node.l2Chain.getBlock(blockHash)
-              if (block) {
-                this.txPool.markAsIncluded(block.body.txs)
-              }
-            }
-            this.startGenBlock()
-            break
-          default:
-            this.stopGenBlock()
-            // cancel proposal
-            break
-        }
-      },
-    )
+    this.node.on('status', async (status: NetworkStatus) => {
+      // udpate the txpool using the newly proposed hash
+      // if the hash does not exist in the tx pool's block list
+      // create an observer to fetch the block data from database
+      switch (status) {
+        case NetworkStatus.SYNCED:
+        case NetworkStatus.FULLY_SYNCED:
+          this.startGenBlock()
+          break
+        default:
+          this.stopGenBlock()
+          // cancel proposal
+          break
+      }
+    })
+    this.node.on('onFetched', (block: Block) => {
+      this.txPool.markAsIncluded(block.body.txs)
+    })
     this.emit('start')
   }
 
@@ -206,10 +200,11 @@ export class Coordinator extends EventEmitter {
     // const zkTx = ZkTx.decode(txData)
     const result = await this.node.verifier.snarkVerifier.verifyTx(zkTx)
     if (result) {
+      logger.info('add a transaction')
       await this.txPool.addToTxPool(zkTx)
       res.send(result)
     } else {
-      logger.info('Coordinator is not running. Run start()')
+      logger.info('Failed to verify zk snark')
       res.status(500).send('Coordinator is not running')
     }
   }
@@ -309,7 +304,7 @@ export class Coordinator extends EventEmitter {
     try {
       block = await this.genBlock()
     } catch (err) {
-      logger.error('Failed to gen block', err)
+      logger.warn(`Failed to gen block: ${err}`)
       return
     }
     const bytes = Buffer.concat([
@@ -394,7 +389,6 @@ export class Coordinator extends EventEmitter {
     const txs =
       (await this.txPool.pickTxs(
         this.config.maxBytes - consumedBytes,
-        160000,
         this.gasPrice.muln(this.config.priceMultiplier),
       )) || []
     aggregatedFee = aggregatedFee.add(
@@ -436,11 +430,25 @@ export class Coordinator extends EventEmitter {
     }
     // TODO acquire lock during gen block
     const massMigrations: MassMigration[] = []
+    // TODO remove this line
+    logger.info('current nullifier')
+    const snapShot = await this.node.l2Chain.grove.getSnapshot()
     const expectedGrove = await this.node.l2Chain.grove.dryPatch({
       utxos,
       withdrawals,
       nullifiers,
     })
+    logger.info(
+      `nullifiers: ${JSON.stringify(nullifiers.map(f => f.toString()))}`,
+    )
+    logger.info(`Prev grove / Expected grove
+        snapshot utxo index & root: ${snapShot.utxoTreeIndex.toString()} / ${snapShot.utxoTreeRoot.toString()}
+        snapshot withdrawal index & root: ${snapShot.withdrawalTreeIndex.toString()} / ${snapShot.withdrawalTreeRoot.toString()}
+        snapshot nullifier root: ${snapShot.nullifierTreeRoot?.toString()}
+        expected utxo index & root: ${expectedGrove.utxoTreeIndex.toString()} / ${expectedGrove.utxoTreeRoot.toString()}
+        expected withdrawal index & root: ${expectedGrove.withdrawalTreeIndex.toString()} / ${expectedGrove.withdrawalTreeRoot.toString()}
+        expected nullifier root: ${expectedGrove.nullifierTreeRoot?.toString()}
+      `)
 
     if (!expectedGrove.nullifierTreeRoot) {
       throw Error(

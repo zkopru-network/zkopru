@@ -62,7 +62,18 @@ export class Verifier {
       case !prevHeader.withdrawalIndex.toBN().eq(snapShot.withdrawalTreeIndex):
       case !prevHeader.withdrawalRoot.toBN().eq(snapShot.withdrawalTreeRoot):
       case !snapShot.nullifierTreeRoot?.eq(prevHeader.nullifierRoot.toBN()):
-        throw Error('Current grove does not fit for prev header')
+        throw Error(`Current grove does not fit for prev header
+        prev utxo index & root: ${prevHeader.utxoIndex
+          .toBN()
+          .toString()} / ${prevHeader.utxoRoot.toBN().toString()}
+        prev withdrawal index & root: ${prevHeader.withdrawalIndex
+          .toBN()
+          .toString()} / ${prevHeader.withdrawalRoot.toBN().toString()}
+        prev nullifier root: ${prevHeader.nullifierRoot.toBN().toString()}
+        snapshot utxo index & root: ${snapShot.utxoTreeIndex.toString()} / ${snapShot.utxoTreeRoot.toString()}
+        snapshot withdrawal index & root: ${snapShot.withdrawalTreeIndex.toString()} / ${snapShot.withdrawalTreeRoot.toString()}
+        snapshot nullifier root: ${snapShot.nullifierTreeRoot?.toString()}
+        `)
       default:
         break
     }
@@ -116,6 +127,12 @@ export class Verifier {
         block: block.hash,
         massDeposits: block.body.massDeposits.map(massDepositHash),
         treePatch,
+        nullifiers: block.body.txs.reduce((arr, tx) => {
+          return [
+            ...arr,
+            ...tx.inflow.map(inflow => inflow.nullifier.toUint256()),
+          ]
+        }, [] as Uint256[]),
       },
     }
   }
@@ -160,9 +177,7 @@ export class Verifier {
         block.header.migrationRoot,
       ):
         return 'challengeMigrationRoot'
-      case !root(block.body.txs.map(tx => tx.hash())).eq(
-        block.header.migrationRoot,
-      ):
+      case !root(block.body.txs.map(tx => tx.hash())).eq(block.header.txRoot):
         return 'challengeTxRoot'
       default:
         return undefined

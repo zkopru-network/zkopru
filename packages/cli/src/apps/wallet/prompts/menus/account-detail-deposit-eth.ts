@@ -35,7 +35,7 @@ export default class DepositEther extends App {
         initial: 0,
         message: 'How much ETH do you want to pay for the fee?',
       })
-      const parsedFee = parseStringToUnit(amount, 'ether')
+      const parsedFee = parseStringToUnit(fee, 'ether')
       feeWei = toWei(parsedFee.val, parsedFee.unit).toString()
       messages.push(`Fee: ${fee} ETH`)
       messages.push(`    = ${feeWei} wei`)

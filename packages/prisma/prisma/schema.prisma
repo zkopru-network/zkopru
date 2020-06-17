@@ -116,11 +116,6 @@ model Deposit {
   queuedAt String
 }
 
-model Nullifier {
-  index String @id
-  nullified Boolean
-}
-
 model Note {
   hash String @id
   index String?
@@ -136,6 +131,8 @@ model Note {
   status Int?
   noteType Int
   treeId String?
+  nullifier String?
+  usedFor String?
   tree LightTree? @relation(fields: [treeId], references: [id])
 }
 

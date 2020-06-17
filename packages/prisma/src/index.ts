@@ -31,7 +31,6 @@ export const NULLIFIER_TREE_ID = 'nullifier-tree'
 export {
   LightTree,
   TreeNode,
-  Nullifier,
   Keystore,
   EncryptedWallet,
   Block,

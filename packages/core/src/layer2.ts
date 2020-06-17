@@ -6,6 +6,7 @@ import {
   Proposal,
   MassDeposit as MassDepositSql,
   Note as NoteSql,
+  NoteType,
 } from '@zkopru/prisma'
 import { Grove, GrovePatch, Item } from '@zkopru/tree'
 import BN from 'bn.js'
@@ -13,7 +14,8 @@ import AsyncLock from 'async-lock'
 import { Bytes32, Address, Uint256 } from 'soltypes'
 import { logger, mergeDeposits } from '@zkopru/utils'
 import { Field } from '@zkopru/babyjubjub'
-import { Note, OutflowType, ZkOutflow } from '@zkopru/transaction'
+import { Note, OutflowType, ZkOutflow, UtxoStatus } from '@zkopru/transaction'
+import { ZkAccount } from '@zkopru/account'
 import {
   Block,
   Header,
@@ -31,6 +33,7 @@ export interface Patch {
   block: Bytes32
   massDeposits?: Bytes32[]
   treePatch?: GrovePatch
+  nullifiers?: Uint256[]
 }
 
 export class L2Chain {
@@ -191,6 +194,7 @@ export class L2Chain {
       if (result === VerifyResult.INVALIDATED)
         throw Error('Invalid result cannot make a patch')
       await this.grove.applyPatch(treePatch)
+      await this.nullifyNotes(block, treePatch.nullifiers)
     }
     // Record the verify result
     if (result === VerifyResult.INVALIDATED) {
@@ -208,6 +212,45 @@ export class L2Chain {
     // Update mass deposits inclusion status
     if (massDeposits) {
       await this.markMassDepositsAsIncludedIn(massDeposits, block)
+    }
+  }
+
+  async findMyNotes(block: Block, accounts: ZkAccount[]) {
+    const txs = block.body.txs.filter(tx => tx.memo)
+    logger.info(
+      `findMyNotes ${JSON.stringify(block.body.txs)} / ${JSON.stringify(
+        txs,
+      )} / ${JSON.stringify(accounts)}`,
+    )
+    const myNotes: Note[] = []
+    for (const tx of txs) {
+      for (const account of accounts) {
+        const note = account.decrypt(tx)
+        logger.info(`decrypt result ${note}`)
+        if (note) myNotes.push(note)
+      }
+    }
+    // TODO needs batch transaction
+    for (const note of myNotes) {
+      const noteSql = {
+        hash: note
+          .hash()
+          .toUint256()
+          .toString(),
+        eth: note.eth.toUint256().toString(),
+        pubKey: Bytes32.from(note.pubKey.toHex()).toString(),
+        salt: note.salt.toUint256().toString(),
+        tokenAddr: note.tokenAddr.toAddress().toString(),
+        erc20Amount: note.erc20Amount.toUint256().toString(),
+        nft: note.nft.toUint256().toString(),
+        status: UtxoStatus.NON_INCLUDED,
+        noteType: NoteType.UTXO,
+      }
+      await this.db.prisma.note.upsert({
+        where: { hash: noteSql.hash },
+        create: noteSql,
+        update: noteSql,
+      })
     }
   }
 
@@ -270,6 +313,13 @@ export class L2Chain {
     await this.db.prisma.massDeposit.updateMany({
       where: { index: { in: indexes } },
       data: { includedIn: block.toString() },
+    })
+  }
+
+  private async nullifyNotes(blockHash: Bytes32, nullifiers: BN[]) {
+    await this.db.prisma.note.updateMany({
+      where: { nullifier: { in: nullifiers.map(v => v.toString()) } },
+      data: { usedFor: blockHash.toString() },
     })
   }
 

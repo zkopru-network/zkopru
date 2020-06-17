@@ -48,13 +48,15 @@ export class ZkOPRUNode extends EventEmitter {
     [proposalTx: string]: boolean
   }
 
-  runningSerialProcessing = false
+  onlyRunRecursiveCall = false
 
   status: NetworkStatus
 
   latestProposed?: number
 
   latestProcessed?: number
+
+  syncing: boolean
 
   constructor({
     db,
@@ -88,6 +90,7 @@ export class ZkOPRUNode extends EventEmitter {
     this.lock = new AsyncLock()
     this.cronJobs = []
     this.fetching = {}
+    this.syncing = false
   }
 
   private setStatus(status: NetworkStatus) {
@@ -100,44 +103,57 @@ export class ZkOPRUNode extends EventEmitter {
   }
 
   startSync() {
-    logger.info('start sync')
-    this.setStatus(NetworkStatus.ON_SYNCING)
-    this.synchronizer.sync()
-    this.cronJobs = [
-      scheduleJob('*/1 * * * * *', () => {
-        this.updateStatus()
-        this.fetchUnfetchedProposals()
-        this.processUnverifiedBlocks()
-        this.checkBlockUpdate()
-      }),
-    ]
+    if (!this.syncing) {
+      logger.info('start sync')
+      this.setStatus(NetworkStatus.ON_SYNCING)
+      this.synchronizer.sync()
+      this.cronJobs = [
+        scheduleJob('*/1 * * * * *', () => {
+          this.updateStatus()
+          this.fetchUnfetchedProposals()
+          this.processUnverifiedBlocks()
+          this.checkBlockUpdate()
+        }),
+      ]
+      this.syncing = true
+    } else {
+      logger.info('already on syncing')
+    }
   }
 
   stopSync() {
-    logger.info('stop sync')
-    while (this.cronJobs.length > 0) {
-      ;(this.cronJobs.pop() as Job).cancel()
+    if (this.syncing) {
+      logger.info('stop sync')
+      while (this.cronJobs.length > 0) {
+        ;(this.cronJobs.pop() as Job).cancel()
+      }
+      this.setStatus(NetworkStatus.STOPPED)
+      this.synchronizer.stop()
+      this.syncing = false
+    } else {
+      logger.info('already stopped')
     }
-    this.setStatus(NetworkStatus.STOPPED)
-    this.synchronizer.stop()
   }
 
   async processUnverifiedBlocks(recursive?: boolean) {
-    if (this.runningSerialProcessing && !recursive) {
+    if (this.onlyRunRecursiveCall && !recursive) {
       // Skip cron job calling becaus it is processing blocks recursively
       return
     }
     const { prevHeader, block } = await this.l2Chain.getOldestUnverifiedBlock()
     if (!block) {
-      // if once it processed all blocks, it will stop its recursive call
-      this.runningSerialProcessing = false
+      // if it processes all blocks, it will stop its recursive call
+      this.onlyRunRecursiveCall = false
       return
     }
     // Once it finds an unverified block, starts recursive processing
-    this.runningSerialProcessing = true
-    if (!prevHeader)
+    this.onlyRunRecursiveCall = true
+    if (!prevHeader) {
+      this.onlyRunRecursiveCall = false
       throw Error('Unexpected runtime error occured during the verification.')
+    }
 
+    logger.info(`Processing block ${block.hash.toString()}`)
     try {
       const { patch, challenge } = await this.verifier.verifyBlock({
         layer2: this.l2Chain,
@@ -146,14 +162,17 @@ export class ZkOPRUNode extends EventEmitter {
       })
       if (patch) {
         await this.l2Chain.applyPatchAndMarkAsVerified(patch)
+        await this.l2Chain.findMyNotes(block, this.accounts || [])
         this.processUnverifiedBlocks(true)
       } else if (challenge) {
         // implement challenge here & mark as invalidated
+        this.onlyRunRecursiveCall = false
         logger.warn(challenge)
       }
     } catch (err) {
       // TODO needs to provide roll back & resync option
       // sync & process error
+      this.onlyRunRecursiveCall = false
       logger.error(err)
     }
   }
@@ -271,22 +290,37 @@ export class ZkOPRUNode extends EventEmitter {
     const block = Block.fromTx(proposalData)
     const header = block.getHeaderSql()
     await this.lock.acquire('db', async () => {
-      await this.db.prisma.proposal.update({
-        where: {
-          hash: header.hash,
-        },
-        data: {
-          block: {
-            create: {
-              header: {
-                create: header,
+      try {
+        await this.db.prisma.proposal.update({
+          where: {
+            hash: header.hash,
+          },
+          data: {
+            block: {
+              upsert: {
+                create: {
+                  header: {
+                    create: header,
+                  },
+                },
+                update: {
+                  header: {
+                    connect: {
+                      hash: header.hash,
+                    },
+                  },
+                },
               },
             },
+            proposalData: JSON.stringify(proposalData),
           },
-          proposalData: JSON.stringify(proposalData),
-        },
-      })
+        })
+      } catch (err) {
+        logger.error(err)
+        process.exit()
+      }
     })
+    this.emit('onFetched', block)
     delete this.fetching[proposalTx]
   }
 

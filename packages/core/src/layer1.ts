@@ -41,17 +41,17 @@ export class L1Contract extends ZkOPRUContract {
           ]
           const vk_beta_2 = [
             [bigInt(vk.beta2[0][0]), bigInt(vk.beta2[0][1])],
-            [bigInt(vk.beta2[1][1]), bigInt(vk.beta2[1][1])],
+            [bigInt(vk.beta2[1][0]), bigInt(vk.beta2[1][1])],
             [bigInt('1'), bigInt('0')],
           ]
           const vk_gamma_2 = [
             [bigInt(vk.gamma2[0][0]), bigInt(vk.gamma2[0][1])],
-            [bigInt(vk.gamma2[1][1]), bigInt(vk.gamma2[1][1])],
+            [bigInt(vk.gamma2[1][0]), bigInt(vk.gamma2[1][1])],
             [bigInt('1'), bigInt('0')],
           ]
           const vk_delta_2 = [
             [bigInt(vk.delta2[0][0]), bigInt(vk.delta2[0][1])],
-            [bigInt(vk.delta2[1][1]), bigInt(vk.delta2[1][1])],
+            [bigInt(vk.delta2[1][0]), bigInt(vk.delta2[1][1])],
             [bigInt('1'), bigInt('0')],
           ]
           const vk_alfabeta_12 = ffjs.bn128.pairing(

@@ -45,19 +45,16 @@ export function parseStringToUnit(
   str: string,
   defaultUnit?: Unit,
 ): { val: string; unit: Unit } {
-  for (const unit of units) {
-    const splitted = str.split(unit)
-    if (splitted.length > 1) {
-      const val = parseFloat(splitted[0].trim()).toString()
-      return {
-        val,
-        unit,
-      }
-    }
+  const val = parseFloat(str).toString()
+  const unitParser = str.match(/[\d.\-\+]*\s*(.*)/)
+  const parsedUnit = (unitParser ? unitParser[1] : '') as Unit
+  let unit = defaultUnit || 'ether'
+  if (units.includes(parsedUnit)) {
+    unit = parsedUnit
   }
   return {
-    val: parseFloat(str).toString(),
-    unit: defaultUnit || 'ether',
+    val,
+    unit,
   }
 }
 

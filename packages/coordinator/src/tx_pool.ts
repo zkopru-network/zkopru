@@ -1,15 +1,11 @@
 import { Field } from '@zkopru/babyjubjub'
 import { ZkTx } from '@zkopru/transaction'
-import { root } from '@zkopru/utils'
+import { root, logger } from '@zkopru/utils'
 
 export interface TxPoolInterface {
   pendingNum(): number
   addToTxPool(zkTx: ZkTx): Promise<void>
-  pickTxs(
-    maxBytes: number,
-    minProposalCost: number,
-    minPricePerByte: Field,
-  ): Promise<ZkTx[] | null>
+  pickTxs(maxBytes: number, minPricePerByte: Field): Promise<ZkTx[] | null>
   markAsIncluded(txs: ZkTx[]): void
   pendingTxs(): ZkTx[]
 }
@@ -43,7 +39,6 @@ export class TxMemPool implements TxPoolInterface {
 
   async pickTxs(
     maxBytes: number,
-    minProposalCost: number,
     minPricePerByte: Field,
   ): Promise<ZkTx[] | null> {
     // TODO add atomic swap tx logic here
@@ -56,13 +51,15 @@ export class TxMemPool implements TxPoolInterface {
       if (!tx) break
       const size = tx.size()
       const expectedFee = minPricePerByte.muln(size)
+      logger.info(`expected fee: ${expectedFee.toString()}`)
+      logger.info(`tx.fee: ${tx.fee.toString()}`)
       if (available >= size && tx.fee.gte(expectedFee)) {
         available -= size
         fee = fee.add(tx.fee)
         picked.push(tx)
       }
     }
-    if (fee.ltn(minProposalCost)) return null
+    logger.info(`fee: ${fee}`)
     return picked
   }
 
