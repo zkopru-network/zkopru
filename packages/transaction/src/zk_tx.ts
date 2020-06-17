@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { BigInteger } from 'big-integer'
 import { soliditySha3 } from 'web3-utils'
-import * as snarkjs from 'snarkjs'
 import { Field } from '@zkopru/babyjubjub'
 import * as Utils from '@zkopru/utils'
 import { Bytes32 } from 'soltypes'
@@ -297,19 +296,21 @@ export class ZkTx {
   }
 
   circomProof(): {
-    pi_a: bigint[]
-    pi_b: bigint[][]
-    pi_c: bigint[]
+    pi_a: BigInteger[]
+    pi_b: BigInteger[][]
+    pi_c: BigInteger[]
     protocol: string
   } {
     if (!this.proof) throw Error('Does not have SNARK proof')
+    const bigOne = Field.from(1).toIden3BigInt()
+    const bigZero = Field.zero.toIden3BigInt()
     return {
-      pi_a: [...this.proof.pi_a.map(f => f.toIden3BigInt()), snarkjs.bigInt(1)],
+      pi_a: [...this.proof.pi_a.map(f => f.toIden3BigInt()), bigOne],
       pi_b: [
         ...this.proof.pi_b.map(arr => arr.map(f => f.toIden3BigInt())),
-        [snarkjs.bigInt(1), snarkjs.bigInt(0)],
+        [bigOne, bigZero],
       ],
-      pi_c: [...this.proof.pi_c.map(f => f.toIden3BigInt()), snarkjs.bigInt(1)],
+      pi_c: [...this.proof.pi_c.map(f => f.toIden3BigInt()), bigOne],
       protocol: 'groth',
     }
   }

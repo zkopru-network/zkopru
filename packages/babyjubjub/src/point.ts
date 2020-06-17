@@ -1,6 +1,6 @@
 import { hexToBuffer, hexify } from '@zkopru/utils'
 import bigInt, { BigInteger } from 'big-integer'
-import * as snarkjs from 'snarkjs'
+import * as ffjs from 'ffjavascript'
 import * as circomlib from 'circomlib'
 import createBlakeHash from 'blake-hash'
 import { Field, F } from './field'
@@ -49,19 +49,20 @@ export class Point {
     return Point.from(result[0].toString(), result[1].toString())
   }
 
-  static getMultiplier(key: string): Field {
-    const sBuff = circomlib.eddsa.pruneBuffer(
+  static getMultiplier(key: string | Buffer): Field {
+    const buff: Buffer = typeof key === 'string' ? hexToBuffer(key) : key
+    const sBuff = Buffer.from(
       createBlakeHash('blake512')
-        .update(key)
+        .update(buff)
         .digest()
         .slice(0, 32),
     )
-    return Field.from(
-      snarkjs.bigInt
-        .leBuff2int(sBuff)
-        .shr(3)
-        .toString(),
-    )
+    sBuff[0] &= 0xf8
+    sBuff[31] &= 0x7f
+    sBuff[31] |= 0x40
+    const s = ffjs.utils.leBuff2int(sBuff)
+    const multiplier = ffjs.Scalar.shr(s, 3)
+    return Field.from(multiplier)
   }
 
   static isOnJubjub(x: F, y: F): boolean {

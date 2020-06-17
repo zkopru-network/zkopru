@@ -216,18 +216,19 @@ export class Note {
     utxoHash: Field
     memo: Buffer
     privKey: string
-  }): Note | null {
+  }): Note | undefined {
     const multiplier = Point.getMultiplier(privKey)
     const ephemeralPubKey = Point.decode(memo.subarray(0, 32))
     const sharedKey = ephemeralPubKey.mul(multiplier).encode()
     const data = memo.subarray(32, 81)
-    const decrypted = chacha20.decrypt(sharedKey, 0, data) // prints "testing"
-
+    const decrypted = chacha20.decrypt(sharedKey, 0, data)
     const salt = Field.fromBuffer(decrypted.subarray(0, 16))
     const tokenAddress = TokenUtils.getTokenAddress(
       decrypted.subarray(16, 17)[0],
     )
-    if (tokenAddress === null) return null
+    if (tokenAddress === null) {
+      return
+    }
     const value = Field.fromBuffer(decrypted.subarray(17, 49))
 
     const myPubKey: Point = Point.fromPrivKey(privKey)
@@ -262,6 +263,6 @@ export class Note {
         return nftNote
       }
     }
-    return null
+    return undefined
   }
 }

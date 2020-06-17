@@ -54,6 +54,7 @@ export class ZkWizard {
     account: ZkAccount
     toMemo?: number
   }): Promise<ZkTx> {
+    logger.info(`shield to memo(${toMemo})`)
     return new Promise<ZkTx>((resolve, reject) => {
       const merkleProof: { [hash: string]: MerkleProof<Field> } = {}
       const eddsa: { [hash: string]: EdDSA } = {}
@@ -240,6 +241,10 @@ export class ZkWizard {
     )
     // let { proof, publicSignals } = Utils.genProof(snarkjs.unstringifyBigInts(provingKey), witness);
     // TODO handle genProof exception
+    let memo: Buffer | undefined
+    if (toMemo !== undefined) {
+      memo = tx.outflow[toMemo].encrypt()
+    }
     const zkTx: ZkTx = new ZkTx({
       inflow: tx.inflow.map((utxo, index) => {
         return {
@@ -257,7 +262,7 @@ export class ZkWizard {
         pi_c: proof.pi_c.map(Field.from),
       },
       swap: tx.swap,
-      memo: toMemo ? tx.outflow[toMemo].encrypt() : undefined,
+      memo,
     })
     return zkTx
   }

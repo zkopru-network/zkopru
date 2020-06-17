@@ -65,5 +65,11 @@ describe('baby jubjub point', () => {
       })
       expect(verifyEdDSA(msg, signature, pubKey)).toBe(true)
     })
+    describe('fromPrivKey', () => {
+      it('should be able to same public key using Point.getMultiplier()', () => {
+        const multiplier = Point.getMultiplier(password)
+        expect(Point.BASE8.mul(multiplier).toHex()).toBe(pubKey.toHex())
+      })
+    })
   })
 })

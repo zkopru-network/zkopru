@@ -94,6 +94,7 @@ export class ZkWallet {
     const utxoSqls = await this.db.prisma.note.findMany({
       where: {
         pubKey: { in: [account.pubKey.toHex()] },
+        usedFor: null,
       },
     })
     const utxos: Utxo[] = []
@@ -338,6 +339,7 @@ export class ZkWallet {
       const { verifier } = this.node
       const snarkValid = await verifier.snarkVerifier.verifyTx(zkTx)
       assert(snarkValid, 'generated snark proof is invalid')
+      assert(zkTx.memo, 'memo does not exist')
       const response = await fetch(`${this.coordinator}/tx`, {
         method: 'post',
         body: zkTx.encode().toString('hex'),
