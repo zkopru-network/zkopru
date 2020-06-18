@@ -128,7 +128,7 @@ export function verifyingKeyIdentifier(nI: number, nO: number): string {
 
 export function hexify(
   n: BN | Buffer | string | number,
-  length?: number,
+  byteLength?: number,
 ): string {
   let hex: string
   if (n instanceof BN || typeof n === 'number') {
@@ -146,11 +146,11 @@ export function hexify(
   } else {
     hex = n.toString('hex')
   }
-  if (length) {
-    if (hex.length > length * 2) {
+  if (byteLength) {
+    if (hex.length > byteLength * 2) {
       throw Error('Input data exceeds the given length')
     }
-    hex = '0'.repeat(length * 2 - hex.length) + hex
+    hex = '0'.repeat(byteLength * 2 - hex.length) + hex
   }
   return `0x${hex}`
 }

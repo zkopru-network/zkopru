@@ -34,6 +34,7 @@
     "@prisma/client": "^2.0.0-beta.8",
     "@prisma/migrate": "^2.0.0-beta.8",
     "@zkopru/babyjubjub": "file:../babyjubjub",
+    "@zkopru/utils": "file:../utils",
     "async-lock": "^1.2.2",
     "big-integer": "^1.6.48",
     "bn.js": "^5.1.1",

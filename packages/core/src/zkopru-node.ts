@@ -22,6 +22,10 @@ export enum NetworkStatus {
   ON_ERROR = 'on error',
 }
 
+export enum BlockEvents {
+  ON_FETCHED = 'onFetched',
+}
+
 export class ZkOPRUNode extends EventEmitter {
   db: DB
 
@@ -158,7 +162,11 @@ export class ZkOPRUNode extends EventEmitter {
       })
       if (patch) {
         await this.l2Chain.applyPatchAndMarkAsVerified(patch)
-        await this.l2Chain.findMyNotes(block, this.accounts || [])
+        await this.l2Chain.findMyNotes(
+          block.body.txs,
+          patch.treePatch?.utxos || [],
+          this.accounts || [],
+        )
         this.processUnverifiedBlocks(true)
       } else if (challenge) {
         // implement challenge here & mark as invalidated
@@ -317,7 +325,7 @@ export class ZkOPRUNode extends EventEmitter {
       logger.error(err)
       process.exit()
     }
-    this.emit('onFetched', block)
+    this.emit(BlockEvents.ON_FETCHED, block)
     delete this.fetching[proposalTx]
   }
 

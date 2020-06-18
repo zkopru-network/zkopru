@@ -2,7 +2,7 @@
 /* eslint-disable no-underscore-dangle */
 import { Field } from '@zkopru/babyjubjub'
 import AsyncLock from 'async-lock'
-import { Note } from '@zkopru/transaction'
+import { Note, UtxoStatus } from '@zkopru/transaction'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { hexify } from '@zkopru/utils'
@@ -374,6 +374,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
             tokenAddr: item.note.tokenAddr.toHex(20),
             erc20Amount: item.note?.erc20Amount.toString(10),
             nft: item.note?.nft.toString(10),
+            status: UtxoStatus.UNSPENT,
           }
         } else {
           noteSql = {

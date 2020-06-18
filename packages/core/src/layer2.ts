@@ -14,7 +14,13 @@ import AsyncLock from 'async-lock'
 import { Bytes32, Address, Uint256 } from 'soltypes'
 import { logger, mergeDeposits } from '@zkopru/utils'
 import { Field } from '@zkopru/babyjubjub'
-import { Note, OutflowType, ZkOutflow, UtxoStatus } from '@zkopru/transaction'
+import {
+  Note,
+  OutflowType,
+  ZkOutflow,
+  UtxoStatus,
+  ZkTx,
+} from '@zkopru/transaction'
 import { ZkAccount } from '@zkopru/account'
 import {
   Block,
@@ -109,46 +115,50 @@ export class L2Chain {
     return null
   }
 
-  async getDeposits(massDeposit: MassDeposit): Promise<DepositSql[]> {
-    const commits = await this.db.read(prisma =>
-      prisma.massDeposit.findMany({
-        where: {
-          merged: massDeposit.merged.toString(),
-          fee: massDeposit.fee.toString(),
-          includedIn: null,
-        },
-        orderBy: {
-          blockNumber: 'asc',
-        },
-        take: 1,
-      }),
-    )
-    // logger.info()
-    const nonIncludedMassDepositCommit = commits.pop()
-    if (!nonIncludedMassDepositCommit) {
-      logger.info('faield to find mass deposit')
-      logger.info(massDeposit.merged.toString())
-      logger.info(`fee ${massDeposit.fee.toString()}`)
-      throw Error('Failed to find the mass deposit')
-    }
+  async getDeposits(...massDeposits: MassDeposit[]): Promise<DepositSql[]> {
+    const totalDeposits: DepositSql[] = []
+    for (const massDeposit of massDeposits) {
+      const commits = await this.db.read(prisma =>
+        prisma.massDeposit.findMany({
+          where: {
+            merged: massDeposit.merged.toString(),
+            fee: massDeposit.fee.toString(),
+            includedIn: null,
+          },
+          orderBy: {
+            blockNumber: 'asc',
+          },
+          take: 1,
+        }),
+      )
+      // logger.info()
+      const nonIncludedMassDepositCommit = commits.pop()
+      if (!nonIncludedMassDepositCommit) {
+        logger.info('faield to find mass deposit')
+        logger.info(massDeposit.merged.toString())
+        logger.info(`fee ${massDeposit.fee.toString()}`)
+        throw Error('Failed to find the mass deposit')
+      }
 
-    const deposits = await this.db.read(prisma =>
-      prisma.deposit.findMany({
-        where: {
-          queuedAt: nonIncludedMassDepositCommit.index,
-        },
-      }),
-    )
-    deposits.sort((a, b) => {
-      if (a.blockNumber !== b.blockNumber) {
-        return a.blockNumber - b.blockNumber
-      }
-      if (a.transactionIndex !== b.transactionIndex) {
-        return a.transactionIndex - b.transactionIndex
-      }
-      return a.logIndex - b.logIndex
-    })
-    return deposits
+      const deposits = await this.db.read(prisma =>
+        prisma.deposit.findMany({
+          where: {
+            queuedAt: nonIncludedMassDepositCommit.index,
+          },
+        }),
+      )
+      deposits.sort((a, b) => {
+        if (a.blockNumber !== b.blockNumber) {
+          return a.blockNumber - b.blockNumber
+        }
+        if (a.transactionIndex !== b.transactionIndex) {
+          return a.transactionIndex - b.transactionIndex
+        }
+        return a.logIndex - b.logIndex
+      })
+      totalDeposits.push(...deposits)
+    }
+    return totalDeposits
   }
 
   async getOldestUnverifiedBlock(): Promise<{
@@ -233,15 +243,11 @@ export class L2Chain {
     }
   }
 
-  async findMyNotes(block: Block, accounts: ZkAccount[]) {
-    const txs = block.body.txs.filter(tx => tx.memo)
-    logger.info(
-      `findMyNotes ${JSON.stringify(block.body.txs)} / ${JSON.stringify(
-        txs,
-      )} / ${JSON.stringify(accounts)}`,
-    )
+  async findMyNotes(txs: ZkTx[], utxos: Item<Field>[], accounts: ZkAccount[]) {
+    const txsWithMemo = txs.filter(tx => tx.memo)
+    logger.info(`findMyNotes`)
     const myNotes: Note[] = []
-    for (const tx of txs) {
+    for (const tx of txsWithMemo) {
       for (const account of accounts) {
         const note = account.decrypt(tx)
         logger.info(`decrypt result ${note}`)
@@ -261,8 +267,9 @@ export class L2Chain {
         tokenAddr: note.tokenAddr.toAddress().toString(),
         erc20Amount: note.erc20Amount.toUint256().toString(),
         nft: note.nft.toUint256().toString(),
-        status: UtxoStatus.NON_INCLUDED,
+        status: UtxoStatus.UNSPENT,
         noteType: NoteType.UTXO,
+        usedFor: null,
       }
       await this.db.write(prisma =>
         prisma.note.upsert({
@@ -272,6 +279,14 @@ export class L2Chain {
         }),
       )
     }
+    await this.db.write(prisma =>
+      prisma.note.updateMany({
+        where: {
+          hash: { in: utxos.map(utxo => utxo.leafHash.toUint256().toString()) },
+        },
+        data: { status: UtxoStatus.UNSPENT },
+      }),
+    )
   }
 
   async applyBootstrap(block: Block, bootstrapData: BootstrapData) {
@@ -346,7 +361,10 @@ export class L2Chain {
     await this.db.write(prisma =>
       prisma.note.updateMany({
         where: { nullifier: { in: nullifiers.map(v => v.toString()) } },
-        data: { usedFor: blockHash.toString() },
+        data: {
+          status: UtxoStatus.SPENT,
+          usedFor: blockHash.toString(),
+        },
       }),
     )
   }
@@ -455,14 +473,12 @@ export class L2Chain {
     const withdrawals: BN[] = []
     const nullifiers: BN[] = []
 
-    for (const massDeposit of block.body.massDeposits) {
-      const deposits = await this.getDeposits(massDeposit)
-      utxos.push(
-        ...deposits.map(deposit => ({
-          leafHash: Field.from(deposit.note),
-        })),
-      )
-    }
+    const deposits = await this.getDeposits(...block.body.massDeposits)
+    utxos.push(
+      ...deposits.map(deposit => ({
+        leafHash: Field.from(deposit.note),
+      })),
+    )
 
     const utxoHashes: Field[] = []
     for (const tx of block.body.txs) {

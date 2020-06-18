@@ -25,7 +25,8 @@ function getPreHash<T extends Field | BN>(
 
 export function genesisRoot<T extends Field | BN>(hasher: Hasher<T>): T {
   const lastSib = hasher.preHash.slice(-1)[0]
-  return hasher.parentOf(lastSib, lastSib)
+  const genesisRoot = hasher.parentOf(lastSib, lastSib)
+  return genesisRoot
 }
 
 export function keccakHasher(depth: number): Hasher<BN> {

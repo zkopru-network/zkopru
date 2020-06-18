@@ -98,6 +98,8 @@ export class Coordinator extends EventEmitter {
   }
 
   async stop(): Promise<void> {
+    // TODO : stop api & gas price subscriber / remove listeners
+    this.stopGenBlock()
     return new Promise(res => {
       this.node.on('status', status => {
         if (status === NetworkStatus.STOPPED) {
@@ -277,11 +279,12 @@ export class Coordinator extends EventEmitter {
   }
 
   private startGenBlock() {
-    logger.info('Started to generate blocks')
-    if (!this.genBlockJob)
+    if (!this.genBlockJob) {
+      logger.info('Started to generate blocks')
       this.genBlockJob = scheduleJob('*/5 * * * * *', () =>
         this.proposeNewBlocks(),
       )
+    }
   }
 
   private stopGenBlock() {
@@ -292,10 +295,13 @@ export class Coordinator extends EventEmitter {
 
   private async proposeNewBlocks() {
     if (!this.gasPrice) {
-      logger.info('Skip gen block. Gas price is not synced yet')
+      logger.trace('Skip gen block. Gas price is not synced yet')
       return
     }
-    logger.info('Generating block')
+    if (this.node.status !== NetworkStatus.FULLY_SYNCED) {
+      logger.trace('Skip gen block. Syncing layer 2 with the layer 1')
+      return
+    }
     let block: {
       header: Header
       body: Body
@@ -307,6 +313,29 @@ export class Coordinator extends EventEmitter {
       logger.warn(`Failed to gen block: ${err}`)
       return
     }
+    const blockHash = headerHash(block.header)
+    const siblingProposals = await this.node.db.read(prisma =>
+      prisma.proposal.findMany({
+        where: {
+          OR: [
+            {
+              block: {
+                header: { parentBlock: block.header.parentBlock.toString() },
+              },
+              invalidated: false,
+            },
+            {
+              hash: blockHash.toString(),
+            },
+          ],
+        },
+      }),
+    )
+    if (siblingProposals.length > 0) {
+      logger.info(`Already proposed for the given parent block`)
+      return
+    }
+
     const bytes = Buffer.concat([
       serializeHeader(block.header),
       serializeBody(block.body),
@@ -320,8 +349,7 @@ export class Coordinator extends EventEmitter {
           from: this.account.address,
         })
     } catch (err) {
-      logger.error(`Skip gen block. propose() fails`)
-      logger.error(blockData)
+      logger.warn(`propose() fails. Skip gen block`)
       return
     }
     const expectedFee = this.gasPrice.muln(expectedGas)
@@ -330,9 +358,7 @@ export class Coordinator extends EventEmitter {
         `Skip gen block. Aggregated fee is not enough yet ${block.fee} / ${expectedFee}`,
       )
     } else {
-      logger.info(
-        chalk.green(`Proposed a new block: ${headerHash(block.header)}`),
-      )
+      logger.info(chalk.green(`Proposed a new block: ${blockHash}`))
       await this.node.l1Contract.coordinator.methods.propose(blockData).send({
         from: this.account.address,
         gas: expectedGas,
@@ -378,7 +404,6 @@ export class Coordinator extends EventEmitter {
       return a.logIndex - b.logIndex
     })
     deposits.push(...pendingDeposits.map(deposit => Field.from(deposit.note)))
-    logger.info(`Pending deposits: ${pendingDeposits.length}`)
     consumedBytes += 32 * commits.length
     aggregatedFee = aggregatedFee.add(
       pendingDeposits.reduce((prev, item) => prev.add(item.fee), Field.zero),
@@ -396,8 +421,6 @@ export class Coordinator extends EventEmitter {
     aggregatedFee = aggregatedFee.add(
       txs.map(tx => tx.fee).reduce((prev, fee) => prev.add(fee), Field.zero),
     )
-    logger.info(`Picked txs: ${txs.length}`)
-    logger.info(`Pending txs: ${this.txPool.pendingNum()}`)
     // TODO 3 make sure every nullifier is unique and not used before
     // * if there exists invalid transactions, remove them from the tx pool and try genBlock recursively
 
@@ -421,7 +444,17 @@ export class Coordinator extends EventEmitter {
       ]
     }, [] as Field[])
 
-    logger.info(`Withdrawals: ${withdrawals.length}`)
+    if (
+      pendingDeposits.length ||
+      txs.length ||
+      this.txPool.pendingNum() ||
+      withdrawals.length
+    ) {
+      logger.info(`Pending deposits: ${pendingDeposits.length}`)
+      logger.info(`Picked txs: ${txs.length}`)
+      logger.info(`Pending txs: ${this.txPool.pendingNum()}`)
+      logger.info(`Withdrawals: ${withdrawals.length}`)
+    }
     const nullifiers = txs.reduce((arr, tx) => {
       return [...arr, ...tx.inflow.map(inflow => inflow.nullifier)]
     }, [] as Field[])
@@ -434,7 +467,6 @@ export class Coordinator extends EventEmitter {
     const massMigrations: MassMigration[] = []
     // TODO remove this line
     logger.info('current nullifier')
-    const snapShot = await this.node.l2Chain.grove.getSnapshot()
     const expectedGrove = await this.node.l2Chain.grove.dryPatch({
       utxos,
       withdrawals,
@@ -443,15 +475,6 @@ export class Coordinator extends EventEmitter {
     logger.info(
       `nullifiers: ${JSON.stringify(nullifiers.map(f => f.toString()))}`,
     )
-    logger.info(`Prev grove / Expected grove
-        snapshot utxo index & root: ${snapShot.utxoTreeIndex.toString()} / ${snapShot.utxoTreeRoot.toString()}
-        snapshot withdrawal index & root: ${snapShot.withdrawalTreeIndex.toString()} / ${snapShot.withdrawalTreeRoot.toString()}
-        snapshot nullifier root: ${snapShot.nullifierTreeRoot?.toString()}
-        expected utxo index & root: ${expectedGrove.utxoTreeIndex.toString()} / ${expectedGrove.utxoTreeRoot.toString()}
-        expected withdrawal index & root: ${expectedGrove.withdrawalTreeIndex.toString()} / ${expectedGrove.withdrawalTreeRoot.toString()}
-        expected nullifier root: ${expectedGrove.nullifierTreeRoot?.toString()}
-      `)
-
     if (!expectedGrove.nullifierTreeRoot) {
       throw Error(
         'Grove does not have the nullifier tree. Use full node option',
