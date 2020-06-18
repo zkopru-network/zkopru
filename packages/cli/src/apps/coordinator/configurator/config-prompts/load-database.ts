@@ -18,21 +18,25 @@ async function initDB({
 }) {
   const networkId = await web3.eth.net.getId()
   const chainId = await web3.eth.getChainId()
-  const config = await db.prisma.config.findOne({
-    where: {
-      networkId_chainId_address: {
-        networkId,
-        address,
-        chainId,
+  const config = await db.read(prisma =>
+    prisma.config.findOne({
+      where: {
+        networkId_chainId_address: {
+          networkId,
+          address,
+          chainId,
+        },
       },
-    },
-  })
+    }),
+  )
   if (!config) {
     const layer1: L1Contract = new L1Contract(web3, address)
     const configFromContract = await layer1.getConfig()
-    await db.prisma.config.create({
-      data: configFromContract,
-    })
+    await db.write(prisma =>
+      prisma.config.create({
+        data: configFromContract,
+      }),
+    )
   }
 }
 

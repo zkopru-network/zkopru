@@ -53,68 +53,76 @@ export class L2Chain {
   }
 
   async getBlock(hash: Bytes32): Promise<Block | null> {
-    const proposal = await this.db.prisma.proposal.findOne({
-      where: {
-        hash: hash.toString(),
-      },
-      include: {
-        block: true,
-      },
-    })
+    const proposal = await this.db.read(prisma =>
+      prisma.proposal.findOne({
+        where: {
+          hash: hash.toString(),
+        },
+        include: {
+          block: true,
+        },
+      }),
+    )
     if (!proposal || !proposal.proposalData) return null
     const tx = JSON.parse(proposal.proposalData)
     return Block.fromTx(tx, proposal.block?.verified || false)
   }
 
   async getProposal(hash: Bytes32) {
-    const proposal = await this.db.prisma.proposal.findOne({
-      where: {
-        hash: hash.toString(),
-      },
-      include: {
-        block: true,
-      },
-    })
+    const proposal = await this.db.read(prisma =>
+      prisma.proposal.findOne({
+        where: {
+          hash: hash.toString(),
+        },
+        include: {
+          block: true,
+        },
+      }),
+    )
     return proposal
   }
 
   async getLatestVerified(): Promise<string | null> {
     const lastVerifiedProposal: Proposal | undefined = (
-      await this.db.prisma.proposal.findMany({
-        where: {
-          block: {
-            verified: true,
-          },
-        },
-        orderBy: {
-          proposalNum: 'desc',
-        },
-        include: {
-          block: {
-            include: {
-              header: true,
+      await this.db.read(prisma =>
+        prisma.proposal.findMany({
+          where: {
+            block: {
+              verified: true,
             },
           },
-        },
-        take: 1,
-      })
+          orderBy: {
+            proposalNum: 'desc',
+          },
+          include: {
+            block: {
+              include: {
+                header: true,
+              },
+            },
+          },
+          take: 1,
+        }),
+      )
     ).pop()
     if (lastVerifiedProposal) return lastVerifiedProposal.hash
     return null
   }
 
   async getDeposits(massDeposit: MassDeposit): Promise<DepositSql[]> {
-    const commits = await this.db.prisma.massDeposit.findMany({
-      where: {
-        merged: massDeposit.merged.toString(),
-        fee: massDeposit.fee.toString(),
-        includedIn: null,
-      },
-      orderBy: {
-        blockNumber: 'asc',
-      },
-      take: 1,
-    })
+    const commits = await this.db.read(prisma =>
+      prisma.massDeposit.findMany({
+        where: {
+          merged: massDeposit.merged.toString(),
+          fee: massDeposit.fee.toString(),
+          includedIn: null,
+        },
+        orderBy: {
+          blockNumber: 'asc',
+        },
+        take: 1,
+      }),
+    )
     // logger.info()
     const nonIncludedMassDepositCommit = commits.pop()
     if (!nonIncludedMassDepositCommit) {
@@ -124,11 +132,13 @@ export class L2Chain {
       throw Error('Failed to find the mass deposit')
     }
 
-    const deposits = await this.db.prisma.deposit.findMany({
-      where: {
-        queuedAt: nonIncludedMassDepositCommit.index,
-      },
-    })
+    const deposits = await this.db.read(prisma =>
+      prisma.deposit.findMany({
+        where: {
+          queuedAt: nonIncludedMassDepositCommit.index,
+        },
+      }),
+    )
     deposits.sort((a, b) => {
       if (a.blockNumber !== b.blockNumber) {
         return a.blockNumber - b.blockNumber
@@ -148,21 +158,25 @@ export class L2Chain {
     const lastVerified = await this.getLatestVerified()
     if (!lastVerified) return {}
 
-    const unverifiedProposals = await this.db.prisma.proposal.findMany({
-      where: {
-        block: { header: { parentBlock: lastVerified }, verified: null },
-      },
-      orderBy: { proposalNum: 'asc' },
-      take: 1,
-      include: { block: true },
-    })
+    const unverifiedProposals = await this.db.read(prisma =>
+      prisma.proposal.findMany({
+        where: {
+          block: { header: { parentBlock: lastVerified }, verified: null },
+        },
+        orderBy: { proposalNum: 'asc' },
+        take: 1,
+        include: { block: true },
+      }),
+    )
     const unverifiedProposal = unverifiedProposals.pop()
 
     if (!unverifiedProposal || !unverifiedProposal.proposalData) return {}
 
-    const lastVerifiedHeader = await this.db.prisma.header.findOne({
-      where: { hash: lastVerified },
-    })
+    const lastVerifiedHeader = await this.db.read(prisma =>
+      prisma.header.findOne({
+        where: { hash: lastVerified },
+      }),
+    )
     if (!lastVerifiedHeader) throw Error('Header not exist error.')
     const prevHeader = {
       proposer: Address.from(lastVerifiedHeader.proposer),
@@ -198,16 +212,20 @@ export class L2Chain {
     }
     // Record the verify result
     if (result === VerifyResult.INVALIDATED) {
-      await this.db.prisma.proposal.update({
-        where: { hash: block.toString() },
-        data: { invalidated: true },
-      })
+      await this.db.write(prisma =>
+        prisma.proposal.update({
+          where: { hash: block.toString() },
+          data: { invalidated: true },
+        }),
+      )
     } else {
       if (!patch) throw Error('patch does not exists')
-      await this.db.prisma.block.update({
-        where: { hash: block.toString() },
-        data: { verified: true },
-      })
+      await this.db.write(prisma =>
+        prisma.block.update({
+          where: { hash: block.toString() },
+          data: { verified: true },
+        }),
+      )
     }
     // Update mass deposits inclusion status
     if (massDeposits) {
@@ -246,11 +264,13 @@ export class L2Chain {
         status: UtxoStatus.NON_INCLUDED,
         noteType: NoteType.UTXO,
       }
-      await this.db.prisma.note.upsert({
-        where: { hash: noteSql.hash },
-        create: noteSql,
-        update: noteSql,
-      })
+      await this.db.write(prisma =>
+        prisma.note.upsert({
+          where: { hash: noteSql.hash },
+          create: noteSql,
+          update: noteSql,
+        }),
+      )
     }
   }
 
@@ -258,32 +278,36 @@ export class L2Chain {
     this.grove.applyBootstrap(bootstrapData)
     const blockSql = { ...block.toSqlObj(), status: BlockStatus.FINALIZED }
     const headerSql = block.getHeaderSql()
-    this.db.prisma.block.upsert({
-      where: {
-        hash: block.hash.toString(),
-      },
-      update: blockSql,
-      create: {
-        ...blockSql,
-        proposal: {
-          create: bootstrapData.proposal,
+    this.db.write(prisma =>
+      prisma.block.upsert({
+        where: {
+          hash: block.hash.toString(),
         },
-        header: {
-          create: headerSql,
+        update: blockSql,
+        create: {
+          ...blockSql,
+          proposal: {
+            create: bootstrapData.proposal,
+          },
+          header: {
+            create: headerSql,
+          },
         },
-      },
-    })
+      }),
+    )
   }
 
   private async markMassDepositsAsIncludedIn(
     massDepositHashes: Bytes32[],
     block: Bytes32,
   ) {
-    const nonIncluded = await this.db.prisma.massDeposit.findMany({
-      where: {
-        includedIn: null,
-      },
-    })
+    const nonIncluded = await this.db.read(prisma =>
+      prisma.massDeposit.findMany({
+        where: {
+          includedIn: null,
+        },
+      }),
+    )
     const candidates: { [index: string]: MassDepositSql } = {}
     nonIncluded.forEach(md => {
       candidates[md.index] = md
@@ -310,17 +334,21 @@ export class L2Chain {
     }
     if (indexes.length !== massDepositHashes.length)
       throw Error('Number of MassDeposits is different with the block proposal')
-    await this.db.prisma.massDeposit.updateMany({
-      where: { index: { in: indexes } },
-      data: { includedIn: block.toString() },
-    })
+    await this.db.write(prisma =>
+      prisma.massDeposit.updateMany({
+        where: { index: { in: indexes } },
+        data: { includedIn: block.toString() },
+      }),
+    )
   }
 
   private async nullifyNotes(blockHash: Bytes32, nullifiers: BN[]) {
-    await this.db.prisma.note.updateMany({
-      where: { nullifier: { in: nullifiers.map(v => v.toString()) } },
-      data: { usedFor: blockHash.toString() },
-    })
+    await this.db.write(prisma =>
+      prisma.note.updateMany({
+        where: { nullifier: { in: nullifiers.map(v => v.toString()) } },
+        data: { usedFor: blockHash.toString() },
+      }),
+    )
   }
 
   static getMassMigrations(block: Block): MassMigration[] {
@@ -446,12 +474,14 @@ export class L2Chain {
         }
       }
     }
-    const myNoteList = await this.db.prisma.note.findMany({
-      where: {
-        hash: { in: utxoHashes.map(output => output.toHex()) },
-        treeId: null,
-      },
-    })
+    const myNoteList = await this.db.read(prisma =>
+      prisma.note.findMany({
+        where: {
+          hash: { in: utxoHashes.map(output => output.toHex()) },
+          treeId: null,
+        },
+      }),
+    )
     const myNotes: { [key: string]: NoteSql } = {}
     for (const myNote of myNoteList) {
       myNotes[myNote.hash] = myNote

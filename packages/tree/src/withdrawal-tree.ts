@@ -29,12 +29,14 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
   async indexesOfTrackingLeaves(): Promise<BN[]> {
     const keys: string[] = this.addressesToObserve || []
 
-    const trackingLeaves = await this.db.prisma.note.findMany({
-      where: {
-        treeId: this.metadata.id,
-        pubKey: { in: keys },
-      },
-    })
+    const trackingLeaves = await this.db.read(prisma =>
+      prisma.note.findMany({
+        where: {
+          treeId: this.metadata.id,
+          pubKey: { in: keys },
+        },
+      }),
+    )
     return trackingLeaves
       .filter(leaf => leaf.index !== null)
       .map(leaf => toBN(leaf.index as string))

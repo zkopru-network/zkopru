@@ -55,7 +55,9 @@ export class HDWallet {
   }
 
   async list(): Promise<EncryptedWallet[]> {
-    const wallets = await this.db.prisma.encryptedWallet.findMany()
+    const wallets = await this.db.read(prisma =>
+      prisma.encryptedWallet.findMany(),
+    )
     return wallets
   }
 
@@ -95,7 +97,9 @@ export class HDWallet {
 
   async retrieveAccounts(): Promise<ZkAccount[]> {
     if (!this.seed) throw Error('Not initialized')
-    const keys: Keystore[] = await this.db.prisma.keystore.findMany()
+    const keys: Keystore[] = await this.db.read(prisma =>
+      prisma.keystore.findMany(),
+    )
     const accounts: ZkAccount[] = []
     for (let i = 0; i < keys.length; i += 1) {
       const ethAccount = this.web3.eth.accounts.decrypt(
@@ -120,9 +124,11 @@ export class HDWallet {
       hexify(derivedKey.privateKey, 32),
     )
     const account = new ZkAccount(ethAccount)
-    await this.db.prisma.keystore.create({
-      data: account.toKeystoreSqlObj(this.password),
-    })
+    await this.db.write(prisma =>
+      prisma.keystore.create({
+        data: account.toKeystoreSqlObj(this.password),
+      }),
+    )
     return account
   }
 
@@ -161,12 +167,16 @@ export class HDWallet {
     const hdwallet = this.export(password)
     let result: EncryptedWallet
     if (!this.id) {
-      result = await this.db.prisma.encryptedWallet.create({ data: hdwallet })
+      result = await this.db.write(prisma =>
+        prisma.encryptedWallet.create({ data: hdwallet }),
+      )
     } else {
-      result = await this.db.prisma.encryptedWallet.update({
-        where: { id: this.id },
-        data: hdwallet,
-      })
+      result = await this.db.write(prisma =>
+        prisma.encryptedWallet.update({
+          where: { id: this.id },
+          data: hdwallet,
+        }),
+      )
     }
     return { id: result.id }
   }

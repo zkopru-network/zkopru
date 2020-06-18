@@ -30,12 +30,14 @@ export class UtxoTree extends LightRollUpTree<Field> {
       ? this.pubKeysToObserve.map(point => point.toHex())
       : []
 
-    const trackingLeaves = await this.db.prisma.note.findMany({
-      where: {
-        treeId: this.metadata.id,
-        pubKey: { in: keys },
-      },
-    })
+    const trackingLeaves = await this.db.read(prisma =>
+      prisma.note.findMany({
+        where: {
+          treeId: this.metadata.id,
+          pubKey: { in: keys },
+        },
+      }),
+    )
     return trackingLeaves
       .filter(leaf => leaf.index !== null)
       .map(leaf => Field.from(leaf.index as string))

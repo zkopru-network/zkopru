@@ -89,12 +89,14 @@ export class Grove {
 
   async init() {
     await this.lock.acquire('grove', async () => {
-      const utxoTreeData = await this.db.prisma.lightTree.findMany({
-        where: {
-          species: TreeSpecies.UTXO,
-        },
-        orderBy: { treeIndex: 'asc' },
-      })
+      const utxoTreeData = await this.db.read(prisma =>
+        prisma.lightTree.findMany({
+          where: {
+            species: TreeSpecies.UTXO,
+          },
+          orderBy: { treeIndex: 'asc' },
+        }),
+      )
 
       if (utxoTreeData.length === 0) {
         // start a new tree if there's no utxo tree
@@ -110,12 +112,14 @@ export class Grove {
         }),
       )
 
-      const withdrawalTreeData = await this.db.prisma.lightTree.findMany({
-        where: {
-          species: TreeSpecies.WITHDRAWAL,
-        },
-        orderBy: { treeIndex: 'asc' },
-      })
+      const withdrawalTreeData = await this.db.read(prisma =>
+        prisma.lightTree.findMany({
+          where: {
+            species: TreeSpecies.WITHDRAWAL,
+          },
+          orderBy: { treeIndex: 'asc' },
+        }),
+      )
 
       if (withdrawalTreeData.length === 0) {
         // start a new tree if there's no utxo tree
@@ -230,18 +234,22 @@ export class Grove {
       ),
     }
     if (header) {
-      await this.db.prisma.bootstrap.upsert({
-        where: { blockHash: header },
-        update: bootstrapData,
-        create: {
-          ...bootstrapData,
-          block: {
-            connect: { hash: header },
+      await this.db.write(prisma =>
+        prisma.bootstrap.upsert({
+          where: { blockHash: header },
+          update: bootstrapData,
+          create: {
+            ...bootstrapData,
+            block: {
+              connect: { hash: header },
+            },
           },
-        },
-      })
+        }),
+      )
     } else {
-      await this.db.prisma.bootstrap.create({ data: bootstrapData })
+      await this.db.write(prisma =>
+        prisma.bootstrap.create({ data: bootstrapData }),
+      )
     }
   }
 
@@ -314,12 +322,14 @@ export class Grove {
   }
 
   async utxoMerkleProof(hash: Field): Promise<MerkleProof<Field>> {
-    const utxo = await this.db.prisma.note.findOne({
-      where: {
-        hash: hash.toString(10),
-      },
-      include: { tree: true },
-    })
+    const utxo = await this.db.read(prisma =>
+      prisma.note.findOne({
+        where: {
+          hash: hash.toString(10),
+        },
+        include: { tree: true },
+      }),
+    )
     if (!utxo) throw Error('Failed to find the utxo')
     if (!utxo.tree) throw Error('It is not included in a block yet')
     if (!utxo.index) throw Error('It is not included in a block yet')
@@ -354,12 +364,14 @@ export class Grove {
   }
 
   async withdrawalMerkleProof(hash: BN): Promise<MerkleProof<BN>> {
-    const withdrawal = await this.db.prisma.note.findOne({
-      where: {
-        hash: hexify(hash),
-      },
-      include: { tree: true },
-    })
+    const withdrawal = await this.db.read(prisma =>
+      prisma.note.findOne({
+        where: {
+          hash: hexify(hash),
+        },
+        include: { tree: true },
+      }),
+    )
     if (!withdrawal) throw Error('Failed to find the withdrawal')
     if (!withdrawal.tree) throw Error('It is not included in a block yet')
     if (!withdrawal.index) throw Error('It is not included in a block yet')
@@ -420,24 +432,26 @@ export class Grove {
       start: index.toString(10),
       end: index.toString(10),
     }
-    const treeSql = await this.db.prisma.lightTree.upsert({
-      where: {
-        species_treeIndex: {
+    const treeSql = await this.db.write(prisma =>
+      prisma.lightTree.upsert({
+        where: {
+          species_treeIndex: {
+            species: TreeSpecies.UTXO,
+            treeIndex,
+          },
+        },
+        update: {
           species: TreeSpecies.UTXO,
           treeIndex,
+          ...data,
         },
-      },
-      update: {
-        species: TreeSpecies.UTXO,
-        treeIndex,
-        ...data,
-      },
-      create: {
-        species: TreeSpecies.UTXO,
-        treeIndex,
-        ...data,
-      },
-    })
+        create: {
+          species: TreeSpecies.UTXO,
+          treeIndex,
+          ...data,
+        },
+      }),
+    )
     const tree = UtxoTree.from(this.db, treeSql, {
       hasher: this.config.utxoHasher,
       forceUpdate: this.config.forceUpdate,
@@ -475,24 +489,26 @@ export class Grove {
       start: index.toString(10),
       end: index.toString(10),
     }
-    const treeSql = await this.db.prisma.lightTree.upsert({
-      where: {
-        species_treeIndex: {
+    const treeSql = await this.db.write(prisma =>
+      prisma.lightTree.upsert({
+        where: {
+          species_treeIndex: {
+            species: TreeSpecies.WITHDRAWAL,
+            treeIndex,
+          },
+        },
+        update: {
           species: TreeSpecies.WITHDRAWAL,
           treeIndex,
+          ...data,
         },
-      },
-      update: {
-        species: TreeSpecies.WITHDRAWAL,
-        treeIndex,
-        ...data,
-      },
-      create: {
-        species: TreeSpecies.WITHDRAWAL,
-        treeIndex,
-        ...data,
-      },
-    })
+        create: {
+          species: TreeSpecies.WITHDRAWAL,
+          treeIndex,
+          ...data,
+        },
+      }),
+    )
     const tree = WithdrawalTree.from(this.db, treeSql, {
       hasher: this.config.withdrawalHasher,
       forceUpdate: this.config.forceUpdate,

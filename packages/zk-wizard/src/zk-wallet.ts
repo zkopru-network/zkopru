@@ -91,12 +91,14 @@ export class ZkWallet {
   }
 
   async getSpendableUtxos(account: ZkAccount): Promise<Utxo[]> {
-    const utxoSqls = await this.db.prisma.note.findMany({
-      where: {
-        pubKey: { in: [account.pubKey.toHex()] },
-        usedFor: null,
-      },
-    })
+    const utxoSqls = await this.db.read(prisma =>
+      prisma.note.findMany({
+        where: {
+          pubKey: { in: [account.pubKey.toHex()] },
+          usedFor: null,
+        },
+      }),
+    )
     const utxos: Utxo[] = []
     utxoSqls.forEach(obj => {
       if (!obj.eth) throw Error('should have Ether data')
@@ -377,22 +379,24 @@ export class ZkWallet {
       from: this.account.address,
       value: note.eth.add(fee).toString(),
     })
-    await this.db.prisma.note.create({
-      data: {
-        hash: note
-          .hash()
-          .toUint256()
-          .toString(),
-        eth: note.eth.toUint256().toString(),
-        pubKey: Bytes32.from(note.pubKey.toHex()).toString(),
-        salt: note.salt.toUint256().toString(),
-        tokenAddr: note.tokenAddr.toAddress().toString(),
-        erc20Amount: note.erc20Amount.toUint256().toString(),
-        nft: note.nft.toUint256().toString(),
-        status: UtxoStatus.NON_INCLUDED,
-        noteType: NoteType.UTXO,
-      },
-    })
+    await this.db.write(prisma =>
+      prisma.note.create({
+        data: {
+          hash: note
+            .hash()
+            .toUint256()
+            .toString(),
+          eth: note.eth.toUint256().toString(),
+          pubKey: Bytes32.from(note.pubKey.toHex()).toString(),
+          salt: note.salt.toUint256().toString(),
+          tokenAddr: note.tokenAddr.toAddress().toString(),
+          erc20Amount: note.erc20Amount.toUint256().toString(),
+          nft: note.nft.toUint256().toString(),
+          status: UtxoStatus.NON_INCLUDED,
+          noteType: NoteType.UTXO,
+        },
+      }),
+    )
     // TODO check what web3 methods returns when it failes
     if (receipt) return true
     return false

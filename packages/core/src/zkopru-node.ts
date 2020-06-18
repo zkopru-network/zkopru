@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { ZkAccount } from '@zkopru/account'
-import { DB, Proposal } from '@zkopru/prisma'
+import { DB } from '@zkopru/prisma'
 import { Grove, poseidonHasher, keccakHasher } from '@zkopru/tree'
 import { logger } from '@zkopru/utils'
 import { Uint256 } from 'soltypes'
-import AsyncLock from 'async-lock'
 import { scheduleJob, Job } from 'node-schedule'
 import { EventEmitter } from 'events'
 import { L1Contract } from './layer1'
@@ -24,8 +23,6 @@ export enum NetworkStatus {
 }
 
 export class ZkOPRUNode extends EventEmitter {
-  lock: AsyncLock
-
   db: DB
 
   l1Contract: L1Contract
@@ -87,7 +84,6 @@ export class ZkOPRUNode extends EventEmitter {
     this.accounts = accounts
     this.verifyOption = verifyOption
     this.status = NetworkStatus.STOPPED
-    this.lock = new AsyncLock()
     this.cronJobs = []
     this.fetching = {}
     this.syncing = false
@@ -185,18 +181,20 @@ export class ZkOPRUNode extends EventEmitter {
     return null
   }
 
-  checkBlockUpdate() {
-    this.lock.acquire('db', async () => {
-      const proposals = await this.db.prisma.proposal.findMany({
+  async checkBlockUpdate() {
+    const proposals = await this.db.read(prisma =>
+      prisma.proposal.findMany({
         orderBy: {
           proposalNum: 'desc',
         },
         take: 1,
-      })
-      if (proposals[0]?.proposalNum) {
-        this.setLatestProposed(proposals[0]?.proposalNum)
-      }
-      const verifiedProposals = await this.db.prisma.proposal.findMany({
+      }),
+    )
+    if (proposals[0]?.proposalNum) {
+      this.setLatestProposed(proposals[0]?.proposalNum)
+    }
+    const verifiedProposals = await this.db.read(prisma =>
+      prisma.proposal.findMany({
         where: {
           block: {
             verified: true,
@@ -206,11 +204,11 @@ export class ZkOPRUNode extends EventEmitter {
           proposalNum: 'desc',
         },
         take: 1,
-      })
-      if (verifiedProposals[0]) {
-        this.setLatestProcessed(verifiedProposals[0].proposalNum + 1)
-      }
-    })
+      }),
+    )
+    if (verifiedProposals[0]) {
+      this.setLatestProcessed(verifiedProposals[0].proposalNum + 1)
+    }
   }
 
   private setLatestProposed(proposalNum: number) {
@@ -226,16 +224,16 @@ export class ZkOPRUNode extends EventEmitter {
   }
 
   async updateStatus() {
-    let unfetched!: number
-    let unverified!: number
-    await this.lock.acquire('db', async () => {
-      unfetched = await this.db.prisma.proposal.count({
+    const unfetched = await this.db.read(prisma =>
+      prisma.proposal.count({
         where: { fetched: null },
-      })
-      unverified = await this.db.prisma.block.count({
+      }),
+    )
+    const unverified = await this.db.read(prisma =>
+      prisma.block.count({
         where: { verified: { not: true } },
-      })
-    })
+      }),
+    )
     const haveFetchedAll = unfetched === 0
     const haveVerifiedAll = unverified === 0
     if (!haveFetchedAll) {
@@ -265,16 +263,15 @@ export class ZkOPRUNode extends EventEmitter {
       0,
     )
     if (availableFetchJob === 0) return
-    let candidates!: Proposal[]
-    await this.lock.acquire('db', async () => {
-      candidates = await this.db.prisma.proposal.findMany({
+    const candidates = await this.db.read(prisma =>
+      prisma.proposal.findMany({
         where: { fetched: null },
         orderBy: {
           proposalNum: 'asc',
         },
         take: availableFetchJob,
-      })
-    })
+      }),
+    )
 
     candidates.forEach(candidate => {
       this.fetch(candidate.proposalTx)
@@ -289,9 +286,9 @@ export class ZkOPRUNode extends EventEmitter {
     )
     const block = Block.fromTx(proposalData)
     const header = block.getHeaderSql()
-    await this.lock.acquire('db', async () => {
-      try {
-        await this.db.prisma.proposal.update({
+    try {
+      await this.db.write(prisma =>
+        prisma.proposal.update({
           where: {
             hash: header.hash,
           },
@@ -314,12 +311,12 @@ export class ZkOPRUNode extends EventEmitter {
             },
             proposalData: JSON.stringify(proposalData),
           },
-        })
-      } catch (err) {
-        logger.error(err)
-        process.exit()
-      }
-    })
+        }),
+      )
+    } catch (err) {
+      logger.error(err)
+      process.exit()
+    }
     this.emit('onFetched', block)
     delete this.fetching[proposalTx]
   }
@@ -340,15 +337,17 @@ export class ZkOPRUNode extends EventEmitter {
       ? accounts.map(account => account.address)
       : []
 
-    const savedConfig = await db.prisma.config.findOne({
-      where: {
-        networkId_chainId_address: {
-          networkId,
-          chainId,
-          address,
+    const savedConfig = await db.read(prisma =>
+      prisma.config.findOne({
+        where: {
+          networkId_chainId_address: {
+            networkId,
+            chainId,
+            address,
+          },
         },
-      },
-    })
+      }),
+    )
     const config = savedConfig || (await l1Contract.getConfig())
     const hashers = {
       utxo: poseidonHasher(config.utxoTreeDepth),

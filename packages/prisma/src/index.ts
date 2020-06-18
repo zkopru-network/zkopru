@@ -4,6 +4,7 @@ import { TreeNode, PrismaClient, PrismaClientOptions } from '@prisma/client'
 import BN from 'bn.js'
 import path from 'path'
 import fs from 'fs'
+import AsyncLock from 'async-lock'
 
 export enum TreeSpecies {
   UTXO = 0,
@@ -49,12 +50,41 @@ export interface MockupDB {
   terminate: () => Promise<void>
 }
 
+enum Lock {
+  EXCLUSIVE = 'exclusive',
+}
+
 export class DB {
+  lock: AsyncLock
+
   constructor(option?: PrismaClientOptions) {
     this.prisma = new PrismaClient(option)
+    this.lock = new AsyncLock()
   }
 
   prisma: PrismaClient
+
+  async read<T>(query: (prisma: PrismaClient) => Promise<T>): Promise<T> {
+    let result: T | undefined
+    if (this.lock.isBusy(Lock.EXCLUSIVE)) {
+      await this.lock.acquire(Lock.EXCLUSIVE, async () => {
+        result = await query(this.prisma)
+      })
+    } else {
+      result = await query(this.prisma)
+    }
+    if (result === undefined) throw Error('Failed to get data from db')
+    return result
+  }
+
+  async write<T>(query: (prisma: PrismaClient) => Promise<T>): Promise<T> {
+    let result: T | undefined
+    await this.lock.acquire([Lock.EXCLUSIVE], async () => {
+      result = await query(this.prisma)
+    })
+    if (result === undefined) throw Error('Failed to write data from db')
+    return result
+  }
 
   preset = {
     getCachedSiblings: async (

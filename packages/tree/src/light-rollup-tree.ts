@@ -91,38 +91,42 @@ export abstract class LightRollUpTree<T extends Field | BN> {
   }
 
   async includedInBlock(hash: string) {
-    await this.db.prisma.lightTree.update({
-      where: {
-        species_treeIndex: {
-          species: this.species,
-          treeIndex: this.metadata.index,
+    await this.db.write(prisma =>
+      prisma.lightTree.update({
+        where: {
+          species_treeIndex: {
+            species: this.species,
+            treeIndex: this.metadata.index,
+          },
         },
-      },
-      data: {
-        block: hash,
-      },
-    })
+        data: {
+          block: hash,
+        },
+      }),
+    )
   }
 
   async init() {
-    const saveResult = await this.db.prisma.lightTree.create({
-      data: {
-        species: this.species,
-        treeIndex: this.metadata.index,
-        start: this.metadata.start.toString(10),
-        end: this.metadata.end.toString(10),
-        root:
-          this.data.root instanceof Field
-            ? this.data.root.toString(10)
-            : hexify(this.data.root),
-        index: this.data.index.toString(10),
-        siblings: JSON.stringify(
-          this.data.siblings.map(sib =>
-            sib instanceof Field ? sib.toString(10) : hexify(sib),
+    const saveResult = await this.db.write(prisma =>
+      prisma.lightTree.create({
+        data: {
+          species: this.species,
+          treeIndex: this.metadata.index,
+          start: this.metadata.start.toString(10),
+          end: this.metadata.end.toString(10),
+          root:
+            this.data.root instanceof Field
+              ? this.data.root.toString(10)
+              : hexify(this.data.root),
+          index: this.data.index.toString(10),
+          siblings: JSON.stringify(
+            this.data.siblings.map(sib =>
+              sib instanceof Field ? sib.toString(10) : hexify(sib),
+            ),
           ),
-        ),
-      },
-    })
+        },
+      }),
+    )
     this.metadata.id = saveResult.id
   }
 
@@ -246,13 +250,15 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     if (index) {
       leafIndex = index
     } else {
-      const leafCandidates = await this.db.prisma.treeNode.findMany({
-        where: {
-          value: hexify(hash),
-          treeId: this.metadata.id,
-        },
-        take: 1,
-      })
+      const leafCandidates = await this.db.read(prisma =>
+        prisma.treeNode.findMany({
+          where: {
+            value: hexify(hash),
+            treeId: this.metadata.id,
+          },
+          take: 1,
+        }),
+      )
       if (leafCandidates.length === 0) throw Error('Leaf does not exist.')
       else if (leafCandidates.length > 1)
         throw Error('Multiple leaves exist for same hash.')
@@ -453,59 +459,65 @@ export abstract class LightRollUpTree<T extends Field | BN> {
         ),
       ),
     }
-    await this.db.prisma.lightTree.upsert({
-      where: {
-        species_treeIndex: {
+    await this.db.write(prisma =>
+      prisma.lightTree.upsert({
+        where: {
+          species_treeIndex: {
+            species: this.species,
+            treeIndex: this.metadata.index,
+          },
+        },
+        update: {
+          ...rollUpSync,
+          ...rollUpSnapshot,
+        },
+        create: {
+          ...rollUpSync,
+          ...rollUpSnapshot,
           species: this.species,
           treeIndex: this.metadata.index,
         },
-      },
-      update: {
-        ...rollUpSync,
-        ...rollUpSnapshot,
-      },
-      create: {
-        ...rollUpSync,
-        ...rollUpSnapshot,
-        species: this.species,
-        treeIndex: this.metadata.index,
-      },
-    })
+      }),
+    )
     // insert notes
     // TODO prisma batch transaction
     for (const noteSql of itemsToSave) {
-      await this.db.prisma.note.upsert({
-        where: { hash: noteSql.hash },
-        update: {
-          ...noteSql,
-          tree: { connect: { id: this.metadata.id } },
-        },
-        create: {
-          ...noteSql,
-          noteType: this.species,
-          tree: { connect: { id: this.metadata.id } },
-        },
-      })
+      await this.db.write(prisma =>
+        prisma.note.upsert({
+          where: { hash: noteSql.hash },
+          update: {
+            ...noteSql,
+            tree: { connect: { id: this.metadata.id } },
+          },
+          create: {
+            ...noteSql,
+            noteType: this.species,
+            tree: { connect: { id: this.metadata.id } },
+          },
+        }),
+      )
     }
     // update cached nodes
     // TODO prisma batch transaction
     for (const nodeIndex of Object.keys(cached)) {
-      await this.db.prisma.treeNode.upsert({
-        where: {
-          treeId_nodeIndex: {
+      await this.db.write(prisma =>
+        prisma.treeNode.upsert({
+          where: {
+            treeId_nodeIndex: {
+              treeId: this.metadata.id,
+              nodeIndex,
+            },
+          },
+          update: {
+            value: cached[nodeIndex],
+          },
+          create: {
             treeId: this.metadata.id,
             nodeIndex,
+            value: cached[nodeIndex],
           },
-        },
-        update: {
-          value: cached[nodeIndex],
-        },
-        create: {
-          treeId: this.metadata.id,
-          nodeIndex,
-          value: cached[nodeIndex],
-        },
-      })
+        }),
+      )
     }
     return {
       root,
@@ -546,9 +558,11 @@ export abstract class LightRollUpTree<T extends Field | BN> {
         treeIndex: metadata.index,
       },
     }
-    const exisingTree = await db.prisma.lightTree.findOne({
-      where,
-    })
+    const exisingTree = await db.read(prisma =>
+      prisma.lightTree.findOne({
+        where,
+      }),
+    )
     if (
       !config.forceUpdate &&
       data.index.lte(toBN(exisingTree?.index || '0'))
@@ -572,13 +586,15 @@ export abstract class LightRollUpTree<T extends Field | BN> {
         ),
       ),
     }
-    const newTree = await db.prisma.lightTree.upsert({
-      where,
-      update: tree,
-      create: {
-        ...tree,
-      },
-    })
+    const newTree = await db.write(prisma =>
+      prisma.lightTree.upsert({
+        where,
+        update: tree,
+        create: {
+          ...tree,
+        },
+      }),
+    )
     const { start, end, treeIndex } = newTree
     // Return tree object
     let _start: T

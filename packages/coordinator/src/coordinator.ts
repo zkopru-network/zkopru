@@ -351,21 +351,23 @@ export class Coordinator extends EventEmitter {
     let consumedBytes = 0
     let aggregatedFee: Field = Field.zero
     // 1. pick mass deposits
-    const commits: MassDepositSql[] = await this.node.db.prisma.massDeposit.findMany(
-      {
+    const commits: MassDepositSql[] = await this.node.db.read(prisma =>
+      prisma.massDeposit.findMany({
         where: {
           includedIn: null,
         },
-      },
+      }),
     )
     commits.sort((a, b) => parseInt(a.index, 10) - parseInt(b.index, 10))
-    const pendingDeposits = await this.node.db.prisma.deposit.findMany({
-      where: {
-        queuedAt: {
-          in: commits.map(commit => commit.index),
+    const pendingDeposits = await this.node.db.read(prisma =>
+      prisma.deposit.findMany({
+        where: {
+          queuedAt: {
+            in: commits.map(commit => commit.index),
+          },
         },
-      },
-    })
+      }),
+    )
     pendingDeposits.sort((a, b) => {
       if (a.blockNumber !== b.blockNumber) {
         return a.blockNumber - b.blockNumber

@@ -5,18 +5,14 @@ import {
   Header as HeaderSql,
   Deposit as DepositSql,
   MassDeposit as MassDepositSql,
-  Proposal,
 } from '@zkopru/prisma'
 import { EventEmitter } from 'events'
 import { Bytes32, Address, Uint256 } from 'soltypes'
-import AsyncLock from 'async-lock'
 import { L1Contract } from './layer1'
 import { headerHash } from './block'
 import { genesis } from './genesis'
 
 export class Synchronizer {
-  lock: AsyncLock
-
   db: DB
 
   l1Contract!: L1Contract
@@ -32,7 +28,6 @@ export class Synchronizer {
   isListening: boolean
 
   constructor(db: DB, l1Contract: L1Contract) {
-    this.lock = new AsyncLock()
     this.db = db
     this.l1Contract = l1Contract
     this.isListening = false
@@ -69,12 +64,11 @@ export class Synchronizer {
   }
 
   async listenGenesis() {
-    let numOfGenesisBlock!: number
-    await this.lock.acquire('db', async () => {
-      numOfGenesisBlock = await this.db.prisma.proposal.count({
+    const numOfGenesisBlock = await this.db.read(prisma =>
+      prisma.proposal.count({
         where: { proposalNum: 0 },
-      })
-    })
+      }),
+    )
     if (numOfGenesisBlock === 0) {
       logger.info('No genesis block. Trying to fetch')
       const genesisListener = this.l1Contract.upstream.events
@@ -112,8 +106,8 @@ export class Synchronizer {
             migrationRoot: genesisHeader.migrationRoot.toString(),
           }
 
-          await this.lock.acquire('db', async () => {
-            await this.db.prisma.proposal.create({
+          await this.db.write(prisma =>
+            prisma.proposal.create({
               data: {
                 hash: blockHash,
                 block: {
@@ -131,21 +125,20 @@ export class Synchronizer {
                 invalidated: false,
                 proposalData: '',
               },
-            })
-          })
+            }),
+          )
           genesisListener.removeAllListeners()
         })
     }
   }
 
   async listenDeposits(cb?: (deposit: DepositSql) => void) {
-    let lastDeposits!: DepositSql[]
-    await this.lock.acquire('db', async () => {
-      lastDeposits = await this.db.prisma.deposit.findMany({
+    const lastDeposits = await this.db.read(prisma =>
+      prisma.deposit.findMany({
         orderBy: { blockNumber: 'desc' },
         take: 1,
-      })
-    })
+      }),
+    )
     const fromBlock = lastDeposits[0]?.blockNumber || 0
     logger.info('new deposit from block', fromBlock)
     this.depositSubscriber = this.l1Contract.user.events
@@ -166,14 +159,13 @@ export class Synchronizer {
           blockNumber,
         }
         logger.info(`synchronizer.js: NewDeposit(${deposit.note})`)
-        await this.lock.acquire('db', async done => {
-          await this.db.prisma.deposit.upsert({
+        await this.db.write(prisma =>
+          prisma.deposit.upsert({
             where: { note: deposit.note },
             update: deposit,
             create: deposit,
-          })
-          done()
-        })
+          }),
+        )
         if (cb) cb(deposit)
       })
       .on('changed', event => {
@@ -187,13 +179,12 @@ export class Synchronizer {
   }
 
   async listenMassDepositCommit(cb?: (commit: MassDepositSql) => void) {
-    let lastMassDeposit!: MassDepositSql[]
-    await this.lock.acquire('db', async () => {
-      lastMassDeposit = await this.db.prisma.massDeposit.findMany({
+    const lastMassDeposit = await this.db.read(prisma =>
+      prisma.massDeposit.findMany({
         orderBy: { blockNumber: 'desc' },
         take: 1,
-      })
-    })
+      }),
+    )
     const fromBlock = lastMassDeposit[0]?.blockNumber || 0
     logger.info('sync mass deposits from block', fromBlock)
     this.massDepositCommitSubscriber = this.l1Contract.coordinator.events
@@ -218,15 +209,15 @@ export class Synchronizer {
           includedIn: null,
         }
         logger.info('massdeposit commit is', massDeposit)
-        await this.lock.acquire('db', async () => {
-          await this.db.prisma.massDeposit.upsert({
+        await this.db.write(prisma =>
+          prisma.massDeposit.upsert({
             where: {
               index: massDeposit.index,
             },
             create: massDeposit,
             update: {},
-          })
-        })
+          }),
+        )
         if (cb) cb(massDeposit)
         logger.info('massdeposit commit succeeded')
       })
@@ -241,13 +232,12 @@ export class Synchronizer {
   }
 
   async listenNewProposals(cb?: (hash: string) => void) {
-    let lastProposal!: Proposal[]
-    await this.lock.acquire('db', async () => {
-      lastProposal = await this.db.prisma.proposal.findMany({
+    const lastProposal = await this.db.read(prisma =>
+      prisma.proposal.findMany({
         orderBy: { proposedAt: 'desc' },
         take: 1,
-      })
-    })
+      }),
+    )
     const fromBlock = lastProposal[0]?.proposedAt || 0
     logger.info('listenNewProposal fromBlock: ', fromBlock)
     this.proposalSubscriber = this.l1Contract.coordinator.events
@@ -271,15 +261,15 @@ export class Synchronizer {
           proposalTx: transactionHash,
         }
         logger.info(`newProposal ${newProposal}`)
-        await this.lock.acquire('db', async () => {
-          await this.db.prisma.proposal.upsert({
+        await this.db.write(prisma =>
+          prisma.proposal.upsert({
             where: {
               hash: newProposal.hash,
             },
             create: newProposal,
             update: newProposal,
-          })
-        })
+          }),
+        )
         if (cb) cb(blockHash)
       })
       .on('changed', event => {
@@ -293,14 +283,13 @@ export class Synchronizer {
   }
 
   async listenFinalization(cb?: (hash: string) => void) {
-    let lastFinalized!: Proposal[]
-    await this.lock.acquire('db', async () => {
-      lastFinalized = await this.db.prisma.proposal.findMany({
+    const lastFinalized = await this.db.read(prisma =>
+      prisma.proposal.findMany({
         where: { finalized: true },
         orderBy: { proposedAt: 'desc' },
         take: 1,
-      })
-    })
+      }),
+    )
     const fromBlock = lastFinalized[0]?.proposedAt || 0
     this.finalizationSubscriber = this.l1Contract.coordinator.events
       .Finalized({ fromBlock })
@@ -311,10 +300,12 @@ export class Synchronizer {
       })
       .on('data', async event => {
         const { returnValues } = event
-        await this.db.prisma.proposal.update({
-          where: { hash: Bytes32.from(returnValues).toString() },
-          data: { finalized: true },
-        })
+        await this.db.write(prisma =>
+          prisma.proposal.update({
+            where: { hash: Bytes32.from(returnValues).toString() },
+            data: { finalized: true },
+          }),
+        )
         if (cb) cb(returnValues)
       })
       .on('changed', event => {

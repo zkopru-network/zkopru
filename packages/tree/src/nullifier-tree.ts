@@ -52,15 +52,17 @@ export class NullifierTree implements SMT<BN> {
 
   async root(): Promise<BN> {
     if (this.rootNode) return new BN(this.rootNode)
-    const rootNode = await this.db.prisma.treeNode.findOne({
-      select: { value: true },
-      where: {
-        treeId_nodeIndex: {
-          treeId: NULLIFIER_TREE_ID,
-          nodeIndex: Field.one.toHex(),
+    const rootNode = await this.db.read(prisma =>
+      prisma.treeNode.findOne({
+        select: { value: true },
+        where: {
+          treeId_nodeIndex: {
+            treeId: NULLIFIER_TREE_ID,
+            nodeIndex: Field.one.toHex(),
+          },
         },
-      },
-    })
+      }),
+    )
     if (rootNode) return toBN(rootNode.value)
     return genesisRoot(this.hasher)
   }
@@ -173,16 +175,18 @@ export class NullifierTree implements SMT<BN> {
 
     // need batch query here..
     for (const node of nodesToUpdate) {
-      await this.db.prisma.treeNode.upsert({
-        where: {
-          treeId_nodeIndex: {
-            treeId: node.treeId,
-            nodeIndex: node.nodeIndex,
+      await this.db.write(prisma =>
+        prisma.treeNode.upsert({
+          where: {
+            treeId_nodeIndex: {
+              treeId: node.treeId,
+              nodeIndex: node.nodeIndex,
+            },
           },
-        },
-        update: node,
-        create: node,
-      })
+          update: node,
+          create: node,
+        }),
+      )
     }
     this.rootNode = node
     return this.rootNode
