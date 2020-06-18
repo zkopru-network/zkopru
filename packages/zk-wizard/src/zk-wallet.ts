@@ -1,4 +1,4 @@
-import { Utxo, Note, UtxoStatus, Sum, RawTx } from '@zkopru/transaction'
+import { Note, UtxoStatus, Sum, RawTx } from '@zkopru/transaction'
 import { Field, F, Point } from '@zkopru/babyjubjub'
 import { Layer1 } from '@zkopru/contracts'
 import { HDWallet, ZkAccount } from '@zkopru/account'
@@ -90,24 +90,40 @@ export class ZkWallet {
     }
   }
 
-  async getSpendableUtxos(account: ZkAccount): Promise<Utxo[]> {
-    const utxoSqls = await this.db.read(prisma =>
+  async getSpendableAmount(account: ZkAccount): Promise<Sum> {
+    const notes: Note[] = await this.getSpendableNotes(account)
+    const assets = Sum.from(notes)
+    return assets
+  }
+
+  async getLockedAmount(account: ZkAccount): Promise<Sum> {
+    const notes: Note[] = await this.getNotesFor(account, UtxoStatus.SPENDING)
+    const assets = Sum.from(notes)
+    return assets
+  }
+
+  async getSpendableNotes(account: ZkAccount): Promise<Note[]> {
+    const utxos = this.getNotesFor(account, UtxoStatus.UNSPENT)
+    return utxos
+  }
+
+  async getNotesFor(account: ZkAccount, status: UtxoStatus): Promise<Note[]> {
+    const noteSqls = await this.db.read(prisma =>
       prisma.note.findMany({
         where: {
           pubKey: { in: [account.pubKey.toHex()] },
+          status,
           usedFor: null,
         },
       }),
     )
-    const utxos: Utxo[] = []
-    utxoSqls.forEach(obj => {
+    const notes: Note[] = []
+    noteSqls.forEach(obj => {
       if (!obj.eth) throw Error('should have Ether data')
       if (!obj.pubKey) throw Error('should have pubkey data')
       if (!(account.pubKey.toHex() === obj.pubKey))
         throw Error('should have same pubkey')
       if (!obj.salt) throw Error('should have salt data')
-      if (!(obj.status === UtxoStatus.NON_INCLUDED || obj.status === undefined))
-        throw Error('should have undefined status or NON_INCLUDED status')
 
       let note!: Note
       if (!obj.tokenAddr) {
@@ -135,15 +151,9 @@ export class ZkWallet {
       } else {
         throw Error('Not enough data to recover utxo')
       }
-      utxos.push(Utxo.from(note))
+      notes.push(note)
     })
-    return utxos
-  }
-
-  async getSpendables(account: ZkAccount): Promise<Sum> {
-    const utxos: Utxo[] = await this.getSpendableUtxos(account)
-    const assets = Sum.from(utxos)
-    return assets
+    return notes
   }
 
   async getLayer1Assets(
@@ -351,6 +361,47 @@ export class ZkWallet {
         method: 'post',
         body: zkTx.encode().toString('hex'),
       })
+      // add newly created notes
+      for (const note of tx.outflow) {
+        await this.db.write(prisma =>
+          prisma.note.create({
+            data: {
+              hash: note
+                .hash()
+                .toUint256()
+                .toString(),
+              eth: note.eth.toUint256().toString(),
+              pubKey: Bytes32.from(note.pubKey.toHex()).toString(),
+              salt: note.salt.toUint256().toString(),
+              tokenAddr: note.tokenAddr.toAddress().toString(),
+              erc20Amount: note.erc20Amount.toUint256().toString(),
+              nft: note.nft.toUint256().toString(),
+              status: UtxoStatus.NON_INCLUDED,
+              noteType: NoteType.UTXO,
+              nullifier: note
+                .nullifier()
+                .toUint256()
+                .toString(),
+            },
+          }),
+        )
+      }
+      // mark used notes as spending
+      await this.db.write(prisma =>
+        prisma.note.updateMany({
+          where: {
+            hash: {
+              in: tx.inflow.map(utxo =>
+                utxo
+                  .hash()
+                  .toUint256()
+                  .toString(),
+              ),
+            },
+          },
+          data: { status: UtxoStatus.SPENDING },
+        }),
+      )
       return response
     } catch (err) {
       logger.error(err)
@@ -394,6 +445,10 @@ export class ZkWallet {
           nft: note.nft.toUint256().toString(),
           status: UtxoStatus.NON_INCLUDED,
           noteType: NoteType.UTXO,
+          nullifier: note
+            .nullifier()
+            .toUint256()
+            .toString(),
         },
       }),
     )

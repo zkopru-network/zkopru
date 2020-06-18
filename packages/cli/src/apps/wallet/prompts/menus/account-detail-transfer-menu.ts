@@ -8,7 +8,8 @@ export default class TransferMenu extends App {
   // eslint-disable-next-line class-methods-use-this
   async run(context: Context): Promise<{ context: Context; next: number }> {
     if (!context.account) throw Error('Acocunt is not set')
-    const spendables: Sum = await this.base.getSpendables(context.account)
+    const spendables: Sum = await this.base.getSpendableAmount(context.account)
+    const locked: Sum = await this.base.getLockedAmount(context.account)
     const { choice } = await this.ask({
       type: 'select',
       name: 'choice',
@@ -17,7 +18,10 @@ export default class TransferMenu extends App {
       choices: [
         { title: 'Go back', value: { menu: AppMenu.ACCOUNT_DETAIL } },
         {
-          title: `Ether (balance: ${fromWei(spendables.eth, 'ether')} ETH)`,
+          title: `Ether (balance: ${fromWei(
+            spendables.eth,
+            'ether',
+          )} ETH / locked: ${fromWei(locked.eth, 'ether')} ETH)`,
           value: { menu: AppMenu.TRANSFER_ETH },
         },
         ...Object.keys(spendables.erc20).map(address => ({

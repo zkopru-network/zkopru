@@ -1,5 +1,5 @@
 import { Point, Field } from '@zkopru/babyjubjub'
-import { Sum, TxBuilder, RawTx, Utxo } from '@zkopru/transaction'
+import { Sum, TxBuilder, RawTx, Note, Utxo } from '@zkopru/transaction'
 import { parseStringToUnit, logger } from '@zkopru/utils'
 import { fromWei, toBN, toWei } from 'web3-utils'
 import App, { AppMenu, Context } from '..'
@@ -12,7 +12,7 @@ export default class TransferEth extends App {
     const wallet = this.base
     const { account } = context
     if (!account) throw Error('Acocunt is not set')
-    const spendables: Utxo[] = await wallet.getSpendableUtxos(account)
+    const spendables: Note[] = await wallet.getSpendableNotes(account)
     const spendableAmount = Sum.from(spendables)
     let weiPerByte!: string
     try {
@@ -89,7 +89,7 @@ export default class TransferEth extends App {
       const txBuilder = TxBuilder.from(account.pubKey)
       try {
         tx = txBuilder
-          .provide(...spendables)
+          .provide(...spendables.map(note => Utxo.from(note)))
           .weiPerByte(confirmedWeiPerByte)
           .sendEther({
             eth: Field.from(amountWei),

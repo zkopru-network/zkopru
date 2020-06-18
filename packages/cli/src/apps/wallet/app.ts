@@ -7,8 +7,8 @@ import OnSyncing from './prompts/menus/on-syncing'
 import AccountDetail from './prompts/menus/account-detail'
 import Deposit from './prompts/menus/account-detail-deposit'
 import DepositEther from './prompts/menus/account-detail-deposit-eth'
-import TransferMenu from './prompts/menus/account-detail-my-utxos'
 import TransferEth from './prompts/menus/account-detail-transfer-eth'
+import TransferMenu from './prompts/menus/account-detail-transfer-menu'
 
 export class WalletDashboard extends Dashboard<Context, ZkWallet> {
   node: ZkOPRUNode
