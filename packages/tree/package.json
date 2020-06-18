@@ -1,6 +1,6 @@
 {
   "name": "@zkopru/tree",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "license": "GPL-3.0-or-later",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -30,14 +30,14 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@zkopru/prisma": "file:../prisma",
     "@zkopru/babyjubjub": "file:../babyjubjub",
+    "@zkopru/prisma": "file:../prisma",
     "@zkopru/transaction": "file:../transaction",
     "async-lock": "^1.2.2",
     "big-integer": "^1.6.48",
-    "soltypes": "^1.2.0",
     "bn.js": "^5.1.1",
     "circomlib": "^0.1.1",
+    "soltypes": "^1.2.0",
     "uuid": "^8.1.0",
     "web3-utils": "^1.2.6"
   },
