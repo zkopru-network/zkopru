@@ -325,16 +325,21 @@ export class ZkWallet {
   async sendTx(
     tx: RawTx,
     account?: ZkAccount,
-    toMemo?: number,
+    encryptTo?: Point,
   ): Promise<Response> {
-    if (toMemo && !tx.outflow[toMemo]) throw Error('Invalid index')
+    if (
+      encryptTo &&
+      tx.outflow.find(outflow => outflow.pubKey.eq(encryptTo)) === undefined
+    ) {
+      throw Error('Cannot find the recipient')
+    }
     const from = account || this.account
     if (!from) throw Error('Account is not set')
     try {
       const zkTx = await this.wizard.shield({
         tx,
         account: from,
-        toMemo,
+        encryptTo,
       })
       const { verifier } = this.node
       const snarkValid = await verifier.snarkVerifier.verifyTx(zkTx)

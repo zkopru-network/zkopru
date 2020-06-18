@@ -40,6 +40,7 @@ export default class TransferEth extends App {
     let amountWei: string
     let confirmedWeiPerByte: string
     let tx!: RawTx
+    let to!: Point
     do {
       const msgs: string[] = []
       const { pubKey } = await this.ask({
@@ -49,7 +50,6 @@ export default class TransferEth extends App {
           '0xabcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
         message: 'Send to? (babyjubjub pub key)',
       })
-      let to!: Point
       try {
         to = Point.fromHex(pubKey)
       } catch (err) {
@@ -101,24 +101,9 @@ export default class TransferEth extends App {
         this.print(`Failed to build transaction \n${err.toString()}`)
       }
     } while (!tx)
-    const { encryptTo } = await this.ask({
-      type: 'select',
-      name: 'encryptTo',
-      initial: undefined,
-      message: 'You can add memo field to notify to the recipient',
-      choices: [
-        {
-          title: 'Send without memo. Recipient can lose the note',
-          value: undefined,
-        },
-        ...tx.outflow.map((note, i) => ({
-          title: `To: ${note.pubKey.toHex()}`,
-          value: i,
-        })),
-      ],
-    })
+
     try {
-      await wallet.sendTx(tx, account, encryptTo)
+      await wallet.sendTx(tx, account, to)
     } catch (err) {
       logger.error(err)
       logger.error(tx)

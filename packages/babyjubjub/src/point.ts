@@ -103,6 +103,10 @@ export class Point {
     return Point.from(result[0].toString(), result[1].toString())
   }
 
+  eq(p: Point): boolean {
+    return p.toHex() === this.toHex()
+  }
+
   static GENERATOR: Point = Point.from(
     circomlib.babyJub.Generator[0].toString(),
     circomlib.babyJub.Generator[1].toString(),

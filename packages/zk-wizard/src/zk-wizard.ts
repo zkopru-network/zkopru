@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { ZkAccount } from '@zkopru/account'
-import { Field, F, EdDSA } from '@zkopru/babyjubjub'
+import { Field, F, EdDSA, Point } from '@zkopru/babyjubjub'
 import {
   RawTx,
   ZkTx,
@@ -48,13 +48,12 @@ export class ZkWizard {
   async shield({
     tx,
     account,
-    toMemo,
+    encryptTo,
   }: {
     tx: RawTx
     account: ZkAccount
-    toMemo?: number
+    encryptTo?: Point
   }): Promise<ZkTx> {
-    logger.info(`shield to memo(${toMemo})`)
     return new Promise<ZkTx>((resolve, reject) => {
       const merkleProof: { [hash: string]: MerkleProof<Field> } = {}
       const eddsa: { [hash: string]: EdDSA } = {}
@@ -75,7 +74,7 @@ export class ZkWizard {
             if (isDataPrepared()) {
               const zkTx = await this.buildZkTx({
                 tx,
-                toMemo,
+                encryptTo,
                 data: { merkleProof, eddsa },
               })
               resolve(zkTx)
@@ -88,11 +87,11 @@ export class ZkWizard {
 
   private async buildZkTx({
     tx,
-    toMemo,
+    encryptTo,
     data,
   }: {
     tx: RawTx
-    toMemo?: number
+    encryptTo?: Point
     data: {
       merkleProof: { [hash: string]: MerkleProof<Field> }
       eddsa: { [hash: string]: EdDSA }
@@ -242,8 +241,11 @@ export class ZkWizard {
     // let { proof, publicSignals } = Utils.genProof(snarkjs.unstringifyBigInts(provingKey), witness);
     // TODO handle genProof exception
     let memo: Buffer | undefined
-    if (toMemo !== undefined) {
-      memo = tx.outflow[toMemo].encrypt()
+    if (encryptTo !== undefined) {
+      const noteToEncrypt = tx.outflow.find(outflow =>
+        outflow.pubKey.eq(encryptTo),
+      )
+      if (noteToEncrypt) memo = noteToEncrypt.encrypt()
     }
     const zkTx: ZkTx = new ZkTx({
       inflow: tx.inflow.map((utxo, index) => {
