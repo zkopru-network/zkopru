@@ -4,13 +4,14 @@ import { ISetupWizard } from "./interfaces/ISetupWizard.sol";
 import { Layer2 } from "./storage/Layer2.sol";
 import { Layer2Controller } from "./Layer2Controller.sol";
 import { SNARKsVerifier } from "./libraries/SNARKs.sol";
-import { Header, Types } from "./libraries/Types.sol";
+import { Blockchain, Header, Types } from "./libraries/Types.sol";
 import { Pairing } from "./libraries/Pairing.sol";
 import { Hash } from "./libraries/Hash.sol";
 import { SMT254 } from "./libraries/SMT.sol";
 
 contract ZkOptimisticRollUp is Layer2Controller {
     using Types for Header;
+    using Types for Blockchain;
 
     address setupWizard;
 
@@ -116,16 +117,12 @@ contract ZkOptimisticRollUp is Layer2Controller {
             bytes32(0)
         );
         bytes32 genesis = header.hash();
-        Layer2.chain.latest = genesis;
-        Layer2.chain.genesis = genesis;
-        Layer2.chain.withdrawables.push(); /// withdrawables[0]: daily snapshot
-        Layer2.chain.withdrawables.push(); /// withdrawables[0]: initial withdrawable tree
+        Layer2.chain.init(genesis);
         emit GenesisBlock(
             genesis,
             msg.sender,
             block.number,
             parentBlock
         );
-        Layer2.chain.proposedBlocks++;
     }
 }

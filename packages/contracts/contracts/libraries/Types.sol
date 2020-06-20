@@ -19,9 +19,11 @@ struct Blockchain {
     mapping(bytes32=>uint) committedDeposits;
 
     /** For withdrawal */
-    Withdrawable[] withdrawables; /// 0: daily snapshot of the latest withdrawable tree
-    uint256 snapshotTimestamp;
+    WithdrawalTree[] withdrawalTrees; // withdrawal trees
+    bytes32[] withdrawalRefs; // works as a linked list
+    uint8 wrIndex; // index for the withdrawal reference linked list
     mapping(bytes32=>bool) withdrawn;
+    mapping(bytes32=>mapping(bytes32=>address)) newWithdrawalOwner;
     /** For migrations */
     mapping(bytes32=>bool) migrations;
     // MassMigration[] migrations; // legacy
@@ -52,8 +54,8 @@ struct ERC721Migration {
     uint256[] nfts;
 }
 
-struct Withdrawable {
-    /// Merkle tree of Withdrawable notes
+struct WithdrawalTree {
+    /// Merkle tree of WithdrawalTree notes
     bytes32 root;
     uint index;
 }
@@ -165,8 +167,12 @@ struct Proof {
 library Types {
     function init(Blockchain storage chain, bytes32 genesis) internal {
         chain.latest = genesis;
-        chain.withdrawables.push(); /// withdrawables[0]: daily snapshot
-        chain.withdrawables.push(); /// withdrawables[0]: initial withdrawable tree
+        chain.genesis = genesis;
+        chain.withdrawalTrees.push(); /// withdrawalTrees[0]: initial withdrawalTree tree
+        for (uint i = 0 ; i < 256; i ++) {
+            chain.withdrawalRefs.push(); /// init refs
+        }
+        chain.proposedBlocks++;
     }
 
     function hash(Header memory header) internal pure returns (bytes32) {

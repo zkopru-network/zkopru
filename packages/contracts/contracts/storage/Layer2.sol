@@ -84,14 +84,10 @@ contract Layer2 is Configurated {
         return chain.committedDeposits[massDepositHash];
     }
 
-    function withdrawables(uint idx) public view returns (bytes32 root, uint index) {
-        Withdrawable memory withdrawable =  chain.withdrawables[idx];
-        root = withdrawable.root;
-        index = withdrawable.index;
-    }
-
-    function snapshotTimestamp() public view returns (uint) {
-        return chain.snapshotTimestamp;
+    function withdrawalTrees(uint idx) public view returns (bytes32 root, uint index) {
+        WithdrawalTree memory withdrawalTree =  chain.withdrawalTrees[idx];
+        root = withdrawalTree.root;
+        index = withdrawalTree.index;
     }
 
     function withdrawn(bytes32 leaf) public view returns (bool) {

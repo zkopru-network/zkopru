@@ -10,7 +10,7 @@ import {
     Proposal,
     Finalization,
     MassDeposit,
-    Withdrawable,
+    WithdrawalTree,
     Types
 } from "../libraries/Types.sol";
 import { Deserializer } from "../libraries/Deserializer.sol";
@@ -106,23 +106,18 @@ contract Coordinatable is Layer2 {
             chain.committedDeposits[deposit.hash()] -= 1;
         }
 
-        /// Update withdrawable every finalization
-        require(Layer2.chain.withdrawables.length >= 2, "not initialized blockchain");
-        Withdrawable storage latest = Layer2.chain.withdrawables[Layer2.chain.withdrawables.length - 1];
+        WithdrawalTree storage latest = Layer2.chain.withdrawalTrees[Layer2.chain.withdrawalTrees.length - 1];
         if (latest.index > finalization.header.withdrawalIndex) {
             /// Fully filled. Start a new withdrawal tree
-            Layer2.chain.withdrawables.push();
+            Layer2.chain.withdrawalTrees.push();
         }
-        Withdrawable storage target = Layer2.chain.withdrawables[Layer2.chain.withdrawables.length - 1];
+        WithdrawalTree storage target = Layer2.chain.withdrawalTrees[Layer2.chain.withdrawalTrees.length - 1];
         target.root = finalization.header.withdrawalRoot;
         target.index = finalization.header.withdrawalIndex;
 
-        /// Update the daily snapshot of withdrawable tree to prevent race conditions
-        if (Layer2.chain.snapshotTimestamp + 1 days < now) {
-            Layer2.chain.snapshotTimestamp = now;
-            Layer2.chain.withdrawables[0].root = target.root;
-            Layer2.chain.withdrawables[0].index = target.index;
-        }
+        /// Update the daily snapshot of withdrawalTree tree to prevent race conditions
+        Layer2.chain.wrIndex += 1;
+        Layer2.chain.withdrawalRefs[Layer2.chain.wrIndex] = finalization.header.withdrawalRoot;
 
         /// Record mass migrations and collect fees.
         /// A MassMigration becomes a MassDeposit for the migration destination.

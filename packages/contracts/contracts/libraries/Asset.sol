@@ -1,6 +1,6 @@
 pragma solidity >= 0.6.0;
 
-import { MassDeposit, Withdrawable, Types } from "../libraries/Types.sol";
+import { MassDeposit, WithdrawalTree, Types } from "../libraries/Types.sol";
 interface IERC20 {
     function transfer(address recipient, uint256 amount) external returns (bool);
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);

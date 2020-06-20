@@ -24,61 +24,76 @@ interface IUserInteractable {
     ) external payable;
 
     /**
-     * @notice Users can withdraw a note when your withdrawal tx is finalized
+     * @notice Users can withdraw notes when only after they're finazlied.
+     * @param owner The original owner's address of the note
      * @param eth Amount of Ether to withdraw out
      * @param token Token address of ERC20 or ERC721. It can be undefined.
      * @param amount Amount of ERC20 when the token param is defined and it is an ERC20
      * @param nft NFT id when the token param is defined and it is an ERC721
      * @param fee Amount of fee to give to the coordinator
-     * @param rootIndex Withdrawer should submit inclusion proof. Submit which withdrawal root to use.
-     *                  withdrawables[0]: daily snapshot of withdrawable tree
-     *                  withdrawables[latest]: the latest withdrawal tree
-     *                  withdrawables[1~latest-1]: finalized tree
+     * @param root Withdraw notes using recent cached root reference
      * @param leafIndex The index of your withdrawal note's leaf in the given tree.
      * @param siblings Inclusion proof data
      */
     function withdraw(
+        address owner,
         uint eth,
         address token,
         uint amount,
         uint nft,
         uint fee,
-        uint rootIndex,
-        uint leafIndex,
+        bytes32 root,
+        uint128 leafIndex,
         uint[] calldata siblings
     ) external;
 
     /**
-     * @notice Others can execute the withdrawal instead of the recipient account using ECDSA.
-     * @param to Address of the ECDSA signer
+     * @notice Users can withdraw notes when only after they're finazlied.
+     *         Use this function, to withdraw notes from archived tree.
+     * @param owner The original owner's address of the note
+     * @param eth Amount of Ether to withdraw out
+     * @param token Token address of ERC20 or ERC721. It can be undefined.
+     * @param amount Amount of ERC20 when the token param is defined and it is an ERC20
+     * @param nft NFT id when the token param is defined and it is an ERC721
+     * @param fee Amount of fee to give to the coordinator
+     * @param treeIndex Withdrawer should submit inclusion proof. Submit which withdrawal root to use.
+     * @param leafIndex The index of your withdrawal note's leaf in the given tree.
+     * @param siblings Inclusion proof data
+     */
+    function withdrawArchived(
+        address owner,
+        uint eth,
+        address token,
+        uint amount,
+        uint nft,
+        uint fee,
+        uint128 treeIndex,
+        uint128 leafIndex,
+        uint[] calldata siblings
+    ) external;
+
+    /**
+     * @notice Someone can pay in advance for unfinalized withdrawals
+     * @param owner Address of the note
      * @param eth Amount of Ether to withdraw out
      * @param token Token address of ERC20 or ERC721. It can be undefined.
      * @param amount Amount of ERC20 when the token param is defined and it is an ERC20
      * @param nft NFT id when the token param is defined and it is an ERC721
      * @param amount Amount to withdraw out.
      * @param fee Amount of fee to give to the coordinator
-     * @param rootIndex Withdrawer should submit inclusion proof. Submit which withdrawal root to use.
-     *                  withdrawables[0]: daily snapshot of withdrawable tree
-     *                  withdrawables[latest]: the latest withdrawal tree
-     *                  withdrawables[1~latest-1]: finalized tree
+     * @param treeIndex The index of the withdrawal tree to use for inclusion proof
      * @param leafIndex The index of your withdrawal note's leaf in the given tree.
-     * @param siblings Inclusion proof data
-     * @param v ECDSA signature v
-     * @param r ECDSA signature r
-     * @param s ECDSA signature s
+     * @param signature ECDSA signature
      */
-    function withdrawUsingSignature(
-        address to,
+    function payInAdvance(
+        address owner,
         uint eth,
         address token,
         uint amount,
         uint nft,
         uint fee,
-        uint rootIndex,
-        uint leafIndex,
-        uint[] calldata siblings,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        uint128 treeIndex,
+        uint128 leafIndex,
+        bytes calldata signature
     ) external;
 }

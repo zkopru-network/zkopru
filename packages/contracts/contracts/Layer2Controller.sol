@@ -57,7 +57,8 @@ contract Layer2Controller is Layer2 {
     function _connectUserInteractable(address addr) internal {
         _connect(addr, IUserInteractable(0).deposit.selector);
         _connect(addr, IUserInteractable(0).withdraw.selector);
-        _connect(addr, IUserInteractable(0).withdrawUsingSignature.selector);
+        _connect(addr, IUserInteractable(0).withdrawArchived.selector);
+        _connect(addr, IUserInteractable(0).payInAdvance.selector);
     }
 
     function _connectRollUpable(address addr) internal {
