@@ -6,6 +6,7 @@ import {
   ZkOutflow,
   PublicData,
   SNARK,
+  OutflowType,
 } from '@zkopru/transaction'
 import {
   Block as BlockSql,
@@ -412,6 +413,101 @@ export function massMigrationHash(massMigration: MassMigration): Bytes32 {
   const result = soliditySha3(`0x${concatenated.toString('hex')}`)
   if (!result) throw Error('Failed to get header hash')
   return Bytes32.from(result)
+}
+
+export function getErc20Migrations(notes: ZkOutflow[]): ERC20Migration[] {
+  const erc20Notes = notes.filter(note => note.data?.erc20Amount !== undefined)
+  const erc20Addresses = erc20Notes
+    .map(note => note.data?.tokenAddr.toHex())
+    .filter((v, i, self) => self.indexOf(v) === i)
+
+  const erc20Migrations: ERC20Migration[] = []
+  for (const addr of erc20Addresses) {
+    if (!addr) break
+    const targetNotes = erc20Notes.filter(note =>
+      note.data?.tokenAddr.eq(Field.from(addr)),
+    )
+    const amount: Uint256 = targetNotes
+      .reduce(
+        (acc, note) => acc.add(note.data?.erc20Amount || Field.zero),
+        Field.zero,
+      )
+      .toUint256()
+    erc20Migrations.push({
+      addr: Address.from(addr),
+      amount,
+    })
+  }
+  return erc20Migrations
+}
+
+export function getErc721Migrations(notes: ZkOutflow[]): ERC721Migration[] {
+  const erc721Notes = notes.filter(note => note.data?.nft !== undefined)
+  const erc721Addresses = erc721Notes
+    .map(note => note.data?.tokenAddr.toHex())
+    .filter((v, i, self) => self.indexOf(v) === i)
+  const erc721Migrations: ERC721Migration[] = []
+  for (const addr of erc721Addresses) {
+    if (!addr) break
+    const targetNotes = erc721Notes.filter(note =>
+      note.data?.tokenAddr.eq(Field.from(addr)),
+    )
+    const nfts: Uint256[] = targetNotes
+      .map(note => note.data?.nft || Field.zero)
+      .map(nft => nft.toUint256())
+    erc721Migrations.push({
+      addr: Address.from(addr),
+      nfts,
+    })
+  }
+  return erc721Migrations
+}
+
+export function getMassMigrationToAddress(
+  dest: string,
+  migratingNotes: ZkOutflow[],
+): MassMigration {
+  const notes = migratingNotes.filter(note =>
+    note.data?.to.eq(Field.from(dest)),
+  )
+  const totalETH = notes
+    .reduce((acc, note) => acc.add(note.data?.eth || Field.zero), Field.zero)
+    .toUint256()
+  const migratingLeaves: MassDeposit = Utils.mergeDeposits(
+    notes.map(note => ({
+      note: note.note.toBytes32(),
+      fee: note.data?.fee.toUint256() || Uint256.from(''),
+    })),
+  )
+  const erc20Migrations: ERC20Migration[] = getErc20Migrations(notes)
+  const erc721Migrations: ERC721Migration[] = getErc721Migrations(notes)
+  return {
+    destination: Address.from(dest),
+    migratingLeaves,
+    totalETH,
+    erc20: erc20Migrations,
+    erc721: erc721Migrations,
+  }
+}
+
+export function getMassMigrations(txs: ZkTx[]): MassMigration[] {
+  const migratingNotes: ZkOutflow[] = []
+  for (const tx of txs) {
+    for (const outflow of tx.outflow) {
+      if (outflow.outflowType.eqn(OutflowType.MIGRATION)) {
+        migratingNotes.push(outflow)
+      }
+    }
+  }
+  const destinations = migratingNotes
+    .map(note => note.data?.to.toHex())
+    .filter((v, i, self) => self.indexOf(v) === i)
+  const migrations: MassMigration[] = []
+  for (const dest of destinations) {
+    if (!dest) break
+    migrations.push(getMassMigrationToAddress(dest, migratingNotes))
+  }
+  return migrations
 }
 
 export class Block {

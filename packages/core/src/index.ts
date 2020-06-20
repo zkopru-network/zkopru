@@ -22,5 +22,6 @@ export {
   massMigrationHash,
   serializeHeader,
   serializeBody,
+  getMassMigrations,
 } from './block'
 export { L1Contract } from './layer1'

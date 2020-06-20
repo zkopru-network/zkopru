@@ -12,15 +12,9 @@ import { Grove, GrovePatch, Item } from '@zkopru/tree'
 import BN from 'bn.js'
 import AsyncLock from 'async-lock'
 import { Bytes32, Address, Uint256 } from 'soltypes'
-import { logger, mergeDeposits } from '@zkopru/utils'
+import { logger } from '@zkopru/utils'
 import { Field } from '@zkopru/babyjubjub'
-import {
-  Note,
-  OutflowType,
-  ZkOutflow,
-  UtxoStatus,
-  ZkTx,
-} from '@zkopru/transaction'
+import { Note, OutflowType, UtxoStatus, ZkTx } from '@zkopru/transaction'
 import { ZkAccount } from '@zkopru/account'
 import {
   Block,
@@ -28,9 +22,6 @@ import {
   VerifyResult,
   MassDeposit,
   massDepositHash,
-  MassMigration,
-  ERC20Migration,
-  ERC721Migration,
 } from './block'
 import { BootstrapData } from './bootstrap'
 
@@ -367,103 +358,6 @@ export class L2Chain {
         },
       }),
     )
-  }
-
-  static getMassMigrations(block: Block): MassMigration[] {
-    const migratingNotes: ZkOutflow[] = []
-    for (const tx of block.body.txs) {
-      for (const outflow of tx.outflow) {
-        if (outflow.outflowType.eqn(OutflowType.MIGRATION)) {
-          migratingNotes.push(outflow)
-        }
-      }
-    }
-    const destinations = migratingNotes
-      .map(note => note.data?.to.toHex())
-      .filter((v, i, self) => self.indexOf(v) === i)
-    const migrations: MassMigration[] = []
-    for (const dest of destinations) {
-      if (!dest) break
-      migrations.push(this.getMassMigrationToAddress(dest, migratingNotes))
-    }
-    return migrations
-  }
-
-  private static getMassMigrationToAddress(
-    dest: string,
-    migratingNotes: ZkOutflow[],
-  ): MassMigration {
-    const notes = migratingNotes.filter(note =>
-      note.data?.to.eq(Field.from(dest)),
-    )
-    const totalETH = notes
-      .reduce((acc, note) => acc.add(note.data?.eth || Field.zero), Field.zero)
-      .toUint256()
-    const migratingLeaves: MassDeposit = mergeDeposits(
-      notes.map(note => ({
-        note: note.note.toBytes32(),
-        fee: note.data?.fee.toUint256() || Uint256.from(''),
-      })),
-    )
-    const erc20Migrations: ERC20Migration[] = this.getErc20Migrations(notes)
-    const erc721Migrations: ERC721Migration[] = this.getErc721Migrations(notes)
-    return {
-      destination: Address.from(dest),
-      migratingLeaves,
-      totalETH,
-      erc20: erc20Migrations,
-      erc721: erc721Migrations,
-    }
-  }
-
-  private static getErc20Migrations(notes: ZkOutflow[]): ERC20Migration[] {
-    const erc20Notes = notes.filter(
-      note => note.data?.erc20Amount !== undefined,
-    )
-    const erc20Addresses = erc20Notes
-      .map(note => note.data?.tokenAddr.toHex())
-      .filter((v, i, self) => self.indexOf(v) === i)
-
-    const erc20Migrations: ERC20Migration[] = []
-    for (const addr of erc20Addresses) {
-      if (!addr) break
-      const targetNotes = erc20Notes.filter(note =>
-        note.data?.tokenAddr.eq(Field.from(addr)),
-      )
-      const amount: Uint256 = targetNotes
-        .reduce(
-          (acc, note) => acc.add(note.data?.erc20Amount || Field.zero),
-          Field.zero,
-        )
-        .toUint256()
-      erc20Migrations.push({
-        addr: Address.from(addr),
-        amount,
-      })
-    }
-    return erc20Migrations
-  }
-
-  private static getErc721Migrations(notes: ZkOutflow[]): ERC721Migration[] {
-    const erc721Notes = notes.filter(note => note.data?.nft !== undefined)
-    const erc721Addresses = erc721Notes
-      .map(note => note.data?.tokenAddr.toHex())
-      .filter((v, i, self) => self.indexOf(v) === i)
-    const erc721Migrations: ERC721Migration[] = []
-    for (const addr of erc721Addresses) {
-      if (!addr) break
-      const targetNotes = erc721Notes.filter(note =>
-        note.data?.tokenAddr.eq(Field.from(addr)),
-      )
-      const nfts: Uint256[] = targetNotes
-        .map(note => note.data?.nft || Field.zero)
-        .map(nft => nft.toUint256())
-      erc721Migrations.push({
-        addr: Address.from(addr),
-        nfts,
-      })
-    }
-    return erc721Migrations
   }
 
   async getGrovePatch(block: Block): Promise<GrovePatch> {
