@@ -8,7 +8,7 @@ import {
   WithdrawalTree,
   TreeConfig,
   keccakHasher,
-  Item,
+  Leaf,
   genesisRoot,
   verifyProof,
 } from '~tree'
@@ -66,7 +66,7 @@ describe('withdrawal tree unit test', () => {
     }
     beforeAll(async () => {
       prevRoot = withdrawalTree.root()
-      const items: Item<BN>[] = [{ leafHash: toBN(1) }, { leafHash: toBN(2) }]
+      const items: Leaf<BN>[] = [{ hash: toBN(1) }, { hash: toBN(2) }]
       result = await withdrawalTree.dryAppend(...items)
     })
     it('should not update its root', () => {
@@ -92,7 +92,7 @@ describe('withdrawal tree unit test', () => {
     }
     it('should update its root and its value should equal to the dry run', async () => {
       prevRoot = withdrawalTree.root()
-      const items: Item<BN>[] = [{ leafHash: toBN(1) }, { leafHash: toBN(2) }]
+      const items: Leaf<BN>[] = [{ hash: toBN(1) }, { hash: toBN(2) }]
       dryResult = await withdrawalTree.dryAppend(...items)
       result = await withdrawalTree.append(...items)
       expect(result.root.eq(prevRoot)).toBe(false)
@@ -106,26 +106,27 @@ describe('withdrawal tree unit test', () => {
   })
   describe('tracking', () => {
     const addresses = [address.USER_A]
-    const items: Item<BN>[] = [
+    const items: Leaf<BN>[] = [
       utxos.utxo1_in_1.toWithdrawal({ to: address.USER_A, fee: 1 }),
-      utxos.utxo1_out_1,
-      utxos.utxo2_1_in_1,
+      utxos.utxo1_out_1.toWithdrawal({ to: address.USER_A, fee: 1 }),
+      utxos.utxo2_1_in_1.toWithdrawal({ to: address.USER_A, fee: 1 }),
     ].map(note => ({
-      leafHash: toBN(note.hash().toHex()),
-      note,
+      hash: note.withdrawalHash().toBN(),
+      noteHash: note.hash(),
+      shouldTrack: true,
     }))
     it("should track Alice's utxos while not tracking Bob's", async () => {
       withdrawalTree.updateAddresses(addresses)
       await withdrawalTree.append(...items)
       const proof = await withdrawalTree.merkleProof({
-        hash: items[0].leafHash,
+        hash: items[0].hash,
       })
       expect(verifyProof(keccakHasher(depth), proof)).toBe(true)
     })
     it('should generate merkle proof using index together', async () => {
       const index = withdrawalTree.latestLeafIndex().subn(3)
       const proof = await withdrawalTree.merkleProof({
-        hash: items[0].leafHash,
+        hash: items[0].hash,
         index,
       })
       expect(verifyProof(keccakHasher(depth), proof)).toBe(true)
@@ -134,7 +135,7 @@ describe('withdrawal tree unit test', () => {
       const index = withdrawalTree.latestLeafIndex().subn(1)
       await expect(
         withdrawalTree.merkleProof({
-          hash: items[0].leafHash,
+          hash: items[0].hash,
           index,
         }),
       ).rejects.toThrow('')

@@ -3,7 +3,7 @@ import Web3 from 'web3'
 import { Account, EncryptedKeystoreV3Json, AddAccount } from 'web3-core'
 import { Field, Point, EdDSA, signEdDSA, verifyEdDSA } from '@zkopru/babyjubjub'
 import { Keystore } from '@zkopru/prisma'
-import { Note, ZkTx } from '@zkopru/transaction'
+import { ZkTx, Utxo } from '@zkopru/transaction'
 import { hexify } from '@zkopru/utils'
 import assert from 'assert'
 
@@ -59,15 +59,15 @@ export class ZkAccount {
     }
   }
 
-  decrypt(zkTx: ZkTx): Note | undefined {
+  decrypt(zkTx: ZkTx): Utxo | undefined {
     const { memo } = zkTx
     if (!memo) {
       return
     }
-    let note: Note | undefined
+    let note: Utxo | undefined
     for (const outflow of zkTx.outflow) {
       try {
-        note = Note.decrypt({
+        note = Utxo.decrypt({
           utxoHash: outflow.note,
           memo,
           privKey: this.snarkPK.toHex(32),
@@ -77,7 +77,7 @@ export class ZkAccount {
       }
       if (note) break
     }
-    return note
+    return note ? Utxo.from(note) : undefined
   }
 
   static fromEncryptedKeystoreV3Json(

@@ -1,5 +1,5 @@
 export {
-  Item,
+  Leaf,
   TreeMetadata,
   TreeData,
   TreeConfig,
@@ -16,4 +16,9 @@ export { NullifierTree } from './nullifier-tree'
 
 export { Hasher, keccakHasher, poseidonHasher, genesisRoot } from './hasher'
 
-export { Grove, GroveConfig, GrovePatch, GroveSnapshot as DryPatchResult } from './grove'
+export {
+  Grove,
+  GroveConfig,
+  GrovePatch,
+  GroveSnapshot as DryPatchResult,
+} from './grove'

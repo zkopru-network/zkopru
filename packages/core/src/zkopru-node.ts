@@ -155,22 +155,28 @@ export class ZkOPRUNode extends EventEmitter {
 
     logger.info(`Processing block ${block.hash.toString()}`)
     try {
+      // should find and save my notes before calling getGrovePatch
+      await this.l2Chain.findMyUtxos(block.body.txs, this.accounts || [])
+      await this.l2Chain.findMyWithdrawals(block.body.txs, this.accounts || [])
+      const treePatch = await this.l2Chain.getGrovePatch(block)
       const { patch, challenge } = await this.verifier.verifyBlock({
         layer2: this.l2Chain,
         prevHeader,
+        treePatch,
         block,
       })
       if (patch) {
-        await this.l2Chain.applyPatchAndMarkAsVerified(patch)
-        await this.l2Chain.findMyNotes(
-          block.body.txs,
-          patch.treePatch?.utxos || [],
-          this.accounts || [],
-        )
+        await this.l2Chain.applyPatch(patch)
         this.processUnverifiedBlocks(true)
       } else if (challenge) {
         // implement challenge here & mark as invalidated
         this.onlyRunRecursiveCall = false
+        await this.db.write(prisma =>
+          prisma.proposal.update({
+            where: { hash: block.hash.toString() },
+            data: { invalidated: true },
+          }),
+        )
         logger.warn(challenge)
       }
     } catch (err) {
@@ -179,6 +185,7 @@ export class ZkOPRUNode extends EventEmitter {
       this.onlyRunRecursiveCall = false
       logger.error(err)
     }
+    // TODO remove proposal data if it completes verification or if the block is finalized
   }
 
   async latestBlock(): Promise<string | null> {

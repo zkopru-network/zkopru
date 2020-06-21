@@ -1,11 +1,20 @@
 import { Field, F } from '@zkopru/babyjubjub'
 import { hexify } from '@zkopru/utils'
 import { v4 } from 'uuid'
-import { TreeNode, PrismaClient, PrismaClientOptions } from '@prisma/client'
+import {
+  TreeNode,
+  Utxo,
+  Withdrawal,
+  Migration,
+  PrismaClient,
+  PrismaClientOptions,
+} from '@prisma/client'
 import BN from 'bn.js'
 import path from 'path'
 import fs from 'fs'
 import AsyncLock from 'async-lock'
+
+export type NoteSql = Utxo | Withdrawal | Migration
 
 export enum TreeSpecies {
   UTXO = 0,
@@ -20,12 +29,6 @@ export enum BlockStatus {
   FINALIZED = 4,
   INVALIDATED = 5,
   REVERTED = 6,
-}
-
-export enum NoteType {
-  UTXO = 0,
-  WITHDRAWAL = 1,
-  MIGRATION = 2,
 }
 
 export const NULLIFIER_TREE_ID = 'nullifier-tree'
@@ -43,7 +46,6 @@ export {
   Deposit,
   MassDeposit,
   Proposal,
-  Note,
 } from '@prisma/client'
 
 export interface MockupDB {

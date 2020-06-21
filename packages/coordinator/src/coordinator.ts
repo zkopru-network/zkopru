@@ -2,8 +2,8 @@ import { Field } from '@zkopru/babyjubjub'
 import express, { RequestHandler } from 'express'
 import { scheduleJob, Job } from 'node-schedule'
 import { EventEmitter } from 'events'
-import { ZkTx } from '@zkopru/transaction'
-import { Item } from '@zkopru/tree'
+import { ZkTx, OutflowType, Withdrawal } from '@zkopru/transaction'
+import { Leaf } from '@zkopru/tree'
 import { logger, root, bnToBytes32, bnToUint256 } from '@zkopru/utils'
 import {
   FullNode,
@@ -19,6 +19,7 @@ import {
   serializeHeader,
   headerHash,
   Block,
+  getMassMigrations,
 } from '@zkopru/core'
 import { Account } from 'web3-core'
 import { Subscription } from 'web3-core-subscriptions'
@@ -26,6 +27,7 @@ import { MassDeposit as MassDepositSql } from '@zkopru/prisma'
 import { Server } from 'http'
 import chalk from 'chalk'
 import { Address, Bytes32, Uint256 } from 'soltypes'
+import BN from 'bn.js'
 import { TxMemPool, TxPoolInterface } from './tx_pool'
 
 export interface CoordinatorConfig {
@@ -433,16 +435,25 @@ export class Coordinator extends EventEmitter {
             .map(outflow => outflow.note),
         ]
       }, deposits)
-      .map(leafHash => ({ leafHash })) as Item<Field>[]
+      .map(hash => ({ hash })) as Leaf<Field>[]
 
-    const withdrawals = txs.reduce((arr, tx) => {
+    const withdrawals: Leaf<BN>[] = txs.reduce((arr, tx) => {
       return [
         ...arr,
         ...tx.outflow
-          .filter(outflow => outflow.outflowType.eqn(1))
-          .map(outflow => outflow.note),
+          .filter(outflow => outflow.outflowType.eqn(OutflowType.WITHDRAWAL))
+          .map(outflow => {
+            if (!outflow.data) throw Error('No withdrawal public data')
+            return {
+              hash: Withdrawal.withdrawalHash(
+                outflow.note,
+                outflow.data,
+              ).toBN(),
+              noteHash: outflow.note,
+            }
+          }),
       ]
-    }, [] as Field[])
+    }, [] as Leaf<BN>[])
 
     if (
       pendingDeposits.length ||
@@ -464,9 +475,7 @@ export class Coordinator extends EventEmitter {
       throw Error('Layer 2 chain is not synced yet.')
     }
     // TODO acquire lock during gen block
-    const massMigrations: MassMigration[] = []
-    // TODO remove this line
-    logger.info('current nullifier')
+    const massMigrations: MassMigration[] = getMassMigrations(txs)
     const expectedGrove = await this.node.l2Chain.grove.dryPatch({
       utxos,
       withdrawals,
@@ -494,7 +503,7 @@ export class Coordinator extends EventEmitter {
       utxoRoot: expectedGrove.utxoTreeRoot.toUint256(),
       utxoIndex: expectedGrove.utxoTreeIndex.toUint256(),
       nullifierRoot: bnToBytes32(expectedGrove.nullifierTreeRoot),
-      withdrawalRoot: bnToBytes32(expectedGrove.withdrawalTreeRoot),
+      withdrawalRoot: bnToUint256(expectedGrove.withdrawalTreeRoot),
       withdrawalIndex: bnToUint256(expectedGrove.withdrawalTreeIndex),
       txRoot: root(txs.map(tx => tx.hash())),
       depositRoot: root(massDeposits.map(massDepositHash)),

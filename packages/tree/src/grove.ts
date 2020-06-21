@@ -7,7 +7,7 @@ import { toBN } from 'web3-utils'
 import { DB, TreeSpecies, LightTree, TreeNode } from '@zkopru/prisma'
 import { Hasher, genesisRoot } from './hasher'
 import { MerkleProof, verifyProof, startingLeafProof } from './merkle-proof'
-import { Item } from './light-rollup-tree'
+import { Leaf } from './light-rollup-tree'
 import { UtxoTree } from './utxo-tree'
 import { WithdrawalTree } from './withdrawal-tree'
 import { NullifierTree } from './nullifier-tree'
@@ -29,9 +29,9 @@ export interface GroveConfig {
 
 export interface GrovePatch {
   header?: string
-  utxos: Item<Field>[]
-  withdrawals: BN[]
-  nullifiers: BN[]
+  utxos: Leaf<Field>[]
+  withdrawals: Leaf<BN>[]
+  nullifiers: Field[]
 }
 
 export interface GroveSnapshot {
@@ -170,15 +170,26 @@ export class Grove {
     return this.withdrawalTrees[this.withdrawalTrees.length - 1]
   }
 
-  async applyPatch(patch: GrovePatch) {
+  async applyGrovePatch(
+    patch: GrovePatch,
+  ): Promise<{
+    utxoTreeId: string
+    withdrawalTreeId: string
+  }> {
+    let utxoTreeId!: string
+    let withdrawalTreeId!: string
     await this.lock.acquire('grove', async () => {
-      await this.appendUTXOs(patch.utxos)
-      await this.appendWithdrawals(patch.withdrawals)
+      utxoTreeId = await this.appendUTXOs(patch.utxos)
+      withdrawalTreeId = await this.appendWithdrawals(patch.withdrawals)
       await this.markAsNullified(patch.nullifiers)
       if (this.config.fullSync) {
         await this.recordBootstrap(patch.header)
       }
     })
+    return {
+      utxoTreeId,
+      withdrawalTreeId,
+    }
   }
 
   async dryPatch(patch: GrovePatch): Promise<GroveSnapshot> {
@@ -187,10 +198,10 @@ export class Grove {
       this.lock
         .acquire('grove', async () => {
           const utxoResult = await this.latestUTXOTree().dryAppend(
-            ...patch.utxos,
+            ...patch.utxos.map(leaf => ({ ...leaf, shouldTrack: false })),
           )
           const withdrawalResult = await this.latestWithdrawalTree().dryAppend(
-            ...patch.withdrawals.map(leafHash => ({ leafHash })),
+            ...patch.withdrawals.map(leaf => ({ ...leaf, shouldTrack: false })),
           )
           const nullifierRoot = await this.nullifierTree?.dryRunNullify(
             ...patch.nullifiers,
@@ -253,19 +264,25 @@ export class Grove {
     }
   }
 
-  private async appendUTXOs(utxos: Item<Field>[]): Promise<void> {
+  /**
+   *
+   * @param utxos utxos to append
+   * @returns treeId of appended to
+   */
+  private async appendUTXOs(utxos: Leaf<Field>[]): Promise<string> {
     const totalItemLen =
       this.config.utxoSubTreeSize *
       Math.ceil(utxos.length / this.config.utxoSubTreeSize)
 
-    const fixedSizeUtxos: Item<Field>[] = Array(totalItemLen).fill({
-      leafHash: Field.zero,
+    const fixedSizeUtxos: Leaf<Field>[] = Array(totalItemLen).fill({
+      hash: Field.zero,
     })
-    utxos.forEach((item: Item<Field>, index: number) => {
+    utxos.forEach((item: Leaf<Field>, index: number) => {
       fixedSizeUtxos[index] = item
     })
     const latestTree = this.latestUTXOTree()
     if (!latestTree) throw Error('Grove is not initialized')
+    let treeId: string
     if (
       latestTree
         .latestLeafIndex()
@@ -273,30 +290,32 @@ export class Grove {
         .lt(latestTree.maxSize())
     ) {
       await latestTree.append(...fixedSizeUtxos)
+      treeId = latestTree.metadata.id
     } else {
       const { tree } = await this.bootstrapUtxoTree(
         latestTree.metadata.index + 1,
       )
       this.utxoTrees.push(tree)
       await tree.append(...fixedSizeUtxos)
+      treeId = tree.metadata.id
     }
+    return treeId
   }
 
-  private async appendWithdrawals(withdrawals: BN[]): Promise<void> {
+  private async appendWithdrawals(withdrawals: Leaf<BN>[]): Promise<string> {
     const totalItemLen =
       this.config.withdrawalSubTreeSize *
       Math.ceil(withdrawals.length / this.config.withdrawalSubTreeSize)
 
-    const fixedSizeWithdrawals: Item<BN>[] = Array(totalItemLen).fill({
-      leafHash: new BN(0),
+    const fixedSizeWithdrawals: Leaf<BN>[] = Array(totalItemLen).fill({
+      hash: new BN(0),
     })
-    withdrawals.forEach((withdrawal: BN, index: number) => {
-      fixedSizeWithdrawals[index] = {
-        leafHash: withdrawal,
-      }
+    withdrawals.forEach((withdrawal: Leaf<BN>, index: number) => {
+      fixedSizeWithdrawals[index] = withdrawal
     })
     const latestTree = this.latestWithdrawalTree()
     if (!latestTree) throw Error('Grove is not initialized')
+    let treeId: string
     if (
       latestTree
         .latestLeafIndex()
@@ -304,13 +323,16 @@ export class Grove {
         .lt(latestTree.maxSize())
     ) {
       await latestTree.append(...fixedSizeWithdrawals)
+      treeId = latestTree.metadata.id
     } else {
       const { tree } = await this.bootstrapWithdrawalTree(
         latestTree.metadata.index + 1,
       )
       this.withdrawalTrees.push(tree)
       await tree.append(...fixedSizeWithdrawals)
+      treeId = tree.metadata.id
     }
+    return treeId
   }
 
   private async markAsNullified(nullifiers: BN[]): Promise<void> {
@@ -323,7 +345,7 @@ export class Grove {
 
   async utxoMerkleProof(hash: Field): Promise<MerkleProof<Field>> {
     const utxo = await this.db.read(prisma =>
-      prisma.note.findOne({
+      prisma.utxo.findOne({
         where: {
           hash: hash.toString(10),
         },
@@ -365,9 +387,9 @@ export class Grove {
 
   async withdrawalMerkleProof(hash: BN): Promise<MerkleProof<BN>> {
     const withdrawal = await this.db.read(prisma =>
-      prisma.note.findOne({
+      prisma.withdrawal.findOne({
         where: {
-          hash: hexify(hash),
+          hash: hash.toString(10),
         },
         include: { tree: true },
       }),
@@ -397,10 +419,11 @@ export class Grove {
     const proof = {
       root,
       index: toBN(withdrawal.index),
-      leaf: toBN(withdrawal.hash),
+      leaf: toBN(withdrawal.withdrawalHash),
       siblings,
     }
-    verifyProof(this.config.withdrawalHasher, proof)
+    const isValid = verifyProof(this.config.withdrawalHasher, proof)
+    if (!isValid) throw Error('Failed to generate withdrawal merkle proof')
     return proof
   }
 

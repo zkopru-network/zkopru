@@ -51,9 +51,9 @@ export interface Header {
   fee: Uint256
   utxoRoot: Uint256
   utxoIndex: Uint256
-  nullifierRoot: Bytes32
-  withdrawalRoot: Bytes32
+  withdrawalRoot: Uint256
   withdrawalIndex: Uint256
+  nullifierRoot: Bytes32
   txRoot: Bytes32
   depositRoot: Bytes32
   migrationRoot: Bytes32
@@ -95,7 +95,7 @@ export function sqlToHeader(sql: HeaderSql): Header {
     utxoRoot: Uint256.from(sql.utxoRoot),
     utxoIndex: Uint256.from(sql.utxoIndex),
     nullifierRoot: Bytes32.from(sql.nullifierRoot),
-    withdrawalRoot: Bytes32.from(sql.withdrawalRoot),
+    withdrawalRoot: Uint256.from(sql.withdrawalRoot),
     withdrawalIndex: Uint256.from(sql.withdrawalIndex),
     txRoot: Bytes32.from(sql.txRoot),
     depositRoot: Bytes32.from(sql.depositRoot),
@@ -225,7 +225,7 @@ function deserializeHeaderFrom(
     utxoRoot: queue.dequeueToUint256(),
     utxoIndex: queue.dequeueToUint256(),
     nullifierRoot: queue.dequeueToBytes32(),
-    withdrawalRoot: queue.dequeueToBytes32(),
+    withdrawalRoot: queue.dequeueToUint256(),
     withdrawalIndex: queue.dequeueToUint256(),
     txRoot: queue.dequeueToBytes32(),
     depositRoot: queue.dequeueToBytes32(),

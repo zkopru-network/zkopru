@@ -101,7 +101,7 @@ export async function loadGrove(db: DB): Promise<{ grove: Grove }> {
   const latestTree = grove.latestUTXOTree()
   const size = latestTree ? latestTree.latestLeafIndex() : Field.zero
   if (size.eqn(0)) {
-    await grove.applyPatch({
+    await grove.applyGrovePatch({
       utxos: [
         utxos.utxo1_in_1,
         utxos.utxo2_1_in_1,
@@ -112,7 +112,7 @@ export async function loadGrove(db: DB): Promise<{ grove: Grove }> {
         utxos.utxo4_in_1,
         utxos.utxo4_in_2,
         utxos.utxo4_in_3,
-      ].map(utxo => ({ leafHash: utxo.hash(), note: utxo })),
+      ].map(utxo => ({ hash: utxo.hash(), note: utxo })),
       withdrawals: [],
       nullifiers: [],
     })

@@ -1,9 +1,16 @@
-import { Note, UtxoStatus, Sum, RawTx } from '@zkopru/transaction'
+import {
+  UtxoStatus,
+  Sum,
+  RawTx,
+  Withdrawal,
+  Utxo,
+  Note,
+} from '@zkopru/transaction'
 import { Field, F, Point } from '@zkopru/babyjubjub'
 import { Layer1 } from '@zkopru/contracts'
 import { HDWallet, ZkAccount } from '@zkopru/account'
 import { ZkOPRUNode } from '@zkopru/core'
-import { DB, NoteType } from '@zkopru/prisma'
+import { DB } from '@zkopru/prisma'
 import { logger } from '@zkopru/utils'
 import { Bytes32 } from 'soltypes'
 import fetch, { Response } from 'node-fetch'
@@ -91,25 +98,25 @@ export class ZkWallet {
   }
 
   async getSpendableAmount(account: ZkAccount): Promise<Sum> {
-    const notes: Note[] = await this.getSpendableNotes(account)
+    const notes: Utxo[] = await this.getSpendables(account)
     const assets = Sum.from(notes)
     return assets
   }
 
   async getLockedAmount(account: ZkAccount): Promise<Sum> {
-    const notes: Note[] = await this.getNotesFor(account, UtxoStatus.SPENDING)
+    const notes: Utxo[] = await this.getUtxos(account, UtxoStatus.SPENDING)
     const assets = Sum.from(notes)
     return assets
   }
 
-  async getSpendableNotes(account: ZkAccount): Promise<Note[]> {
-    const utxos = this.getNotesFor(account, UtxoStatus.UNSPENT)
+  async getSpendables(account: ZkAccount): Promise<Utxo[]> {
+    const utxos = this.getUtxos(account, UtxoStatus.UNSPENT)
     return utxos
   }
 
-  async getNotesFor(account: ZkAccount, status: UtxoStatus): Promise<Note[]> {
+  async getUtxos(account: ZkAccount, status: UtxoStatus): Promise<Utxo[]> {
     const noteSqls = await this.db.read(prisma =>
-      prisma.note.findMany({
+      prisma.utxo.findMany({
         where: {
           pubKey: { in: [account.pubKey.toHex()] },
           status,
@@ -117,7 +124,7 @@ export class ZkWallet {
         },
       }),
     )
-    const notes: Note[] = []
+    const notes: Utxo[] = []
     noteSqls.forEach(obj => {
       if (!obj.eth) throw Error('should have Ether data')
       if (!obj.pubKey) throw Error('should have pubkey data')
@@ -125,15 +132,15 @@ export class ZkWallet {
         throw Error('should have same pubkey')
       if (!obj.salt) throw Error('should have salt data')
 
-      let note!: Note
+      let note!: Utxo
       if (!obj.tokenAddr) {
-        note = Note.newEtherNote({
+        note = Utxo.newEtherNote({
           eth: obj.eth,
           pubKey: account.pubKey,
           salt: obj.salt,
         })
       } else if (obj.erc20Amount) {
-        note = Note.newERC20Note({
+        note = Utxo.newERC20Note({
           eth: obj.eth,
           pubKey: account.pubKey,
           salt: obj.salt,
@@ -141,7 +148,7 @@ export class ZkWallet {
           erc20Amount: obj.erc20Amount,
         })
       } else if (obj.nft) {
-        note = Note.newNFTNote({
+        note = Utxo.newNFTNote({
           eth: obj.eth,
           pubKey: account.pubKey,
           salt: obj.salt,
@@ -243,7 +250,7 @@ export class ZkWallet {
       logger.error('Not enough Ether')
       return false
     }
-    const note = Note.newEtherNote({
+    const note = Utxo.newEtherNote({
       eth,
       pubKey: to || this.account.pubKey,
     })
@@ -282,7 +289,7 @@ export class ZkWallet {
       logger.error('Not enough ERC20 balance')
       return false
     }
-    const note = Note.newERC20Note({
+    const note = Utxo.newERC20Note({
       eth,
       pubKey: to || this.account.pubKey,
       tokenAddr: addr,
@@ -315,7 +322,7 @@ export class ZkWallet {
       logger.error('Not enough Ether')
       return false
     }
-    const note = Note.newNFTNote({
+    const note = Utxo.newNFTNote({
       eth,
       pubKey: to || this.account.pubKey,
       tokenAddr: addr,
@@ -363,32 +370,11 @@ export class ZkWallet {
       })
       // add newly created notes
       for (const note of tx.outflow) {
-        await this.db.write(prisma =>
-          prisma.note.create({
-            data: {
-              hash: note
-                .hash()
-                .toUint256()
-                .toString(),
-              eth: note.eth.toUint256().toString(),
-              pubKey: Bytes32.from(note.pubKey.toHex()).toString(),
-              salt: note.salt.toUint256().toString(),
-              tokenAddr: note.tokenAddr.toAddress().toString(),
-              erc20Amount: note.erc20Amount.toUint256().toString(),
-              nft: note.nft.toUint256().toString(),
-              status: UtxoStatus.NON_INCLUDED,
-              noteType: NoteType.UTXO,
-              nullifier: note
-                .nullifier()
-                .toUint256()
-                .toString(),
-            },
-          }),
-        )
+        await this.saveNote(note)
       }
       // mark used notes as spending
       await this.db.write(prisma =>
-        prisma.note.updateMany({
+        prisma.utxo.updateMany({
           where: {
             hash: {
               in: tx.inflow.map(utxo =>
@@ -409,7 +395,7 @@ export class ZkWallet {
     }
   }
 
-  private async deposit(note: Note, fee: Field): Promise<boolean> {
+  private async deposit(note: Utxo, fee: Field): Promise<boolean> {
     if (!this.account) {
       logger.error('Account is not set')
       return false
@@ -430,30 +416,56 @@ export class ZkWallet {
       from: this.account.address,
       value: note.eth.add(fee).toString(),
     })
-    await this.db.write(prisma =>
-      prisma.note.create({
-        data: {
-          hash: note
-            .hash()
-            .toUint256()
-            .toString(),
-          eth: note.eth.toUint256().toString(),
-          pubKey: Bytes32.from(note.pubKey.toHex()).toString(),
-          salt: note.salt.toUint256().toString(),
-          tokenAddr: note.tokenAddr.toAddress().toString(),
-          erc20Amount: note.erc20Amount.toUint256().toString(),
-          nft: note.nft.toUint256().toString(),
-          status: UtxoStatus.NON_INCLUDED,
-          noteType: NoteType.UTXO,
-          nullifier: note
-            .nullifier()
-            .toUint256()
-            .toString(),
-        },
-      }),
-    )
+    await this.saveNote(note)
     // TODO check what web3 methods returns when it failes
     if (receipt) return true
     return false
+  }
+
+  private async saveNote(note: Note) {
+    if (note instanceof Utxo) {
+      await this.db.write(prisma =>
+        prisma.utxo.create({
+          data: {
+            hash: note
+              .hash()
+              .toUint256()
+              .toString(),
+            eth: note.eth.toUint256().toString(),
+            pubKey: Bytes32.from(note.pubKey.toHex()).toString(),
+            salt: note.salt.toUint256().toString(),
+            tokenAddr: note.tokenAddr.toAddress().toString(),
+            erc20Amount: note.erc20Amount.toUint256().toString(),
+            nft: note.nft.toUint256().toString(),
+            status: UtxoStatus.NON_INCLUDED,
+            nullifier: note
+              .nullifier()
+              .toUint256()
+              .toString(),
+          },
+        }),
+      )
+    } else if (note instanceof Withdrawal) {
+      await this.db.write(prisma =>
+        prisma.withdrawal.create({
+          data: {
+            hash: note
+              .hash()
+              .toUint256()
+              .toString(),
+            withdrawalHash: note.withdrawalHash().toString(),
+            eth: note.eth.toUint256().toString(),
+            pubKey: Bytes32.from(note.pubKey.toHex()).toString(),
+            salt: note.salt.toUint256().toString(),
+            tokenAddr: note.tokenAddr.toAddress().toString(),
+            to: note.publicData.to.toAddress().toString(),
+            fee: note.publicData.fee.toAddress().toString(),
+            erc20Amount: note.erc20Amount.toUint256().toString(),
+            nft: note.nft.toUint256().toString(),
+            status: UtxoStatus.NON_INCLUDED,
+          },
+        }),
+      )
+    }
   }
 }

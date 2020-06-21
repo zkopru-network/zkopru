@@ -6,7 +6,7 @@ import {
   UtxoTree,
   TreeConfig,
   poseidonHasher,
-  Item,
+  Leaf,
   genesisRoot,
   verifyProof,
 } from '~tree'
@@ -64,9 +64,9 @@ describe('utxo tree unit test', () => {
     }
     beforeAll(async () => {
       prevRoot = utxoTree.root()
-      const items: Item<Field>[] = [
-        { leafHash: Field.from(1) },
-        { leafHash: Field.from(2) },
+      const items: Leaf<Field>[] = [
+        { hash: Field.from(1) },
+        { hash: Field.from(2) },
       ]
       result = await utxoTree.dryAppend(...items)
     })
@@ -93,9 +93,9 @@ describe('utxo tree unit test', () => {
     }
     beforeAll(async () => {
       prevRoot = utxoTree.root()
-      const items: Item<Field>[] = [
-        { leafHash: Field.from(1) },
-        { leafHash: Field.from(2) },
+      const items: Leaf<Field>[] = [
+        { hash: Field.from(1) },
+        { hash: Field.from(2) },
       ]
       dryResult = await utxoTree.dryAppend(...items)
       result = await utxoTree.append(...items)
@@ -111,13 +111,13 @@ describe('utxo tree unit test', () => {
     it.todo('should have same result with its solidity version')
   })
   describe('tracking', () => {
-    const items: Item<Field>[] = [
+    const items: Leaf<Field>[] = [
       utxos.utxo1_out_1,
       utxos.utxo1_out_2,
       utxos.utxo2_1_out_1,
       utxos.utxo2_1_out_2,
     ].map(note => ({
-      leafHash: note.hash(),
+      hash: note.hash(),
       note,
     }))
     beforeAll(async () => {

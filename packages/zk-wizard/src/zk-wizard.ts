@@ -7,6 +7,7 @@ import {
   OutflowType,
   Withdrawal,
   Migration,
+  Utxo,
 } from '@zkopru/transaction'
 import { MerkleProof, Grove } from '@zkopru/tree'
 import path from 'path'
@@ -245,7 +246,7 @@ export class ZkWizard {
       const noteToEncrypt = tx.outflow.find(outflow =>
         outflow.pubKey.eq(encryptTo),
       )
-      if (noteToEncrypt) memo = noteToEncrypt.encrypt()
+      if (noteToEncrypt instanceof Utxo) memo = noteToEncrypt.encrypt()
     }
     const zkTx: ZkTx = new ZkTx({
       inflow: tx.inflow.map((utxo, index) => {

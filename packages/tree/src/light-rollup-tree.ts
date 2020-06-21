@@ -2,17 +2,17 @@
 /* eslint-disable no-underscore-dangle */
 import { Field } from '@zkopru/babyjubjub'
 import AsyncLock from 'async-lock'
-import { Note, UtxoStatus } from '@zkopru/transaction'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { hexify } from '@zkopru/utils'
-import { DB, TreeSpecies, Note as NoteSql } from '@zkopru/prisma'
+import { DB, TreeSpecies } from '@zkopru/prisma'
 import { Hasher } from './hasher'
 import { MerkleProof, startingLeafProof } from './merkle-proof'
 
-export interface Item<T extends Field | BN> {
-  leafHash: T
-  note?: Note
+export interface Leaf<T extends Field | BN> {
+  hash: T
+  noteHash?: Field
+  shouldTrack?: boolean
 }
 
 export interface TreeMetadata<T extends Field | BN> {
@@ -145,7 +145,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
   }
 
   async append(
-    ...items: Item<T>[]
+    ...items: Leaf<T>[]
   ): Promise<{
     root: T
     index: T
@@ -163,7 +163,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
   }
 
   async dryAppend(
-    ...items: Item<T>[]
+    ...items: Leaf<T>[]
   ): Promise<{
     root: T
     index: T
@@ -183,7 +183,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       // if note exists, save the data and mark as an item to keep tracking
       // udpate the latest siblings and save the intermediate value if it needs to be tracked
       const leafIndex = new BN(1).shln(this.depth).or(index)
-      let node = item.leafHash
+      let node = item.hash
       let hasRightSibling!: boolean
       for (let level = 0; level < this.depth; level += 1) {
         const pathIndex = leafIndex.shrn(level)
@@ -339,7 +339,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
   }
 
   private async _append(
-    ...items: Item<T>[]
+    ...leaves: Leaf<T>[]
   ): Promise<{
     root: T
     index: T
@@ -351,47 +351,23 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       [nodeIndex: string]: string
     } = {}
 
-    const itemsToSave: NoteSql[] = []
     let root: T = this.root()
 
     const trackingLeaves: T[] = await this.indexesOfTrackingLeaves()
 
-    for (let i = 0; i < items.length; i += 1) {
-      const item = items[i]
-      const index = (item.leafHash instanceof Field
+    for (let i = 0; i < leaves.length; i += 1) {
+      const leaf = leaves[i]
+      const index = (leaf.hash instanceof Field
         ? Field.from(i).add(start)
         : new BN(i).add(start)) as T
-      // if note exists, save the data and mark as an item to keep tracking
-      if (!item.leafHash.isZero() && (this.config.fullSync || item.note)) {
-        let noteSql
-        if (item.note) {
-          noteSql = {
-            hash: item.leafHash.toString(10),
-            index: index.toString(10),
-            eth: item.note.eth.toString(10),
-            pubKey: item.note.pubKey.toHex(),
-            salt: item.note.salt.toString(10),
-            tokenAddr: item.note.tokenAddr.toHex(20),
-            erc20Amount: item.note?.erc20Amount.toString(10),
-            nft: item.note?.nft.toString(10),
-            status: UtxoStatus.UNSPENT,
-          }
-        } else {
-          noteSql = {
-            hash: item.leafHash.toString(10),
-            index: index.toString(10),
-          }
-        }
-        itemsToSave.push(noteSql)
-      }
-
-      if (items[i].note) {
+      // TODO batch transaction
+      if (leaf.shouldTrack) {
         trackingLeaves.push(index)
       }
 
       // udpate the latest siblings and save the intermediate value if it needs to be tracked
       const leafNodeIndex = new BN(1).shln(this.depth).or(index)
-      let node = item.leafHash
+      let node = leaf.hash
       let hasRightSibling!: boolean
       for (let level = 0; level < this.depth; level += 1) {
         const pathIndex = leafNodeIndex.shrn(level)
@@ -437,7 +413,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       // update root
       root = node
     }
-    const end: T = start.addn(items.length) as T
+    const end: T = start.addn(leaves.length) as T
     // update the latest siblings
     this.data = {
       root,
@@ -480,24 +456,6 @@ export abstract class LightRollUpTree<T extends Field | BN> {
         },
       }),
     )
-    // insert notes
-    // TODO prisma batch transaction
-    for (const noteSql of itemsToSave) {
-      await this.db.write(prisma =>
-        prisma.note.upsert({
-          where: { hash: noteSql.hash },
-          update: {
-            ...noteSql,
-            tree: { connect: { id: this.metadata.id } },
-          },
-          create: {
-            ...noteSql,
-            noteType: this.species,
-            tree: { connect: { id: this.metadata.id } },
-          },
-        }),
-      )
-    }
     // update cached nodes
     // TODO prisma batch transaction
     for (const nodeIndex of Object.keys(cached)) {

@@ -116,22 +116,55 @@ model Deposit {
   queuedAt String
 }
 
-model Note {
+model Utxo {
   hash String @id
-  index String?
   eth String?
   pubKey String?
   salt String?
   tokenAddr String?
   erc20Amount String?
   nft String?
-  type Int?
-  withdrawOutTo String?
+  status Int?
+  treeId String?
+  index String?
+  nullifier String?
+  usedFor String?
+  tree LightTree? @relation(fields: [treeId], references: [id])
+}
+
+model Withdrawal {
+  hash String @id
+  withdrawalHash String
+  eth String
+  pubKey String?
+  salt String?
+  tokenAddr String
+  erc20Amount String
+  nft String
+  to String
+  fee String
+  status Int?
+  treeId String?
+  index String?
+  usedFor String?
+  prepayer String?
+  siblings String? // stringified str[]
+  tree LightTree? @relation(fields: [treeId], references: [id])
+}
+
+model Migration {
+  hash String @id
+  eth String?
+  pubKey String?
+  salt String?
+  tokenAddr String?
+  erc20Amount String?
+  nft String?
+  to String?
   fee String?
   status Int?
-  noteType Int
   treeId String?
-  nullifier String?
+  index String?
   usedFor String?
   tree LightTree? @relation(fields: [treeId], references: [id])
 }

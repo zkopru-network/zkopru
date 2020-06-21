@@ -1,10 +1,6 @@
-import { randomHex } from 'web3-utils'
 import * as circomlib from 'circomlib'
-import * as chacha20 from 'chacha20'
-import { Field, F, Point } from '@zkopru/babyjubjub'
-import { Note as NoteSql } from '@zkopru/prisma'
-import * as TokenUtils from './tokens'
-import { ZkOutflow } from './zk_tx'
+import { Field, Point } from '@zkopru/babyjubjub'
+import { NoteSql } from '@zkopru/prisma'
 
 const poseidonHash = circomlib.poseidon.createHash(6, 8, 57)
 
@@ -12,6 +8,17 @@ export enum OutflowType {
   UTXO = 0,
   WITHDRAWAL = 1,
   MIGRATION = 2,
+}
+
+export enum NoteStatus {
+  NON_INCLUDED = 0,
+  UNSPENT = 1,
+  SPENDING = 2,
+  SPENT = 3,
+  WAITING_FINALIZATION = 4,
+  WITHDRAWABLE = 5,
+  TRANSFERRED = 6,
+  WITHDRAWN = 7,
 }
 
 export class Note {
@@ -46,69 +53,18 @@ export class Note {
     this.outflowType = OutflowType.UTXO
   }
 
-  static newEtherNote({
-    eth,
-    pubKey,
-    salt,
-  }: {
-    eth: F
-    pubKey: Point
-    salt?: F
-  }): Note {
-    return new Note(
-      Field.from(eth),
-      salt ? Field.from(salt) : Field.from(randomHex(16)),
-      Field.from(0),
-      Field.from(0),
-      Field.from(0),
-      pubKey,
-    )
-  }
-
-  static newERC20Note({
-    eth,
-    tokenAddr,
-    erc20Amount,
-    pubKey,
-    salt,
-  }: {
-    eth: F
-    tokenAddr: F
-    erc20Amount: F
-    pubKey: Point
-    salt?: F
-  }): Note {
-    return new Note(
-      Field.from(eth),
-      salt ? Field.from(salt) : Field.from(randomHex(16)),
-      Field.from(tokenAddr),
-      Field.from(erc20Amount),
-      Field.from(0),
-      pubKey,
-    )
-  }
-
-  static newNFTNote({
-    eth,
-    tokenAddr,
-    nft,
-    pubKey,
-    salt,
-  }: {
-    eth: F
-    tokenAddr: F
-    nft: F
-    pubKey: Point
-    salt?: F
-  }): Note {
-    return new Note(
-      Field.from(eth),
-      salt ? Field.from(salt) : Field.from(randomHex(16)),
-      Field.from(tokenAddr),
-      Field.from(0),
-      Field.from(nft),
-      pubKey,
-    )
+  toJSON(): string {
+    return JSON.stringify({
+      eth: this.eth,
+      salt: this.salt,
+      token: this.tokenAddr,
+      amount: this.erc20Amount,
+      nft: this.nft.toHex(),
+      pubKey: {
+        x: this.pubKey.x,
+        y: this.pubKey.y,
+      },
+    })
   }
 
   hash(): Field {
@@ -129,57 +85,6 @@ export class Note {
       ]).toString(),
     )
     return resultHash
-  }
-
-  nullifier(): Field {
-    const hash = poseidonHash([
-      this.hash().toIden3BigInt(),
-      this.salt.toIden3BigInt(),
-    ]).toString()
-    const val = Field.from(hash)
-    return val
-  }
-
-  encrypt(): Buffer {
-    const ephemeralSecretKey: Field = Field.from(randomHex(16))
-    const sharedKey: Buffer = this.pubKey.mul(ephemeralSecretKey).encode()
-    const tokenId = TokenUtils.getTokenId(this.tokenAddr)
-    const value = this.eth || this.erc20Amount || this.nft
-    const secret = [
-      this.salt.toBuffer('be', 16),
-      Field.from(tokenId).toBuffer('be', 1),
-      value.toBuffer('be', 32),
-    ]
-    const ciphertext = chacha20.encrypt(sharedKey, 0, Buffer.concat(secret))
-    const encryptedMemo = Buffer.concat([
-      Point.generate(ephemeralSecretKey).encode(),
-      ciphertext,
-    ])
-    // 32bytes ephemeral pub key + 16 bytes salt + 1 byte token id + 32 bytes toIden3BigInt()ue = 81 bytes
-    return encryptedMemo
-  }
-
-  toZkOutflow(): ZkOutflow {
-    const outflowType: Field = Field.from(this.outflowType)
-    const outflow = {
-      note: this.hash(),
-      outflowType,
-    }
-    return outflow
-  }
-
-  toJSON(): string {
-    return JSON.stringify({
-      eth: this.eth,
-      salt: this.salt,
-      token: this.tokenAddr,
-      amount: this.erc20Amount,
-      nft: this.nft.toHex(),
-      pubKey: {
-        x: this.pubKey.x,
-        y: this.pubKey.y,
-      },
-    })
   }
 
   static fromJSON(data: string): Note {
@@ -205,64 +110,6 @@ export class Note {
         Field.from(nft),
         Point.fromHex(pubKey),
       )
-    return undefined
-  }
-
-  static decrypt({
-    utxoHash,
-    memo,
-    privKey,
-  }: {
-    utxoHash: Field
-    memo: Buffer
-    privKey: string
-  }): Note | undefined {
-    const multiplier = Point.getMultiplier(privKey)
-    const ephemeralPubKey = Point.decode(memo.subarray(0, 32))
-    const sharedKey = ephemeralPubKey.mul(multiplier).encode()
-    const data = memo.subarray(32, 81)
-    const decrypted = chacha20.decrypt(sharedKey, 0, data)
-    const salt = Field.fromBuffer(decrypted.subarray(0, 16))
-    const tokenAddress = TokenUtils.getTokenAddress(
-      decrypted.subarray(16, 17)[0],
-    )
-    if (tokenAddress === null) {
-      return
-    }
-    const value = Field.fromBuffer(decrypted.subarray(17, 49))
-
-    const myPubKey: Point = Point.fromPrivKey(privKey)
-    if (tokenAddress.isZero()) {
-      const etherNote = Note.newEtherNote({
-        eth: value,
-        pubKey: myPubKey,
-        salt,
-      })
-      if (utxoHash.eq(etherNote.hash())) {
-        return etherNote
-      }
-    } else {
-      const erc20Note = Note.newERC20Note({
-        eth: Field.from(0),
-        tokenAddr: tokenAddress,
-        erc20Amount: value,
-        pubKey: myPubKey,
-        salt,
-      })
-      if (utxoHash.eq(erc20Note.hash())) {
-        return erc20Note
-      }
-      const nftNote = Note.newNFTNote({
-        eth: Field.from(0),
-        tokenAddr: tokenAddress,
-        nft: value,
-        pubKey: myPubKey,
-        salt,
-      })
-      if (utxoHash.eq(nftNote.hash())) {
-        return nftNote
-      }
-    }
     return undefined
   }
 }

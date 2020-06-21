@@ -4,7 +4,7 @@ import { Deposit as DepositSql } from '@zkopru/prisma'
 import { Bytes32, Uint256 } from 'soltypes'
 import { soliditySha3 } from 'web3-utils'
 import BN from 'bn.js'
-import { DryPatchResult } from '@zkopru/tree'
+import { DryPatchResult, GrovePatch } from '@zkopru/tree'
 import {
   Block,
   Header,
@@ -45,10 +45,12 @@ export class Verifier {
   async verifyBlock({
     layer2,
     prevHeader,
+    treePatch,
     block,
   }: {
     layer2: L2Chain
     prevHeader: Header
+    treePatch: GrovePatch
     block: Block
   }): Promise<{ patch?: Patch; challenge?: Challenge }> {
     logger.info(`Verifying ${block.hash}`)
@@ -78,7 +80,6 @@ export class Verifier {
         break
     }
     // verify and gen challenge codes here
-    const treePatch = await layer2.getGrovePatch(block)
     const dryPatchResult = await layer2.grove.dryPatch(treePatch)
     if (this.option.header) {
       const code = Verifier.verifyHeader(block, dryPatchResult)
@@ -127,6 +128,8 @@ export class Verifier {
         block: block.hash,
         massDeposits: block.body.massDeposits.map(massDepositHash),
         treePatch,
+        header: block.header,
+        prevHeader,
         nullifiers: block.body.txs.reduce((arr, tx) => {
           return [
             ...arr,

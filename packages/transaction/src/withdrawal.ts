@@ -1,10 +1,15 @@
 import { Field, Point, F } from '@zkopru/babyjubjub'
-import { ZkOutflow } from './zk_tx'
-import { Note, OutflowType } from './note'
+import { Uint256, Bytes32 } from 'soltypes'
+import { soliditySha3 } from 'web3-utils'
+import { ZkOutflow, PublicData } from './zk_tx'
+import { Note, OutflowType, NoteStatus } from './note'
 
 export enum WithdrawalStatus {
-  NON_INCLUDED = 0,
-  INCLUDED = 1,
+  NON_INCLUDED = NoteStatus.NON_INCLUDED,
+  UNFINALIZED = NoteStatus.WAITING_FINALIZATION,
+  WITHDRAWABLE = NoteStatus.WITHDRAWABLE,
+  TRANSFERRED = NoteStatus.TRANSFERRED,
+  WITHDRAWN = NoteStatus.WITHDRAWN,
 }
 
 export class Withdrawal extends Note {
@@ -14,8 +19,6 @@ export class Withdrawal extends Note {
     to: Field
     fee: Field
   }
-
-  static outflowType: Field = Field.from(1)
 
   constructor(
     eth: Field,
@@ -38,7 +41,7 @@ export class Withdrawal extends Note {
   toZkOutflow(): ZkOutflow {
     const outflow = {
       note: this.hash(),
-      outflowType: Withdrawal.outflowType,
+      outflowType: Field.from(OutflowType.WITHDRAWAL),
       data: {
         to: this.publicData.to,
         eth: this.eth,
@@ -49,6 +52,33 @@ export class Withdrawal extends Note {
       },
     }
     return outflow
+  }
+
+  withdrawalHash(): Uint256 {
+    return Withdrawal.withdrawalHash(this.hash(), {
+      to: this.publicData.to,
+      eth: this.eth,
+      tokenAddr: this.tokenAddr,
+      erc20Amount: this.erc20Amount,
+      nft: this.nft,
+      fee: this.publicData.fee,
+    })
+  }
+
+  static withdrawalHash(note: Field, publicData: PublicData): Uint256 {
+    const concatenated = Buffer.concat([
+      note.toBuffer(),
+      publicData.to.toAddress().toBuffer(),
+      publicData.eth.toBytes32().toBuffer(),
+      publicData.tokenAddr.toAddress().toBuffer(),
+      publicData.erc20Amount.toBytes32().toBuffer(),
+      publicData.nft.toBytes32().toBuffer(),
+      publicData.fee.toBytes32().toBuffer(),
+    ])
+    const result = soliditySha3(`0x${concatenated.toString('hex')}`)
+    //  uint256 note = uint256(keccak256(abi.encodePacked(owner, eth, token, amount, nft, fee)));
+    if (result === null) throw Error('hash result is null')
+    return Bytes32.from(result).toUint()
   }
 
   static from(note: Note, to: F, fee: F): Withdrawal {
