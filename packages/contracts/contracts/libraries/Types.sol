@@ -20,10 +20,10 @@ struct Blockchain {
 
     /** For withdrawal */
     WithdrawalTree[] withdrawalTrees; // withdrawal trees
-    bytes32[] withdrawalRefs; // works as a linked list
+    uint[] withdrawalRefs; // works as a linked list
     uint8 wrIndex; // index for the withdrawal reference linked list
     mapping(bytes32=>bool) withdrawn;
-    mapping(bytes32=>mapping(bytes32=>address)) newWithdrawalOwner;
+    mapping(bytes32=>mapping(uint256=>address)) newWithdrawalOwner;
     /** For migrations */
     mapping(bytes32=>bool) migrations;
     // MassMigration[] migrations; // legacy
@@ -56,7 +56,7 @@ struct ERC721Migration {
 
 struct WithdrawalTree {
     /// Merkle tree of WithdrawalTree notes
-    bytes32 root;
+    uint root;
     uint index;
 }
 
@@ -106,7 +106,7 @@ struct Header {
     bytes32 nullifierRoot;
 
     /** Withdrawal roll up  */
-    bytes32 withdrawalRoot;
+    uint256 withdrawalRoot;
     uint256 withdrawalIndex;
 
     /** Transactions */

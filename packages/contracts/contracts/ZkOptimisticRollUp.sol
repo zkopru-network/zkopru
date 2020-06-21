@@ -110,7 +110,7 @@ contract ZkOptimisticRollUp is Layer2Controller {
             utxoRoot,
             uint256(0),
             nullifierRoot,
-            bytes32(withdrawalRoot),
+            withdrawalRoot,
             uint256(0),
             bytes32(0),
             bytes32(0),

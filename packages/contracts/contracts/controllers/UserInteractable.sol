@@ -33,7 +33,7 @@ contract UserInteractable is Layer2 {
         uint256 amount,
         uint256 nft,
         uint256 fee,
-        bytes32 root,
+        uint256 root,
         uint128 leafIndex,
         uint[] memory siblings
     ) internal {
@@ -109,7 +109,7 @@ contract UserInteractable is Layer2 {
         bytes32 withdrawalId = _withdrawalId(treeIndex, leafIndex);
         require(!Layer2.chain.withdrawn[withdrawalId], "Already withdrawn");
 
-        bytes32 noteHash = keccak256(abi.encodePacked(owner, eth, token, amount, nft, fee));
+        uint256 noteHash = uint256(keccak256(abi.encodePacked(owner, eth, token, amount, nft, fee)));
         address newOwner = Layer2.chain.newWithdrawalOwner[withdrawalId][noteHash];
         address currentOwner = newOwner == address(0) ? owner : newOwner;
         address prepayer = msg.sender;
@@ -199,13 +199,13 @@ contract UserInteractable is Layer2 {
         uint256 amount,
         uint256 nft,
         uint256 fee,
-        bytes32 root,
+        uint256 root,
         uint128 treeIndex,
         uint128 leafIndex,
         uint[] memory siblings
     ) internal {
         require(nft*amount == 0, "Only ERC20 or ERC721");
-        bytes32 note = keccak256(abi.encodePacked(owner, eth, token, amount, nft, fee));
+        uint256 note = uint256(keccak256(abi.encodePacked(owner, eth, token, amount, nft, fee)));
         bytes32 withdrawalId = _withdrawalId(treeIndex, leafIndex);
         // Should not be withdrawn
         require(!Layer2.chain.withdrawn[withdrawalId], "Already withdrawn");
@@ -216,8 +216,8 @@ contract UserInteractable is Layer2 {
 
         // inclusion proof
         bool inclusion = Hash.keccak().merkleProof(
-            uint(root),
-            uint(note),
+            root,
+            note,
             uint(leafIndex),
             siblings
         );

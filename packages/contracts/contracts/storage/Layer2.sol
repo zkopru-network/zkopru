@@ -84,7 +84,7 @@ contract Layer2 is Configurated {
         return chain.committedDeposits[massDepositHash];
     }
 
-    function withdrawalTrees(uint idx) public view returns (bytes32 root, uint index) {
+    function withdrawalTrees(uint idx) public view returns (uint root, uint index) {
         WithdrawalTree memory withdrawalTree =  chain.withdrawalTrees[idx];
         root = withdrawalTree.root;
         index = withdrawalTree.index;

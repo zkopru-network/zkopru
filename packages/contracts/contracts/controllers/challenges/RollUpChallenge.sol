@@ -228,7 +228,7 @@ contract RollUpChallenge is Challengeable {
         require(numOfWithdrawals == index, "Submitted invalid num of utxo num");
         /// Start a new tree if there's no room to add the new withdrawals
         uint startingIndex;
-        bytes32 startingRoot;
+        uint startingRoot;
         if (_parentHeader.withdrawalIndex + numOfWithdrawals < MAX_WITHDRAWAL_PER_TREE) {
             /// it uses the latest tree
             startingIndex = _parentHeader.withdrawalIndex;

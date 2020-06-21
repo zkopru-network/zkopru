@@ -50,7 +50,7 @@ contract DeserializationTester {
     external
     pure
     returns (
-        bytes32 root,
+        uint256 root,
         uint256 index
     ) {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
