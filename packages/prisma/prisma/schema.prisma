@@ -128,7 +128,7 @@ model Utxo {
   treeId String?
   index String?
   nullifier String?
-  usedFor String?
+  usedAt String?
   tree LightTree? @relation(fields: [treeId], references: [id])
 }
 
@@ -146,7 +146,7 @@ model Withdrawal {
   status Int?
   treeId String?
   index String?
-  usedFor String?
+  includedIn String?
   prepayer String?
   siblings String? // stringified str[]
   tree LightTree? @relation(fields: [treeId], references: [id])

@@ -2,15 +2,16 @@ import {
   UtxoStatus,
   Sum,
   RawTx,
-  Withdrawal,
   Utxo,
   Note,
+  WithdrawalStatus,
+  Withdrawal,
 } from '@zkopru/transaction'
 import { Field, F, Point } from '@zkopru/babyjubjub'
 import { Layer1 } from '@zkopru/contracts'
 import { HDWallet, ZkAccount } from '@zkopru/account'
 import { ZkOPRUNode } from '@zkopru/core'
-import { DB } from '@zkopru/prisma'
+import { DB, Withdrawal as WithdrawalSql } from '@zkopru/prisma'
 import { logger } from '@zkopru/utils'
 import { Bytes32 } from 'soltypes'
 import fetch, { Response } from 'node-fetch'
@@ -114,13 +115,28 @@ export class ZkWallet {
     return utxos
   }
 
+  async getWithdrawables(
+    account: ZkAccount,
+    status: WithdrawalStatus,
+  ): Promise<WithdrawalSql[]> {
+    const withdrawals = await this.db.read(prisma =>
+      prisma.withdrawal.findMany({
+        where: {
+          to: account.address,
+          status,
+        },
+      }),
+    )
+    return withdrawals
+  }
+
   async getUtxos(account: ZkAccount, status: UtxoStatus): Promise<Utxo[]> {
     const noteSqls = await this.db.read(prisma =>
       prisma.utxo.findMany({
         where: {
           pubKey: { in: [account.pubKey.toHex()] },
           status,
-          usedFor: null,
+          usedAt: null,
         },
       }),
     )

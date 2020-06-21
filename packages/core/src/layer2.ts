@@ -253,7 +253,7 @@ export class L2Chain {
       withdrawalLeafStartIndex,
       patch.treePatch?.withdrawals || [],
     )
-    await this.updateWithdrawalProof(patch.treePatch?.withdrawals || [])
+    await this.updateWithdrawalProof(block, patch.treePatch?.withdrawals || [])
   }
 
   private async markUtxosAsUnspent(utxos: Leaf<Field>[]) {
@@ -312,7 +312,7 @@ export class L2Chain {
         erc20Amount: note.erc20Amount.toUint256().toString(),
         nft: note.nft.toUint256().toString(),
         status: UtxoStatus.UNSPENT,
-        usedFor: null,
+        usedAt: null,
       }
       await this.db.write(prisma =>
         prisma.utxo.upsert({
@@ -356,7 +356,6 @@ export class L2Chain {
         nft: output.data.nft.toUint256().toString(),
         fee: output.data.fee.toUint256().toString(),
         status: WithdrawalStatus.WITHDRAWABLE,
-        usedFor: null,
       }
       await this.db.write(prisma =>
         prisma.withdrawal.upsert({
@@ -442,7 +441,7 @@ export class L2Chain {
         where: { nullifier: { in: nullifiers.map(v => v.toString()) } },
         data: {
           status: UtxoStatus.SPENT,
-          usedFor: blockHash.toString(),
+          usedAt: blockHash.toString(),
         },
       }),
     )
@@ -497,7 +496,10 @@ export class L2Chain {
     }
   }
 
-  private async updateWithdrawalProof(withdrawals: Leaf<BN>[]) {
+  private async updateWithdrawalProof(
+    blockHash: Bytes32,
+    withdrawals: Leaf<BN>[],
+  ) {
     const myWithdrawals = withdrawals.filter(w => w.shouldTrack)
     for (const withdrawal of myWithdrawals) {
       const merkleProof = await this.grove.withdrawalMerkleProof(
@@ -509,6 +511,7 @@ export class L2Chain {
         prisma.withdrawal.update({
           where: { hash: noteHash.toString() },
           data: {
+            includedIn: blockHash.toString(),
             siblings: JSON.stringify(
               merkleProof.siblings.map(sib => sib.toString(10)),
             ),
