@@ -47,7 +47,7 @@ export class Challengeable extends Contract {
       massDepositHash: string | number[],
     ): TransactionObject<string>
 
-    finalizedUTXOs(utxoRoot: string | number[]): TransactionObject<boolean>
+    finalizedUTXORoots(utxoRoot: string | number[]): TransactionObject<boolean>
 
     genesis(): TransactionObject<string>
 
@@ -99,8 +99,6 @@ export class Challengeable extends Contract {
       2: string
     }>
 
-    snapshotTimestamp(): TransactionObject<string>
-
     stagedDeposits(): TransactionObject<{
       merged: string
       fee: string
@@ -112,14 +110,7 @@ export class Challengeable extends Contract {
 
     utxoRootOf(header: string | number[]): TransactionObject<string>
 
-    withdrawables(
-      idx: number | string,
-    ): TransactionObject<{
-      root: string
-      index: string
-      0: string
-      1: string
-    }>
+    withdrawalRootOf(header: string | number[]): TransactionObject<string>
 
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
   }

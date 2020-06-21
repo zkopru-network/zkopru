@@ -80,7 +80,7 @@ contract TxChallenge is Challengeable {
     }
 
     function isValidRef(bytes32 l2BlockHash, uint256 ref) public view returns (bool) {
-        if (Layer2.chain.finalizedUTXOs[ref]) {
+        if (Layer2.chain.finalizedUTXORoots[ref]) {
             return true;
         }
         bytes32 parentBlock = l2BlockHash;

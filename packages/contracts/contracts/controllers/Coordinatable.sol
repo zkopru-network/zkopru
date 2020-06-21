@@ -59,12 +59,17 @@ contract Coordinatable is Layer2 {
         Layer2.chain.proposals[_block.checksum] = Proposal(
             currentBlockHash,
             block.number + CHALLENGE_PERIOD,
+            false,
             false
         );
         /// Record l2 chain
         Layer2.chain.parentOf[currentBlockHash] = _block.header.parentBlock;
         /// Record reference for the inclusion proofs
         Layer2.chain.utxoRootOf[currentBlockHash] = _block.header.utxoRoot;
+        /// Record reference for the withdrawal proofs when only if there exists update
+        if (Layer2.chain.withdrawalRootOf[_block.header.parentBlock] != _block.header.withdrawalRoot) {
+            Layer2.chain.withdrawalRootOf[currentBlockHash] = _block.header.withdrawalRoot;
+        }
         /// Update exit allowance period
         proposer.exitAllowance = block.number + CHALLENGE_PERIOD;
         /// Freeze the latest mass deposit for the next block proposer
@@ -96,6 +101,7 @@ contract Coordinatable is Layer2 {
         require(finalization.header.hash() == proposal.headerHash, "Invalid header data");
         require(!proposal.slashed, "Slashed roll up can't be finalized");
         require(finalization.header.parentBlock == Layer2.chain.latest, "The latest block should be its parent");
+        require(finalization.header.parentBlock != proposal.headerHash, "Reentrancy case");
 
         uint totalFee = finalization.header.fee;
         /// Execute deposits and collect fees
@@ -105,19 +111,6 @@ contract Coordinatable is Layer2 {
             totalFee += deposit.fee;
             chain.committedDeposits[deposit.hash()] -= 1;
         }
-
-        WithdrawalTree storage latest = Layer2.chain.withdrawalTrees[Layer2.chain.withdrawalTrees.length - 1];
-        if (latest.index > finalization.header.withdrawalIndex) {
-            /// Fully filled. Start a new withdrawal tree
-            Layer2.chain.withdrawalTrees.push();
-        }
-        WithdrawalTree storage target = Layer2.chain.withdrawalTrees[Layer2.chain.withdrawalTrees.length - 1];
-        target.root = finalization.header.withdrawalRoot;
-        target.index = finalization.header.withdrawalIndex;
-
-        /// Update the daily snapshot of withdrawalTree tree to prevent race conditions
-        Layer2.chain.wrIndex += 1;
-        Layer2.chain.withdrawalRefs[Layer2.chain.wrIndex] = finalization.header.withdrawalRoot;
 
         /// Record mass migrations and collect fees.
         /// A MassMigration becomes a MassDeposit for the migration destination.
@@ -137,6 +130,7 @@ contract Coordinatable is Layer2 {
         proposer.reward += totalFee;
 
         /// Update the chain
+        proposal.finalized = true;
         Layer2.chain.latest = proposal.headerHash;
         emit Finalized(proposal.headerHash);
     }

@@ -25,99 +25,61 @@ contract UserInteractable is Layer2 {
     ) public payable {
         _deposit(eth, salt, token, amount, nft, pubKey, fee);
     }
-
+    
     function withdraw(
+        uint note,
         address owner,
         uint eth,
         address token,
         uint256 amount,
         uint256 nft,
         uint256 fee,
-        uint256 root,
-        uint128 leafIndex,
-        uint[] memory siblings
-    ) internal {
-        // find root
-        bool rootExist = false;
-        uint128 treeIndex;
-        uint8 refIndex = Layer2.chain.wrIndex;
-        for (uint i = 0; i < 256; i ++) {
-            if (Layer2.chain.withdrawalRefs[refIndex] == root) {
-                rootExist = true;
-                break;
-            }
-            refIndex--;
-        }
-        require(rootExist, 'failed to find the withdrawal ref root');
-        treeIndex = uint128(Layer2.chain.withdrawalTrees.length) - 1;
-        if (treeIndex != 0 && Layer2.chain.withdrawalTrees[treeIndex - 1].root == root) {
-            // found cached root indicates the latest archived tree's root.
-            // set the tree index
-            treeIndex = treeIndex - 1;
-        }
-        return _withdraw(
-            owner,
-            eth,
-            token,
-            amount,
-            nft,
-            fee,
-            root,
-            treeIndex,
-            leafIndex,
-            siblings
-        );
-    }
-
-    function withdrawArchived(
-        address owner,
-        uint eth,
-        address token,
-        uint amount,
-        uint nft,
-        uint fee,
-        uint128 treeIndex,
-        uint128 leafIndex,
+        bytes32 blockHash,
+        uint256 leafIndex,
         uint[] memory siblings
     ) public {
-        WithdrawalTree memory withdrawalTree = chain.withdrawalTrees[treeIndex];
-        _withdraw(
+        return _withdraw(
+            note,
             owner,
             eth,
             token,
             amount,
             nft,
             fee,
-            withdrawalTree.root,
-            treeIndex,
+            blockHash,
             leafIndex,
             siblings
         );
     }
 
     function payInAdvance(
+        uint note,
         address owner,
         uint eth,
         address token,
         uint amount,
         uint nft,
         uint fee,
-        uint128 treeIndex,
-        uint128 leafIndex,
         bytes memory signature
     ) public payable {
-        bytes32 withdrawalId = _withdrawalId(treeIndex, leafIndex);
-        require(!Layer2.chain.withdrawn[withdrawalId], "Already withdrawn");
+        bytes32 withdrawalHash = _withdrawalHash(
+            note,
+            owner,
+            eth,
+            token,
+            amount,
+            nft,
+            fee
+        );
+        require(!Layer2.chain.withdrawn[withdrawalHash], "Already withdrawn");
 
-        uint256 noteHash = uint256(keccak256(abi.encodePacked(owner, eth, token, amount, nft, fee)));
-        address newOwner = Layer2.chain.newWithdrawalOwner[withdrawalId][noteHash];
+        address newOwner = Layer2.chain.newWithdrawalOwner[withdrawalHash];
         address currentOwner = newOwner == address(0) ? owner : newOwner;
         address prepayer = msg.sender;
         bytes32 payInAdvanceMsg = keccak256(
             abi.encodePacked(
                 prepayer,
-                noteHash,
-                withdrawalId
+                withdrawalHash
             )
         );
         /// verify original owner's signature
@@ -139,7 +101,7 @@ contract UserInteractable is Layer2 {
         /// prepay ether
         payable(currentOwner).transfer(eth);
         /// transfer ownership
-        Layer2.chain.newWithdrawalOwner[withdrawalId][noteHash] = prepayer;
+        Layer2.chain.newWithdrawalOwner[withdrawalHash] = prepayer;
     }
 
     function _deposit(
@@ -193,32 +155,47 @@ contract UserInteractable is Layer2 {
     }
 
     function _withdraw(
+        uint note,
         address owner,
         uint eth,
         address token,
         uint256 amount,
         uint256 nft,
         uint256 fee,
-        uint256 root,
-        uint128 treeIndex,
-        uint128 leafIndex,
+        bytes32 blockHash,
+        uint256 leafIndex,
         uint[] memory siblings
     ) internal {
         require(nft*amount == 0, "Only ERC20 or ERC721");
-        uint256 note = uint256(keccak256(abi.encodePacked(owner, eth, token, amount, nft, fee)));
-        bytes32 withdrawalId = _withdrawalId(treeIndex, leafIndex);
-        // Should not be withdrawn
-        require(!Layer2.chain.withdrawn[withdrawalId], "Already withdrawn");
+        require(Layer2.chain.proposals[blockHash].finalized, "Not a finalized block");
+        uint256 root = Layer2.chain.withdrawalRootOf[blockHash];
+        bytes32 currentBlock = blockHash;
+        while (root == 0) {
+            currentBlock = Layer2.chain.parentOf[currentBlock];
+            root = Layer2.chain.withdrawalRootOf[currentBlock];
+            // if the block does not contain any withdrawal, it does not record withdrawal root
+        }
+        bytes32 withdrawalHash = _withdrawalHash(
+            note,
+            owner,
+            eth,
+            token,
+            amount,
+            nft,
+            fee
+        );
+        // Should not allow double-withdrawing
+        require(!Layer2.chain.withdrawn[withdrawalHash], "Already withdrawn");
         // Check whether new owner exists
-        address to = Layer2.chain.newWithdrawalOwner[withdrawalId][note] != address(0)
-            ? Layer2.chain.newWithdrawalOwner[withdrawalId][note]
+        address to = Layer2.chain.newWithdrawalOwner[withdrawalHash] != address(0)
+            ? Layer2.chain.newWithdrawalOwner[withdrawalHash]
             : owner;
 
         // inclusion proof
         bool inclusion = Hash.keccak().merkleProof(
             root,
-            note,
-            uint(leafIndex),
+            uint(withdrawalHash),
+            leafIndex,
             siblings
         );
         require(inclusion, "The given withdrawal note does not exist");
@@ -238,11 +215,29 @@ contract UserInteractable is Layer2 {
             IERC721(token).transferFrom(address(this), to, nft);
         }
         /// Mark as withdrawn
-        Layer2.chain.withdrawn[withdrawalId] = true;
+        Layer2.chain.withdrawn[withdrawalHash] = true;
     }
 
-    function _withdrawalId(uint128 treeIndex, uint128 leafIndex) internal pure returns (bytes32) {
-        return abi.decode(abi.encodePacked(treeIndex, leafIndex), (bytes32));
+    function _withdrawalHash(
+        uint256 note,
+        address owner,
+        uint eth,
+        address token,
+        uint256 amount,
+        uint256 nft,
+        uint256 fee
+    ) internal pure returns (bytes32) {
+        return keccak256(
+            abi.encodePacked(
+                note,
+                owner,
+                eth,
+                token,
+                amount,
+                nft,
+                fee
+            )
+        );
     }
 
     function _verifySignature(

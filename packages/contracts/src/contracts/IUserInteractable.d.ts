@@ -28,29 +28,40 @@ export class IUserInteractable extends Contract {
     ): TransactionObject<void>
 
     withdraw(
+      note: number | string,
+      owner: string,
       eth: number | string,
       token: string,
       amount: number | string,
       nft: number | string,
       fee: number | string,
-      rootIndex: number | string,
+      blockHash: string | number[],
       leafIndex: number | string,
       siblings: (number | string)[],
     ): TransactionObject<void>
 
-    withdrawUsingSignature(
-      to: string,
+    withdrawArchived(
+      owner: string,
       eth: number | string,
       token: string,
       amount: number | string,
       nft: number | string,
       fee: number | string,
-      rootIndex: number | string,
+      treeIndex: number | string,
       leafIndex: number | string,
       siblings: (number | string)[],
-      v: number | string,
-      r: string | number[],
-      s: string | number[],
+    ): TransactionObject<void>
+
+    payInAdvance(
+      owner: string,
+      eth: number | string,
+      token: string,
+      amount: number | string,
+      nft: number | string,
+      fee: number | string,
+      treeIndex: number | string,
+      leafIndex: number | string,
+      signature: string | number[],
     ): TransactionObject<void>
   }
   events: {

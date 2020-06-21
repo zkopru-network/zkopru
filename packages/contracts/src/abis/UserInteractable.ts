@@ -135,7 +135,7 @@ export const UserInteractableABI = [
   },
   {
     inputs: [{ internalType: 'bytes32', name: 'utxoRoot', type: 'bytes32' }],
-    name: 'finalizedUTXOs',
+    name: 'finalizedUTXORoots',
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
@@ -224,13 +224,6 @@ export const UserInteractableABI = [
   },
   {
     inputs: [],
-    name: 'snapshotTimestamp',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
     name: 'stagedDeposits',
     outputs: [
       { internalType: 'bytes32', name: 'merged', type: 'bytes32' },
@@ -249,17 +242,14 @@ export const UserInteractableABI = [
   {
     inputs: [{ internalType: 'bytes32', name: 'header', type: 'bytes32' }],
     name: 'utxoRootOf',
-    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'uint256', name: 'idx', type: 'uint256' }],
-    name: 'withdrawables',
-    outputs: [
-      { internalType: 'bytes32', name: 'root', type: 'bytes32' },
-      { internalType: 'uint256', name: 'index', type: 'uint256' },
-    ],
+    inputs: [{ internalType: 'bytes32', name: 'header', type: 'bytes32' }],
+    name: 'withdrawalRootOf',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
   },
@@ -287,12 +277,14 @@ export const UserInteractableABI = [
   },
   {
     inputs: [
+      { internalType: 'uint256', name: 'note', type: 'uint256' },
+      { internalType: 'address', name: 'owner', type: 'address' },
       { internalType: 'uint256', name: 'eth', type: 'uint256' },
       { internalType: 'address', name: 'token', type: 'address' },
       { internalType: 'uint256', name: 'amount', type: 'uint256' },
       { internalType: 'uint256', name: 'nft', type: 'uint256' },
       { internalType: 'uint256', name: 'fee', type: 'uint256' },
-      { internalType: 'uint256', name: 'rootIndex', type: 'uint256' },
+      { internalType: 'bytes32', name: 'blockHash', type: 'bytes32' },
       { internalType: 'uint256', name: 'leafIndex', type: 'uint256' },
       { internalType: 'uint256[]', name: 'siblings', type: 'uint256[]' },
     ],
@@ -303,22 +295,18 @@ export const UserInteractableABI = [
   },
   {
     inputs: [
-      { internalType: 'address', name: 'to', type: 'address' },
+      { internalType: 'uint256', name: 'note', type: 'uint256' },
+      { internalType: 'address', name: 'owner', type: 'address' },
       { internalType: 'uint256', name: 'eth', type: 'uint256' },
       { internalType: 'address', name: 'token', type: 'address' },
       { internalType: 'uint256', name: 'amount', type: 'uint256' },
       { internalType: 'uint256', name: 'nft', type: 'uint256' },
       { internalType: 'uint256', name: 'fee', type: 'uint256' },
-      { internalType: 'uint256', name: 'rootIndex', type: 'uint256' },
-      { internalType: 'uint256', name: 'leafIndex', type: 'uint256' },
-      { internalType: 'uint256[]', name: 'siblings', type: 'uint256[]' },
-      { internalType: 'uint8', name: 'v', type: 'uint8' },
-      { internalType: 'bytes32', name: 'r', type: 'bytes32' },
-      { internalType: 'bytes32', name: 's', type: 'bytes32' },
+      { internalType: 'bytes', name: 'signature', type: 'bytes' },
     ],
-    name: 'withdrawUsingSignature',
+    name: 'payInAdvance',
     outputs: [],
-    stateMutability: 'nonpayable',
+    stateMutability: 'payable',
     type: 'function',
   },
 ]

@@ -51,7 +51,7 @@ export class UserInteractable extends Contract {
       massDepositHash: string | number[],
     ): TransactionObject<string>
 
-    finalizedUTXOs(utxoRoot: string | number[]): TransactionObject<boolean>
+    finalizedUTXORoots(utxoRoot: string | number[]): TransactionObject<boolean>
 
     genesis(): TransactionObject<string>
 
@@ -103,8 +103,6 @@ export class UserInteractable extends Contract {
       2: string
     }>
 
-    snapshotTimestamp(): TransactionObject<string>
-
     stagedDeposits(): TransactionObject<{
       merged: string
       fee: string
@@ -116,14 +114,7 @@ export class UserInteractable extends Contract {
 
     utxoRootOf(header: string | number[]): TransactionObject<string>
 
-    withdrawables(
-      idx: number | string,
-    ): TransactionObject<{
-      root: string
-      index: string
-      0: string
-      1: string
-    }>
+    withdrawalRootOf(header: string | number[]): TransactionObject<string>
 
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
 
@@ -138,29 +129,27 @@ export class UserInteractable extends Contract {
     ): TransactionObject<void>
 
     withdraw(
+      note: number | string,
+      owner: string,
       eth: number | string,
       token: string,
       amount: number | string,
       nft: number | string,
       fee: number | string,
-      rootIndex: number | string,
+      blockHash: string | number[],
       leafIndex: number | string,
       siblings: (number | string)[],
     ): TransactionObject<void>
 
-    withdrawUsingSignature(
-      to: string,
+    payInAdvance(
+      note: number | string,
+      owner: string,
       eth: number | string,
       token: string,
       amount: number | string,
       nft: number | string,
       fee: number | string,
-      rootIndex: number | string,
-      leafIndex: number | string,
-      siblings: (number | string)[],
-      v: number | string,
-      r: string | number[],
-      s: string | number[],
+      signature: string | number[],
     ): TransactionObject<void>
   }
   events: {

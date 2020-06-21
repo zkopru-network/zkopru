@@ -53,7 +53,9 @@ export class Layer2 extends Contract {
 
     utxoRootOf(header: string | number[]): TransactionObject<string>
 
-    finalizedUTXOs(utxoRoot: string | number[]): TransactionObject<boolean>
+    withdrawalRootOf(header: string | number[]): TransactionObject<string>
+
+    finalizedUTXORoots(utxoRoot: string | number[]): TransactionObject<boolean>
 
     proposers(
       addr: string,
@@ -91,17 +93,6 @@ export class Layer2 extends Contract {
     committedDeposits(
       massDepositHash: string | number[],
     ): TransactionObject<string>
-
-    withdrawables(
-      idx: number | string,
-    ): TransactionObject<{
-      root: string
-      index: string
-      0: string
-      1: string
-    }>
-
-    snapshotTimestamp(): TransactionObject<string>
 
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
 

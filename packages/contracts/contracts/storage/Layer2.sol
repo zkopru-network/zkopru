@@ -44,12 +44,16 @@ contract Layer2 is Configurated {
         return chain.parentOf[header];
     }
 
-    function utxoRootOf(bytes32 header) public view returns (bytes32) {
-        return bytes32(chain.utxoRootOf[header]);
+    function utxoRootOf(bytes32 header) public view returns (uint256) {
+        return chain.utxoRootOf[header];
     }
 
-    function finalizedUTXOs(bytes32 utxoRoot) public view returns (bool) {
-        return chain.finalizedUTXOs[uint(utxoRoot)];
+    function withdrawalRootOf(bytes32 header) public view returns (uint256) {
+        return chain.withdrawalRootOf[header];
+    }
+
+    function finalizedUTXORoots(bytes32 utxoRoot) public view returns (bool) {
+        return chain.finalizedUTXORoots[uint(utxoRoot)];
     }
 
     function proposers(address addr) public view returns (uint stake, uint reward, uint exitAllowance) {
@@ -82,12 +86,6 @@ contract Layer2 is Configurated {
 
     function committedDeposits(bytes32 massDepositHash) public view returns (uint) {
         return chain.committedDeposits[massDepositHash];
-    }
-
-    function withdrawalTrees(uint idx) public view returns (uint root, uint index) {
-        WithdrawalTree memory withdrawalTree =  chain.withdrawalTrees[idx];
-        root = withdrawalTree.root;
-        index = withdrawalTree.index;
     }
 
     function withdrawn(bytes32 leaf) public view returns (bool) {

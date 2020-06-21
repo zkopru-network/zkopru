@@ -25,25 +25,27 @@ interface IUserInteractable {
 
     /**
      * @notice Users can withdraw notes when only after they're finazlied.
+     * @param note Note hash in layer 2. It is a poseidon hash
      * @param owner The original owner's address of the note
      * @param eth Amount of Ether to withdraw out
      * @param token Token address of ERC20 or ERC721. It can be undefined.
      * @param amount Amount of ERC20 when the token param is defined and it is an ERC20
      * @param nft NFT id when the token param is defined and it is an ERC721
      * @param fee Amount of fee to give to the coordinator
-     * @param root Withdraw notes using recent cached root reference
+     * @param blockHash Finalized block hash to find the finalized withdrawal root
      * @param leafIndex The index of your withdrawal note's leaf in the given tree.
      * @param siblings Inclusion proof data
      */
     function withdraw(
+        uint note,
         address owner,
         uint eth,
         address token,
         uint amount,
         uint nft,
         uint fee,
-        bytes32 root,
-        uint128 leafIndex,
+        bytes32 blockHash,
+        uint256 leafIndex,
         uint[] calldata siblings
     ) external;
 

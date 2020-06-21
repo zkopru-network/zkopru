@@ -57,7 +57,7 @@ export const DeserializationTesterABI = [
     inputs: [{ internalType: 'bytes', name: '', type: 'bytes' }],
     name: 'getWithdrawalRollUp',
     outputs: [
-      { internalType: 'bytes32', name: 'root', type: 'bytes32' },
+      { internalType: 'uint256', name: 'root', type: 'uint256' },
       { internalType: 'uint256', name: 'index', type: 'uint256' },
     ],
     stateMutability: 'pure',

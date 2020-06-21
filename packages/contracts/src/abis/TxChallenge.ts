@@ -101,7 +101,7 @@ export const TxChallengeABI = [
   },
   {
     inputs: [{ internalType: 'bytes32', name: 'utxoRoot', type: 'bytes32' }],
-    name: 'finalizedUTXOs',
+    name: 'finalizedUTXORoots',
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
@@ -190,13 +190,6 @@ export const TxChallengeABI = [
   },
   {
     inputs: [],
-    name: 'snapshotTimestamp',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
     name: 'stagedDeposits',
     outputs: [
       { internalType: 'bytes32', name: 'merged', type: 'bytes32' },
@@ -215,17 +208,14 @@ export const TxChallengeABI = [
   {
     inputs: [{ internalType: 'bytes32', name: 'header', type: 'bytes32' }],
     name: 'utxoRootOf',
-    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'uint256', name: 'idx', type: 'uint256' }],
-    name: 'withdrawables',
-    outputs: [
-      { internalType: 'bytes32', name: 'root', type: 'bytes32' },
-      { internalType: 'uint256', name: 'index', type: 'uint256' },
-    ],
+    inputs: [{ internalType: 'bytes32', name: 'header', type: 'bytes32' }],
+    name: 'withdrawalRootOf',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
   },

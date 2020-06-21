@@ -8,7 +8,7 @@ struct Blockchain {
     /** For inclusion reference */
     mapping(bytes32=>bytes32) parentOf; // childBlockHash=>parentBlockHash
     mapping(bytes32=>uint256) utxoRootOf; // header => utxoRoot
-    mapping(uint256=>bool) finalizedUTXOs; // all finalized utxoRoots
+    mapping(uint256=>bool) finalizedUTXORoots; // all finalized utxo roots
     /** For coordinating */
     mapping(address=>Proposer) proposers;
     mapping(bytes32=>Proposal) proposals;
@@ -19,11 +19,13 @@ struct Blockchain {
     mapping(bytes32=>uint) committedDeposits;
 
     /** For withdrawal */
-    WithdrawalTree[] withdrawalTrees; // withdrawal trees
-    uint[] withdrawalRefs; // works as a linked list
-    uint8 wrIndex; // index for the withdrawal reference linked list
+    mapping(bytes32=>uint256) withdrawalRootOf; // header => utxoRoot
+    // WithdrawalTree[] withdrawalTrees; // withdrawal trees
+    // uint[] withdrawalRefs; // works as a linked list
+    // uint8 wrIndex; // index for the withdrawal reference linked list
     mapping(bytes32=>bool) withdrawn;
-    mapping(bytes32=>mapping(uint256=>address)) newWithdrawalOwner;
+    uint128 withdrawalTrees;
+    mapping(bytes32=>address) newWithdrawalOwner;
     /** For migrations */
     mapping(bytes32=>bool) migrations;
     // MassMigration[] migrations; // legacy
@@ -77,6 +79,7 @@ struct Proposal {
     bytes32 headerHash;
     uint challengeDue;
     bool slashed;
+    bool finalized;
 }
 
 struct Challenge {
@@ -168,10 +171,6 @@ library Types {
     function init(Blockchain storage chain, bytes32 genesis) internal {
         chain.latest = genesis;
         chain.genesis = genesis;
-        chain.withdrawalTrees.push(); /// withdrawalTrees[0]: initial withdrawalTree tree
-        for (uint i = 0 ; i < 256; i ++) {
-            chain.withdrawalRefs.push(); /// init refs
-        }
         chain.proposedBlocks++;
     }
 
