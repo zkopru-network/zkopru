@@ -2,7 +2,12 @@ import { Field } from '@zkopru/babyjubjub'
 import express, { RequestHandler } from 'express'
 import { scheduleJob, Job } from 'node-schedule'
 import { EventEmitter } from 'events'
-import { ZkTx, OutflowType, Withdrawal } from '@zkopru/transaction'
+import {
+  ZkTx,
+  OutflowType,
+  Withdrawal,
+  WithdrawalStatus,
+} from '@zkopru/transaction'
 import { Leaf } from '@zkopru/tree'
 import { logger, root, bnToBytes32, bnToUint256 } from '@zkopru/utils'
 import {
@@ -20,6 +25,8 @@ import {
   headerHash,
   Block,
   getMassMigrations,
+  Finalization,
+  serializeFinalization,
 } from '@zkopru/core'
 import { Account } from 'web3-core'
 import { Subscription } from 'web3-core-subscriptions'
@@ -28,6 +35,8 @@ import { Server } from 'http'
 import chalk from 'chalk'
 import { Address, Bytes32, Uint256 } from 'soltypes'
 import BN from 'bn.js'
+import { soliditySha3Raw } from 'web3-utils'
+import assert from 'assert'
 import { TxMemPool, TxPoolInterface } from './tx_pool'
 
 export interface CoordinatorConfig {
@@ -64,6 +73,8 @@ export class Coordinator extends EventEmitter {
 
   genBlockJob?: Job
 
+  finalizationJob?: Job
+
   constructor(node: FullNode, account: Account, config: CoordinatorConfig) {
     super()
     this.account = account
@@ -78,6 +89,7 @@ export class Coordinator extends EventEmitter {
     this.node.startSync()
     this.startAPI()
     this.startSubscribeGasPrice()
+    this.startFinalization()
     this.node.on('status', async (status: NetworkStatus) => {
       // udpate the txpool using the newly proposed hash
       // if the hash does not exist in the tx pool's block list
@@ -102,6 +114,7 @@ export class Coordinator extends EventEmitter {
   async stop(): Promise<void> {
     // TODO : stop api & gas price subscriber / remove listeners
     this.stopGenBlock()
+    this.stopFinalization()
     return new Promise(res => {
       this.node.on('status', status => {
         if (status === NetworkStatus.STOPPED) {
@@ -169,6 +182,7 @@ export class Coordinator extends EventEmitter {
       const app = express()
       app.use(express.text())
       app.post('/tx', this.txHandler)
+      app.post('/instant-withdraw', this.instantWithdrawHandler)
       if (this.config.bootstrap) {
         app.get('/bootstrap', this.bootstrapHandler)
       }
@@ -210,6 +224,79 @@ export class Coordinator extends EventEmitter {
     } else {
       logger.info('Failed to verify zk snark')
       res.status(500).send('Coordinator is not running')
+    }
+  }
+
+  private instantWithdrawHandler: RequestHandler = async (req, res) => {
+    const withdrawalData = req.body
+    const withdrawal = JSON.parse(withdrawalData)
+    const {
+      hash,
+      to,
+      eth,
+      tokenAddr,
+      erc20Amount,
+      nft,
+      fee,
+      includedIn,
+      index,
+      sign,
+    } = withdrawal
+    // TODO verify request
+    // TODO check fee
+    const siblings: string[] = JSON.parse(withdrawal.siblings)
+    const tx = this.node.l1Contract.user.methods.payInAdvance(
+      hash,
+      to,
+      eth,
+      tokenAddr,
+      erc20Amount,
+      nft,
+      fee,
+      sign.signature,
+    )
+    const withdrawalHash = soliditySha3Raw(
+      hash,
+      to,
+      eth,
+      tokenAddr,
+      erc20Amount,
+      nft,
+      fee,
+    )
+    const result = await this.node.l1Contract.sendTx(tx, {
+      value: eth,
+      from: this.account.address,
+    })
+    if (result) {
+      // save withdrawal
+      logger.info('pay in advance')
+      const data = {
+        hash,
+        withdrawalHash,
+        to,
+        eth,
+        tokenAddr,
+        erc20Amount,
+        nft,
+        fee,
+        includedIn,
+        index,
+        siblings: JSON.stringify(siblings),
+        status: WithdrawalStatus.UNFINALIZED,
+      }
+      await this.node.db.write(prisma =>
+        prisma.withdrawal.upsert({
+          where: { hash },
+          create: data,
+          update: data,
+        }),
+      )
+      res.send(result)
+    } else {
+      // set prepayed
+      logger.info('Failed to run pay-in-advance')
+      res.status(500).send('Failed to run pay-in-advance')
     }
   }
 
@@ -282,7 +369,7 @@ export class Coordinator extends EventEmitter {
 
   private startGenBlock() {
     if (!this.genBlockJob) {
-      logger.info('Started to generate blocks')
+      logger.info('Start block generations')
       this.genBlockJob = scheduleJob('*/5 * * * * *', () =>
         this.proposeNewBlocks(),
       )
@@ -290,9 +377,24 @@ export class Coordinator extends EventEmitter {
   }
 
   private stopGenBlock() {
-    logger.info('Stopped to generate blocks')
+    logger.info('Stop block generations')
     if (this.genBlockJob) this.genBlockJob.cancel()
     this.genBlockJob = undefined
+  }
+
+  private startFinalization() {
+    if (!this.finalizationJob) {
+      logger.info('Start finalization')
+      this.finalizationJob = scheduleJob('*/5 * * * * *', () =>
+        this.finalizeBlock(),
+      )
+    }
+  }
+
+  private stopFinalization() {
+    logger.info('Stop finalization')
+    if (this.finalizationJob) this.finalizationJob.cancel()
+    this.finalizationJob = undefined
   }
 
   private async proposeNewBlocks() {
@@ -515,5 +617,82 @@ export class Coordinator extends EventEmitter {
       massMigrations,
     }
     return { header, body, fee: aggregatedFee }
+  }
+
+  private async finalizeBlock() {
+    const finalization = await this.genFinalization()
+    if (!finalization) return
+    logger.info('finalization')
+    const blockHash = headerHash(finalization.header).toString()
+
+    const mdHash = soliditySha3Raw(
+      finalization.massDeposits[0].merged.toString(),
+      finalization.massDeposits[0].fee.toString(),
+    )
+    logger.debug(`massdeposit hash: ${mdHash}`)
+    const exist = await this.node.l1Contract.upstream.methods
+      .committedDeposits(mdHash)
+      .call()
+    logger.debug(`mass deposit exist: ${exist}`)
+    const tx = this.node.l1Contract.coordinator.methods.finalize(
+      `0x${serializeFinalization(finalization).toString('hex')}`,
+    )
+    let finalizable = false
+    try {
+      await tx.call({ from: this.account.address })
+      finalizable = true
+    } catch (err) {
+      logger.error(err)
+      return
+    }
+    if (finalizable) {
+      try {
+        const receipt = await this.node.l1Contract.sendTx(tx, {
+          from: this.account.address,
+        })
+        if (receipt) {
+          await this.node.db.write(prisma =>
+            prisma.proposal.update({
+              where: { hash: blockHash },
+              data: { finalized: true },
+            }),
+          )
+          logger.info(`finalized block ${blockHash}`)
+        } else {
+          logger.warn(`Failed to finalize the block ${blockHash}`)
+        }
+      } catch (err) {
+        logger.error(err)
+      }
+    }
+  }
+
+  private async genFinalization(): Promise<Finalization | undefined> {
+    const latest = await this.node.l1Contract.upstream.methods.latest().call()
+    const unfinalizedProposals = await this.node.db.read(prisma =>
+      prisma.proposal.findMany({
+        where: {
+          finalized: null,
+          block: {
+            header: { parentBlock: latest },
+            verified: true,
+          },
+          proposalData: { not: null },
+        },
+        take: 1,
+      }),
+    )
+    const proposalToFinalize = unfinalizedProposals[0]
+    if (!proposalToFinalize) return undefined
+    assert(proposalToFinalize.proposalData)
+
+    const tx = JSON.parse(proposalToFinalize.proposalData)
+    const block = Block.fromTx(tx, true)
+
+    const finalization: Finalization = block.getFinalization()
+    logger.debug(
+      `merged: ${finalization.massDeposits[0].merged} / fee: ${finalization.massDeposits[0].fee}`,
+    )
+    return finalization
   }
 }

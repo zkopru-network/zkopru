@@ -1,6 +1,14 @@
-import { Header, Body } from '@zkopru/core'
+import {
+  Header,
+  Body,
+  Block,
+  serializeHeader,
+  serializeBody,
+} from '@zkopru/core'
 import { Field } from '@zkopru/babyjubjub'
 import { Address } from 'soltypes'
+import { hexify } from '@zkopru/utils'
+import { Transaction } from 'web3-core'
 import { loadZkTxs } from './testset-zktxs'
 
 function strToField(val: string): Field {
@@ -62,4 +70,33 @@ export async function getDummyBody(): Promise<Body> {
       },
     ],
   }
+}
+
+export async function getDummyBlock(): Promise<Block> {
+  const header = dummyHeader
+  const body = await getDummyBody()
+  const serializedBlock = Buffer.concat([
+    serializeHeader(header),
+    serializeBody(body),
+  ])
+  const dummySelector = 'aaaaaaaa'
+  const lengthToHex = hexify(serializedBlock.length, 32).slice(2)
+  const paramPosition = hexify(32, 32).slice(2)
+  console.log('length to hex', lengthToHex)
+  const dummyTx: Transaction = {
+    hash: 'dummyhash',
+    nonce: 1,
+    blockHash: 'dummyblockhash',
+    blockNumber: 10000,
+    transactionIndex: 3,
+    from: 'dummyfrom',
+    to: 'dummyto',
+    value: 'dummyvalue',
+    gasPrice: 'dummygas',
+    gas: 11,
+    input: `0x${dummySelector}${paramPosition}${lengthToHex}${serializedBlock.toString(
+      'hex',
+    )}`,
+  }
+  return Block.fromTx(dummyTx)
 }

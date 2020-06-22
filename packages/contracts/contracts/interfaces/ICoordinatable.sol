@@ -1,7 +1,7 @@
 pragma solidity >= 0.6.0;
 
 interface ICoordinatable {
-    event NewProposal(uint256 proposalNum, bytes32 blockHash);    
+    event NewProposal(uint256 proposalNum, bytes32 blockHash);
     event Finalized(bytes32 blockHash);
     event MassDepositCommit(uint index, bytes32 merged, uint256 fee);
 
@@ -28,10 +28,9 @@ interface ICoordinatable {
     /**
      * @dev Coordinator can finalize a submitted block if it isn't slashed during the
      *      challenge period. It updates the aggregated fee and withdrawal root.
-     * @param submissionId Keccak256 of submitted block data
      * @param finalization Block data without tx details
      */
-    function finalize(bytes32 submissionId, bytes calldata finalization) external;
+    function finalize(bytes calldata finalization) external;
 
     /**
      * @dev Coordinators can withdraw aggregated transaction fees.

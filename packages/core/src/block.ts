@@ -15,7 +15,7 @@ import {
 } from '@zkopru/prisma'
 import * as Utils from '@zkopru/utils'
 import { Field } from '@zkopru/babyjubjub'
-import { soliditySha3 } from 'web3-utils'
+import { soliditySha3, soliditySha3Raw } from 'web3-utils'
 import { Bytes32, Uint256, Address } from 'soltypes'
 import { Transaction } from 'web3-core'
 import assert from 'assert'
@@ -124,24 +124,24 @@ export function serializeHeader(header: Header): Buffer {
   return headerBytes
 }
 
-export function serializeBody(body: Body): Buffer {
+export function serializeTxs(txs: ZkTx[]): Buffer {
   const arr: Buffer[] = []
   // Txs
-  const txLenBytes = Utils.numToBuffer(body.txs.length, 2)
+  const txLenBytes = Utils.numToBuffer(txs.length, 2)
   arr.push(txLenBytes)
-  for (let i = 0; i < body.txs.length; i += 1) {
-    const numOfInflowByte = Utils.numToBuffer(body.txs[i].inflow.length, 1)
+  for (let i = 0; i < txs.length; i += 1) {
+    const numOfInflowByte = Utils.numToBuffer(txs[i].inflow.length, 1)
     arr.push(numOfInflowByte)
-    for (let j = 0; j < body.txs[i].inflow.length; j += 1) {
-      arr.push(body.txs[i].inflow[j].root.toBuffer('be', 32))
-      arr.push(body.txs[i].inflow[j].nullifier.toBuffer('be', 32))
+    for (let j = 0; j < txs[i].inflow.length; j += 1) {
+      arr.push(txs[i].inflow[j].root.toBuffer('be', 32))
+      arr.push(txs[i].inflow[j].nullifier.toBuffer('be', 32))
     }
-    const numOfOutflowByte = Utils.numToBuffer(body.txs[i].outflow.length, 1)
+    const numOfOutflowByte = Utils.numToBuffer(txs[i].outflow.length, 1)
     arr.push(numOfOutflowByte)
-    for (let j = 0; j < body.txs[i].outflow.length; j += 1) {
-      arr.push(body.txs[i].outflow[j].note.toBuffer('be', 32))
-      arr.push(body.txs[i].outflow[j].outflowType.toBuffer('be', 1))
-      const { data } = body.txs[i].outflow[j]
+    for (let j = 0; j < txs[i].outflow.length; j += 1) {
+      arr.push(txs[i].outflow[j].note.toBuffer('be', 32))
+      arr.push(txs[i].outflow[j].outflowType.toBuffer('be', 1))
+      const { data } = txs[i].outflow[j]
       if (data) {
         arr.push(data.to.toBuffer('be', 20))
         arr.push(data.eth.toBuffer('be', 32))
@@ -149,12 +149,12 @@ export function serializeBody(body: Body): Buffer {
         arr.push(data.erc20Amount.toBuffer('be', 32))
         arr.push(data.nft.toBuffer('be', 32))
         arr.push(data.fee.toBuffer('be', 32))
-      } else if (!body.txs[i].outflow[j].outflowType.isZero()) {
+      } else if (!txs[i].outflow[j].outflowType.isZero()) {
         throw Error('public data should exist')
       }
     }
-    arr.push(body.txs[i].fee.toBuffer('be', 32))
-    const { proof } = body.txs[i]
+    arr.push(txs[i].fee.toBuffer('be', 32))
+    const { proof } = txs[i]
     if (!proof) throw Error('SNARK proof should exist')
     arr.push(proof.pi_a[0].toBuffer('be', 32))
     arr.push(proof.pi_a[1].toBuffer('be', 32))
@@ -165,8 +165,8 @@ export function serializeBody(body: Body): Buffer {
     arr.push(proof.pi_c[0].toBuffer('be', 32))
     arr.push(proof.pi_c[1].toBuffer('be', 32))
 
-    const { swap } = body.txs[i]
-    const { memo } = body.txs[i]
+    const { swap } = txs[i]
+    const { memo } = txs[i]
     const swapExist = swap ? 1 : 0
     const memoExist = memo ? 2 : 0
     const indicator = swapExist | memoExist
@@ -179,22 +179,34 @@ export function serializeBody(body: Body): Buffer {
       arr.push(memo)
     }
   }
+  return Buffer.concat(arr)
+}
+
+export function serializeMassDeposits(massDeposits: MassDeposit[]): Buffer {
+  const arr: Buffer[] = []
   // Mass deposits
-  const massDepositLenBytes = Utils.numToBuffer(body.massDeposits.length, 1)
+  const massDepositLenBytes = Utils.numToBuffer(massDeposits.length, 1)
   arr.push(massDepositLenBytes)
-  for (let i = 0; i < body.massDeposits.length; i += 1) {
-    arr.push(body.massDeposits[i].merged.toBuffer())
-    arr.push(body.massDeposits[i].fee.toBuffer())
+  for (let i = 0; i < massDeposits.length; i += 1) {
+    arr.push(massDeposits[i].merged.toBuffer())
+    arr.push(massDeposits[i].fee.toBuffer())
   }
+  return Buffer.concat(arr)
+}
+
+export function serializeMassMigrations(
+  massMigrations: MassMigration[],
+): Buffer {
+  const arr: Buffer[] = []
   // Mass migrations
-  const massMigrationLenBytes = Utils.numToBuffer(body.massMigrations.length, 1)
+  const massMigrationLenBytes = Utils.numToBuffer(massMigrations.length, 1)
   arr.push(massMigrationLenBytes)
-  for (let i = 0; i < body.massMigrations.length; i += 1) {
-    arr.push(body.massMigrations[i].destination.toBuffer())
-    arr.push(body.massMigrations[i].totalETH.toBuffer())
-    arr.push(body.massMigrations[i].migratingLeaves.merged.toBuffer())
-    arr.push(body.massMigrations[i].migratingLeaves.fee.toBuffer())
-    const { erc20, erc721 } = body.massMigrations[i]
+  for (let i = 0; i < massMigrations.length; i += 1) {
+    arr.push(massMigrations[i].destination.toBuffer())
+    arr.push(massMigrations[i].totalETH.toBuffer())
+    arr.push(massMigrations[i].migratingLeaves.merged.toBuffer())
+    arr.push(massMigrations[i].migratingLeaves.fee.toBuffer())
+    const { erc20, erc721 } = massMigrations[i]
     arr.push(Utils.numToBuffer(erc20.length, 1))
     for (let j = 0; j < erc20.length; j += 1) {
       arr.push(erc20[j].addr.toBuffer())
@@ -211,6 +223,23 @@ export function serializeBody(body: Body): Buffer {
     }
   }
   return Buffer.concat(arr)
+}
+
+export function serializeBody(body: Body): Buffer {
+  return Buffer.concat([
+    serializeTxs(body.txs),
+    serializeMassDeposits(body.massDeposits),
+    serializeMassMigrations(body.massMigrations),
+  ])
+}
+
+export function serializeFinalization(finalization: Finalization): Buffer {
+  return Buffer.concat([
+    finalization.proposalChecksum.toBuffer(),
+    serializeHeader(finalization.header),
+    serializeMassDeposits(finalization.massDeposits),
+    serializeMassMigrations(finalization.massMigration),
+  ])
 }
 
 function deserializeHeaderFrom(
@@ -549,6 +578,17 @@ export class Block {
     this.header = header
     this.body = body
     this.bootstrap = bootstrap
+  }
+
+  getFinalization(): Finalization {
+    const data = `0x${this.serializeBlock().toString('hex')}`
+    const checksum = soliditySha3Raw(data)
+    return {
+      proposalChecksum: Bytes32.from(checksum),
+      header: this.header,
+      massDeposits: this.body.massDeposits,
+      massMigration: this.body.massMigrations,
+    }
   }
 
   toSqlObj(): BlockSql {

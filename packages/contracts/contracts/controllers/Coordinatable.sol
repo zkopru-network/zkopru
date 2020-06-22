@@ -80,7 +80,8 @@ contract Coordinatable is Layer2 {
 
     function commitMassDeposit() public {
         if(Layer2.chain.stagedDeposits.merged != bytes32(0)) {
-            Layer2.chain.committedDeposits[Layer2.chain.stagedDeposits.hash()] += 1;
+            bytes32 depositHash = Layer2.chain.stagedDeposits.hash();
+            Layer2.chain.committedDeposits[depositHash] += 1;
             emit MassDepositCommit(
                 Layer2.chain.massDepositId,
                 Layer2.chain.stagedDeposits.merged,
@@ -100,16 +101,16 @@ contract Coordinatable is Layer2 {
         require(finalization.massMigrations.root() == finalization.header.migrationRoot, "Submitted different deposit root");
         require(finalization.header.hash() == proposal.headerHash, "Invalid header data");
         require(!proposal.slashed, "Slashed roll up can't be finalized");
+        require(!proposal.finalized, "Already finalized");
         require(finalization.header.parentBlock == Layer2.chain.latest, "The latest block should be its parent");
         require(finalization.header.parentBlock != proposal.headerHash, "Reentrancy case");
 
-        uint totalFee = finalization.header.fee;
         /// Execute deposits and collect fees
         for (uint i = 0; i < finalization.massDeposits.length; i++) {
             MassDeposit memory deposit = finalization.massDeposits[i];
-            require(chain.committedDeposits[deposit.hash()] > 0, "MassDeposit does not exist.");
-            totalFee += deposit.fee;
-            chain.committedDeposits[deposit.hash()] -= 1;
+            bytes32 massDepositHash = deposit.hash();
+            require(Layer2.chain.committedDeposits[massDepositHash] > 0, "MassDeposit does not exist.");
+            Layer2.chain.committedDeposits[massDepositHash] -= 1;
         }
 
         /// Record mass migrations and collect fees.
@@ -127,7 +128,7 @@ contract Coordinatable is Layer2 {
 
         /// Give fee to the proposer
         Proposer storage proposer = Layer2.chain.proposers[finalization.header.proposer];
-        proposer.reward += totalFee;
+        proposer.reward += finalization.header.fee;
 
         /// Update the chain
         proposal.finalized = true;

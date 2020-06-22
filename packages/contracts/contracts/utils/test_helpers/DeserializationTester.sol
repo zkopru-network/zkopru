@@ -7,7 +7,8 @@ import {
     Inflow,
     Outflow,
     PublicData,
-    Proof
+    Proof,
+    Types
 } from "../../libraries/Types.sol";
 
 contract DeserializationTester {

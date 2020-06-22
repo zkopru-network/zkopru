@@ -13,7 +13,8 @@ import { HDWallet, ZkAccount } from '@zkopru/account'
 import { ZkOPRUNode } from '@zkopru/core'
 import { DB, Withdrawal as WithdrawalSql } from '@zkopru/prisma'
 import { logger } from '@zkopru/utils'
-import { Bytes32 } from 'soltypes'
+import { soliditySha3 } from 'web3-utils'
+import { Bytes32, Address } from 'soltypes'
 import fetch, { Response } from 'node-fetch'
 import assert from 'assert'
 import { ZkWizard } from './zk-wizard'
@@ -346,6 +347,81 @@ export class ZkWallet {
     })
     const result = await this.deposit(note, Field.strictFrom(fee))
     return result
+  }
+
+  async withdraw(withdrawal: WithdrawalSql): Promise<boolean> {
+    if (!this.account) {
+      logger.error('Account is not set')
+      return false
+    }
+    if (!withdrawal.siblings) throw Error('No sibling data')
+    if (!withdrawal.includedIn) throw Error('No block hash which includes it')
+    if (!withdrawal.index) throw Error('No leaf index')
+    const siblings: string[] = JSON.parse(withdrawal.siblings)
+    const tx = this.node.l1Contract.user.methods.withdraw(
+      withdrawal.hash,
+      withdrawal.to,
+      withdrawal.eth,
+      withdrawal.tokenAddr,
+      withdrawal.erc20Amount,
+      withdrawal.nft,
+      withdrawal.fee,
+      withdrawal.includedIn,
+      withdrawal.index,
+      siblings,
+    )
+    const receipt = await this.node.l1Contract.sendTx(tx, {
+      from: this.account.address,
+    })
+    if (receipt) {
+      await this.db.write(prisma =>
+        prisma.withdrawal.update({
+          where: { hash: withdrawal.hash },
+          data: { status: WithdrawalStatus.WITHDRAWN },
+        }),
+      )
+      return true
+    }
+    return false
+  }
+
+  async instantWithdrawal(
+    prePayer: Address,
+    withdrawal: WithdrawalSql,
+  ): Promise<boolean> {
+    if (!this.account) {
+      logger.error('Account is not set')
+      return false
+    }
+    if (!withdrawal.siblings) throw Error('No sibling data')
+    if (!withdrawal.includedIn) throw Error('No block hash which includes it')
+    if (!withdrawal.index) throw Error('No leaf index')
+    const message = soliditySha3(
+      prePayer.toString(),
+      Bytes32.from(withdrawal.hash).toString(),
+    )
+    assert(message)
+    const siblings: string[] = JSON.parse(withdrawal.siblings)
+    const sign = this.account.ethAccount.sign(message)
+    const data = {
+      ...withdrawal,
+      siblings,
+      sign,
+    }
+    const response = await fetch(`${this.coordinator}/instant-withdraw`, {
+      method: 'post',
+      body: JSON.stringify(data),
+    })
+    if (response.ok) {
+      await this.db.write(prisma =>
+        prisma.withdrawal.update({
+          where: { hash: withdrawal.hash },
+          data: { status: WithdrawalStatus.TRANSFERRED },
+        }),
+      )
+      return true
+    }
+    return false
   }
 
   async fetchPrice(): Promise<string> {

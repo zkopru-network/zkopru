@@ -197,9 +197,10 @@ export class Synchronizer {
       .on('data', async event => {
         const { returnValues, blockNumber } = event
         logger.info(
-          `MassDepositCommit ${(returnValues.index,
-          returnValues.merged,
-          returnValues.fee)}`,
+          `MassDepositCommit
+          ${returnValues.index}
+          ${returnValues.merged}
+          ${returnValues.fee}`,
         )
         const massDeposit: MassDepositSql = {
           index: Uint256.from(returnValues.index).toString(),
@@ -208,6 +209,9 @@ export class Synchronizer {
           blockNumber,
           includedIn: null,
         }
+        logger.debug(
+          `Massdeposit: index ${massDeposit.index} / merged: ${massDeposit.merged} / fee: ${massDeposit.fee}`,
+        )
         logger.info('massdeposit commit is', massDeposit)
         await this.db.write(prisma =>
           prisma.massDeposit.upsert({
@@ -299,14 +303,17 @@ export class Synchronizer {
         )
       })
       .on('data', async event => {
-        const { returnValues } = event
+        let blockHash: string
+        if (typeof event.returnValues === 'string')
+          blockHash = event.returnValues
+        else blockHash = (event.returnValues as any).blockHash
         await this.db.write(prisma =>
           prisma.proposal.update({
-            where: { hash: Bytes32.from(returnValues).toString() },
+            where: { hash: Bytes32.from(blockHash).toString() },
             data: { finalized: true },
           }),
         )
-        if (cb) cb(returnValues)
+        if (cb) cb(blockHash)
       })
       .on('changed', event => {
         // TODO removed

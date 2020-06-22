@@ -23,10 +23,7 @@ export class ICoordinatable extends Contract {
 
     propose(submission: string | number[]): TransactionObject<void>
 
-    finalize(
-      submissionId: string | number[],
-      finalization: string | number[],
-    ): TransactionObject<void>
+    finalize(finalization: string | number[]): TransactionObject<void>
 
     withdrawReward(amount: number | string): TransactionObject<void>
 
