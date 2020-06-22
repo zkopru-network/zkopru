@@ -54,7 +54,8 @@ export default class AccountDetail extends App {
         { title: 'Go to top menu', value: AppMenu.TOP_MENU },
         { title: 'Deposit', value: AppMenu.DEPOSIT },
         { title: 'Transfer', value: AppMenu.TRANSFER },
-        { title: 'Withdraw', value: AppMenu.WITHDRAW },
+        { title: 'Withdraw request', value: AppMenu.WITHDRAW_REQUEST },
+        { title: 'Withdraw out', value: AppMenu.WITHDRAWABLE_LIST },
       ],
     })
     return { next: choice, context: { ...context, balance } }

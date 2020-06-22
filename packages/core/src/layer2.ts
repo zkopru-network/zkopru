@@ -282,7 +282,7 @@ export class L2Chain {
 
   async findMyUtxos(txs: ZkTx[], accounts: ZkAccount[]) {
     const txsWithMemo = txs.filter(tx => tx.memo)
-    logger.info(`findMyNotes`)
+    logger.info(`findMyUtxos`)
     const myUtxos: Utxo[] = []
     for (const tx of txsWithMemo) {
       for (const account of accounts) {
@@ -325,6 +325,7 @@ export class L2Chain {
   }
 
   async findMyWithdrawals(txs: ZkTx[], accounts: ZkAccount[]) {
+    logger.info(`findMyWithdrawals`)
     const outflows = txs.reduce(
       (acc, tx) => [
         ...acc,
@@ -334,11 +335,29 @@ export class L2Chain {
       ],
       [] as ZkOutflow[],
     )
+    logger.debug(
+      `withdrawal address =>
+      ${outflows.map(outflow =>
+        outflow.data?.to
+          .toAddress()
+          .toString()
+          .toLowerCase(),
+      )}`,
+    )
+    logger.debug(
+      `my address =>${accounts.map(account => account.address.toLowerCase())}`,
+    )
     const myWithdrawalOutputs: ZkOutflow[] = outflows.filter(
       outflow =>
         outflow.data &&
-        outflow.data?.to.toAddress().toString() in
-          accounts.map(account => account.address),
+        accounts
+          .map(account => account.address.toLowerCase())
+          .includes(
+            outflow.data?.to
+              .toAddress()
+              .toString()
+              .toLowerCase(),
+          ),
     )
     // TODO needs batch transaction
     for (const output of myWithdrawalOutputs) {
@@ -357,6 +376,7 @@ export class L2Chain {
         fee: output.data.fee.toUint256().toString(),
         status: WithdrawalStatus.WITHDRAWABLE,
       }
+      logger.info(`found my withdrawal: ${withdrawalSql.hash}`)
       await this.db.write(prisma =>
         prisma.withdrawal.upsert({
           where: { hash: withdrawalSql.hash },
@@ -502,11 +522,9 @@ export class L2Chain {
   ) {
     const myWithdrawals = withdrawals.filter(w => w.shouldTrack)
     for (const withdrawal of myWithdrawals) {
-      const merkleProof = await this.grove.withdrawalMerkleProof(
-        withdrawal.hash,
-      )
       const { noteHash } = withdrawal
       if (!noteHash) throw Error('Withdrawal does not have note hash')
+      const merkleProof = await this.grove.withdrawalMerkleProof(noteHash)
       await this.db.write(prisma =>
         prisma.withdrawal.update({
           where: { hash: noteHash.toString() },
@@ -535,7 +553,6 @@ export class L2Chain {
     const withdrawalHashes: { noteHash: Field; withdrawalHash: Uint256 }[] = []
     for (const tx of block.body.txs) {
       for (const outflow of tx.outflow) {
-        logger.debug(`outflow type ${outflow.outflowType.toString()}`)
         if (outflow.outflowType.eqn(OutflowType.UTXO)) {
           utxoHashes.push(outflow.note)
         } else if (outflow.outflowType.eqn(OutflowType.WITHDRAWAL)) {
@@ -550,7 +567,6 @@ export class L2Chain {
         }
       }
     }
-    logger.debug(`utxo list.. ${utxoHashes}`)
     const myUtxoList = await this.db.read(prisma =>
       prisma.utxo.findMany({
         where: {
@@ -570,13 +586,11 @@ export class L2Chain {
     const shouldTrack: { [key: string]: boolean } = {}
     for (const myNote of myUtxoList) {
       shouldTrack[myNote.hash] = true
-      logger.debug(`found my note: ${myNote.hash}`)
     }
     for (const myNote of myWithdrawalList) {
       shouldTrack[myNote.hash] = true
     }
     for (const output of utxoHashes) {
-      logger.debug(`utxo...: ${output.toString(10)}`)
       const trackThisNote = shouldTrack[output.toString(10)]
       utxos.push({
         hash: output,

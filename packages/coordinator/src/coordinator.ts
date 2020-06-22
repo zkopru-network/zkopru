@@ -403,7 +403,9 @@ export class Coordinator extends EventEmitter {
       return
     }
     if (this.node.status !== NetworkStatus.FULLY_SYNCED) {
-      logger.trace('Skip gen block. Syncing layer 2 with the layer 1')
+      logger.trace(
+        `Skip gen block. Syncing layer 2 with the layer 1 - status: ${this.node.status}`,
+      )
       return
     }
     let block: {
@@ -624,16 +626,6 @@ export class Coordinator extends EventEmitter {
     if (!finalization) return
     logger.info('finalization')
     const blockHash = headerHash(finalization.header).toString()
-
-    const mdHash = soliditySha3Raw(
-      finalization.massDeposits[0].merged.toString(),
-      finalization.massDeposits[0].fee.toString(),
-    )
-    logger.debug(`massdeposit hash: ${mdHash}`)
-    const exist = await this.node.l1Contract.upstream.methods
-      .committedDeposits(mdHash)
-      .call()
-    logger.debug(`mass deposit exist: ${exist}`)
     const tx = this.node.l1Contract.coordinator.methods.finalize(
       `0x${serializeFinalization(finalization).toString('hex')}`,
     )
@@ -690,9 +682,6 @@ export class Coordinator extends EventEmitter {
     const block = Block.fromTx(tx, true)
 
     const finalization: Finalization = block.getFinalization()
-    logger.debug(
-      `merged: ${finalization.massDeposits[0].merged} / fee: ${finalization.massDeposits[0].fee}`,
-    )
     return finalization
   }
 }

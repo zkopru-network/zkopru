@@ -307,10 +307,14 @@ export class Synchronizer {
         if (typeof event.returnValues === 'string')
           blockHash = event.returnValues
         else blockHash = (event.returnValues as any).blockHash
+        const hash = Bytes32.from(blockHash).toString()
+        logger.debug(`finalization hash@!${hash}`)
+        logger.debug(`${JSON.stringify(event.returnValues)}`)
         await this.db.write(prisma =>
-          prisma.proposal.update({
-            where: { hash: Bytes32.from(blockHash).toString() },
-            data: { finalized: true },
+          prisma.proposal.upsert({
+            where: { hash },
+            create: { hash, finalized: true },
+            update: { finalized: true },
           }),
         )
         if (cb) cb(blockHash)

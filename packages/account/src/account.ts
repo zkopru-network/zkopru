@@ -34,7 +34,7 @@ export class ZkAccount {
       this.snarkPK = Field.from(pk.privateKey)
       this.ethAccount = pk
     }
-    this.address = this.ethAccount.address
+    this.address = this.ethAccount.address.toLowerCase()
     this.pubKey = Point.fromPrivKey(this.snarkPK.toHex(32))
   }
 

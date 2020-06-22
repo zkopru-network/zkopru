@@ -167,14 +167,9 @@ contract UserInteractable is Layer2 {
         uint[] memory siblings
     ) internal {
         require(nft*amount == 0, "Only ERC20 or ERC721");
-        require(Layer2.chain.proposals[blockHash].finalized, "Not a finalized block");
+        require(Layer2.chain.finalized[blockHash], "Not a finalized block");
         uint256 root = Layer2.chain.withdrawalRootOf[blockHash];
         bytes32 currentBlock = blockHash;
-        while (root == 0) {
-            currentBlock = Layer2.chain.parentOf[currentBlock];
-            root = Layer2.chain.withdrawalRootOf[currentBlock];
-            // if the block does not contain any withdrawal, it does not record withdrawal root
-        }
         bytes32 withdrawalHash = _withdrawalHash(
             note,
             owner,
@@ -200,7 +195,7 @@ contract UserInteractable is Layer2 {
         );
         require(inclusion, "The given withdrawal note does not exist");
         /// Withdraw ETH & get fee
-        if(eth!=0) {
+        if(eth != 0) {
             if(to == msg.sender) {
                 payable(to).transfer(eth + fee);
             } else {
@@ -209,10 +204,12 @@ contract UserInteractable is Layer2 {
             }
         }
         /// Withdrawn token
-        if(amount!=0) {
-            IERC20(token).transfer(to, amount);
-        } else {
-            IERC721(token).transferFrom(address(this), to, nft);
+        if (token != address(0)) {
+            if (amount != 0) {
+                IERC20(token).transfer(to, amount);
+            } else {
+                IERC721(token).transferFrom(address(this), to, nft);
+            }
         }
         /// Mark as withdrawn
         Layer2.chain.withdrawn[withdrawalHash] = true;

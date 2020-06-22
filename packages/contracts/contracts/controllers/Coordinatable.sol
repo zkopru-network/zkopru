@@ -59,7 +59,6 @@ contract Coordinatable is Layer2 {
         Layer2.chain.proposals[_block.checksum] = Proposal(
             currentBlockHash,
             block.number + CHALLENGE_PERIOD,
-            false,
             false
         );
         /// Record l2 chain
@@ -101,7 +100,7 @@ contract Coordinatable is Layer2 {
         require(finalization.massMigrations.root() == finalization.header.migrationRoot, "Submitted different deposit root");
         require(finalization.header.hash() == proposal.headerHash, "Invalid header data");
         require(!proposal.slashed, "Slashed roll up can't be finalized");
-        require(!proposal.finalized, "Already finalized");
+        require(!Layer2.chain.finalized[proposal.headerHash], "Already finalized");
         require(finalization.header.parentBlock == Layer2.chain.latest, "The latest block should be its parent");
         require(finalization.header.parentBlock != proposal.headerHash, "Reentrancy case");
 
@@ -131,9 +130,10 @@ contract Coordinatable is Layer2 {
         proposer.reward += finalization.header.fee;
 
         /// Update the chain
-        proposal.finalized = true;
+        Layer2.chain.finalized[proposal.headerHash] = true;
         Layer2.chain.latest = proposal.headerHash;
         emit Finalized(proposal.headerHash);
+        delete Layer2.chain.proposals[finalization.proposalChecksum];
     }
 
     function withdrawReward(uint amount) public {

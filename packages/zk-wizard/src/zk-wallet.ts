@@ -3,9 +3,9 @@ import {
   Sum,
   RawTx,
   Utxo,
-  Note,
   WithdrawalStatus,
   Withdrawal,
+  Outflow,
 } from '@zkopru/transaction'
 import { Field, F, Point } from '@zkopru/babyjubjub'
 import { Layer1 } from '@zkopru/contracts'
@@ -372,6 +372,7 @@ export class ZkWallet {
     )
     const receipt = await this.node.l1Contract.sendTx(tx, {
       from: this.account.address,
+      gas: 100000,
     })
     if (receipt) {
       await this.db.write(prisma =>
@@ -455,14 +456,13 @@ export class ZkWallet {
       const { verifier } = this.node
       const snarkValid = await verifier.snarkVerifier.verifyTx(zkTx)
       assert(snarkValid, 'generated snark proof is invalid')
-      assert(zkTx.memo, 'memo does not exist')
       const response = await fetch(`${this.coordinator}/tx`, {
         method: 'post',
         body: zkTx.encode().toString('hex'),
       })
       // add newly created notes
-      for (const note of tx.outflow) {
-        await this.saveNote(note)
+      for (const outflow of tx.outflow) {
+        await this.saveOutflow(outflow)
       }
       // mark used notes as spending
       await this.db.write(prisma =>
@@ -508,52 +508,52 @@ export class ZkWallet {
       from: this.account.address,
       value: note.eth.add(fee).toString(),
     })
-    await this.saveNote(note)
+    await this.saveOutflow(note)
     // TODO check what web3 methods returns when it failes
     if (receipt) return true
     return false
   }
 
-  private async saveNote(note: Note) {
-    if (note instanceof Utxo) {
+  private async saveOutflow(outflow: Outflow) {
+    if (outflow instanceof Utxo) {
       await this.db.write(prisma =>
         prisma.utxo.create({
           data: {
-            hash: note
+            hash: outflow
               .hash()
               .toUint256()
               .toString(),
-            eth: note.eth.toUint256().toString(),
-            pubKey: Bytes32.from(note.pubKey.toHex()).toString(),
-            salt: note.salt.toUint256().toString(),
-            tokenAddr: note.tokenAddr.toAddress().toString(),
-            erc20Amount: note.erc20Amount.toUint256().toString(),
-            nft: note.nft.toUint256().toString(),
+            eth: outflow.eth.toUint256().toString(),
+            pubKey: Bytes32.from(outflow.pubKey.toHex()).toString(),
+            salt: outflow.salt.toUint256().toString(),
+            tokenAddr: outflow.tokenAddr.toAddress().toString(),
+            erc20Amount: outflow.erc20Amount.toUint256().toString(),
+            nft: outflow.nft.toUint256().toString(),
             status: UtxoStatus.NON_INCLUDED,
-            nullifier: note
+            nullifier: outflow
               .nullifier()
               .toUint256()
               .toString(),
           },
         }),
       )
-    } else if (note instanceof Withdrawal) {
+    } else if (outflow instanceof Withdrawal) {
       await this.db.write(prisma =>
         prisma.withdrawal.create({
           data: {
-            hash: note
+            hash: outflow
               .hash()
               .toUint256()
               .toString(),
-            withdrawalHash: note.withdrawalHash().toString(),
-            eth: note.eth.toUint256().toString(),
-            pubKey: Bytes32.from(note.pubKey.toHex()).toString(),
-            salt: note.salt.toUint256().toString(),
-            tokenAddr: note.tokenAddr.toAddress().toString(),
-            to: note.publicData.to.toAddress().toString(),
-            fee: note.publicData.fee.toAddress().toString(),
-            erc20Amount: note.erc20Amount.toUint256().toString(),
-            nft: note.nft.toUint256().toString(),
+            withdrawalHash: outflow.withdrawalHash().toString(),
+            eth: outflow.eth.toUint256().toString(),
+            pubKey: Bytes32.from(outflow.pubKey.toHex()).toString(),
+            salt: outflow.salt.toUint256().toString(),
+            tokenAddr: outflow.tokenAddr.toAddress().toString(),
+            to: outflow.publicData.to.toAddress().toString(),
+            fee: outflow.publicData.fee.toAddress().toString(),
+            erc20Amount: outflow.erc20Amount.toUint256().toString(),
+            nft: outflow.nft.toUint256().toString(),
             status: UtxoStatus.NON_INCLUDED,
           },
         }),

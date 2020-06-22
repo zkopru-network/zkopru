@@ -7,6 +7,7 @@ export { Note, OutflowType } from './note'
 export { TxBuilder, RawTx } from './tx'
 export { ZkTx, ZkInflow, ZkOutflow, PublicData, SNARK } from './zk_tx'
 export { Sum } from './note-sum'
+export { Outflow } from './outflow'
 
 export const TokenUtils = {
   DAI,

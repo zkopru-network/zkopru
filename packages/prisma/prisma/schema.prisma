@@ -53,9 +53,9 @@ model Config {
 
 model Proposal {
   hash String @id
-  proposalNum Int
-  proposedAt Int
-  proposalTx String // tx hash
+  proposalNum Int?
+  proposedAt Int?
+  proposalTx String? // tx hash
   proposalData String? // stringified json
   fetched String?
   finalized Boolean?

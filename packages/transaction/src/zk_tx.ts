@@ -176,45 +176,33 @@ export class ZkTx {
   }
 
   signals(): BigInteger[] {
-    const signals = [
-      this.fee.toIden3BigInt(),
-      this.swap ? this.swap.toIden3BigInt() : Field.zero.toIden3BigInt(),
-      ...this.inflow.map(inflow => inflow.root.toIden3BigInt()),
-      ...this.inflow.map(inflow => inflow.nullifier.toIden3BigInt()),
-      ...this.outflow.map(outflow => outflow.note.toIden3BigInt()),
-      ...this.outflow.map(outflow => outflow.outflowType.toIden3BigInt()),
+    const signals: Field[] = [
+      this.fee,
+      this.swap ? this.swap : Field.zero,
+      ...this.inflow.map(inflow => inflow.root),
+      ...this.inflow.map(inflow => inflow.nullifier),
+      ...this.outflow.map(outflow => outflow.note),
+      ...this.outflow.map(outflow => outflow.outflowType),
       ...this.outflow.map(outflow =>
-        outflow.data
-          ? outflow.data.to.toIden3BigInt()
-          : Field.zero.toIden3BigInt(),
+        outflow.data ? outflow.data.to : Field.zero,
       ),
       ...this.outflow.map(outflow =>
-        outflow.data
-          ? outflow.data.eth.toIden3BigInt()
-          : Field.zero.toIden3BigInt(),
+        outflow.data ? outflow.data.eth : Field.zero,
       ),
       ...this.outflow.map(outflow =>
-        outflow.data
-          ? outflow.data.tokenAddr.toIden3BigInt()
-          : Field.zero.toIden3BigInt(),
+        outflow.data ? outflow.data.tokenAddr : Field.zero,
       ),
       ...this.outflow.map(outflow =>
-        outflow.data
-          ? outflow.data.erc20Amount.toIden3BigInt()
-          : Field.zero.toIden3BigInt(),
+        outflow.data ? outflow.data.erc20Amount : Field.zero,
       ),
       ...this.outflow.map(outflow =>
-        outflow.data
-          ? outflow.data.nft.toIden3BigInt()
-          : Field.zero.toIden3BigInt(),
+        outflow.data ? outflow.data.nft : Field.zero,
       ),
       ...this.outflow.map(outflow =>
-        outflow.data
-          ? outflow.data.fee.toIden3BigInt()
-          : Field.zero.toIden3BigInt(),
+        outflow.data ? outflow.data.fee : Field.zero,
       ),
     ]
-    return signals
+    return signals.map(f => f.toIden3BigInt())
   }
 
   static decode(buff: Buffer): ZkTx {

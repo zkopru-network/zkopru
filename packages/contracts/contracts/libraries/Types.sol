@@ -6,12 +6,13 @@ struct Blockchain {
     bytes32 genesis;
     bytes32 latest;
     /** For inclusion reference */
-    mapping(bytes32=>bytes32) parentOf; // childBlockHash=>parentBlockHash
-    mapping(bytes32=>uint256) utxoRootOf; // header => utxoRoot
+    mapping(bytes32=>bytes32) parentOf; // childBlockHash => parentBlockHash
+    mapping(bytes32=>uint256) utxoRootOf; // blockhash => utxoRoot
     mapping(uint256=>bool) finalizedUTXORoots; // all finalized utxo roots
     /** For coordinating */
     mapping(address=>Proposer) proposers;
     mapping(bytes32=>Proposal) proposals;
+    mapping(bytes32=>bool) finalized; // blockhash => finalized?
     /** For deposit */
     MassDeposit stagedDeposits;
     uint stagedSize;
@@ -79,7 +80,6 @@ struct Proposal {
     bytes32 headerHash;
     uint challengeDue;
     bool slashed;
-    bool finalized;
 }
 
 struct Challenge {

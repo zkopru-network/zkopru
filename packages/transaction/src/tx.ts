@@ -79,7 +79,7 @@ export class TxBuilder {
         'You should have only one value of withdrawalTo or migrationTo',
       )
     const note = Utxo.newEtherNote({ eth, pubKey: to })
-    this.send(note)
+    this.send(note, withdrawal, migration)
     return this
   }
 
@@ -183,6 +183,13 @@ export class TxBuilder {
     const spendables: Utxo[] = [...this.spendables]
     const spendings: Utxo[] = []
     const sendingAmount = Sum.from(this.sendings)
+    const outgoingNotes: (Withdrawal | Migration)[] = this.sendings.filter(
+      sending => sending instanceof Withdrawal || sending instanceof Migration,
+    ) as (Withdrawal | Migration)[]
+    const l1Fee = outgoingNotes.reduce(
+      (acc, note) => acc.add(note.publicData.fee),
+      Field.zero,
+    )
 
     // Find ERC20 notes to spend
     Object.keys(sendingAmount.erc20).forEach(addr => {
@@ -282,7 +289,7 @@ export class TxBuilder {
     }
 
     const getRequiredETH = (): Field => {
-      return sendingAmount.eth.add(getTxFee())
+      return sendingAmount.eth.add(getTxFee()).add(l1Fee)
     }
 
     // Spend ETH containing notes until it hits the number
@@ -318,7 +325,10 @@ export class TxBuilder {
     const outflow = [...this.sendings, ...changes]
     const inflowSum = Sum.from(inflow)
     const outflowSum = Sum.from(outflow)
-    assert(inflowSum.eth.eq(outflowSum.eth.add(finalFee)), 'inflow != outflow')
+    assert(
+      inflowSum.eth.eq(outflowSum.eth.add(finalFee).add(l1Fee)),
+      'inflow != outflow',
+    )
     for (const addr of Object.keys(inflowSum.erc20)) {
       assert(
         inflowSum.erc20[addr].eq(outflowSum.erc20[addr]),

@@ -11,6 +11,7 @@ import { BootstrapHelper } from './bootstrap'
 import { Block, headerHash } from './block'
 import { Synchronizer } from './synchronizer'
 import { ZkOPRUNode } from './zkopru-node'
+import { logger } from '@zkopru/utils'
 
 type provider = WebsocketProvider | IpcProvider
 
@@ -62,6 +63,10 @@ export class LightNode extends ZkOPRUNode {
       return
     }
     const bootstrapData = await this.bootstrapHelper.fetchBootstrapData(latest)
+    if (!bootstrapData.proposal.proposalTx) {
+      logger.error('bootstrap api is not giving proposalTx')
+      return
+    }
     const proposalData = await this.l1Contract.web3.eth.getTransaction(
       bootstrapData.proposal.proposalTx,
     )

@@ -9,6 +9,10 @@ import Deposit from './prompts/menus/account-detail-deposit'
 import DepositEther from './prompts/menus/account-detail-deposit-eth'
 import TransferEth from './prompts/menus/account-detail-transfer-eth'
 import TransferMenu from './prompts/menus/account-detail-transfer-menu'
+import WithdrawRequest from './prompts/menus/account-detail-withdraw-request-menu'
+import WithdrawRequestEth from './prompts/menus/account-detail-withraw-request-eth'
+import WithdrawableList from './prompts/menus/account-detail-withdrawable-list'
+import Withdraw from './prompts/menus/account-detail-withdraw'
 
 export class WalletDashboard extends Dashboard<Context, ZkWallet> {
   node: ZkOPRUNode
@@ -29,5 +33,12 @@ export class WalletDashboard extends Dashboard<Context, ZkWallet> {
     this.addPromptApp(AppMenu.DEPOSIT_ETHER, new DepositEther(option))
     this.addPromptApp(AppMenu.TRANSFER, new TransferMenu(option))
     this.addPromptApp(AppMenu.TRANSFER_ETH, new TransferEth(option))
+    this.addPromptApp(AppMenu.WITHDRAW_REQUEST, new WithdrawRequest(option))
+    this.addPromptApp(
+      AppMenu.WITHDRAW_REQUEST_ETH,
+      new WithdrawRequestEth(option),
+    )
+    this.addPromptApp(AppMenu.WITHDRAWABLE_LIST, new WithdrawableList(option))
+    this.addPromptApp(AppMenu.WITHDRAW, new Withdraw(option))
   }
 }

@@ -6,6 +6,7 @@ import { logger } from '@zkopru/utils'
 import { Uint256 } from 'soltypes'
 import { scheduleJob, Job } from 'node-schedule'
 import { EventEmitter } from 'events'
+import assert from 'assert'
 import { L1Contract } from './layer1'
 import { Verifier, VerifyOption } from './verifier'
 import { L2Chain } from './layer2'
@@ -221,7 +222,7 @@ export class ZkOPRUNode extends EventEmitter {
         take: 1,
       }),
     )
-    if (verifiedProposals[0]) {
+    if (verifiedProposals[0] && verifiedProposals[0].proposalNum !== null) {
       this.setLatestProcessed(verifiedProposals[0].proposalNum + 1)
     }
   }
@@ -280,7 +281,7 @@ export class ZkOPRUNode extends EventEmitter {
     if (availableFetchJob === 0) return
     const candidates = await this.db.read(prisma =>
       prisma.proposal.findMany({
-        where: { fetched: null },
+        where: { fetched: null, proposalTx: { not: null } },
         orderBy: {
           proposalNum: 'asc',
         },
@@ -289,6 +290,7 @@ export class ZkOPRUNode extends EventEmitter {
     )
 
     candidates.forEach(candidate => {
+      assert(candidate.proposalTx)
       this.fetch(candidate.proposalTx)
     })
   }
