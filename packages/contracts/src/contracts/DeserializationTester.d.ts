@@ -163,6 +163,115 @@ export class DeserializationTester extends Contract {
       0: string
       1: string[]
     }>
+
+    getProposerFromFinalization(
+      arg0: string | number[],
+    ): TransactionObject<string>
+
+    getProposer2FromFinalization(
+      arg0: number | string,
+      arg1: number | string,
+      arg2: string | number[],
+    ): TransactionObject<string>
+
+    getParentBlockFromFinalization(
+      arg0: string | number[],
+    ): TransactionObject<string>
+
+    getParentBlock2FromFinalization(
+      arg0: number | string,
+      arg1: number | string,
+      arg2: number | string,
+      arg3: string | number[],
+    ): TransactionObject<string>
+
+    getUTXORollUpFromFinalization(
+      arg0: string | number[],
+    ): TransactionObject<{
+      root: string
+      index: string
+      0: string
+      1: string
+    }>
+
+    getNullifierRollUpFromFinalization(
+      arg0: string | number[],
+    ): TransactionObject<string>
+
+    getWithdrawalRollUpFromFinalization(
+      arg0: string | number[],
+    ): TransactionObject<{
+      root: string
+      index: string
+      0: string
+      1: string
+    }>
+
+    getTxRootFromFinalization(
+      arg0: string | number[],
+    ): TransactionObject<string>
+
+    getMassDepositRootFromFinalization(
+      arg0: string | number[],
+    ): TransactionObject<string>
+
+    getMassMigrationRootFromFinalization(
+      arg0: string | number[],
+    ): TransactionObject<string>
+
+    getMassDepositsLenFromFinalization(
+      arg0: string | number[],
+    ): TransactionObject<string>
+
+    getMassDepositFromFinalization(
+      index: number | string,
+      arg1: string | number[],
+    ): TransactionObject<{
+      merged: string
+      fee: string
+      0: string
+      1: string
+    }>
+
+    getMassMigrationsLenFromFinalization(
+      arg0: string | number[],
+    ): TransactionObject<string>
+
+    getMassMigrationFromFinalization(
+      index: number | string,
+      arg1: string | number[],
+    ): TransactionObject<{
+      destination: string
+      totalETH: string
+      merged: string
+      fee: string
+      0: string
+      1: string
+      2: string
+      3: string
+    }>
+
+    getERC20MigrationFromFinalization(
+      index: number | string,
+      erc20Index: number | string,
+      arg2: string | number[],
+    ): TransactionObject<{
+      token: string
+      amount: string
+      0: string
+      1: string
+    }>
+
+    getERC721MigrationFromFinalization(
+      index: number | string,
+      erc721Index: number | string,
+      arg2: string | number[],
+    ): TransactionObject<{
+      token: string
+      nfts: string[]
+      0: string
+      1: string[]
+    }>
   }
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter

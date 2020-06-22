@@ -1,7 +1,14 @@
 pragma solidity >= 0.6.0;
 
 import { Deserializer } from "../../libraries/Deserializer.sol";
-import { Block, Inflow, Outflow, PublicData, Proof } from "../../libraries/Types.sol";
+import {
+    Finalization,
+    Block,
+    Inflow,
+    Outflow,
+    PublicData,
+    Proof
+} from "../../libraries/Types.sol";
 
 contract DeserializationTester {
     function getProposer(bytes calldata) external pure returns (address) {
@@ -185,5 +192,121 @@ contract DeserializationTester {
         Block memory _block = Deserializer.blockFromCalldataAt(2);
         token = _block.body.massMigrations[index].erc721[erc721Index].addr;
         nfts = _block.body.massMigrations[index].erc721[erc721Index].nfts;
+   }
+
+    function getProposerFromFinalization(bytes calldata) external pure returns (address) {
+        Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(0);
+        return _finalization.header.proposer;
+    }
+
+    function getProposer2FromFinalization(uint, uint, bytes calldata) external pure returns (address) {
+        Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(2);
+        return _finalization.header.proposer;
+    }
+
+    function getParentBlockFromFinalization(bytes calldata) external pure returns (bytes32) {
+        Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(0);
+        return _finalization.header.parentBlock;
+    }
+
+    function getParentBlock2FromFinalization(uint, uint, uint, bytes calldata) external pure returns (bytes32) {
+        Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(3);
+        return _finalization.header.parentBlock;
+    }
+
+    function getUTXORollUpFromFinalization(bytes calldata)
+    external
+    pure
+    returns (
+        uint256 root,
+        uint256 index
+    ) {
+        Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(0);
+        root = _finalization.header.utxoRoot;
+        index = _finalization.header.utxoIndex;
+    }
+
+    function getNullifierRollUpFromFinalization(bytes calldata)
+    external
+    pure
+    returns (
+        bytes32 root
+    ) {
+        Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(0);
+        root = _finalization.header.nullifierRoot;
+    }
+
+    function getWithdrawalRollUpFromFinalization(bytes calldata)
+    external
+    pure
+    returns (
+        uint256 root,
+        uint256 index
+    ) {
+        Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(0);
+        root = _finalization.header.withdrawalRoot;
+        index = _finalization.header.withdrawalIndex;
+    }
+
+    function getTxRootFromFinalization(bytes calldata) external pure returns (bytes32) {
+        Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(0);
+        return _finalization.header.txRoot;
+    }
+
+    function getMassDepositRootFromFinalization(bytes calldata) external pure returns (bytes32) {
+        Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(0);
+        return _finalization.header.depositRoot;
+    }
+
+    function getMassMigrationRootFromFinalization(bytes calldata) external pure returns (bytes32) {
+        Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(0);
+        return _finalization.header.migrationRoot;
+    }
+
+    function getMassDepositsLenFromFinalization(bytes calldata) external pure returns (uint len) {
+        Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(0);
+        return _finalization.massDeposits.length;
+    }
+
+    function getMassDepositFromFinalization(uint index, bytes calldata) external pure returns (bytes32 merged, uint256 fee) {
+        Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(1);
+        merged = _finalization.massDeposits[index].merged;
+        fee = _finalization.massDeposits[index].fee;
+   }
+
+    function getMassMigrationsLenFromFinalization(bytes calldata) external pure returns (uint len) {
+        Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(0);
+        return _finalization.massMigrations.length;
+    }
+
+    function getMassMigrationFromFinalization(uint index, bytes calldata) external pure returns (
+        address destination,
+        uint256 totalETH,
+        bytes32 merged,
+        uint256 fee
+    ) {
+        Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(1);
+        destination = _finalization.massMigrations[index].destination;
+        totalETH = _finalization.massMigrations[index].totalETH;
+        merged = _finalization.massMigrations[index].migratingLeaves.merged;
+        fee = _finalization.massMigrations[index].migratingLeaves.fee;
+   }
+
+   function getERC20MigrationFromFinalization(uint index, uint erc20Index, bytes calldata) external pure returns (
+        address token,
+        uint256 amount
+    ) {
+        Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(2);
+        token = _finalization.massMigrations[index].erc20[erc20Index].addr;
+        amount = _finalization.massMigrations[index].erc20[erc20Index].amount;
+   }
+
+   function getERC721MigrationFromFinalization(uint index, uint erc721Index, bytes calldata) external pure returns (
+        address token,
+        uint256[] memory nfts
+    ) {
+        Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(2);
+        token = _finalization.massMigrations[index].erc721[erc721Index].addr;
+        nfts = _finalization.massMigrations[index].erc721[erc721Index].nfts;
    }
 }

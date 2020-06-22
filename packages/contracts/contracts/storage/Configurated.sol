@@ -6,7 +6,7 @@ contract Configurated {
      * Constants to manage this layer2 system.
      * Rationales: https://github.com/wilsonbeam/zk-optimistic-rollup/wiki
      */
-    uint constant public CHALLENGE_PERIOD = 7 days;
+    uint constant public CHALLENGE_PERIOD = 7 seconds;
     // uint constant public CHALLENGE_LIMIT = 8000000;
     uint constant public MINIMUM_STAKE = 32 ether;
     uint constant public REF_DEPTH = 128;
