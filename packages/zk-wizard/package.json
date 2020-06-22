@@ -1,6 +1,6 @@
 {
   "name": "@zkopru/zk-wizard",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "license": "GPL-3.0-or-later",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -43,8 +43,8 @@
     "wasmsnark": "^0.0.10",
     "web3": "^1.2.6",
     "web3-core": "^1.2.6",
-    "web3-utils": "^1.2.6",
-    "web3-eth-contract": "^1.2.6"
+    "web3-eth-contract": "^1.2.6",
+    "web3-utils": "^1.2.6"
   },
   "publishConfig": {
     "access": "public"
