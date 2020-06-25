@@ -5,32 +5,31 @@ import { Pairing } from "./Pairing.sol";
 struct Blockchain {
     bytes32 genesis;
     bytes32 latest;
-    /** For inclusion reference */
-    mapping(bytes32=>bytes32) parentOf; // childBlockHash => parentBlockHash
-    mapping(bytes32=>uint256) utxoRootOf; // blockhash => utxoRoot
-    mapping(uint256=>bool) finalizedUTXORoots; // all finalized utxo roots
-    /** For coordinating */
+
+    // For coordinating
+    uint proposedBlocks;
     mapping(address=>Proposer) proposers;
     mapping(bytes32=>Proposal) proposals;
     mapping(bytes32=>bool) finalized; // blockhash => finalized?
-    /** For deposit */
+
+    // For inclusion reference
+    mapping(bytes32=>bytes32) parentOf; // childBlockHash => parentBlockHash
+    mapping(bytes32=>uint256) utxoRootOf; // blockhash => utxoRoot
+    mapping(uint256=>bool) finalizedUTXORoots; // all finalized utxo roots
+
+    // For deposit
     MassDeposit stagedDeposits;
     uint stagedSize;
     uint massDepositId;
     mapping(bytes32=>uint) committedDeposits;
 
-    /** For withdrawal */
-    mapping(bytes32=>uint256) withdrawalRootOf; // header => utxoRoot
-    // WithdrawalTree[] withdrawalTrees; // withdrawal trees
-    // uint[] withdrawalRefs; // works as a linked list
-    // uint8 wrIndex; // index for the withdrawal reference linked list
+    // For withdrawal
+    mapping(bytes32=>uint256) withdrawalRootOf; // header => withdrawalRoot
     mapping(bytes32=>bool) withdrawn;
-    uint128 withdrawalTrees;
     mapping(bytes32=>address) newWithdrawalOwner;
-    /** For migrations */
+
+    // For migrations
     mapping(bytes32=>bool) migrations;
-    // MassMigration[] migrations; // legacy
-    uint proposedBlocks;
 }
 
 struct MassDeposit {
@@ -38,7 +37,7 @@ struct MassDeposit {
     uint256 fee;
 }
 
-/// needs gas limit
+// needs gas limit
 struct MassMigration {
     address destination;
     uint256 totalETH;
@@ -58,7 +57,7 @@ struct ERC721Migration {
 }
 
 struct WithdrawalTree {
-    /// Merkle tree of WithdrawalTree notes
+    // Merkle tree of WithdrawalTree notes
     uint root;
     uint index;
 }
@@ -95,24 +94,24 @@ struct Block {
 }
 
 struct Header {
-    /** Basic data */
+    // basic data
     address proposer;
     bytes32 parentBlock;
     bytes32 metadata;
     uint256 fee;
 
-    /** UTXO roll up  */
+    // UTXO roll up
     uint256 utxoRoot;
     uint256 utxoIndex;
 
-    /** Nullifier roll up  */
+    // Nullifier roll up
     bytes32 nullifierRoot;
 
-    /** Withdrawal roll up  */
+    // Withdrawal roll up
     uint256 withdrawalRoot;
     uint256 withdrawalIndex;
 
-    /** Transactions */
+    // Transactions
     bytes32 txRoot;
     bytes32 depositRoot;
     bytes32 migrationRoot;
@@ -146,7 +145,7 @@ struct Outflow {
 
 enum OutflowType { UTXO, Withdrawal, Migration }
 
-/// Only used for migration
+// Only used for migration
 struct PublicData {
     address to; // to == 0: UTXO / to == address(this): Withdrawal / else: Migration
     uint256 eth;
