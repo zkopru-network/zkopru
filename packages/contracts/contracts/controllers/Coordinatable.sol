@@ -131,6 +131,7 @@ contract Coordinatable is Layer2 {
 
         /// Update the chain
         Layer2.chain.finalized[proposal.headerHash] = true;
+        Layer2.chain.finalizedUTXORoots[finalization.header.utxoRoot] = true;
         Layer2.chain.latest = proposal.headerHash;
         emit Finalized(proposal.headerHash);
         delete Layer2.chain.proposals[finalization.proposalChecksum];
