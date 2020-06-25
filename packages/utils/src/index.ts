@@ -81,6 +81,7 @@ export function txSizeCalculator(
   size += 1 // swap & memo indicator
   size += hasSwap ? 32 : 0 // note hash to swap with
   size += noMemo ? 0 : 81 // note hash to swap
+  size += 256 // snark proof size
   return size
 }
 
