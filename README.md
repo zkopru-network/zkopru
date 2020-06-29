@@ -1,133 +1,36 @@
 # zkopru
 
-[WIP]
+![Banner](https://docs.google.com/drawings/d/e/2PACX-1vRwGTvmJAbNBZCK5syubcrWZgYc3wuK9cHZScbc5lgyLbBYsx42Xzo60unw4-oLlPg_-nwXxaE3t9c6/pub?w=1280)
+
 
 ## What is zkopru?
 
-[WIP]
+Zkopru(zk-optimistic-rollup) is a layer-2 scaling solution for private transactions using zk-SNARK and optimistic rollup. It supports private transfer and private atomic swap within the layer-2 network between ETH, ERC20, ERC721 at a low cost. Also, with the pay-in-advance feature, users can withdraw assets from the layer-2 before the finalization.
 
 
-## How to run wallet of zkopru?
+## Usage
 
 ```shell
-npm install -g @zkopru/wallet
+npm install -g @zkopru/cli
 zkopru-wallet
 ```
 
-## How to run coordinator of zkopru?
+## Get more information
 
-```shell
-npm install -g @zkopru/coordinator
-zkopru-wallet --ws
-zkopru-coordinator
-```
+* [Technical paper](https://ethresear.ch)
+* [Document](https://docs.zkopru.network)
 
-## Development
+## Contribution
 
-### Prerequisites
-
-1. You need docker & docker-compose for integration test
-
-    * Get [docker](https://docs.docker.com/get-docker/)
-    * Get [docker-compose](https://docs.docker.com/compose/install/)
-
-2. Set your node version v12. It currently supports Node v12.
-
-    * Get nvm [here](https://github.com/nvm-sh/nvm#installing-and-updating)
-    * Download node version 12 and set to use it.
-      ```shell
-      nvm install 12
-      nvm use 12
-      ```
-      If you want to make node 12 as the default option run  && yarn build:keys
-      ```shell
-      nvm alias default 12
-      ```
-
-3. Install yarn globally. You can skip this step if you already have yarn.
-
-    ```shell
-    npm install -g yarn
-    ```
-
-### Build
-
-1. Install packages
-
-    ```shell
-    yarn
-    ```
-
-2. Build packages
-
-    ```shell
-    yarn build
-    ```
-
-### Run
-
-1. Prepare three terminals
-
-2. Run ganache and deploy contract by one-click.
-
-    ```shell
-    docker-compose up --build testnet
-    ```
-
-3. Go to cooridnator package and run coordinator with a pre-configured test account.
-
-    ```shell
-    cd packages/coordinator && yarn dev:config
-    ```
-    This will give you a cli menu to operate coordinator locally.
+* [Code of conduct](./CODE_OF_CONDUCT.md)
+* [Contributing](./CONTRIBUTING.md)
 
 
-4. Go to the wallet package and run wallet with a pre-configured test account.
+## Authors
 
-    ```shell
-    cd packages/wallet && yarn dev:config
-    ```
-    This will give you a cli menu to run wallet locally.
+* Wanseob Lim
+* Barry Whitehat
 
-### How to
+## License
 
-[WIP]
-
-* update contracts
-* update database schema
-  ```shell
-  yarn build:prisma
-  ```
-* run prisma studio
-* check logs
-* run testnet
-
-
-### Optional commands
-
-#### Fresh build
-
-```shell
-yarn build:fresh
-```
-
-This command will re-build the whole packages by wiping away every artifacts.
-
-#### Setting up new snark keys
-
-```shell
-yarn build:keys
-```
-
-### Testing
-
-```shell
-yarn test
-```
-
-### Module dev
-
-```shell
-lerna run build --scope=@zkopru/modulename
-lerna run test --scope=@zkopru/modulename
-```
+This project is under [GPL v3.0](https://github.com/wanseob/zkopru/blob/master/LICENSE)
