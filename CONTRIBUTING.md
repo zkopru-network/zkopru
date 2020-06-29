@@ -1,16 +1,16 @@
-# Contributing to Zkopru🔒
+# Contributing to Zkopru👋
 
 Thanks for taking a time to read this document. This document includes how to contribute to the project including testing and commits. 
 
 ## Table of Content
-[Network security vulnerability](#Network-security-vulnerability)
-[Commit rule](#Commit-rule)
-[Style guide](#Style-guide)
-[Recommended Environment](#recommended-environment)
-[How to run tests](#how-to-run-tests)
-[Packages](#packages)
 
-## Network security vulnerability
+* [Security vulnerability](#security-vulnerability)
+* [Commit rule](#commit-rule)
+* [Style guide](#style-guide)
+* [Development](#development)
+* [Packages](#packages)
+
+## Security vulnerability
 
 After the mainnet stage, you should not open up issues on Github to report bugs that can affect the network's security.
 Mostly, it will be the case when you find some bugs in [`packages/contracts`](./packages/contracts) or [`packages/circuits`](./pacakges/circuits).
@@ -69,8 +69,144 @@ To check the full specification, please see [https://www.conventionalcommits.org
 
 This uses airbnb eslint, and husky will automatically prettify using commit-hook.
 
-## Recommended Environment
-## How to run tests
+## Development
+
+### Prerequisites
+
+1. You need docker & docker-compose for integration test
+
+    * Get [docker](https://docs.docker.com/get-docker/)
+    * Get [docker-compose](https://docs.docker.com/compose/install/)
+
+2. Set your node version v12. It currently supports Node v12.
+
+    * Get nvm [here](https://github.com/nvm-sh/nvm#installing-and-updating)
+    * Download node version 12 and set to use it.
+      ```shell
+      nvm install 12
+      nvm use 12
+      ```
+      If you want to make node 12 as the default option run  && yarn build:keys
+      ```shell
+      nvm alias default 12
+      ```
+
+3. Install yarn globally. You can skip this step if you already have yarn.
+
+    ```shell
+    npm install -g yarn
+    ```
+
+### Build
+
+1. Install packages
+
+    ```shell
+    yarn
+    ```
+
+2. Build packages
+
+    ```shell
+    yarn build
+    ```
+
+### Integration test
+
+```
+yarn test
+```
+
+### Run cli applications
+
+1. Prepare three terminals
+
+2. Run ganache and deploy contract using the following command.
+
+    ```shell
+    docker-compose up --build testnet
+    ```
+
+3. Go to cli package and run coordinator with a pre-configured test account.
+
+    ```shell
+    cd packages/cli && yarn dev:coordinator
+    ```
+    This will give you a cli menu to operate coordinator locally.
+
+
+4. Go to the cli package and run wallet with a pre-configured test account.
+
+    ```shell
+    cd packages/cli && yarn dev:wallet
+    ```
+    This will give you a cli menu to run wallet locally.
+
+### Log files
+
+It stores the dev log in `packages/cli/WALLET_LOG` and `packages/cli/COORDINATOR_LOG`. You can beautify the logs using this command.
+
+```shell
+$ npm install -g pino-pretty
+$ tail -f packages/cli/WALLET_LOG | pino-pretty
+$ tail -f packages/cli/COORDINATOR_LOG | pino-pretty
+```
+### Explore database
+
+You can open the Prisma Studio to explore the database with following steps:
+
+1. Create `pacakges/prisma/prisma/.env`
+
+2. Write up the database connection information.
+
+    * for dev coordinator
+        ```
+        # file packages/prisma/prisma/.env
+        DATABASE_URL="file:../../cli/zkopru-coordinator.db"
+        ```
+    * for dev wallet
+        ```
+        # file packages/prisma/prisma/.env
+        DATABASE_URL="file:../../cli/zkopru-wallet.db"
+        ```
+3. Run `yarn studio`
+
+    ```shell
+    cd packages/prisma && yarn studio
+    ```
+
+### Update database schema
+
+1. Modify `packages/prisma/prisma/schema.prisma`
+
+2. Run the following command will update the typescript automatically.
+    ```shell
+    yarn build:prisma
+    ```
+3. Update mockup database (WIP)
+
+### Optional commands
+
+#### Fresh build
+
+```shell
+yarn build:fresh
+```
+
+#### Build only typescript (will save your time)
+
+```shell
+yarn build:ts
+```
+
+
+This command will re-build the whole packages by wiping away every artifacts.
+
+#### Setting up new snark keys
+
+```shell
+yarn build:keys
+```
 
 ## Packages
 
