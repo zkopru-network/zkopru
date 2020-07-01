@@ -1,6 +1,10 @@
 import { Field, F } from '@zkopru/babyjubjub'
 import { hexify } from '@zkopru/utils'
 import { v4 } from 'uuid'
+import BN from 'bn.js'
+import path from 'path'
+import fs from 'fs'
+import AsyncLock from 'async-lock'
 import {
   TreeNode,
   Utxo,
@@ -8,11 +12,7 @@ import {
   Migration,
   PrismaClient,
   PrismaClientOptions,
-} from '@prisma/client'
-import BN from 'bn.js'
-import path from 'path'
-import fs from 'fs'
-import AsyncLock from 'async-lock'
+} from './generated/client'
 
 export type NoteSql = Utxo | Withdrawal | Migration
 
