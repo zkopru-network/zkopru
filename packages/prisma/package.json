@@ -15,6 +15,7 @@
     "build:prisma": "prisma generate",
     "migrate-save": "prisma migrate save --experimental",
     "migrate-up": "prisma migrate up --experimental",
+    "postinstall": "prisma generate",
     "gen-mockup": "yarn migrate-save && yarn migrate-up",
     "prebuild": "shx mkdir -p dist",
     "build": "yarn build:prisma && tsc --build tsconfig.build.json",
