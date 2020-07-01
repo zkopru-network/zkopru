@@ -132,7 +132,7 @@ export class DB {
     await fs.promises.copyFile(predefined, dbPath)
     const db = new DB({
       datasources: {
-        sqlite: `file://${dbPath}`,
+        sqlite: { url: `file://${dbPath}` },
       },
     })
     const terminate = async () => {

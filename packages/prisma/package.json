@@ -31,13 +31,14 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@prisma/client": "^2.0.0-beta.8",
-    "@prisma/migrate": "^2.0.0-beta.8",
+    "@prisma/client": "^2.0.0",
+    "@prisma/migrate": "^2.0.0",
     "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/utils": "file:../utils",
     "async-lock": "^1.2.2",
     "big-integer": "^1.6.48",
     "bn.js": "^5.1.1",
+    "solc5": "npm:solc@0.5.15",
     "sqlite3": "^4.2.0",
     "uuid": "^8.1.0",
     "web3-core": "^1.2.6",
@@ -47,7 +48,7 @@
     "access": "public"
   },
   "devDependencies": {
-    "@prisma/cli": "^2.0.0-beta.8",
+    "@prisma/cli": "^2.0.0",
     "@types/sqlite3": "^3.1.6"
   }
 }

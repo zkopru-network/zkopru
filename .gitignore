@@ -7,7 +7,6 @@ zkopru.db
 **/*/*.db
 **/*/*.db-journal
 temp
-**/*/package-lock.json
 reports
 junit.xml
 dist

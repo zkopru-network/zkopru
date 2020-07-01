@@ -53,7 +53,7 @@ export default class LoadDatabase extends Configurator {
     if (this.base.postgres) {
       database = new DB({
         datasources: {
-          postgres: this.base.postgres,
+          postgres: { url: this.base.postgres },
         },
       })
     } else if (this.base.sqlite) {
@@ -64,7 +64,7 @@ export default class LoadDatabase extends Configurator {
         database = db
       } else {
         // database exists
-        database = new DB({ datasources: { sqlite: dbPath } })
+        database = new DB({ datasources: { sqlite: { url: dbPath } } })
       }
     } else {
       // no configuration. try to create new one
@@ -126,7 +126,9 @@ export default class LoadDatabase extends Configurator {
         })
         database = new DB({
           datasources: {
-            postgres: `postgresql://${user}:${password}@${host}:${port}/${dbName}`,
+            postgres: {
+              url: `postgresql://${user}:${password}@${host}:${port}/${dbName}`,
+            },
           },
         })
       } else {
@@ -154,7 +156,9 @@ export default class LoadDatabase extends Configurator {
             database = db
           } else {
             const dbPath = path.join(path.resolve('.'), dbName)
-            database = new DB({ datasources: { sqlite: `file://${dbPath}` } })
+            database = new DB({
+              datasources: { sqlite: { url: `file://${dbPath}` } },
+            })
           }
         }
       }
