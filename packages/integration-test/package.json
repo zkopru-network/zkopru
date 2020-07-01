@@ -1,7 +1,7 @@
 {
   "name": "@zkopru/integration-test",
   "private": true,
-  "version": "0.0.7-alpha.3",
+  "version": "0.0.7-alpha.4",
   "license": "GPL-3.0-or-later",
   "_moduleAliases": {
     "~account": "../account/dist",
