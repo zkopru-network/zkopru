@@ -7,9 +7,6 @@
   "files": [
     "dist"
   ],
-  "bin": {
-    "zkopru-coordinator": "dist/cli.js"
-  },
   "keywords": [
     "zkopru, coordinator, cli, verifier"
   ],
