@@ -47,7 +47,7 @@ export {
   MassDeposit,
   Proposal,
   Withdrawal,
-} from '@prisma/client'
+} from './generated/client'
 
 export interface MockupDB {
   db: DB
