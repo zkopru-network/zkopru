@@ -1,8 +1,8 @@
 import chalk from 'chalk'
 import path from 'path'
 import fs from 'fs'
+import { EncryptedWallet } from '@zkopru/prisma'
 import Configurator, { Context, Menu } from '../configurator'
-import { EncryptedWallet } from '.prisma/client'
 
 export default class SaveConfig extends Configurator {
   static code = Menu.SAVE_CONFIG

@@ -12,7 +12,7 @@ import {
   Migration,
   PrismaClient,
   PrismaClientOptions,
-} from './generated/client'
+} from '../generated/client'
 
 export type NoteSql = Utxo | Withdrawal | Migration
 
@@ -47,7 +47,7 @@ export {
   MassDeposit,
   Proposal,
   Withdrawal,
-} from './generated/client'
+} from '../generated/client'
 
 export interface MockupDB {
   db: DB

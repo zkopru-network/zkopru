@@ -5,6 +5,7 @@
     "outDir": "./dist",
     "allowJs": true,
     "noImplicitAny": false,
+    "esModuleInterop": true,
     "tsBuildInfoFile": "../../.build-cache/prisma.tsbuildinfo"
   },
   "include": ["src"],
