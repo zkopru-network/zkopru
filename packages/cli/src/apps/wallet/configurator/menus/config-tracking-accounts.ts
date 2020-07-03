@@ -9,16 +9,16 @@ export default class TrackingAccount extends Configurator {
     if (!context.wallet) {
       throw Error(chalk.red('Wallet is not loaded'))
     }
-    if (this.base.accountNumber) {
+    if (this.base.numberOfAccounts) {
       await Promise.all(
-        Array(this.base.accountNumber).map((_, index) =>
+        Array(this.base.numberOfAccounts).map((_, index) =>
           context.wallet?.createAccount(index),
         ),
       )
       return { context, next: Menu.LOAD_NODE }
     }
     let message = ``
-    message = `${message}${this.print(chalk.blue('List of tracking accounts'))}`
+    this.print(chalk.blue('List of tracking accounts'))
     const accounts: ZkAccount[] = await context.wallet.retrieveAccounts()
     message = accounts.reduce(
       (val, account, idx) => `${val}\n${idx}: ${account.address}`,
@@ -34,11 +34,11 @@ export default class TrackingAccount extends Configurator {
       message: 'This node will keep tracking on the utxos for these accounts.',
       choices: [
         {
-          title: 'Create new account',
+          title: 'Create a new account',
           value: 0,
         },
         {
-          title: 'Proceed next step',
+          title: 'Proceed to the next step',
           value: 1,
         },
       ],

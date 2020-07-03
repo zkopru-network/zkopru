@@ -70,7 +70,6 @@ export class Dashboard<T, B> {
         type: 'line',
         bold: '2',
       },
-      mouse: true,
       cursor: 'line',
       cursorBlink: true,
       style: { border: { fg: 'cyan' } },
@@ -162,10 +161,6 @@ export class Dashboard<T, B> {
     this.promptBox.on('resize', () => {
       terminal.resize(this.screen.cols, this.screen.rows)
     })
-    this.screen.on('keypress', (_, key) => {
-      // TODO grace termination
-      if (key.full === 'C-c') process.exit()
-    })
     const render = () => {
       this.promptBox.setContent(
         terminal.screen.buffer
@@ -194,7 +189,13 @@ export class Dashboard<T, B> {
         callback()
       },
     })
-    process.stdin.pipe(this.promptReadStream)
+    this.screen.on('keypress', (ch, key) => {
+      if (key.name !== 'return') {
+        this.promptReadStream.write(ch)
+      }
+      // TODO grace termination
+      if (key.full === 'C-c') process.exit()
+    })
     this.printInfoStream = new Writable({
       write: (chunk, _, cb) => {
         this.infoBox.setContent(chunk.toString())

@@ -78,7 +78,7 @@ export default class LoadDatabase extends Configurator {
         message: 'You should configure database',
         choices: [
           {
-            title: 'Postgres(recommended)',
+            title: 'Postgres(work in progress)',
             value: DBType.POSTGRES,
           },
           {
@@ -86,10 +86,11 @@ export default class LoadDatabase extends Configurator {
             value: DBType.SQLITE,
           },
         ],
+        initial: DBType.SQLITE,
       })
 
       if (dbType === DBType.POSTGRES) {
-        this.print(`chalk.blue('Creating a postgresql connection')
+        this.print(`${chalk.blue('Creating a postgresql connection')}
         ${chalk.yellow('Fetch schema files')}
         ${chalk.yellow('1. Install postgres.')}
         ${chalk.yellow('2. Run postgres daemon.')}
@@ -132,9 +133,12 @@ export default class LoadDatabase extends Configurator {
           },
         })
       } else {
-        this.print(`${chalk.blue('Creating a sqlite3 connection')}
-        ${chalk.yellow('Provide file path to store sqlite db')}
-        ${chalk.yellow('ex: ./zkopru.db')}`)
+        this.print(`${chalk.blue('Creating a sqlite3 connection')}`)
+        this.print(
+          `${chalk.yellow(
+            'Provide file path to store sqlite db ex: ./zkopru.db',
+          )}`,
+        )
         const { dbName } = await this.ask({
           type: 'text',
           name: 'dbName',
@@ -148,8 +152,10 @@ export default class LoadDatabase extends Configurator {
           const { overwrite } = await this.ask({
             type: 'confirm',
             name: 'overwrite',
-            message: 'DB already exists. Do you want to overwrite?',
-            initial: true,
+            message: `DB already exists. Do you want to overwrite? ${chalk.yellow(
+              'WARN: you may lose your assets if you overwrite the database.',
+            )}`,
+            initial: false,
           })
           if (overwrite) {
             const { db } = await DB.mockup(dbName)

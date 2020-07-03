@@ -4,6 +4,7 @@
 import { NetworkStatus } from '@zkopru/core'
 import { PromptApp } from '@zkopru/utils'
 import { ZkWallet } from '@zkopru/zk-wizard'
+import { Writable } from 'stream'
 import assert from 'assert'
 import { Menu, Context, Config } from './configurator'
 import Splash from './menus/splash'
@@ -32,6 +33,12 @@ export async function getZkWallet(
   const option = {
     base: config,
     onCancel,
+    infoStream: new Writable({
+      write: (chunk, _, cb) => {
+        console.log(chunk.toString())
+        cb()
+      },
+    }),
   }
   apps[Menu.SPLASH] = new Splash(option)
   apps[Menu.CONNECT_WEB3] = new ConnectWeb3(option)

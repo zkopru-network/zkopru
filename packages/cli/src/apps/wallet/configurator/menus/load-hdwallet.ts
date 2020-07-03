@@ -32,7 +32,7 @@ export default class LoadHDWallet extends Configurator {
           type: 'select',
           name: 'create',
           initial: 0,
-          message: 'You should import mnemonic keys or create new one.',
+          message: 'You should import mnemonic keys or create a new one.',
           choices: [
             { title: 'create', value: true },
             { title: 'import', value: false },

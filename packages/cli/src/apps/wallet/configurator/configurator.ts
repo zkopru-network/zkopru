@@ -20,7 +20,7 @@ export interface Config {
   erc721?: string[]
   seedKeystore?: EncryptedWallet
   password?: string
-  accountNumber?: number
+  numberOfAccounts?: number
 }
 
 export enum Menu {
