@@ -1,3 +1,0 @@
-# Grove
-
-Doc for grove
