@@ -18,7 +18,7 @@ zkopru-wallet
 ## Get more information
 
 * [Ethresear.ch](https://ethresear.ch)
-* [Document](https://docs.zkopru.network)
+* [Document](https://docs.zkopru.network) \[[edit here]\](https://github.com/wanseob/docs.zkopru.network)
 
 ## Contribution
 
