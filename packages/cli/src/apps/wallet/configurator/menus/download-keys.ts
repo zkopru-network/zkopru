@@ -60,7 +60,7 @@ export default class DownloadKeys extends Configurator {
     fs.mkdirpSync(pwd)
     try {
       await downloadKeys(
-        'https://d2xnpw7ihgc4iv.cloudfront.net/keys.tgz',
+        'https://zkopru.azureedge.net/snarkkeys/arctic-roll/1-0-0/keys.tgz',
         pwd,
         this.infoStream,
       )
