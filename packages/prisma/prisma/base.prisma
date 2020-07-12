@@ -1,16 +1,11 @@
 generator client {
   provider = "prisma-client-js"
-  output = "../generated/client"
+  output = "../generated/base"
 }
 
-datasource sqlite {
+datasource mockup {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
-}
-
-datasource postgres {
-  provider = "postgres"
-  url      = env("POSTGRES_URL")
+  url      = "file:../mockup.db"
 }
 
 model EncryptedWallet {

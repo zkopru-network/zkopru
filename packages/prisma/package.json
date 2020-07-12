@@ -13,10 +13,13 @@
     "~prisma": "dist"
   },
   "scripts": {
-    "build:prisma": "prisma generate",
-    "migrate-save": "prisma migrate save --experimental",
-    "migrate-up": "prisma migrate up --experimental",
-    "gen-mockup": "yarn migrate-save && yarn migrate-up",
+    "build:prisma": "yarn build:base & yarn build:postgres & yarn build:sqlite",
+    "build:base": "prisma generate --schema prisma/base.prisma",
+    "build:postgres": "prisma generate --schema prisma/postgres.prisma",
+    "build:sqlite": "prisma generate --schema prisma/sqlite.prisma",
+    "migrate-save:base": "prisma migrate save --experimental --schema prisma/base.prisma",
+    "migrate-up:base": "prisma migrate up --experimental --schema prisma/base.prisma",
+    "gen-mockup": "shx rm mockup.db && prisma migrate up --experimental --schema prisma/base.prisma",
     "prebuild": "shx mkdir -p dist",
     "build": "yarn build:prisma && tsc --build tsconfig.build.json",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",

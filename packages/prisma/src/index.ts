@@ -5,14 +5,21 @@ import BN from 'bn.js'
 import path from 'path'
 import fs from 'fs'
 import AsyncLock from 'async-lock'
+import { TreeNode, Utxo, Withdrawal, Migration } from '../generated/base'
+
+import { PrismaClient } from '../generated/client'
+
 import {
-  TreeNode,
-  Utxo,
-  Withdrawal,
-  Migration,
-  PrismaClient,
-  PrismaClientOptions,
-} from '../generated/client'
+  PrismaClient as PostgresClient,
+  PrismaClientOptions as PostgresClientOptions,
+} from '../generated/postgres'
+
+import {
+  PrismaClient as SqliteClient,
+  PrismaClientOptions as SqliteClientOptions,
+} from '../generated/sqlite'
+
+// Prisma does not support multi source yet.
 
 export type NoteSql = Utxo | Withdrawal | Migration
 
@@ -47,12 +54,15 @@ export {
   MassDeposit,
   Proposal,
   Withdrawal,
-} from '../generated/client'
+} from '../generated/base'
 
 export interface MockupDB {
   db: DB
   terminate: () => Promise<void>
 }
+
+// type PrismaClient = PostgresClient | SqliteClient
+type PrismaClientOptions = PostgresClientOptions | SqliteClientOptions
 
 enum Lock {
   EXCLUSIVE = 'exclusive',
@@ -62,7 +72,13 @@ export class DB {
   lock: AsyncLock
 
   constructor(option?: PrismaClientOptions) {
-    this.prisma = new PrismaClient(option)
+    let client: PostgresClient | SqliteClient
+    if (option?.datasources && 'postgres' in option.datasources) {
+      client = new PostgresClient(option as PostgresClientOptions)
+    } else {
+      client = new SqliteClient(option as SqliteClientOptions)
+    }
+    this.prisma = (client as unknown) as PrismaClient
     this.lock = new AsyncLock()
   }
 
@@ -125,10 +141,7 @@ export class DB {
     const dbPath = path.join(path.resolve('.'), dbName)
     const dirPath = path.join(dbPath, '../')
     fs.mkdirSync(dirPath, { recursive: true })
-    const predefined = `${path.join(
-      path.resolve(__dirname),
-      '../prisma/dev.db',
-    )}`
+    const predefined = `${path.join(path.resolve(__dirname), '../mockup.db')}`
     await fs.promises.copyFile(predefined, dbPath)
     const db = new DB({
       datasources: {
