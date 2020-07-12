@@ -33,4 +33,4 @@ zkopru-wallet
 
 ## License
 
-This project is under [GPL v3.0](https://github.com/wanseob/zkopru/blob/master/LICENSE)
+This project is under [GPL v3.0](https://github.com/zkopru-network/zkopru/blob/master/LICENSE)

@@ -19,7 +19,7 @@ import {
 library Deserializer {
     /**
      * @dev Block data will be serialized with the following structure
-     *      https://github.com/wanseob/zkopru/wiki/Serialization
+     *      https://docs.zkopru.network/how-it-works/block
      * @param paramIndex The index of the block calldata parameter in the external function
      */
     function blockFromCalldataAt(uint paramIndex) internal pure returns (Block memory) {
