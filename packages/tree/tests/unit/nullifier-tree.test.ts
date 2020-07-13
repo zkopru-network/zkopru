@@ -98,7 +98,7 @@ describe('nullifier tree unit test', () => {
       const result = await nullifierTree.nullify(...nullifiers)
       expect(result.eq(prevRoot)).toBe(false)
       expect(result.eq(dryResult)).toBe(true)
-    }, 30000)
+    }, 60000)
     it.todo('should have same result with its solidity version')
   })
 })
