@@ -15,4 +15,14 @@ services:
       - "8888:8888"
     links:
       - 'testnet:testnet'
+    depends_on:
+      - 'testnet'
+      - 'postgres'
     command: 'node /proj/packages/coordinator/dist/cli.js --ws ws://testnet:5000 --config /proj/packages/coordinator/coordinator.json'
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: helloworld
+    ports:
+      - "5432:5432"

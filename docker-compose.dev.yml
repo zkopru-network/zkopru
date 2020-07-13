@@ -1,0 +1,60 @@
+version: "3"
+
+services:
+  testnet:
+    ports:
+      - "5000:5000"
+    build:
+      context: ./packages/contracts/
+      dockerfile: ../../containers/Contract.dockerfile
+  postgres:
+    ports:
+      - "5432:5432"
+    build:
+      context: ./
+      dockerfile: ./containers/Postgres.dockerfile
+    environment:
+      POSTGRES_PASSWORD: helloworld
+  postgres-setup:
+    build:
+      context: ./
+      dockerfile: ./containers/PostgresSetup.dockerfile
+    depends_on:
+      - 'postgres'
+    links:
+      - 'postgres:postgres'
+    environment:
+      POSTGRES_URL: postgresql://postgres:helloworld@postgres:5432/zkopru
+    command: prisma migrate up --experimental --schema /proj/prisma/schema.prisma --verbose
+  coordinator:
+    build:
+      context: ./
+      dockerfile: ./containers/Cli.dockerfile
+    ports:
+      - "1234:1234"
+      - "8888:8888"
+    links:
+      - 'testnet:testnet'
+      - 'postgres:postgres'
+    depends_on:
+      - 'testnet'
+      - 'postgres-setup'
+    environment:
+      POSTGRES_URL: postgresql://postgres:helloworld@postgres:5432/zkopru
+    command: sh -c "sleep 5s && gotty -w --port 1234 node /proj/packages/cli/dist/apps/coordinator/cli.js --config /proj/packages/cli/coordinator.dev.json"
+  wallet:
+    build:
+      context: ./
+      dockerfile: ./containers/Cli.dockerfile
+    ports:
+      - "4321:4321"
+    links:
+      - 'testnet:testnet'
+      - 'postgres:postgres'
+      - 'coordinator:coordinator'
+    depends_on:
+      - 'testnet'
+      - 'postgres-setup'
+    environment:
+      DATABASE_URL: sqlite:///proj/zkopru-wallet.db
+    command: sh -c "sleep 5s && gotty -w --port 4321 node /proj/packages/cli/dist/apps/wallet/cli.js --config /proj/packages/cli/wallet.dev.json"

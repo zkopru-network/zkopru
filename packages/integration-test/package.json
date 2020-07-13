@@ -38,6 +38,7 @@
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/utils": "file:../utils",
     "@zkopru/zk-wizard": "file:../zk-wizard",
+    "puppeteer": "^5.0.0",
     "node-docker-api": "^1.1.22",
     "web3": "^1.2.7",
     "web3-core": "^1.2.7",

@@ -1,7 +1,20 @@
 FROM node:12-alpine
+RUN apk add --no-cache git make musl-dev go
+RUN apk add --no-cache sqlite postgresql-client
+RUN apk add --no-cache tmux
+
+# Configure Go
+ENV GOROOT /usr/lib/go
+ENV GOPATH /go
+ENV PATH /go/bin:$PATH
+
+RUN mkdir -p ${GOPATH}/src ${GOPATH}/bin
+
+# Install Glide
+RUN go get github.com/yudai/gotty
+
 RUN apk add --no-cache --virtual .gyp \
         python \
-        make \
         g++ \
     && npm install  -g node-gyp-build \
     && apk del .gyp
@@ -35,12 +48,15 @@ COPY ./packages/core/dist /proj/packages/core/dist
 COPY ./packages/cli/dist /proj/packages/cli/dist
 COPY ./packages/prisma/dist /proj/packages/prisma/dist
 COPY ./packages/prisma/generated /proj/packages/prisma/generated
+COPY ./packages/prisma/mockup.db /proj/packages/prisma/mockup.db
 COPY ./packages/transaction/dist /proj/packages/transaction/dist
 COPY ./packages/tree/dist /proj/packages/tree/dist
 COPY ./packages/utils/dist /proj/packages/utils/dist
 COPY ./packages/zk-wizard/dist /proj/packages/zk-wizard/dist
 RUN lerna clean -y --loglevel silent && lerna bootstrap
 
-COPY ./packages/cli/coordinator.dev.json /proj/packages/cli/coordinator.json
+COPY ./containers/.gotty /proj/.gotty
+COPY ./packages/cli/coordinator.*.json /proj/packages/cli/
+COPY ./packages/cli/wallet.*.json /proj/packages/cli/
 EXPOSE 8888
 CMD ["node", "/proj/packages/cli/dist/apps/coordinator/cli.js", "--ws ws://localhost:5000", "--config /proj/packages/cli/coordinator.json"]
