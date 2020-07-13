@@ -4,7 +4,7 @@ async function main() {
   const browser = await puppeteer.launch({
     headless: true,
     executablePath: process.env.CHROMIUM_PATH,
-    args: ['--no-sandbos', '--disable-gpu'],
+    args: ['--no-sandbox', '--disable-gpu'],
   })
   const coordinator = await browser.newPage()
   const wallet = await browser.newPage()
