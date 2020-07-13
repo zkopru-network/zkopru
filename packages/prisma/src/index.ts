@@ -5,9 +5,13 @@ import BN from 'bn.js'
 import path from 'path'
 import fs from 'fs'
 import AsyncLock from 'async-lock'
-import { TreeNode, Utxo, Withdrawal, Migration } from '../generated/base'
-
-import { PrismaClient } from '../generated/client'
+import {
+  TreeNode,
+  Utxo,
+  Withdrawal,
+  Migration,
+  PrismaClient,
+} from '../generated/base'
 
 import {
   PrismaClient as PostgresClient,
