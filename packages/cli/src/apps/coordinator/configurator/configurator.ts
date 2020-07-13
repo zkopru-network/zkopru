@@ -17,6 +17,7 @@ export interface Config {
   config?: string
   keystore?: EncryptedKeystoreV3Json
   password?: string
+  nonInteractive?: boolean
 }
 
 export enum Menu {

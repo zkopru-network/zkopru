@@ -25,22 +25,29 @@ export default class ConfigureAccount extends Configurator {
       )
       return { context: { ...context, account }, next: Menu.LOAD_DATABASE }
     }
-    const { choice } = await this.ask({
-      type: 'select',
-      name: 'choice',
-      message: 'You need to configure an Ethereum account for coordination',
-      initial: 0,
-      choices: [
-        {
-          title: 'Do you want to import an exising private key?',
-          value: 0,
-        },
-        {
-          title: 'Do you want to create a new one?',
-          value: 1,
-        },
-      ],
-    })
+    let choice: number
+    if (this.base.nonInteractive) {
+      choice = 1
+    } else {
+      const result = await this.ask({
+        type: 'select',
+        name: 'choice',
+        message: 'You need to configure an Ethereum account for coordination',
+        initial: 0,
+        choices: [
+          {
+            title: 'Do you want to import an exising private key?',
+            value: 0,
+          },
+          {
+            title: 'Do you want to create a new one?',
+            value: 1,
+          },
+        ],
+      })
+      choice = result.choice
+    }
+
     let account: Account
     if (choice === 1) {
       account = context.web3.eth.accounts.create()

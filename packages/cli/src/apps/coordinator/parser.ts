@@ -42,9 +42,9 @@ export const { argv } = yargs
       describe:
         'You can skip interactive booting up process with JSON configuration file',
     },
-    n: {
+    nonInteractive: {
       type: 'boolean',
-      alias: 'nonInteractive',
+      alias: 'n',
     },
     password: {
       type: 'string',

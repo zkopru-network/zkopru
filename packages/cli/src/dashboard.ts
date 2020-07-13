@@ -190,7 +190,7 @@ export class Dashboard<T, B> {
       },
     })
     this.screen.on('keypress', (ch, key) => {
-      if (key.name !== 'return') {
+      if (key.name !== 'return' && ch !== undefined) {
         this.promptReadStream.write(ch)
       }
       // TODO grace termination

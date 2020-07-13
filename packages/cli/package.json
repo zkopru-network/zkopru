@@ -30,8 +30,7 @@
     "coverage": "jest --coverage",
     "coverage:show": "live-server coverage",
     "dev:coordinator": "ts-node src/apps/coordinator/cli.ts --config coordinator.json",
-    "dev:wallet": "ts-node src/apps/wallet/cli.ts --config wallet.json",
-    "start": "node dist/cli.js"
+    "dev:wallet": "ts-node src/apps/wallet/cli.ts --config wallet.json"
   },
   "dependencies": {
     "@zkopru/account": "file:../account",
