@@ -1,15 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable max-classes-per-file */
 import { soliditySha3, Unit } from 'web3-utils'
-import { Container } from 'node-docker-api/lib/container'
-import { ReadStream } from 'fs-extra'
 import { Bytes32, Uint256, Address } from 'soltypes'
-import tar from 'tar'
 import BN from 'bn.js'
 
 export { logger, logStream } from './logger'
 
 export { PromptApp } from './prompt'
+
+export { readFromContainer, getContainer } from './docker'
 
 const units: Unit[] = [
   'noether',
@@ -253,26 +252,6 @@ export class StringifiedHexQueue {
   dequeueAll(): string {
     return `0x${this.str.slice(this.cursor)}`
   }
-}
-
-export async function readFromContainer(
-  container: Container,
-  path: string,
-): Promise<Buffer> {
-  const data: any[] = []
-  const stream: ReadStream = (await container.fs.get({ path })) as ReadStream
-  return new Promise<Buffer>(res => {
-    stream.pipe(
-      tar.t({
-        onentry: entry => {
-          entry.on('data', c => data.push(c))
-          entry.on('end', () => {
-            res(Buffer.concat(data))
-          })
-        },
-      }),
-    )
-  })
 }
 
 export function toArrayBuffer(buff: Buffer): ArrayBuffer {

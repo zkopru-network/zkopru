@@ -1,28 +1,16 @@
 /* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable jest/no-hooks */
-import { Docker } from 'node-docker-api'
 import { Container } from 'node-docker-api/lib/container'
 import * as snarkjs from 'snarkjs'
 import * as ffjs from 'ffjavascript'
 import { getZkSnarkParams, calculateWitness } from '~utils/snark'
+import { getContainer } from '~utils/docker'
 import { utxos } from '~dataset/testset-utxos'
 
 describe('note_hash.circom', () => {
   let container: Container
   beforeAll(async () => {
-    const docker = new Docker({ socketPath: '/var/run/docker.sock' })
-    const containerName = Math.random()
-      .toString(36)
-      .substring(2, 16)
-    try {
-      container = await docker.container.create({
-        Image: 'wanseob/zkopru-circuits-test:0.0.1',
-        name: containerName,
-        rm: true,
-      })
-    } catch {
-      container = docker.container.get(containerName)
-    }
+    container = await getContainer('wanseob/zkopru-circuits-test:0.0.1')
     await container.start()
   })
   afterAll(async () => {
