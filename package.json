@@ -11,7 +11,7 @@
     "postinstall": "lerna bootstrap && yarn build:fresh",
     "prep-containers": "make pull-dev-images",
     "bootstrap": "lerna bootstrap && lerna link --force-local",
-    "build": "yarn build:contract && yarn build:ts",
+    "build": "lerna run build:contract && lerna run build:prisma && yarn build:ts",
     "build:ts": "lerna run --parallel build && yarn link-modules",
     "build:contract": "lerna run --parallel build:contract",
     "build:keys": "lerna run build-keys --scope=@zkopru/dataset",
@@ -59,7 +59,7 @@
   "devDependencies": {
     "@commitlint/cli": "^8.1.0",
     "@commitlint/config-conventional": "^8.1.0",
-    "@prisma/cli": "^2.0.0-beta.8",
+    "@prisma/cli": "^2.2.1",
     "@truffle/artifactor": "^4.0.30",
     "@types/async-lock": "^1.1.1",
     "@types/blessed": "^0.1.17",

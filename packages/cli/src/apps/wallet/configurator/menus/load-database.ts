@@ -64,7 +64,9 @@ export default class LoadDatabase extends Configurator {
         database = db
       } else {
         // database exists
-        database = new DB({ datasources: { sqlite: { url: dbPath } } })
+        database = new DB({
+          datasources: { sqlite: { url: `sqlite://${dbPath}` } },
+        })
       }
     } else {
       // no configuration. try to create new one
@@ -163,7 +165,7 @@ export default class LoadDatabase extends Configurator {
           } else {
             const dbPath = path.join(path.resolve('.'), dbName)
             database = new DB({
-              datasources: { sqlite: { url: `file://${dbPath}` } },
+              datasources: { sqlite: { url: `sqlite://${dbPath}` } },
             })
           }
         }
