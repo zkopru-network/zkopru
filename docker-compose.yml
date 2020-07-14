@@ -7,6 +7,7 @@ services:
       dockerfile: ../../containers/Contract.dockerfile
     ports:
       - "5000:5000"
+    command: ganache-cli --db=/data -i 20200406 -p 5000 --deterministic --host 0.0.0.0
   coordinator:
     build:
       context: ./

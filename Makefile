@@ -4,6 +4,11 @@ DIR := ${CURDIR}
 test-env: container-contract
 
 # -------------------- Dev Containers -------------------- #
+develop:
+	$(info Make: yarn build:ts && docker-compose -f docker-compose.dev.yml up --build)
+	@yarn build:ts
+	@docker-compose -f docker-compose.dev.yml up --build --force-recreate -V
+
 contract-container:
 	$(info Make: build container and compile circuits)
 	@docker build -f containers/Contract.dockerfile ./packages/contracts -t wanseob/zkopru-contract

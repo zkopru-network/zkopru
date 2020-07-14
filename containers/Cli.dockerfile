@@ -22,6 +22,9 @@ RUN apk add --no-cache git
 RUN npm install -g lerna
 WORKDIR /proj
 
+# Copy SNARK keys
+COPY ./keys /proj/keys
+
 # Copy package.json
 COPY ./.package-dev.json /proj/package.json
 COPY ./lerna.json /proj/lerna.json
@@ -55,8 +58,8 @@ COPY ./packages/utils/dist /proj/packages/utils/dist
 COPY ./packages/zk-wizard/dist /proj/packages/zk-wizard/dist
 RUN lerna clean -y --loglevel silent && lerna bootstrap
 
-COPY ./containers/.gotty /proj/.gotty
 COPY ./packages/cli/coordinator.*.json /proj/packages/cli/
 COPY ./packages/cli/wallet.*.json /proj/packages/cli/
+COPY ./packages/prisma/prisma /proj/packages/prisma/prisma
 EXPOSE 8888
 CMD ["node", "/proj/packages/cli/dist/apps/coordinator/cli.js", "--ws ws://localhost:5000", "--config /proj/packages/cli/coordinator.json"]

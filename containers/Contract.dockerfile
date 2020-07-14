@@ -7,7 +7,7 @@ RUN apk add --no-cache --virtual .gyp \
     && apk del .gyp
 WORKDIR /proj
 COPY ./package.json /proj/package.json
-RUN npm install
+RUN yarn install
 COPY ./contracts /proj/contracts
 COPY ./utils /proj/utils
 COPY ./migrations /proj/migrations

@@ -30,19 +30,24 @@ RUN cd /proj/zkopru && yarn
 ENV CHROMIUM_PATH=/usr/bin/chromium-browser
 ENV DATABASE_URL=sqlite:///temp
 WORKDIR /proj/zkopru/packages/cli
-RUN  ganache-cli --db=/proj/data -i 20200406 -p 5000 --deterministic --host 0.0.0.0 & \
-        sleep 5 && cd /proj/zkopru/packages/contracts && truffle migrate --network testnet;\
-        cd /proj/zkopru/packages/cli; \
-        gotty -w --port 1234 node /proj/zkopru/packages/cli/dist/apps/coordinator/cli.js \
-        --config /proj/zkopru/packages/cli/coordinator.playground.json & \
-        gotty -w --port 4321 node /proj/zkopru/packages/cli/dist/apps/wallet/cli.js \
-        --config /proj/zkopru/packages/cli/wallet.playground.json & \
-        sleep 5 && echo "Start playground setup" && \
-        /proj/zkopru/node_modules/.bin/ts-node /proj/zkopru/packages/integration-test/utils/playground-setup.ts && \
-        echo "Finished playground setup"
 
-EXPOSE 4321
-EXPOSE 1234
+RUN  ganache-cli --db=/proj/data -i 20200406 -p 5000 --deterministic --host 0.0.0.0 & \
+        sleep 5 && cd /proj/zkopru/packages/contracts && truffle migrate --network testnet
+
+COPY keys /proj/zkopru/packages/cli/keys
+# RUN  ganache-cli --db=/proj/data -i 20200406 -p 5000 --deterministic --host 0.0.0.0 & \
+#         sleep 5 && cd /proj/zkopru/packages/contracts && truffle migrate --network testnet;\
+#         cd /proj/zkopru/packages/cli; \
+#         gotty -w --port 1234 node /proj/zkopru/packages/cli/dist/apps/coordinator/cli.js \
+#         --config /proj/zkopru/packages/cli/coordinator.playground.json & \
+#         gotty -w --port 4321 node /proj/zkopru/packages/cli/dist/apps/wallet/cli.js \
+#         --config /proj/zkopru/packages/cli/wallet.playground.json & \
+#         sleep 5 && echo "Start playground setup" && \
+#         /proj/zkopru/node_modules/.bin/ts-node /proj/zkopru/packages/integration-test/utils/playground-setup.ts && \
+#         echo "Finished playground setup"
+
+# EXPOSE 4321
+# EXPOSE 1234
 
 CMD  ganache-cli --db=/proj/data -i 20200406 -p 5000 --deterministic --host 0.0.0.0 > /dev/null & \
         sleep 1;\
