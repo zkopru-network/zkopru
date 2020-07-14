@@ -38,6 +38,7 @@
   },
   "devDependencies": {
     "@truffle/artifactor": "^4.0.54",
+    "@truffle/hdwallet-provider": "^1.0.38",
     "chai": "^4.2.0",
     "circomlib": "^0.1.2",
     "merkle-tree-rollup": "^1.1.4",

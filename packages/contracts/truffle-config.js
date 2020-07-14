@@ -1,3 +1,5 @@
+const HDWalletProvider = require('@truffle/hdwallet-provider')
+
 /**
  * Use this file to configure your truffle project. It's seeded with some
  * common settings for different networks and features like migrations,
@@ -51,6 +53,14 @@ module.exports = {
       host: '127.0.0.1',
       port: 5000,
       network_id: '20200406',
+    },
+    goerli: {
+      provider: () => {
+        return new HDWalletProvider(process.env.MNEMONIC, process.env.GOERLI)
+      },
+      skipDryRun: true,
+      network_id: '5',
+      gas: 8000000,
     },
     // Useful for testing. The `development` name is special - truffle uses it by default
     // if it's defined here and no other network is specified at the command line.
