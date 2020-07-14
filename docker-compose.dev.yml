@@ -41,7 +41,7 @@ services:
       - 'postgres-setup'
     environment:
       POSTGRES_URL: postgresql://postgres:helloworld@postgres:5432/zkopru
-    command: sh -c "sleep 5s && node /proj/packages/cli/dist/apps/coordinator/cli.js --config /proj/packages/cli/coordinator.dev.json --nonInteractive"
+    command: sh -c "sleep 5s && gotty -w --port 1234 node /proj/packages/cli/dist/apps/coordinator/cli.js --config /proj/packages/cli/coordinator.dev.json"
   wallet:
     build:
       context: ./
