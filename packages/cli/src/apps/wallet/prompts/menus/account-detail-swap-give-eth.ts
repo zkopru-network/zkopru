@@ -65,7 +65,7 @@ export default class AtomicSwapGiveEth extends App {
         type: 'text',
         name: 'amount',
         initial: 0,
-        message: 'How much ETH do you want to transfer(ex: 0.3 ETH)?',
+        message: 'How much ETH do you give(ex: 0.3 ETH)?',
       })
       const eth = parseStringToUnit(amount, 'ether')
       amountWei = toWei(eth.val, eth.unit).toString()

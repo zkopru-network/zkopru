@@ -18,12 +18,12 @@ export default class AtomicSwapTakeEth extends App {
       type: 'text',
       name: 'amount',
       initial: 0,
-      message: 'How much ETH do you want to transfer(ex: 0.3 ETH)?',
+      message: 'How much ETH do you take(ex: 0.3 ETH)?',
     })
     const { salt } = await this.ask({
       type: 'text',
       name: 'salt',
-      message: `Salt of the UTXO for the recipient`,
+      message: `Salt of the UTXO that you'll receive`,
     })
 
     const { swapTxBuilder } = context
