@@ -31,17 +31,17 @@ export const { argv } = yargs
     address: {
       type: 'string',
       alias: 'a',
-      default: '0x7C728214be9A0049e6a86f2137ec61030D0AA964',
+      default: '0xE948ef9B96B3D69EFFc5429a812bA5364429F1eA',
     },
     coordinator: {
       type: 'string',
       alias: 'r',
-      default: 'https://coordinator.zkopru.network:8888',
+      default: 'http://coordinator.zkopru.network:8888',
     },
     websocket: {
       type: 'string',
       alias: 'ws',
-      default: 'wss://goerli.infura.io/ws/v3/903b5c8ce616421db0a335ba3a761022',
+      default: 'ws://goerli.zkopru.network:8546',
     },
     keys: {
       type: 'string',
