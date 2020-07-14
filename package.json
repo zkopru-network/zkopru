@@ -117,7 +117,7 @@
     "serve": "^11.2.0",
     "shx": "^0.3.2",
     "smt-rollup": "^0.6.3",
-    "snarkjs": "0.1.25",
+    "snarkjs": "0.1.31",
     "solc": "^0.6.4",
     "solc5": "npm:solc@0.5.15",
     "solium": "^1.2.5",
