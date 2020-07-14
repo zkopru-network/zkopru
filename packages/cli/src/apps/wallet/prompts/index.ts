@@ -1,5 +1,5 @@
 import { ZkAccount } from '@zkopru/account'
-import { Sum } from '@zkopru/transaction'
+import { Sum, SwapTxBuilder } from '@zkopru/transaction'
 import { PromptApp } from '@zkopru/utils'
 import { ZkWallet, Balance } from '@zkopru/zk-wizard'
 import { Withdrawal as WithdrawalSql } from '@zkopru/prisma'
@@ -16,6 +16,10 @@ export enum AppMenu {
   TRANSFER_ETH,
   TRANSFER_ERC20,
   TRANSFER_ERC721,
+  ATOMIC_SWAP,
+  ATOMIC_SWAP_GIVE_ETH,
+  ATOMIC_SWAP_TAKE,
+  ATOMIC_SWAP_TAKE_ETH,
   WITHDRAW_REQUEST,
   WITHDRAW_REQUEST_ETH,
   WITHDRAW_REQUEST_ERC20,
@@ -34,6 +38,7 @@ export interface Context {
   balance?: Balance
   spendables?: Sum
   withdrawal?: WithdrawalSql
+  swapTxBuilder?: SwapTxBuilder
 }
 
 export default abstract class App extends PromptApp<Context, ZkWallet> {}

@@ -8,13 +8,7 @@ import { Outflow } from './outflow'
 import { Withdrawal } from './withdrawal'
 import { Migration } from './migration'
 import { OutflowType } from './note'
-
-export interface RawTx {
-  inflow: Utxo[]
-  outflow: Outflow[]
-  swap?: Field
-  fee: Field
-}
+import { RawTx } from './raw-tx'
 
 export class TxBuilder {
   spendables: Utxo[]
@@ -34,7 +28,7 @@ export class TxBuilder {
     this.feePerByte = Field.zero
   }
 
-  static from(pubKey: Point) {
+  static from(pubKey: Point): TxBuilder {
     return new TxBuilder(pubKey)
   }
 
@@ -142,40 +136,6 @@ export class TxBuilder {
       pubKey: to,
     })
     this.send(note, withdrawal, migration)
-    return this
-  }
-
-  swapForEther(amount: Field): TxBuilder {
-    this.swap = Utxo.newEtherNote({
-      eth: amount,
-      pubKey: this.changeTo,
-    }).hash()
-    return this
-  }
-
-  swapForERC20({
-    tokenAddr,
-    erc20Amount,
-  }: {
-    tokenAddr: Field
-    erc20Amount: Field
-  }): TxBuilder {
-    this.swap = Utxo.newERC20Note({
-      eth: 0,
-      tokenAddr,
-      erc20Amount,
-      pubKey: this.changeTo,
-    }).hash()
-    return this
-  }
-
-  swapForNFT({ tokenAddr, nft }: { tokenAddr: F; nft: F }): TxBuilder {
-    this.swap = Utxo.newNFTNote({
-      eth: 0,
-      tokenAddr,
-      nft,
-      pubKey: this.changeTo,
-    }).hash()
     return this
   }
 
@@ -352,7 +312,7 @@ export class TxBuilder {
     }
   }
 
-  private send(
+  protected send(
     note: Outflow,
     withdrawal?: {
       to: F

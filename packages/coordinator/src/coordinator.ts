@@ -405,7 +405,7 @@ export class Coordinator extends EventEmitter {
   }
 
   private stopCommitMassDeposits() {
-    logger.info('Stop finalization')
+    logger.info('Stop commit massdeposit')
     if (this.massDepositCommitJob) this.massDepositCommitJob.cancel()
     this.massDepositCommitJob = undefined
   }

@@ -13,6 +13,10 @@ import WithdrawRequest from './prompts/menus/account-detail-withdraw-request-men
 import WithdrawRequestEth from './prompts/menus/account-detail-withraw-request-eth'
 import WithdrawableList from './prompts/menus/account-detail-withdrawable-list'
 import Withdraw from './prompts/menus/account-detail-withdraw'
+import AtomicSwap from './prompts/menus/account-detail-swap'
+import AtomicSwapGiveEth from './prompts/menus/account-detail-swap-give-eth'
+import AtomicSwapTake from './prompts/menus/account-detail-swap-take'
+import AtomicSwapTakeEth from './prompts/menus/account-detail-swap-take-eth'
 
 export class WalletDashboard extends Dashboard<Context, ZkWallet> {
   node: ZkOPRUNode
@@ -33,6 +37,16 @@ export class WalletDashboard extends Dashboard<Context, ZkWallet> {
     this.addPromptApp(AppMenu.DEPOSIT_ETHER, new DepositEther(option))
     this.addPromptApp(AppMenu.TRANSFER, new TransferMenu(option))
     this.addPromptApp(AppMenu.TRANSFER_ETH, new TransferEth(option))
+    this.addPromptApp(AppMenu.ATOMIC_SWAP, new AtomicSwap(option))
+    this.addPromptApp(
+      AppMenu.ATOMIC_SWAP_GIVE_ETH,
+      new AtomicSwapGiveEth(option),
+    )
+    this.addPromptApp(AppMenu.ATOMIC_SWAP_TAKE, new AtomicSwapTake(option))
+    this.addPromptApp(
+      AppMenu.ATOMIC_SWAP_TAKE_ETH,
+      new AtomicSwapTakeEth(option),
+    )
     this.addPromptApp(AppMenu.WITHDRAW_REQUEST, new WithdrawRequest(option))
     this.addPromptApp(
       AppMenu.WITHDRAW_REQUEST_ETH,

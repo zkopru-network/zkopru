@@ -36,12 +36,12 @@ export const { argv } = yargs
     coordinator: {
       type: 'string',
       alias: 'r',
-      default: 'https://coordinator.zkopru.network',
+      default: 'https://coordinator.zkopru.network:8888',
     },
     websocket: {
       type: 'string',
       alias: 'ws',
-      default: 'ws://ws.zkopru.network',
+      default: 'wss://goerli.infura.io/ws/v3/903b5c8ce616421db0a335ba3a761022',
     },
     keys: {
       type: 'string',

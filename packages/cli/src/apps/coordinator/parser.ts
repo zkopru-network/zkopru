@@ -17,7 +17,7 @@ export const { argv } = yargs
     websocket: {
       type: 'string',
       alias: 'ws',
-      default: 'ws://ws.zkopru.network',
+      default: 'wss://goerli.infura.io/ws/v3/903b5c8ce616421db0a335ba3a761022',
     },
     sqlite: {
       type: 'string',

@@ -54,6 +54,7 @@ export default class AccountDetail extends App {
         { title: 'Go to top menu', value: AppMenu.TOP_MENU },
         { title: 'Deposit', value: AppMenu.DEPOSIT },
         { title: 'Transfer', value: AppMenu.TRANSFER },
+        { title: 'Atomic swap', value: AppMenu.ATOMIC_SWAP },
         { title: 'Withdraw request', value: AppMenu.WITHDRAW_REQUEST },
         { title: 'Withdraw out', value: AppMenu.WITHDRAWABLE_LIST },
       ],
