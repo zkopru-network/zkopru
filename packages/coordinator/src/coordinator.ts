@@ -75,6 +75,8 @@ export class Coordinator extends EventEmitter {
 
   finalizationJob?: Job
 
+  massDepositCommitJob?: Job
+
   constructor(node: FullNode, account: Account, config: CoordinatorConfig) {
     super()
     this.account = account
@@ -90,6 +92,7 @@ export class Coordinator extends EventEmitter {
     this.startAPI()
     this.startSubscribeGasPrice()
     this.startFinalization()
+    this.startCommitMassDeposits()
     this.node.on('status', async (status: NetworkStatus) => {
       // udpate the txpool using the newly proposed hash
       // if the hash does not exist in the tx pool's block list
@@ -115,6 +118,7 @@ export class Coordinator extends EventEmitter {
     // TODO : stop api & gas price subscriber / remove listeners
     this.stopGenBlock()
     this.stopFinalization()
+    this.stopCommitMassDeposits()
     return new Promise(res => {
       this.node.on('status', status => {
         if (status === NetworkStatus.STOPPED) {
@@ -158,8 +162,17 @@ export class Coordinator extends EventEmitter {
   }
 
   async commitMassDeposit(): Promise<any> {
-    const tx = this.node.l1Contract.coordinator.methods.commitMassDeposit()
-    return this.node.l1Contract.sendTx(tx, { from: this.account.address })
+    const stagedDeposits = await this.node.l1Contract.upstream.methods
+      .stagedDeposits()
+      .call()
+    if (
+      Uint256.from(stagedDeposits.fee)
+        .toBN()
+        .gtn(0)
+    ) {
+      const tx = this.node.l1Contract.coordinator.methods.commitMassDeposit()
+      return this.node.l1Contract.sendTx(tx, { from: this.account.address })
+    }
   }
 
   async registerAsCoordinator(): Promise<any> {
@@ -380,6 +393,21 @@ export class Coordinator extends EventEmitter {
     logger.info('Stop block generations')
     if (this.genBlockJob) this.genBlockJob.cancel()
     this.genBlockJob = undefined
+  }
+
+  private startCommitMassDeposits() {
+    if (!this.massDepositCommitJob) {
+      logger.info('Start to commit mass deposits')
+      this.massDepositCommitJob = scheduleJob('*/15 * * * * *', () =>
+        this.commitMassDeposit(),
+      )
+    }
+  }
+
+  private stopCommitMassDeposits() {
+    logger.info('Stop finalization')
+    if (this.massDepositCommitJob) this.massDepositCommitJob.cancel()
+    this.massDepositCommitJob = undefined
   }
 
   private startFinalization() {
