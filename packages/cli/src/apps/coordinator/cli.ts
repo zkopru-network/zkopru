@@ -20,11 +20,9 @@ const main = async () => {
   const coordinator = await getCoordinator(config)
   if (argv.n) {
     logger.info('Run non-interactive mode')
-    return new Promise(res => {
-      if (!coordinator) throw Error('Failed to load coordinator')
-      coordinator.start()
-      coordinator.on('stop', res)
-    })
+    if (!coordinator) throw Error('Failed to load coordinator')
+    coordinator.start()
+    return new Promise<void>(res => coordinator.on('stop', res))
   }
   logger.info('Run interactive mode')
   const dashboard = new CooridnatorDashboard(coordinator, () => process.exit())
