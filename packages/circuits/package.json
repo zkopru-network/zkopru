@@ -1,6 +1,6 @@
 {
   "name": "@zkopru/circuits",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0-alpha.2",
   "license": "GPL-3.0-or-later",
   "_moduleAliases": {
     "circomlib": "../../node_modules/circomlib",
