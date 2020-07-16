@@ -249,19 +249,14 @@ export class L1Contract extends ZkOPRUContract {
             : '0x00',
         data: tx.encodeABI(),
       }
-      logger.trace('1')
       const ethTx = new Transaction(txParams)
-      logger.trace('2')
       const hexStr = account.privateKey.startsWith('0x')
         ? account.privateKey.substr(2)
         : account.privateKey
-      logger.trace('3')
       ethTx.sign(Buffer.from(hexStr, 'hex'))
-      logger.trace('4')
       const receipt = await this.web3.eth.sendSignedTransaction(
         `0x${ethTx.serialize().toString('hex')}`,
       )
-      logger.trace('5')
       return receipt
     }
     const receipt = await tx.send({

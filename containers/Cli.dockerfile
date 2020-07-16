@@ -1,7 +1,9 @@
-FROM node:14-alpine
-RUN apk add --no-cache git make musl-dev go
-RUN apk add --no-cache sqlite postgresql-client
-RUN apk add --no-cache tmux
+FROM node:14-stretch-slim
+RUN apt update
+RUN apt install -y git make musl-dev golang-go sqlite g++ tmux
+RUN mkdir -p /usr/share/man/man1
+RUN mkdir -p /usr/share/man/man7
+RUN apt install -y postgresql-client
 
 # Configure Go
 ENV GOROOT /usr/lib/go
@@ -10,12 +12,16 @@ ENV PATH /go/bin:$PATH
 
 RUN mkdir -p ${GOPATH}/src ${GOPATH}/bin
 
-# Install Gotty
-RUN go get github.com/yudai/gotty
+# Install Gotty (it needs go >= 1.9)
+RUN go get golang.org/dl/go1.10.7
+RUN go1.10.7 download
+RUN go1.10.7 get github.com/yudai/gotty
 
-RUN apk add --no-cache python g++ git
-RUN npm install  -g node-gyp-build
+RUN apt install -y python
+# Install Lerna & gyp
+RUN npm install -g node-gyp-build
 RUN npm install -g lerna
+RUN ln -s "$(which nodejs)" /usr/bin/node
 WORKDIR /proj
 
 # Copy SNARK keys
@@ -35,6 +41,7 @@ COPY ./packages/transaction/package.json /proj/packages/transaction/package.json
 COPY ./packages/tree/package.json /proj/packages/tree/package.json
 COPY ./packages/utils/package.json /proj/packages/utils/package.json
 COPY ./packages/zk-wizard/package.json /proj/packages/zk-wizard/package.json
+COPY ./yarn.lock /proj/yarn.lock
 
 RUN yarn install
 
