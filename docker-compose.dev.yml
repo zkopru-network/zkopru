@@ -25,7 +25,7 @@ services:
       - 'postgres:postgres'
     environment:
       POSTGRES_URL: postgresql://postgres:helloworld@postgres:5432/zkopru
-    command: prisma migrate up --experimental --schema /proj/prisma/schema.prisma --verbose
+    command: prisma migrate up --experimental --schema /proj/prisma/postgres-migrator.prisma --verbose
   coordinator:
     build:
       context: ./
@@ -39,8 +39,6 @@ services:
     depends_on:
       - 'testnet'
       - 'postgres-setup'
-    environment:
-      POSTGRES_URL: postgresql://postgres:helloworld@postgres:5432/zkopru
     command: sh -c "sleep 5s && gotty -w --port 1234 node /proj/packages/cli/dist/apps/coordinator/cli.js --config /proj/packages/cli/coordinator.dev.json"
   wallet:
     build:
@@ -55,6 +53,4 @@ services:
     depends_on:
       - 'testnet'
       - 'postgres-setup'
-    environment:
-      DATABASE_URL: sqlite:///proj/zkopru-wallet.db
     command: sh -c "sleep 5s && gotty -w --port 4321 node /proj/packages/cli/dist/apps/wallet/cli.js --config /proj/packages/cli/wallet.dev.json"
