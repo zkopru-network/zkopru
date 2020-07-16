@@ -36,7 +36,7 @@ export const { argv } = yargs
     coordinator: {
       type: 'string',
       alias: 'r',
-      default: 'http://coordinator.zkopru.network:8888',
+      default: 'https://:coordinator.zkopru.network',
     },
     websocket: {
       type: 'string',

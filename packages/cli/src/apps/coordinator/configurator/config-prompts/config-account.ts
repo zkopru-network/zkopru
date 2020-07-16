@@ -14,15 +14,6 @@ export default class ConfigureAccount extends Configurator {
         this.base.keystore,
         this.base.password,
       )
-      context.web3.eth.personal.importRawKey(
-        account.privateKey,
-        this.base.password,
-      )
-      context.web3.eth.personal.unlockAccount(
-        account.address,
-        this.base.password,
-        0,
-      )
       return { context: { ...context, account }, next: Menu.LOAD_DATABASE }
     }
     let choice: number
