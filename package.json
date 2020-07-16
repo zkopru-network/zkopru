@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "build:prisma": "prisma generate",
-    "postinstall": "lerna bootstrap && yarn build:fresh",
+    "postinstall": "lerna bootstrap && yarn clean && shx rm -rf packages/*/node_modules",
     "prep-containers": "make pull-dev-images",
     "bootstrap": "lerna bootstrap && lerna link --force-local",
     "build": "lerna run build:contract && lerna run build:prisma && yarn build:ts",

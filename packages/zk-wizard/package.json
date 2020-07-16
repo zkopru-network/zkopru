@@ -39,7 +39,7 @@
     "ffjavascript": "^0.1.2",
     "fs-extra": "^9.0.0",
     "node-fetch": "^2.6.0",
-    "soltypes": "^1.2.0",
+    "soltypes": "^1.2.2",
     "wasmsnark": "^0.0.10",
     "web3": "^1.2.6",
     "web3-core": "^1.2.6",

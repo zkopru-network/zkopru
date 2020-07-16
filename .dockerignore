@@ -1,8 +1,10 @@
 **/build
 **/node_modules
 **/coverage
+**/*.db
 **/db
 **/keys.tgz
 packages/**/keys
 .git
 .build-cache
+!packages/prisma/mockup.db

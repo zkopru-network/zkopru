@@ -1,4 +1,4 @@
-FROM node:12-alpine
+FROM node:14-alpine
 RUN apk add --no-cache git make musl-dev go
 RUN apk add --no-cache sqlite postgresql-client
 RUN apk add --no-cache tmux
@@ -10,15 +10,11 @@ ENV PATH /go/bin:$PATH
 
 RUN mkdir -p ${GOPATH}/src ${GOPATH}/bin
 
-# Install Glide
+# Install Gotty
 RUN go get github.com/yudai/gotty
 
-RUN apk add --no-cache --virtual .gyp \
-        python \
-        g++ \
-    && npm install  -g node-gyp-build \
-    && apk del .gyp
-RUN apk add --no-cache git
+RUN apk add --no-cache python g++ git
+RUN npm install  -g node-gyp-build
 RUN npm install -g lerna
 WORKDIR /proj
 

@@ -153,12 +153,12 @@ export class Coordinator extends EventEmitter {
       vk.vk_delta_2.slice(0, 2),
       vk.IC.map(arr => arr.slice(0, 2)),
     )
-    return this.node.l1Contract.sendTx(tx, { from: this.account.address })
+    return this.node.l1Contract.sendTx(tx, this.account)
   }
 
   async completeSetup(): Promise<any> {
     const tx = this.node.l1Contract.setup.methods.completeSetup()
-    return this.node.l1Contract.sendTx(tx, { from: this.account.address })
+    return this.node.l1Contract.sendTx(tx, this.account)
   }
 
   async commitMassDeposit(): Promise<any> {
@@ -171,23 +171,22 @@ export class Coordinator extends EventEmitter {
         .gtn(0)
     ) {
       const tx = this.node.l1Contract.coordinator.methods.commitMassDeposit()
-      return this.node.l1Contract.sendTx(tx, { from: this.account.address })
+      return this.node.l1Contract.sendTx(tx, this.account)
     }
   }
 
   async registerAsCoordinator(): Promise<any> {
     const { minimumStake } = this.node.l2Chain.config
     const tx = this.node.l1Contract.coordinator.methods.register()
-    return this.node.l1Contract.sendTx(tx, {
+    return this.node.l1Contract.sendTx(tx, this.account, {
       value: minimumStake,
-      from: this.account.address,
     })
     // return this.sendTx(tx)
   }
 
   async deregister(): Promise<any> {
     const tx = this.node.l1Contract.coordinator.methods.deregister()
-    return this.node.l1Contract.sendTx(tx, { from: this.account.address })
+    return this.node.l1Contract.sendTx(tx, this.account)
   }
 
   private startAPI() {
@@ -277,9 +276,8 @@ export class Coordinator extends EventEmitter {
       nft,
       fee,
     )
-    const result = await this.node.l1Contract.sendTx(tx, {
+    const result = await this.node.l1Contract.sendTx(tx, this.account, {
       value: eth,
-      from: this.account.address,
     })
     if (result) {
       // save withdrawal
@@ -475,13 +473,14 @@ export class Coordinator extends EventEmitter {
       serializeBody(block.body),
     ])
     const blockData = `0x${bytes.toString('hex')}`
+    const proposeTx = this.node.l1Contract.coordinator.methods.propose(
+      blockData,
+    )
     let expectedGas: number
     try {
-      expectedGas = await this.node.l1Contract.coordinator.methods
-        .propose(blockData)
-        .estimateGas({
-          from: this.account.address,
-        })
+      expectedGas = await proposeTx.estimateGas({
+        from: this.account.address,
+      })
     } catch (err) {
       logger.warn(`propose() fails. Skip gen block`)
       return
@@ -493,8 +492,7 @@ export class Coordinator extends EventEmitter {
       )
     } else {
       logger.info(chalk.green(`Proposed a new block: ${blockHash}`))
-      await this.node.l1Contract.coordinator.methods.propose(blockData).send({
-        from: this.account.address,
+      await this.node.l1Contract.sendTx(proposeTx, this.account, {
         gas: expectedGas,
         gasPrice: this.gasPrice.toString(),
       })
@@ -667,9 +665,7 @@ export class Coordinator extends EventEmitter {
     }
     if (finalizable) {
       try {
-        const receipt = await this.node.l1Contract.sendTx(tx, {
-          from: this.account.address,
-        })
+        const receipt = await this.node.l1Contract.sendTx(tx, this.account)
         if (receipt) {
           await this.node.db.write(prisma =>
             prisma.proposal.update({

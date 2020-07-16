@@ -370,10 +370,10 @@ export class ZkWallet {
       withdrawal.index,
       siblings,
     )
-    const receipt = await this.node.l1Contract.sendTx(tx, {
-      from: this.account.address,
-      gas: 100000,
-    })
+    const receipt = await this.node.l1Contract.sendTx(
+      tx,
+      this.account.ethAccount,
+    )
     if (receipt) {
       await this.db.write(prisma =>
         prisma.withdrawal.update({
@@ -504,10 +504,13 @@ export class ZkWallet {
       ],
       fee.toUint256().toString(),
     )
-    const receipt = await this.node.l1Contract.sendTx(tx, {
-      from: this.account.address,
-      value: note.eth.add(fee).toString(),
-    })
+    const receipt = await this.node.l1Contract.sendTx(
+      tx,
+      this.account.ethAccount,
+      {
+        value: note.eth.add(fee).toString(),
+      },
+    )
     await this.saveOutflow(note)
     // TODO check what web3 methods returns when it failes
     if (receipt) return true
