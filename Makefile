@@ -9,6 +9,10 @@ develop:
 	@yarn build:ts
 	@docker-compose -f docker-compose.dev.yml up --build --force-recreate -V
 
+playground-container:
+	$(info Make: build container and compile circuits)
+	@docker build -f containers/Playground.dockerfile ./ -t zkoprunet/playground --no-cache
+
 contract-container:
 	$(info Make: build container and compile circuits)
 	@docker build -f containers/Contract.dockerfile ./packages/contracts -t wanseob/zkopru-contract
