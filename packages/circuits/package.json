@@ -8,6 +8,10 @@
     "~dataset": "../dataset/dist",
     "~utils": "../utils/dist"
   },
+  "files": [
+    "impls",
+    "lib"
+  ],
   "scripts": {
     "prebuild": "shx mkdir -p dist",
     "circuit": "./script/compile_circuits.sh",
