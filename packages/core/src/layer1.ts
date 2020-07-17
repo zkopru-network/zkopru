@@ -212,6 +212,7 @@ export class L1Contract extends ZkOPRUContract {
           try {
             gas = await tx.estimateGas({
               ...option,
+              from: account?.address,
             })
             logger.trace(`estimated gas: ${gas}`)
           } catch (err) {

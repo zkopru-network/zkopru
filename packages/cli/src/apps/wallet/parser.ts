@@ -8,7 +8,7 @@ export const { argv } = yargs
   .options({
     fullnode: {
       type: 'boolean',
-      default: false,
+      default: true,
       alias: 'f',
       describe: 'Run a full-node zkopru wallet',
     },
