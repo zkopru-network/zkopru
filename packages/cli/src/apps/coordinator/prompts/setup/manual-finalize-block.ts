@@ -7,7 +7,7 @@ export default class CommitDeposits extends App {
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
     logger.info('Mannual finalization')
-    let receipt!: TransactionReceipt
+    let receipt: TransactionReceipt | undefined
     try {
       receipt = await this.base.commitMassDeposit()
     } catch (err) {

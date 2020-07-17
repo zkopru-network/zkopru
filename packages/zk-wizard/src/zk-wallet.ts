@@ -511,9 +511,11 @@ export class ZkWallet {
         value: note.eth.add(fee).toString(),
       },
     )
-    await this.saveOutflow(note)
     // TODO check what web3 methods returns when it failes
-    if (receipt) return true
+    if (receipt) {
+      await this.saveOutflow(note)
+      return true
+    }
     return false
   }
 

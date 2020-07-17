@@ -50,7 +50,7 @@ export class ZkOPRUNode extends EventEmitter {
     [proposalTx: string]: boolean
   }
 
-  onlyRunRecursiveCall = false
+  processingBlocks = false
 
   status: NetworkStatus
 
@@ -136,21 +136,16 @@ export class ZkOPRUNode extends EventEmitter {
     }
   }
 
-  async processUnverifiedBlocks(recursive?: boolean) {
-    if (this.onlyRunRecursiveCall && !recursive) {
-      // Skip cron job calling becaus it is processing blocks recursively
-      return
-    }
+  async processUnverifiedBlocks() {
+    if (this.processingBlocks) return
+    this.processingBlocks = true
+
     const { prevHeader, block } = await this.l2Chain.getOldestUnverifiedBlock()
     if (!block) {
-      // if it processes all blocks, it will stop its recursive call
-      this.onlyRunRecursiveCall = false
+      this.processingBlocks = false
       return
     }
-    // Once it finds an unverified block, starts recursive processing
-    this.onlyRunRecursiveCall = true
     if (!prevHeader) {
-      this.onlyRunRecursiveCall = false
       throw Error('Unexpected runtime error occured during the verification.')
     }
 
@@ -168,10 +163,12 @@ export class ZkOPRUNode extends EventEmitter {
       })
       if (patch) {
         await this.l2Chain.applyPatch(patch)
-        this.processUnverifiedBlocks(true)
-      } else if (challenge) {
+        this.processingBlocks = false
+        this.processUnverifiedBlocks()
+        return
+      }
+      if (challenge) {
         // implement challenge here & mark as invalidated
-        this.onlyRunRecursiveCall = false
         await this.db.write(prisma =>
           prisma.proposal.update({
             where: { hash: block.hash.toString() },
@@ -183,10 +180,10 @@ export class ZkOPRUNode extends EventEmitter {
     } catch (err) {
       // TODO needs to provide roll back & resync option
       // sync & process error
-      this.onlyRunRecursiveCall = false
       logger.error(err)
     }
     // TODO remove proposal data if it completes verification or if the block is finalized
+    this.processingBlocks = false
   }
 
   async latestBlock(): Promise<string | null> {

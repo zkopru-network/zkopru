@@ -28,7 +28,7 @@ import {
   Finalization,
   serializeFinalization,
 } from '@zkopru/core'
-import { Account } from 'web3-core'
+import { Account, TransactionReceipt } from 'web3-core'
 import { Subscription } from 'web3-core-subscriptions'
 import { MassDeposit as MassDepositSql } from '@zkopru/prisma'
 import { Server } from 'http'
@@ -143,7 +143,11 @@ export class Coordinator extends EventEmitter {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async registerVk(nIn: number, nOut: number, vk: any): Promise<any> {
+  async registerVk(
+    nIn: number,
+    nOut: number,
+    vk: any,
+  ): Promise<TransactionReceipt | undefined> {
     const tx = this.node.l1Contract.setup.methods.registerVk(
       nIn,
       nOut,
@@ -156,12 +160,12 @@ export class Coordinator extends EventEmitter {
     return this.node.l1Contract.sendTx(tx, this.account)
   }
 
-  async completeSetup(): Promise<any> {
+  async completeSetup(): Promise<TransactionReceipt | undefined> {
     const tx = this.node.l1Contract.setup.methods.completeSetup()
     return this.node.l1Contract.sendTx(tx, this.account)
   }
 
-  async commitMassDeposit(): Promise<any> {
+  async commitMassDeposit(): Promise<TransactionReceipt | undefined> {
     const stagedDeposits = await this.node.l1Contract.upstream.methods
       .stagedDeposits()
       .call()
@@ -173,9 +177,10 @@ export class Coordinator extends EventEmitter {
       const tx = this.node.l1Contract.coordinator.methods.commitMassDeposit()
       return this.node.l1Contract.sendTx(tx, this.account)
     }
+    return undefined
   }
 
-  async registerAsCoordinator(): Promise<any> {
+  async registerAsCoordinator(): Promise<TransactionReceipt | undefined> {
     const { minimumStake } = this.node.l2Chain.config
     const tx = this.node.l1Contract.coordinator.methods.register()
     return this.node.l1Contract.sendTx(tx, this.account, {
@@ -184,7 +189,7 @@ export class Coordinator extends EventEmitter {
     // return this.sendTx(tx)
   }
 
-  async deregister(): Promise<any> {
+  async deregister(): Promise<TransactionReceipt | undefined> {
     const tx = this.node.l1Contract.coordinator.methods.deregister()
     return this.node.l1Contract.sendTx(tx, this.account)
   }
@@ -276,10 +281,10 @@ export class Coordinator extends EventEmitter {
       nft,
       fee,
     )
-    const result = await this.node.l1Contract.sendTx(tx, this.account, {
+    const receipt = await this.node.l1Contract.sendTx(tx, this.account, {
       value: eth,
     })
-    if (result) {
+    if (receipt) {
       // save withdrawal
       logger.info('pay in advance')
       const data = {
@@ -303,7 +308,7 @@ export class Coordinator extends EventEmitter {
           update: data,
         }),
       )
-      res.send(result)
+      res.send(receipt)
     } else {
       // set prepayed
       logger.info('Failed to run pay-in-advance')
@@ -491,11 +496,19 @@ export class Coordinator extends EventEmitter {
         `Skip gen block. Aggregated fee is not enough yet ${block.fee} / ${expectedFee}`,
       )
     } else {
-      logger.info(chalk.green(`Proposed a new block: ${blockHash}`))
-      await this.node.l1Contract.sendTx(proposeTx, this.account, {
-        gas: expectedGas,
-        gasPrice: this.gasPrice.toString(),
-      })
+      const receipt = await this.node.l1Contract.sendTx(
+        proposeTx,
+        this.account,
+        {
+          gas: expectedGas,
+          gasPrice: this.gasPrice.toString(),
+        },
+      )
+      if (receipt) {
+        logger.info(chalk.green(`Proposed a new block: ${blockHash}`))
+      } else {
+        logger.warn(chalk.green(`Failed to propose a new block: ${blockHash}`))
+      }
     }
   }
 

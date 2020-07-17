@@ -8,7 +8,7 @@ export default class RegisterAsCoordinator extends App {
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
     this.print(chalk.blue('Registering as a coordinator'))
-    let receipt!: TransactionReceipt
+    let receipt: TransactionReceipt | undefined
     try {
       receipt = await this.base.registerAsCoordinator()
     } catch (err) {

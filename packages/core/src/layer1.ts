@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { ZkOPRUContract } from '@zkopru/contracts'
 import { Config } from '@zkopru/prisma'
-import { Account } from 'web3-core'
+import { Account, TransactionReceipt } from 'web3-core'
 import { verifyingKeyIdentifier, logger, hexify } from '@zkopru/utils'
 import Web3 from 'web3'
 import { ContractOptions } from 'web3-eth-contract'
@@ -202,34 +202,46 @@ export class L1Contract extends ZkOPRUContract {
     return this.config
   }
 
-  async sendTx(tx: TransactionObject<void>, account?: Account, option?: Tx) {
+  async sendTx(
+    tx: TransactionObject<void>,
+    account?: Account,
+    option?: Tx,
+  ): Promise<TransactionReceipt | undefined> {
     let gas!: number
     let gasPrice!: string
     let nonce!: number
-    await Promise.all(
-      [
-        async () => {
-          try {
-            gas = await tx.estimateGas({
-              ...option,
-              from: account?.address,
-            })
-            logger.trace(`estimated gas: ${gas}`)
-          } catch (err) {
-            logger.error(err)
-            throw Error('It may get reverted so did not send the transaction')
-          }
-        },
-        async () => {
-          gasPrice = await this.web3.eth.getGasPrice()
-        },
-        async () => {
-          if (account) {
-            nonce = await this.web3.eth.getTransactionCount(account.address)
-          }
-        },
-      ].map(fetchTask => fetchTask()),
-    )
+    const promises = [
+      async () => {
+        try {
+          gas = await tx.estimateGas({
+            ...option,
+            from: account?.address,
+          })
+          logger.trace(`estimated gas: ${gas}`)
+        } catch (err) {
+          logger.warn(err)
+          throw Error('It may get reverted so did not send the transaction')
+        }
+        return undefined
+      },
+      async () => {
+        gasPrice = await this.web3.eth.getGasPrice()
+      },
+      async () => {
+        if (account) {
+          nonce = await this.web3.eth.getTransactionCount(
+            account.address,
+            'pending',
+          )
+        }
+      },
+    ].map(fetchTask => fetchTask())
+    try {
+      await Promise.all(promises)
+    } catch (err) {
+      logger.warn(err)
+      return undefined
+    }
     if (account) {
       const txParams = {
         nonce: NumString.from(`${nonce}`)
@@ -255,16 +267,28 @@ export class L1Contract extends ZkOPRUContract {
         ? account.privateKey.substr(2)
         : account.privateKey
       ethTx.sign(Buffer.from(hexStr, 'hex'))
-      const receipt = await this.web3.eth.sendSignedTransaction(
-        `0x${ethTx.serialize().toString('hex')}`,
-      )
+      let receipt: TransactionReceipt
+      try {
+        receipt = await this.web3.eth.sendSignedTransaction(
+          `0x${ethTx.serialize().toString('hex')}`,
+        )
+      } catch (err) {
+        logger.warn(err)
+        return undefined
+      }
       return receipt
     }
-    const receipt = await tx.send({
-      gas,
-      gasPrice,
-      ...option,
-    })
+    let receipt: TransactionReceipt
+    try {
+      receipt = await tx.send({
+        gas,
+        gasPrice,
+        ...option,
+      })
+    } catch (err) {
+      logger.warn(err)
+      return undefined
+    }
     return receipt
   }
 }

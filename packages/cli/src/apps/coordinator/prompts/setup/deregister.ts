@@ -8,7 +8,7 @@ export default class Deregister extends App {
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
     this.print('Deregistering...')
-    let receipt!: TransactionReceipt
+    let receipt: TransactionReceipt | undefined
     try {
       receipt = await this.base.deregister()
     } catch (err) {

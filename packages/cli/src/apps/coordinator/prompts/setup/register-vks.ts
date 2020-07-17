@@ -51,7 +51,12 @@ export default class RegisterVk extends App {
       message: 'Number of outputs',
     })
     const vk = JSON.parse(fs.readFileSync(currentPath, 'utf8'))
-    await this.base.registerVk(nIn, nOut, vk)
+    const receipt = await this.base.registerVk(nIn, nOut, vk)
+    if (receipt) {
+      this.print('Registered verifying key successfully')
+    } else {
+      this.print('Failed to register verifying key successfully')
+    }
     return { context, next: AppMenu.SETUP_MENU }
   }
 }
