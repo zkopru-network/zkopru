@@ -445,8 +445,6 @@ export class L2Chain {
         }
       }
     }
-    if (indexes.length !== massDepositHashes.length)
-      throw Error('Number of MassDeposits is different with the block proposal')
     await this.db.write(prisma =>
       prisma.massDeposit.updateMany({
         where: { index: { in: indexes } },
