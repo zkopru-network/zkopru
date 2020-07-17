@@ -1,6 +1,6 @@
 {
   "name": "@zkopru/babyjubjub",
-  "version": "1.0.0-alpha.5",
+  "version": "1.0.0-alpha.6",
   "license": "GPL-3.0-or-later",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
