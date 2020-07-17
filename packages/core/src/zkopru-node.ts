@@ -94,15 +94,6 @@ export class ZkOPRUNode extends EventEmitter {
     this.syncing = false
   }
 
-  private setStatus(status: NetworkStatus) {
-    if (this.status !== status) {
-      this.status = status
-      // this.emit('status', status, this.latestProposedHash)
-      logger.info(`sync status: ${status}`)
-      this.emit('status', status)
-    }
-  }
-
   startSync() {
     if (!this.syncing) {
       logger.info('start sync')
@@ -139,50 +130,17 @@ export class ZkOPRUNode extends EventEmitter {
   async processUnverifiedBlocks() {
     if (this.processingBlocks) return
     this.processingBlocks = true
-
-    const { prevHeader, block } = await this.l2Chain.getOldestUnverifiedBlock()
-    if (!block) {
-      this.processingBlocks = false
-      return
-    }
-    if (!prevHeader) {
-      throw Error('Unexpected runtime error occured during the verification.')
-    }
-
-    logger.info(`Processing block ${block.hash.toString()}`)
-    try {
-      // should find and save my notes before calling getGrovePatch
-      await this.l2Chain.findMyUtxos(block.body.txs, this.accounts || [])
-      await this.l2Chain.findMyWithdrawals(block.body.txs, this.accounts || [])
-      const treePatch = await this.l2Chain.getGrovePatch(block)
-      const { patch, challenge } = await this.verifier.verifyBlock({
-        layer2: this.l2Chain,
-        prevHeader,
-        treePatch,
-        block,
-      })
-      if (patch) {
-        await this.l2Chain.applyPatch(patch)
-        this.processingBlocks = false
-        this.processUnverifiedBlocks()
-        return
+    let processedAll: boolean
+    do {
+      try {
+        processedAll = await this.processUnverified()
+      } catch (err) {
+        // TODO needs to provide roll back & resync option
+        // sync & process error
+        logger.error(err)
+        break
       }
-      if (challenge) {
-        // implement challenge here & mark as invalidated
-        await this.db.write(prisma =>
-          prisma.proposal.update({
-            where: { hash: block.hash.toString() },
-            data: { invalidated: true },
-          }),
-        )
-        logger.warn(challenge)
-      }
-    } catch (err) {
-      // TODO needs to provide roll back & resync option
-      // sync & process error
-      logger.error(err)
-    }
-    // TODO remove proposal data if it completes verification or if the block is finalized
+    } while (!processedAll)
     this.processingBlocks = false
   }
 
@@ -221,18 +179,6 @@ export class ZkOPRUNode extends EventEmitter {
     )
     if (verifiedProposals[0] && verifiedProposals[0].proposalNum !== null) {
       this.setLatestProcessed(verifiedProposals[0].proposalNum + 1)
-    }
-  }
-
-  private setLatestProposed(proposalNum: number) {
-    if (proposalNum && this.latestProposed !== proposalNum) {
-      this.latestProposed = proposalNum
-    }
-  }
-
-  private setLatestProcessed(proposalNum: number) {
-    if (this.latestProcessed !== proposalNum) {
-      this.latestProcessed = proposalNum
     }
   }
 
@@ -333,6 +279,67 @@ export class ZkOPRUNode extends EventEmitter {
     }
     this.emit(BlockEvents.ON_FETCHED, block)
     delete this.fetching[proposalTx]
+  }
+
+  private setLatestProposed(proposalNum: number) {
+    if (proposalNum && this.latestProposed !== proposalNum) {
+      this.latestProposed = proposalNum
+    }
+  }
+
+  private setLatestProcessed(proposalNum: number) {
+    if (this.latestProcessed !== proposalNum) {
+      this.latestProcessed = proposalNum
+    }
+  }
+
+  /**
+   * @returns processedAll
+   */
+  private async processUnverified(): Promise<boolean> {
+    const { prevHeader, block } = await this.l2Chain.getOldestUnverifiedBlock()
+    if (!block) return true
+    if (!prevHeader) {
+      this.processingBlocks = false
+      throw Error('Unexpected runtime error occured during the verification.')
+    }
+    logger.info(`Processing block ${block.hash.toString()}`)
+    // should find and save my notes before calling getGrovePatch
+    await this.l2Chain.findMyUtxos(block.body.txs, this.accounts || [])
+    await this.l2Chain.findMyWithdrawals(block.body.txs, this.accounts || [])
+    const treePatch = await this.l2Chain.getGrovePatch(block)
+    const { patch, challenge } = await this.verifier.verifyBlock({
+      layer2: this.l2Chain,
+      prevHeader,
+      treePatch,
+      block,
+    })
+    if (patch) {
+      await this.l2Chain.applyPatch(patch)
+      this.processingBlocks = false
+      return false
+    }
+    if (challenge) {
+      // implement challenge here & mark as invalidated
+      await this.db.write(prisma =>
+        prisma.proposal.update({
+          where: { hash: block.hash.toString() },
+          data: { invalidated: true },
+        }),
+      )
+      logger.warn(challenge)
+    }
+    // TODO remove proposal data if it completes verification or if the block is finalized
+    return true
+  }
+
+  private setStatus(status: NetworkStatus) {
+    if (this.status !== status) {
+      this.status = status
+      // this.emit('status', status, this.latestProposedHash)
+      logger.info(`sync status: ${status}`)
+      this.emit('status', status)
+    }
   }
 
   static async getOrInitChain(
