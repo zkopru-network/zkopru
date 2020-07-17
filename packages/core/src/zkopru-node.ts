@@ -265,7 +265,9 @@ export class ZkOPRUNode extends EventEmitter {
       if (!this.latestProcessed) {
         const latestProcessed = await this.db.read(prisma =>
           prisma.proposal.findMany({
-            where: { verified: { not: null } },
+            where: {
+              AND: [{ verified: { not: null } }, { isUncle: null }],
+            },
             orderBy: { proposalNum: 'desc' },
             take: 1,
             include: { block: true },
@@ -277,6 +279,32 @@ export class ZkOPRUNode extends EventEmitter {
       return true
     }
     const { parent, block, proposal } = unprocessed
+
+    if (!proposal.proposalNum || !proposal.proposedAt)
+      throw Error('Invalid proposal data')
+
+    const isUncle = await this.l2Chain.isUncleBlock(
+      block.header.parentBlock,
+      proposal.proposedAt,
+    )
+
+    if (isUncle) {
+      await this.db.write(prisma =>
+        prisma.proposal.update({
+          where: { hash: block.hash.toString() },
+          data: { isUncle: true },
+        }),
+      )
+      await this.db.write(prisma =>
+        prisma.massDeposit.updateMany({
+          where: { includedIn: block.hash.toString() },
+          data: { includedIn: null },
+        }),
+      )
+      // TODO: can not process uncle block's grove patch yet
+      return false
+    }
+
     logger.info(`Processing block ${block.hash.toString()}`)
     // should find and save my notes before calling getGrovePatch
     await this.l2Chain.findMyUtxos(block.body.txs, this.accounts || [])
@@ -288,33 +316,10 @@ export class ZkOPRUNode extends EventEmitter {
       treePatch,
       block,
     })
-    if (!proposal.proposalNum) throw Error('Invalid proposal data')
     this.setLatestProcessed(proposal.proposalNum)
     if (patch) {
       // check if there exists fork
-      const canonical = await this.db.read(prisma =>
-        prisma.proposal.findMany({
-          where: {
-            AND: [
-              { proposedAt: { lt: proposal.proposedAt } },
-              {
-                block: {
-                  header: {
-                    parentBlock: {
-                      equals: block.header.parentBlock.toString(),
-                    },
-                  },
-                },
-              },
-              { verified: true },
-            ],
-          },
-          orderBy: { proposalNum: 'asc' },
-          take: 1,
-        }),
-      )
-      const forkExist = canonical.length === 1
-      if (forkExist) {
+      if (isUncle) {
         logger.warn('Sibling exists. Leave this as an uncle block')
       } else {
         await this.l2Chain.applyPatch(patch)
@@ -325,7 +330,7 @@ export class ZkOPRUNode extends EventEmitter {
           where: { hash: block.hash.toString() },
           data: {
             verified: true,
-            isUncle: forkExist ? true : null,
+            isUncle: isUncle ? true : null,
           },
         }),
       )
@@ -335,6 +340,12 @@ export class ZkOPRUNode extends EventEmitter {
         prisma.proposal.update({
           where: { hash: block.hash.toString() },
           data: { verified: false },
+        }),
+      )
+      await this.db.write(prisma =>
+        prisma.massDeposit.updateMany({
+          where: { includedIn: block.hash.toString() },
+          data: { includedIn: null },
         }),
       )
       logger.warn(challenge)

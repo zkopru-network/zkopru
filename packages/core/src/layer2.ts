@@ -104,7 +104,6 @@ export class L2Chain {
             AND: [
               { merged: massDeposit.merged.toString() },
               { fee: massDeposit.fee.toString() },
-              { includedIn: null },
             ],
           },
           orderBy: {
@@ -116,7 +115,6 @@ export class L2Chain {
       // logger.info()
       const nonIncludedMassDepositCommit = commits.pop()
       if (!nonIncludedMassDepositCommit) {
-        logger.info('faield to find mass deposit')
         logger.info(massDeposit.merged.toString())
         logger.info(`fee ${massDeposit.fee.toString()}`)
         throw Error('Failed to find the mass deposit')
@@ -151,7 +149,9 @@ export class L2Chain {
   > {
     const unprocessedProposals = await this.db.read(prisma =>
       prisma.proposal.findMany({
-        where: { verified: null },
+        where: {
+          AND: [{ verified: null }, { isUncle: null }],
+        },
         orderBy: { proposalNum: 'asc' },
         take: 1,
         include: { block: { include: { header: true } } },
@@ -197,6 +197,32 @@ export class L2Chain {
       block,
       proposal: unprocessedProposal,
     }
+  }
+
+  async isUncleBlock(
+    parentBlock: Bytes32,
+    proposedAt: number,
+  ): Promise<boolean> {
+    const canonical = await this.db.read(prisma =>
+      prisma.proposal.findMany({
+        where: {
+          AND: [
+            { proposedAt: { lt: proposedAt } },
+            {
+              block: {
+                header: {
+                  parentBlock: { equals: parentBlock.toString() },
+                },
+              },
+            },
+            { verified: true },
+          ],
+        },
+        orderBy: { proposalNum: 'asc' },
+        take: 1,
+      }),
+    )
+    return canonical.length === 1
   }
 
   async applyPatch(patch: Patch) {
