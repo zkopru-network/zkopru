@@ -56,13 +56,13 @@ model Proposal {
   proposalData String? // stringified json
   fetched String?
   finalized Boolean?
-  invalidated Boolean?
+  verified Boolean?
+  isUncle Boolean?
   block Block? @relation(fields: [fetched], references: [hash])
 }
 
 model Block {
   hash String @id
-  verified Boolean?
   header Header @relation(fields: [hash], references: [hash])
   proposal Proposal
   bootstrap Bootstrap?

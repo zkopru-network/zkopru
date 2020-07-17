@@ -91,9 +91,7 @@ export class Grove {
     await this.lock.acquire('grove', async () => {
       const utxoTreeData = await this.db.read(prisma =>
         prisma.lightTree.findMany({
-          where: {
-            species: TreeSpecies.UTXO,
-          },
+          where: { species: TreeSpecies.UTXO },
           orderBy: { treeIndex: 'asc' },
         }),
       )
@@ -114,9 +112,7 @@ export class Grove {
 
       const withdrawalTreeData = await this.db.read(prisma =>
         prisma.lightTree.findMany({
-          where: {
-            species: TreeSpecies.WITHDRAWAL,
-          },
+          where: { species: TreeSpecies.WITHDRAWAL },
           orderBy: { treeIndex: 'asc' },
         }),
       )
@@ -346,9 +342,7 @@ export class Grove {
   async utxoMerkleProof(hash: Field): Promise<MerkleProof<Field>> {
     const utxo = await this.db.read(prisma =>
       prisma.utxo.findOne({
-        where: {
-          hash: hash.toString(10),
-        },
+        where: { hash: hash.toString(10) },
         include: { tree: true },
       }),
     )
@@ -388,9 +382,7 @@ export class Grove {
   async withdrawalMerkleProof(hash: BN): Promise<MerkleProof<BN>> {
     const withdrawal = await this.db.read(prisma =>
       prisma.withdrawal.findOne({
-        where: {
-          hash: hash.toString(10),
-        },
+        where: { hash: hash.toString(10) },
         include: { tree: true },
       }),
     )

@@ -2,7 +2,6 @@ import {
   DB,
   Deposit as DepositSql,
   Config,
-  BlockStatus,
   Proposal,
   MassDeposit as MassDepositSql,
 } from '@zkopru/prisma'
@@ -60,28 +59,20 @@ export class L2Chain {
   async getBlock(hash: Bytes32): Promise<Block | null> {
     const proposal = await this.db.read(prisma =>
       prisma.proposal.findOne({
-        where: {
-          hash: hash.toString(),
-        },
-        include: {
-          block: true,
-        },
+        where: { hash: hash.toString() },
+        include: { block: true },
       }),
     )
     if (!proposal || !proposal.proposalData) return null
     const tx = JSON.parse(proposal.proposalData)
-    return Block.fromTx(tx, proposal.block?.verified || false)
+    return Block.fromTx(tx, proposal.verified || false)
   }
 
   async getProposal(hash: Bytes32) {
     const proposal = await this.db.read(prisma =>
       prisma.proposal.findOne({
-        where: {
-          hash: hash.toString(),
-        },
-        include: {
-          block: true,
-        },
+        where: { hash: hash.toString() },
+        include: { block: true },
       }),
     )
     return proposal
@@ -92,20 +83,10 @@ export class L2Chain {
       await this.db.read(prisma =>
         prisma.proposal.findMany({
           where: {
-            block: {
-              verified: true,
-            },
+            AND: [{ verified: true }, { isUncle: null }],
           },
-          orderBy: {
-            proposalNum: 'desc',
-          },
-          include: {
-            block: {
-              include: {
-                header: true,
-              },
-            },
-          },
+          orderBy: { proposalNum: 'desc' },
+          include: { block: { include: { header: true } } },
           take: 1,
         }),
       )
@@ -120,9 +101,11 @@ export class L2Chain {
       const commits = await this.db.read(prisma =>
         prisma.massDeposit.findMany({
           where: {
-            merged: massDeposit.merged.toString(),
-            fee: massDeposit.fee.toString(),
-            includedIn: null,
+            AND: [
+              { merged: massDeposit.merged.toString() },
+              { fee: massDeposit.fee.toString() },
+              { includedIn: null },
+            ],
           },
           orderBy: {
             blockNumber: 'asc',
@@ -141,9 +124,7 @@ export class L2Chain {
 
       const deposits = await this.db.read(prisma =>
         prisma.deposit.findMany({
-          where: {
-            queuedAt: nonIncludedMassDepositCommit.index,
-          },
+          where: { queuedAt: nonIncludedMassDepositCommit.index },
         }),
       )
       deposits.sort((a, b) => {
@@ -160,52 +141,61 @@ export class L2Chain {
     return totalDeposits
   }
 
-  async getOldestUnverifiedBlock(): Promise<{
-    prevHeader?: Header
-    block?: Block
-  }> {
-    const lastVerified = await this.getLatestVerified()
-    if (!lastVerified) return {}
-
-    const unverifiedProposals = await this.db.read(prisma =>
+  async getOldestUnprocessedBlock(): Promise<
+    | undefined
+    | {
+        parent: Header
+        block: Block
+        proposal: Proposal
+      }
+  > {
+    const unprocessedProposals = await this.db.read(prisma =>
       prisma.proposal.findMany({
-        where: {
-          block: { header: { parentBlock: lastVerified }, verified: null },
-        },
+        where: { verified: null },
         orderBy: { proposalNum: 'asc' },
         take: 1,
-        include: { block: true },
+        include: { block: { include: { header: true } } },
       }),
     )
-    const unverifiedProposal = unverifiedProposals.pop()
+    const unprocessedProposal = unprocessedProposals.pop()
+    if (
+      !unprocessedProposal ||
+      !unprocessedProposal.proposalData ||
+      !unprocessedProposal.proposalNum
+    )
+      return
 
-    if (!unverifiedProposal || !unverifiedProposal.proposalData) return {}
+    logger.trace(`unprocessed proposal: ${unprocessedProposal?.hash}`)
+    const parentHash = unprocessedProposal.block?.header.parentBlock
+    if (!parentHash) throw Error('Its parent block is not processed yet')
 
-    const lastVerifiedHeader = await this.db.read(prisma =>
+    const parentHeader = await this.db.read(prisma =>
       prisma.header.findOne({
-        where: { hash: lastVerified },
+        where: { hash: parentHash },
       }),
     )
-    if (!lastVerifiedHeader) throw Error('Header not exist error.')
-    const prevHeader = {
-      proposer: Address.from(lastVerifiedHeader.proposer),
-      parentBlock: Bytes32.from(lastVerifiedHeader.parentBlock),
-      metadata: Bytes32.from(lastVerifiedHeader.metadata),
-      fee: Uint256.from(lastVerifiedHeader.fee),
-      utxoRoot: Uint256.from(lastVerifiedHeader.utxoRoot),
-      utxoIndex: Uint256.from(lastVerifiedHeader.utxoIndex),
-      nullifierRoot: Bytes32.from(lastVerifiedHeader.nullifierRoot),
-      withdrawalRoot: Uint256.from(lastVerifiedHeader.withdrawalRoot),
-      withdrawalIndex: Uint256.from(lastVerifiedHeader.withdrawalIndex),
-      txRoot: Bytes32.from(lastVerifiedHeader.txRoot),
-      depositRoot: Bytes32.from(lastVerifiedHeader.depositRoot),
-      migrationRoot: Bytes32.from(lastVerifiedHeader.migrationRoot),
-    }
-    const tx = JSON.parse(unverifiedProposal.proposalData)
+    logger.trace(`last verified header: ${parentHeader?.hash}`)
+    if (!parentHeader) throw Error('Parent header does not exist.')
+
+    const tx = JSON.parse(unprocessedProposal.proposalData)
     const block = Block.fromTx(tx)
     return {
-      prevHeader,
+      parent: {
+        proposer: Address.from(parentHeader.proposer),
+        parentBlock: Bytes32.from(parentHeader.parentBlock),
+        metadata: Bytes32.from(parentHeader.metadata),
+        fee: Uint256.from(parentHeader.fee),
+        utxoRoot: Uint256.from(parentHeader.utxoRoot),
+        utxoIndex: Uint256.from(parentHeader.utxoIndex),
+        nullifierRoot: Bytes32.from(parentHeader.nullifierRoot),
+        withdrawalRoot: Uint256.from(parentHeader.withdrawalRoot),
+        withdrawalIndex: Uint256.from(parentHeader.withdrawalIndex),
+        txRoot: Bytes32.from(parentHeader.txRoot),
+        depositRoot: Bytes32.from(parentHeader.depositRoot),
+        migrationRoot: Bytes32.from(parentHeader.migrationRoot),
+      },
       block,
+      proposal: unprocessedProposal,
     }
   }
 
@@ -220,13 +210,6 @@ export class L2Chain {
       treePatch,
     )
     await this.nullifyUtxos(block, treePatch.nullifiers)
-    // Record the verify result
-    await this.db.write(prisma =>
-      prisma.block.update({
-        where: { hash: block.toString() },
-        data: { verified: true },
-      }),
-    )
     // Update mass deposits inclusion status
     if (massDeposits) {
       await this.markMassDepositsAsIncludedIn(massDeposits, block)
@@ -389,14 +372,14 @@ export class L2Chain {
 
   async applyBootstrap(block: Block, bootstrapData: BootstrapData) {
     this.grove.applyBootstrap(bootstrapData)
-    const blockSql = { ...block.toSqlObj(), status: BlockStatus.FINALIZED }
+    const blockSql = { ...block.toSqlObj() }
     const headerSql = block.getHeaderSql()
     this.db.write(prisma =>
       prisma.block.upsert({
         where: {
           hash: block.hash.toString(),
         },
-        update: blockSql,
+        update: {},
         create: {
           ...blockSql,
           proposal: {

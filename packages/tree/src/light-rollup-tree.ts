@@ -253,8 +253,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       const leafCandidates = await this.db.read(prisma =>
         prisma.treeNode.findMany({
           where: {
-            value: hexify(hash),
-            treeId: this.metadata.id,
+            AND: [{ value: hexify(hash) }, { treeId: this.metadata.id }],
           },
           take: 1,
         }),

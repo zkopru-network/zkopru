@@ -77,6 +77,8 @@ export class Coordinator extends EventEmitter {
 
   massDepositCommitJob?: Job
 
+  isProposing = false
+
   constructor(node: FullNode, account: Account, config: CoordinatorConfig) {
     super()
     this.account = account
@@ -386,9 +388,7 @@ export class Coordinator extends EventEmitter {
   private startGenBlock() {
     if (!this.genBlockJob) {
       logger.info('Start block generations')
-      this.genBlockJob = scheduleJob('*/5 * * * * *', () =>
-        this.proposeNewBlocks(),
-      )
+      this.genBlockJob = scheduleJob('*/5 * * * * *', () => this.proposeTask())
     }
   }
 
@@ -428,7 +428,19 @@ export class Coordinator extends EventEmitter {
     this.finalizationJob = undefined
   }
 
-  private async proposeNewBlocks() {
+  private async proposeTask() {
+    if (this.isProposing) return
+    this.isProposing = true
+    try {
+      this.proposeNewBlock()
+    } catch (err) {
+      logger.error(`Error occurred during block proposing.`)
+      logger.error(err)
+    }
+    this.isProposing = false
+  }
+
+  private async proposeNewBlock() {
     if (!this.gasPrice) {
       logger.trace('Skip gen block. Gas price is not synced yet')
       return
@@ -459,7 +471,8 @@ export class Coordinator extends EventEmitter {
               block: {
                 header: { parentBlock: block.header.parentBlock.toString() },
               },
-              invalidated: false,
+              verified: true,
+              isUncle: null,
             },
             {
               hash: blockHash.toString(),
@@ -532,11 +545,7 @@ export class Coordinator extends EventEmitter {
     commits.sort((a, b) => parseInt(a.index, 10) - parseInt(b.index, 10))
     const pendingDeposits = await this.node.db.read(prisma =>
       prisma.deposit.findMany({
-        where: {
-          queuedAt: {
-            in: commits.map(commit => commit.index),
-          },
-        },
+        where: { queuedAt: { in: commits.map(commit => commit.index) } },
       }),
     )
     pendingDeposits.sort((a, b) => {
@@ -614,6 +623,7 @@ export class Coordinator extends EventEmitter {
     }, [] as Field[])
 
     const latest = await this.node.latestBlock()
+    logger.info(`Trying to create a child block of ${latest}`)
     if (!latest) {
       throw Error('Layer 2 chain is not synced yet.')
     }
@@ -701,12 +711,13 @@ export class Coordinator extends EventEmitter {
     const unfinalizedProposals = await this.node.db.read(prisma =>
       prisma.proposal.findMany({
         where: {
-          finalized: null,
-          block: {
-            header: { parentBlock: latest },
-            verified: true,
-          },
-          proposalData: { not: null },
+          AND: [
+            { finalized: null },
+            { block: { header: { parentBlock: latest } } },
+            { verified: true },
+            { isUncle: null },
+            { proposalData: { not: null } },
+          ],
         },
         take: 1,
       }),

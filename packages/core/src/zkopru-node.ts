@@ -54,8 +54,6 @@ export class ZkOPRUNode extends EventEmitter {
 
   status: NetworkStatus
 
-  latestProposed?: number
-
   latestProcessed?: number
 
   syncing: boolean
@@ -103,8 +101,7 @@ export class ZkOPRUNode extends EventEmitter {
         scheduleJob('*/1 * * * * *', () => {
           this.updateStatus()
           this.fetchUnfetchedProposals()
-          this.processUnverifiedBlocks()
-          this.checkBlockUpdate()
+          this.processBlocks()
         }),
       ]
       this.syncing = true
@@ -127,13 +124,13 @@ export class ZkOPRUNode extends EventEmitter {
     }
   }
 
-  async processUnverifiedBlocks() {
+  async processBlocks() {
     if (this.processingBlocks) return
     this.processingBlocks = true
     let processedAll: boolean
     do {
       try {
-        processedAll = await this.processUnverified()
+        processedAll = await this.processBlock()
       } catch (err) {
         // TODO needs to provide roll back & resync option
         // sync & process error
@@ -152,36 +149,6 @@ export class ZkOPRUNode extends EventEmitter {
     return null
   }
 
-  async checkBlockUpdate() {
-    const proposals = await this.db.read(prisma =>
-      prisma.proposal.findMany({
-        orderBy: {
-          proposalNum: 'desc',
-        },
-        take: 1,
-      }),
-    )
-    if (proposals[0]?.proposalNum) {
-      this.setLatestProposed(proposals[0]?.proposalNum)
-    }
-    const verifiedProposals = await this.db.read(prisma =>
-      prisma.proposal.findMany({
-        where: {
-          block: {
-            verified: true,
-          },
-        },
-        orderBy: {
-          proposalNum: 'desc',
-        },
-        take: 1,
-      }),
-    )
-    if (verifiedProposals[0] && verifiedProposals[0].proposalNum !== null) {
-      this.setLatestProcessed(verifiedProposals[0].proposalNum + 1)
-    }
-  }
-
   async updateStatus() {
     const unfetched = await this.db.read(prisma =>
       prisma.proposal.count({
@@ -189,7 +156,7 @@ export class ZkOPRUNode extends EventEmitter {
       }),
     )
     const unverified = await this.db.read(prisma =>
-      prisma.block.count({
+      prisma.proposal.count({
         where: { verified: { not: true } },
       }),
     )
@@ -203,11 +170,11 @@ export class ZkOPRUNode extends EventEmitter {
       const layer1ProposedBlocks = Uint256.from(
         await this.l1Contract.upstream.methods.proposedBlocks().call(),
       )
-      if (layer1ProposedBlocks.toBN().eqn(this.latestProcessed || 0)) {
+        .toBN()
+        .subn(1) // proposal num starts from 0
+      if (layer1ProposedBlocks.eqn(this.latestProcessed || 0)) {
         this.setStatus(NetworkStatus.FULLY_SYNCED)
-      } else if (
-        layer1ProposedBlocks.toBN().ltn((this.latestProcessed || 0) + 2)
-      ) {
+      } else if (layer1ProposedBlocks.ltn((this.latestProcessed || 0) + 2)) {
         this.setStatus(NetworkStatus.SYNCED)
       } else {
         this.setStatus(NetworkStatus.ON_SYNCING)
@@ -224,7 +191,9 @@ export class ZkOPRUNode extends EventEmitter {
     if (availableFetchJob === 0) return
     const candidates = await this.db.read(prisma =>
       prisma.proposal.findMany({
-        where: { fetched: null, proposalTx: { not: null } },
+        where: {
+          AND: [{ fetched: null }, { proposalTx: { not: null } }],
+        },
         orderBy: {
           proposalNum: 'asc',
         },
@@ -249,9 +218,7 @@ export class ZkOPRUNode extends EventEmitter {
     try {
       await this.db.write(prisma =>
         prisma.proposal.update({
-          where: {
-            hash: header.hash,
-          },
+          where: { hash: header.hash },
           data: {
             block: {
               upsert: {
@@ -281,28 +248,35 @@ export class ZkOPRUNode extends EventEmitter {
     delete this.fetching[proposalTx]
   }
 
-  private setLatestProposed(proposalNum: number) {
-    if (proposalNum && this.latestProposed !== proposalNum) {
-      this.latestProposed = proposalNum
-    }
-  }
-
   private setLatestProcessed(proposalNum: number) {
     if (this.latestProcessed !== proposalNum) {
+      logger.info(`Latest processed: ${proposalNum}`)
       this.latestProcessed = proposalNum
     }
   }
 
   /**
+   * Fork choice rule: we choose the oldest valid block when there exists a fork
    * @returns processedAll
    */
-  private async processUnverified(): Promise<boolean> {
-    const { prevHeader, block } = await this.l2Chain.getOldestUnverifiedBlock()
-    if (!block) return true
-    if (!prevHeader) {
-      this.processingBlocks = false
-      throw Error('Unexpected runtime error occured during the verification.')
+  private async processBlock(): Promise<boolean> {
+    const unprocessed = await this.l2Chain.getOldestUnprocessedBlock()
+    if (!unprocessed) {
+      if (!this.latestProcessed) {
+        const latestProcessed = await this.db.read(prisma =>
+          prisma.proposal.findMany({
+            where: { verified: { not: null } },
+            orderBy: { proposalNum: 'desc' },
+            take: 1,
+            include: { block: true },
+          }),
+        )
+        const latest = latestProcessed.pop()
+        this.setLatestProcessed(latest?.proposalNum || 0)
+      }
+      return true
     }
+    const { parent, block, proposal } = unprocessed
     logger.info(`Processing block ${block.hash.toString()}`)
     // should find and save my notes before calling getGrovePatch
     await this.l2Chain.findMyUtxos(block.body.txs, this.accounts || [])
@@ -310,27 +284,63 @@ export class ZkOPRUNode extends EventEmitter {
     const treePatch = await this.l2Chain.getGrovePatch(block)
     const { patch, challenge } = await this.verifier.verifyBlock({
       layer2: this.l2Chain,
-      prevHeader,
+      prevHeader: parent,
       treePatch,
       block,
     })
+    if (!proposal.proposalNum) throw Error('Invalid proposal data')
+    this.setLatestProcessed(proposal.proposalNum)
     if (patch) {
-      await this.l2Chain.applyPatch(patch)
-      this.processingBlocks = false
-      return false
-    }
-    if (challenge) {
+      // check if there exists fork
+      const canonical = await this.db.read(prisma =>
+        prisma.proposal.findMany({
+          where: {
+            AND: [
+              { proposedAt: { lt: proposal.proposedAt } },
+              {
+                block: {
+                  header: {
+                    parentBlock: {
+                      equals: block.header.parentBlock.toString(),
+                    },
+                  },
+                },
+              },
+              { verified: true },
+            ],
+          },
+          orderBy: { proposalNum: 'asc' },
+          take: 1,
+        }),
+      )
+      const forkExist = canonical.length === 1
+      if (forkExist) {
+        logger.warn('Sibling exists. Leave this as an uncle block')
+      } else {
+        await this.l2Chain.applyPatch(patch)
+      }
+      // Mark as verified
+      await this.db.write(prisma =>
+        prisma.proposal.update({
+          where: { hash: block.hash.toString() },
+          data: {
+            verified: true,
+            isUncle: forkExist ? true : null,
+          },
+        }),
+      )
+    } else if (challenge) {
       // implement challenge here & mark as invalidated
       await this.db.write(prisma =>
         prisma.proposal.update({
           where: { hash: block.hash.toString() },
-          data: { invalidated: true },
+          data: { verified: false },
         }),
       )
       logger.warn(challenge)
     }
     // TODO remove proposal data if it completes verification or if the block is finalized
-    return true
+    return false
   }
 
   private setStatus(status: NetworkStatus) {

@@ -7,7 +7,7 @@ export const { argv } = yargs
     address: {
       type: 'string',
       alias: 'a',
-      default: '0x318E2bfc7Ad1Ab6C611eE5fcA63F22e75d39a536',
+      default: '0xe2229A6dc8516236967a6e70fF854C17B871C8b4',
     },
     bootstrap: {
       type: 'boolean',

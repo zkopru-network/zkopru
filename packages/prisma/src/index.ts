@@ -129,10 +129,7 @@ export class DB {
       const cachedSiblings = await this.read(prisma =>
         prisma.treeNode.findMany({
           where: {
-            treeId,
-            nodeIndex: {
-              in: [...siblingIndexes],
-            },
+            AND: [{ treeId }, { nodeIndex: { in: [...siblingIndexes] } }],
           },
         }),
       )

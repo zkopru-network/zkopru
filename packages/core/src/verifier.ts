@@ -55,8 +55,9 @@ export class Verifier {
   }): Promise<{ patch?: Patch; challenge?: Challenge }> {
     logger.info(`Verifying ${block.hash}`)
     // check current node status is equal to the prev header
-    if (!headerHash(prevHeader).eq(block.header.parentBlock))
-      throw Error('differnet parent hash')
+    if (!headerHash(prevHeader).eq(block.header.parentBlock)) {
+      throw Error(`differnet parent hash`)
+    }
     const snapShot = await layer2.grove.getSnapshot()
     switch (true) {
       case !prevHeader.utxoIndex.toBN().eq(snapShot.utxoTreeIndex):

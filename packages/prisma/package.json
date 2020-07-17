@@ -20,6 +20,8 @@
     "build:sqlite": "prisma generate --schema prisma/sqlite.prisma",
     "migrate-save:base": "prisma migrate save --experimental --schema prisma/base.prisma",
     "migrate-up:base": "prisma migrate up --experimental --schema prisma/base.prisma",
+    "migrate-save:postgres": "prisma migrate save --experimental --schema prisma/postgres-migrator.prisma",
+    "migrate-up:postgres": "prisma migrate up --experimental --schema prisma/postgres-migrator.prisma",
     "gen-mockup": "shx rm mockup.db && prisma migrate up --experimental --schema prisma/base.prisma",
     "prebuild": "shx mkdir -p dist",
     "build": "yarn build:prisma && tsc --build tsconfig.build.json",

@@ -32,8 +32,10 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
     const trackingLeaves = await this.db.read(prisma =>
       prisma.withdrawal.findMany({
         where: {
-          treeId: this.metadata.id,
-          OR: [{ to: { in: keys } }, { prepayer: { in: keys } }],
+          AND: [
+            { treeId: this.metadata.id },
+            { OR: [{ to: { in: keys } }, { prepayer: { in: keys } }] },
+          ],
         },
       }),
     )

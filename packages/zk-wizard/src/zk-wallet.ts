@@ -123,8 +123,7 @@ export class ZkWallet {
     const withdrawals = await this.db.read(prisma =>
       prisma.withdrawal.findMany({
         where: {
-          to: account.address,
-          status,
+          AND: [{ to: account.address }, { status }],
         },
       }),
     )
@@ -135,9 +134,11 @@ export class ZkWallet {
     const noteSqls = await this.db.read(prisma =>
       prisma.utxo.findMany({
         where: {
-          pubKey: { in: [account.pubKey.toHex()] },
-          status,
-          usedAt: null,
+          AND: [
+            { pubKey: { in: [account.pubKey.toHex()] } },
+            { status },
+            { usedAt: null },
+          ],
         },
       }),
     )

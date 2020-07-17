@@ -33,8 +33,7 @@ export class UtxoTree extends LightRollUpTree<Field> {
     const trackingLeaves = await this.db.read(prisma =>
       prisma.utxo.findMany({
         where: {
-          treeId: this.metadata.id,
-          pubKey: { in: keys },
+          AND: [{ treeId: this.metadata.id }, { pubKey: { in: keys } }],
         },
       }),
     )

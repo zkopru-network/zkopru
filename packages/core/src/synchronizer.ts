@@ -110,19 +110,12 @@ export class Synchronizer {
             prisma.proposal.create({
               data: {
                 hash: blockHash,
-                block: {
-                  create: {
-                    header: {
-                      create: header,
-                    },
-                    verified: true,
-                  },
-                },
+                block: { create: { header: { create: header } } },
                 proposalNum: 0,
                 proposedAt: blockNumber,
                 proposalTx: transactionHash,
                 finalized: true,
-                invalidated: false,
+                verified: true,
                 proposalData: '',
               },
             }),
@@ -215,9 +208,7 @@ export class Synchronizer {
         logger.info('massdeposit commit is', massDeposit)
         await this.db.write(prisma =>
           prisma.massDeposit.upsert({
-            where: {
-              index: massDeposit.index,
-            },
+            where: { index: massDeposit.index },
             create: massDeposit,
             update: {},
           }),
@@ -255,21 +246,18 @@ export class Synchronizer {
         const { returnValues, blockNumber, transactionHash } = event
         // WRITE DATABASE
         const { proposalNum, blockHash } = returnValues
-        logger.info(`newProposal: ${returnValues}`)
-        logger.info(`blocknumber: ${blockNumber}`)
-        logger.info(`transactionHash: ${transactionHash}`)
+        logger.info(
+          `newProposal: ${proposalNum} - ${blockHash} @ ${blockNumber}`,
+        )
         const newProposal = {
           hash: Bytes32.from(blockHash).toString(),
           proposalNum: parseInt(proposalNum, 10),
           proposedAt: blockNumber,
           proposalTx: transactionHash,
         }
-        logger.info(`newProposal ${newProposal}`)
         await this.db.write(prisma =>
           prisma.proposal.upsert({
-            where: {
-              hash: newProposal.hash,
-            },
+            where: { hash: newProposal.hash },
             create: newProposal,
             update: newProposal,
           }),
