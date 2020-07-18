@@ -152,7 +152,7 @@ export class ZkOPRUNode extends EventEmitter {
   async updateStatus() {
     const unfetched = await this.db.read(prisma =>
       prisma.proposal.count({
-        where: { fetched: null },
+        where: { proposalData: null },
       }),
     )
     const unverified = await this.db.read(prisma =>
@@ -192,7 +192,7 @@ export class ZkOPRUNode extends EventEmitter {
     const candidates = await this.db.read(prisma =>
       prisma.proposal.findMany({
         where: {
-          AND: [{ fetched: null }, { proposalTx: { not: null } }],
+          AND: [{ proposalData: null }, { proposalTx: { not: null } }],
         },
         orderBy: {
           proposalNum: 'asc',
@@ -213,6 +213,11 @@ export class ZkOPRUNode extends EventEmitter {
     const proposalData = await this.l1Contract.web3.eth.getTransaction(
       proposalTx,
     )
+    if (!proposalData.blockHash) {
+      logger.trace(`pended proposal tx: ${proposalTx}`)
+      return
+    }
+    this.fetching[proposalTx] = true
     const block = Block.fromTx(proposalData)
     const header = block.getHeaderSql()
     try {
