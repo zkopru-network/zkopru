@@ -31,7 +31,7 @@ export const { argv } = yargs
     address: {
       type: 'string',
       alias: 'a',
-      default: '0xe2229A6dc8516236967a6e70fF854C17B871C8b4',
+      default: '0x98a9b814B423B4D17Cd612cD7943986aB9BF8c41',
     },
     coordinator: {
       type: 'string',
