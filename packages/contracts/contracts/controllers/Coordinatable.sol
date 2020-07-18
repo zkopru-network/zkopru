@@ -41,22 +41,23 @@ contract Coordinatable is Layer2 {
         delete Layer2.chain.proposers[proposerAddr];
     }
 
-    function propose(bytes memory) public {
+    function propose(bytes memory data) public {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
+        bytes32 checksum = keccak256(data);
         /// The message sender address should be same with the proposer address
         require(_block.header.proposer == msg.sender, "Coordinator account is different with the message sender");
         Proposer storage proposer = Layer2.chain.proposers[msg.sender];
         /// Check permission
         require(isProposable(msg.sender), "Not allowed to propose");
         /// Duplicated proposal is not allowed
-        require(Layer2.chain.proposals[_block.checksum].headerHash == bytes32(0), "Already submitted");
+        require(Layer2.chain.proposals[checksum].headerHash == bytes32(0), "Already submitted");
         /** LEGACY
         /// Do not exceed maximum challenging cost
         require(_block.maxChallengeCost() < CHALLENGE_LIMIT, "Its challenge cost exceeds the limit");
         */
         /// Save opru proposal
         bytes32 currentBlockHash = _block.header.hash();
-        Layer2.chain.proposals[_block.checksum] = Proposal(
+        Layer2.chain.proposals[checksum] = Proposal(
             currentBlockHash,
             block.number + CHALLENGE_PERIOD,
             false

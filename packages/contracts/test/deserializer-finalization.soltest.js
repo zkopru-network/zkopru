@@ -23,19 +23,24 @@ const compare = (actual, expected) => {
 
 contract('Finalization serialize-deserialize tests', async accounts => {
   let header
+  let block
   let body
   let rawData
   let finalization
   let dt
   before(async () => {
     dt = await DeserializationTester.new(accounts[0])
-    const block = await getDummyBlock()
+    block = await getDummyBlock()
     header = block.header
     body = block.body
     finalization = block.getFinalization()
     rawData = serializeFinalization(finalization)
   })
   describe('header test', () => {
+    it('should have correct checksum', async () => {
+      const checksum = await dt.getProposalChecksum(block.serializeBlock())
+      compare(finalization.proposalChecksum.toString(), checksum)
+    })
     it('should have correct proposer', async () => {
       const proposer = await dt.getProposerFromFinalization(rawData)
       compare(header.proposer, proposer)

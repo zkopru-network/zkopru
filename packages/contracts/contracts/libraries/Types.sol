@@ -88,7 +88,6 @@ struct Challenge {
 }
 
 struct Block {
-    bytes32 checksum;
     Header header;
     Body body;
 }

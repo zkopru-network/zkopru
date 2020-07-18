@@ -27,8 +27,12 @@ library Deserializer {
      *      https://docs.zkopru.network/how-it-works/block
      * @param paramIndex The index of the block calldata parameter in the external function
      */
-    function blockFromCalldataAt(uint paramIndex) internal pure returns (Block memory) {
-        /// 4 means the length of the function signature in the calldata
+    function blockFromCalldataAt(uint paramIndex)
+    internal
+    pure
+    returns (Block memory)
+    {
+        // 4 means the length of the function signature in the calldata
         uint start = 4 + abi.decode(msg.data[4 + 32*paramIndex:4 + 32*(paramIndex+1)], (uint));
         uint cp = start + 0x20; //calldata position
         Block memory _block;
@@ -36,21 +40,18 @@ library Deserializer {
         (_block.body.txs, cp) = dequeueTxs(cp);
         (_block.body.massDeposits, cp) = dequeueMassDeposits(cp);
         (_block.body.massMigrations, cp) = dequeueMassMigrations(cp);
-        uint size;
-        bytes32 checksum;
+        // get data length from the calldata
+        uint dataLen;
         assembly {
             let p := mload(0x40)
             calldatacopy(p, start, 0x20)
-            size := mload(p)
-            p := add(p, 0x20)
-            calldatacopy(p, add(start, 0x20), size)
-            checksum := keccak256(p, size)
+            dataLen := mload(p)
             mstore(0x40, add(p, 0x20))
         }
-        if(size != cp - start - 0x20) {
+        // Check that deserialization fits to the original data length
+        if(dataLen != cp - start - 0x20) {
             revert("Serialization has a problem");
         }
-        _block.checksum = checksum;
         return _block;
     }
 

@@ -30,6 +30,10 @@ contract DeserializationTester {
         return _block.header.proposer;
     }
 
+    function getProposalChecksum(bytes calldata _data) external pure returns (bytes32) {
+        return keccak256(_data);
+    }
+
     function getParentBlock(bytes calldata) external pure returns (bytes32) {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         return _block.header.parentBlock;
