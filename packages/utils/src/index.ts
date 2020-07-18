@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable max-classes-per-file */
-import { soliditySha3, Unit } from 'web3-utils'
+import { Unit, soliditySha3Raw } from 'web3-utils'
 import { Bytes32, Uint256, Address } from 'soltypes'
 import BN from 'bn.js'
 
@@ -85,10 +85,11 @@ export function txSizeCalculator(
 }
 
 export function root(hashes: Bytes32[]): Bytes32 {
+  const zeroBytes = Bytes32.from(
+    '0x0000000000000000000000000000000000000000000000000000000000000000',
+  )
   if (hashes.length === 0) {
-    return Bytes32.from(
-      '0x0000000000000000000000000000000000000000000000000000000000000000',
-    )
+    return zeroBytes
   }
   if (hashes.length === 1) {
     return hashes[0]
@@ -98,11 +99,12 @@ export function root(hashes: Bytes32[]): Bytes32 {
   const hasEmptyLeaf = hashes.length % 2 === 1
   for (let i = 0; i < numOfParentNodes; i += 1) {
     if (hasEmptyLeaf && i === numOfParentNodes - 1) {
-      parents[i] = Bytes32.from(soliditySha3(hashes[i * 2].toString()) || '')
+      parents[i] = Bytes32.from(
+        soliditySha3Raw(hashes[i * 2].toString(), zeroBytes.toString()),
+      )
     } else {
       parents[i] = Bytes32.from(
-        soliditySha3(hashes[i * 2].toString(), hashes[i * 2 + 1].toString()) ||
-          '',
+        soliditySha3Raw(hashes[i * 2].toString(), hashes[i * 2 + 1].toString()),
       )
     }
   }
@@ -121,9 +123,7 @@ export function hexToBuffer(hex: string, len?: number): Buffer {
 }
 
 export function verifyingKeyIdentifier(nI: number, nO: number): string {
-  const identifier = soliditySha3(nI, nO)
-  if (!identifier) throw Error('soliditySha3 returns null')
-  return identifier
+  return soliditySha3Raw(nI, nO)
 }
 
 export function hexify(
@@ -199,9 +199,8 @@ export function mergeDeposits(
   let fee = new BN(0)
   let merged = ''
   for (const deposit of deposits) {
-    merged = soliditySha3(merged, deposit.note.toString()) || ''
+    merged = soliditySha3Raw(merged, deposit.note.toString())
     fee = fee.add(deposit.fee.toBN())
-    if (merged === '') throw Error('web3-utils keccak256 throws Error')
   }
   return {
     merged: Bytes32.from(merged),

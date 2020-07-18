@@ -98,7 +98,7 @@ export class ZkOPRUNode extends EventEmitter {
       this.setStatus(NetworkStatus.ON_SYNCING)
       this.synchronizer.sync()
       this.cronJobs = [
-        scheduleJob('*/1 * * * * *', () => {
+        scheduleJob('*/5 * * * * *', () => {
           this.updateStatus()
           this.fetchUnfetchedProposals()
           this.processBlocks()
@@ -172,6 +172,10 @@ export class ZkOPRUNode extends EventEmitter {
       )
         .toBN()
         .subn(1) // proposal num starts from 0
+      logger.trace(
+        `total proposed: ${this.l1Contract.upstream.methods.proposedBlocks()}`,
+      )
+      logger.trace(`total processed: ${this.latestProcessed}`)
       if (layer1ProposedBlocks.eqn(this.latestProcessed || 0)) {
         this.setStatus(NetworkStatus.FULLY_SYNCED)
       } else if (layer1ProposedBlocks.ltn((this.latestProcessed || 0) + 2)) {
@@ -254,7 +258,7 @@ export class ZkOPRUNode extends EventEmitter {
   }
 
   private setLatestProcessed(proposalNum: number) {
-    if (this.latestProcessed !== proposalNum) {
+    if ((this.latestProcessed || 0) < proposalNum) {
       logger.info(`Latest processed: ${proposalNum}`)
       this.latestProcessed = proposalNum
     }

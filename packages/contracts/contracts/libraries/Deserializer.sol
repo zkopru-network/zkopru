@@ -16,6 +16,11 @@ import {
     Finalization
 } from "./Types.sol";
 
+import {
+    G1Point,
+    G2Point
+} from "./Pairing.sol";
+
 library Deserializer {
     /**
      * @dev Block data will be serialized with the following structure
@@ -242,17 +247,45 @@ library Deserializer {
         }
     }
 
+    function dequeueG1Point(uint calldataPos) internal pure returns (
+        G1Point memory point,
+        uint end
+    ) {
+        assembly {
+            calldatacopy(point, calldataPos, 0x40)
+            end := add(calldataPos, 0x40)
+        }
+    }
+    
+    function dequeueUint2Arr(uint calldataPos) internal pure returns (
+        uint[2] memory arr,
+        uint end
+    ) {
+        assembly {
+            calldatacopy(arr, calldataPos, 0x40)
+            end := add(calldataPos, 0x40)
+        }
+    }
+
+    function dequeueG2Point(uint calldataPos) internal pure returns (
+        G2Point memory point,
+        uint end
+    ) {
+        uint cp = calldataPos;
+        (point.X, cp) = dequeueUint2Arr(cp);
+        (point.Y, cp) = dequeueUint2Arr(cp);
+        end = cp;
+    }
+
     function dequeueProof(uint calldataPos) internal pure returns (
         Proof memory proof,
         uint end
     ) {
-        assembly {
-            let free_mem := mload(0x40)
-            proof := free_mem
-            calldatacopy(free_mem, calldataPos, 0x100)
-            end := add(calldataPos, 0x100)
-            mstore(0x40, add(free_mem, 0x100))
-        }
+        uint cp = calldataPos;
+        (proof.a, cp) = dequeueG1Point(cp);
+        (proof.b, cp) = dequeueG2Point(cp);
+        (proof.c, cp) = dequeueG1Point(cp);
+        end = cp;
     }
     
     function dequeueMemo(uint calldataPos) internal pure returns (

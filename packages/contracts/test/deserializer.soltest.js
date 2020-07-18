@@ -3,7 +3,7 @@
 /* eslint-disable jest/require-top-level-describe */
 /* eslint-disable jest/consistent-test-it */
 const chai = require('chai')
-const { dummyHeader, getDummyBody } = require('~dataset/testset-block')
+const { getDummyBlock } = require('~dataset/testset-block')
 const { serializeHeader, serializeBody } = require('~core')
 const { Field } = require('~babyjubjub')
 
@@ -24,9 +24,10 @@ contract('Block serialize-deserialize tests', async accounts => {
   let dt
   before(async () => {
     dt = await DeserializationTester.new(accounts[0])
-    header = dummyHeader
-    body = await getDummyBody()
-    rawData = Buffer.concat([serializeHeader(dummyHeader), serializeBody(body)])
+    const dummyBlock = await getDummyBlock()
+    body = dummyBlock.body
+    header = dummyBlock.header
+    rawData = Buffer.concat([serializeHeader(header), serializeBody(body)])
   })
   describe('header test', () => {
     it('should have correct proposer', async () => {
@@ -61,15 +62,21 @@ contract('Block serialize-deserialize tests', async accounts => {
     })
     it('should have correct tx root', async () => {
       const txRoot = await dt.getTxRoot(rawData)
+      const computedTxRoot = await dt.computeTxRoot(rawData)
       compare(header.txRoot, txRoot)
+      compare(header.txRoot, computedTxRoot)
     })
     it('should have correct mass deposit root', async () => {
       const mdRoot = await dt.getMassDepositRoot(rawData)
       compare(header.depositRoot, mdRoot)
+      const computedMdRoot = await dt.computeDepositRoot(rawData)
+      compare(header.depositRoot, computedMdRoot)
     })
     it('should have correct mass migration root', async () => {
       const mmRoot = await dt.getMassMigrationRoot(rawData)
       compare(header.migrationRoot, mmRoot)
+      const computedMMRoot = await dt.computeMigrationRoot(rawData)
+      compare(header.migrationRoot, computedMMRoot)
     })
   })
   describe('body txs', () => {
@@ -124,6 +131,31 @@ contract('Block serialize-deserialize tests', async accounts => {
       for (let txIndex = 0; txIndex < body.txs.length; txIndex += 1) {
         const txFee = await dt.getTxFee(txIndex, rawData)
         compare(body.txs[txIndex].fee, txFee)
+      }
+    })
+    it('should have correct swap value', async () => {
+      for (let txIndex = 0; txIndex < body.txs.length; txIndex += 1) {
+        const txSwap = await dt.getTxSwap(txIndex, rawData)
+        compare(body.txs[txIndex].swap || 0, txSwap)
+      }
+    })
+    it('should have correct proof value', async () => {
+      for (let txIndex = 0; txIndex < body.txs.length; txIndex += 1) {
+        const proof = await dt.getProof(txIndex, rawData)
+        compare(body.txs[txIndex].proof.pi_a[0], proof[0])
+        compare(body.txs[txIndex].proof.pi_a[1], proof[1])
+        compare(body.txs[txIndex].proof.pi_b[0][0], proof[2])
+        compare(body.txs[txIndex].proof.pi_b[0][1], proof[3])
+        compare(body.txs[txIndex].proof.pi_b[1][0], proof[4])
+        compare(body.txs[txIndex].proof.pi_b[1][1], proof[5])
+        compare(body.txs[txIndex].proof.pi_c[0], proof[6])
+        compare(body.txs[txIndex].proof.pi_c[1], proof[7])
+      }
+    })
+    it('should have same tx hash', async () => {
+      for (let txIndex = 0; txIndex < body.txs.length; txIndex += 1) {
+        const txHash = await dt.getTxHash(txIndex, rawData)
+        compare(body.txs[txIndex].hash().toString(), txHash)
       }
     })
   })

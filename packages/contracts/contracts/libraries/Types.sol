@@ -1,6 +1,6 @@
 pragma solidity >= 0.6.0;
 
-import { Pairing } from "./Pairing.sol";
+import { G1Point, G2Point } from "./Pairing.sol";
 
 struct Blockchain {
     bytes32 genesis;
@@ -161,9 +161,9 @@ struct AtomicSwap {
 }
 
 struct Proof {
-    Pairing.G1Point a;
-    Pairing.G2Point b;
-    Pairing.G1Point c;
+    G1Point a;
+    G2Point b;
+    G1Point c;
 }
 
 library Types {
@@ -248,7 +248,16 @@ library Types {
     }
 
     function toBytes(Proof memory proof) internal pure returns (bytes memory) {
-        return abi.encodePacked(proof.a.X, proof.a.Y, proof.b.X, proof.b.Y, proof.c.X, proof.c.Y);
+        return abi.encodePacked(
+            proof.a.X,
+            proof.a.Y,
+            proof.b.X[0],
+            proof.b.X[1],
+            proof.b.Y[0],
+            proof.b.Y[1],
+            proof.c.X,
+            proof.c.Y
+        );
     }
 
     function withdrawalNote(Outflow memory outflow) internal pure returns (bytes32) {

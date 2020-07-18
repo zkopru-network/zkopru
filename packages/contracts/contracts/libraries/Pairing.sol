@@ -12,16 +12,17 @@ pragma solidity >= 0.6.0;
 //      fixed linter warnings
 //      added requiere error messages
 //
-library Pairing {
-    struct G1Point {
-        uint X;
-        uint Y;
-    }
-    // Encoding of field elements is: X[0] * z + X[1]
-    struct G2Point {
-        uint[2] X;
-        uint[2] Y;
-    }
+struct G1Point {
+    uint X;
+    uint Y;
+}
+// Encoding of field elements is: X[0] * z + X[1]
+struct G2Point {
+    uint[2] X;
+    uint[2] Y;
+}
+
+library Pairing {    
     /// @return the generator of G1
     function P1() internal pure returns (G1Point memory) {
         return G1Point(1, 2);

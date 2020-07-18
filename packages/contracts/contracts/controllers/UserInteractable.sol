@@ -169,7 +169,6 @@ contract UserInteractable is Layer2 {
         require(nft*amount == 0, "Only ERC20 or ERC721");
         require(Layer2.chain.finalized[blockHash], "Not a finalized block");
         uint256 root = Layer2.chain.withdrawalRootOf[blockHash];
-        bytes32 currentBlock = blockHash;
         bytes32 withdrawalHash = _withdrawalHash(
             note,
             owner,

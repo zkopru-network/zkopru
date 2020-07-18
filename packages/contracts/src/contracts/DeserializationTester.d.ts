@@ -114,6 +114,11 @@ export class DeserializationTester extends Contract {
       arg1: string | number[],
     ): TransactionObject<string>
 
+    getTxHash(
+      txIndex: number | string,
+      arg1: string | number[],
+    ): TransactionObject<string>
+
     getMassDepositsLen(arg0: string | number[]): TransactionObject<string>
 
     getMassDeposit(
@@ -163,6 +168,12 @@ export class DeserializationTester extends Contract {
       0: string
       1: string[]
     }>
+
+    computeTxRoot(arg0: string | number[]): TransactionObject<string>
+
+    computeDepositRoot(arg0: string | number[]): TransactionObject<string>
+
+    computeMigrationRoot(arg0: string | number[]): TransactionObject<string>
 
     getProposerFromFinalization(
       arg0: string | number[],
@@ -272,6 +283,14 @@ export class DeserializationTester extends Contract {
       0: string
       1: string[]
     }>
+
+    computeDepositRootFromFinalization(
+      arg0: string | number[],
+    ): TransactionObject<string>
+
+    computeMigrationRootFromFinalization(
+      arg0: string | number[],
+    ): TransactionObject<string>
   }
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter

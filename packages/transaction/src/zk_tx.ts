@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { BigInteger } from 'big-integer'
-import { soliditySha3 } from 'web3-utils'
+import { soliditySha3Raw } from 'web3-utils'
 import { Field } from '@zkopru/babyjubjub'
 import * as Utils from '@zkopru/utils'
-import { Bytes32 } from 'soltypes'
+import { Bytes32, Uint256 } from 'soltypes'
+import { OutflowType } from './note'
 
 export interface ZkInflow {
   nullifier: Field
@@ -128,27 +129,22 @@ export class ZkTx {
           ])
         }),
         ...this.outflow.map(outflow => {
+          if (outflow.outflowType.eqn(OutflowType.UTXO)) {
+            return outflow.note.toBuffer('be', 32)
+          }
+          if (!outflow.data)
+            throw Error('Withdrawal or Migration should have data')
           return Buffer.concat([
             outflow.note.toBuffer('be', 32),
-            outflow.data ? outflow.data.to.toBuffer('be', 20) : Buffer.from([]),
-            outflow.data
-              ? outflow.data.eth.toBuffer('be', 32)
-              : Buffer.from([]),
-            outflow.data
-              ? outflow.data.tokenAddr.toBuffer('be', 20)
-              : Buffer.from([]),
-            outflow.data
-              ? outflow.data.erc20Amount.toBuffer('be', 32)
-              : Buffer.from([]),
-            outflow.data
-              ? outflow.data.nft.toBuffer('be', 32)
-              : Buffer.from([]),
-            outflow.data
-              ? outflow.data.fee.toBuffer('be', 32)
-              : Buffer.from([]),
+            outflow.data.to.toBuffer('be', 20),
+            outflow.data.eth.toBuffer('be', 32),
+            outflow.data.tokenAddr.toBuffer('be', 20),
+            outflow.data.erc20Amount.toBuffer('be', 32),
+            outflow.data.nft.toBuffer('be', 32),
+            outflow.data.fee.toBuffer('be', 32),
           ])
         }),
-        this.swap ? this.swap.toBuffer('be', 32) : Buffer.alloc(32),
+        this.swap ? this.swap.toBuffer('be', 32) : Uint256.from('0').toBuffer(),
         this.proof.pi_a[0].toBuffer('be', 32),
         this.proof.pi_a[1].toBuffer('be', 32),
         this.proof.pi_b[0][0].toBuffer('be', 32),
@@ -156,11 +152,11 @@ export class ZkTx {
         this.proof.pi_b[1][0].toBuffer('be', 32),
         this.proof.pi_b[1][1].toBuffer('be', 32),
         this.proof.pi_c[0].toBuffer('be', 32),
-        this.proof.pi_c[0].toBuffer('be', 32),
+        this.proof.pi_c[1].toBuffer('be', 32),
         this.fee.toBuffer('be', 32),
       ])
       const hash = Bytes32.from(
-        soliditySha3(encodePacked.toString('hex')) || '',
+        soliditySha3Raw(`0x${encodePacked.toString('hex')}`),
       )
       this.cache.hash = hash
     }

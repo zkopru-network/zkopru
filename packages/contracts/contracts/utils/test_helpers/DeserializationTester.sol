@@ -8,10 +8,18 @@ import {
     Outflow,
     PublicData,
     Proof,
+    Transaction,
+    MassDeposit,
+    MassMigration,
     Types
 } from "../../libraries/Types.sol";
 
 contract DeserializationTester {
+    using Types for MassDeposit[];
+    using Types for MassMigration[];
+    using Types for Transaction[];
+    using Types for Transaction;
+
     function getProposer(bytes calldata) external pure returns (address) {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         return _block.header.proposer;
@@ -148,6 +156,11 @@ contract DeserializationTester {
         return _block.body.txs[txIndex].fee;
     }
 
+    function getTxHash(uint txIndex, bytes calldata) external pure returns (bytes32) {
+        Block memory _block = Deserializer.blockFromCalldataAt(1);
+        return _block.body.txs[txIndex].hash();
+    }
+
     function getMassDepositsLen(bytes calldata) external pure returns (uint len) {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         return _block.body.massDeposits.length;
@@ -194,6 +207,21 @@ contract DeserializationTester {
         token = _block.body.massMigrations[index].erc721[erc721Index].addr;
         nfts = _block.body.massMigrations[index].erc721[erc721Index].nfts;
    }
+
+    function computeTxRoot(bytes calldata) external pure returns (bytes32) {
+        Block memory _block = Deserializer.blockFromCalldataAt(0);
+        return _block.body.txs.root();
+    }
+
+    function computeDepositRoot(bytes calldata) external pure returns (bytes32) {
+        Block memory _block = Deserializer.blockFromCalldataAt(0);
+        return _block.body.massDeposits.root();
+    }
+
+    function computeMigrationRoot(bytes calldata) external pure returns (bytes32) {
+        Block memory _block = Deserializer.blockFromCalldataAt(0);
+        return _block.body.massMigrations.root();
+    }
 
     function getProposerFromFinalization(bytes calldata) external pure returns (address) {
         Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(0);
@@ -309,5 +337,15 @@ contract DeserializationTester {
         Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(2);
         token = _finalization.massMigrations[index].erc721[erc721Index].addr;
         nfts = _finalization.massMigrations[index].erc721[erc721Index].nfts;
-   }
+    }
+
+    function computeDepositRootFromFinalization(bytes calldata) external pure returns (bytes32) {
+        Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(0);
+        return _finalization.massDeposits.root();
+    }
+
+    function computeMigrationRootFromFinalization(bytes calldata) external pure returns (bytes32) {
+        Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(0);
+        return _finalization.massMigrations.root();
+    }
 }

@@ -5,7 +5,7 @@ import { Layer2 } from "./storage/Layer2.sol";
 import { Layer2Controller } from "./Layer2Controller.sol";
 import { SNARKsVerifier } from "./libraries/SNARKs.sol";
 import { Blockchain, Header, Types } from "./libraries/Types.sol";
-import { Pairing } from "./libraries/Pairing.sol";
+import { Pairing, G1Point, G2Point } from "./libraries/Pairing.sol";
 import { Hash } from "./libraries/Hash.sol";
 import { SMT254 } from "./libraries/SMT.sol";
 
@@ -42,12 +42,12 @@ contract ZkOptimisticRollUp is Layer2Controller {
     ) public onlySetupWizard {
         bytes32 txSig = Types.getSNARKsSignature(numOfInputs, numOfOutputs);
         SNARKsVerifier.VerifyingKey storage vk = Layer2.vks[txSig];
-        vk.alfa1 = Pairing.G1Point(alfa1[0], alfa1[1]);
-        vk.beta2 = Pairing.G2Point(beta2[0], beta2[1]);
-        vk.gamma2 = Pairing.G2Point(gamma2[0], gamma2[1]);
-        vk.delta2 = Pairing.G2Point(delta2[0], delta2[1]);
+        vk.alfa1 = G1Point(alfa1[0], alfa1[1]);
+        vk.beta2 = G2Point(beta2[0], beta2[1]);
+        vk.gamma2 = G2Point(gamma2[0], gamma2[1]);
+        vk.delta2 = G2Point(delta2[0], delta2[1]);
         for (uint i = 0; i < ic.length; i++) {
-            vk.ic.push(Pairing.G1Point(ic[i][0], ic[i][1]));
+            vk.ic.push(G1Point(ic[i][0], ic[i][1]));
         }
     }
 

@@ -44,6 +44,11 @@ module.exports = {
       port: 8545, // Standard Ethereum port (default: none)
       network_id: '*', // Any network (default: none)
     },
+    develop2: {
+      host: '127.0.0.1', // Localhost (default: none)
+      port: 8549, // Standard Ethereum port (default: none)
+      network_id: '*', // Any network (default: none)
+    },
     integrationtest: {
       host: '127.0.0.1',
       port: 5000,
@@ -105,6 +110,7 @@ module.exports = {
     // reporter: 'eth-gas-reporter', // update later when it supports solidity 0.6.0
     useColors: true,
     // timeout: 100000
+    // reporterOptions : { ... } // See options below
   },
 
   // Configure your compilers
