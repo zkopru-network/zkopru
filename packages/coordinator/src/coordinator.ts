@@ -99,14 +99,17 @@ export class Coordinator extends EventEmitter {
       // udpate the txpool using the newly proposed hash
       // if the hash does not exist in the tx pool's block list
       // create an observer to fetch the block data from database
+      logger.info(`current status: ${status}`)
       switch (status) {
         case NetworkStatus.SYNCED:
         case NetworkStatus.FULLY_SYNCED:
           this.startGenBlock()
           break
-        default:
+        case NetworkStatus.ON_ERROR:
+          logger.error(`on error, stop generating new blocks`)
           this.stopGenBlock()
-          // cancel proposal
+          break
+        default:
           break
       }
     })
@@ -537,9 +540,7 @@ export class Coordinator extends EventEmitter {
     // 1. pick mass deposits
     const commits: MassDepositSql[] = await this.node.db.read(prisma =>
       prisma.massDeposit.findMany({
-        where: {
-          includedIn: null,
-        },
+        where: { includedIn: null },
       }),
     )
     commits.sort((a, b) => parseInt(a.index, 10) - parseInt(b.index, 10))
@@ -555,6 +556,7 @@ export class Coordinator extends EventEmitter {
       if (a.transactionIndex !== b.transactionIndex) {
         return a.transactionIndex - b.transactionIndex
       }
+      // TODO HERE!!
       return a.logIndex - b.logIndex
     })
     deposits.push(...pendingDeposits.map(deposit => Field.from(deposit.note)))
@@ -730,6 +732,16 @@ export class Coordinator extends EventEmitter {
     const block = Block.fromTx(tx, true)
 
     const finalization: Finalization = block.getFinalization()
+    logger.trace(`latest: ${latest}`)
+    logger.trace(`finalization block: ${block.hash.toString()}`)
+    logger.trace(
+      `header deposit root: ${finalization.header.depositRoot.toString()}`,
+    )
+    logger.trace(
+      `calculated root: ${root(
+        finalization.massDeposits.map(massDepositHash),
+      )}`,
+    )
     return finalization
   }
 }

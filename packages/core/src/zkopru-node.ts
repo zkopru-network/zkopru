@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { ZkAccount } from '@zkopru/account'
-import { DB } from '@zkopru/prisma'
+import { DB, Proposal } from '@zkopru/prisma'
 import { Grove, poseidonHasher, keccakHasher } from '@zkopru/tree'
 import { logger } from '@zkopru/utils'
 import { Uint256 } from 'soltypes'
@@ -12,7 +12,7 @@ import { Verifier, VerifyOption } from './verifier'
 import { L2Chain } from './layer2'
 import { BootstrapHelper } from './bootstrap'
 import { Synchronizer } from './synchronizer'
-import { Block } from './block'
+import { Block, Header } from './block'
 
 export enum NetworkStatus {
   STOPPED = 'stopped',
@@ -127,17 +127,35 @@ export class ZkOPRUNode extends EventEmitter {
   async processBlocks() {
     if (this.processingBlocks) return
     this.processingBlocks = true
-    let processedAll: boolean
     do {
       try {
-        processedAll = await this.processBlock()
+        const unprocessed = await this.l2Chain.getOldestUnprocessedBlock()
+        logger.trace(`unprocessed: ${unprocessed}`)
+        if (!unprocessed) {
+          const latestProcessed = await this.db.read(prisma =>
+            prisma.proposal.findMany({
+              where: {
+                OR: [{ verified: { not: null } }, { isUncle: { not: null } }],
+              },
+              orderBy: { proposalNum: 'desc' },
+              take: 1,
+              include: { block: true },
+            }),
+          )
+          const latest = latestProcessed.pop()
+          this.setLatestProcessed(latest?.proposalNum || 0)
+          break
+        }
+        const processedProposalNum = await this.processBlock(unprocessed)
+        this.setLatestProcessed(processedProposalNum)
       } catch (err) {
         // TODO needs to provide roll back & resync option
         // sync & process error
         logger.error(err)
         break
       }
-    } while (!processedAll)
+      // eslint-disable-next-line no-constant-condition
+    } while (true)
     this.processingBlocks = false
   }
 
@@ -155,16 +173,16 @@ export class ZkOPRUNode extends EventEmitter {
         where: { proposalData: null },
       }),
     )
-    const unverified = await this.db.read(prisma =>
+    const unprocessed = await this.db.read(prisma =>
       prisma.proposal.count({
-        where: { verified: { not: true } },
+        where: { AND: [{ verified: null }, { isUncle: null }] },
       }),
     )
     const haveFetchedAll = unfetched === 0
-    const haveVerifiedAll = unverified === 0
+    const haveProcessedAll = unprocessed === 0
     if (!haveFetchedAll) {
       this.setStatus(NetworkStatus.ON_SYNCING)
-    } else if (!haveVerifiedAll) {
+    } else if (!haveProcessedAll) {
       this.setStatus(NetworkStatus.ON_PROCESSING)
     } else {
       const layer1ProposedBlocks = Uint256.from(
@@ -172,9 +190,7 @@ export class ZkOPRUNode extends EventEmitter {
       )
         .toBN()
         .subn(1) // proposal num starts from 0
-      logger.trace(
-        `total proposed: ${this.l1Contract.upstream.methods.proposedBlocks()}`,
-      )
+      logger.trace(`total proposed: ${layer1ProposedBlocks.toString(10)}`)
       logger.trace(`total processed: ${this.latestProcessed}`)
       if (layer1ProposedBlocks.eqn(this.latestProcessed || 0)) {
         this.setStatus(NetworkStatus.FULLY_SYNCED)
@@ -268,25 +284,11 @@ export class ZkOPRUNode extends EventEmitter {
    * Fork choice rule: we choose the oldest valid block when there exists a fork
    * @returns processedAll
    */
-  private async processBlock(): Promise<boolean> {
-    const unprocessed = await this.l2Chain.getOldestUnprocessedBlock()
-    if (!unprocessed) {
-      if (!this.latestProcessed) {
-        const latestProcessed = await this.db.read(prisma =>
-          prisma.proposal.findMany({
-            where: {
-              AND: [{ verified: { not: null } }, { isUncle: null }],
-            },
-            orderBy: { proposalNum: 'desc' },
-            take: 1,
-            include: { block: true },
-          }),
-        )
-        const latest = latestProcessed.pop()
-        this.setLatestProcessed(latest?.proposalNum || 0)
-      }
-      return true
-    }
+  private async processBlock(unprocessed: {
+    parent: Header
+    block: Block
+    proposal: Proposal
+  }): Promise<number> {
     const { parent, block, proposal } = unprocessed
 
     if (!proposal.proposalNum || !proposal.proposedAt)
@@ -311,21 +313,18 @@ export class ZkOPRUNode extends EventEmitter {
         }),
       )
       // TODO: can not process uncle block's grove patch yet
-      return false
+      return proposal.proposalNum
     }
 
     logger.info(`Processing block ${block.hash.toString()}`)
     // should find and save my notes before calling getGrovePatch
     await this.l2Chain.findMyUtxos(block.body.txs, this.accounts || [])
     await this.l2Chain.findMyWithdrawals(block.body.txs, this.accounts || [])
-    const treePatch = await this.l2Chain.getGrovePatch(block)
     const { patch, challenge } = await this.verifier.verifyBlock({
       layer2: this.l2Chain,
       prevHeader: parent,
-      treePatch,
       block,
     })
-    this.setLatestProcessed(proposal.proposalNum)
     if (patch) {
       // check if there exists fork
       if (isUncle) {
@@ -360,7 +359,7 @@ export class ZkOPRUNode extends EventEmitter {
       logger.warn(challenge)
     }
     // TODO remove proposal data if it completes verification or if the block is finalized
-    return false
+    return proposal.proposalNum
   }
 
   private setStatus(status: NetworkStatus) {

@@ -4,7 +4,7 @@ import { Deposit as DepositSql } from '@zkopru/prisma'
 import { Bytes32, Uint256 } from 'soltypes'
 import { soliditySha3 } from 'web3-utils'
 import BN from 'bn.js'
-import { DryPatchResult, GrovePatch } from '@zkopru/tree'
+import { DryPatchResult } from '@zkopru/tree'
 import {
   Block,
   Header,
@@ -45,12 +45,10 @@ export class Verifier {
   async verifyBlock({
     layer2,
     prevHeader,
-    treePatch,
     block,
   }: {
     layer2: L2Chain
     prevHeader: Header
-    treePatch: GrovePatch
     block: Block
   }): Promise<{ patch?: Patch; challenge?: Challenge }> {
     logger.info(`Verifying ${block.hash}`)
@@ -80,18 +78,18 @@ export class Verifier {
       default:
         break
     }
-    // verify and gen challenge codes here
-    const dryPatchResult = await layer2.grove.dryPatch(treePatch)
-    if (this.option.header) {
-      const code = Verifier.verifyHeader(block, dryPatchResult)
-      if (code) {
-        return { challenge: { code } }
-      }
-    }
     // deposit verification
     for (let i = 0; i < block.body.massDeposits.length; i += 1) {
       const massDeposit = block.body.massDeposits[i]
-      const deposits: DepositSql[] = await layer2.getDeposits(massDeposit)
+      let deposits: DepositSql[]
+      try {
+        deposits = await layer2.getDeposits(massDeposit)
+      } catch (err) {
+        // deposit does not exist
+        return {
+          challenge: { code: 'challengeMassDeposit', data: { index: i } },
+        }
+      }
       let merged
       let fee = new BN(0)
       for (const deposit of deposits) {
@@ -122,6 +120,16 @@ export class Verifier {
         : VerifyResult.PARTIALLY_VERIFIED
     } else {
       result = VerifyResult.INVALIDATED
+    }
+
+    // grove patch verification
+    const treePatch = await layer2.getGrovePatch(block)
+    const dryPatchResult = await layer2.grove.dryPatch(treePatch)
+    if (this.option.header) {
+      const code = Verifier.verifyHeader(block, dryPatchResult)
+      if (code) {
+        return { challenge: { code } }
+      }
     }
     return {
       patch: {

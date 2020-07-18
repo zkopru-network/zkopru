@@ -4,10 +4,12 @@ import {
   Block,
   serializeHeader,
   serializeBody,
+  massDepositHash,
+  massMigrationHash,
 } from '@zkopru/core'
 import { Field } from '@zkopru/babyjubjub'
 import { Address } from 'soltypes'
-import { hexify } from '@zkopru/utils'
+import { hexify, root } from '@zkopru/utils'
 import { Transaction } from 'web3-core'
 import { loadZkTxs } from './testset-zktxs'
 
@@ -75,6 +77,9 @@ export async function getDummyBody(): Promise<Body> {
 export async function getDummyBlock(): Promise<Block> {
   const header = dummyHeader
   const body = await getDummyBody()
+  header.txRoot = root(body.txs.map(tx => tx.hash()))
+  header.depositRoot = root(body.massDeposits.map(massDepositHash))
+  header.migrationRoot = root(body.massMigrations.map(massMigrationHash))
   const serializedBlock = Buffer.concat([
     serializeHeader(header),
     serializeBody(body),
@@ -82,7 +87,6 @@ export async function getDummyBlock(): Promise<Block> {
   const dummySelector = 'aaaaaaaa'
   const lengthToHex = hexify(serializedBlock.length, 32).slice(2)
   const paramPosition = hexify(32, 32).slice(2)
-  console.log('length to hex', lengthToHex)
   const dummyTx: Transaction = {
     hash: 'dummyhash',
     nonce: 1,
