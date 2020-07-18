@@ -10,7 +10,7 @@ services:
     command: ganache-cli --db=/data -i 20200406 -p 5000 --deterministic --host 0.0.0.0 --secure --blockTime 10
   postgres:
     ports:
-      - "5432:5432"
+      - "5678:5432"
     build:
       context: ./
       dockerfile: ./containers/Postgres.dockerfile
