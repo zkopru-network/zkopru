@@ -201,18 +201,16 @@ export class L2Chain {
 
   async isUncleBlock(
     parentBlock: Bytes32,
-    proposedAt: number,
+    proposalNum: number,
   ): Promise<boolean> {
     const canonical = await this.db.read(prisma =>
       prisma.proposal.findMany({
         where: {
           AND: [
-            { proposedAt: { lt: proposedAt } },
+            { proposalNum: { lt: proposalNum } },
             {
               block: {
-                header: {
-                  parentBlock: { equals: parentBlock.toString() },
-                },
+                header: { parentBlock: { equals: parentBlock.toString() } },
               },
             },
             { verified: true },

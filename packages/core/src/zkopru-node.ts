@@ -151,7 +151,7 @@ export class ZkOPRUNode extends EventEmitter {
       } catch (err) {
         // TODO needs to provide roll back & resync option
         // sync & process error
-        logger.error(err)
+        logger.warn(`Failed process a block - ${err}`)
         break
       }
       // eslint-disable-next-line no-constant-condition
@@ -296,7 +296,7 @@ export class ZkOPRUNode extends EventEmitter {
 
     const isUncle = await this.l2Chain.isUncleBlock(
       block.header.parentBlock,
-      proposal.proposedAt,
+      proposal.proposalNum,
     )
 
     if (isUncle) {

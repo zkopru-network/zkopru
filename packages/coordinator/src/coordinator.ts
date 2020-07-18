@@ -32,11 +32,11 @@ import { Account, TransactionReceipt } from 'web3-core'
 import { Subscription } from 'web3-core-subscriptions'
 import { MassDeposit as MassDepositSql } from '@zkopru/prisma'
 import { Server } from 'http'
-import chalk from 'chalk'
 import { Address, Bytes32, Uint256 } from 'soltypes'
 import BN from 'bn.js'
 import { soliditySha3Raw } from 'web3-utils'
 import assert from 'assert'
+import AsyncLock from 'async-lock'
 import { TxMemPool, TxPoolInterface } from './tx_pool'
 
 export interface CoordinatorConfig {
@@ -77,7 +77,7 @@ export class Coordinator extends EventEmitter {
 
   massDepositCommitJob?: Job
 
-  isProposing = false
+  proposeLock: AsyncLock
 
   constructor(node: FullNode, account: Account, config: CoordinatorConfig) {
     super()
@@ -86,6 +86,7 @@ export class Coordinator extends EventEmitter {
     this.txPool = new TxMemPool()
     this.config = { priceMultiplier: 32, ...config }
     this.bootstrapCache = {}
+    this.proposeLock = new AsyncLock()
   }
 
   start() {
@@ -432,27 +433,31 @@ export class Coordinator extends EventEmitter {
   }
 
   private async proposeTask() {
-    if (this.isProposing) return
-    this.isProposing = true
-    try {
-      this.proposeNewBlock()
-    } catch (err) {
-      logger.error(`Error occurred during block proposing.`)
-      logger.error(err)
-    }
-    this.isProposing = false
+    if (this.proposeLock.isBusy('propose')) return
+    await this.proposeLock.acquire('propose', async () => {
+      logger.trace(`try to propose a new block`)
+      try {
+        const receipt = await this.proposeNewBlock()
+        if (receipt) {
+          await this.node.updateStatus()
+        }
+      } catch (err) {
+        logger.error(`Error occurred during block proposing.`)
+        logger.error(err)
+      }
+    })
   }
 
-  private async proposeNewBlock() {
+  private async proposeNewBlock(): Promise<TransactionReceipt | undefined> {
     if (!this.gasPrice) {
       logger.trace('Skip gen block. Gas price is not synced yet')
-      return
+      return undefined
     }
     if (this.node.status !== NetworkStatus.FULLY_SYNCED) {
       logger.trace(
         `Skip gen block. Syncing layer 2 with the layer 1 - status: ${this.node.status}`,
       )
-      return
+      return undefined
     }
     let block: {
       header: Header
@@ -463,7 +468,7 @@ export class Coordinator extends EventEmitter {
       block = await this.genBlock()
     } catch (err) {
       logger.warn(`Failed to gen block: ${err}`)
-      return
+      return undefined
     }
     const blockHash = headerHash(block.header)
     const siblingProposals = await this.node.db.read(prisma =>
@@ -486,7 +491,7 @@ export class Coordinator extends EventEmitter {
     )
     if (siblingProposals.length > 0) {
       logger.info(`Already proposed for the given parent block`)
-      return
+      return undefined
     }
 
     const bytes = Buffer.concat([
@@ -504,28 +509,25 @@ export class Coordinator extends EventEmitter {
       })
     } catch (err) {
       logger.warn(`propose() fails. Skip gen block`)
-      return
+      return undefined
     }
     const expectedFee = this.gasPrice.muln(expectedGas)
     if (block.fee.lte(expectedFee)) {
       logger.info(
         `Skip gen block. Aggregated fee is not enough yet ${block.fee} / ${expectedFee}`,
       )
-    } else {
-      const receipt = await this.node.l1Contract.sendTx(
-        proposeTx,
-        this.account,
-        {
-          gas: expectedGas,
-          gasPrice: this.gasPrice.toString(),
-        },
-      )
-      if (receipt) {
-        logger.info(chalk.green(`Proposed a new block: ${blockHash}`))
-      } else {
-        logger.warn(chalk.green(`Failed to propose a new block: ${blockHash}`))
-      }
+      return undefined
     }
+    const receipt = await this.node.l1Contract.sendTx(proposeTx, this.account, {
+      gas: expectedGas,
+      gasPrice: this.gasPrice.toString(),
+    })
+    if (receipt) {
+      logger.info(`Proposed a new block: ${blockHash}`)
+    } else {
+      logger.warn(`Failed to propose a new block: ${blockHash}`)
+    }
+    return receipt
   }
 
   private async genBlock(): Promise<{

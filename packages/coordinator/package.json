@@ -39,6 +39,7 @@
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/tree": "file:../tree",
     "@zkopru/utils": "file:../utils",
+    "async-lock": "^1.2.2",
     "big-integer": "^1.6.48",
     "bip39": "^3.0.2",
     "blessed": "^0.1.81",
