@@ -118,7 +118,7 @@ export class Coordinatable extends Contract {
 
     deregister(): TransactionObject<void>
 
-    propose(arg0: string | number[]): TransactionObject<void>
+    propose(data: string | number[]): TransactionObject<void>
 
     commitMassDeposit(): TransactionObject<void>
 

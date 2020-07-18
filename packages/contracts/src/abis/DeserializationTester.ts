@@ -18,6 +18,13 @@ export const DeserializationTesterABI = [
     type: 'function',
   },
   {
+    inputs: [{ internalType: 'bytes', name: '_data', type: 'bytes' }],
+    name: 'getProposalChecksum',
+    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
+    stateMutability: 'pure',
+    type: 'function',
+  },
+  {
     inputs: [{ internalType: 'bytes', name: '', type: 'bytes' }],
     name: 'getParentBlock',
     outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],

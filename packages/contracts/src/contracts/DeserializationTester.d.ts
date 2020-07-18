@@ -25,6 +25,8 @@ export class DeserializationTester extends Contract {
       arg2: string | number[],
     ): TransactionObject<string>
 
+    getProposalChecksum(_data: string | number[]): TransactionObject<string>
+
     getParentBlock(arg0: string | number[]): TransactionObject<string>
 
     getParentBlock2(
