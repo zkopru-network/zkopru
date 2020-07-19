@@ -9,6 +9,11 @@ develop:
 	@yarn build:ts
 	@docker-compose -f docker-compose.dev.yml up --build --force-recreate -V
 
+develop-instant:
+	$(info Make: yarn build:ts && docker-compose -f docker-compose.dev.yml up --build)
+	@yarn build:ts
+	@docker-compose -f docker-compose.instant-block.yml up --build --force-recreate -V
+
 playground-container:
 	$(info Make: build container and compile circuits)
 	@docker build -f containers/Playground.dockerfile ./ -t zkoprunet/playground --no-cache
