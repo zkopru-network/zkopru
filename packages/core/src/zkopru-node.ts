@@ -124,6 +124,15 @@ export class ZkOPRUNode extends EventEmitter {
     }
   }
 
+  addAccounts(...accounts: ZkAccount[]) {
+    this.accounts = this.accounts || []
+    const newAccounts = accounts.filter(
+      newAccount =>
+        !this.accounts?.find(acc => acc.pubKey.eq(newAccount.pubKey)),
+    )
+    this.accounts.push(...newAccounts)
+  }
+
   async processBlocks() {
     if (this.processingBlocks) return
     this.processingBlocks = true

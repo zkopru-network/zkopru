@@ -6,7 +6,7 @@ export default class TopMenu extends App {
 
   // eslint-disable-next-line class-methods-use-this
   async run(context: Context): Promise<{ context: Context; next: number }> {
-    const accounts: ZkAccount[] = await this.base.wallet.retrieveAccounts()
+    const accounts: ZkAccount[] = await this.base.retrieveAccounts()
     const { idx } = await this.ask({
       type: 'select',
       name: 'idx',
@@ -29,7 +29,7 @@ export default class TopMenu extends App {
     let reRun: { context: Context; next: number }
     switch (idx) {
       case -1:
-        await this.base.wallet.createAccount(accounts.length)
+        await this.base.createAccount(accounts.length)
         reRun = await this.run(context)
         return reRun
       case -2:

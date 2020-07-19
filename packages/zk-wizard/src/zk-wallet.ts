@@ -30,7 +30,7 @@ export interface Balance {
 export class ZkWallet {
   db: DB
 
-  wallet: HDWallet
+  private wallet: HDWallet
 
   node: ZkOPRUNode
 
@@ -97,6 +97,19 @@ export class ZkWallet {
     } else {
       this.account = account
     }
+  }
+
+  async retrieveAccounts(): Promise<ZkAccount[]> {
+    const accounts = await this.wallet.retrieveAccounts()
+    this.accounts = accounts
+    this.node.addAccounts(...accounts)
+    return accounts
+  }
+
+  async createAccount(idx: number) {
+    const newAccount = await this.wallet.createAccount(idx)
+    this.node.addAccounts(newAccount)
+    return newAccount
   }
 
   async getSpendableAmount(account: ZkAccount): Promise<Sum> {
