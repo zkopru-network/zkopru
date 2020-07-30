@@ -111,13 +111,25 @@ This uses airbnb eslint, and husky will automatically prettify using commit-hook
     yarn build
     ```
 
+3. Run development env
+
+    ```shell
+    make develop
+    ```
+
+    This command will run the coordinator & cli wallet using docker and you can easily access to the running programs via web browser.
+    * coordinator: http://localhost:1234
+    * cli wallet: http://localhost:4321
+
+    Or you can setup the environment without docker-compose. Please check ["Manually setup Run cli applications"](#manually-setup-run-cli-applications) section.
+
 ### Integration test
 
 ```
 yarn test
 ```
 
-### Run cli applications
+### Manually setup Run cli applications
 
 1. Prepare three terminals
 
@@ -142,15 +154,14 @@ yarn test
     ```
     This will give you a cli menu to run wallet locally.
 
-### Log files
+5. It stores the dev log in `packages/cli/WALLET_LOG` and `packages/cli/COORDINATOR_LOG`. You can beautify the logs using this command.
 
-It stores the dev log in `packages/cli/WALLET_LOG` and `packages/cli/COORDINATOR_LOG`. You can beautify the logs using this command.
+    ```shell
+    $ npm install -g pino-pretty
+    $ tail -f packages/cli/WALLET_LOG | pino-pretty
+    $ tail -f packages/cli/COORDINATOR_LOG | pino-pretty
+    ```
 
-```shell
-$ npm install -g pino-pretty
-$ tail -f packages/cli/WALLET_LOG | pino-pretty
-$ tail -f packages/cli/COORDINATOR_LOG | pino-pretty
-```
 ### Explore database
 
 You can open the Prisma Studio to explore the database with following steps:
