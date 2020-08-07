@@ -21,7 +21,7 @@ export default class TrackingAccount extends Configurator {
     this.print(chalk.blue('List of tracking accounts'))
     const accounts: ZkAccount[] = await context.wallet.retrieveAccounts()
     message = accounts.reduce(
-      (val, account, idx) => `${val}\n${idx}: ${account.address}`,
+      (val, account, idx) => `${val}\n${idx}: ${account.ethAddress}`,
       message,
     )
     this.print(message)

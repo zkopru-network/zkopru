@@ -17,7 +17,7 @@ describe('index', () => {
       const tx1 = zktxs[0]
       const note = accounts.bob.decrypt(tx1)
       expect(note).toBeDefined()
-      expect(note?.pubKey.toHex()).toBe(accounts.bob.pubKey.toHex())
-    }, 600000)
+      expect(note?.owner.toString()).toBe(accounts.bob.zkAddress.toString())
+    }, 60000)
   })
 })

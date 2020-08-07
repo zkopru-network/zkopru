@@ -52,7 +52,7 @@ describe('testnet', () => {
     it('coordinator can register vks', testRegisterVKs(ctx))
     it('alice, bob, and carl cannot register vks', testRegisterVKFails(ctx))
   })
-  describe('3: Complete setup', () => {
+  describe.skip('3: Complete setup', () => {
     describe('3-1: before completeSetup() called', () => {
       it('should allow only the coordinator', testCompleteSetup(ctx))
     })

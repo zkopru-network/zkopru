@@ -122,7 +122,7 @@ describe('utxo tree unit test', () => {
     }))
     beforeAll(async () => {
       await utxoTree.append(...items)
-      utxoTree.updatePubKeys([accounts.alice.pubKey])
+      utxoTree.updatePubKeys([accounts.alice.zkAddress])
     })
     it("should track Alice's utxos while not tracking Bob's", async () => {
       const aliceUtxoProof = await utxoTree.merkleProof({

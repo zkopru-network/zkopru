@@ -1,46 +1,49 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { Field, Point } from '@zkopru/babyjubjub'
-import { RawTx, TokenUtils, Utxo } from '@zkopru/transaction'
+import { Field } from '@zkopru/babyjubjub'
+import { RawTx, TokenUtils, Utxo, ZkAddress } from '@zkopru/transaction'
+import { ZkAccount } from '@zkopru/account'
 
 const alicePrivKey = "I am Alice's private key"
-const alicePubKey: Point = Point.fromPrivKey(alicePrivKey)
 const bobPrivKey = "I am Bob's private key"
-const bobPubKey: Point = Point.fromPrivKey(bobPrivKey)
+const aliceAccount = new ZkAccount(alicePrivKey)
+const bobAccount = new ZkAccount(bobPrivKey)
+const aliceZkAddress: ZkAddress = aliceAccount.zkAddress
+const bobZkAddress: ZkAddress = bobAccount.zkAddress
 
 const utxo1_in_1: Utxo = Utxo.newEtherNote({
   eth: 3333,
-  pubKey: alicePubKey,
+  owner: aliceZkAddress,
   salt: 11,
 })
 const utxo1_out_1: Utxo = Utxo.newEtherNote({
   eth: 2221,
-  pubKey: bobPubKey,
+  owner: bobZkAddress,
   salt: 12,
 })
 const utxo1_out_2: Utxo = Utxo.newEtherNote({
   eth: 1111,
-  pubKey: alicePubKey,
+  owner: aliceZkAddress,
   salt: 13,
 })
 const utxo2_1_in_1: Utxo = Utxo.newERC20Note({
   eth: 22222333333,
   tokenAddr: TokenUtils.DAI,
   erc20Amount: 8888,
-  pubKey: alicePubKey,
+  owner: aliceZkAddress,
   salt: 14,
 })
 const utxo2_1_out_1: Utxo = Utxo.newERC20Note({
   eth: 22222333332,
   tokenAddr: TokenUtils.DAI,
   erc20Amount: 5555,
-  pubKey: alicePubKey,
+  owner: aliceZkAddress,
   salt: 15,
 })
 const utxo2_1_out_2: Utxo = Utxo.newERC20Note({
   eth: 0,
   tokenAddr: TokenUtils.DAI,
   erc20Amount: 3333,
-  pubKey: bobPubKey,
+  owner: bobZkAddress,
   salt: 16,
 })
 
@@ -57,39 +60,39 @@ const utxo2_2_in_1: Utxo = Utxo.newNFTNote({
   eth: 7777777777,
   tokenAddr: TokenUtils.CRYPTO_KITTIES,
   nft: KITTY_1,
-  pubKey: bobPubKey,
+  owner: bobZkAddress,
   salt: 17,
 })
 const utxo2_2_out_1: Utxo = Utxo.newEtherNote({
   eth: 7777777776,
-  pubKey: bobPubKey,
+  owner: bobZkAddress,
   salt: 18,
 })
 const utxo2_2_out_2: Utxo = Utxo.newNFTNote({
   eth: 0,
   tokenAddr: TokenUtils.CRYPTO_KITTIES,
   nft: KITTY_1,
-  pubKey: alicePubKey,
+  owner: aliceZkAddress,
   salt: 19,
 })
 const utxo3_in_1: Utxo = Utxo.newEtherNote({
   eth: 111111111111111,
-  pubKey: alicePubKey,
+  owner: aliceZkAddress,
   salt: 21,
 })
 const utxo3_in_2: Utxo = Utxo.newEtherNote({
   eth: 222222222222222,
-  pubKey: alicePubKey,
+  owner: aliceZkAddress,
   salt: 22,
 })
 const utxo3_in_3: Utxo = Utxo.newEtherNote({
   eth: 333333333333333,
-  pubKey: alicePubKey,
+  owner: aliceZkAddress,
   salt: 23,
 })
 const utxo3_out_1: Utxo = Utxo.newEtherNote({
   eth: 666666666666664,
-  pubKey: alicePubKey,
+  owner: aliceZkAddress,
   salt: 24,
 })
 
@@ -97,40 +100,40 @@ utxo3_out_1.toWithdrawal({ to: Field.from(USER_A), fee: Field.from(1) })
 
 const utxo4_in_1: Utxo = Utxo.newEtherNote({
   eth: 8888888888888,
-  pubKey: alicePubKey,
+  owner: aliceZkAddress,
   salt: 25,
 })
 const utxo4_in_2: Utxo = Utxo.newERC20Note({
   eth: 0,
   tokenAddr: TokenUtils.DAI,
   erc20Amount: 5555,
-  pubKey: alicePubKey,
+  owner: aliceZkAddress,
   salt: 26,
 })
 const utxo4_in_3: Utxo = Utxo.newNFTNote({
   eth: 0,
   tokenAddr: TokenUtils.CRYPTO_KITTIES,
   nft: KITTY_2,
-  pubKey: alicePubKey,
+  owner: aliceZkAddress,
   salt: 27,
 })
 const utxo4_out_1: Utxo = Utxo.newEtherNote({
   eth: 8888888888884,
-  pubKey: alicePubKey,
+  owner: aliceZkAddress,
   salt: 28,
 }) // fee for tx & fee for withdrawal for each utxos
 const utxo4_out_2: Utxo = Utxo.newERC20Note({
   eth: 0,
   tokenAddr: TokenUtils.DAI,
   erc20Amount: 5555,
-  pubKey: alicePubKey,
+  owner: aliceZkAddress,
   salt: 29,
 })
 const utxo4_out_3: Utxo = Utxo.newNFTNote({
   eth: 0,
   tokenAddr: TokenUtils.CRYPTO_KITTIES,
   nft: KITTY_2,
-  pubKey: alicePubKey,
+  owner: aliceZkAddress,
   salt: 30,
 })
 const migration_4_1 = utxo4_out_1.toMigration({
@@ -180,9 +183,9 @@ const tx_4: RawTx = {
 
 export const keys = {
   alicePrivKey,
-  alicePubKey,
+  alicePubKey: aliceZkAddress,
   bobPrivKey,
-  bobPubKey,
+  bobPubKey: bobZkAddress,
 }
 
 export const address = {

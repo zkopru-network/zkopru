@@ -21,12 +21,12 @@ export const IUserInteractableABI = [
   },
   {
     inputs: [
-      { internalType: 'uint256', name: 'eth', type: 'uint256' },
+      { internalType: 'uint256', name: 'spendingPubKey', type: 'uint256' },
       { internalType: 'uint256', name: 'salt', type: 'uint256' },
+      { internalType: 'uint256', name: 'eth', type: 'uint256' },
       { internalType: 'address', name: 'token', type: 'address' },
       { internalType: 'uint256', name: 'amount', type: 'uint256' },
       { internalType: 'uint256', name: 'nft', type: 'uint256' },
-      { internalType: 'uint256[2]', name: 'pubKey', type: 'uint256[2]' },
       { internalType: 'uint256', name: 'fee', type: 'uint256' },
     ],
     name: 'deposit',

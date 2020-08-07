@@ -1,5 +1,5 @@
-import { Point, Field } from '@zkopru/babyjubjub'
-import { Sum, TxBuilder, RawTx, Utxo } from '@zkopru/transaction'
+import { Field } from '@zkopru/babyjubjub'
+import { Sum, TxBuilder, RawTx, Utxo, ZkAddress } from '@zkopru/transaction'
 import { parseStringToUnit, logger } from '@zkopru/utils'
 import { fromWei, toBN, toWei, isAddress } from 'web3-utils'
 import { Address } from 'soltypes'
@@ -29,7 +29,7 @@ export default class WithdrawRequestEth extends App {
       'ether',
     )
     const messages: string[] = []
-    messages.push(`Account: ${account.pubKey.toHex()}`)
+    messages.push(`Account: ${account.zkAddress.toString()}`)
     messages.push(`Withdrawable ETH: ${fromWei(spendableAmount.eth, 'ether')}`)
     messages.push(
       `Recommended fee per byte: ${fromWei(weiPerByte, 'gwei')} gwei / byte`,
@@ -104,14 +104,14 @@ export default class WithdrawRequestEth extends App {
       msgs.push(`    = ${fromWei(confirmedPrePayFeeToWei, 'gwei')} gwei`)
       this.print(messages.join('\n'))
 
-      const txBuilder = TxBuilder.from(account.pubKey)
+      const txBuilder = TxBuilder.from(account.zkAddress)
       try {
         tx = txBuilder
           .provide(...spendables.map(note => Utxo.from(note)))
           .weiPerByte(confirmedWeiPerByte)
           .sendEther({
             eth: Field.from(amountWei),
-            to: Point.zero,
+            to: ZkAddress.null,
             withdrawal: {
               to: Field.from(to.toString()),
               fee: Field.from(confirmedPrePayFeeToWei),

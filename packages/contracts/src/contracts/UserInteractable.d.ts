@@ -119,12 +119,12 @@ export class UserInteractable extends Contract {
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
 
     deposit(
-      eth: number | string,
+      spendingPubKey: number | string,
       salt: number | string,
+      eth: number | string,
       token: string,
       amount: number | string,
       nft: number | string,
-      pubKey: (number | string)[],
       fee: number | string,
     ): TransactionObject<void>
 

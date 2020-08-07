@@ -5,6 +5,7 @@ RUN apk add --no-cache --virtual .gyp \
         g++ \
     && npm install -g truffle ganache-cli \
     && apk del .gyp
+RUN apk add git
 WORKDIR /proj
 COPY ./package.json /proj/package.json
 RUN yarn install

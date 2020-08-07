@@ -33,6 +33,7 @@
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/utils": "file:../utils",
     "bip39": "^3.0.2",
+    "circomlib": "^0.1.1",
     "hdkey": "^1.1.1",
     "web3": "^1.2.6",
     "web3-core": "^1.2.6",

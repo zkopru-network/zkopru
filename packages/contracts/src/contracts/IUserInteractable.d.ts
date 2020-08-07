@@ -18,12 +18,12 @@ export class IUserInteractable extends Contract {
   clone(): IUserInteractable
   methods: {
     deposit(
-      eth: number | string,
+      spendingPubKey: number | string,
       salt: number | string,
+      eth: number | string,
       token: string,
       amount: number | string,
       nft: number | string,
-      pubKey: (number | string)[],
       fee: number | string,
     ): TransactionObject<void>
 

@@ -34,8 +34,7 @@ export async function getZkWallet(
     base: config,
     onCancel,
     infoStream: new Writable({
-      write: (chunk, _, cb) => {
-        console.log(chunk.toString())
+      write: (_chunk, _enc, cb) => {
         cb()
       },
     }),

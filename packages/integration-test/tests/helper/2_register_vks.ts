@@ -25,7 +25,7 @@ export const testRegisterVKs = (ctx: Provider) => async () => {
         )
         const estimatedGas = await tx.estimateGas()
         const receipt = await tx.send({
-          from: accounts.coordinator.address,
+          from: accounts.coordinator.ethAddress,
           gas: estimatedGas,
         })
         registeredNum += 1
@@ -51,12 +51,12 @@ export const testRegisterVKFails = (ctx: Provider) => async () => {
   )
   const estimatedGas = await tx.estimateGas()
   await expect(
-    tx.send({ from: accounts.alice.address, gas: estimatedGas }),
+    tx.send({ from: accounts.alice.ethAddress, gas: estimatedGas }),
   ).rejects.toThrow()
   await expect(
-    tx.send({ from: accounts.bob.address, gas: estimatedGas }),
+    tx.send({ from: accounts.bob.ethAddress, gas: estimatedGas }),
   ).rejects.toThrow()
   await expect(
-    tx.send({ from: accounts.carl.address, gas: estimatedGas }),
+    tx.send({ from: accounts.carl.ethAddress, gas: estimatedGas }),
   ).rejects.toThrow()
 }

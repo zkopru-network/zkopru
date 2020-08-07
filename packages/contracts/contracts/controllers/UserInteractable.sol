@@ -15,15 +15,15 @@ contract UserInteractable is Layer2 {
     event Deposit(uint indexed queuedAt, uint note, uint fee);
 
     function deposit(
-        uint eth,
+        uint spendingPubKey,
         uint salt,
+        uint eth,
         address token,
         uint amount,
         uint nft,
-        uint[2] memory pubKey,
         uint fee
     ) public payable {
-        _deposit(eth, salt, token, amount, nft, pubKey, fee);
+        _deposit(spendingPubKey, salt, eth, token, amount, nft, fee);
     }
     
     function withdraw(
@@ -105,12 +105,12 @@ contract UserInteractable is Layer2 {
     }
 
     function _deposit(
-        uint eth,
+        uint spendingPubKey,
         uint salt,
+        uint eth,
         address token,
         uint amount,
         uint nft,
-        uint[2] memory pubKey,
         uint fee
     ) internal {
         require(msg.value < RANGE_LIMIT, "Too big value can cause the overflow inside the SNARK");
@@ -122,17 +122,16 @@ contract UserInteractable is Layer2 {
 
         ///TODO: require(fee >= specified fee);
         /// Validate the note is same with the hash result
-        uint[] memory firstHashInputs = new uint[](4);
-        firstHashInputs[0] = eth;
-        firstHashInputs[1] = pubKey[0];
-        firstHashInputs[2] = pubKey[1];
-        firstHashInputs[3] = salt;
-        uint firstHash = Poseidon6.poseidon(firstHashInputs);
-        uint[] memory resultHashInputs = new uint[](4);
-        resultHashInputs[0] = firstHash;
-        resultHashInputs[1] = uint(token);
-        resultHashInputs[2] = amount;
-        resultHashInputs[3] = nft;
+        uint[] memory assetHashInputs = new uint[](4);
+        assetHashInputs[0] = eth;
+        assetHashInputs[1] = uint(token);
+        assetHashInputs[2] = amount; //erc20 amount
+        assetHashInputs[3] = nft;
+        uint assetHash = Poseidon6.poseidon(assetHashInputs);
+        uint[] memory resultHashInputs = new uint[](3);
+        resultHashInputs[0] = spendingPubKey;
+        resultHashInputs[1] = salt;
+        resultHashInputs[2] = assetHash;
         uint note = Poseidon6.poseidon(resultHashInputs);
         /// Receive token
         if (token != address(0) && amount != 0) {

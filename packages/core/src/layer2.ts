@@ -312,12 +312,24 @@ export class L2Chain {
           .hash()
           .toUint256()
           .toString(),
-        eth: note.eth.toUint256().toString(),
-        pubKey: Bytes32.from(note.pubKey.toHex()).toString(),
+        eth: note
+          .eth()
+          .toUint256()
+          .toString(),
+        owner: note.owner.toString(),
         salt: note.salt.toUint256().toString(),
-        tokenAddr: note.tokenAddr.toAddress().toString(),
-        erc20Amount: note.erc20Amount.toUint256().toString(),
-        nft: note.nft.toUint256().toString(),
+        tokenAddr: note
+          .tokenAddr()
+          .toAddress()
+          .toString(),
+        erc20Amount: note
+          .erc20Amount()
+          .toUint256()
+          .toString(),
+        nft: note
+          .nft()
+          .toUint256()
+          .toString(),
         status: UtxoStatus.UNSPENT,
         usedAt: null,
       }
@@ -352,13 +364,15 @@ export class L2Chain {
       )}`,
     )
     logger.debug(
-      `my address =>${accounts.map(account => account.address.toLowerCase())}`,
+      `my address =>${accounts.map(account =>
+        account.ethAddress.toLowerCase(),
+      )}`,
     )
     const myWithdrawalOutputs: ZkOutflow[] = outflows.filter(
       outflow =>
         outflow.data &&
         accounts
-          .map(account => account.address.toLowerCase())
+          .map(account => account.ethAddress.toLowerCase())
           .includes(
             outflow.data?.to
               .toAddress()

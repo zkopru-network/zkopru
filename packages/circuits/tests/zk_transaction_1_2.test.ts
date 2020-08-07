@@ -6,32 +6,45 @@ import * as ffjs from 'ffjavascript'
 import { getZkSnarkParams, calculateWitness } from '~utils/snark'
 import { getContainer } from '~utils/docker'
 import { utxos } from '~dataset/testset-utxos'
+import { accounts } from '~dataset/testset-keys'
+import { Field } from '~babyjubjub/field'
 
-describe('note_hash.circom', () => {
+describe.skip('zk_transaction_1_2.circom', () => {
   let container: Container
   beforeAll(async () => {
-    container = await getContainer('wanseob/zkopru-circuits-test:0.0.1')
+    container = await getContainer('zkoprunet/circuits-test')
     await container.start()
   })
   afterAll(async () => {
     await container.stop()
     await container.delete()
   })
-  describe('noteHash()', () => {
+  describe('ZkTransaction(1, 2)', () => {
     it('should return same hash with its typescript version', async () => {
       const { wasm, pk, vk } = await getZkSnarkParams(
         container,
-        'note_hash.test.circom',
+        'zk_transaction_1_2.test.circom',
       )
       const utxo = utxos.utxo1_out_1
+      const account = accounts.bob
+      const eddsa = account.signEdDSA(utxo.hash())
       const witness = await calculateWitness(wasm, {
-        eth: utxo.eth.toIden3BigInt(),
-        pubkey_x: utxo.pubKey.x.toIden3BigInt(),
-        pubkey_y: utxo.pubKey.y.toIden3BigInt(),
+        pG_x: account.getEdDSAPoint().x.toIden3BigInt(),
+        pG_y: account.getEdDSAPoint().y.toIden3BigInt(),
+        sig_r8x: eddsa.R8.x.toIden3BigInt(),
+        sig_r8y: eddsa.R8.y.toIden3BigInt(),
+        sig_s: eddsa.S.toIden3BigInt(),
+        nullifier_seed: account.getNullifierSeed().toIden3BigInt(),
         salt: utxo.salt.toIden3BigInt(),
-        token_addr: utxo.tokenAddr.toIden3BigInt(),
-        erc20: utxo.erc20Amount.toIden3BigInt(),
-        nft: utxo.nft.toIden3BigInt(),
+        eth: utxo.eth().toIden3BigInt(),
+        token_addr: utxo.tokenAddr().toIden3BigInt(),
+        erc20: utxo.erc20Amount().toIden3BigInt(),
+        erc721: utxo.nft().toIden3BigInt(),
+        leaf_index: Field.from(32).toIden3BigInt(),
+        note_hash: utxo.hash().toIden3BigInt(),
+        nullifier: utxo
+          .nullifier(account.getNullifierSeed(), Field.from(32))
+          .toIden3BigInt(),
       })
       const { proof, publicSignals } = snarkjs.groth.genProof(
         ffjs.utils.unstringifyBigInts(pk),

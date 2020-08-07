@@ -13,7 +13,7 @@ export default class TopMenu extends App {
       message: 'Which account do you want to use?',
       choices: [
         ...accounts.map((obj, i) => ({
-          title: obj.address,
+          title: obj.ethAddress,
           value: i,
         })),
         {

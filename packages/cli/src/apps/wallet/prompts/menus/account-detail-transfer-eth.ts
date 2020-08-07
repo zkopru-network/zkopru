@@ -1,5 +1,5 @@
-import { Point, Field } from '@zkopru/babyjubjub'
-import { Sum, TxBuilder, RawTx, Utxo } from '@zkopru/transaction'
+import { Field } from '@zkopru/babyjubjub'
+import { Sum, TxBuilder, RawTx, Utxo, ZkAddress } from '@zkopru/transaction'
 import { parseStringToUnit, logger } from '@zkopru/utils'
 import { fromWei, toBN, toWei } from 'web3-utils'
 import App, { AppMenu, Context } from '..'
@@ -28,7 +28,7 @@ export default class TransferEth extends App {
       'ether',
     )
     const messages: string[] = []
-    messages.push(`Account: ${account.pubKey.toHex()}`)
+    messages.push(`Account: ${account.zkAddress.toString()}`)
     messages.push(`Spendable ETH: ${fromWei(spendableAmount.eth, 'ether')}`)
     messages.push(
       `Recommended fee per byte: ${fromWei(weiPerByte, 'gwei')} gwei / byte`,
@@ -40,26 +40,20 @@ export default class TransferEth extends App {
     let amountWei: string
     let confirmedWeiPerByte: string
     let tx!: RawTx
-    let to!: Point
+    let to!: ZkAddress
     do {
       const msgs: string[] = []
-      const { pubKey } = await this.ask({
+      const { zkAddress } = await this.ask({
         type: 'text',
-        name: 'pubKey',
-        initial:
-          '0xabcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
-        message: 'Send to? (babyjubjub pub key)',
+        name: 'zkAddress',
+        initial: 'bbyozxbgoaisdfnjcx7zisdfasdfuhaisdf81..',
+        message: 'Send to? (Zkopru address)',
       })
       try {
-        to = Point.fromHex(pubKey)
+        to = new ZkAddress(zkAddress)
       } catch (err) {
-        logger.error(`Failed to get a point from ${pubKey}`)
+        logger.error(`Failed to get a point from ${zkAddress}`)
         logger.error(err)
-      }
-      if (!to || !Point.isOnJubjub(to.x, to.y)) {
-        this.print('Provided invalid babyjubjub point')
-        // eslint-disable-next-line no-continue
-        continue
       }
       const { amount } = await this.ask({
         type: 'text',
@@ -86,7 +80,7 @@ export default class TransferEth extends App {
       msgs.push(`    = ${fromWei(confirmedWeiPerByte, 'gwei')} gwei`)
       this.print(messages.join('\n'))
 
-      const txBuilder = TxBuilder.from(account.pubKey)
+      const txBuilder = TxBuilder.from(account.zkAddress)
       try {
         tx = txBuilder
           .provide(...spendables.map(note => Utxo.from(note)))

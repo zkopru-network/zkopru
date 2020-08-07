@@ -26,7 +26,7 @@ describe('grove full sync grove()', () => {
       nullifierHasher: keccakHasher(254),
       fullSync: true,
       forceUpdate: !false,
-      pubKeysToObserve: [accounts.alice.pubKey],
+      zkAddressesToObserve: [accounts.alice.zkAddress],
       addressesToObserve: [address.USER_A],
     })
     await fullSyncGrvoe.init()
@@ -39,7 +39,7 @@ describe('grove full sync grove()', () => {
   })
   describe('setPubKeysToObserve()', () => {
     it('should register public keys to keep track for the inclusion proof for tx building', () => {
-      fullSyncGrvoe.setPubKeysToObserve([accounts.alice.pubKey])
+      fullSyncGrvoe.setZkAddressesToObserve([accounts.alice.zkAddress])
     })
   })
   describe('setAddressesToObserve()', () => {
@@ -168,7 +168,7 @@ describe('grove full sync grove()', () => {
         nullifierHasher: keccakHasher(254),
         fullSync: false,
         forceUpdate: !true,
-        pubKeysToObserve: [accounts.alice.pubKey],
+        zkAddressesToObserve: [accounts.alice.zkAddress],
         addressesToObserve: [address.USER_A],
       })
       await lightSyncGrove.init()

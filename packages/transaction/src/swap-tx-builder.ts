@@ -1,10 +1,11 @@
-import { Field, F, Point } from '@zkopru/babyjubjub'
+import { Field, F } from '@zkopru/babyjubjub'
+import { ZkAddress } from './zk-address'
 import { Utxo } from './utxo'
 import { TxBuilder } from './tx-builder'
 
 export class SwapTxBuilder extends TxBuilder {
-  static from(pubKey: Point): SwapTxBuilder {
-    return new SwapTxBuilder(pubKey)
+  static from(owner: ZkAddress): SwapTxBuilder {
+    return new SwapTxBuilder(owner)
   }
 
   weiPerByte(val: F): SwapTxBuilder {
@@ -17,8 +18,16 @@ export class SwapTxBuilder extends TxBuilder {
     return this
   }
 
-  sendEther({ eth, to, salt }: { eth: F; to: Point; salt: F }): SwapTxBuilder {
-    const note = Utxo.newEtherNote({ eth, pubKey: to, salt })
+  sendEther({
+    eth,
+    to,
+    salt,
+  }: {
+    eth: F
+    to: ZkAddress
+    salt: F
+  }): SwapTxBuilder {
+    const note = Utxo.newEtherNote({ eth, owner: to, salt })
     this.send(note)
     return this
   }
@@ -31,14 +40,14 @@ export class SwapTxBuilder extends TxBuilder {
   }: {
     tokenAddr: F
     erc20Amount: F
-    to: Point
+    to: ZkAddress
     salt: F
   }): SwapTxBuilder {
     const note = Utxo.newERC20Note({
       eth: 0,
       tokenAddr,
       erc20Amount,
-      pubKey: to,
+      owner: to,
       salt,
     })
     this.send(note)
@@ -53,14 +62,14 @@ export class SwapTxBuilder extends TxBuilder {
   }: {
     tokenAddr: F
     nft: F
-    to: Point
+    to: ZkAddress
     salt: F
   }): SwapTxBuilder {
     const note = Utxo.newNFTNote({
       eth: 0,
       tokenAddr,
       nft,
-      pubKey: to,
+      owner: to,
       salt,
     })
     this.send(note)
@@ -70,7 +79,7 @@ export class SwapTxBuilder extends TxBuilder {
   receiveEther(amount: Field, salt: F): SwapTxBuilder {
     this.swap = Utxo.newEtherNote({
       eth: amount,
-      pubKey: this.changeTo,
+      owner: this.changeTo,
       salt,
     }).hash()
     return this
@@ -89,7 +98,7 @@ export class SwapTxBuilder extends TxBuilder {
       eth: 0,
       tokenAddr,
       erc20Amount,
-      pubKey: this.changeTo,
+      owner: this.changeTo,
       salt,
     }).hash()
     return this
@@ -108,7 +117,7 @@ export class SwapTxBuilder extends TxBuilder {
       eth: 0,
       tokenAddr,
       nft,
-      pubKey: this.changeTo,
+      owner: this.changeTo,
       salt,
     }).hash()
     return this

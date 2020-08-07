@@ -6,8 +6,9 @@ import {
   WithdrawalStatus,
   Withdrawal,
   Outflow,
+  ZkAddress,
 } from '@zkopru/transaction'
-import { Field, F, Point } from '@zkopru/babyjubjub'
+import { Field, F } from '@zkopru/babyjubjub'
 import { Layer1 } from '@zkopru/contracts'
 import { HDWallet, ZkAccount } from '@zkopru/account'
 import { ZkOPRUNode } from '@zkopru/core'
@@ -136,7 +137,7 @@ export class ZkWallet {
     const withdrawals = await this.db.read(prisma =>
       prisma.withdrawal.findMany({
         where: {
-          AND: [{ to: account.address }, { status }],
+          AND: [{ to: account.ethAddress }, { status }],
         },
       }),
     )
@@ -148,7 +149,7 @@ export class ZkWallet {
       prisma.utxo.findMany({
         where: {
           AND: [
-            { pubKey: { in: [account.pubKey.toHex()] } },
+            { owner: { in: [account.zkAddress.toString()] } },
             { status },
             { usedAt: null },
           ],
@@ -158,8 +159,8 @@ export class ZkWallet {
     const notes: Utxo[] = []
     noteSqls.forEach(obj => {
       if (!obj.eth) throw Error('should have Ether data')
-      if (!obj.pubKey) throw Error('should have pubkey data')
-      if (!(account.pubKey.toHex() === obj.pubKey))
+      if (!obj.owner) throw Error('should have pubkey data')
+      if (!(account.zkAddress.toString() === obj.owner))
         throw Error('should have same pubkey')
       if (!obj.salt) throw Error('should have salt data')
 
@@ -167,13 +168,13 @@ export class ZkWallet {
       if (!obj.tokenAddr) {
         note = Utxo.newEtherNote({
           eth: obj.eth,
-          pubKey: account.pubKey,
+          owner: account.zkAddress,
           salt: obj.salt,
         })
       } else if (obj.erc20Amount) {
         note = Utxo.newERC20Note({
           eth: obj.eth,
-          pubKey: account.pubKey,
+          owner: account.zkAddress,
           salt: obj.salt,
           tokenAddr: obj.tokenAddr,
           erc20Amount: obj.erc20Amount,
@@ -181,7 +182,7 @@ export class ZkWallet {
       } else if (obj.nft) {
         note = Utxo.newNFTNote({
           eth: obj.eth,
-          pubKey: account.pubKey,
+          owner: account.zkAddress,
           salt: obj.salt,
           tokenAddr: obj.tokenAddr,
           nft: obj.nft,
@@ -207,13 +208,13 @@ export class ZkWallet {
     const promises: (() => Promise<void>)[] = []
     const { web3 } = this.node.l1Contract
     promises.push(async () => {
-      balance.eth = await web3.eth.getBalance(account.address)
+      balance.eth = await web3.eth.getBalance(account.ethAddress)
     })
     if (erc20Addrs) {
       promises.push(
         ...erc20Addrs.map(addr => async () => {
           balance.erc20[addr] = await Layer1.getERC20(web3, addr)
-            .methods.balanceOf(account.address)
+            .methods.balanceOf(account.ethAddress)
             .call()
         }),
       )
@@ -222,7 +223,7 @@ export class ZkWallet {
       promises.push(
         ...erc721Addrs.map(addr => async () => {
           balance.erc721[addr] = await Layer1.getIERC721Enumerable(web3, addr)
-            .methods.balanceOf(account.address)
+            .methods.balanceOf(account.ethAddress)
             .call()
         }),
       )
@@ -253,7 +254,7 @@ export class ZkWallet {
           .fill(0)
           .map((_, i) => async () => {
             nfts[i] = await Layer1.getIERC721Enumerable(web3, erc721Addr)
-              .methods.tokenOfOwnerByIndex(account.address, i)
+              .methods.tokenOfOwnerByIndex(account.ethAddress, i)
               .call()
           }),
       )
@@ -264,7 +265,7 @@ export class ZkWallet {
     return []
   }
 
-  async depositEther(eth: F, fee: F, to?: Point): Promise<boolean> {
+  async depositEther(eth: F, fee: F, to?: ZkAddress): Promise<boolean> {
     if (!this.account) {
       logger.error('Account is not set')
       return false
@@ -283,7 +284,7 @@ export class ZkWallet {
     }
     const note = Utxo.newEtherNote({
       eth,
-      pubKey: to || this.account.pubKey,
+      owner: to || this.account.zkAddress,
     })
     const result = await this.deposit(note, Field.strictFrom(fee))
     return result
@@ -294,7 +295,7 @@ export class ZkWallet {
     addr: string,
     amount: F,
     fee: F,
-    to?: Point,
+    to?: ZkAddress,
   ): Promise<boolean> {
     if (!this.account) {
       logger.error('Account is not set')
@@ -322,7 +323,7 @@ export class ZkWallet {
     }
     const note = Utxo.newERC20Note({
       eth,
-      pubKey: to || this.account.pubKey,
+      owner: to || this.account.zkAddress,
       tokenAddr: addr,
       erc20Amount: amount,
     })
@@ -335,7 +336,7 @@ export class ZkWallet {
     addr: string,
     nft: F,
     fee: F,
-    to?: Point,
+    to?: ZkAddress,
   ): Promise<boolean> {
     if (!this.account) {
       logger.error('Account is not set')
@@ -355,7 +356,7 @@ export class ZkWallet {
     }
     const note = Utxo.newNFTNote({
       eth,
-      pubKey: to || this.account.pubKey,
+      owner: to || this.account.zkAddress,
       tokenAddr: addr,
       nft,
     })
@@ -451,11 +452,11 @@ export class ZkWallet {
   async sendTx(
     tx: RawTx,
     account?: ZkAccount,
-    encryptTo?: Point,
+    encryptTo?: ZkAddress,
   ): Promise<Response> {
     if (
       encryptTo &&
-      tx.outflow.find(outflow => outflow.pubKey.eq(encryptTo)) === undefined
+      tx.outflow.find(outflow => outflow.owner.eq(encryptTo)) === undefined
     ) {
       throw Error('Cannot find the recipient')
     }
@@ -507,22 +508,34 @@ export class ZkWallet {
       return false
     }
     const tx = this.node.l1Contract.user.methods.deposit(
-      note.eth.toUint256().toString(),
+      note.owner.spendingPubKey().toString(),
       note.salt.toUint256().toString(),
-      note.tokenAddr.toAddress().toString(),
-      note.erc20Amount.toUint256().toString(),
-      note.nft.toUint256().toString(),
-      [
-        note.pubKey.x.toUint256().toString(),
-        note.pubKey.y.toUint256().toString(),
-      ],
+      note
+        .eth()
+        .toUint256()
+        .toString(),
+      note
+        .tokenAddr()
+        .toAddress()
+        .toString(),
+      note
+        .erc20Amount()
+        .toUint256()
+        .toString(),
+      note
+        .nft()
+        .toUint256()
+        .toString(),
       fee.toUint256().toString(),
     )
     const receipt = await this.node.l1Contract.sendTx(
       tx,
       this.account.ethAccount,
       {
-        value: note.eth.add(fee).toString(),
+        value: note
+          .eth()
+          .add(fee)
+          .toString(),
       },
     )
     // TODO check what web3 methods returns when it failes
@@ -542,17 +555,25 @@ export class ZkWallet {
               .hash()
               .toUint256()
               .toString(),
-            eth: outflow.eth.toUint256().toString(),
-            pubKey: Bytes32.from(outflow.pubKey.toHex()).toString(),
+            owner: outflow.owner.toString(),
             salt: outflow.salt.toUint256().toString(),
-            tokenAddr: outflow.tokenAddr.toAddress().toString(),
-            erc20Amount: outflow.erc20Amount.toUint256().toString(),
-            nft: outflow.nft.toUint256().toString(),
-            status: UtxoStatus.NON_INCLUDED,
-            nullifier: outflow
-              .nullifier()
+            eth: outflow
+              .eth()
               .toUint256()
               .toString(),
+            tokenAddr: outflow
+              .tokenAddr()
+              .toAddress()
+              .toString(),
+            erc20Amount: outflow
+              .erc20Amount()
+              .toUint256()
+              .toString(),
+            nft: outflow
+              .nft()
+              .toUint256()
+              .toString(),
+            status: UtxoStatus.NON_INCLUDED,
           },
         }),
       )
@@ -565,14 +586,26 @@ export class ZkWallet {
               .toUint256()
               .toString(),
             withdrawalHash: outflow.withdrawalHash().toString(),
-            eth: outflow.eth.toUint256().toString(),
-            pubKey: Bytes32.from(outflow.pubKey.toHex()).toString(),
+            owner: outflow.owner.toString(),
             salt: outflow.salt.toUint256().toString(),
-            tokenAddr: outflow.tokenAddr.toAddress().toString(),
+            eth: outflow
+              .eth()
+              .toUint256()
+              .toString(),
+            tokenAddr: outflow
+              .tokenAddr()
+              .toAddress()
+              .toString(),
+            erc20Amount: outflow
+              .erc20Amount()
+              .toUint256()
+              .toString(),
+            nft: outflow
+              .nft()
+              .toUint256()
+              .toString(),
             to: outflow.publicData.to.toAddress().toString(),
             fee: outflow.publicData.fee.toAddress().toString(),
-            erc20Amount: outflow.erc20Amount.toUint256().toString(),
-            nft: outflow.nft.toUint256().toString(),
             status: UtxoStatus.NON_INCLUDED,
           },
         }),

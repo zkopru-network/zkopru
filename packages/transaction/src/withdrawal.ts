@@ -1,8 +1,9 @@
-import { Field, Point, F } from '@zkopru/babyjubjub'
+import { Field, F } from '@zkopru/babyjubjub'
 import { Uint256, Bytes32 } from 'soltypes'
 import { soliditySha3 } from 'web3-utils'
+import { ZkAddress } from './zk-address'
 import { ZkOutflow, PublicData } from './zk_tx'
-import { Note, OutflowType, NoteStatus } from './note'
+import { Note, OutflowType, NoteStatus, Asset } from './note'
 
 export enum WithdrawalStatus {
   NON_INCLUDED = NoteStatus.NON_INCLUDED,
@@ -21,18 +22,15 @@ export class Withdrawal extends Note {
   }
 
   constructor(
-    eth: Field,
+    owner: ZkAddress,
     salt: Field,
-    tokenAddr: Field,
-    erc20Amount: Field,
-    nft: Field,
-    pubKey: Point,
+    asset: Asset,
     publicData: {
       to: Field
       fee: Field
     },
   ) {
-    super(eth, salt, tokenAddr, erc20Amount, nft, pubKey)
+    super(owner, salt, asset)
     this.publicData = publicData
     this.outflowType = OutflowType.WITHDRAWAL
     this.status = WithdrawalStatus.NON_INCLUDED
@@ -44,10 +42,10 @@ export class Withdrawal extends Note {
       outflowType: Field.from(OutflowType.WITHDRAWAL),
       data: {
         to: this.publicData.to,
-        eth: this.eth,
-        tokenAddr: this.tokenAddr,
-        erc20Amount: this.erc20Amount,
-        nft: this.nft,
+        eth: this.asset.eth,
+        tokenAddr: this.asset.tokenAddr,
+        erc20Amount: this.asset.erc20Amount,
+        nft: this.asset.nft,
         fee: this.publicData.fee,
       },
     }
@@ -57,10 +55,10 @@ export class Withdrawal extends Note {
   withdrawalHash(): Uint256 {
     return Withdrawal.withdrawalHash(this.hash(), {
       to: this.publicData.to,
-      eth: this.eth,
-      tokenAddr: this.tokenAddr,
-      erc20Amount: this.erc20Amount,
-      nft: this.nft,
+      eth: this.asset.eth,
+      tokenAddr: this.asset.tokenAddr,
+      erc20Amount: this.asset.erc20Amount,
+      nft: this.asset.nft,
       fee: this.publicData.fee,
     })
   }
@@ -82,17 +80,9 @@ export class Withdrawal extends Note {
   }
 
   static from(note: Note, to: F, fee: F): Withdrawal {
-    return new Withdrawal(
-      note.eth,
-      note.salt,
-      note.tokenAddr,
-      note.erc20Amount,
-      note.nft,
-      note.pubKey,
-      {
-        to: Field.from(to),
-        fee: Field.from(fee),
-      },
-    )
+    return new Withdrawal(note.owner, note.salt, note.asset, {
+      to: Field.from(to),
+      fee: Field.from(fee),
+    })
   }
 }

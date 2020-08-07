@@ -5,6 +5,7 @@
   "_moduleAliases": {
     "circomlib": "../../node_modules/circomlib",
     "wasmsnark": "../../node_modules/wasmsnark",
+    "~babyjubjub": "../babyjubjub/dist",
     "~dataset": "../dataset/dist",
     "~utils": "../utils/dist"
   },
@@ -16,6 +17,9 @@
     "prebuild": "shx mkdir -p dist",
     "circuit": "./script/compile_circuits.sh",
     "setup": "./script/snark_setup.sh",
+    "gen-tar": "./script/gen_tar.sh",
+    "build:circuit": "yarn circuit && yarn setup",
+    "postbuild:circuit": "copyfiles -f build/vks/* ../contracts/keys/vks",
     "build": "tsc --build tsconfig.build.json",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "link-modules": "link-module-alias",

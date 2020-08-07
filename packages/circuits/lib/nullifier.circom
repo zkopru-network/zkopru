@@ -1,12 +1,12 @@
 include "../node_modules/circomlib/circuits/poseidon.circom";
 
 template Nullifier() {
-    signal input note_hash;
-    signal input note_salt;
+    signal input nullifier_seed;
+    signal input leaf_index;
     signal output out;
 
     component hash = Poseidon(2, 6, 8, 57);   // Constant
-    hash.inputs[0] <== note_hash;
-    hash.inputs[1] <== note_salt;
+    hash.inputs[0] <== nullifier_seed;
+    hash.inputs[1] <== leaf_index;
     hash.out ==> out;
 }

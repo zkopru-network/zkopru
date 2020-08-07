@@ -40,7 +40,7 @@ describe('unit test', () => {
       '0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e',
     ]
     expect(ganacheAddress.map(a => a.toLowerCase())).toStrictEqual(
-      accounts.map(account => account.address),
+      accounts.map(account => account.ethAddress),
     )
   }, 30000)
 })

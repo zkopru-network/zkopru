@@ -3,7 +3,7 @@ import { Container } from 'node-docker-api/lib/container'
 import Web3 from 'web3'
 import { MockupDB, DB } from '~prisma'
 import { ZkAccount, HDWallet } from '~account'
-import { sleep, readFromContainer } from '~utils'
+import { sleep, readFromContainer, logger } from '~utils'
 import { L1Contract } from '~core'
 import { Layer1 } from '~contracts'
 import { IERC20 } from '~contracts/contracts/IERC20'
@@ -53,14 +53,14 @@ export async function terminate(ctx: Provider) {
 export async function initContext() {
   const docker = new Docker({ socketPath: '/var/run/docker.sock' })
   const layer1Container = await docker.container.create({
-    Image: 'wanseob/zkopru-contract-integration-test:0.0.1',
+    Image: 'zkoprunet/contracts-integration-test',
     name: Math.random()
       .toString(36)
       .substring(2, 16),
     rm: true,
   })
   const circuitArtifactContainer = await docker.container.create({
-    Image: 'wanseob/zkopru-circuits:0.0.1',
+    Image: 'zkoprunet/circuits',
     name: Math.random()
       .toString(36)
       .substring(2, 16),
@@ -87,7 +87,7 @@ export async function initContext() {
     NetworkSettings: { IPAddress: string }
   }).NetworkSettings.IPAddress
   await sleep(2000)
-  console.log('Running testnet on ', `${containerIP}:5000`)
+  logger.info(`Running testnet on ${containerIP}:5000`)
   const provider = new Web3.providers.WebsocketProvider(
     `ws://${containerIP}:5000`,
     { reconnect: { auto: true } },
@@ -99,7 +99,7 @@ export async function initContext() {
     })
   }
   await waitConnection()
-  console.log('Websocket connection with ', `${containerIP}:5000`)
+  logger.info(`Websocket connection with ${containerIP}:5000`)
   const web3 = new Web3(provider)
   const contract = new L1Contract(web3, zkopruAddress)
   const erc20 = Layer1.getERC20(web3, erc20Address)

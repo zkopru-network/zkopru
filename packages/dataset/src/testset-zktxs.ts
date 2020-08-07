@@ -22,7 +22,7 @@ export async function loadCircuits() {
   let container: Container
   try {
     container = await docker.container.create({
-      Image: 'wanseob/zkopru-circuits:0.0.1',
+      Image: 'zkoprunet/circuits',
       name: containerName,
       rm: true,
     })
@@ -94,7 +94,7 @@ export async function loadGrove(db: DB): Promise<{ grove: Grove }> {
     nullifierHasher: keccakHasher(254),
     fullSync: true,
     forceUpdate: true,
-    pubKeysToObserve: [accounts.alice.pubKey, accounts.bob.pubKey],
+    zkAddressesToObserve: [accounts.alice.zkAddress, accounts.bob.zkAddress],
     addressesToObserve: [address.USER_A],
   })
   await grove.init()
@@ -137,12 +137,24 @@ export async function saveUtxos(db: DB, utxos: Utxo[]): Promise<DB> {
             .hash()
             .toUint256()
             .toString(),
-          pubKey: utxo.pubKey.toString(),
+          owner: utxo.owner.toString(),
           salt: utxo.salt.toUint256().toString(),
-          eth: utxo.eth.toUint256().toString(),
-          tokenAddr: utxo.tokenAddr.toAddress().toString(),
-          erc20Amount: utxo.erc20Amount.toUint256().toString(),
-          nft: utxo.nft.toUint256().toString(),
+          eth: utxo
+            .eth()
+            .toUint256()
+            .toString(),
+          tokenAddr: utxo
+            .tokenAddr()
+            .toAddress()
+            .toString(),
+          erc20Amount: utxo
+            .erc20Amount()
+            .toUint256()
+            .toString(),
+          nft: utxo
+            .nft()
+            .toUint256()
+            .toString(),
           status: UtxoStatus.NON_INCLUDED,
           index: i.toString(),
           tree: { connect: { id: utxoTreeId } },
@@ -186,7 +198,7 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
     zk_tx_1 = await zkWizard.shield({
       tx: txs.tx_1,
       account: accounts.alice,
-      encryptTo: accounts.bob.pubKey,
+      encryptTo: accounts.bob.zkAddress,
     })
     fs.writeFileSync(tx1Path, zk_tx_1.encode())
   }
@@ -197,7 +209,7 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
     zk_tx_2_1 = await zkWizard.shield({
       tx: txs.tx_2_1,
       account: accounts.alice,
-      encryptTo: accounts.bob.pubKey,
+      encryptTo: accounts.bob.zkAddress,
     })
     fs.writeFileSync(tx2_1Path, zk_tx_2_1.encode())
   }
@@ -208,7 +220,7 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
     zk_tx_2_2 = await zkWizard.shield({
       tx: txs.tx_2_2,
       account: accounts.bob,
-      encryptTo: accounts.alice.pubKey,
+      encryptTo: accounts.alice.zkAddress,
     })
     fs.writeFileSync(tx2_2Path, zk_tx_2_2.encode())
   }

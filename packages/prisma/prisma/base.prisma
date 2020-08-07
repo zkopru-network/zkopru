@@ -24,7 +24,7 @@ model EncryptedWallet {
 
 model Keystore {
   address String @id
-  pubKey String
+  zkAddress String
   encrypted String // stringified json
 }
 
@@ -116,7 +116,7 @@ model Deposit {
 model Utxo {
   hash String @id
   eth String?
-  pubKey String?
+  owner String?
   salt String?
   tokenAddr String?
   erc20Amount String?
@@ -133,7 +133,7 @@ model Withdrawal {
   hash String @id
   withdrawalHash String
   eth String
-  pubKey String?
+  owner String?
   salt String?
   tokenAddr String
   erc20Amount String
@@ -152,7 +152,7 @@ model Withdrawal {
 model Migration {
   hash String @id
   eth String?
-  pubKey String?
+  owner String?
   salt String?
   tokenAddr String?
   erc20Amount String?

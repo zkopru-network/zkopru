@@ -43,6 +43,9 @@ export class Point {
     return Point.BASE8.mul(Field.from(n))
   }
 
+  /**
+   * @returns getMultiplier(key)*G
+   */
   static fromPrivKey(key: string | Buffer): Point {
     const buff: Buffer = typeof key === 'string' ? hexToBuffer(key) : key
     const result = circomlib.eddsa.prv2pub(buff)

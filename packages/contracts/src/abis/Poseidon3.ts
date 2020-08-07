@@ -1,8 +1,10 @@
 export const Poseidon3ABI = [
   {
-    inputs: [{ internalType: 'uint256[]', name: '', type: 'uint256[]' }],
+    constant: true,
+    inputs: [{ name: 'input', type: 'uint256[]' }],
     name: 'poseidon',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    outputs: [{ name: '', type: 'uint256' }],
+    payable: false,
     stateMutability: 'pure',
     type: 'function',
   },

@@ -1,5 +1,6 @@
-import { Field, Point } from '@zkopru/babyjubjub'
+import { Field } from '@zkopru/babyjubjub'
 import { DB, LightTree, TreeSpecies } from '@zkopru/prisma'
+import { ZkAddress } from '@zkopru/transaction'
 import {
   LightRollUpTree,
   TreeMetadata,
@@ -19,21 +20,21 @@ export class UtxoTree extends LightRollUpTree<Field> {
 
   zero = Field.zero
 
-  pubKeysToObserve?: Point[]
+  zkAddressesToObserve?: ZkAddress[]
 
-  updatePubKeys(pubKeys: Point[]) {
-    this.pubKeysToObserve = pubKeys
+  updatePubKeys(addresses: ZkAddress[]) {
+    this.zkAddressesToObserve = addresses
   }
 
   async indexesOfTrackingLeaves(): Promise<Field[]> {
-    const keys: string[] = this.pubKeysToObserve
-      ? this.pubKeysToObserve.map(point => point.toHex())
+    const keys: string[] = this.zkAddressesToObserve
+      ? this.zkAddressesToObserve.map(address => address.toString())
       : []
 
     const trackingLeaves = await this.db.read(prisma =>
       prisma.utxo.findMany({
         where: {
-          AND: [{ treeId: this.metadata.id }, { pubKey: { in: keys } }],
+          AND: [{ treeId: this.metadata.id }, { owner: { in: keys } }],
         },
       }),
     )

@@ -2,7 +2,8 @@ import { randomHex } from 'web3-utils'
 import * as circomlib from 'circomlib'
 import * as chacha20 from 'chacha20'
 import { Field, F, Point } from '@zkopru/babyjubjub'
-import { Note, OutflowType, NoteStatus } from './note'
+import { ZkAddress } from './zk-address'
+import { Note, OutflowType, NoteStatus, Asset } from './note'
 import { Withdrawal } from './withdrawal'
 import { Migration } from './migration'
 import * as TokenUtils from './tokens'
@@ -20,67 +21,38 @@ export enum UtxoStatus {
 export class Utxo extends Note {
   status: UtxoStatus
 
-  constructor(
-    eth: Field,
-    salt: Field,
-    tokenAddr: Field,
-    erc20Amount: Field,
-    nft: Field,
-    pubKey: Point,
-    status: UtxoStatus,
-  ) {
-    super(eth, salt, tokenAddr, erc20Amount, nft, pubKey)
+  constructor(owner: ZkAddress, salt: Field, asset: Asset, status: UtxoStatus) {
+    super(owner, salt, asset)
     this.outflowType = OutflowType.UTXO
     this.status = status
   }
 
   static from(note: Note) {
-    return new Utxo(
-      note.eth,
-      note.salt,
-      note.tokenAddr,
-      note.erc20Amount,
-      note.nft,
-      note.pubKey,
-      UtxoStatus.NON_INCLUDED,
-    )
+    return new Utxo(note.owner, note.salt, note.asset, UtxoStatus.NON_INCLUDED)
   }
 
   toWithdrawal({ to, fee }: { to: F; fee: F }): Withdrawal {
-    return new Withdrawal(
-      this.eth,
-      this.salt,
-      this.tokenAddr,
-      this.erc20Amount,
-      this.nft,
-      this.pubKey,
-      {
-        to: Field.from(to),
-        fee: Field.from(fee),
-      },
-    )
+    return new Withdrawal(this.owner, this.salt, this.asset, {
+      to: Field.from(to),
+      fee: Field.from(fee),
+    })
   }
 
   toMigration({ to, fee }: { to: F; fee: F }): Migration {
-    return new Migration(
-      this.eth,
-      this.salt,
-      this.tokenAddr,
-      this.erc20Amount,
-      this.nft,
-      this.pubKey,
-      {
-        to: Field.from(to),
-        fee: Field.from(fee),
-      },
-    )
+    return new Migration(this.owner, this.salt, this.asset, {
+      to: Field.from(to),
+      fee: Field.from(fee),
+    })
   }
 
   encrypt(): Buffer {
     const ephemeralSecretKey: Field = Field.from(randomHex(16))
-    const sharedKey: Buffer = this.pubKey.mul(ephemeralSecretKey).encode()
-    const tokenId = TokenUtils.getTokenId(this.tokenAddr)
-    const value = this.eth || this.erc20Amount || this.nft
+    const sharedKey: Buffer = this.owner
+      .viewingPubKey()
+      .mul(ephemeralSecretKey)
+      .encode()
+    const tokenId = TokenUtils.getTokenId(this.asset.tokenAddr)
+    const value = this.asset.eth || this.asset.erc20Amount || this.asset.nft
     const secret = [
       this.salt.toBuffer('be', 16),
       Field.from(tokenId).toBuffer('be', 1),
@@ -95,11 +67,16 @@ export class Utxo extends Note {
     return encryptedMemo
   }
 
-  nullifier(): Field {
+  nullifier(nullifierSeed: Field, leafIndex: Field): Field {
     const hash = poseidonHash([
-      this.hash().toIden3BigInt(),
-      this.salt.toIden3BigInt(),
+      nullifierSeed.toIden3BigInt(),
+      leafIndex.toIden3BigInt(),
     ]).toString()
+    if (
+      !this.owner.viewingPubKey().eq(Point.fromPrivKey(nullifierSeed.toHex(32)))
+    ) {
+      throw Error("Given nullifier does not match utxo's owner address")
+    }
     const val = Field.from(hash)
     return val
   }
@@ -116,13 +93,15 @@ export class Utxo extends Note {
   static decrypt({
     utxoHash,
     memo,
-    privKey,
+    spendingPubKey,
+    viewingKey,
   }: {
     utxoHash: Field
     memo: Buffer
-    privKey: string
+    spendingPubKey: Field
+    viewingKey: Field
   }): Utxo | undefined {
-    const multiplier = Point.getMultiplier(privKey)
+    const multiplier = Point.getMultiplier(viewingKey.toHex(32))
     const ephemeralPubKey = Point.decode(memo.subarray(0, 32))
     const sharedKey = ephemeralPubKey.mul(multiplier).encode()
     const data = memo.subarray(32, 81)
@@ -136,11 +115,14 @@ export class Utxo extends Note {
     }
     const value = Field.fromBuffer(decrypted.subarray(17, 49))
 
-    const myPubKey: Point = Point.fromPrivKey(privKey)
+    const owner = ZkAddress.from(
+      spendingPubKey,
+      Point.fromPrivKey(viewingKey.toHex(32)),
+    )
     if (tokenAddress.isZero()) {
       const etherNote = Utxo.newEtherNote({
+        owner,
         eth: value,
-        pubKey: myPubKey,
         salt,
       })
       if (utxoHash.eq(etherNote.hash())) {
@@ -148,20 +130,20 @@ export class Utxo extends Note {
       }
     } else {
       const erc20Note = Utxo.newERC20Note({
+        owner,
         eth: Field.from(0),
         tokenAddr: tokenAddress,
         erc20Amount: value,
-        pubKey: myPubKey,
         salt,
       })
       if (utxoHash.eq(erc20Note.hash())) {
         return erc20Note
       }
       const nftNote = Utxo.newNFTNote({
+        owner,
         eth: Field.from(0),
         tokenAddr: tokenAddress,
         nft: value,
-        pubKey: myPubKey,
         salt,
       })
       if (utxoHash.eq(nftNote.hash())) {
@@ -172,69 +154,75 @@ export class Utxo extends Note {
   }
 
   static newEtherNote({
+    owner,
     eth,
-    pubKey,
     salt,
   }: {
+    owner: ZkAddress
     eth: F
-    pubKey: Point
     salt?: F
   }): Utxo {
     const note = new Note(
-      Field.from(eth),
+      owner,
       salt ? Field.from(salt) : Field.from(randomHex(16)),
-      Field.from(0),
-      Field.from(0),
-      Field.from(0),
-      pubKey,
+      {
+        eth: Field.from(eth),
+        tokenAddr: Field.from(0),
+        erc20Amount: Field.from(0),
+        nft: Field.from(0),
+      },
     )
     return Utxo.from(note)
   }
 
   static newERC20Note({
+    owner,
     eth,
     tokenAddr,
     erc20Amount,
-    pubKey,
     salt,
   }: {
+    owner: ZkAddress
     eth: F
     tokenAddr: F
     erc20Amount: F
-    pubKey: Point
     salt?: F
   }): Utxo {
     const note = new Note(
-      Field.from(eth),
+      owner,
       salt ? Field.from(salt) : Field.from(randomHex(16)),
-      Field.from(tokenAddr),
-      Field.from(erc20Amount),
-      Field.from(0),
-      pubKey,
+      {
+        eth: Field.from(eth),
+        tokenAddr: Field.from(tokenAddr),
+        erc20Amount: Field.from(erc20Amount),
+        nft: Field.from(0),
+      },
     )
     return Utxo.from(note)
   }
 
   static newNFTNote({
+    owner,
     eth,
     tokenAddr,
     nft,
-    pubKey,
     salt,
   }: {
+    owner: ZkAddress
     eth: F
     tokenAddr: F
     nft: F
-    pubKey: Point
     salt?: F
   }): Utxo {
     const note = new Note(
-      Field.from(eth),
+      owner,
       salt ? Field.from(salt) : Field.from(randomHex(16)),
-      Field.from(tokenAddr),
-      Field.from(0),
-      Field.from(nft),
-      pubKey,
+      {
+        eth: Field.from(eth),
+        tokenAddr: Field.from(tokenAddr),
+        erc20Amount: Field.from(0),
+        nft: Field.from(nft),
+      },
     )
     return Utxo.from(note)
   }

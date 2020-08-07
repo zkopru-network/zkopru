@@ -5,21 +5,21 @@ interface IUserInteractable {
 
     /**
      * @notice Users can use zkopru network by submitting a new homomorphically hiden note.
-     * @param eth Amount of Ether to deposit
+     * @param spendingPubKey P = poseidon(p*G, N) https://github.com/zkopru-network/zkopru/issues/34#issuecomment-666988505
      * @param salt 254bit salt for the privacy
+     * @param eth Amount of Ether to deposit
      * @param token Token address of ERC20 or ERC721. It can be undefined.
      * @param amount Amount of ERC20 when the token param is defined and it is an ERC20
      * @param nft NFT id when the token param is defined and it is an ERC721
-     * @param pubKey EdDSA public key to use in the zkopru network
      * @param fee Amount of fee to give to the coordinator
      */
     function deposit(
-        uint eth,
+        uint spendingPubKey,
         uint salt,
+        uint eth,
         address token,
         uint amount,
         uint nft,
-        uint[2] calldata pubKey,
         uint fee
     ) external payable;
 

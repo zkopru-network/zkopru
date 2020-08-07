@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { Field, Point } from '@zkopru/babyjubjub'
+import { Field } from '@zkopru/babyjubjub'
 import { logger, hexify } from '@zkopru/utils'
 import AsyncLock from 'async-lock'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { DB, TreeSpecies, LightTree, TreeNode } from '@zkopru/prisma'
+import { ZkAddress } from '@zkopru/transaction'
 import { Hasher, genesisRoot } from './hasher'
 import { MerkleProof, verifyProof, startingLeafProof } from './merkle-proof'
 import { Leaf } from './light-rollup-tree'
@@ -23,7 +24,7 @@ export interface GroveConfig {
   nullifierHasher: Hasher<BN>
   fullSync?: boolean
   forceUpdate?: boolean
-  pubKeysToObserve: Point[]
+  zkAddressesToObserve: ZkAddress[]
   addressesToObserve: string[]
 }
 
@@ -148,9 +149,9 @@ export class Grove {
     return result
   }
 
-  setPubKeysToObserve(points: Point[]) {
-    this.config.pubKeysToObserve = points
-    this.utxoTrees.forEach(tree => tree.updatePubKeys(points))
+  setZkAddressesToObserve(addresses: ZkAddress[]) {
+    this.config.zkAddressesToObserve = addresses
+    this.utxoTrees.forEach(tree => tree.updatePubKeys(addresses))
   }
 
   setAddressesToObserve(addresses: string[]) {

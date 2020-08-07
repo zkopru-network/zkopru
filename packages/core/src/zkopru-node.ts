@@ -128,7 +128,9 @@ export class ZkOPRUNode extends EventEmitter {
     this.accounts = this.accounts || []
     const newAccounts = accounts.filter(
       newAccount =>
-        !this.accounts?.find(acc => acc.pubKey.eq(newAccount.pubKey)),
+        !this.accounts?.find(
+          acc => acc.zkAddress.toString() === newAccount.zkAddress.toString(),
+        ),
     )
     this.accounts.push(...newAccounts)
   }
@@ -389,11 +391,11 @@ export class ZkOPRUNode extends EventEmitter {
     accounts?: ZkAccount[],
   ): Promise<L2Chain> {
     logger.info('Get or init chain')
-    const pubKeysToObserve = accounts
-      ? accounts.map(account => account.pubKey)
+    const zkAddressesToObserve = accounts
+      ? accounts.map(account => account.zkAddress)
       : []
     const addressesToObserve = accounts
-      ? accounts.map(account => account.address)
+      ? accounts.map(account => account.ethAddress)
       : []
 
     const savedConfig = await db.read(prisma =>
@@ -420,7 +422,7 @@ export class ZkOPRUNode extends EventEmitter {
       nullifierHasher: hashers.nullifier,
       fullSync: true,
       forceUpdate: false,
-      pubKeysToObserve,
+      zkAddressesToObserve,
       addressesToObserve,
     })
     await grove.init()

@@ -15,7 +15,7 @@ export default class AccountDetail extends App {
     const messages: string[] = []
     const { eth, erc20, erc721 } = balance
     messages.push(`Layer 1`)
-    messages.push(`   Address: ${account.address}`)
+    messages.push(`   Address: ${account.ethAddress}`)
     messages.push(`   Ether: ${fromWei(eth, 'ether')}`)
     messages.push(`   ERC20: ${Object.keys(erc20).length === 0 ? 'N/A' : ''}`)
     messages.push(
@@ -26,7 +26,7 @@ export default class AccountDetail extends App {
       ...Object.keys(erc721).map(addr => `      ${addr}: ${erc721[addr]}`),
     )
     messages.push(`Layer 2`)
-    messages.push(`   Pub key: ${account.pubKey.toHex()}`)
+    messages.push(`   Pub key: ${account.zkAddress.toString()}`)
     messages.push(`   Ether: ${fromWei(spendables.eth, 'ether')}`)
     messages.push(
       `   ERC20: ${Object.keys(spendables.erc20).length === 0 ? 'N/A' : ''}`,
