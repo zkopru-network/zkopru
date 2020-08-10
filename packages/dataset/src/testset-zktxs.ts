@@ -3,13 +3,13 @@ import { Docker } from 'node-docker-api'
 import fs from 'fs-extra'
 import path from 'path'
 import { Field } from '@zkopru/babyjubjub'
-import { ZkTx } from '@zkopru/transaction'
+import { ZkTx, Utxo, UtxoStatus } from '@zkopru/transaction'
 import { ZkWizard } from '@zkopru/zk-wizard'
 import { keccakHasher, poseidonHasher, Grove } from '@zkopru/tree'
 import * as utils from '@zkopru/utils'
 import { Container } from 'node-docker-api/lib/container'
 import tar from 'tar'
-import { DB } from '@zkopru/prisma'
+import { DB, TreeSpecies } from '@zkopru/prisma'
 import { accounts, address } from './testset-keys'
 import { utxos } from './testset-utxos'
 import { txs } from './testset-txs'
@@ -120,9 +120,53 @@ export async function loadGrove(db: DB): Promise<{ grove: Grove }> {
   return { grove }
 }
 
+export async function saveUtxos(db: DB, utxos: Utxo[]): Promise<DB> {
+  const utxoTree = await db.read(prisma =>
+    prisma.lightTree.findOne({
+      where: { species_treeIndex: { species: TreeSpecies.UTXO, treeIndex: 0 } },
+    }),
+  )
+  if (!utxoTree) throw Error('Failed to get utxo gree from grove')
+  const utxoTreeId = utxoTree.id
+  for (let i = 0; i < utxos.length; i += 1) {
+    const utxo = utxos[i]
+    await db.write(prisma =>
+      prisma.utxo.create({
+        data: {
+          hash: utxo
+            .hash()
+            .toUint256()
+            .toString(),
+          pubKey: utxo.pubKey.toString(),
+          salt: utxo.salt.toUint256().toString(),
+          eth: utxo.eth.toUint256().toString(),
+          tokenAddr: utxo.tokenAddr.toAddress().toString(),
+          erc20Amount: utxo.erc20Amount.toUint256().toString(),
+          nft: utxo.nft.toUint256().toString(),
+          status: UtxoStatus.NON_INCLUDED,
+          index: i.toString(),
+          tree: { connect: { id: utxoTreeId } },
+        },
+      }),
+    )
+  }
+  return db
+}
+
 export async function loadZkTxs(): Promise<ZkTx[]> {
   const mockupDB = await DB.mockup()
   const { grove } = await loadGrove(mockupDB.db)
+  await saveUtxos(mockupDB.db, [
+    utxos.utxo1_in_1,
+    utxos.utxo2_1_in_1,
+    utxos.utxo2_2_in_1,
+    utxos.utxo3_in_1,
+    utxos.utxo3_in_2,
+    utxos.utxo3_in_3,
+    utxos.utxo4_in_1,
+    utxos.utxo4_in_2,
+    utxos.utxo4_in_3,
+  ])
   const keyPath = path.join(path.dirname(__filename), '../keys')
   await buildKeys(keyPath)
 
