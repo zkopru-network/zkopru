@@ -18,6 +18,6 @@ describe('index', () => {
       const note = accounts.bob.decrypt(tx1)
       expect(note).toBeDefined()
       expect(note?.pubKey.toHex()).toBe(accounts.bob.pubKey.toHex())
-    })
+    }, 600000)
   })
 })
