@@ -99,10 +99,10 @@ This uses airbnb eslint, and husky will automatically prettify using commit-hook
 
 ### Build
 
-1. Install packages
+1. Install & get initial setup for the project
 
     ```shell
-    yarn
+    yarn initialize
     ```
 
 2. Build packages
