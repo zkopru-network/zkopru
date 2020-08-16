@@ -17,13 +17,65 @@ export class IERC721 extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
   clone(): IERC721
   methods: {
+    supportsInterface(
+      interfaceId: string | number[],
+    ): TransactionObject<boolean>
+
+    balanceOf(owner: string): TransactionObject<string>
+
+    ownerOf(tokenId: number | string): TransactionObject<string>
+
     transferFrom(
+      from: string,
+      to: string,
+      tokenId: number | string,
+    ): TransactionObject<void>
+
+    approve(to: string, tokenId: number | string): TransactionObject<void>
+
+    getApproved(tokenId: number | string): TransactionObject<string>
+
+    setApprovalForAll(
+      operator: string,
+      _approved: boolean,
+    ): TransactionObject<void>
+
+    isApprovedForAll(
+      owner: string,
+      operator: string,
+    ): TransactionObject<boolean>
+
+    safeTransferFrom(
       from: string,
       to: string,
       tokenId: number | string,
     ): TransactionObject<void>
   }
   events: {
+    Approval: ContractEvent<{
+      owner: string
+      approved: string
+      tokenId: string
+      0: string
+      1: string
+      2: string
+    }>
+    ApprovalForAll: ContractEvent<{
+      owner: string
+      operator: string
+      approved: boolean
+      0: string
+      1: string
+      2: boolean
+    }>
+    Transfer: ContractEvent<{
+      from: string
+      to: string
+      tokenId: string
+      0: string
+      1: string
+      2: string
+    }>
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
 }
