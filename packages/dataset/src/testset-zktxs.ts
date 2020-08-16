@@ -87,7 +87,7 @@ export async function loadGrove(db: DB): Promise<{ grove: Grove }> {
     addressesToObserve: [address.USER_A],
   })
   await grove.init()
-  const latestTree = grove.latestUTXOTree()
+  const latestTree = grove.utxoTree
   const size = latestTree ? latestTree.latestLeafIndex() : Field.zero
   if (size.eqn(0)) {
     await grove.applyGrovePatch({
@@ -111,9 +111,7 @@ export async function loadGrove(db: DB): Promise<{ grove: Grove }> {
 
 export async function saveUtxos(db: DB, utxos: Utxo[]): Promise<DB> {
   const utxoTree = await db.read(prisma =>
-    prisma.lightTree.findOne({
-      where: { species_treeIndex: { species: TreeSpecies.UTXO, treeIndex: 0 } },
-    }),
+    prisma.lightTree.findOne({ where: { species: TreeSpecies.UTXO } }),
   )
   if (!utxoTree) throw Error('Failed to get utxo gree from grove')
   const utxoTreeId = utxoTree.id

@@ -50,10 +50,10 @@ describe('grove full sync grove()', () => {
   describe('dryPatch', () => {
     it('should not update the grove', async () => {
       const prevResult = {
-        utxoRoot: fullSyncGrvoe.latestUTXOTree().root(),
-        utxoIndex: fullSyncGrvoe.latestUTXOTree().latestLeafIndex(),
-        withdrawalRoot: fullSyncGrvoe.latestWithdrawalTree().root(),
-        withdrawalIndex: fullSyncGrvoe.latestWithdrawalTree().latestLeafIndex(),
+        utxoRoot: fullSyncGrvoe.utxoTree.root(),
+        utxoIndex: fullSyncGrvoe.utxoTree.latestLeafIndex(),
+        withdrawalRoot: fullSyncGrvoe.withdrawalTree.root(),
+        withdrawalIndex: fullSyncGrvoe.withdrawalTree.latestLeafIndex(),
         nullifierRoot: await fullSyncGrvoe.nullifierTree?.root(),
       }
       const utxosToAppend: Leaf<Field>[] = [
@@ -79,10 +79,10 @@ describe('grove full sync grove()', () => {
       }
       await fullSyncGrvoe.dryPatch(patch)
       const postResult = {
-        utxoRoot: fullSyncGrvoe.latestUTXOTree().root(),
-        utxoIndex: fullSyncGrvoe.latestUTXOTree().latestLeafIndex(),
-        withdrawalRoot: fullSyncGrvoe.latestWithdrawalTree().root(),
-        withdrawalIndex: fullSyncGrvoe.latestWithdrawalTree().latestLeafIndex(),
+        utxoRoot: fullSyncGrvoe.utxoTree.root(),
+        utxoIndex: fullSyncGrvoe.utxoTree.latestLeafIndex(),
+        withdrawalRoot: fullSyncGrvoe.withdrawalTree.root(),
+        withdrawalIndex: fullSyncGrvoe.withdrawalTree.latestLeafIndex(),
         nullifierRoot: await fullSyncGrvoe.nullifierTree?.root(),
       }
       expect(prevResult.utxoRoot.eq(postResult.utxoRoot)).toBe(true)
@@ -122,10 +122,10 @@ describe('grove full sync grove()', () => {
       const expected = await fullSyncGrvoe.dryPatch(patch)
       await fullSyncGrvoe.applyGrovePatch(patch)
       const result = {
-        utxoRoot: fullSyncGrvoe.latestUTXOTree().root(),
-        utxoIndex: fullSyncGrvoe.latestUTXOTree().latestLeafIndex(),
-        withdrawalRoot: fullSyncGrvoe.latestWithdrawalTree().root(),
-        withdrawalIndex: fullSyncGrvoe.latestWithdrawalTree().latestLeafIndex(),
+        utxoRoot: fullSyncGrvoe.utxoTree.root(),
+        utxoIndex: fullSyncGrvoe.utxoTree.latestLeafIndex(),
+        withdrawalRoot: fullSyncGrvoe.withdrawalTree.root(),
+        withdrawalIndex: fullSyncGrvoe.withdrawalTree.latestLeafIndex(),
         nullifierRoot: await fullSyncGrvoe.nullifierTree?.root(),
       }
       expect(result.utxoRoot.eq(expected.utxoTreeRoot)).toBe(true)
@@ -141,17 +141,15 @@ describe('grove full sync grove()', () => {
   })
   describe('light sync grove - applyBootstrap()', () => {
     it('should update the grove using bootstrap data', async () => {
-      const latestUtxoTree = fullSyncGrvoe.latestUTXOTree()
-      const latestWithdrawalTree = fullSyncGrvoe.latestWithdrawalTree()
+      const { utxoTree } = fullSyncGrvoe
+      const { withdrawalTree } = fullSyncGrvoe
       const bootstrapData = {
-        utxoTreeIndex: latestUtxoTree.metadata.index,
         utxoStartingLeafProof: {
-          ...latestUtxoTree.getStartingLeafProof(),
+          ...utxoTree.getStartingLeafProof(),
           leaf: Field.zero,
         },
-        withdrawalTreeIndex: latestWithdrawalTree.metadata.index,
         withdrawalStartingLeafProof: {
-          ...latestWithdrawalTree.getStartingLeafProof(),
+          ...withdrawalTree.getStartingLeafProof(),
           leaf: toBN(0),
         },
       }
@@ -174,28 +172,22 @@ describe('grove full sync grove()', () => {
       await lightSyncGrove.init()
       await lightSyncGrove.applyBootstrap(bootstrapData)
       expect(
-        lightSyncGrove
-          .latestUTXOTree()
-          .root()
-          .eq(fullSyncGrvoe.latestUTXOTree().root()),
+        lightSyncGrove.utxoTree.root().eq(fullSyncGrvoe.utxoTree.root()),
       ).toBe(true)
       expect(
-        lightSyncGrove
-          .latestUTXOTree()
+        lightSyncGrove.utxoTree
           .latestLeafIndex()
-          .eq(fullSyncGrvoe.latestUTXOTree().latestLeafIndex()),
+          .eq(fullSyncGrvoe.utxoTree.latestLeafIndex()),
       ).toBe(true)
       expect(
-        lightSyncGrove
-          .latestWithdrawalTree()
+        lightSyncGrove.withdrawalTree
           .root()
-          .eq(fullSyncGrvoe.latestWithdrawalTree().root()),
+          .eq(fullSyncGrvoe.withdrawalTree.root()),
       ).toBe(true)
       expect(
-        lightSyncGrove
-          .latestWithdrawalTree()
+        lightSyncGrove.withdrawalTree
           .latestLeafIndex()
-          .eq(fullSyncGrvoe.latestWithdrawalTree().latestLeafIndex()),
+          .eq(fullSyncGrvoe.withdrawalTree.latestLeafIndex()),
       ).toBe(true)
       await mockup.terminate()
     })

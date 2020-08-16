@@ -70,7 +70,6 @@ export class UtxoTree extends LightRollUpTree<Field> {
       metadata: {
         id: obj.id,
         species: obj.species,
-        index: obj.treeIndex,
         start: Field.from(obj.start),
         end: Field.from(obj.end),
       },

@@ -18,7 +18,6 @@ export interface Leaf<T extends Field | BN> {
 export interface TreeMetadata<T extends Field | BN> {
   id: string
   species: number
-  index: number
   start: T
   end: T
 }
@@ -90,28 +89,28 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     return [...this.data.siblings].slice(0, this.depth)
   }
 
-  async includedInBlock(hash: string) {
-    await this.db.write(prisma =>
-      prisma.lightTree.update({
-        where: {
-          species_treeIndex: {
-            species: this.species,
-            treeIndex: this.metadata.index,
-          },
-        },
-        data: {
-          block: hash,
-        },
-      }),
-    )
-  }
+  // TODO: remove
+  // async includedInBlock(hash: string) {
+  //   await this.db.write(prisma =>
+  //     prisma.lightTree.update({
+  //       where: {
+  //         species_treeIndex: {
+  //           species: this.species,
+  //           treeIndex: this.metadata.index,
+  //         },
+  //       },
+  //       data: {
+  //         block: hash,
+  //       },
+  //     }),
+  //   )
+  // }
 
   async init() {
     const saveResult = await this.db.write(prisma =>
       prisma.lightTree.create({
         data: {
           species: this.species,
-          treeIndex: this.metadata.index,
           start: this.metadata.start.toString(10),
           end: this.metadata.end.toString(10),
           root:
@@ -437,12 +436,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     }
     await this.db.write(prisma =>
       prisma.lightTree.upsert({
-        where: {
-          species_treeIndex: {
-            species: this.species,
-            treeIndex: this.metadata.index,
-          },
-        },
+        where: { species: this.species },
         update: {
           ...rollUpSync,
           ...rollUpSnapshot,
@@ -451,7 +445,6 @@ export abstract class LightRollUpTree<T extends Field | BN> {
           ...rollUpSync,
           ...rollUpSnapshot,
           species: this.species,
-          treeIndex: this.metadata.index,
         },
       }),
     )
@@ -510,16 +503,8 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       throw Error('bootstrapped with invalid merkle proof')
     }
     // If it does not have force update config, check existing merkle tree
-    const where = {
-      species_treeIndex: {
-        species,
-        treeIndex: metadata.index,
-      },
-    }
     const exisingTree = await db.read(prisma =>
-      prisma.lightTree.findOne({
-        where,
-      }),
+      prisma.lightTree.findOne({ where: { species } }),
     )
     if (
       !config.forceUpdate &&
@@ -530,7 +515,6 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     // Create or update the merkle tree using the "bootstrapTree" preset query
     const tree = {
       species,
-      treeIndex: metadata.index,
       // rollup sync data
       start: data.index.toString(10),
       end: data.index.toString(10),
@@ -546,14 +530,14 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     }
     const newTree = await db.write(prisma =>
       prisma.lightTree.upsert({
-        where,
+        where: { species },
         update: tree,
         create: {
           ...tree,
         },
       }),
     )
-    const { start, end, treeIndex } = newTree
+    const { start, end } = newTree
     // Return tree object
     let _start: T
     let _end: T
@@ -569,7 +553,6 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       species,
       metadata: {
         ...metadata,
-        index: treeIndex,
         start: _start,
         end: _end,
       },

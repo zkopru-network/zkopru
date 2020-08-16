@@ -4,6 +4,7 @@ import { logger, hexify } from '@zkopru/utils'
 import AsyncLock from 'async-lock'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
+import assert from 'assert'
 import { DB, TreeSpecies, LightTree, TreeNode } from '@zkopru/prisma'
 import { ZkAddress } from '@zkopru/transaction'
 import { Hasher, genesisRoot } from './hasher'
@@ -50,9 +51,9 @@ export class Grove {
 
   config: GroveConfig
 
-  utxoTrees!: UtxoTree[]
+  utxoTree!: UtxoTree
 
-  withdrawalTrees!: WithdrawalTree[]
+  withdrawalTree!: WithdrawalTree
 
   nullifierTree?: NullifierTree
 
@@ -63,74 +64,64 @@ export class Grove {
   }
 
   async applyBootstrap({
-    utxoTreeIndex,
     utxoStartingLeafProof,
-    withdrawalTreeIndex,
     withdrawalStartingLeafProof,
   }: {
-    utxoTreeIndex: number
     utxoStartingLeafProof: MerkleProof<Field>
-    withdrawalTreeIndex: number
     withdrawalStartingLeafProof: MerkleProof<BN>
   }) {
     logger.info('Applied bootstrap')
     await this.lock.acquire('grove', async () => {
       const utxoBootstrapResult = await this.bootstrapUtxoTree(
-        utxoTreeIndex,
         utxoStartingLeafProof,
       )
       const withdrawalBootstrapResult = await this.bootstrapWithdrawalTree(
-        withdrawalTreeIndex,
         withdrawalStartingLeafProof,
       )
-      this.utxoTrees.push(utxoBootstrapResult.tree)
-      this.withdrawalTrees.push(withdrawalBootstrapResult.tree)
+      this.utxoTree = utxoBootstrapResult.tree
+      this.withdrawalTree = withdrawalBootstrapResult.tree
     })
   }
 
   async init() {
     await this.lock.acquire('grove', async () => {
-      const utxoTreeData = await this.db.read(prisma =>
-        prisma.lightTree.findMany({
+      let utxoTreeData = await this.db.read(prisma =>
+        prisma.lightTree.findOne({
           where: { species: TreeSpecies.UTXO },
-          orderBy: { treeIndex: 'asc' },
         }),
       )
 
-      if (utxoTreeData.length === 0) {
+      if (utxoTreeData === null) {
         // start a new tree if there's no utxo tree
-        const { treeSql } = await this.bootstrapUtxoTree(0)
-        utxoTreeData.push(treeSql)
+        const { treeSql } = await this.bootstrapUtxoTree()
+        utxoTreeData = treeSql
       }
+      assert(utxoTreeData)
 
-      this.utxoTrees = utxoTreeData.map(data =>
-        UtxoTree.from(this.db, data, {
-          hasher: this.config.utxoHasher,
-          forceUpdate: this.config.forceUpdate,
-          fullSync: this.config.fullSync,
-        }),
-      )
+      this.utxoTree = UtxoTree.from(this.db, utxoTreeData, {
+        hasher: this.config.utxoHasher,
+        forceUpdate: this.config.forceUpdate,
+        fullSync: this.config.fullSync,
+      })
 
-      const withdrawalTreeData = await this.db.read(prisma =>
-        prisma.lightTree.findMany({
+      let withdrawalTreeData = await this.db.read(prisma =>
+        prisma.lightTree.findOne({
           where: { species: TreeSpecies.WITHDRAWAL },
-          orderBy: { treeIndex: 'asc' },
         }),
       )
 
-      if (withdrawalTreeData.length === 0) {
+      if (withdrawalTreeData === null) {
         // start a new tree if there's no utxo tree
-        const { treeSql } = await this.bootstrapWithdrawalTree(0)
-        withdrawalTreeData.push(treeSql)
+        const { treeSql } = await this.bootstrapWithdrawalTree()
+        withdrawalTreeData = treeSql
       }
+      assert(withdrawalTreeData)
 
-      this.withdrawalTrees = withdrawalTreeData.map(data =>
-        WithdrawalTree.from(this.db, data, {
-          hasher: this.config.withdrawalHasher,
-          forceUpdate: this.config.forceUpdate,
-          fullSync: this.config.fullSync,
-        }),
-      )
+      this.withdrawalTree = WithdrawalTree.from(this.db, withdrawalTreeData, {
+        hasher: this.config.withdrawalHasher,
+        forceUpdate: this.config.forceUpdate,
+        fullSync: this.config.fullSync,
+      })
 
       this.nullifierTree = new NullifierTree({
         db: this.db,
@@ -151,20 +142,12 @@ export class Grove {
 
   setZkAddressesToObserve(addresses: ZkAddress[]) {
     this.config.zkAddressesToObserve = addresses
-    this.utxoTrees.forEach(tree => tree.updatePubKeys(addresses))
+    this.utxoTree.updatePubKeys(addresses)
   }
 
   setAddressesToObserve(addresses: string[]) {
     this.config.addressesToObserve = addresses
-    this.withdrawalTrees.forEach(tree => tree.updateAddresses(addresses))
-  }
-
-  latestUTXOTree(): UtxoTree {
-    return this.utxoTrees[this.utxoTrees.length - 1]
-  }
-
-  latestWithdrawalTree(): WithdrawalTree {
-    return this.withdrawalTrees[this.withdrawalTrees.length - 1]
+    this.withdrawalTree.updateAddresses(addresses)
   }
 
   async applyGrovePatch(
@@ -194,10 +177,10 @@ export class Grove {
       let result!: GroveSnapshot
       this.lock
         .acquire('grove', async () => {
-          const utxoResult = await this.latestUTXOTree().dryAppend(
+          const utxoResult = await this.utxoTree.dryAppend(
             ...patch.utxos.map(leaf => ({ ...leaf, shouldTrack: false })),
           )
-          const withdrawalResult = await this.latestWithdrawalTree().dryAppend(
+          const withdrawalResult = await this.withdrawalTree.dryAppend(
             ...patch.withdrawals.map(leaf => ({ ...leaf, shouldTrack: false })),
           )
           const nullifierRoot = await this.nullifierTree?.dryRunNullify(
@@ -232,13 +215,11 @@ export class Grove {
 
   private async recordBootstrap(header?: string): Promise<void> {
     const bootstrapData = {
-      utxoTreeIndex: this.latestUTXOTree().metadata.index,
       utxoBootstrap: JSON.stringify(
-        this.latestUTXOTree().data.siblings.map(val => hexify(val)),
+        this.utxoTree.data.siblings.map(val => hexify(val)),
       ),
-      withdrawalTreeIndex: this.latestWithdrawalTree().metadata.index,
       withdrawalBootstrap: JSON.stringify(
-        this.latestWithdrawalTree().data.siblings.map(val => hexify(val)),
+        this.withdrawalTree.data.siblings.map(val => hexify(val)),
       ),
     }
     if (header) {
@@ -277,26 +258,18 @@ export class Grove {
     utxos.forEach((item: Leaf<Field>, index: number) => {
       fixedSizeUtxos[index] = item
     })
-    const latestTree = this.latestUTXOTree()
-    if (!latestTree) throw Error('Grove is not initialized')
-    let treeId: string
+    if (!this.utxoTree) throw Error('Grove is not initialized')
     if (
-      latestTree
+      this.utxoTree
         .latestLeafIndex()
         .add(totalItemLen)
-        .lt(latestTree.maxSize())
+        .lte(this.utxoTree.maxSize())
     ) {
-      await latestTree.append(...fixedSizeUtxos)
-      treeId = latestTree.metadata.id
+      await this.utxoTree.append(...fixedSizeUtxos)
     } else {
-      const { tree } = await this.bootstrapUtxoTree(
-        latestTree.metadata.index + 1,
-      )
-      this.utxoTrees.push(tree)
-      await tree.append(...fixedSizeUtxos)
-      treeId = tree.metadata.id
+      throw Error('utxo tree flushes.')
     }
-    return treeId
+    return this.utxoTree.metadata.id
   }
 
   private async appendWithdrawals(withdrawals: Leaf<BN>[]): Promise<string> {
@@ -310,26 +283,18 @@ export class Grove {
     withdrawals.forEach((withdrawal: Leaf<BN>, index: number) => {
       fixedSizeWithdrawals[index] = withdrawal
     })
-    const latestTree = this.latestWithdrawalTree()
-    if (!latestTree) throw Error('Grove is not initialized')
-    let treeId: string
+    if (!this.withdrawalTree) throw Error('Grove is not initialized')
     if (
-      latestTree
+      this.withdrawalTree
         .latestLeafIndex()
         .addn(totalItemLen)
-        .lt(latestTree.maxSize())
+        .lte(this.withdrawalTree.maxSize())
     ) {
-      await latestTree.append(...fixedSizeWithdrawals)
-      treeId = latestTree.metadata.id
+      await this.withdrawalTree.append(...fixedSizeWithdrawals)
     } else {
-      const { tree } = await this.bootstrapWithdrawalTree(
-        latestTree.metadata.index + 1,
-      )
-      this.withdrawalTrees.push(tree)
-      await tree.append(...fixedSizeWithdrawals)
-      treeId = tree.metadata.id
+      throw Error('withdrawal tree flushes')
     }
-    return treeId
+    return this.withdrawalTree.metadata.id
   }
 
   private async markAsNullified(nullifiers: BN[]): Promise<void> {
@@ -356,7 +321,7 @@ export class Grove {
       utxo.tree.id,
       utxo.index,
     )
-    let root: Field = this.latestUTXOTree().root()
+    let root: Field = this.utxoTree.root()
     const siblings = [...this.config.utxoHasher.preHash]
     cachedSiblings.forEach((obj: TreeNode) => {
       const level =
@@ -396,7 +361,7 @@ export class Grove {
       withdrawal.tree.id,
       withdrawal.index,
     )
-    let root: BN = this.latestWithdrawalTree().root()
+    let root: BN = this.withdrawalTree.root()
     const siblings = [...this.config.withdrawalHasher.preHash]
     cachedSiblings.forEach((obj: TreeNode) => {
       const level =
@@ -421,7 +386,6 @@ export class Grove {
   }
 
   private async bootstrapUtxoTree(
-    treeIndex: number,
     proof?: MerkleProof<Field>,
   ): Promise<{ treeSql: LightTree; tree: UtxoTree }> {
     const hasher = this.config.utxoHasher
@@ -450,22 +414,9 @@ export class Grove {
     }
     const treeSql = await this.db.write(prisma =>
       prisma.lightTree.upsert({
-        where: {
-          species_treeIndex: {
-            species: TreeSpecies.UTXO,
-            treeIndex,
-          },
-        },
-        update: {
-          species: TreeSpecies.UTXO,
-          treeIndex,
-          ...data,
-        },
-        create: {
-          species: TreeSpecies.UTXO,
-          treeIndex,
-          ...data,
-        },
+        where: { species: TreeSpecies.UTXO },
+        update: { ...data },
+        create: { species: TreeSpecies.UTXO, ...data },
       }),
     )
     const tree = UtxoTree.from(this.db, treeSql, {
@@ -477,7 +428,6 @@ export class Grove {
   }
 
   private async bootstrapWithdrawalTree(
-    treeIndex: number,
     proof?: MerkleProof<BN>,
   ): Promise<{ treeSql: LightTree; tree: WithdrawalTree }> {
     const hasher = this.config.withdrawalHasher
@@ -507,22 +457,9 @@ export class Grove {
     }
     const treeSql = await this.db.write(prisma =>
       prisma.lightTree.upsert({
-        where: {
-          species_treeIndex: {
-            species: TreeSpecies.WITHDRAWAL,
-            treeIndex,
-          },
-        },
-        update: {
-          species: TreeSpecies.WITHDRAWAL,
-          treeIndex,
-          ...data,
-        },
-        create: {
-          species: TreeSpecies.WITHDRAWAL,
-          treeIndex,
-          ...data,
-        },
+        where: { species: TreeSpecies.WITHDRAWAL },
+        update: { ...data },
+        create: { species: TreeSpecies.WITHDRAWAL, ...data },
       }),
     )
     const tree = WithdrawalTree.from(this.db, treeSql, {

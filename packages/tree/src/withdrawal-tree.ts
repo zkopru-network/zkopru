@@ -71,7 +71,6 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
       metadata: {
         id: obj.id,
         species: obj.species,
-        index: obj.treeIndex,
         start: toBN(obj.start),
         end: toBN(obj.end),
       },
