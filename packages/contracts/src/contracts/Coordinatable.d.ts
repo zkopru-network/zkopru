@@ -19,9 +19,9 @@ export class Coordinatable extends Contract {
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
-    MAX_UTXO_PER_TREE(): TransactionObject<string>
+    MAX_UTXO(): TransactionObject<string>
 
-    MAX_WITHDRAWAL_PER_TREE(): TransactionObject<string>
+    MAX_WITHDRAWAL(): TransactionObject<string>
 
     MINIMUM_STAKE(): TransactionObject<string>
 

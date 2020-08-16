@@ -125,7 +125,7 @@ contract RollUpChallenge is Challengeable {
         require(_utxoNum == index, "Submitted invalid num of utxo num");
 
         /// UTXO tree flushed
-        if (_parentHeader.utxoIndex + _utxoNum > MAX_UTXO_PER_TREE) {
+        if (_parentHeader.utxoIndex + _utxoNum > MAX_UTXO) {
             return Challenge(
                 true,
                 _block.header.proposer,
@@ -223,7 +223,7 @@ contract RollUpChallenge is Challengeable {
         }
         require(numOfWithdrawals == index, "Submitted invalid num of utxo num");
         /// Withdrawal tree flushed
-        if (_parentHeader.withdrawalIndex + numOfWithdrawals > MAX_WITHDRAWAL_PER_TREE) {
+        if (_parentHeader.withdrawalIndex + numOfWithdrawals > MAX_WITHDRAWAL) {
             return Challenge(
                 true,
                 _block.header.proposer,

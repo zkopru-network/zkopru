@@ -93,8 +93,8 @@ export class L1Contract extends ZkOPRUContract {
     let challengePeriod!: number
     let minimumStake!: string
     let referenceDepth!: number
-    let maxUtxoPerTree!: string
-    let maxWithdrawalPerTree!: string
+    let maxUtxo!: string
+    let maxWithdrawal!: string
     let utxoSubTreeDepth!: number
     let utxoSubTreeSize!: number
     let withdrawalSubTreeDepth!: number
@@ -166,12 +166,10 @@ export class L1Contract extends ZkOPRUContract {
         )
       },
       async () => {
-        maxUtxoPerTree = await this.upstream.methods.MAX_UTXO_PER_TREE().call()
+        maxUtxo = await this.upstream.methods.MAX_UTXO().call()
       },
       async () => {
-        maxWithdrawalPerTree = await this.upstream.methods
-          .MAX_WITHDRAWAL_PER_TREE()
-          .call()
+        maxWithdrawal = await this.upstream.methods.MAX_WITHDRAWAL().call()
       },
     ]
     await Promise.all(tasks.map(task => task()))
@@ -196,8 +194,8 @@ export class L1Contract extends ZkOPRUContract {
       challengePeriod,
       minimumStake,
       referenceDepth,
-      maxUtxoPerTree,
-      maxWithdrawalPerTree,
+      maxUtxo,
+      maxWithdrawal,
     }
     return this.config
   }
