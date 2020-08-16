@@ -1,9 +1,8 @@
-import { Docker } from 'node-docker-api'
 import { Container } from 'node-docker-api/lib/container'
 import Web3 from 'web3'
 import { MockupDB, DB } from '~prisma'
 import { ZkAccount, HDWallet } from '~account'
-import { sleep, readFromContainer, logger } from '~utils'
+import { sleep, readFromContainer, logger, getContainer } from '~utils'
 import { L1Contract } from '~core'
 import { Layer1 } from '~contracts'
 import { IERC20 } from '~contracts/contracts/IERC20'
@@ -51,21 +50,12 @@ export async function terminate(ctx: Provider) {
 }
 
 export async function initContext() {
-  const docker = new Docker({ socketPath: '/var/run/docker.sock' })
-  const layer1Container = await docker.container.create({
-    Image: 'zkoprunet/contracts-integration-test',
-    name: Math.random()
-      .toString(36)
-      .substring(2, 16),
-    rm: true,
-  })
-  const circuitArtifactContainer = await docker.container.create({
-    Image: 'zkoprunet/circuits',
-    name: Math.random()
-      .toString(36)
-      .substring(2, 16),
-    rm: true,
-  })
+  const layer1Container = await getContainer(
+    'zkoprunet/contracts-integration-test:feat35',
+  )
+  const circuitArtifactContainer = await getContainer(
+    'zkoprunet/circuits:feat35',
+  )
   await Promise.all([layer1Container.start(), circuitArtifactContainer.start()])
   const deployed = await readFromContainer(
     layer1Container,

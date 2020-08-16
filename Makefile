@@ -48,7 +48,7 @@ build-dev-images:
 	@make coordinator-container
 
 pull-dev-images:
-	@docker pull zkoprunet/contracts
-	@docker pull zkoprunet/contracts-integration-test
-	@docker pull zkoprunet/circuits
-	@docker pull zkoprunet/circuits-test
+	@docker pull zkoprunet/contracts:feat35
+	@docker pull zkoprunet/contracts-integration-test:feat35
+	@docker pull zkoprunet/circuits:feat35
+	@docker pull zkoprunet/circuits-test:feat35

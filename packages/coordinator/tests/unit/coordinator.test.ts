@@ -1,17 +1,14 @@
 /* eslint-disable jest/no-hooks */
 import Web3 from 'web3'
 import { WebsocketProvider } from 'web3-core'
-import { Docker } from 'node-docker-api'
 import { Container } from 'node-docker-api/lib/container'
 import { FullNode } from '@zkopru/core'
-import { randomHex } from 'web3-utils'
 import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
-import { readFromContainer, sleep } from '~utils'
+import { readFromContainer, sleep, getContainer } from '~utils'
 import { MockupDB, DB } from '~prisma'
 
 describe('coordinator test to run testnet', () => {
-  const testName = `${randomHex(32)}`
   const accounts: ZkAccount[] = [
     new ZkAccount(Buffer.from('sample private key')),
   ]
@@ -23,16 +20,7 @@ describe('coordinator test to run testnet', () => {
   let coordinator: Coordinator
   beforeAll(async () => {
     mockup = await DB.mockup()
-    const docker = new Docker({ socketPath: '/var/run/docker.sock' })
-    try {
-      container = await docker.container.create({
-        Image: 'zkoprunet/contracts',
-        name: testName,
-        rm: true,
-      })
-    } catch (err) {
-      container = docker.container.get(testName)
-    }
+    container = await getContainer('zkoprunet/contracts:feat35')
     await container.start()
     const file = await readFromContainer(
       container,

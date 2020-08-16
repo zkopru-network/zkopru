@@ -1,11 +1,10 @@
 /* eslint-disable jest/no-hooks */
 import Web3 from 'web3'
-import { Docker } from 'node-docker-api'
 import { WebsocketProvider } from 'web3-core'
 import { Container } from 'node-docker-api/lib/container'
 import { MockupDB, DB } from '@zkopru/prisma'
 import { ZkAccount } from '~account'
-import { sleep, readFromContainer } from '~utils'
+import { sleep, readFromContainer, getContainer } from '~utils'
 import { FullNode } from '~core'
 
 describe('integration test to run testnet', () => {
@@ -17,16 +16,9 @@ describe('integration test to run testnet', () => {
   let mockup: MockupDB
   beforeAll(async () => {
     mockup = await DB.mockup()
-    const docker = new Docker({ socketPath: '/var/run/docker.sock' })
-    try {
-      container = await docker.container.create({
-        Image: 'zkoprunet/contracts',
-        name: testName,
-        rm: true,
-      })
-    } catch {
-      container = docker.container.get(testName)
-    }
+    container = await getContainer('zkoprunet/contracts:feat35', {
+      containerName: testName,
+    })
     await container.start()
     const deployed = await readFromContainer(
       container,

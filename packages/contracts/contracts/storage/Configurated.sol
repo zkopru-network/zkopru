@@ -10,9 +10,9 @@ contract Configurated {
     // uint constant public CHALLENGE_LIMIT = 8000000;
     uint constant public MINIMUM_STAKE = 32 ether;
     uint constant public REF_DEPTH = 128;
-    uint constant public UTXO_TREE_DEPTH = 31;
+    uint constant public UTXO_TREE_DEPTH = 48;
     uint constant public MAX_UTXO_PER_TREE = (1 << UTXO_TREE_DEPTH);
-    uint constant public WITHDRAWAL_TREE_DEPTH = 31;
+    uint constant public WITHDRAWAL_TREE_DEPTH = 48;
     uint constant public MAX_WITHDRAWAL_PER_TREE = (1 << WITHDRAWAL_TREE_DEPTH);
     uint constant public NULLIFIER_TREE_DEPTH = 254;
 

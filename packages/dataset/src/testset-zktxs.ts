@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { Docker } from 'node-docker-api'
 import fs from 'fs-extra'
 import path from 'path'
 import { Field } from '@zkopru/babyjubjub'
@@ -7,7 +6,6 @@ import { ZkTx, Utxo, UtxoStatus } from '@zkopru/transaction'
 import { ZkWizard } from '@zkopru/zk-wizard'
 import { keccakHasher, poseidonHasher, Grove } from '@zkopru/tree'
 import * as utils from '@zkopru/utils'
-import { Container } from 'node-docker-api/lib/container'
 import tar from 'tar'
 import { DB, TreeSpecies } from '@zkopru/prisma'
 import { accounts, address } from './testset-keys'
@@ -15,20 +13,7 @@ import { utxos } from './testset-utxos'
 import { txs } from './testset-txs'
 
 export async function loadCircuits() {
-  const docker = new Docker({ socketPath: '/var/run/docker.sock' })
-  const containerName = Math.random()
-    .toString(36)
-    .substring(2, 16)
-  let container: Container
-  try {
-    container = await docker.container.create({
-      Image: 'zkoprunet/circuits',
-      name: containerName,
-      rm: true,
-    })
-  } catch {
-    container = docker.container.get(containerName)
-  }
+  const container = await utils.getContainer('zkoprunet/circuits:feat35')
   await container.start()
   const nIn = [1, 2, 3, 4]
   const nOut = [1, 2, 3, 4]
@@ -84,13 +69,13 @@ export async function buildKeys(keyPath: string) {
 
 export async function loadGrove(db: DB): Promise<{ grove: Grove }> {
   const grove = new Grove(db, {
-    utxoTreeDepth: 31,
-    withdrawalTreeDepth: 31,
+    utxoTreeDepth: 48,
+    withdrawalTreeDepth: 48,
     nullifierTreeDepth: 254,
     utxoSubTreeSize: 32,
     withdrawalSubTreeSize: 32,
-    utxoHasher: poseidonHasher(31),
-    withdrawalHasher: keccakHasher(31),
+    utxoHasher: poseidonHasher(48),
+    withdrawalHasher: keccakHasher(48),
     nullifierHasher: keccakHasher(254),
     fullSync: true,
     forceUpdate: true,
