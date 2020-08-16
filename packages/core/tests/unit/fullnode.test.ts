@@ -4,7 +4,7 @@ import { WebsocketProvider } from 'web3-core'
 import { Container } from 'node-docker-api/lib/container'
 import { MockupDB, DB } from '@zkopru/prisma'
 import { ZkAccount } from '~account'
-import { sleep, readFromContainer, getContainer } from '~utils'
+import { sleep, readFromContainer, buildAndGetContainer } from '~utils'
 import { FullNode } from '~core'
 
 describe('integration test to run testnet', () => {
@@ -16,8 +16,12 @@ describe('integration test to run testnet', () => {
   let mockup: MockupDB
   beforeAll(async () => {
     mockup = await DB.mockup()
-    container = await getContainer('zkoprunet/contracts:feat35', {
-      containerName: testName,
+    // It may take about few minutes. If you want to skip building image,
+    // run `yarn pull:images` on the root directory
+    container = await buildAndGetContainer({
+      compose: [__dirname, '../../../../dockerfiles'],
+      service: 'contracts',
+      option: { containerName: testName },
     })
     await container.start()
     const deployed = await readFromContainer(
@@ -41,7 +45,7 @@ describe('integration test to run testnet', () => {
       })
     }
     await waitConnection()
-  }, 60000)
+  }, 3600000)
   afterAll(async () => {
     await container.stop()
     await container.delete()

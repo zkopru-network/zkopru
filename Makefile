@@ -16,30 +16,30 @@ develop-instant:
 
 playground-container:
 	$(info Make: build container and compile circuits)
-	@docker build -f containers/Playground.dockerfile ./ -t zkoprunet/playground --no-cache
+	@docker build -f dockerfiles/Playground.dockerfile ./ -t zkoprunet/playground --no-cache
 
 contract-container:
 	$(info Make: build container and compile circuits)
-	@docker build -f containers/Contract.dockerfile ./packages/contracts -t zkoprunet/contracts
+	@docker build -f dockerfiles/Contract.dockerfile ./packages/contracts -t zkoprunet/contracts
 
 contract-container-for-integration-test:
 	$(info Make: build container and compile circuits)
-	@docker build -f containers/Contract.integration.dockerfile ./packages/contracts -t zkoprunet/contracts-integration-test
+	@docker build -f dockerfiles/Contract.integration.dockerfile ./packages/contracts -t zkoprunet/contracts-integration-test
 
 circuit-container:
 	$(info Make: build container and compile circuits)
-	@docker build -f containers/Circuits.dockerfile ./ -t zkoprunet/circuits
+	@docker build -f dockerfiles/Circuits.dockerfile ./packages/circuits -t zkoprunet/circuits
 
 circuit-testing-container:
 	$(info Make: build container and compile circuits)
-	@docker build -f containers/Circuits.test.dockerfile ./ -t zkoprunet/circuits-test
+	@docker build -f dockerfiles/Circuits.test.dockerfile ./packages/circuits -t zkoprunet/circuits-test
 
 coordinator-container:
 	$(info Make: build container and compile circuits)
 	@lerna run build --scope=@zkopru/coordinator
-	@docker build -f containers/Coordinator.dockerfile ./ -t zkoprunet/coordinator
+	@docker build -f dockerfiles/Coordinator.dockerfile ./ -t zkoprunet/coordinator
 
-# ------------ Pull containers fro docker hub ------------- #
+# ------------ Pull dockerfiles fro docker hub ------------- #
 build-dev-images:
 	@make contract-container
 	@make contract-container-for-integration-test

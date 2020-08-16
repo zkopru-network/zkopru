@@ -4,7 +4,7 @@ import { Container } from 'node-docker-api/lib/container'
 import * as snarkjs from 'snarkjs'
 import * as ffjs from 'ffjavascript'
 import { getZkSnarkParams, calculateWitness } from '~utils/snark'
-import { getContainer } from '~utils/docker'
+import { buildAndGetContainer } from '~utils/docker'
 import { utxos } from '~dataset/testset-utxos'
 import { accounts } from '~dataset/testset-keys'
 import { Field } from '~babyjubjub/field'
@@ -12,13 +12,18 @@ import { Field } from '~babyjubjub/field'
 describe('utxo_notehash.test.circom', () => {
   let container: Container
   beforeAll(async () => {
-    container = await getContainer('zkoprunet/circuits-test')
+    // It may take about few minutes. If you want to skip building image,
+    // run `yarn pull:images` on the root directory
+    container = await buildAndGetContainer({
+      compose: [__dirname, '../../../dockerfiles'],
+      service: 'circuits-test',
+    })
     await container.start()
-  })
+  }, 3600000)
   afterAll(async () => {
     await container.stop()
     await container.delete()
-  })
+  }, 60000)
   describe('utxo note hash()', () => {
     it('should return same hash with its typescript version', async () => {
       const { wasm, pk, vk } = await getZkSnarkParams(

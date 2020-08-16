@@ -8,3 +8,4 @@ packages/**/keys
 .git
 .build-cache
 !packages/prisma/mockup.db
+!packages/contracts/keys

@@ -13,8 +13,12 @@ import { utxos } from './testset-utxos'
 import { txs } from './testset-txs'
 
 export async function loadCircuits() {
-  const container = await utils.getContainer('zkoprunet/circuits:feat35')
-  await container.start()
+  // It may take about an hour. If you want to skip building image,
+  // run `yarn pull:images` on the root directory
+  const container = await utils.buildAndGetContainer({
+    compose: [__dirname, '../../../dockerfiles'],
+    service: 'circuits',
+  })
   const nIn = [1, 2, 3, 4]
   const nOut = [1, 2, 3, 4]
   const keyPath = path.join(path.dirname(__filename), '../keys')
