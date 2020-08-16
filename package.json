@@ -40,7 +40,7 @@
     "format": "yarn lint --fix",
     "format:md": "yarn lint:md --fix",
     "husky-skip": "cross-env HUSKY_SKIP_HOOKS=1",
-    "precommit": "lerna run --concurrency 1 --stream precommit --since HEAD",
+    "precommit": "lint-staged && lerna run --concurrency 1 --stream precommit --since HEAD",
     "commit": "git cz"
   },
   "husky": {
