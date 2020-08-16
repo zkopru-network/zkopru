@@ -124,24 +124,20 @@ contract RollUpChallenge is Challengeable {
         }
         require(_utxoNum == index, "Submitted invalid num of utxo num");
 
-        /// Start a new tree if there's no room to add the new outputs
-        uint startingIndex;
-        uint startingRoot;
-        if (_parentHeader.utxoIndex + _utxoNum < MAX_UTXO_PER_TREE) {
-            /// it uses the latest tree
-            startingIndex = _parentHeader.utxoIndex;
-            startingRoot = _parentHeader.utxoRoot;
-        } else {
-            /// start a new tree
-            startingIndex = 0;
-            startingRoot = 0;
-        }
-        /// Submitted invalid next output index
-        if (_block.header.utxoIndex != (startingIndex + _utxoNum)) {
+        /// UTXO tree flushed
+        if (_parentHeader.utxoIndex + _utxoNum > MAX_UTXO_PER_TREE) {
             return Challenge(
                 true,
                 _block.header.proposer,
-                "UTXO tree flushed"
+                "utxo tree flushed"
+            );
+        }
+        /// Submitted invalid next output index
+        if (_block.header.utxoIndex != (_parentHeader.utxoIndex + _utxoNum)) {
+            return Challenge(
+                true,
+                _block.header.proposer,
+                "Invalid utxo index"
             );
         }
 
@@ -149,8 +145,8 @@ contract RollUpChallenge is Challengeable {
         // SplitRollUp memory rollUpProof =
         bool isValidRollUp = Layer2.proof.ofUTXORollUp[_utxoRollUpId].verify(
             SubTreeRollUpLib.newSubTreeOPRU(
-                uint(startingRoot),
-                startingIndex,
+                uint(_parentHeader.utxoRoot),
+                _parentHeader.utxoIndex,
                 uint(_block.header.utxoRoot),
                 UTXO_SUB_TREE_DEPTH,
                 outputs
@@ -226,24 +222,20 @@ contract RollUpChallenge is Challengeable {
             }
         }
         require(numOfWithdrawals == index, "Submitted invalid num of utxo num");
-        /// Start a new tree if there's no room to add the new withdrawals
-        uint startingIndex;
-        uint startingRoot;
-        if (_parentHeader.withdrawalIndex + numOfWithdrawals < MAX_WITHDRAWAL_PER_TREE) {
-            /// it uses the latest tree
-            startingIndex = _parentHeader.withdrawalIndex;
-            startingRoot = _parentHeader.withdrawalRoot;
-        } else {
-            /// start a new tree
-            startingIndex = 0;
-            startingRoot = 0;
-        }
-        /// Submitted invalid index of the next withdrawal tree
-        if (_block.header.withdrawalIndex != (startingIndex + numOfWithdrawals)) {
+        /// Withdrawal tree flushed
+        if (_parentHeader.withdrawalIndex + numOfWithdrawals > MAX_WITHDRAWAL_PER_TREE) {
             return Challenge(
                 true,
                 _block.header.proposer,
                 "Withdrawal tree flushed"
+            );
+        }
+        /// Submitted invalid index of the next withdrawal tree
+        if (_block.header.withdrawalIndex != (_parentHeader.withdrawalIndex + numOfWithdrawals)) {
+            return Challenge(
+                true,
+                _block.header.proposer,
+                "Invalid withdrawal index"
             );
         }
 
@@ -255,8 +247,8 @@ contract RollUpChallenge is Challengeable {
         }
         bool isValidRollUp = proof.verify(
             SubTreeRollUpLib.newSubTreeOPRU(
-                uint(startingRoot),
-                startingIndex,
+                uint(_parentHeader.withdrawalRoot),
+                _parentHeader.withdrawalIndex,
                 uint(_block.header.withdrawalRoot),
                 WITHDRAWAL_SUB_TREE_DEPTH,
                 uintLeaves
