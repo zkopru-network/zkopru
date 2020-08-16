@@ -102,7 +102,7 @@ This uses airbnb eslint, and husky will automatically prettify using commit-hook
 1. Install & get initial setup for the project
 
     ```shell
-    yarn initialize
+    yarn bootstrap
     ```
 
 2. Build packages
@@ -114,7 +114,7 @@ This uses airbnb eslint, and husky will automatically prettify using commit-hook
 3. Run development env
 
     ```shell
-    make develop
+    yarn develop
     ```
 
     This command will run the coordinator & cli wallet using docker and you can easily access to the running programs via web browser.
@@ -164,13 +164,8 @@ yarn test
 ### How to make changes of the circuit package.
 
 1. Add a test circuit in the directory `packages/circuits/tester/`
-2. Build a docker image for testing the circuit
-  ```shell
-  # root directory of the project
-  make circuit-testing-container
-  ```
-3. Write testcase in the directory `packages/circuits/tests`
-4. Run test command
+2. Write testcase in the directory `packages/circuits/tests`
+3. Run test command
   ```shell
   lerna run test --scope=@zkopru/circuits
   ```
@@ -179,15 +174,20 @@ yarn test
   cd packages/circuits
   yarn test  
   ```
-5. After the testing, build a docker image to use the compiled circuit and keys
+4. After the testing, build a docker image to use the compiled circuit and keys
   ```
   # root directory of the project
-  make circuit-container
+  yarn build:images
+  # Or you can build only the zkoprunet/circuits image with this command
+  docker-compose -f dockerfiles/docker-compose.yml build circuits
   ```
   This command will compile and setup circuits in the `impls` directory.
 
-6. Tag the docker image and push to the docker hub.
-7. (Optional) Specify the docker image tag in the test cases.
+5. (maintainer only) Update dockerifles/docker-compose.yml to modify tag and run following: 
+    ```
+    yarn build:images
+    docker-compose -f dockerfiles/docker-compose.yml push
+    ```
 
 ### Explore database
 
