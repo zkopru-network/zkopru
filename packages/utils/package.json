@@ -28,8 +28,10 @@
   "dependencies": {
     "bn.js": "^5.1.1",
     "circom_runtime": "^0.0.3",
+    "docker-compose": "^0.23.5",
     "ffjavascript": "^0.1.2",
     "fs-extra": "^9.0.0",
+    "js-yaml": "^3.14.0",
     "node-docker-api": "^1.1.22",
     "pino": "^6.2.0",
     "pino-pretty": "^4.0.0",

@@ -99,14 +99,14 @@ describe('utxo tree unit test', () => {
       ]
       dryResult = await utxoTree.dryAppend(...items)
       result = await utxoTree.append(...items)
-    })
+    }, 30000)
     it('should update its root and its value should equal to the dry run', () => {
       expect(result.root.eq(prevRoot)).toBe(false)
       expect(result.root.eq(dryResult.root)).toBe(true)
       expect(result.index.eq(dryResult.index)).toBe(true)
       result.siblings.forEach((sib, i) => {
         expect(sib.eq(dryResult.siblings[i])).toBe(true)
-      })
+      }, 30000)
     })
     it.todo('should have same result with its solidity version')
   })
@@ -134,7 +134,7 @@ describe('utxo tree unit test', () => {
           hash: utxos.utxo2_2_out_2.hash(),
         }),
       ).rejects.toThrow('')
-    })
+    }, 30000)
     it('should generate merkle proof using index together', async () => {
       const index = utxoTree.latestLeafIndex().sub(3)
       const proof = await utxoTree.merkleProof({

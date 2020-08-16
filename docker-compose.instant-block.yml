@@ -6,20 +6,20 @@ services:
       - "5000:5000"
     build:
       context: ./packages/contracts/
-      dockerfile: ../../containers/Contract.dockerfile
+      dockerfile: ../../dockerfiles/Contract.dockerfile
     command: ganache-cli --db=/data -i 20200406 -p 5000 --deterministic --host 0.0.0.0 --secure
   postgres:
     ports:
       - "5678:5432"
     build:
       context: ./
-      dockerfile: ./containers/Postgres.dockerfile
+      dockerfile: ./dockerfiles/Postgres.dockerfile
     environment:
       POSTGRES_PASSWORD: helloworld
   postgres-setup:
     build:
       context: ./
-      dockerfile: ./containers/PostgresSetup.dockerfile
+      dockerfile: ./dockerfiles/PostgresSetup.dockerfile
     depends_on:
       - 'postgres'
     links:
@@ -30,7 +30,7 @@ services:
   coordinator:
     build:
       context: ./
-      dockerfile: ./containers/Cli.dockerfile
+      dockerfile: ./dockerfiles/Cli.dockerfile
     ports:
       - "1234:1234"
       - "8888:8888"
@@ -44,7 +44,7 @@ services:
   wallet:
     build:
       context: ./
-      dockerfile: ./containers/Cli.dockerfile
+      dockerfile: ./dockerfiles/Cli.dockerfile
     ports:
       - "4321:4321"
     links:

@@ -19,7 +19,7 @@ WORKDIR /proj/zkopru/packages/cli
 RUN  ganache-cli --db=/proj/data -i 20200406 -p 5000 --deterministic --host 0.0.0.0 & \
         sleep 5 && cd /proj/zkopru/packages/contracts && truffle migrate --network testnet
 
-COPY keys /proj/zkopru/packages/cli/keys
+COPY ./packages/contracts/keys /proj/zkopru/packages/cli/keys
 
 CMD  ganache-cli --db=/proj/data -i 20200406 -p 5000 --deterministic --host 0.0.0.0 > /dev/null & \
         sleep 1;\

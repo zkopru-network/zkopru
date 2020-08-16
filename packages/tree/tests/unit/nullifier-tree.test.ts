@@ -84,11 +84,11 @@ describe('nullifier tree unit test', () => {
       const nullifiers: BN[] = [toBN(1), toBN(2)]
       await nullifierTree.dryRunNullify(...nullifiers)
       expect((await nullifierTree.root()).eq(prevRoot)).toBe(true)
-    }, 30000)
+    }, 60000)
     it('should emit error when it uses an already spent nullifier', async () => {
       const nullifiers: BN[] = [toBN(1), toBN(1)]
       await expect(nullifierTree.dryRunNullify(...nullifiers)).rejects.toThrow()
-    }, 30000)
+    }, 60000)
   })
   describe('append', () => {
     it('should update its root and its value should equal to the dry run', async () => {

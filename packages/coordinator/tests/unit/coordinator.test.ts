@@ -5,7 +5,7 @@ import { Container } from 'node-docker-api/lib/container'
 import { FullNode } from '@zkopru/core'
 import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
-import { readFromContainer, sleep, getContainer } from '~utils'
+import { readFromContainer, sleep, buildAndGetContainer } from '~utils'
 import { MockupDB, DB } from '~prisma'
 
 describe('coordinator test to run testnet', () => {
@@ -20,7 +20,12 @@ describe('coordinator test to run testnet', () => {
   let coordinator: Coordinator
   beforeAll(async () => {
     mockup = await DB.mockup()
-    container = await getContainer('zkoprunet/contracts:feat35')
+    // It may take about few minutes. If you want to skip building image,
+    // run `yarn pull:images` on the root directory
+    container = await buildAndGetContainer({
+      compose: [__dirname, '../../../../dockerfiles'],
+      service: 'contracts',
+    })
     await container.start()
     const file = await readFromContainer(
       container,
@@ -59,13 +64,13 @@ describe('coordinator test to run testnet', () => {
         snark: true,
       },
     })
-  }, 60000)
+  }, 3600000)
   afterAll(async () => {
     await container.stop()
     await container.delete()
     await mockup.terminate()
     wsProvider.disconnect(0, 'close connection')
-  }, 60000)
+  }, 10000)
   describe('coordinator', () => {
     it('should be defined', async () => {
       coordinator = new Coordinator(fullNode, accounts[0].ethAccount, {

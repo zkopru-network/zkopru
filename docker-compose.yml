@@ -4,14 +4,14 @@ services:
   testnet:
     build:
       context: ./packages/contracts/
-      dockerfile: ../../containers/Contract.dockerfile
+      dockerfile: ../../dockerfiles/Contract.dockerfile
     ports:
       - "5000:5000"
     command: ganache-cli --db=/data -i 20200406 -p 5000 --deterministic --host 0.0.0.0
   coordinator:
     build:
       context: ./
-      dockerfile: ./containers/Coordinator.dockerfile
+      dockerfile: ./dockerfiles/Coordinator.dockerfile
     ports:
       - "8888:8888"
     links:
