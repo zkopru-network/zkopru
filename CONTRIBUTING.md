@@ -161,6 +161,33 @@ yarn test
     $ tail -f packages/cli/WALLET_LOG | pino-pretty
     $ tail -f packages/cli/COORDINATOR_LOG | pino-pretty
     ```
+### How to make changes of the circuit package.
+
+1. Add a test circuit in the directory `packages/circuits/tester/`
+2. Build a docker image for testing the circuit
+  ```shell
+  # root directory of the project
+  make circuit-testing-container
+  ```
+3. Write testcase in the directory `packages/circuits/tests`
+4. Run test command
+  ```shell
+  lerna run test --scope=@zkopru/circuits
+  ```
+  or
+  ```
+  cd packages/circuits
+  yarn test  
+  ```
+5. After the testing, build a docker image to use the compiled circuit and keys
+  ```
+  # root directory of the project
+  make circuit-container
+  ```
+  This command will compile and setup circuits in the `impls` directory.
+
+6. Tag the docker image and push to the docker hub.
+7. (Optional) Specify the docker image tag in the test cases.
 
 ### Explore database
 
