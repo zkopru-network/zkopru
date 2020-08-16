@@ -15,6 +15,7 @@
     "develop:instant": "yarn build:ts && docker-compose -f docker-compose.instant-block.yml up --build --force-recreate -V",
     "build": "lerna run build:contract && lerna run build:prisma && yarn build:ts",
     "build:ts": "lerna run --parallel build && yarn link-modules",
+    "build:prisma": "lerna run build:prisma",
     "build:contract": "lerna run --parallel build:contract",
     "build:keys": "lerna run build-keys --scope=@zkopru/dataset",
     "build:fresh": "yarn clean && shx rm -rf packages/*/node_modules && yarn build",

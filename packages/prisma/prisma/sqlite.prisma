@@ -87,10 +87,8 @@ model Header {
 model Bootstrap {
   id String @id @default(uuid())
   blockHash String? @unique
-  utxoTreeIndex Int
   // utxoBootstrap String[]
   utxoBootstrap String // jsonified arr : sqlite does not support arr
-  withdrawalTreeIndex Int
   // withdrawalBootstrap String[]
   withdrawalBootstrap String //jsonified arr : sqlite does not support arr
   block Block? @relation(fields: [blockHash], references: [hash])
@@ -176,23 +174,12 @@ model TreeNode {
 
 model LightTree {
   id String @default(uuid()) @unique
-  species Int // 0: utxo 1: withdrawal
-  treeIndex Int
-  block String?
+  species Int @unique // 0: utxo 1: withdrawal
   // rollup sync data
   start String
   end String
   // rollup snapshot data
   root String
   index String
-  siblings String // stringified str[]
-  @@id([species, treeIndex])
-}
-
-model NullifierTree {
-  id String @id @default(uuid())
-  treeIndex Int @unique
-  block String?
-  root String
   siblings String // stringified str[]
 }

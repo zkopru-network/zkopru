@@ -8,9 +8,7 @@ import { logger } from '@zkopru/utils'
 export interface BootstrapData {
   proposal: Proposal
   blockHash: string
-  utxoTreeIndex: number
   utxoStartingLeafProof: MerkleProof<Field>
-  withdrawalTreeIndex: number
   withdrawalStartingLeafProof: MerkleProof<BN>
 }
 
@@ -34,14 +32,12 @@ export class HttpBootstrapHelper implements BootstrapHelper {
       return {
         proposal: body.proposal,
         blockHash: body.blockHash,
-        utxoTreeIndex: body.utxoTreeIndex,
         utxoStartingLeafProof: {
           root: Field.from(body.utxoBootstrap.root),
           index: Field.from(body.utxoBootstrap.index),
           leaf: Field.from(body.utxoBootstrap.leaf),
           siblings: body.utxoBootstrap.siblings.map(Field.from),
         },
-        withdrawalTreeIndex: body.withdrawalTreeIndex,
         withdrawalStartingLeafProof: {
           root: Field.from(body.withdrawalBootstrap.root),
           index: Field.from(body.withdrawalBootstrap.index),
