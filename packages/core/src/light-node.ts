@@ -4,6 +4,7 @@ import Web3 from 'web3'
 import { verifyProof } from '@zkopru/tree'
 import { DB } from '@zkopru/prisma'
 import { Bytes32 } from 'soltypes'
+import { logger } from '@zkopru/utils'
 import { L1Contract } from './layer1'
 import { Verifier, VerifyOption } from './verifier'
 import { L2Chain } from './layer2'
@@ -11,7 +12,6 @@ import { BootstrapHelper } from './bootstrap'
 import { Block, headerHash } from './block'
 import { Synchronizer } from './synchronizer'
 import { ZkOPRUNode } from './zkopru-node'
-import { logger } from '@zkopru/utils'
 
 type provider = WebsocketProvider | IpcProvider
 

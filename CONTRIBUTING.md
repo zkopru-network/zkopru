@@ -1,6 +1,6 @@
 # Contributing to Zkopru👋
 
-Thanks for taking a time to read this document. This document includes how to contribute to the project including testing and commits. 
+Thanks for taking a time to read this document. This document includes how to contribute to the project including testing and commits.
 
 ## Table of Content
 
@@ -21,46 +21,50 @@ In this case, please report the bug via [security@zkopru.network](mailto:securit
 This project follows the conventional commit rule.
 To check the full specification, please see [https://www.conventionalcommits.org/](https://www.conventionalcommits.org/)
  Here is the sample commits.
- 
+
 1. Commit message with description and breaking change footer
 
-    ```
+    ```text
     feat: allow provided config object to extend other configs
-    
+
     BREAKING CHANGE: `extends` key in config file is now used for extending other config files
     ```
+
 2. Commit message with ! to draw attention to breaking change
 
-    ```
+    ```text
     refactor!: drop support for Node 6
     ```
 
 3. Commit message with both ! and BREAKING CHANGE footer
 
-    ```
+    ```text
     refactor!: drop support for Node 6
 
     BREAKING CHANGE: refactor to use JavaScript features not available in Node 6.
     ```
+
 4. Commit message with no body
 
-    ```
+    ```text
     docs: correct spelling of CHANGELOG
     ```
+
 5. Commit message with scope
 
-    ```
+    ```text
     feat(lang): add polish language
     ```
+
 6. Commit message with multi-paragraph body and multiple footers
 
-    ```
+    ```text
     fix: correct minor typos in code
-    
-    see the issue for details 
-    
+
+    see the issue for details
+
     on typos fixed.
-    
+
     Reviewed-by: Z
     Refs #133
     ```
@@ -82,11 +86,14 @@ This uses airbnb eslint, and husky will automatically prettify using commit-hook
 
     * Get nvm [here](https://github.com/nvm-sh/nvm#installing-and-updating)
     * Download node version 12 and set to use it.
+
       ```shell
       nvm install 12
       nvm use 12
       ```
+
       If you want to make node 12 as the default option run  && yarn build:keys
+
       ```shell
       nvm alias default 12
       ```
@@ -118,14 +125,14 @@ This uses airbnb eslint, and husky will automatically prettify using commit-hook
     ```
 
     This command will run the coordinator & cli wallet using docker and you can easily access to the running programs via web browser.
-    * coordinator: http://localhost:1234
-    * cli wallet: http://localhost:4321
+    * coordinator: <http://localhost:1234>
+    * cli wallet: <http://localhost:4321>
 
     Or you can setup the environment without docker-compose. Please check ["Manually setup Run cli applications"](#manually-setup-run-cli-applications) section.
 
 ### Integration test
 
-```
+```shell
 yarn test
 ```
 
@@ -144,47 +151,56 @@ yarn test
     ```shell
     cd packages/cli && yarn dev:coordinator
     ```
-    This will give you a cli menu to operate coordinator locally.
 
+    This will give you a cli menu to operate coordinator locally.
 
 4. Go to the cli package and run wallet with a pre-configured test account.
 
     ```shell
     cd packages/cli && yarn dev:wallet
     ```
+
     This will give you a cli menu to run wallet locally.
 
 5. It stores the dev log in `packages/cli/WALLET_LOG` and `packages/cli/COORDINATOR_LOG`. You can beautify the logs using this command.
 
     ```shell
-    $ npm install -g pino-pretty
-    $ tail -f packages/cli/WALLET_LOG | pino-pretty
-    $ tail -f packages/cli/COORDINATOR_LOG | pino-pretty
+    npm install -g pino-pretty
+    tail -f packages/cli/WALLET_LOG | pino-pretty
+    tail -f packages/cli/COORDINATOR_LOG | pino-pretty
     ```
-### How to make changes of the circuit package.
+
+### How to make changes of the circuit package
 
 1. Add a test circuit in the directory `packages/circuits/tester/`
 2. Write testcase in the directory `packages/circuits/tests`
 3. Run test command
-  ```shell
-  lerna run test --scope=@zkopru/circuits
-  ```
-  or
-  ```
-  cd packages/circuits
-  yarn test  
-  ```
-4. After the testing, build a docker image to use the compiled circuit and keys
-  ```
-  # root directory of the project
-  yarn build:images
-  # Or you can build only the zkoprunet/circuits image with this command
-  docker-compose -f dockerfiles/docker-compose.yml build circuits
-  ```
-  This command will compile and setup circuits in the `impls` directory.
 
-5. (maintainer only) Update dockerifles/docker-compose.yml to modify tag and run following: 
+    ```shell
+    lerna run test --scope=@zkopru/circuits
     ```
+
+    or
+
+    ```shell
+    cd packages/circuits
+    yarn test  
+    ```
+
+4. After the testing, build a docker image to use the compiled circuit and keys
+
+    ```shell
+    # root directory of the project
+    yarn build:images
+    # Or you can build only the zkoprunet/circuits image with this command
+    docker-compose -f dockerfiles/docker-compose.yml build circuits
+    ```
+
+    This command will compile and setup circuits in the `impls` directory.
+
+5. (maintainer only) Update dockerifles/docker-compose.yml to modify tag and run following:
+
+    ```shell
     yarn build:images
     docker-compose -f dockerfiles/docker-compose.yml push
     ```
@@ -198,15 +214,19 @@ You can open the Prisma Studio to explore the database with following steps:
 2. Write up the database connection information.
 
     * for dev coordinator
-        ```
+
+        ```shell
         # file packages/prisma/prisma/.env
         DATABASE_URL="file:../../cli/zkopru-coordinator.db"
         ```
+
     * for dev wallet
-        ```
+
+        ```shell
         # file packages/prisma/prisma/.env
         DATABASE_URL="file:../../cli/zkopru-wallet.db"
         ```
+
 3. Run `yarn studio`
 
     ```shell
@@ -218,9 +238,11 @@ You can open the Prisma Studio to explore the database with following steps:
 1. Modify `packages/prisma/prisma/schema.prisma`
 
 2. Run the following command will update the typescript automatically.
+
     ```shell
     yarn build:prisma
     ```
+
 3. Update mockup database (WIP)
 
 ### Optional commands
@@ -236,7 +258,6 @@ yarn build:fresh
 ```shell
 yarn build:ts
 ```
-
 
 This command will re-build the whole packages by wiping away every artifacts.
 
