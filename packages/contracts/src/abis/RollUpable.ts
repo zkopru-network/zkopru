@@ -22,14 +22,14 @@ export const RollUpableABI = [
   },
   {
     inputs: [],
-    name: 'MAX_UTXO_PER_TREE',
+    name: 'MAX_UTXO',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [],
-    name: 'MAX_WITHDRAWAL_PER_TREE',
+    name: 'MAX_WITHDRAWAL',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',

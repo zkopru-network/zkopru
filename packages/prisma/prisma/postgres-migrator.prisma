@@ -39,8 +39,8 @@ model Config {
   challengePeriod Int
   minimumStake String
   referenceDepth Int
-  maxUtxoPerTree String
-  maxWithdrawalPerTree String
+  maxUtxo String
+  maxWithdrawal String
   utxoSubTreeDepth Int
   utxoSubTreeSize Int
   withdrawalSubTreeDepth Int

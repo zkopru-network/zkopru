@@ -15,8 +15,8 @@ export default class Layer1Details extends App {
     challenge period                  : ${l1Config.challengePeriod}
     minimum stake                     : ${l1Config.minimumStake} wei
     reference depth                   : ${l1Config.referenceDepth}
-    max utxos per tree                : ${l1Config.maxUtxoPerTree}
-    max withdrawals per tree          : ${l1Config.maxWithdrawalPerTree}
+    max utxos per tree                : ${l1Config.maxUtxo}
+    max withdrawals per tree          : ${l1Config.maxWithdrawal}
     utxo rollup sub tree depth        : ${l1Config.utxoSubTreeDepth}
     utxo rollup sub tree size         : ${l1Config.utxoSubTreeSize}
     withdrawal rollup sub tree depth  : ${l1Config.withdrawalSubTreeDepth}
