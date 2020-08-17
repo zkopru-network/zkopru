@@ -172,9 +172,25 @@ export class ZkTx {
   }
 
   signals(): BigInteger[] {
+    /**
+     * 
+    signal input inclusion_references[n_i]; 
+    signal input nullifiers[n_i]; // prevents double-spending
+
+    signal input new_note_hash[n_o];
+    signal input typeof_new_note[n_o]; // 0: UTXO, 1: Withdrawal, 2: Migration
+
+    signal input public_data_to[n_o];
+    signal input public_data_eth[n_o];
+    signal input public_data_token_addr[n_o];
+    signal input public_data_erc20[n_o];
+    signal input public_data_erc721[n_o];
+    signal input public_data_fee[n_o];
+
+    signal input fee; // tx fee
+    signal input swap; // for atomic swap
+     */
     const signals: Field[] = [
-      this.fee,
-      this.swap ? this.swap : Field.zero,
       ...this.inflow.map(inflow => inflow.root),
       ...this.inflow.map(inflow => inflow.nullifier),
       ...this.outflow.map(outflow => outflow.note),
@@ -197,6 +213,8 @@ export class ZkTx {
       ...this.outflow.map(outflow =>
         outflow.data ? outflow.data.fee : Field.zero,
       ),
+      this.fee,
+      this.swap ? this.swap : Field.zero,
     ]
     return signals.map(f => f.toIden3BigInt())
   }
