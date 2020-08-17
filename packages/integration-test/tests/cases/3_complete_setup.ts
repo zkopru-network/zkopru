@@ -9,9 +9,15 @@ export const testCompleteSetup = (ctx: Provider) => async () => {
   const { accounts, contract } = ctx()
   const tx = contract.setup.methods.completeSetup()
   const gas = await tx.estimateGas()
-  await expect(tx.send({ from: accounts.alice.ethAddress, gas })).rejects.not.toThrow()
-  await expect(tx.send({ from: accounts.bob.ethAddress, gas })).rejects.toThrow()
-  await expect(tx.send({ from: accounts.carl.ethAddress, gas })).rejects.toThrow()
+  await expect(
+    tx.send({ from: accounts.alice.ethAddress, gas }),
+  ).rejects.not.toThrow()
+  await expect(
+    tx.send({ from: accounts.bob.ethAddress, gas }),
+  ).rejects.toThrow()
+  await expect(
+    tx.send({ from: accounts.carl.ethAddress, gas }),
+  ).rejects.toThrow()
   await expect(
     tx.send({ from: accounts.coordinator.ethAddress, gas }),
   ).resolves.toHaveProperty('transactionHash')
@@ -23,7 +29,9 @@ export const testRejectVkRegistration = (ctx: Provider) => async () => {
   await expect(
     tx.estimateGas({ from: accounts.alice.ethAddress }),
   ).rejects.toThrow()
-  await expect(tx.estimateGas({ from: accounts.bob.ethAddress })).rejects.toThrow()
+  await expect(
+    tx.estimateGas({ from: accounts.bob.ethAddress }),
+  ).rejects.toThrow()
   await expect(
     tx.estimateGas({ from: accounts.carl.ethAddress }),
   ).rejects.toThrow()
