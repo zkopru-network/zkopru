@@ -7,18 +7,18 @@
 /* eslint-disable jest/require-tothrow-message */
 /* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable jest/no-hooks */
-import { Context, initContext, terminate } from './helper/context'
+import { Context, initContext, terminate } from './cases/context'
 import {
   testAliceAccount,
   testCarlAccount,
   testBobAccount,
-} from './helper/1_create_accounts'
-import { testRegisterVKs, testRegisterVKFails } from './helper/2_register_vks'
+} from './cases/1_create_accounts'
+import { testRegisterVKs, testRegisterVKFails } from './cases/2_register_vks'
 import {
   testCompleteSetup,
   testRejectVkRegistration,
-} from './helper/3_complete_setup'
-import { depositEther, depositERC20, depositERC721 } from './helper/4_deposit'
+} from './cases/3_complete_setup'
+import { depositEther, depositERC20, depositERC721 } from './cases/4_deposit'
 
 describe('testnet', () => {
   let context!: Context
