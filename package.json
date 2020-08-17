@@ -11,7 +11,8 @@
     "postinstall": "lerna bootstrap && yarn clean && shx rm -rf packages/*/node_modules",
     "pull:images": "docker-compose -f dockerfiles/docker-compose.yml pull",
     "build:images": "docker-compose -f dockerfiles/docker-compose.yml build",
-    "develop": "yarn build:ts && docker-compose -f docker-compose.dev.yml up --build --force-recreate -V",
+    "predevelop": "yarn build:ts && docker-compose -f docker-compose.dev.yml build",
+    "develop": "(sleep 10; open-cli http://localhost:4321) & (sleep 10; open-cli http://localhost:1234) & docker-compose -f docker-compose.dev.yml up --force-recreate -V",
     "develop:instant": "yarn build:ts && docker-compose -f docker-compose.instant-block.yml up --build --force-recreate -V",
     "build": "lerna run build:contract && lerna run build:prisma && yarn build:ts",
     "build:ts": "lerna run --parallel build && yarn link-modules",
@@ -53,11 +54,11 @@
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
       "eslint --fix",
-      "git add"
+      "git add --force"
     ],
     "*.md": [
       "yarn format:md",
-      "git add"
+      "git add --force"
     ]
   },
   "devDependencies": {
@@ -120,6 +121,7 @@
     "markdownlint-cli": "^0.22.0",
     "merkle-tree-rollup": "^1.1.4",
     "node-docker-api": "^1.1.22",
+    "open-cli": "^6.0.1",
     "prettier": "^1.16.4",
     "puppeteer": "^5.0.0",
     "serve": "^11.2.0",
