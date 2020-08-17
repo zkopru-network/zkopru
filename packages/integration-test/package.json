@@ -6,6 +6,7 @@
   "_moduleAliases": {
     "~account": "../account/dist",
     "~babyjubjub": "../babyjubjub/dist",
+    "~cli": "../cli/dist",
     "~contracts": "../contracts/dist",
     "~core": "../core/dist",
     "~coordinator": "../coordinator/dist",
@@ -43,6 +44,9 @@
     "web3": "^1.2.7",
     "web3-core": "^1.2.7",
     "web3-utils": "^1.2.7"
+  },
+  "devDependencies": {
+    "pino-pretty": "^4.0.0"
   },
   "publishConfig": {
     "access": "public"

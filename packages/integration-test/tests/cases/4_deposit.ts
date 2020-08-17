@@ -3,27 +3,23 @@
 /* eslint-disable jest/no-export */
 /* eslint-disable jest/require-top-level-describe */
 
-import { Provider } from './context'
+import { toWei } from 'web3-utils'
+import { CtxProvider } from './context'
 
-export const depositEther = (ctx: Provider) => async () => {
-  const { accounts, contract } = ctx()
-  const tx = contract.setup.methods.completeSetup()
-  const gas = await tx.estimateGas()
+export const depositEther = (ctx: CtxProvider) => async () => {
+  const { wallets } = ctx()
   await expect(
-    tx.send({ from: accounts.alice.ethAddress, gas }),
-  ).rejects.toThrow()
+    wallets.alice.depositEther(toWei('10', 'ether'), toWei('100000', 'gwei')),
+  ).resolves.toStrictEqual(true)
   await expect(
-    tx.send({ from: accounts.bob.ethAddress, gas }),
-  ).rejects.toThrow()
+    wallets.bob.depositEther(toWei('10', 'ether'), toWei('100000', 'gwei')),
+  ).resolves.toStrictEqual(true)
   await expect(
-    tx.send({ from: accounts.carl.ethAddress, gas }),
-  ).rejects.toThrow()
-  await expect(
-    tx.send({ from: accounts.coordinator.ethAddress, gas }),
-  ).resolves.toHaveProperty('transactionHash')
+    wallets.carl.depositEther(toWei('10', 'ether'), toWei('100000', 'gwei')),
+  ).resolves.toStrictEqual(true)
 }
 
-export const depositERC20 = (ctx: Provider) => async () => {
+export const depositERC20 = (ctx: CtxProvider) => async () => {
   const { accounts, contract } = ctx()
   const tx = contract.setup.methods.completeSetup()
   await expect(
@@ -40,7 +36,7 @@ export const depositERC20 = (ctx: Provider) => async () => {
   ).rejects.toThrow()
 }
 
-export const depositERC721 = (ctx: Provider) => async () => {
+export const depositERC721 = (ctx: CtxProvider) => async () => {
   const { accounts, contract } = ctx()
   const tx = contract.setup.methods.completeSetup()
   await expect(

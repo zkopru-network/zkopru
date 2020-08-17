@@ -19,11 +19,13 @@ import {
   testRejectVkRegistration,
 } from './cases/3_complete_setup'
 import { depositEther, depositERC20, depositERC721 } from './cases/4_deposit'
+import { attachConsoleErrorToPino } from '~utils/logger'
 
 describe('testnet', () => {
   let context!: Context
   const ctx = () => context
   beforeAll(async () => {
+    attachConsoleErrorToPino()
     context = await initContext()
   }, 45000)
   afterAll(async done => {
@@ -60,11 +62,11 @@ describe('testnet', () => {
       it('should reject every register txs', testRejectVkRegistration(ctx))
     })
   })
-  describe.skip('4: Deposits', () => {
+  describe('4: Deposits', () => {
     describe('users deposit assets', () => {
-      it('ether: Alice, Bob, and Carl deposits Ether', depositEther(ctx))
-      it('erc20: Bob deposits ERC20', depositERC20(ctx))
-      it('erc721: Carl deposits NFTs', depositERC721(ctx))
+      it('ether: Alice, Bob, and Carl each deposit 10 ETH', depositEther(ctx))
+      it.skip('erc20: Bob deposits ERC20', depositERC20(ctx))
+      it.skip('erc721: Carl deposits NFTs', depositERC721(ctx))
     })
     describe('coordinator subscribe Deposit() events', () => {
       it.todo('Coordinator should subscribe the deposit events')

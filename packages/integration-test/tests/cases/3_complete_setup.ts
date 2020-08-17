@@ -3,9 +3,9 @@
 /* eslint-disable jest/no-export */
 /* eslint-disable jest/require-top-level-describe */
 
-import { Provider } from './context'
+import { CtxProvider } from './context'
 
-export const testCompleteSetup = (ctx: Provider) => async () => {
+export const testCompleteSetup = (ctx: CtxProvider) => async () => {
   const { accounts, contract } = ctx()
   const tx = contract.setup.methods.completeSetup()
   const gas = await tx.estimateGas()
@@ -23,7 +23,7 @@ export const testCompleteSetup = (ctx: Provider) => async () => {
   ).resolves.toHaveProperty('transactionHash')
 }
 
-export const testRejectVkRegistration = (ctx: Provider) => async () => {
+export const testRejectVkRegistration = (ctx: CtxProvider) => async () => {
   const { accounts, contract } = ctx()
   const tx = contract.setup.methods.completeSetup()
   await expect(
