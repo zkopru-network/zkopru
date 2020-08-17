@@ -48,11 +48,11 @@ describe('testnet', () => {
     it('bob should have 100 ETH for his initial balance', testBobAccount(ctx))
     it('carl should have 100 ETH for his initial balance', testCarlAccount(ctx))
   })
-  describe.skip('2: Register verifying keys', () => {
+  describe('2: Register verifying keys', () => {
     it('coordinator can register vks', testRegisterVKs(ctx))
     it('alice, bob, and carl cannot register vks', testRegisterVKFails(ctx))
   })
-  describe.skip('3: Complete setup', () => {
+  describe('3: Complete setup', () => {
     describe('3-1: before completeSetup() called', () => {
       it('should allow only the coordinator', testCompleteSetup(ctx))
     })
