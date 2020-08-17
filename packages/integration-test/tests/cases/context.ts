@@ -1,9 +1,13 @@
 import { Container } from 'node-docker-api/lib/container'
 import Web3 from 'web3'
+import { WebsocketProvider, Account } from 'web3-core'
 import { MockupDB, DB } from '~prisma'
 import { ZkAccount, HDWallet } from '~account'
-import { sleep, readFromContainer, logger, buildAndGetContainer } from '~utils'
-import { L1Contract } from '~core'
+import { sleep, readFromContainer, buildAndGetContainer } from '~utils'
+import { DEFAULT } from '~cli/config'
+import { L1Contract, FullNode } from '~core'
+import { Coordinator } from '~coordinator'
+import { ZkWallet } from '~zk-wizard'
 import { Layer1 } from '~contracts'
 import { IERC20 } from '~contracts/contracts/IERC20'
 import { IERC721 } from '~contracts/contracts/IERC721'
@@ -19,19 +23,31 @@ export interface Context {
     bob: ZkAccount
     carl: ZkAccount
   }
+  wallets: {
+    alice: ZkWallet
+    bob: ZkWallet
+    carl: ZkWallet
+  }
+  coordinator: Coordinator
   vks: VKs
   web3: Web3
   zkopruAddress: string
-  mockup: MockupDB
+  dbs: MockupDB[]
   contract: L1Contract
   erc20: IERC20
   erc721: IERC721
 }
 
-export type Provider = () => Context
+export type CtxProvider = () => Context
 
-export async function terminate(ctx: Provider) {
-  const { layer1Container, circuitArtifactContainer, mockup } = ctx()
+export async function terminate(ctx: CtxProvider) {
+  const {
+    layer1Container,
+    circuitArtifactContainer,
+    dbs,
+    coordinator,
+    wallets,
+  } = ctx()
   await Promise.all(
     [
       async () => {
@@ -43,13 +59,22 @@ export async function terminate(ctx: Provider) {
         await circuitArtifactContainer.delete()
       },
       async () => {
-        await mockup.terminate()
+        await Promise.all(dbs.map(db => db.terminate()))
+      },
+      async () => {
+        await coordinator.stop()
+        wallets.alice.node.stopSync()
+        wallets.bob.node.stopSync()
+        wallets.carl.node.stopSync()
       },
     ].map(task => task()),
   )
 }
 
-export async function initContext() {
+async function getContainers(): Promise<{
+  layer1Container: Container
+  circuitArtifactContainer: Container
+}> {
   const layer1Container = await buildAndGetContainer({
     compose: [__dirname, '../../../../dockerfiles'],
     service: 'contracts-for-integration-test',
@@ -58,7 +83,16 @@ export async function initContext() {
     compose: [__dirname, '../../../../dockerfiles'],
     service: 'circuits',
   })
-  await Promise.all([layer1Container.start(), circuitArtifactContainer.start()])
+  return { layer1Container, circuitArtifactContainer }
+}
+
+async function getAddresses(
+  layer1Container: Container,
+): Promise<{
+  zkopruAddress: string
+  erc20Address: string
+  erc721Address: string
+}> {
   const deployed = await readFromContainer(
     layer1Container,
     '/proj/build/deployed/ZkOptimisticRollUp.json',
@@ -74,16 +108,23 @@ export async function initContext() {
   const zkopruAddress = JSON.parse(deployed.toString()).address
   const erc20Address = JSON.parse(deployedERC20.toString()).address
   const erc721Address = JSON.parse(deployedERC721.toString()).address
-  const status = await layer1Container.status()
+  return { zkopruAddress, erc20Address, erc721Address }
+}
+
+async function getContainerIP(container: Container): Promise<string> {
+  const status = await container.status()
   const containerIP = (status.data as {
     NetworkSettings: { IPAddress: string }
   }).NetworkSettings.IPAddress
-  await sleep(2000)
-  logger.info(`Running testnet on ${containerIP}:5000`)
-  const provider = new Web3.providers.WebsocketProvider(
-    `ws://${containerIP}:5000`,
-    { reconnect: { auto: true } },
-  )
+  return containerIP
+}
+
+async function getWeb3(
+  ws: string,
+): Promise<{ web3: Web3; provider: WebsocketProvider }> {
+  const provider = new Web3.providers.WebsocketProvider(ws, {
+    reconnect: { auto: true },
+  })
   async function waitConnection() {
     return new Promise<void>(res => {
       if (provider.connected) res()
@@ -91,11 +132,18 @@ export async function initContext() {
     })
   }
   await waitConnection()
-  logger.info(`Websocket connection with ${containerIP}:5000`)
   const web3 = new Web3(provider)
-  const contract = new L1Contract(web3, zkopruAddress)
-  const erc20 = Layer1.getERC20(web3, erc20Address)
-  const erc721 = Layer1.getERC721(web3, erc721Address)
+  return { web3, provider }
+}
+
+async function getAccounts(
+  web3: Web3,
+): Promise<{
+  coordinator: ZkAccount
+  alice: ZkAccount
+  bob: ZkAccount
+  carl: ZkAccount
+}> {
   const mockup = await DB.mockup()
   const hdWallet = new HDWallet(web3, mockup.db)
   const mnemonic =
@@ -106,6 +154,11 @@ export async function initContext() {
   const bob = await hdWallet.createAccount(2)
   const carl = await hdWallet.createAccount(3)
   const accounts = { coordinator, alice, bob, carl }
+  await mockup.terminate()
+  return accounts
+}
+
+async function getVKs(circuitArtifactContainer: Container): Promise<VKs> {
   const vks: VKs = {
     1: {},
     2: {},
@@ -132,14 +185,146 @@ export async function initContext() {
     })
   })
   await Promise.all(readVKs.map(f => f()))
+  return vks
+}
+
+async function getCoordinator(
+  provider: WebsocketProvider,
+  address: string,
+  account: Account,
+): Promise<{ coordinator: Coordinator; mockupDB: MockupDB }> {
+  const mockupDB = await DB.mockup()
+  const fullNode: FullNode = await FullNode.new({
+    address,
+    provider,
+    db: mockupDB.db,
+  })
+  const { maxBytes, priceMultiplier, port } = DEFAULT
+  const coordinator = new Coordinator(fullNode, account, {
+    maxBytes,
+    priceMultiplier, // 32 gas is the current default price for 1 byte
+    port,
+    bootstrap: false,
+  })
+  return { coordinator, mockupDB }
+}
+
+export async function getWallet({
+  account,
+  provider,
+  coordinator,
+  erc20s,
+  erc721s,
+  address,
+}: {
+  account: ZkAccount
+  provider: WebsocketProvider
+  coordinator: string
+  address: string
+  erc20s: string[]
+  erc721s: string[]
+}): Promise<{ zkWallet: ZkWallet; mockupDB: MockupDB }> {
+  const mockupDB = await DB.mockup()
+  const node: FullNode = await FullNode.new({
+    address,
+    provider,
+    db: mockupDB.db,
+  })
+  const web3 = new Web3(provider)
+  const hdWallet = new HDWallet(web3, mockupDB.db)
+  const zkWallet = new ZkWallet({
+    db: mockupDB.db,
+    wallet: hdWallet,
+    node,
+    accounts: [account],
+    erc20: erc20s,
+    erc721: erc721s,
+    coordinator,
+    snarkKeyPath: 'integration-test-alice-key-path',
+  })
+  zkWallet.setAccount(account)
+  return { zkWallet, mockupDB }
+}
+
+async function getWallets({
+  accounts,
+  config,
+}: {
+  accounts: {
+    alice: ZkAccount
+    bob: ZkAccount
+    carl: ZkAccount
+  }
+  config: {
+    provider: WebsocketProvider
+    coordinator: string
+    address: string
+    erc20s: string[]
+    erc721s: string[]
+  }
+}): Promise<{
+  wallets: {
+    alice: ZkWallet
+    bob: ZkWallet
+    carl: ZkWallet
+  }
+  dbs: MockupDB[]
+}> {
+  const { zkWallet: alice, mockupDB: aliceDB } = await getWallet({
+    account: accounts.alice,
+    ...config,
+  })
+  const { zkWallet: bob, mockupDB: bobDB } = await getWallet({
+    account: accounts.bob,
+    ...config,
+  })
+  const { zkWallet: carl, mockupDB: carlDB } = await getWallet({
+    account: accounts.carl,
+    ...config,
+  })
+  return { wallets: { alice, bob, carl }, dbs: [aliceDB, bobDB, carlDB] }
+}
+
+export async function initContext(): Promise<Context> {
+  const { layer1Container, circuitArtifactContainer } = await getContainers()
+  await Promise.all([layer1Container.start(), circuitArtifactContainer.start()])
+  const { zkopruAddress, erc20Address, erc721Address } = await getAddresses(
+    layer1Container,
+  )
+  await sleep(2000)
+  const containerIP = await getContainerIP(layer1Container)
+  const { web3, provider } = await getWeb3(`ws://${containerIP}:5000`)
+  const contract = new L1Contract(web3, zkopruAddress)
+  const erc20 = Layer1.getERC20(web3, erc20Address)
+  const erc721 = Layer1.getERC721(web3, erc721Address)
+  const accounts = await getAccounts(web3)
+  const vks = await getVKs(circuitArtifactContainer)
+  const { coordinator, mockupDB: coordinatorDB } = await getCoordinator(
+    provider,
+    zkopruAddress,
+    accounts.coordinator.ethAccount,
+  )
+  const { wallets, dbs } = await getWallets({
+    accounts,
+    config: {
+      provider,
+      coordinator: `http://localhost:${coordinator.config.port}`,
+      address: zkopruAddress,
+      erc20s: [erc20Address],
+      erc721s: [erc721Address],
+    },
+  })
+
   return {
     layer1Container,
     circuitArtifactContainer,
     accounts,
     web3,
     zkopruAddress,
-    mockup,
+    dbs: [...dbs, coordinatorDB],
     contract,
+    coordinator,
+    wallets,
     vks,
     erc20,
     erc721,

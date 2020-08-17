@@ -270,8 +270,9 @@ export class ZkWallet {
       logger.error('Account is not set')
       return false
     }
+    await this.getLayer1Assets(this.account)
     if (!this.cached.layer1.balance) {
-      logger.error('fetch balance first')
+      logger.error('Failed to fetch balance')
       return false
     }
     if (
@@ -301,8 +302,9 @@ export class ZkWallet {
       logger.error('Account is not set')
       return false
     }
+    await this.getLayer1Assets(this.account)
     if (!this.cached.layer1.balance) {
-      logger.error('fetch balance first')
+      logger.error('Failed to fetch balance')
       return false
     }
     if (
@@ -342,8 +344,9 @@ export class ZkWallet {
       logger.error('Account is not set')
       return false
     }
+    await this.getLayer1Assets(this.account)
     if (!this.cached.layer1.balance) {
-      logger.error('fetch balance first')
+      logger.error('Failed to fetch balance')
       return false
     }
     if (

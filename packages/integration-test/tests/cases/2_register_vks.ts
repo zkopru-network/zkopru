@@ -3,9 +3,9 @@
 /* eslint-disable jest/no-export */
 /* eslint-disable jest/require-top-level-describe */
 
-import { Provider } from './context'
+import { CtxProvider } from './context'
 
-export const testRegisterVKs = (ctx: Provider) => async () => {
+export const testRegisterVKs = (ctx: CtxProvider) => async () => {
   const { contract, vks, accounts } = ctx()
   const nIn = Object.keys(vks)
   const nOut = Object.keys(vks[1])
@@ -37,7 +37,7 @@ export const testRegisterVKs = (ctx: Provider) => async () => {
   expect(registeredNum).toStrictEqual(16)
 }
 
-export const testRegisterVKFails = (ctx: Provider) => async () => {
+export const testRegisterVKFails = (ctx: CtxProvider) => async () => {
   const { contract, vks, accounts } = ctx()
   const sampleVk = vks[4][4]
   const tx = contract.setup.methods.registerVk(
