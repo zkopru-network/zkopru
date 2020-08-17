@@ -69,6 +69,22 @@ module.exports = function migration(deployer, network, accounts) {
     })
     .then(async zkopru => {
       console.log(`Deployed ZKOPRU at:\n${zkopru.address}`)
+      // Save deployed addresses
+      save({
+        name: 'TestERC20',
+        address: instances.erc20.address,
+        network: deployer.network_id,
+      })
+      save({
+        name: 'TestERC721',
+        address: instances.erc721.address,
+        network: deployer.network_id,
+      })
+      save({
+        name: 'ZkOptimisticRollUp',
+        address: zkopru.address,
+        network: deployer.network_id,
+      })
       // Setup proxy
       await zkopru.makeCoordinatable(instances.coordinatable.address)
       await zkopru.makeUserInteractable(instances.ui.address)
@@ -81,6 +97,10 @@ module.exports = function migration(deployer, network, accounts) {
         instances.txChallenge.address,
       )
       await zkopru.makeMigratable(instances.migratable.address)
+      if (network === 'integrationtest') {
+        // integration test will run the below steps manually.
+        return
+      }
       // Setup zkSNARKs
       // Setup migrations
       const keyDir = path.join(__dirname, '../keys/vks')
@@ -114,20 +134,5 @@ module.exports = function migration(deployer, network, accounts) {
         // Register as coordinator
         await coordinatable.register({ value: '32000000000000000000' })
       }
-      save({
-        name: 'TestERC20',
-        address: instances.erc20.address,
-        network: deployer.network_id,
-      })
-      save({
-        name: 'TestERC721',
-        address: instances.erc721.address,
-        network: deployer.network_id,
-      })
-      save({
-        name: 'ZkOptimisticRollUp',
-        address: zkopru.address,
-        network: deployer.network_id,
-      })
     })
 }

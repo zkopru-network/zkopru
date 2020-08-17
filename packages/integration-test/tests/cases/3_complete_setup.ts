@@ -11,7 +11,7 @@ export const testCompleteSetup = (ctx: Provider) => async () => {
   const gas = await tx.estimateGas()
   await expect(
     tx.send({ from: accounts.alice.ethAddress, gas }),
-  ).rejects.not.toThrow()
+  ).rejects.toThrow()
   await expect(
     tx.send({ from: accounts.bob.ethAddress, gas }),
   ).rejects.toThrow()
