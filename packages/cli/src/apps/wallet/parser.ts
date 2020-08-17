@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import yargs from 'yargs'
+import { DEFAULT } from '../../config'
 
 export const { argv } = yargs
   .scriptName('zk-wizard')
@@ -21,27 +22,27 @@ export const { argv } = yargs
     networkId: {
       type: 'number',
       alias: 'n',
-      default: 1,
+      default: DEFAULT.networkId,
     },
     chainId: {
       type: 'number',
       alias: 'c',
-      default: 1,
+      default: DEFAULT.chainId,
     },
     address: {
       type: 'string',
       alias: 'a',
-      default: '0x5017a545b09ab9a30499de7f431df0855bcb7275',
+      default: DEFAULT.address,
     },
     coordinator: {
       type: 'string',
       alias: 'r',
-      default: 'https://coordinator.zkopru.network',
+      default: DEFAULT.coordinator,
     },
     websocket: {
       type: 'string',
       alias: 'ws',
-      default: 'ws://goerli.zkopru.network:8546',
+      default: DEFAULT.websocket,
     },
     keys: {
       type: 'string',
