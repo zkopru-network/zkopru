@@ -205,6 +205,21 @@ yarn test
     docker-compose -f dockerfiles/docker-compose.yml push
     ```
 
+### How to make changes of the prisma package
+
+1. Because prisma currently not support multi source gracefully, we have to update the following scheme at once
+    * `packages/prisma/prisma/base.prisma`
+    * `packages/prisma/prisma/postgres.prisma`
+    * `packages/prisma/prisma/sqlite.prisma`
+    * `packages/prisma/prisma/postgres-migrator.prisma`
+    * `packages/prisma/prisma/sqlite-migrator.prisma`
+2. Then run `yarn build:prisma`. This will update the prisma client typescript and the mockup sqlite db file.
+3. If you want to create a migration file for postgres, run `cd packages/prisma && yarn gen-migration:postgres`.
+   You may have to run this command before running the integration test.
+4. (optional) Migration may cause some problems, sometimes you need to clean up the `packages/prisma/prisma/migrations` directory.
+5. (optional) To commit the change, clean up and squash the recent migrations into a single migration.
+    And then, force stage the migration using `git add packages/prisma/prisma/migrations --force`.
+
 ### Explore database
 
 You can open the Prisma Studio to explore the database with following steps:

@@ -25,7 +25,7 @@ RUN ln -s "$(which nodejs)" /usr/bin/node
 WORKDIR /proj
 
 # Copy SNARK keys
-COPY ./keys /proj/keys
+COPY ./packages/dataset/keys /proj/keys
 
 # Copy package.json
 COPY ./.package-dev.json /proj/package.json
