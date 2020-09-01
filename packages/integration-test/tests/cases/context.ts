@@ -323,6 +323,7 @@ export async function initContext(): Promise<Context> {
     zkopruAddress,
     accounts.coordinator.ethAccount,
   )
+  coordinator.start()
   const { wallets, dbs } = await getWallets({
     accounts,
     config: {
@@ -333,6 +334,10 @@ export async function initContext(): Promise<Context> {
       erc721s: [erc721Address],
     },
   })
+  wallets.alice.node.startSync()
+  wallets.bob.node.startSync()
+  wallets.carl.node.startSync()
+  wallets.coordinator.node.startSync()
 
   return {
     layer1Container,

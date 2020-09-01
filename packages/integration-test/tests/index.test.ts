@@ -17,13 +17,21 @@ import { testRegisterVKs, testRegisterVKFails } from './cases/2_register_vks'
 import {
   testCompleteSetup,
   testRejectVkRegistration,
+  registerCoordinator,
 } from './cases/3_complete_setup'
 import {
   depositEther,
   bobDepositsErc20,
   depositERC721,
+  testMassDeposits,
 } from './cases/4_deposit'
 import { attachConsoleErrorToPino } from '~utils/logger'
+import {
+  waitCoordinatorToProposeANewBlock,
+  waitCoordinatorToProcessTheNewBlock,
+  testBlockSync,
+} from './cases/5_create_block'
+import { GroveSnapshot } from '~tree/grove'
 
 describe('testnet', () => {
   let context!: Context
@@ -67,24 +75,65 @@ describe('testnet', () => {
     })
   })
   describe('4: Deposits', () => {
-    describe('users deposit assets', () => {
+    describe('4-1: users deposit assets', () => {
       it('ether: Alice, Bob, and Carl each deposit 10 ETH', depositEther(ctx))
       it('erc20: Bob deposits ERC20', bobDepositsErc20(ctx))
 
       it('erc721: Carl deposits NFTs', depositERC721(ctx))
     })
-    describe('coordinator subscribe Deposit() events', () => {
-      it.todo('Coordinator should subscribe the deposit events')
+    describe('4-2: coordinator commits MassDeposit', () => {
+      it(
+        'coordinator should have 5 pending deposits',
+        testMassDeposits(ctx),
+        10000,
+      )
     })
   })
   describe('5: Coordinator create the first block', () => {
-    describe('coordinator creates the first block', () => {
-      it.todo('should register coordinator')
-      it.todo('should create a first block')
-      it.todo('should update the utxo tree')
+    let prevGroveSnapshot!: GroveSnapshot
+    let newGroveSnapshot!: GroveSnapshot
+    beforeAll(async () => {
+      const { coordinator } = ctx()
+      prevGroveSnapshot = await coordinator.node.l2Chain.grove.getSnapshot()
+    })
+    describe('register coordinator account', () => {
+      // later it should be replaced with the burn auction
+      it('should register "coordinator" account', registerCoordinator(ctx))
+    })
+    describe('coordinator creates the first block when the aggregated fee is enough', () => {
+      afterAll(async () => {
+        const { coordinator } = ctx()
+        newGroveSnapshot = await coordinator.node.l2Chain.grove.getSnapshot()
+      })
+      it(
+        'should propose a new block within a few seconds',
+        waitCoordinatorToProposeANewBlock(ctx),
+        20000,
+      )
+      it(
+        'should process the new submitted block',
+        waitCoordinatorToProcessTheNewBlock(ctx),
+        26000,
+      )
+    })
+    describe('new block should update trees', () => {
+      it('should increase utxo index to at least 32(sub tree size)', () => {
+        expect(
+          prevGroveSnapshot.utxoTreeIndex.addn(32).toString(),
+        ).toStrictEqual(newGroveSnapshot.utxoTreeIndex.toString())
+      })
+      it('should update the utxo root', () => {
+        expect(prevGroveSnapshot.utxoTreeRoot.toString()).not.toStrictEqual(
+          newGroveSnapshot.utxoTreeRoot.toString(),
+        )
+      })
     })
     describe('users subscribe Proposal() events', () => {
-      it.todo('light clients should subscribe new block proposal')
+      it(
+        'wallets should have updated processed block number',
+        testBlockSync(ctx),
+        6000,
+      )
     })
   })
   describe('6: Zk Transactions round 1', () => {
