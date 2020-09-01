@@ -10,7 +10,7 @@ export default class AccountDetail extends App {
     const wallet = this.base
     const { account } = context
     if (!account) throw Error('Acocunt is not set')
-    const balance: Balance = await wallet.getLayer1Assets(account)
+    const balance: Balance = await wallet.fetchLayer1Assets(account)
     const spendables = await wallet.getSpendableAmount(account)
     const messages: string[] = []
     const { eth, erc20, erc721 } = balance

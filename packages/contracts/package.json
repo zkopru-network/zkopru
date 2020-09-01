@@ -16,6 +16,8 @@
   "dependencies": {
     "@openzeppelin/contracts": "3.0.1",
     "bn.js": "^5.1.1",
+    "ethereumjs-tx": "1.3.7",
+    "soltypes": "^1.2.2",
     "web3": "^1.2.6",
     "web3-core": "^1.2.6",
     "web3-eth-contract": "^1.2.6"

@@ -6,6 +6,7 @@ import { PromptApp } from '@zkopru/utils'
 import { ZkWallet } from '@zkopru/zk-wizard'
 import { Writable } from 'stream'
 import assert from 'assert'
+import { Address } from 'soltypes'
 import { Menu, Context, Config } from './configurator'
 import Splash from './menus/splash'
 import ConnectWeb3 from './menus/connect-web3'
@@ -70,8 +71,8 @@ export async function getZkWallet(
     wallet,
     node,
     accounts,
-    erc20: erc20 || [],
-    erc721: erc721 || [],
+    erc20: erc20?.map(Address.from) || [],
+    erc721: erc721?.map(Address.from) || [],
     coordinator,
     snarkKeyPath: keys,
   })

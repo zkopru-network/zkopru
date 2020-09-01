@@ -9,15 +9,16 @@ import {
   ZkAddress,
 } from '@zkopru/transaction'
 import { Field, F } from '@zkopru/babyjubjub'
-import { Layer1 } from '@zkopru/contracts'
+import { Layer1, TransactionObject, Tx } from '@zkopru/contracts'
 import { HDWallet, ZkAccount } from '@zkopru/account'
 import { ZkOPRUNode } from '@zkopru/core'
 import { DB, Withdrawal as WithdrawalSql } from '@zkopru/prisma'
 import { logger } from '@zkopru/utils'
 import { soliditySha3 } from 'web3-utils'
-import { Bytes32, Address } from 'soltypes'
+import { Bytes32, Address, Uint256 } from 'soltypes'
 import fetch, { Response } from 'node-fetch'
 import assert from 'assert'
+import { TransactionReceipt, Account } from 'web3-core'
 import { ZkWizard } from './zk-wizard'
 
 export interface Balance {
@@ -43,14 +44,14 @@ export class ZkWallet {
 
   accounts: ZkAccount[]
 
-  erc20: string[]
+  erc20: Address[]
 
-  erc721: string[]
+  erc721: Address[]
 
   cached: {
     layer1: {
       balance?: Balance
-      nfts?: string[]
+      nfts?: Uint256[]
     }
   }
 
@@ -70,8 +71,8 @@ export class ZkWallet {
     account?: ZkAccount
     node: ZkOPRUNode
     accounts: ZkAccount[]
-    erc20: string[]
-    erc721: string[]
+    erc20: Address[]
+    erc721: Address[]
     coordinator: string
     snarkKeyPath: string
   }) {
@@ -98,6 +99,26 @@ export class ZkWallet {
     } else {
       this.account = account
     }
+  }
+
+  addERC20(...addresses: string[]) {
+    this.erc20.push(
+      ...addresses
+        .filter(addr => this.erc20.find(Address.from(addr).eq) === undefined)
+        .map(Address.from),
+    )
+  }
+
+  removeERC20(address: string) {
+    this.erc20 = this.erc20.filter(addr => !addr.eq(Address.from(address)))
+  }
+
+  addERC721(...addresses: string[]) {
+    this.erc721.push(...addresses.map(Address.from))
+  }
+
+  removeERC721(address: string) {
+    this.erc721 = this.erc721.filter(addr => !addr.eq(Address.from(address)))
   }
 
   async retrieveAccounts(): Promise<ZkAccount[]> {
@@ -195,11 +216,7 @@ export class ZkWallet {
     return notes
   }
 
-  async getLayer1Assets(
-    account: ZkAccount,
-    erc20Addrs?: string[],
-    erc721Addrs?: string[],
-  ): Promise<Balance> {
+  async fetchLayer1Assets(account: ZkAccount): Promise<Balance> {
     const balance: Balance = {
       eth: '0',
       erc20: {},
@@ -210,24 +227,20 @@ export class ZkWallet {
     promises.push(async () => {
       balance.eth = await web3.eth.getBalance(account.ethAddress)
     })
-    if (erc20Addrs) {
-      promises.push(
-        ...erc20Addrs.map(addr => async () => {
-          balance.erc20[addr] = await Layer1.getERC20(web3, addr)
-            .methods.balanceOf(account.ethAddress)
-            .call()
-        }),
-      )
-    }
-    if (erc721Addrs) {
-      promises.push(
-        ...erc721Addrs.map(addr => async () => {
-          balance.erc721[addr] = await Layer1.getIERC721Enumerable(web3, addr)
-            .methods.balanceOf(account.ethAddress)
-            .call()
-        }),
-      )
-    }
+    promises.push(
+      ...this.erc20.map(addr => async () => {
+        const erc20 = Layer1.getERC20(web3, addr.toString())
+        const bal = await erc20.methods.balanceOf(account.ethAddress).call()
+        balance.erc20[addr.toString()] = bal
+      }),
+    )
+    promises.push(
+      ...this.erc721.map(addr => async () => {
+        const erc721 = Layer1.getIERC721Enumerable(web3, addr.toString())
+        const count = await erc721.methods.balanceOf(account.ethAddress).call()
+        balance.erc721[addr.toString()] = count
+      }),
+    )
     await Promise.all(promises.map(task => task()))
     this.cached.layer1.balance = balance
     return balance
@@ -270,7 +283,7 @@ export class ZkWallet {
       logger.error('Account is not set')
       return false
     }
-    await this.getLayer1Assets(this.account)
+    await this.fetchLayer1Assets(this.account)
     if (!this.cached.layer1.balance) {
       logger.error('Failed to fetch balance')
       return false
@@ -302,7 +315,7 @@ export class ZkWallet {
       logger.error('Account is not set')
       return false
     }
-    await this.getLayer1Assets(this.account)
+    await this.fetchLayer1Assets(this.account)
     if (!this.cached.layer1.balance) {
       logger.error('Failed to fetch balance')
       return false
@@ -344,7 +357,7 @@ export class ZkWallet {
       logger.error('Account is not set')
       return false
     }
-    await this.getLayer1Assets(this.account)
+    await this.fetchLayer1Assets(this.account)
     if (!this.cached.layer1.balance) {
       logger.error('Failed to fetch balance')
       return false
@@ -450,6 +463,30 @@ export class ZkWallet {
       if (weiPerByte) return weiPerByte
     }
     throw Error(`${response}`)
+  }
+
+  async sendLayer1Tx<T>({
+    contract,
+    tx,
+    signer,
+    option,
+  }: {
+    contract: Address | string
+    tx: TransactionObject<T>
+    signer?: Account
+    option?: Tx
+  }): Promise<TransactionReceipt | undefined> {
+    const { web3 } = this.node.l1Contract
+    const from = signer || this.account?.ethAccount
+    if (!from) throw Error(`You need to set 'from' account`)
+    const result = await Layer1.sendTx(
+      tx,
+      contract.toString(),
+      web3,
+      from,
+      option,
+    )
+    return result
   }
 
   async sendTx(
