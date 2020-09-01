@@ -3,6 +3,7 @@
 /* eslint-disable jest/no-export */
 /* eslint-disable jest/require-top-level-describe */
 
+import { toWei } from 'web3-utils'
 import { CtxProvider } from './context'
 
 export const testCompleteSetup = (ctx: CtxProvider) => async () => {
@@ -38,4 +39,15 @@ export const testRejectVkRegistration = (ctx: CtxProvider) => async () => {
   await expect(
     tx.estimateGas({ from: accounts.coordinator.ethAddress }),
   ).rejects.toThrow()
+}
+
+export const registerCoordinator = (ctx: CtxProvider) => async () => {
+  const { wallets, contract, zkopruAddress } = ctx()
+  await wallets.coordinator.sendLayer1Tx({
+    contract: zkopruAddress,
+    tx: contract.coordinator.methods.register(),
+    option: {
+      value: toWei('32', 'ether'),
+    },
+  })
 }

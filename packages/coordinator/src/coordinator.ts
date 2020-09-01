@@ -52,6 +52,13 @@ export interface CoordinatorInterface {
   onBlock: () => void
 }
 
+export interface PendingMassDeposits {
+  massDeposits: MassDeposit[]
+  leaves: Field[]
+  totalFee: Field
+  calldataSize: number
+}
+
 export class Coordinator extends EventEmitter {
   node: FullNode
 
@@ -198,6 +205,48 @@ export class Coordinator extends EventEmitter {
   async deregister(): Promise<TransactionReceipt | undefined> {
     const tx = this.node.l1Contract.coordinator.methods.deregister()
     return this.node.l1Contract.sendTx(tx, this.account)
+  }
+
+  async getPendingMassDeposits(): Promise<PendingMassDeposits> {
+    const leaves: Field[] = []
+    let consumedBytes = 0
+    let aggregatedFee: Field = Field.zero
+    // 1. pick mass deposits
+    const commits: MassDepositSql[] = await this.node.db.read(prisma =>
+      prisma.massDeposit.findMany({
+        where: { includedIn: null },
+      }),
+    )
+    commits.sort((a, b) => parseInt(a.index, 10) - parseInt(b.index, 10))
+    const pendingDeposits = await this.node.db.read(prisma =>
+      prisma.deposit.findMany({
+        where: { queuedAt: { in: commits.map(commit => commit.index) } },
+      }),
+    )
+    pendingDeposits.sort((a, b) => {
+      if (a.blockNumber !== b.blockNumber) {
+        return a.blockNumber - b.blockNumber
+      }
+      if (a.transactionIndex !== b.transactionIndex) {
+        return a.transactionIndex - b.transactionIndex
+      }
+      // TODO HERE!!
+      return a.logIndex - b.logIndex
+    })
+    leaves.push(...pendingDeposits.map(deposit => Field.from(deposit.note)))
+    consumedBytes += commits.length
+    aggregatedFee = aggregatedFee.add(
+      pendingDeposits.reduce((prev, item) => prev.add(item.fee), Field.zero),
+    )
+    return {
+      massDeposits: commits.map(commit => ({
+        merged: Bytes32.from(commit.merged),
+        fee: Uint256.from(commit.fee),
+      })),
+      leaves,
+      totalFee: aggregatedFee,
+      calldataSize: consumedBytes,
+    }
   }
 
   private startAPI() {
@@ -535,53 +584,30 @@ export class Coordinator extends EventEmitter {
     body: Body
     fee: Field
   }> {
-    // TODO use node lock
-    const deposits: Field[] = []
-    let consumedBytes = 0
-    let aggregatedFee: Field = Field.zero
-    // 1. pick mass deposits
-    const commits: MassDepositSql[] = await this.node.db.read(prisma =>
-      prisma.massDeposit.findMany({
-        where: { includedIn: null },
-      }),
-    )
-    commits.sort((a, b) => parseInt(a.index, 10) - parseInt(b.index, 10))
-    const pendingDeposits = await this.node.db.read(prisma =>
-      prisma.deposit.findMany({
-        where: { queuedAt: { in: commits.map(commit => commit.index) } },
-      }),
-    )
-    pendingDeposits.sort((a, b) => {
-      if (a.blockNumber !== b.blockNumber) {
-        return a.blockNumber - b.blockNumber
-      }
-      if (a.transactionIndex !== b.transactionIndex) {
-        return a.transactionIndex - b.transactionIndex
-      }
-      // TODO HERE!!
-      return a.logIndex - b.logIndex
-    })
-    deposits.push(...pendingDeposits.map(deposit => Field.from(deposit.note)))
-    consumedBytes += 32 * commits.length
-    aggregatedFee = aggregatedFee.add(
-      pendingDeposits.reduce((prev, item) => prev.add(item.fee), Field.zero),
-    )
-
-    // 2. pick transactions
     if (!this.gasPrice) {
       throw Error('coordinator.js: Gas price is not synced')
     }
-    const txs =
-      (await this.txPool.pickTxs(
-        this.config.maxBytes - consumedBytes,
-        this.gasPrice.muln(this.config.priceMultiplier),
-      )) || []
+
+    // Calculate consumed bytes and aggregated fee
+    let consumedBytes = 32 // bytes length
+    let aggregatedFee: Field = Field.zero
+
+    // 1. pick mass deposits
+    const pendingMassDeposits = await this.getPendingMassDeposits()
+    consumedBytes += pendingMassDeposits.calldataSize
+    aggregatedFee = aggregatedFee.add(pendingMassDeposits.totalFee)
+
+    // 2. pick transactions
+    const pendingTxs = await this.txPool.pickTxs(
+      this.config.maxBytes - consumedBytes,
+      this.gasPrice.muln(this.config.priceMultiplier),
+    )
+    const txs = pendingTxs || []
     aggregatedFee = aggregatedFee.add(
       txs.map(tx => tx.fee).reduce((prev, fee) => prev.add(fee), Field.zero),
     )
     // TODO 3 make sure every nullifier is unique and not used before
     // * if there exists invalid transactions, remove them from the tx pool and try genBlock recursively
-
     const utxos = txs
       .reduce((arr, tx) => {
         return [
@@ -590,7 +616,7 @@ export class Coordinator extends EventEmitter {
             .filter(outflow => outflow.outflowType.isZero())
             .map(outflow => outflow.note),
         ]
-      }, deposits)
+      }, pendingMassDeposits.leaves)
       .map(hash => ({ hash })) as Leaf<Field>[]
 
     const withdrawals: Leaf<BN>[] = txs.reduce((arr, tx) => {
@@ -612,12 +638,12 @@ export class Coordinator extends EventEmitter {
     }, [] as Leaf<BN>[])
 
     if (
-      pendingDeposits.length ||
+      pendingMassDeposits.leaves.length ||
       txs.length ||
       this.txPool.pendingNum() ||
       withdrawals.length
     ) {
-      logger.info(`Pending deposits: ${pendingDeposits.length}`)
+      logger.info(`Pending deposits: ${pendingMassDeposits.leaves.length}`)
       logger.info(`Picked txs: ${txs.length}`)
       logger.info(`Pending txs: ${this.txPool.pendingNum()}`)
       logger.info(`Withdrawals: ${withdrawals.length}`)
@@ -646,10 +672,7 @@ export class Coordinator extends EventEmitter {
         'Grove does not have the nullifier tree. Use full node option',
       )
     }
-    const massDeposits: MassDeposit[] = commits.map(obj => ({
-      merged: Bytes32.from(obj.merged),
-      fee: Uint256.from(obj.fee),
-    }))
+    const { massDeposits } = pendingMassDeposits
     const header: Header = {
       proposer: Address.from(this.account.address),
       parentBlock: Bytes32.from(latest),

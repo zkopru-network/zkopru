@@ -4,18 +4,19 @@
 /* eslint-disable jest/require-top-level-describe */
 
 import { toWei } from 'web3-utils'
+import { sleep } from '@zkopru/utils'
 import { CtxProvider } from './context'
 
 export const depositEther = (ctx: CtxProvider) => async () => {
   const { wallets } = ctx()
   await expect(
-    wallets.alice.depositEther(toWei('10', 'ether'), toWei('100000', 'gwei')),
+    wallets.alice.depositEther(toWei('10', 'ether'), toWei('1', 'milliether')),
   ).resolves.toStrictEqual(true)
   await expect(
-    wallets.bob.depositEther(toWei('10', 'ether'), toWei('100000', 'gwei')),
+    wallets.bob.depositEther(toWei('10', 'ether'), toWei('1', 'milliether')),
   ).resolves.toStrictEqual(true)
   await expect(
-    wallets.carl.depositEther(toWei('10', 'ether'), toWei('100000', 'gwei')),
+    wallets.carl.depositEther(toWei('10', 'ether'), toWei('1', 'milliether')),
   ).resolves.toStrictEqual(true)
 }
 
@@ -41,7 +42,7 @@ export const bobDepositsErc20 = (ctx: CtxProvider) => async () => {
       toWei('0', 'ether'),
       tokens.erc20.address,
       amount,
-      toWei('100000', 'gwei'),
+      toWei('1', 'milliether'),
     ),
   ).resolves.toStrictEqual(true)
 }
@@ -68,8 +69,15 @@ export const depositERC721 = (ctx: CtxProvider) => async () => {
       toWei('0', 'ether'),
       tokens.erc721.address,
       '0',
-      toWei('100000', 'gwei'),
+      toWei('1', 'milliether'),
     ),
   ).resolves.toStrictEqual(true)
-  console.log('depositted successfully')
+}
+
+export const testMassDeposits = (ctx: CtxProvider) => async () => {
+  const { coordinator } = ctx()
+  await coordinator.commitMassDeposit()
+  await sleep(1000)
+  const pendingMassDeposits = await coordinator.getPendingMassDeposits()
+  expect(pendingMassDeposits.leaves).toHaveLength(5)
 }
