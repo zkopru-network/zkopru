@@ -1,6 +1,7 @@
 import { Container } from 'node-docker-api/lib/container'
 import Web3 from 'web3'
 import { WebsocketProvider, Account } from 'web3-core'
+import { Address } from 'soltypes'
 import { MockupDB, DB } from '~prisma'
 import { ZkAccount, HDWallet } from '~account'
 import { sleep, readFromContainer, buildAndGetContainer } from '~utils'
@@ -27,6 +28,7 @@ export interface Context {
     alice: ZkWallet
     bob: ZkWallet
     carl: ZkWallet
+    coordinator: ZkWallet
   }
   coordinator: Coordinator
   vks: VKs
@@ -34,8 +36,16 @@ export interface Context {
   zkopruAddress: string
   dbs: MockupDB[]
   contract: L1Contract
-  erc20: IERC20
-  erc721: IERC721
+  tokens: {
+    erc20: {
+      contract: IERC20
+      address: string
+    }
+    erc721: {
+      contract: IERC721
+      address: string
+    }
+  }
 }
 
 export type CtxProvider = () => Context
@@ -139,10 +149,10 @@ async function getWeb3(
 async function getAccounts(
   web3: Web3,
 ): Promise<{
-  coordinator: ZkAccount
   alice: ZkAccount
   bob: ZkAccount
   carl: ZkAccount
+  coordinator: ZkAccount
 }> {
   const mockup = await DB.mockup()
   const hdWallet = new HDWallet(web3, mockup.db)
@@ -237,8 +247,8 @@ export async function getWallet({
     wallet: hdWallet,
     node,
     accounts: [account],
-    erc20: erc20s,
-    erc721: erc721s,
+    erc20: erc20s.map(Address.from),
+    erc721: erc721s.map(Address.from),
     coordinator,
     snarkKeyPath: 'integration-test-alice-key-path',
   })
@@ -254,6 +264,7 @@ async function getWallets({
     alice: ZkAccount
     bob: ZkAccount
     carl: ZkAccount
+    coordinator: ZkAccount
   }
   config: {
     provider: WebsocketProvider
@@ -267,6 +278,7 @@ async function getWallets({
     alice: ZkWallet
     bob: ZkWallet
     carl: ZkWallet
+    coordinator: ZkWallet
   }
   dbs: MockupDB[]
 }> {
@@ -282,7 +294,14 @@ async function getWallets({
     account: accounts.carl,
     ...config,
   })
-  return { wallets: { alice, bob, carl }, dbs: [aliceDB, bobDB, carlDB] }
+  const { zkWallet: coordinator, mockupDB: coordinatorDB } = await getWallet({
+    account: accounts.coordinator,
+    ...config,
+  })
+  return {
+    wallets: { alice, bob, carl, coordinator },
+    dbs: [aliceDB, bobDB, carlDB, coordinatorDB],
+  }
 }
 
 export async function initContext(): Promise<Context> {
@@ -326,7 +345,9 @@ export async function initContext(): Promise<Context> {
     coordinator,
     wallets,
     vks,
-    erc20,
-    erc721,
+    tokens: {
+      erc20: { contract: erc20, address: erc20Address },
+      erc721: { contract: erc721, address: erc721Address },
+    },
   }
 }
