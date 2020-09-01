@@ -8,7 +8,7 @@ export default class Deposit extends App {
   // eslint-disable-next-line class-methods-use-this
   async run(context: Context): Promise<{ context: Context; next: number }> {
     if (!context.account) throw Error('Acocunt is not set')
-    const balance: Balance = await this.base.getLayer1Assets(context.account)
+    const balance: Balance = await this.base.fetchLayer1Assets(context.account)
     const { choice } = await this.ask({
       type: 'select',
       name: 'choice',

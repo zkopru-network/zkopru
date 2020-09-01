@@ -1,17 +1,19 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { ZkOPRUContract } from '@zkopru/contracts'
+import {
+  ZkOPRUContract,
+  Layer1,
+  TransactionObject,
+  Tx,
+} from '@zkopru/contracts'
 import { Config } from '@zkopru/prisma'
 import { Account, TransactionReceipt } from 'web3-core'
-import { verifyingKeyIdentifier, logger, hexify } from '@zkopru/utils'
+import { verifyingKeyIdentifier, hexify } from '@zkopru/utils'
 import Web3 from 'web3'
 import { ContractOptions } from 'web3-eth-contract'
 import bigInt from 'big-integer'
 import * as ffjs from 'ffjavascript'
 import { soliditySha3 } from 'web3-utils'
-import Transaction from 'ethereumjs-tx'
-import { NumString } from 'soltypes'
 import { VerifyingKey } from './snark'
-import { TransactionObject, Tx } from './types/contract'
 
 export class L1Contract extends ZkOPRUContract {
   web3: Web3
@@ -202,91 +204,16 @@ export class L1Contract extends ZkOPRUContract {
 
   async sendTx(
     tx: TransactionObject<void>,
-    account?: Account,
+    account: Account,
     option?: Tx,
   ): Promise<TransactionReceipt | undefined> {
-    let gas!: number
-    let gasPrice!: string
-    let nonce!: number
-    const promises = [
-      async () => {
-        try {
-          gas = await tx.estimateGas({
-            ...option,
-            from: account?.address,
-          })
-          logger.trace(`estimated gas: ${gas}`)
-        } catch (err) {
-          logger.warn(err)
-          throw Error('It may get reverted so did not send the transaction')
-        }
-        return undefined
-      },
-      async () => {
-        gasPrice = await this.web3.eth.getGasPrice()
-      },
-      async () => {
-        if (account) {
-          nonce = await this.web3.eth.getTransactionCount(
-            account.address,
-            'pending',
-          )
-        }
-      },
-    ].map(fetchTask => fetchTask())
-    try {
-      await Promise.all(promises)
-    } catch (err) {
-      logger.warn(err)
-      return undefined
-    }
-    if (account) {
-      const txParams = {
-        nonce: NumString.from(`${nonce}`)
-          .toBytes()
-          .toString(),
-        gasPrice: NumString.from(`${gasPrice}`)
-          .toBytes()
-          .toString(),
-        gasLimit: NumString.from(`${gas}`)
-          .toBytes()
-          .toString(),
-        to: this.address,
-        value:
-          typeof option?.value === 'string'
-            ? NumString.from(`${option.value}`)
-                .toBytes()
-                .toString()
-            : '0x00',
-        data: tx.encodeABI(),
-      }
-      const ethTx = new Transaction(txParams)
-      const hexStr = account.privateKey.startsWith('0x')
-        ? account.privateKey.substr(2)
-        : account.privateKey
-      ethTx.sign(Buffer.from(hexStr, 'hex'))
-      let receipt: TransactionReceipt
-      try {
-        receipt = await this.web3.eth.sendSignedTransaction(
-          `0x${ethTx.serialize().toString('hex')}`,
-        )
-      } catch (err) {
-        logger.warn(err)
-        return undefined
-      }
-      return receipt
-    }
-    let receipt: TransactionReceipt
-    try {
-      receipt = await tx.send({
-        gas,
-        gasPrice,
-        ...option,
-      })
-    } catch (err) {
-      logger.warn(err)
-      return undefined
-    }
-    return receipt
+    const result = await Layer1.sendTx(
+      tx,
+      this.address,
+      this.web3,
+      account,
+      option,
+    )
+    return result
   }
 }
