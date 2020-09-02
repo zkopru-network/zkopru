@@ -45,6 +45,7 @@ export function parseStringToUnit(
   defaultUnit?: Unit,
 ): { val: string; unit: Unit } {
   const val = parseFloat(str).toString()
+  // eslint-disable-next-line no-useless-escape
   const unitParser = str.match(/[\d.\-\+]*\s*(.*)/)
   const parsedUnit = (unitParser ? unitParser[1] : '') as Unit
   let unit = defaultUnit || 'ether'
@@ -265,5 +266,20 @@ export function toArrayBuffer(buff: Buffer): ArrayBuffer {
 export function sleep(ms: number) {
   return new Promise(res => {
     setTimeout(res, ms)
+  })
+}
+
+export function jestExtendToCompareBigNumber(expect: jest.Expect) {
+  expect.extend({
+    toBe(received: BN, expected: BN) {
+      const pass = received.eq(expected)
+      const message = pass
+        ? `expected ${received.toString()} not to be equal to ${expected.toString()}`
+        : `expected ${received.toString()} to be equal to ${expected.toString()}`
+      return {
+        message: () => message,
+        pass,
+      }
+    },
   })
 }

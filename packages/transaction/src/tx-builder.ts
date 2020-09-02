@@ -154,27 +154,27 @@ export class TxBuilder {
 
     // Find ERC20 notes to spend
     Object.keys(sendingAmount.erc20).forEach(addr => {
-      const targetAmount: Field = sendingAmount.erc20[addr]
+      const targetAmount: Field = sendingAmount.getERC20(addr)
       const sameERC20UTXOs: Utxo[] = this.spendables
         .filter(utxo => utxo.tokenAddr().toHex() === addr)
         .sort((a, b) => (a.erc20Amount().gt(b.erc20Amount()) ? 1 : -1))
       for (const utxo of sameERC20UTXOs) {
-        if (targetAmount.gt(Sum.from(spendings).erc20[addr])) {
+        if (targetAmount.gt(Sum.from(spendings).getERC20(addr))) {
           spendings.push(...spendables.splice(spendables.indexOf(utxo), 1))
         } else {
           break
         }
       }
-      if (targetAmount.gt(Sum.from(spendings).erc20[addr])) {
+      if (targetAmount.gt(Sum.from(spendings).getERC20(addr))) {
         throw Error(`Not enough ERC20 token ${addr} / ${targetAmount}`)
       }
     })
 
     // Find ERC721 notes to spend
     Object.keys(sendingAmount.erc721).forEach(addr => {
-      const sendingNFTs: Field[] = sendingAmount.erc721[addr].sort((a, b) =>
-        a.gt(b) ? 1 : -1,
-      )
+      const sendingNFTs: Field[] = sendingAmount
+        .getNFTs(addr)
+        .sort((a, b) => (a.gt(b) ? 1 : -1))
       const spendingNFTNotes: Utxo[] = this.spendables.filter(utxo => {
         return (
           utxo.tokenAddr().toHex() === addr &&
@@ -198,7 +198,9 @@ export class TxBuilder {
     // Start to calculate ERC20 changes
     const spendingAmount = () => Sum.from(spendings)
     Object.keys(spendingAmount().erc20).forEach(addr => {
-      const change = spendingAmount().erc20[addr].sub(sendingAmount.erc20[addr])
+      const change = spendingAmount()
+        .getERC20(addr)
+        .sub(sendingAmount.getERC20(addr))
       if (!change.isZero()) {
         changes.push(
           Utxo.newERC20Note({
@@ -213,15 +215,17 @@ export class TxBuilder {
     // Start to calculate ERC721 changes
     const extraNFTs: { [addr: string]: Field[] } = {}
     Object.keys(spendingAmount().erc721).forEach(addr => {
-      extraNFTs[addr] = spendingAmount().erc721[addr].filter(nft => {
-        if (sendingAmount.erc721[addr] === undefined) {
-          return true
-        }
-        if (sendingAmount.erc721[addr].find(nft.eq) === undefined) {
-          return true
-        }
-        return false
-      })
+      extraNFTs[addr] = spendingAmount()
+        .getNFTs(addr)
+        .filter(nft => {
+          if (sendingAmount.getNFTs(addr).length === 0) {
+            return true
+          }
+          if (sendingAmount.getNFTs(addr).find(f => f.eq(nft)) === undefined) {
+            return true
+          }
+          return false
+        })
     })
     Object.keys(extraNFTs).forEach(addr => {
       extraNFTs[addr].forEach(nft => {
@@ -292,16 +296,16 @@ export class TxBuilder {
     )
     for (const addr of Object.keys(inflowSum.erc20)) {
       assert(
-        inflowSum.erc20[addr].eq(outflowSum.erc20[addr]),
+        inflowSum.getERC20(addr).eq(outflowSum.getERC20(addr)),
         'erc20 in-out is different',
       )
     }
     for (const addr of Object.keys(inflowSum.erc721)) {
       const inflowNFTs = JSON.stringify(
-        inflowSum.erc721[addr].map(f => f.toString()),
+        inflowSum.getNFTs(addr).map(f => f.toString()),
       )
       const outflowNFTs = JSON.stringify(
-        outflowSum.erc721[addr].map(f => f.toString()),
+        outflowSum.getNFTs(addr).map(f => f.toString()),
       )
       assert(inflowNFTs === outflowNFTs, 'nft in-out is different')
     }

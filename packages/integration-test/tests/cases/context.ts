@@ -1,5 +1,6 @@
 import { Container } from 'node-docker-api/lib/container'
 import Web3 from 'web3'
+import path from 'path'
 import { WebsocketProvider, Account } from 'web3-core'
 import { Address } from 'soltypes'
 import { MockupDB, DB } from '~prisma'
@@ -12,8 +13,9 @@ import { ZkWallet } from '~zk-wizard'
 import { Layer1 } from '~contracts'
 import { IERC20 } from '~contracts/contracts/IERC20'
 import { IERC721 } from '~contracts/contracts/IERC721'
+import { VerifyingKey } from '~core/snark'
 
-type VKs = { [nIn: number]: { [nOut: number]: any } }
+type VKs = { [nIn: number]: { [nOut: number]: VerifyingKey } }
 
 export interface Context {
   layer1Container: Container
@@ -69,9 +71,6 @@ export async function terminate(ctx: CtxProvider) {
         await circuitArtifactContainer.delete()
       },
       async () => {
-        await Promise.all(dbs.map(db => db.terminate()))
-      },
-      async () => {
         await coordinator.stop()
         wallets.alice.node.stopSync()
         wallets.bob.node.stopSync()
@@ -79,6 +78,7 @@ export async function terminate(ctx: CtxProvider) {
       },
     ].map(task => task()),
   )
+  await Promise.all(dbs.map(db => db.terminate()))
 }
 
 async function getContainers(): Promise<{
@@ -185,7 +185,7 @@ async function getVKs(circuitArtifactContainer: Container): Promise<VKs> {
           (
             await readFromContainer(
               circuitArtifactContainer,
-              '/proj/build/vks/zk_transaction_1_1.vk.json',
+              `/proj/build/vks/zk_transaction_${i}_${j}.vk.json`,
             )
           ).toString('utf8'),
         )
@@ -250,7 +250,7 @@ export async function getWallet({
     erc20: erc20s.map(Address.from),
     erc721: erc721s.map(Address.from),
     coordinator,
-    snarkKeyPath: 'integration-test-alice-key-path',
+    snarkKeyPath: path.join(__dirname, '../../../dataset/keys'),
   })
   zkWallet.setAccount(account)
   return { zkWallet, mockupDB }
@@ -318,6 +318,7 @@ export async function initContext(): Promise<Context> {
   const erc721 = Layer1.getERC721(web3, erc721Address)
   const accounts = await getAccounts(web3)
   const vks = await getVKs(circuitArtifactContainer)
+  // await getCircuitArtifacts(circuitArtifactContainer)
   const { coordinator, mockupDB: coordinatorDB } = await getCoordinator(
     provider,
     zkopruAddress,

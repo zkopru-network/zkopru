@@ -6,7 +6,6 @@
 import { toWei } from 'web3-utils'
 import { sleep } from '@zkopru/utils'
 import { CtxProvider } from './context'
-import { GroveSnapshot } from '~tree/grove'
 
 export const registerCoordinator = (ctx: CtxProvider) => async () => {
   const { wallets, contract, zkopruAddress } = ctx()
@@ -52,38 +51,11 @@ export const waitCoordinatorToProcessTheNewBlock = (
   let processedBlocks!: number
   while (msToWait > 0) {
     processedBlocks = coordinator.node.latestProcessed || 0
-    console.log('processed: ', processedBlocks)
     if (processedBlocks === 1) break
     msToWait -= 1000
     await sleep(1000)
   }
   expect(processedBlocks).toStrictEqual(1)
-}
-
-export const testUtxoIndex = (
-  getSnapshots: () => {
-    prevGroveSnapshot: GroveSnapshot
-    newGroveSnapshot: GroveSnapshot
-  },
-) => () => {
-  const { prevGroveSnapshot, newGroveSnapshot } = getSnapshots()
-  console.log(prevGroveSnapshot.utxoTreeIndex)
-  console.log(newGroveSnapshot.utxoTreeIndex)
-  expect(prevGroveSnapshot.utxoTreeIndex.addn(32).toString()).toStrictEqual(
-    newGroveSnapshot.utxoTreeIndex.toString(),
-  )
-}
-
-export const testUtxoRoot = (
-  getSnapshots: () => {
-    prevGroveSnapshot: GroveSnapshot
-    newGroveSnapshot: GroveSnapshot
-  },
-) => () => {
-  const { prevGroveSnapshot, newGroveSnapshot } = getSnapshots()
-  expect(prevGroveSnapshot.utxoTreeRoot.toString()).not.toStrictEqual(
-    newGroveSnapshot.utxoTreeRoot.toString(),
-  )
 }
 
 export const testBlockSync = (ctx: CtxProvider) => async () => {

@@ -4,6 +4,7 @@
 /* eslint-disable jest/require-top-level-describe */
 
 import { toWei } from 'web3-utils'
+import { verifyingKeyIdentifier } from '@zkopru/utils'
 import { CtxProvider } from './context'
 
 export const testCompleteSetup = (ctx: CtxProvider) => async () => {
@@ -50,4 +51,21 @@ export const registerCoordinator = (ctx: CtxProvider) => async () => {
       value: toWei('32', 'ether'),
     },
   })
+}
+
+export const updateVerifyingKeys = (ctx: CtxProvider) => async () => {
+  const { wallets, contract, coordinator } = ctx()
+  const vks = await contract.getVKs()
+  const NUM_OF_INPUTS = 4
+  const NUM_OF_OUTPUTS = 4
+  for (let nI = 1; nI <= NUM_OF_INPUTS; nI += 1) {
+    for (let nO = 1; nO <= NUM_OF_OUTPUTS; nO += 1) {
+      const sig = verifyingKeyIdentifier(nI, nO)
+      wallets.alice.node.verifier.addVerifyingKey(nI, nO, vks[sig])
+      wallets.bob.node.verifier.addVerifyingKey(nI, nO, vks[sig])
+      wallets.carl.node.verifier.addVerifyingKey(nI, nO, vks[sig])
+      wallets.coordinator.node.verifier.addVerifyingKey(nI, nO, vks[sig])
+      coordinator.node.verifier.addVerifyingKey(nI, nO, vks[sig])
+    }
+  }
 }
