@@ -192,7 +192,7 @@ export class ZkWallet {
           owner: account.zkAddress,
           salt: obj.salt,
         })
-      } else if (obj.erc20Amount) {
+      } else if (obj.erc20Amount && Field.from(obj.erc20Amount || 0).gtn(0)) {
         note = Utxo.newERC20Note({
           eth: obj.eth,
           owner: account.zkAddress,
@@ -511,30 +511,32 @@ export class ZkWallet {
       const { verifier } = this.node
       const snarkValid = await verifier.snarkVerifier.verifyTx(zkTx)
       assert(snarkValid, 'generated snark proof is invalid')
-      const response = await fetch(`${this.coordinator}/tx`, {
-        method: 'post',
-        body: zkTx.encode().toString('hex'),
-      })
       // add newly created notes
       for (const outflow of tx.outflow) {
         await this.saveOutflow(outflow)
       }
+      const response = await fetch(`${this.coordinator}/tx`, {
+        method: 'post',
+        body: zkTx.encode().toString('hex'),
+      })
       // mark used notes as spending
-      await this.db.write(prisma =>
-        prisma.utxo.updateMany({
-          where: {
-            hash: {
-              in: tx.inflow.map(utxo =>
-                utxo
-                  .hash()
-                  .toUint256()
-                  .toString(),
-              ),
+      if (response.status === 200) {
+        await this.db.write(prisma =>
+          prisma.utxo.updateMany({
+            where: {
+              hash: {
+                in: tx.inflow.map(utxo =>
+                  utxo
+                    .hash()
+                    .toUint256()
+                    .toString(),
+                ),
+              },
             },
-          },
-          data: { status: UtxoStatus.SPENDING },
-        }),
-      )
+            data: { status: UtxoStatus.SPENDING },
+          }),
+        )
+      }
       return response
     } catch (err) {
       logger.error(err)

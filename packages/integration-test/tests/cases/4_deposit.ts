@@ -55,7 +55,7 @@ export const depositERC721 = (ctx: CtxProvider) => async () => {
     tx: tokens.erc721.contract.methods.safeTransferFrom(
       accounts.coordinator.ethAddress,
       accounts.carl.ethAddress,
-      '0',
+      '1',
     ),
   })
   // Approve
@@ -63,12 +63,12 @@ export const depositERC721 = (ctx: CtxProvider) => async () => {
     contract: tokens.erc721.address,
     tx: tokens.erc721.contract.methods.setApprovalForAll(zkopruAddress, true),
   })
-  // Deposit '0' Nft
+  // Deposit NFT id 1
   await expect(
     wallets.carl.depositERC721(
       toWei('0', 'ether'),
       tokens.erc721.address,
-      '0',
+      '1',
       toWei('1', 'milliether'),
     ),
   ).resolves.toStrictEqual(true)

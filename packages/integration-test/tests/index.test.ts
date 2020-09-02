@@ -7,6 +7,7 @@
 /* eslint-disable jest/require-tothrow-message */
 /* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable jest/no-hooks */
+import { jestExtendToCompareBigNumber } from '@zkopru/utils'
 import { Context, initContext, terminate } from './cases/context'
 import {
   testAliceAccount,
@@ -18,6 +19,7 @@ import {
   testCompleteSetup,
   testRejectVkRegistration,
   registerCoordinator,
+  updateVerifyingKeys,
 } from './cases/3_complete_setup'
 import {
   depositEther,
@@ -32,6 +34,13 @@ import {
   testBlockSync,
 } from './cases/5_create_block'
 import { GroveSnapshot } from '~tree/grove'
+import {
+  testAliceSendEtherToBob,
+  testBobSendERC20ToCarl,
+  testCarlSendNFTtoAlice,
+} from './cases/6_zk_tx_round_1'
+
+jestExtendToCompareBigNumber(expect)
 
 describe('testnet', () => {
   let context!: Context
@@ -39,7 +48,7 @@ describe('testnet', () => {
   beforeAll(async () => {
     attachConsoleErrorToPino()
     context = await initContext()
-  }, 45000)
+  }, 90000)
   afterAll(async done => {
     await terminate(ctx)
     done()
@@ -63,10 +72,13 @@ describe('testnet', () => {
     it('carl should have 100 ETH for his initial balance', testCarlAccount(ctx))
   })
   describe('2: Register verifying keys', () => {
-    it('coordinator can register vks', testRegisterVKs(ctx))
+    it('coordinator can register vks', testRegisterVKs(ctx), 30000)
     it('alice, bob, and carl cannot register vks', testRegisterVKFails(ctx))
   })
   describe('3: Complete setup', () => {
+    // Wallets were initialized with empty vks because they were not registered on chain yet.
+    // Therefore update the verifying keys after complete the setup process. This process is only needed in this integration test.
+    afterAll(updateVerifyingKeys(ctx))
     describe('3-1: before completeSetup() called', () => {
       it('should allow only the coordinator', testCompleteSetup(ctx))
     })
@@ -138,10 +150,21 @@ describe('testnet', () => {
   })
   describe('6: Zk Transactions round 1', () => {
     describe('users send zk txs to the coordinator', () => {
-      it.todo('alice creates a zk tx to send Ether to Bob')
-      it.todo('bob creates a zk tx to send ERC20 to carl')
-      it.todo('carl creates a zk tx to send ERC721 to alice')
-      it.todo('alice creates an invalid zk tx')
+      it(
+        'alice sends a zk tx to transfer 1 Ether to Bob',
+        testAliceSendEtherToBob(ctx),
+        60000,
+      )
+      it(
+        'bob sends a zk tx to transfer 1 ZRC to carl',
+        testBobSendERC20ToCarl(ctx),
+        60000,
+      )
+      it(
+        'carl creates a zk tx to send ERC721 to alice',
+        testCarlSendNFTtoAlice(ctx),
+        60000,
+      )
     })
     describe('coordinator creates the 2nd block including zk txs', () => {
       it.todo('should contain 3 valid txs')
