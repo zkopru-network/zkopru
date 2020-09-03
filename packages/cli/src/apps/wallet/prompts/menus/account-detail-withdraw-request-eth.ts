@@ -125,7 +125,7 @@ export default class WithdrawRequestEth extends App {
     } while (!tx)
 
     try {
-      await wallet.sendTx(tx, account)
+      await wallet.sendTx({ tx, from: account })
     } catch (err) {
       logger.error(err)
       logger.error(tx)

@@ -184,7 +184,7 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
   } catch (err) {
     zk_tx_1 = await zkWizard.shield({
       tx: txs.tx_1,
-      account: accounts.alice,
+      from: accounts.alice,
       encryptTo: accounts.bob.zkAddress,
     })
     fs.writeFileSync(tx1Path, zk_tx_1.encode())
@@ -195,7 +195,7 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
   } catch (err) {
     zk_tx_2_1 = await zkWizard.shield({
       tx: txs.tx_2_1,
-      account: accounts.alice,
+      from: accounts.alice,
       encryptTo: accounts.bob.zkAddress,
     })
     fs.writeFileSync(tx2_1Path, zk_tx_2_1.encode())
@@ -206,7 +206,7 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
   } catch (err) {
     zk_tx_2_2 = await zkWizard.shield({
       tx: txs.tx_2_2,
-      account: accounts.bob,
+      from: accounts.bob,
       encryptTo: accounts.alice.zkAddress,
     })
     fs.writeFileSync(tx2_2Path, zk_tx_2_2.encode())
@@ -215,14 +215,14 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
   try {
     zk_tx_3 = ZkTx.decode(fs.readFileSync(tx3Path))
   } catch (err) {
-    zk_tx_3 = await zkWizard.shield({ tx: txs.tx_3, account: accounts.alice })
+    zk_tx_3 = await zkWizard.shield({ tx: txs.tx_3, from: accounts.alice })
     fs.writeFileSync(tx3Path, zk_tx_3.encode())
   }
   let zk_tx_4: ZkTx
   try {
     zk_tx_4 = ZkTx.decode(fs.readFileSync(tx4Path))
   } catch (err) {
-    zk_tx_4 = await zkWizard.shield({ tx: txs.tx_4, account: accounts.alice })
+    zk_tx_4 = await zkWizard.shield({ tx: txs.tx_4, from: accounts.alice })
     fs.writeFileSync(tx4Path, zk_tx_4.encode())
   }
   await zkWizard.terminate()

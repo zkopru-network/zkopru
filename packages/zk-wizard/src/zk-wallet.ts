@@ -7,6 +7,7 @@ import {
   Withdrawal,
   Outflow,
   ZkAddress,
+  ZkTx,
 } from '@zkopru/transaction'
 import { Field, F } from '@zkopru/babyjubjub'
 import { Layer1, TransactionObject, Tx } from '@zkopru/contracts'
@@ -86,6 +87,7 @@ export class ZkWallet {
     this.cached = {
       layer1: {},
     }
+    this.node.addAccounts(...accounts)
     if (account) this.setAccount(account)
     this.wizard = new ZkWizard({
       grove: this.node.l2Chain.grove,
@@ -134,43 +136,49 @@ export class ZkWallet {
     return newAccount
   }
 
-  async getSpendableAmount(account: ZkAccount): Promise<Sum> {
+  async getSpendableAmount(account?: ZkAccount): Promise<Sum> {
     const notes: Utxo[] = await this.getSpendables(account)
     const assets = Sum.from(notes)
     return assets
   }
 
-  async getLockedAmount(account: ZkAccount): Promise<Sum> {
+  async getLockedAmount(account?: ZkAccount): Promise<Sum> {
     const notes: Utxo[] = await this.getUtxos(account, UtxoStatus.SPENDING)
     const assets = Sum.from(notes)
     return assets
   }
 
-  async getSpendables(account: ZkAccount): Promise<Utxo[]> {
+  async getSpendables(account?: ZkAccount): Promise<Utxo[]> {
     const utxos = this.getUtxos(account, UtxoStatus.UNSPENT)
     return utxos
   }
 
   async getWithdrawables(
-    account: ZkAccount,
-    status: WithdrawalStatus,
+    account?: ZkAccount,
+    status?: WithdrawalStatus,
   ): Promise<WithdrawalSql[]> {
+    const targetAccount = account || this.account
+    if (!targetAccount)
+      throw Error('Provide account parameter or set default account')
     const withdrawals = await this.db.read(prisma =>
       prisma.withdrawal.findMany({
         where: {
-          AND: [{ to: account.ethAddress }, { status }],
+          AND: [{ to: targetAccount.ethAddress }, { status }],
         },
       }),
     )
     return withdrawals
   }
 
-  async getUtxos(account: ZkAccount, status: UtxoStatus): Promise<Utxo[]> {
+  async getUtxos(account?: ZkAccount, status?: UtxoStatus): Promise<Utxo[]> {
+    const targetAccount = account || this.account
+    if (!targetAccount)
+      throw Error('Provide account parameter or set default account')
     const noteSqls = await this.db.read(prisma =>
       prisma.utxo.findMany({
         where: {
           AND: [
-            { owner: { in: [account.zkAddress.toString()] } },
+            { owner: { in: [targetAccount.zkAddress.toString()] } },
             { status },
             { usedAt: null },
           ],
@@ -181,7 +189,7 @@ export class ZkWallet {
     noteSqls.forEach(obj => {
       if (!obj.eth) throw Error('should have Ether data')
       if (!obj.owner) throw Error('should have pubkey data')
-      if (!(account.zkAddress.toString() === obj.owner))
+      if (!(targetAccount.zkAddress.toString() === obj.owner))
         throw Error('should have same pubkey')
       if (!obj.salt) throw Error('should have salt data')
 
@@ -189,13 +197,13 @@ export class ZkWallet {
       if (!obj.tokenAddr) {
         note = Utxo.newEtherNote({
           eth: obj.eth,
-          owner: account.zkAddress,
+          owner: targetAccount.zkAddress,
           salt: obj.salt,
         })
       } else if (obj.erc20Amount && Field.from(obj.erc20Amount || 0).gtn(0)) {
         note = Utxo.newERC20Note({
           eth: obj.eth,
-          owner: account.zkAddress,
+          owner: targetAccount.zkAddress,
           salt: obj.salt,
           tokenAddr: obj.tokenAddr,
           erc20Amount: obj.erc20Amount,
@@ -203,7 +211,7 @@ export class ZkWallet {
       } else if (obj.nft) {
         note = Utxo.newNFTNote({
           eth: obj.eth,
-          owner: account.zkAddress,
+          owner: targetAccount.zkAddress,
           salt: obj.salt,
           tokenAddr: obj.tokenAddr,
           nft: obj.nft,
@@ -216,7 +224,10 @@ export class ZkWallet {
     return notes
   }
 
-  async fetchLayer1Assets(account: ZkAccount): Promise<Balance> {
+  async fetchLayer1Assets(account?: ZkAccount): Promise<Balance> {
+    const targetAccount = account || this.account
+    if (!targetAccount)
+      throw Error('Provide account parameter or set default account')
     const balance: Balance = {
       eth: '0',
       erc20: {},
@@ -225,19 +236,23 @@ export class ZkWallet {
     const promises: (() => Promise<void>)[] = []
     const { web3 } = this.node.l1Contract
     promises.push(async () => {
-      balance.eth = await web3.eth.getBalance(account.ethAddress)
+      balance.eth = await web3.eth.getBalance(targetAccount.ethAddress)
     })
     promises.push(
       ...this.erc20.map(addr => async () => {
         const erc20 = Layer1.getERC20(web3, addr.toString())
-        const bal = await erc20.methods.balanceOf(account.ethAddress).call()
+        const bal = await erc20.methods
+          .balanceOf(targetAccount.ethAddress)
+          .call()
         balance.erc20[addr.toString()] = bal
       }),
     )
     promises.push(
       ...this.erc721.map(addr => async () => {
         const erc721 = Layer1.getIERC721Enumerable(web3, addr.toString())
-        const count = await erc721.methods.balanceOf(account.ethAddress).call()
+        const count = await erc721.methods
+          .balanceOf(targetAccount.ethAddress)
+          .call()
         balance.erc721[addr.toString()] = count
       }),
     )
@@ -247,10 +262,13 @@ export class ZkWallet {
   }
 
   async listLayer1Nfts(
-    account: ZkAccount,
     erc721Addr: string,
     balance: number,
+    account?: ZkAccount,
   ): Promise<string[]> {
+    const targetAccount = account || this.account
+    if (!targetAccount)
+      throw Error('Provide account parameter or set default account')
     const promises: (() => Promise<void>)[] = []
     const nfts: string[] = []
     const { web3 } = this.node.l1Contract
@@ -267,7 +285,7 @@ export class ZkWallet {
           .fill(0)
           .map((_, i) => async () => {
             nfts[i] = await Layer1.getIERC721Enumerable(web3, erc721Addr)
-              .methods.tokenOfOwnerByIndex(account.ethAddress, i)
+              .methods.tokenOfOwnerByIndex(targetAccount.ethAddress, i)
               .call()
           }),
       )
@@ -489,58 +507,101 @@ export class ZkWallet {
     return result
   }
 
-  async sendTx(
-    tx: RawTx,
-    account?: ZkAccount,
-    encryptTo?: ZkAddress,
-  ): Promise<Response> {
+  async lockUtxos(utxos: Utxo[]): Promise<void> {
+    await this.db.write(prisma =>
+      prisma.utxo.updateMany({
+        where: {
+          hash: {
+            in: utxos.map(utxo =>
+              utxo
+                .hash()
+                .toUint256()
+                .toString(),
+            ),
+          },
+        },
+        data: { status: UtxoStatus.SPENDING },
+      }),
+    )
+  }
+
+  async unlockUtxos(utxos: Utxo[]): Promise<void> {
+    await this.db.write(prisma =>
+      prisma.utxo.updateMany({
+        where: {
+          hash: {
+            in: utxos.map(utxo =>
+              utxo
+                .hash()
+                .toUint256()
+                .toString(),
+            ),
+          },
+        },
+        data: { status: UtxoStatus.UNSPENT },
+      }),
+    )
+  }
+
+  async shieldTx({
+    tx,
+    from,
+    encryptTo,
+  }: {
+    tx: RawTx
+    from?: ZkAccount
+    encryptTo?: ZkAddress
+  }): Promise<ZkTx> {
     if (
       encryptTo &&
       tx.outflow.find(outflow => outflow.owner.eq(encryptTo)) === undefined
     ) {
       throw Error('Cannot find the recipient')
     }
-    const from = account || this.account
-    if (!from) throw Error('Account is not set')
+    const fromAccount = from || this.account
+    if (!fromAccount) throw Error('Account is not set')
     try {
       const zkTx = await this.wizard.shield({
         tx,
-        account: from,
+        from: fromAccount,
         encryptTo,
       })
       const { verifier } = this.node
       const snarkValid = await verifier.snarkVerifier.verifyTx(zkTx)
       assert(snarkValid, 'generated snark proof is invalid')
-      // add newly created notes
       for (const outflow of tx.outflow) {
         await this.saveOutflow(outflow)
       }
-      const response = await fetch(`${this.coordinator}/tx`, {
-        method: 'post',
-        body: zkTx.encode().toString('hex'),
-      })
-      // mark used notes as spending
-      if (response.status === 200) {
-        await this.db.write(prisma =>
-          prisma.utxo.updateMany({
-            where: {
-              hash: {
-                in: tx.inflow.map(utxo =>
-                  utxo
-                    .hash()
-                    .toUint256()
-                    .toString(),
-                ),
-              },
-            },
-            data: { status: UtxoStatus.SPENDING },
-          }),
-        )
-      }
-      return response
+      await this.lockUtxos(tx.inflow)
+      return zkTx
     } catch (err) {
       logger.error(err)
       throw err
+    }
+  }
+
+  async sendLayer2Tx(zkTx: ZkTx): Promise<Response> {
+    const response = await fetch(`${this.coordinator}/tx`, {
+      method: 'post',
+      body: zkTx.encode().toString('hex'),
+    })
+    return response
+  }
+
+  async sendTx({
+    tx,
+    from,
+    encryptTo,
+  }: {
+    tx: RawTx
+    from?: ZkAccount
+    encryptTo?: ZkAddress
+  }): Promise<void> {
+    const zkTx = await this.shieldTx({ tx, from, encryptTo })
+    const response = await this.sendLayer2Tx(zkTx)
+    if (response.status !== 200) {
+      await this.unlockUtxos(tx.inflow)
+      throw Error(await response.text())
     }
   }
 
