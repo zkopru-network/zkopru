@@ -3,29 +3,8 @@
 /* eslint-disable jest/no-export */
 /* eslint-disable jest/require-top-level-describe */
 
-import { toWei } from 'web3-utils'
 import { sleep } from '@zkopru/utils'
 import { CtxProvider } from './context'
-
-export const registerCoordinator = (ctx: CtxProvider) => async () => {
-  const { wallets, contract, zkopruAddress } = ctx()
-  await wallets.coordinator.sendLayer1Tx({
-    contract: zkopruAddress,
-    tx: contract.coordinator.methods.register(),
-    option: {
-      value: toWei('32', 'ether'),
-    },
-  })
-}
-
-export const aliceDepositEtherWithAdditionalFee = (
-  ctx: CtxProvider,
-) => async () => {
-  const { wallets } = ctx()
-  await expect(
-    wallets.alice.depositEther(toWei('10', 'ether'), toWei('1', 'milliether')),
-  ).resolves.toStrictEqual(true)
-}
 
 export const waitCoordinatorToProposeANewBlock = (
   ctx: CtxProvider,

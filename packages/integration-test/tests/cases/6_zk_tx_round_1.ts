@@ -5,45 +5,59 @@
 /* eslint-disable jest/require-top-level-describe */
 
 import { toWei } from 'web3-utils'
-import { TxBuilder, Utxo } from '@zkopru/transaction'
+import { TxBuilder, Utxo, ZkTx } from '@zkopru/transaction'
 import { Field } from '@zkopru/babyjubjub'
+import { sleep } from '@zkopru/utils'
+import { Bytes32 } from 'soltypes'
 import { CtxProvider } from './context'
 
-export const testAliceSendEtherToBob = (ctx: CtxProvider) => async () => {
+export const buildZkTxAliceSendEthToBob = async (
+  ctx: CtxProvider,
+): Promise<ZkTx> => {
   const { wallets, accounts } = ctx()
-  const wallet = wallets.alice
+  const aliceWallet = wallets.alice
   const { alice } = accounts
   const { bob } = accounts
-  const prevSpendable = await wallet.getSpendableAmount(alice)
-  const spendables: Utxo[] = await wallet.getSpendables(alice)
-  const tx = TxBuilder.from(alice.zkAddress)
-    .provide(...spendables.map(note => Utxo.from(note)))
-    .weiPerByte(toWei('10000', 'gwei'))
+
+  const alicePrevBalance = await aliceWallet.getSpendableAmount(alice)
+  const aliceSpendables: Utxo[] = await aliceWallet.getSpendables(alice)
+  const aliceRawTx = TxBuilder.from(alice.zkAddress)
+    .provide(...aliceSpendables.map(note => Utxo.from(note)))
+    .weiPerByte(toWei('100000', 'gwei'))
     .sendEther({
       eth: Field.from(toWei('1', 'ether')),
       to: bob.zkAddress,
     })
     .build()
-  const response = await wallet.sendTx(tx)
-  const newSpendable = await wallet.getSpendableAmount(alice)
-  const lockedAmount = await wallet.getLockedAmount(alice)
-  expect(response.status).toStrictEqual(200)
-  expect(newSpendable.eth.add(lockedAmount.eth)).toBe(prevSpendable.eth)
+  const aliceZkTx = await aliceWallet.shieldTx({
+    tx: aliceRawTx,
+    encryptTo: bob.zkAddress,
+  })
+  const aliceNewBalance = await aliceWallet.getSpendableAmount(alice)
+  const aliceLockedAmount = await aliceWallet.getLockedAmount(alice)
+  expect(aliceNewBalance.eth.add(aliceLockedAmount.eth)).toBe(
+    alicePrevBalance.eth,
+  )
+  // const aliceResponse = await aliceWallet.sendLayer2Tx(aliceZkTx)
+  // expect(aliceResponse.status).toStrictEqual(200)
+  return aliceZkTx
 }
 
-export const testBobSendERC20ToCarl = (ctx: CtxProvider) => async () => {
+export const buildZkTxBobSendERC20ToCarl = async (
+  ctx: CtxProvider,
+): Promise<ZkTx> => {
   const { wallets, accounts, tokens } = ctx()
-  const wallet = wallets.bob
+  const bobWallet = wallets.bob
   const { bob } = accounts
   const { carl } = accounts
   const tokenAddr = tokens.erc20.address
-  const prevSpendable = (await wallet.getSpendableAmount(bob)).getERC20(
+  const bobPrevBalance = (await bobWallet.getSpendableAmount(bob)).getERC20(
     tokenAddr,
   )
-  const spendables: Utxo[] = await wallet.getSpendables(bob)
-  const tx = TxBuilder.from(bob.zkAddress)
-    .provide(...spendables.map(note => Utxo.from(note)))
-    .weiPerByte(toWei('10000', 'gwei'))
+  const bobSpendables: Utxo[] = await bobWallet.getSpendables(bob)
+  const bobRawTx = TxBuilder.from(bob.zkAddress)
+    .provide(...bobSpendables.map(note => Utxo.from(note)))
+    .weiPerByte(toWei('100000', 'gwei'))
     .sendERC20({
       eth: Field.zero,
       tokenAddr,
@@ -51,41 +65,115 @@ export const testBobSendERC20ToCarl = (ctx: CtxProvider) => async () => {
       to: carl.zkAddress,
     })
     .build()
-  const response = await wallet.sendTx(tx)
-  const newSpendable = (await wallet.getSpendableAmount(bob)).getERC20(
+  const bobZkTx = await bobWallet.shieldTx({
+    tx: bobRawTx,
+    encryptTo: carl.zkAddress,
+  })
+  // const response = await bobWallet.sendTx(bobRawTx)
+  const bobNewBalance = (await bobWallet.getSpendableAmount(bob)).getERC20(
     tokenAddr,
   )
-  const lockedAmount = (await wallet.getLockedAmount(bob)).getERC20(tokenAddr)
-  expect(response.status).toStrictEqual(200)
-  expect(newSpendable.add(lockedAmount)).toBe(prevSpendable)
+  const bobLockedAmount = (await bobWallet.getLockedAmount(bob)).getERC20(
+    tokenAddr,
+  )
+  // expect(response.status).toStrictEqual(200)
+  expect(bobNewBalance.add(bobLockedAmount)).toBe(bobPrevBalance)
+  return bobZkTx
 }
 
-export const testCarlSendNFTtoAlice = (ctx: CtxProvider) => async () => {
+export const buildZkTxCarlSendNftToAlice = async (
+  ctx: CtxProvider,
+): Promise<ZkTx> => {
   const { wallets, accounts, tokens } = ctx()
-  const wallet = wallets.carl
+  const carlWallet = wallets.carl
   const { carl } = accounts
   const { alice } = accounts
   const tokenAddr = tokens.erc721.address
-  const prevSpendableAmount = await wallet.getSpendableAmount(carl)
-  const prevSpendableNFTs = prevSpendableAmount.getNFTs(tokenAddr)
-  const spendables: Utxo[] = await wallet.getSpendables(carl)
-  const tx = TxBuilder.from(carl.zkAddress)
-    .provide(...spendables.map(note => Utxo.from(note)))
-    .weiPerByte(toWei('10000', 'gwei'))
+  const carlPrevBalance = await carlWallet.getSpendableAmount(carl)
+  const carlPrevNFTs = carlPrevBalance.getNFTs(tokenAddr)
+  const carlSpendables: Utxo[] = await carlWallet.getSpendables(carl)
+  const carlRawTx = TxBuilder.from(carl.zkAddress)
+    .provide(...carlSpendables.map(note => Utxo.from(note)))
+    .weiPerByte(toWei('100000', 'gwei'))
     .sendNFT({
       eth: Field.zero,
       tokenAddr,
-      nft: prevSpendableNFTs[0],
+      nft: carlPrevNFTs[0],
       to: alice.zkAddress,
     })
     .build()
-  const response = await wallet.sendTx(tx)
-  const newSpendableNFTs = (await wallet.getSpendableAmount(carl)).getNFTs(
+  const carlZkTx = await carlWallet.shieldTx({
+    tx: carlRawTx,
+    encryptTo: alice.zkAddress,
+  })
+  const carlNewNFTs = (await carlWallet.getSpendableAmount(carl)).getNFTs(
     tokenAddr,
   )
-  const lockedNFTs = (await wallet.getLockedAmount(carl)).getNFTs(tokenAddr)
-  expect(response.status).toStrictEqual(200)
+  const carlLockedNFTs = (await carlWallet.getLockedAmount(carl)).getNFTs(
+    tokenAddr,
+  )
   expect(
-    [...lockedNFTs, ...newSpendableNFTs].map(f => f.toString()).sort(),
-  ).toStrictEqual(prevSpendableNFTs.map(f => f.toString()).sort())
+    [...carlLockedNFTs, ...carlNewNFTs].map(f => f.toString()).sort(),
+  ).toStrictEqual(carlPrevNFTs.map(f => f.toString()).sort())
+  return carlZkTx
+}
+
+export const testSendZkTxsToCoordinator = (
+  ctx: CtxProvider,
+  txs: () => { aliceZkTx: ZkTx; bobZkTx: ZkTx; carlZkTx: ZkTx },
+) => async () => {
+  const { wallets } = ctx()
+  const { aliceZkTx, bobZkTx, carlZkTx } = txs()
+  const [response1, response2, response3] = await Promise.all([
+    wallets.alice.sendLayer2Tx(aliceZkTx),
+    wallets.bob.sendLayer2Tx(bobZkTx),
+    wallets.carl.sendLayer2Tx(carlZkTx),
+  ])
+  expect(response1.status).toStrictEqual(200)
+  expect(response2.status).toStrictEqual(200)
+  expect(response3.status).toStrictEqual(200)
+}
+
+export const testNewBlockProposal = (
+  ctx: CtxProvider,
+  subCtx: () => { prevLatestBlock: string },
+) => async () => {
+  const { wallets, coordinator } = ctx()
+  const { prevLatestBlock } = subCtx()
+  let updated = false
+  let newBlockHash!: string
+  do {
+    const aliceLatestBlock = await wallets.alice.node.latestBlock()
+    const bobLatestBlock = await wallets.bob.node.latestBlock()
+    const carlLatestBlock = await wallets.carl.node.latestBlock()
+    const coordinatorLatestBlock = await coordinator.node.latestBlock()
+    console.log('alice latest', aliceLatestBlock)
+    console.log('alice status', wallets.alice.node.status)
+    if (
+      aliceLatestBlock === bobLatestBlock &&
+      aliceLatestBlock === carlLatestBlock &&
+      aliceLatestBlock === coordinatorLatestBlock &&
+      aliceLatestBlock !== prevLatestBlock &&
+      aliceLatestBlock !== null
+    ) {
+      updated = true
+      newBlockHash = aliceLatestBlock
+      break
+    }
+    await sleep(1000)
+  } while (!updated)
+  const newBlock = await wallets.alice.node.l2Chain.getBlock(
+    Bytes32.from(newBlockHash),
+  )
+  expect(newBlock?.body.txs).toHaveLength(3)
+}
+
+export const testNewSpendableUtxos = (ctx: CtxProvider) => async () => {
+  const { wallets } = ctx()
+  const aliceBalance = await wallets.alice.getSpendableAmount()
+  const bobBalance = await wallets.bob.getSpendableAmount()
+  const carlBalance = await wallets.carl.getSpendableAmount()
+  console.log(aliceBalance)
+  console.log(bobBalance)
+  console.log(carlBalance)
 }
