@@ -49,11 +49,11 @@ export class ZkWizard {
    */
   async shield({
     tx,
-    account,
+    from,
     encryptTo,
   }: {
     tx: RawTx
-    account: ZkAccount
+    from: ZkAccount
     encryptTo?: ZkAddress
   }): Promise<ZkTx> {
     return new Promise<ZkTx>((resolve, reject) => {
@@ -68,7 +68,7 @@ export class ZkWizard {
       }
 
       tx.inflow.forEach(async (utxo, index) => {
-        eddsa[index] = account.signEdDSA(utxo.hash())
+        eddsa[index] = from.signEdDSA(utxo.hash())
         this.grove
           .utxoMerkleProof(utxo.hash())
           .then(async proof => {
@@ -77,8 +77,8 @@ export class ZkWizard {
               const zkTx = await this.buildZkTx({
                 tx,
                 encryptTo,
-                eddsaPoint: account.getEdDSAPoint(),
-                nullifierSeed: account.getNullifierSeed(),
+                eddsaPoint: from.getEdDSAPoint(),
+                nullifierSeed: from.getNullifierSeed(),
                 data: { merkleProof, eddsa },
               })
               resolve(zkTx)

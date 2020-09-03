@@ -298,13 +298,6 @@ export class L2Chain {
         if (note) myUtxos.push(note)
       }
     }
-    for (const tx of txs) {
-      for (const account of accounts) {
-        const note = account.decrypt(tx)
-        logger.info(`decrypt result ${note}`)
-        if (note) myUtxos.push(note)
-      }
-    }
     // TODO needs batch transaction
     for (const note of myUtxos) {
       const utxoSql = {
