@@ -7,7 +7,8 @@
 /* eslint-disable jest/require-tothrow-message */
 /* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable jest/no-hooks */
-import { jestExtendToCompareBigNumber } from '@zkopru/utils'
+import { jestExtendToCompareBigNumber, sleep } from '@zkopru/utils'
+import { ZkTx } from '@zkopru/transaction'
 import { Context, initContext, terminate } from './cases/context'
 import {
   testAliceAccount,
@@ -35,9 +36,12 @@ import {
 } from './cases/5_create_block'
 import { GroveSnapshot } from '~tree/grove'
 import {
-  testAliceSendEtherToBob,
-  testBobSendERC20ToCarl,
-  testCarlSendNFTtoAlice,
+  buildZkTxAliceSendEthToBob,
+  buildZkTxBobSendERC20ToCarl,
+  buildZkTxCarlSendNftToAlice,
+  testSendZkTxsToCoordinator,
+  testNewBlockProposal,
+  testNewSpendableUtxos,
 } from './cases/6_zk_tx_round_1'
 
 jestExtendToCompareBigNumber(expect)
@@ -149,24 +153,44 @@ describe('testnet', () => {
     })
   })
   describe('6: Zk Transactions round 1', () => {
+    let aliceZkTx: ZkTx
+    let bobZkTx: ZkTx
+    let carlZkTx: ZkTx
+    let prevLatestBlock: string
+    const subCtx = () => ({ aliceZkTx, bobZkTx, carlZkTx, prevLatestBlock })
     describe('users send zk txs to the coordinator', () => {
+      beforeAll(async () => {
+        do {
+          const latest = await context.coordinator.node.latestBlock()
+          if (latest !== null) {
+            prevLatestBlock = latest
+            break
+          }
+          await sleep(1000)
+        } while (!prevLatestBlock)
+      }, 30000)
+      it('create 3 transactions: alice transfer 1 Ether to Bob. Bob transfer 1 ERC20 to Carl, and Carl transfer 1 nft to Alice', async () => {
+        aliceZkTx = await buildZkTxAliceSendEthToBob(ctx)
+        bobZkTx = await buildZkTxBobSendERC20ToCarl(ctx)
+        carlZkTx = await buildZkTxCarlSendNftToAlice(ctx)
+      }, 300000)
       it(
-        'alice sends a zk tx to transfer 1 Ether to Bob',
-        testAliceSendEtherToBob(ctx),
+        'they should send zk transactions to the coordinator',
+        testSendZkTxsToCoordinator(ctx, subCtx),
         60000,
       )
       it(
-        'bob sends a zk tx to transfer 1 ZRC to carl',
-        testBobSendERC20ToCarl(ctx),
-        60000,
+        'coordinator should propose a new block and wallet clients subscribe them',
+        testNewBlockProposal(ctx, subCtx),
+        300000,
       )
       it(
-        'carl creates a zk tx to send ERC721 to alice',
-        testCarlSendNFTtoAlice(ctx),
-        60000,
+        'wallets should have new spendable utxos as they sync the new block',
+        testNewSpendableUtxos(ctx),
+        40000,
       )
     })
-    describe('coordinator creates the 2nd block including zk txs', () => {
+    describe('coordinitator creates the 2nd block including zk txs', () => {
       it.todo('should contain 3 valid txs')
       it.todo('should not include the invalid tx')
       it.todo('should update the utxo tree')
