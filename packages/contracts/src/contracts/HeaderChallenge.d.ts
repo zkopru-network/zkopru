@@ -99,6 +99,10 @@ export class HeaderChallenge extends Contract {
       2: string
     }>
 
+    registeredERC20s(): TransactionObject<string[]>
+
+    registeredERC721s(): TransactionObject<string[]>
+
     stagedDeposits(): TransactionObject<{
       merged: string
       fee: string

@@ -6,8 +6,8 @@ import { ZkAddress } from './zk-address'
 import { Note, OutflowType, NoteStatus, Asset } from './note'
 import { Withdrawal } from './withdrawal'
 import { Migration } from './migration'
-import * as TokenUtils from './tokens'
 import { ZkOutflow } from './zk_tx'
+import { TokenRegistry } from './tokens'
 
 const poseidonHash = circomlib.poseidon.createHash(6, 8, 57)
 
@@ -51,8 +51,15 @@ export class Utxo extends Note {
       .viewingPubKey()
       .mul(ephemeralSecretKey)
       .encode()
-    const tokenId = TokenUtils.getTokenId(this.asset.tokenAddr)
-    const value = this.asset.eth || this.asset.erc20Amount || this.asset.nft
+    const tokenId = TokenRegistry.getTokenId(this.asset.tokenAddr)
+    let value: Field
+    if (this.asset.eth.gtn(0)) {
+      value = this.asset.eth
+    } else if (this.asset.erc20Amount.gtn(0)) {
+      value = this.asset.erc20Amount
+    } else {
+      value = this.asset.nft
+    }
     const secret = [
       this.salt.toBuffer('be', 16),
       Field.from(tokenId).toBuffer('be', 1),
@@ -95,11 +102,13 @@ export class Utxo extends Note {
     memo,
     spendingPubKey,
     viewingKey,
+    tokenRegistry,
   }: {
     utxoHash: Field
     memo: Buffer
     spendingPubKey: Field
     viewingKey: Field
+    tokenRegistry?: TokenRegistry
   }): Utxo | undefined {
     const multiplier = Point.getMultiplier(viewingKey.toHex(32))
     const ephemeralPubKey = Point.decode(memo.subarray(0, 32))
@@ -107,47 +116,49 @@ export class Utxo extends Note {
     const data = memo.subarray(32, 81)
     const decrypted = chacha20.decrypt(sharedKey, 0, data)
     const salt = Field.fromBuffer(decrypted.subarray(0, 16))
-    const tokenAddress = TokenUtils.getTokenAddress(
-      decrypted.subarray(16, 17)[0],
-    )
-    if (tokenAddress === null) {
-      return
-    }
+    const tokenIdentifier = decrypted.subarray(16, 17)[0]
     const value = Field.fromBuffer(decrypted.subarray(17, 49))
 
     const owner = ZkAddress.from(
       spendingPubKey,
       Point.fromPrivKey(viewingKey.toHex(32)),
     )
-    if (tokenAddress.isZero()) {
-      const etherNote = Utxo.newEtherNote({
-        owner,
-        eth: value,
-        salt,
-      })
-      if (utxoHash.eq(etherNote.hash())) {
-        return etherNote
+    // Return an Ether note if it is an Ether note
+    const etherNote = Utxo.newEtherNote({
+      owner,
+      eth: value,
+      salt,
+    })
+    if (utxoHash.eq(etherNote.hash())) {
+      return etherNote
+    }
+    // Try to find ERC20 or ERC721 notes
+    if (tokenRegistry) {
+      const erc20Addresses = tokenRegistry.getErc20Addresses(tokenIdentifier)
+      for (const tokenAddr of erc20Addresses) {
+        const erc20Note = Utxo.newERC20Note({
+          owner,
+          eth: Field.from(0),
+          tokenAddr,
+          erc20Amount: value,
+          salt,
+        })
+        if (utxoHash.eq(erc20Note.hash())) {
+          return erc20Note
+        }
       }
-    } else {
-      const erc20Note = Utxo.newERC20Note({
-        owner,
-        eth: Field.from(0),
-        tokenAddr: tokenAddress,
-        erc20Amount: value,
-        salt,
-      })
-      if (utxoHash.eq(erc20Note.hash())) {
-        return erc20Note
-      }
-      const nftNote = Utxo.newNFTNote({
-        owner,
-        eth: Field.from(0),
-        tokenAddr: tokenAddress,
-        nft: value,
-        salt,
-      })
-      if (utxoHash.eq(nftNote.hash())) {
-        return nftNote
+      const erc721Addresses = tokenRegistry.getErc721Addresses(tokenIdentifier)
+      for (const tokenAddr of erc721Addresses) {
+        const nftNote = Utxo.newNFTNote({
+          owner,
+          eth: Field.from(0),
+          tokenAddr,
+          nft: value,
+          salt,
+        })
+        if (utxoHash.eq(nftNote.hash())) {
+          return nftNote
+        }
       }
     }
     return undefined

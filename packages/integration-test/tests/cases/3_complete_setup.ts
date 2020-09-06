@@ -4,7 +4,9 @@
 /* eslint-disable jest/require-top-level-describe */
 
 import { toWei } from 'web3-utils'
-import { verifyingKeyIdentifier } from '@zkopru/utils'
+import { verifyingKeyIdentifier, sleep } from '@zkopru/utils'
+import { Address } from 'soltypes'
+import { ZkWallet } from '@zkopru/zk-wizard'
 import { CtxProvider } from './context'
 
 export const testCompleteSetup = (ctx: CtxProvider) => async () => {
@@ -68,4 +70,43 @@ export const updateVerifyingKeys = (ctx: CtxProvider) => async () => {
       coordinator.node.verifier.addVerifyingKey(nI, nO, vks[sig])
     }
   }
+}
+
+export const testRegisterTokens = (ctx: CtxProvider) => async () => {
+  const { wallets, contract, tokens } = ctx()
+  const registerERC20Tx = contract.coordinator.methods.registerERC20(
+    tokens.erc20.address,
+  )
+  await wallets.coordinator.sendLayer1Tx({
+    contract: contract.address,
+    tx: registerERC20Tx,
+  })
+  const registerERC721Tx = contract.coordinator.methods.registerERC721(
+    tokens.erc721.address,
+  )
+  await wallets.coordinator.sendLayer1Tx({
+    contract: contract.address,
+    tx: registerERC721Tx,
+  })
+  const isSynced = async (wallet: ZkWallet) => {
+    const tokenRegistry = await wallet.node.fetchTokenRegistry()
+    const erc20Sync = !!tokenRegistry.erc20s.find(addr =>
+      addr.eq(Address.from(tokens.erc20.address)),
+    )
+    const erc721Sync = !!tokenRegistry.erc721s.find(addr =>
+      addr.eq(Address.from(tokens.erc721.address)),
+    )
+    return !!(erc20Sync && erc721Sync)
+  }
+  let synced = false
+  do {
+    const aliceSyncedNewTokenRegistration = await isSynced(wallets.alice)
+    const bobSyncedNewTokenRegistration = await isSynced(wallets.bob)
+    const carlSyncedNewTokenRegistration = await isSynced(wallets.carl)
+    synced =
+      aliceSyncedNewTokenRegistration &&
+      bobSyncedNewTokenRegistration &&
+      carlSyncedNewTokenRegistration
+    if (!synced) await sleep(500)
+  } while (!synced)
 }

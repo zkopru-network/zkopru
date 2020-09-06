@@ -101,6 +101,10 @@ export class Layer2Controller extends Contract {
 
     proxied(arg0: string | number[]): TransactionObject<string>
 
+    registeredERC20s(): TransactionObject<string[]>
+
+    registeredERC721s(): TransactionObject<string[]>
+
     stagedDeposits(): TransactionObject<{
       merged: string
       fee: string

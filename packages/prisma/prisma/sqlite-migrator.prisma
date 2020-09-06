@@ -183,3 +183,11 @@ model LightTree {
   index String
   siblings String // stringified str[]
 }
+
+model TokenRegistry {
+  address String @id
+  isERC20 Boolean
+  isERC721 Boolean
+  identifier Int
+  blockNumber Int
+}

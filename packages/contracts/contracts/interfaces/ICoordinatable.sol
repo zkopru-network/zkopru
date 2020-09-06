@@ -4,6 +4,8 @@ interface ICoordinatable {
     event NewProposal(uint256 proposalNum, bytes32 blockHash);
     event Finalized(bytes32 blockHash);
     event MassDepositCommit(uint index, bytes32 merged, uint256 fee);
+    event NewErc20(address tokenAddr);
+    event NewErc721(address tokenAddr);
 
     /**
      * @notice Coordinator calls this function for the proof of stake.
@@ -45,6 +47,16 @@ interface ICoordinatable {
      *      this standalone function.
      */
     function commitMassDeposit() external;
+
+    /**
+     * @dev Provide registered erc20 token information for decryption
+     */
+    function registerERC20(address tokenAddr) external;
+
+    /**
+     * @dev Provide registered erc20 token information for decryption
+     */
+    function registerERC721(address tokenAddr) external;
 
     /**
      * @dev You can override this function to implement your own consensus logic.

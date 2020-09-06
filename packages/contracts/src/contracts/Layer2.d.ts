@@ -98,6 +98,10 @@ export class Layer2 extends Contract {
 
     migrations(migrationHash: string | number[]): TransactionObject<boolean>
 
+    registeredERC20s(): TransactionObject<string[]>
+
+    registeredERC721s(): TransactionObject<string[]>
+
     getVk(
       numOfInputs: number | string,
       numOfOutputs: number | string,

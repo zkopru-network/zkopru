@@ -37,6 +37,32 @@ export const CoordinatableABI = [
     inputs: [
       {
         indexed: false,
+        internalType: 'address',
+        name: 'tokenAddr',
+        type: 'address',
+      },
+    ],
+    name: 'NewErc20',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'tokenAddr',
+        type: 'address',
+      },
+    ],
+    name: 'NewErc721',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
         internalType: 'uint256',
         name: 'proposalNum',
         type: 'uint256',
@@ -242,6 +268,20 @@ export const CoordinatableABI = [
   },
   {
     inputs: [],
+    name: 'registeredERC20s',
+    outputs: [{ internalType: 'address[]', name: '', type: 'address[]' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'registeredERC721s',
+    outputs: [{ internalType: 'address[]', name: '', type: 'address[]' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
     name: 'stagedDeposits',
     outputs: [
       { internalType: 'bytes32', name: 'merged', type: 'bytes32' },
@@ -316,6 +356,20 @@ export const CoordinatableABI = [
   {
     inputs: [{ internalType: 'uint256', name: 'amount', type: 'uint256' }],
     name: 'withdrawReward',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'tokenAddr', type: 'address' }],
+    name: 'registerERC20',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'tokenAddr', type: 'address' }],
+    name: 'registerERC721',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',

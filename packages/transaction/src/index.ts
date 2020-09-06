@@ -1,4 +1,4 @@
-import { DAI, CRYPTO_KITTIES, getTokenAddress, getTokenId } from './tokens'
+import { DAI, CRYPTO_KITTIES } from './tokens'
 
 export { Utxo, UtxoStatus } from './utxo'
 export { Withdrawal, WithdrawalStatus } from './withdrawal'
@@ -11,10 +11,9 @@ export { ZkTx, ZkInflow, ZkOutflow, PublicData, SNARK } from './zk_tx'
 export { ZkAddress } from './zk-address'
 export { Sum } from './note-sum'
 export { Outflow } from './outflow'
+export { TokenRegistry } from './tokens'
 
 export const TokenUtils = {
   DAI,
   CRYPTO_KITTIES,
-  getTokenAddress,
-  getTokenId,
 }

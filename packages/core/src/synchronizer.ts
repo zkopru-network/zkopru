@@ -5,6 +5,7 @@ import {
   Header as HeaderSql,
   Deposit as DepositSql,
   MassDeposit as MassDepositSql,
+  TokenRegistry as TokenRegistrySql,
 } from '@zkopru/prisma'
 import { EventEmitter } from 'events'
 import { Bytes32, Address, Uint256 } from 'soltypes'
@@ -25,6 +26,10 @@ export class Synchronizer {
 
   finalizationSubscriber?: EventEmitter
 
+  erc20RegistrationSubscriber?: EventEmitter
+
+  erc721RegistrationSubscriber?: EventEmitter
+
   isListening: boolean
 
   constructor(db: DB, l1Contract: L1Contract) {
@@ -39,6 +44,7 @@ export class Synchronizer {
   ) {
     if (!this.isListening) {
       this.listenGenesis()
+      this.listenTokenRegistry()
       this.listenDeposits()
       this.listenMassDepositCommit()
       this.listenNewProposals(proposalCB)
@@ -48,18 +54,15 @@ export class Synchronizer {
   }
 
   stop() {
-    if (this.proposalSubscriber) {
-      this.proposalSubscriber.removeAllListeners()
-    }
-    if (this.depositSubscriber) {
-      this.depositSubscriber.removeAllListeners()
-    }
-    if (this.massDepositCommitSubscriber) {
-      this.massDepositCommitSubscriber.removeAllListeners()
-    }
-    if (this.finalizationSubscriber) {
-      this.finalizationSubscriber.removeAllListeners()
-    }
+    const subscribers = [
+      this.proposalSubscriber,
+      this.erc20RegistrationSubscriber,
+      this.erc721RegistrationSubscriber,
+      this.depositSubscriber,
+      this.massDepositCommitSubscriber,
+      this.finalizationSubscriber,
+    ]
+    subscribers.forEach(subscriber => subscriber?.removeAllListeners())
     this.isListening = false
   }
 
@@ -123,6 +126,49 @@ export class Synchronizer {
           genesisListener.removeAllListeners()
         })
     }
+  }
+
+  async listenTokenRegistry() {
+    const lastRegistration = await this.db.read(prisma =>
+      prisma.tokenRegistry.findMany({
+        orderBy: { blockNumber: 'desc' },
+        take: 1,
+      }),
+    )
+    const fromBlock = lastRegistration[0]?.blockNumber || 0
+    this.erc20RegistrationSubscriber = this.l1Contract.coordinator.events
+      .NewErc20({ fromBlock })
+      .on('data', async event => {
+        const { returnValues, blockNumber } = event
+        // WRITE DATABASE
+        const { tokenAddr } = returnValues as unknown as { tokenAddr: string }
+        logger.info(`ERC20 token registered: ${tokenAddr}`)
+        const tokenRegistry: TokenRegistrySql = {
+          address: tokenAddr,
+          isERC20: true,
+          isERC721: false,
+          identifier: Address.from(tokenAddr).toBN().modn(256),
+          blockNumber,
+        }
+
+        await this.db.write(prisma => prisma.tokenRegistry.create({ data: tokenRegistry }))
+      })
+    this.erc721RegistrationSubscriber = this.l1Contract.coordinator.events
+      .NewErc721({ fromBlock })
+      .on('data', async event => {
+        const { returnValues, blockNumber } = event
+        // WRITE DATABASE
+        const { tokenAddr } = returnValues as unknown as { tokenAddr: string }
+        logger.info(`ERC721 token registered: ${tokenAddr}`)
+        const tokenRegistry: TokenRegistrySql = {
+          address: tokenAddr,
+          isERC20: false,
+          isERC721: true,
+          identifier: Address.from(tokenAddr).toBN().modn(256),
+          blockNumber,
+        }
+        await this.db.write(prisma => prisma.tokenRegistry.create({ data: tokenRegistry }))
+      })
   }
 
   async listenDeposits(cb?: (deposit: DepositSql) => void) {

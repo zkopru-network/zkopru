@@ -216,6 +216,20 @@ export const MigratableABI = [
   },
   {
     inputs: [],
+    name: 'registeredERC20s',
+    outputs: [{ internalType: 'address[]', name: '', type: 'address[]' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'registeredERC721s',
+    outputs: [{ internalType: 'address[]', name: '', type: 'address[]' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
     name: 'stagedDeposits',
     outputs: [
       { internalType: 'bytes32', name: 'merged', type: 'bytes32' },
