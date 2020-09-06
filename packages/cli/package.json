@@ -52,7 +52,7 @@
     "node-ansiparser": "^2.2.0",
     "node-ansiterminal": "^0.2.1-beta",
     "node-fetch": "^2.6.0",
-    "soltypes": "^1.2.2",
+    "soltypes": "^1.3.3",
     "tar": "^6.0.2",
     "web3": "^1.2.6",
     "web3-core": "^1.2.6",

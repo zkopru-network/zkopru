@@ -174,9 +174,7 @@ export const testNewSpendableUtxos = (ctx: CtxProvider) => async () => {
   console.log(aliceBalance)
   console.log(tokens.erc721.address)
   expect(
-    aliceBalance.erc721[tokens.erc721.address.toLowerCase()].find(nft =>
-      nft.eqn(1),
-    ),
+    aliceBalance.erc721[tokens.erc721.address].find(nft => nft.eqn(1)),
   ).toBeDefined()
   expect(
     carlBalance.erc20[tokens.erc20.address].eq(toBN(toWei('1', 'ether'))),
