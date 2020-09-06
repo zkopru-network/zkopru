@@ -43,7 +43,7 @@ export class ZkAccount {
       this.ethAccount = pk
     }
     this.pG = Point.fromPrivKey(this.p.toHex(32))
-    this.ethAddress = this.ethAccount.address.toLowerCase()
+    this.ethAddress = this.ethAccount.address
     // https://github.com/zkopru-network/zkopru/issues/34#issuecomment-666988505
     // Note: viewing key can be derived using another method. This is just for the convenience
     // to make it easy to restore spending key & viewing key together from a mnemonic source in

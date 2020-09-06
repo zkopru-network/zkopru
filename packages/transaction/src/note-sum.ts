@@ -20,14 +20,16 @@ export class Sum {
   }
 
   getERC20(address: Address | string): Field {
-    const addr = typeof address === 'string' ? Address.from(address) : address
-    const amount = this.erc20[addr.toString().toLowerCase()] || Field.zero
+    const addr: Address =
+      typeof address === 'string' ? Address.from(address) : address
+    const amount = this.erc20[addr.toString()] || Field.zero
     return amount
   }
 
   getNFTs(address: Address | string): Field[] {
-    const addr = typeof address === 'string' ? Address.from(address) : address
-    const nfts = this.erc721[addr.toString().toLowerCase()] || []
+    const addr: Address =
+      typeof address === 'string' ? Address.from(address) : address
+    const nfts = this.erc721[addr.toString()] || []
     return nfts
   }
 
@@ -42,7 +44,7 @@ export class Sum {
   static erc20From(notes: Note[]): { [addr: string]: Field } {
     const erc20: { [addr: string]: Field } = {}
     for (const note of notes) {
-      const addr = note.asset.tokenAddr.toHex().toLowerCase()
+      const addr = Address.from(note.asset.tokenAddr.toHex()).toString()
       if (!note.asset.erc20Amount.isZero() && note.asset.nft.isZero()) {
         const prev = erc20[addr] ? erc20[addr] : Field.from(0)
         erc20[addr] = prev.add(note.asset.erc20Amount)
@@ -54,7 +56,7 @@ export class Sum {
   static nftsFrom(notes: Note[]): { [addr: string]: Field[] } {
     const erc721: { [addr: string]: Field[] } = {}
     for (const note of notes) {
-      const addr = note.asset.tokenAddr.toHex().toLowerCase()
+      const addr = Address.from(note.asset.tokenAddr.toHex()).toString()
       if (note.asset.erc20Amount.isZero() && !note.asset.nft.isZero()) {
         if (!erc721[addr]) {
           erc721[addr] = []

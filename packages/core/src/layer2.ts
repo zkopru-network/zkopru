@@ -354,29 +354,15 @@ export class L2Chain {
     )
     logger.debug(
       `withdrawal address =>
-      ${outflows.map(outflow =>
-        outflow.data?.to
-          .toAddress()
-          .toString()
-          .toLowerCase(),
-      )}`,
+      ${outflows.map(outflow => outflow.data?.to.toAddress().toString())}`,
     )
-    logger.debug(
-      `my address =>${accounts.map(account =>
-        account.ethAddress.toLowerCase(),
-      )}`,
-    )
+    logger.debug(`my address =>${accounts.map(account => account.ethAddress)}`)
     const myWithdrawalOutputs: ZkOutflow[] = outflows.filter(
       outflow =>
         outflow.data &&
         accounts
-          .map(account => account.ethAddress.toLowerCase())
-          .includes(
-            outflow.data?.to
-              .toAddress()
-              .toString()
-              .toLowerCase(),
-          ),
+          .map(account => account.ethAddress)
+          .includes(outflow.data?.to.toAddress().toString()),
     )
     // TODO needs batch transaction
     for (const output of myWithdrawalOutputs) {

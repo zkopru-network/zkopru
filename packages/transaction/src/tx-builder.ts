@@ -2,6 +2,7 @@ import { Field, F } from '@zkopru/babyjubjub'
 import { txSizeCalculator, logger } from '@zkopru/utils'
 import { fromWei } from 'web3-utils'
 import assert from 'assert'
+import { Address } from 'soltypes'
 import { ZkAddress } from './zk-address'
 import { Utxo } from './utxo'
 import { Sum } from './note-sum'
@@ -156,7 +157,12 @@ export class TxBuilder {
     Object.keys(sendingAmount.erc20).forEach(addr => {
       const targetAmount: Field = sendingAmount.getERC20(addr)
       const sameERC20UTXOs: Utxo[] = this.spendables
-        .filter(utxo => utxo.tokenAddr().toHex() === addr)
+        .filter(utxo =>
+          utxo
+            .tokenAddr()
+            .toAddress()
+            .eq(Address.from(addr)),
+        )
         .sort((a, b) => (a.erc20Amount().gt(b.erc20Amount()) ? 1 : -1))
       for (const utxo of sameERC20UTXOs) {
         if (targetAmount.gt(Sum.from(spendings).getERC20(addr))) {
@@ -177,7 +183,10 @@ export class TxBuilder {
         .sort((a, b) => (a.gt(b) ? 1 : -1))
       const spendingNFTNotes: Utxo[] = this.spendables.filter(utxo => {
         return (
-          utxo.tokenAddr().toHex() === addr &&
+          utxo
+            .tokenAddr()
+            .toAddress()
+            .eq(Address.from(addr)) &&
           sendingNFTs.find(nft => nft.eq(utxo.nft())) !== undefined
         )
       })
