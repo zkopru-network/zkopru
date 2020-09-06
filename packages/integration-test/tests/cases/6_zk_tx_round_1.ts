@@ -171,8 +171,6 @@ export const testNewSpendableUtxos = (ctx: CtxProvider) => async () => {
   const aliceBalance = await wallets.alice.getSpendableAmount()
   const bobBalance = await wallets.bob.getSpendableAmount()
   const carlBalance = await wallets.carl.getSpendableAmount()
-  console.log(aliceBalance)
-  console.log(tokens.erc721.address)
   expect(
     aliceBalance.erc721[tokens.erc721.address].find(nft => nft.eqn(1)),
   ).toBeDefined()
