@@ -19,6 +19,7 @@ import {
   Utxo,
   Withdrawal,
   ZkOutflow,
+  TokenRegistry,
 } from '@zkopru/transaction'
 import { ZkAccount } from '@zkopru/account'
 import {
@@ -287,13 +288,17 @@ export class L2Chain {
     )
   }
 
-  async findMyUtxos(txs: ZkTx[], accounts: ZkAccount[]) {
+  async findMyUtxos(
+    txs: ZkTx[],
+    accounts: ZkAccount[],
+    tokenRegistry: TokenRegistry,
+  ) {
     const txsWithMemo = txs.filter(tx => tx.memo)
     logger.info(`findMyUtxos`)
     const myUtxos: Utxo[] = []
     for (const tx of txsWithMemo) {
       for (const account of accounts) {
-        const note = account.decrypt(tx)
+        const note = account.decrypt(tx, tokenRegistry)
         logger.info(`decrypt result ${note}`)
         if (note) myUtxos.push(note)
       }

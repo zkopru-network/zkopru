@@ -99,6 +99,10 @@ export class Coordinatable extends Contract {
       2: string
     }>
 
+    registeredERC20s(): TransactionObject<string[]>
+
+    registeredERC721s(): TransactionObject<string[]>
+
     stagedDeposits(): TransactionObject<{
       merged: string
       fee: string
@@ -126,6 +130,10 @@ export class Coordinatable extends Contract {
 
     withdrawReward(amount: number | string): TransactionObject<void>
 
+    registerERC20(tokenAddr: string): TransactionObject<void>
+
+    registerERC721(tokenAddr: string): TransactionObject<void>
+
     isProposable(proposerAddr: string): TransactionObject<boolean>
   }
   events: {
@@ -138,6 +146,8 @@ export class Coordinatable extends Contract {
       1: string
       2: string
     }>
+    NewErc20: ContractEvent<string>
+    NewErc721: ContractEvent<string>
     NewProposal: ContractEvent<{
       proposalNum: string
       blockHash: string

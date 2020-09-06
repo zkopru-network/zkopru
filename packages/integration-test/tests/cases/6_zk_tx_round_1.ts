@@ -4,7 +4,7 @@
 /* eslint-disable jest/no-export */
 /* eslint-disable jest/require-top-level-describe */
 
-import { toWei } from 'web3-utils'
+import { toWei, toBN } from 'web3-utils'
 import { TxBuilder, Utxo, ZkTx } from '@zkopru/transaction'
 import { Field } from '@zkopru/babyjubjub'
 import { sleep } from '@zkopru/utils'
@@ -147,8 +147,6 @@ export const testNewBlockProposal = (
     const bobLatestBlock = await wallets.bob.node.latestBlock()
     const carlLatestBlock = await wallets.carl.node.latestBlock()
     const coordinatorLatestBlock = await coordinator.node.latestBlock()
-    console.log('alice latest', aliceLatestBlock)
-    console.log('alice status', wallets.alice.node.status)
     if (
       aliceLatestBlock === bobLatestBlock &&
       aliceLatestBlock === carlLatestBlock &&
@@ -169,11 +167,21 @@ export const testNewBlockProposal = (
 }
 
 export const testNewSpendableUtxos = (ctx: CtxProvider) => async () => {
-  const { wallets } = ctx()
+  const { wallets, tokens } = ctx()
   const aliceBalance = await wallets.alice.getSpendableAmount()
   const bobBalance = await wallets.bob.getSpendableAmount()
   const carlBalance = await wallets.carl.getSpendableAmount()
   console.log(aliceBalance)
-  console.log(bobBalance)
-  console.log(carlBalance)
+  console.log(tokens.erc721.address)
+  expect(
+    aliceBalance.erc721[tokens.erc721.address.toLowerCase()].find(nft =>
+      nft.eqn(1),
+    ),
+  ).toBeDefined()
+  expect(
+    carlBalance.erc20[tokens.erc20.address].eq(toBN(toWei('1', 'ether'))),
+  ).toBeTruthy()
+  expect(
+    bobBalance.erc20[tokens.erc20.address].eq(toBN(toWei('9', 'ether'))),
+  ).toBeTruthy()
 }

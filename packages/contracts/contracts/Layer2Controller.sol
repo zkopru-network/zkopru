@@ -52,6 +52,8 @@ contract Layer2Controller is Layer2 {
         _connect(addr, ICoordinatable(0).commitMassDeposit.selector);
         _connect(addr, ICoordinatable(0).withdrawReward.selector);
         _connect(addr, ICoordinatable(0).isProposable.selector);
+        _connect(addr, ICoordinatable(0).registerERC20.selector);
+        _connect(addr, ICoordinatable(0).registerERC721.selector);
     }
 
     function _connectUserInteractable(address addr) internal {

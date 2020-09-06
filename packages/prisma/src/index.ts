@@ -58,6 +58,7 @@ export {
   MassDeposit,
   Proposal,
   Withdrawal,
+  TokenRegistry,
 } from '../generated/base'
 
 export interface MockupDB {

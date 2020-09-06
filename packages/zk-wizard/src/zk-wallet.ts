@@ -10,7 +10,7 @@ import {
   ZkTx,
 } from '@zkopru/transaction'
 import { Field, F } from '@zkopru/babyjubjub'
-import { Layer1, TransactionObject, Tx } from '@zkopru/contracts'
+import { Layer1, TransactionObject, Tx, TxUtil } from '@zkopru/contracts'
 import { HDWallet, ZkAccount } from '@zkopru/account'
 import { ZkOPRUNode } from '@zkopru/core'
 import { DB, Withdrawal as WithdrawalSql } from '@zkopru/prisma'
@@ -497,7 +497,7 @@ export class ZkWallet {
     const { web3 } = this.node.l1Contract
     const from = signer || this.account?.ethAccount
     if (!from) throw Error(`You need to set 'from' account`)
-    const result = await Layer1.sendTx(
+    const result = await TxUtil.sendTx(
       tx,
       contract.toString(),
       web3,

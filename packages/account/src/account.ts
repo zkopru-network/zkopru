@@ -7,6 +7,7 @@ import { ZkAddress, ZkTx, Utxo } from '@zkopru/transaction'
 import { hexify } from '@zkopru/utils'
 import createKeccak from 'keccak'
 import assert from 'assert'
+import { TokenRegistry } from '~transaction/tokens'
 
 const poseidonHash = circomlib.poseidon.createHash(6, 8, 57)
 
@@ -88,7 +89,7 @@ export class ZkAccount {
     }
   }
 
-  decrypt(zkTx: ZkTx): Utxo | undefined {
+  decrypt(zkTx: ZkTx, tokenRegistry?: TokenRegistry): Utxo | undefined {
     const { memo } = zkTx
     if (!memo) {
       return
@@ -101,6 +102,7 @@ export class ZkAccount {
           memo,
           spendingPubKey: this.zkAddress.spendingPubKey(),
           viewingKey: this.n,
+          tokenRegistry,
         })
       } catch (err) {
         console.error(err)

@@ -7,7 +7,6 @@
 /* eslint-disable jest/require-tothrow-message */
 /* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable jest/no-hooks */
-import { jestExtendToCompareBigNumber, sleep } from '@zkopru/utils'
 import { ZkTx } from '@zkopru/transaction'
 import { Context, initContext, terminate } from './cases/context'
 import {
@@ -21,6 +20,7 @@ import {
   testRejectVkRegistration,
   registerCoordinator,
   updateVerifyingKeys,
+  testRegisterTokens,
 } from './cases/3_complete_setup'
 import {
   depositEther,
@@ -28,6 +28,7 @@ import {
   depositERC721,
   testMassDeposits,
 } from './cases/4_deposit'
+import { jestExtendToCompareBigNumber, sleep } from '~utils'
 import { attachConsoleErrorToPino } from '~utils/logger'
 import {
   waitCoordinatorToProposeANewBlock,
@@ -88,6 +89,9 @@ describe('testnet', () => {
     })
     describe('3-2: after completeSetup() called', () => {
       it('should reject every register txs', testRejectVkRegistration(ctx))
+    })
+    describe('3-3: coordinator can register ERC20 or ERC721 tokens.', () => {
+      it('should register sample erc20 and erc721', testRegisterTokens(ctx))
     })
   })
   describe('4: Deposits', () => {

@@ -3,10 +3,11 @@ import { ZkAccount } from '@zkopru/account'
 import { DB, Proposal } from '@zkopru/prisma'
 import { Grove, poseidonHasher, keccakHasher } from '@zkopru/tree'
 import { logger } from '@zkopru/utils'
-import { Uint256 } from 'soltypes'
+import { Uint256, Address } from 'soltypes'
 import { scheduleJob, Job } from 'node-schedule'
 import { EventEmitter } from 'events'
 import assert from 'assert'
+import { TokenRegistry } from '@zkopru/transaction'
 import { L1Contract } from './layer1'
 import { Verifier, VerifyOption } from './verifier'
 import { L2Chain } from './layer2'
@@ -43,6 +44,8 @@ export class ZkOPRUNode extends EventEmitter {
   accounts?: ZkAccount[]
 
   verifyOption: VerifyOption
+
+  tokenRegistry: TokenRegistry
 
   cronJobs: Job[]
 
@@ -90,6 +93,7 @@ export class ZkOPRUNode extends EventEmitter {
     this.cronJobs = []
     this.fetching = {}
     this.syncing = false
+    this.tokenRegistry = new TokenRegistry()
   }
 
   startSync() {
@@ -329,7 +333,12 @@ export class ZkOPRUNode extends EventEmitter {
 
     logger.info(`Processing block ${block.hash.toString()}`)
     // should find and save my notes before calling getGrovePatch
-    await this.l2Chain.findMyUtxos(block.body.txs, this.accounts || [])
+    const tokenRegistry = await this.fetchTokenRegistry()
+    await this.l2Chain.findMyUtxos(
+      block.body.txs,
+      this.accounts || [],
+      tokenRegistry,
+    )
     await this.l2Chain.findMyWithdrawals(block.body.txs, this.accounts || [])
     const { patch, challenge } = await this.verifier.verifyBlock({
       layer2: this.l2Chain,
@@ -373,6 +382,33 @@ export class ZkOPRUNode extends EventEmitter {
     return proposal.proposalNum
   }
 
+  async fetchTokenRegistry(): Promise<TokenRegistry> {
+    const newRegistrations = await this.db.read(prisma =>
+      prisma.tokenRegistry.findMany({
+        where: {
+          blockNumber: { gte: this.tokenRegistry.blockNumber },
+        },
+      }),
+    )
+    newRegistrations.forEach(registration => {
+      const tokenAddress = Address.from(registration.address)
+      if (
+        registration.isERC20 &&
+        !this.tokenRegistry.erc20s.find(addr => addr.eq(tokenAddress))
+      ) {
+        this.tokenRegistry.addERC20(tokenAddress)
+      } else if (
+        registration.isERC721 &&
+        !this.tokenRegistry.erc721s.find(addr => addr.eq(tokenAddress))
+      ) {
+        this.tokenRegistry.addERC721(tokenAddress)
+      }
+      if (registration.blockNumber > this.tokenRegistry.blockNumber)
+        this.tokenRegistry.blockNumber = registration.blockNumber
+    })
+    return this.tokenRegistry
+  }
+
   private setStatus(status: NetworkStatus) {
     if (this.status !== status) {
       this.status = status
@@ -410,6 +446,7 @@ export class ZkOPRUNode extends EventEmitter {
       }),
     )
     const config = savedConfig || (await l1Contract.getConfig())
+    // l1Contract.upstream.
     const hashers = {
       utxo: poseidonHasher(config.utxoTreeDepth),
       withdrawal: keccakHasher(config.withdrawalTreeDepth),

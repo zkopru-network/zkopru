@@ -22,6 +22,8 @@ contract Coordinatable is Layer2 {
     event NewProposal(uint256 proposalNum, bytes32 blockHash);
     event Finalized(bytes32 blockHash);
     event MassDepositCommit(uint index, bytes32 merged, uint256 fee);
+    event NewErc20(address tokenAddr);
+    event NewErc721(address tokenAddr);
 
     function register() public payable {
         require(msg.value >= MINIMUM_STAKE, "Should stake more than minimum amount of ETH");
@@ -144,6 +146,18 @@ contract Coordinatable is Layer2 {
         require(proposer.reward >= amount, "You can't withdraw more than you have");
         payable(proposerAddr).transfer(amount);
         proposer.reward -= amount;
+    }
+
+    // TODO 1. verify erc20 token 2. governance to register the token address
+    function registerERC20(address tokenAddr) public {
+        Layer2.chain.registeredERC20s.push(tokenAddr);
+        emit NewErc20(tokenAddr);
+    }
+
+    // TODO 1. verify erc721 token 2. governance to register the token address
+    function registerERC721(address tokenAddr) public {
+        Layer2.chain.registeredERC721s.push(tokenAddr);
+        emit NewErc721(tokenAddr);
     }
 
     function isProposable(address proposerAddr) public view returns (bool) {

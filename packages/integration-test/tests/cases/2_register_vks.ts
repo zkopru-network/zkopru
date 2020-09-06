@@ -39,7 +39,7 @@ export const testRegisterVKs = (ctx: CtxProvider) => async () => {
 
 export const testRegisterVKFails = (ctx: CtxProvider) => async () => {
   const { contract, vks, accounts } = ctx()
-  const sampleVk = vks[4][4]
+  const sampleVk: any = vks[4][4]
   const tx = contract.setup.methods.registerVk(
     5,
     5,

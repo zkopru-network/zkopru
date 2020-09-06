@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import {
   ZkOPRUContract,
-  Layer1,
   TransactionObject,
   Tx,
+  TxUtil,
 } from '@zkopru/contracts'
 import { Config } from '@zkopru/prisma'
 import { Account, TransactionReceipt } from 'web3-core'
@@ -207,7 +207,7 @@ export class L1Contract extends ZkOPRUContract {
     account: Account,
     option?: Tx,
   ): Promise<TransactionReceipt | undefined> {
-    const result = await Layer1.sendTx(
+    const result = await TxUtil.sendTx(
       tx,
       this.address,
       this.web3,
