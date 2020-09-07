@@ -42,5 +42,5 @@ describe('unit test', () => {
     expect(ganacheAddress).toStrictEqual(
       accounts.map(account => account.ethAddress),
     )
-  }, 30000)
+  }, 90000)
 })

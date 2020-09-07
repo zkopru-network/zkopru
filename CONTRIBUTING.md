@@ -136,6 +136,14 @@ This uses airbnb eslint, and husky will automatically prettify using commit-hook
 yarn test
 ```
 
+If you have not enough cpu core, please use
+
+```shell
+yarn test:serial
+```
+
+Or you can test specific package by just going into the sub package and running `yarn test` there.
+
 ### Manually setup Run cli applications
 
 1. Prepare three terminals
