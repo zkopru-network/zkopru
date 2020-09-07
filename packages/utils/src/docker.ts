@@ -67,6 +67,60 @@ export async function buildAndGetContainer({
   return container
 }
 
+export async function pullAndGetContainer({
+  compose,
+  service,
+  option,
+}: {
+  compose: string | string[]
+  service: string
+  option?: {
+    containerName?: string
+    socketPath?: string
+  }
+}): Promise<Container> {
+  const cwd = typeof compose === 'string' ? compose : pathLib.join(...compose)
+  const config = await dockerCompose.config({ cwd })
+  const { services } = jsyaml.load(config.out)
+  if (!services[service]) {
+    throw Error(
+      `"${service}" does not exist. Available services are ${Object.keys(
+        services,
+      ).reduce((acc, val) => `${acc}\n${val}`, '\n')}`,
+    )
+  }
+  const { image } = services[service]
+  if (!image) {
+    throw Error(
+      `"${service}" does not tag image name. Please update the compose file`,
+    )
+  }
+  await dockerCompose.pullOne(service, { cwd })
+  const container = await getContainer(image, option)
+  return container
+}
+
+export async function pullOrBuildAndGetContainer({
+  compose,
+  service,
+  option,
+}: {
+  compose: string | string[]
+  service: string
+  option?: {
+    containerName?: string
+    socketPath?: string
+  }
+}): Promise<Container> {
+  let container: Container
+  try {
+    container = await pullAndGetContainer({ compose, service, option })
+  } catch (err) {
+    container = await buildAndGetContainer({ compose, service, option })
+  }
+  return container
+}
+
 export async function readFromContainer(
   container: Container,
   path: string,

@@ -5,7 +5,7 @@ import { Container } from 'node-docker-api/lib/container'
 import { FullNode } from '@zkopru/core'
 import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
-import { readFromContainer, sleep, buildAndGetContainer } from '~utils'
+import { readFromContainer, sleep, pullOrBuildAndGetContainer } from '~utils'
 import { MockupDB, DB } from '~prisma'
 
 describe('coordinator test to run testnet', () => {
@@ -22,7 +22,7 @@ describe('coordinator test to run testnet', () => {
     mockup = await DB.mockup()
     // It may take about few minutes. If you want to skip building image,
     // run `yarn pull:images` on the root directory
-    container = await buildAndGetContainer({
+    container = await pullOrBuildAndGetContainer({
       compose: [__dirname, '../../../../dockerfiles'],
       service: 'contracts',
     })

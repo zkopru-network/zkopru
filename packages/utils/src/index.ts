@@ -8,7 +8,13 @@ export { logger, logStream } from './logger'
 
 export { PromptApp } from './prompt'
 
-export { readFromContainer, getContainer, buildAndGetContainer } from './docker'
+export {
+  readFromContainer,
+  getContainer,
+  buildAndGetContainer,
+  pullAndGetContainer,
+  pullOrBuildAndGetContainer,
+} from './docker'
 
 const units: Unit[] = [
   'noether',

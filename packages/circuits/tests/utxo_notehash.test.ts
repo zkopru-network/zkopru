@@ -4,7 +4,7 @@ import { Container } from 'node-docker-api/lib/container'
 import * as snarkjs from 'snarkjs'
 import * as ffjs from 'ffjavascript'
 import { getZkSnarkParams, calculateWitness } from '~utils/snark'
-import { buildAndGetContainer } from '~utils/docker'
+import { pullOrBuildAndGetContainer } from '~utils/docker'
 import { utxos } from '~dataset/testset-utxos'
 import { accounts } from '~dataset/testset-keys'
 import { Field } from '~babyjubjub/field'
@@ -14,7 +14,7 @@ describe('utxo_notehash.test.circom', () => {
   beforeAll(async () => {
     // It may take about few minutes. If you want to skip building image,
     // run `yarn pull:images` on the root directory
-    container = await buildAndGetContainer({
+    container = await pullOrBuildAndGetContainer({
       compose: [__dirname, '../../../dockerfiles'],
       service: 'circuits-test',
     })

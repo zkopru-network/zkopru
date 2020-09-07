@@ -4,7 +4,7 @@ import { WebsocketProvider } from 'web3-core'
 import { Container } from 'node-docker-api/lib/container'
 import { MockupDB, DB } from '@zkopru/prisma'
 import { ZkAccount } from '~account'
-import { sleep, readFromContainer, buildAndGetContainer } from '~utils'
+import { sleep, readFromContainer, pullOrBuildAndGetContainer } from '~utils'
 import { LightNode, HttpBootstrapHelper } from '~core'
 
 describe('integration test to run testnet', () => {
@@ -18,7 +18,7 @@ describe('integration test to run testnet', () => {
     mockup = await DB.mockup()
     // It may take about few minutes. If you want to skip building image,
     // run `yarn pull:images` on the root directory
-    container = await buildAndGetContainer({
+    container = await pullOrBuildAndGetContainer({
       compose: [__dirname, '../../../../dockerfiles'],
       service: 'contracts',
       option: { containerName: testName },
