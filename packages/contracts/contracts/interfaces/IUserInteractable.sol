@@ -1,4 +1,4 @@
-pragma solidity >= 0.6.0;
+pragma solidity = 0.6.12;
 
 interface IUserInteractable {
     event Deposit(uint256 indexed queuedAt, uint256 note, uint256 fee);

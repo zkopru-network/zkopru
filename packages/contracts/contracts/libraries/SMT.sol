@@ -1,4 +1,4 @@
-pragma solidity >= 0.6.0;
+pragma solidity = 0.6.12;
 
 library SMT254 {
     // in Solidity: keccak256('exist')

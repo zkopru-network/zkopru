@@ -1,4 +1,4 @@
-pragma solidity >= 0.6.0;
+pragma solidity = 0.6.12;
 
 interface ICoordinatable {
     event NewProposal(uint256 proposalNum, bytes32 blockHash);
