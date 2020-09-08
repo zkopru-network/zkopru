@@ -1,4 +1,4 @@
-pragma solidity >= 0.6.0;
+pragma solidity = 0.6.12;
 
 import { MassDeposit, WithdrawalTree, Types } from "../libraries/Types.sol";
 interface IERC20 {

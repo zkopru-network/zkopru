@@ -1,4 +1,4 @@
-pragma solidity >= 0.6.0;
+pragma solidity = 0.6.12;
 
 import "../libraries/Types.sol";
 import { Pairing } from "../libraries/Pairing.sol";
