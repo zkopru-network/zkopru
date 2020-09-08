@@ -15,8 +15,11 @@ interface EventOptions {
 
 export class Context extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): Context
+
   methods: {}
+
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

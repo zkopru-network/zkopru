@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class RollUpable extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): RollUpable
+
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -150,6 +152,7 @@ export class RollUpable extends Contract {
       leaves: (number | string)[],
     ): TransactionObject<void>
   }
+
   events: {
     NewProofOfRollUp: ContractEvent<{
       rollUpType: string
