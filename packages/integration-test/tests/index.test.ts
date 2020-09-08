@@ -186,7 +186,7 @@ describe('testnet', () => {
       it(
         'coordinator should propose a new block and wallet clients subscribe them',
         testNewBlockProposal(ctx, subCtx),
-        300000,
+        600000,
       )
       it(
         'wallets should have new spendable utxos as they sync the new block',

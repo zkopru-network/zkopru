@@ -40,7 +40,7 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
         uint256[2][2] memory delta2,
         uint256[2][] memory ic
     ) public override onlySetupWizard {
-        bytes32 txSig = Types.getSNARKsSignature(numOfInputs, numOfOutputs);
+        uint256 txSig = Types.getSNARKsSignature(numOfInputs, numOfOutputs);
         SNARKsVerifier.VerifyingKey storage vk = Layer2.vks[txSig];
         vk.alfa1 = G1Point(alfa1[0], alfa1[1]);
         vk.beta2 = G2Point(beta2[0], beta2[1]);
