@@ -5,6 +5,10 @@ import { Proof } from "./Types.sol";
 
 library SNARKsVerifier {
     using Pairing for *;
+
+    uint256 constant SNARK_SCALAR_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+    uint256 constant PRIME_Q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
+
     struct VerifyingKey {
         G1Point alfa1;
         G2Point beta2;
@@ -14,25 +18,37 @@ library SNARKsVerifier {
     }
 
     function verifySnarkProof(VerifyingKey memory vk, uint256[] memory input, Proof memory proof) internal view returns (bool) {
-        uint256 SNARK_SCALAR_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
         require(input.length + 1 == vk.ic.length,"verifier-bad-input");
         // Compute the linear combination vkX
         G1Point memory vkX = G1Point(0, 0);
+
+        // Make sure that proof.A, B, and C are each less than the prime q
+        require(proof.a.X < PRIME_Q, "verifier-aX-gte-prime-q");
+        require(proof.a.Y < PRIME_Q, "verifier-aY-gte-prime-q");
+
+        require(proof.b.X[0] < PRIME_Q, "verifier-bX0-gte-prime-q");
+        require(proof.b.Y[0] < PRIME_Q, "verifier-bY0-gte-prime-q");
+
+        require(proof.b.X[1] < PRIME_Q, "verifier-bX1-gte-prime-q");
+        require(proof.b.Y[1] < PRIME_Q, "verifier-bY1-gte-prime-q");
+
+        require(proof.c.X < PRIME_Q, "verifier-cX-gte-prime-q");
+        require(proof.c.Y < PRIME_Q, "verifier-cY-gte-prime-q");
+
         for (uint256 i = 0; i < input.length; i++) {
             require(input[i] < SNARK_SCALAR_FIELD,"verifier-gte-snark-scalar-field");
-            vkX = Pairing.addition(vkX, Pairing.scalar_mul(vk.ic[i + 1], input[i]));
+            vkX = Pairing.plus(vkX, Pairing.scalar_mul(vk.ic[i + 1], input[i]));
         }
-        vkX = Pairing.addition(vkX, vk.ic[0]);
-        if (
-            !Pairing.pairingProd4(
-                Pairing.negate(proof.a), proof.b,
-                vk.alfa1, vk.beta2,
-                vkX, vk.gamma2,
-                proof.c, vk.delta2
-            )
-        ) {
-            return true;
-        }
-        return false;
+        vkX = Pairing.plus(vkX, vk.ic[0]);
+        return Pairing.pairing(
+            Pairing.negate(proof.a),
+            proof.b,
+            vk.alfa1,
+            vk.beta2,
+            vkX,
+            vk.gamma2,
+            proof.c,
+            vk.delta2
+        );
     }
 }
