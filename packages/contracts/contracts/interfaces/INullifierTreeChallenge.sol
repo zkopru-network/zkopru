@@ -9,7 +9,7 @@ interface INullifierTreeChallenge {
      * @param submission The proposal data which is exactly same with the submitted.
      */
     function challengeNullifierRollUp(
-        uint numOfNullifiers,
+        uint256 numOfNullifiers,
         bytes32[254][] calldata siblings,
         bytes calldata parentHeader,
         bytes calldata submission

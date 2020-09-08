@@ -18,7 +18,7 @@ interface IWithdrawalTreeChallenge {
      * @param submission The proposal data which is exactly same with the submitted.
      */
      function challengeWithdrawalRoot(
-        uint[] calldata initialSiblings,
+        uint256[] calldata initialSiblings,
         bytes calldata parentHeader,
         bytes calldata submission
     ) external;

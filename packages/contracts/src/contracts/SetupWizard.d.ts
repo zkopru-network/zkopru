@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class SetupWizard extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): SetupWizard
+
   methods: {
     CHALLENGE_LIMIT(): TransactionObject<string>
 
@@ -73,6 +75,7 @@ export class SetupWizard extends Contract {
 
     completeSetup(): TransactionObject<void>
   }
+
   events: {
     Finalized: ContractEvent<string>
     MassDepositCommit: ContractEvent<{

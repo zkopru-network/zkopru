@@ -10,7 +10,7 @@ import { Deserializer } from "../libraries/Deserializer.sol";
 contract Migratable is Layer2 {
     using Types for *;
 
-    event NewMassMigration(bytes32 checksum, address network, bytes32 merged, uint fee);
+    event NewMassMigration(bytes32 checksum, address network, bytes32 merged, uint256 fee);
 
     function migrateTo(
         bytes32 checksum,
@@ -29,12 +29,12 @@ contract Migratable is Layer2 {
             // send ETH first
             payable(to).transfer(migration.totalETH);
             // send ERC20
-            for(uint i = 0; i < migration.erc20.length; i++) {
+            for(uint256 i = 0; i < migration.erc20.length; i++) {
                 IERC20(migration.erc20[i].addr).transfer(to, migration.erc20[i].amount);
             }
             // send ERC721
-            for(uint i = 0; i < migration.erc721.length; i++) {
-                for(uint j = 0; j < migration.erc721[i].nfts.length; j++) {
+            for(uint256 i = 0; i < migration.erc721.length; i++) {
+                for(uint256 j = 0; j < migration.erc721[i].nfts.length; j++) {
                     IERC721(migration.erc721[i].addr).transferFrom(
                         address(this),
                         to,
@@ -49,7 +49,7 @@ contract Migratable is Layer2 {
         }
     }
 
-    function acceptMigration(bytes32 checksum, bytes32 merged, uint fee) external virtual {
+    function acceptMigration(bytes32 checksum, bytes32 merged, uint256 fee) external virtual {
         require(Layer2.allowedMigrants[msg.sender], "Not an allowed departure");
         Layer2.chain.committedDeposits[MassDeposit(merged,fee).hash()] += 1;
         emit NewMassMigration(checksum, msg.sender, merged, fee);

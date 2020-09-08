@@ -1,13 +1,13 @@
 pragma solidity >= 0.6.0;
 
 struct Hasher {
-    function (uint, uint) internal pure returns (uint) parentOf;
-    uint[] preHashedZero;
+    function (uint256, uint256) internal pure returns (uint256) parentOf;
+    uint256[] preHashedZero;
 }
 
 struct Tree {
-    uint root;
-    uint index;
+    uint256 root;
+    uint256 index;
 }
 
 struct OPRU {
@@ -20,44 +20,44 @@ struct SplitRollUp {
     Tree start;
     Tree result;
     bytes32 mergedLeaves;
-    uint[] siblings;
+    uint256[] siblings;
 }
 
 library RollUpLib {
     function rollUp(
         Hasher memory self,
-        uint startingRoot,
-        uint index,
-        uint[] memory leaves,
-        uint[] memory initialSiblings
-    ) internal pure returns (uint newRoot) {
+        uint256 startingRoot,
+        uint256 index,
+        uint256[] memory leaves,
+        uint256[] memory initialSiblings
+    ) internal pure returns (uint256 newRoot) {
         require(_startingLeafProof(self, startingRoot, index, initialSiblings), "Invalid merkle proof of starting leaf node");
-        uint nextIndex = index;
-        uint[] memory nextSiblings = initialSiblings;
-        for(uint i = 0; i < leaves.length; i++) {
+        uint256 nextIndex = index;
+        uint256[] memory nextSiblings = initialSiblings;
+        for(uint256 i = 0; i < leaves.length; i++) {
             (newRoot, nextIndex, nextSiblings) = _append(self, nextIndex, leaves[i], nextSiblings);
         }
     }
 
     function merkleProof(
         Hasher memory self,
-        uint root,
-        uint leaf,
-        uint index,
-        uint[] memory siblings
+        uint256 root,
+        uint256 leaf,
+        uint256 index,
+        uint256[] memory siblings
     ) internal pure returns (bool) {
         return merkleRoot(self, leaf, index, siblings) == root;
     }
 
     function merkleRoot(
         Hasher memory self,
-        uint leaf,
-        uint index,
-        uint[] memory siblings
-    ) internal pure returns (uint) {
-        uint path = index;
-        uint node = leaf;
-        for(uint i = 0; i < siblings.length; i++) {
+        uint256 leaf,
+        uint256 index,
+        uint256[] memory siblings
+    ) internal pure returns (uint256) {
+        uint256 path = index;
+        uint256 node = leaf;
+        for(uint256 i = 0; i < siblings.length; i++) {
             if(path & 1 == 0) {
                 // right sibling
                 node = self.parentOf(node, siblings[i]);
@@ -79,10 +79,10 @@ library RollUpLib {
     }
 
     function newOPRU(
-        uint startingRoot,
-        uint startingIndex,
-        uint resultRoot,
-        uint[] memory leaves
+        uint256 startingRoot,
+        uint256 startingIndex,
+        uint256 resultRoot,
+        uint256[] memory leaves
     ) internal pure returns (OPRU memory opru) {
         opru.start.root = startingRoot;
         opru.start.index = startingIndex;
@@ -92,8 +92,8 @@ library RollUpLib {
     }
 
     function newSplitRollUp(
-        uint startingRoot,
-        uint index
+        uint256 startingRoot,
+        uint256 index
     ) internal pure returns (SplitRollUp memory splitRollUp) {
         splitRollUp.start.root = startingRoot;
         splitRollUp.result.root = startingRoot;
@@ -105,8 +105,8 @@ library RollUpLib {
 
     function init(
         SplitRollUp storage self,
-        uint startingRoot,
-        uint index
+        uint256 startingRoot,
+        uint256 index
     ) internal {
         self.start.root = startingRoot;
         self.result.root = startingRoot;
@@ -125,9 +125,9 @@ library RollUpLib {
     function initWithSiblings(
         SplitRollUp storage self,
         Hasher memory hasher,
-        uint startingRoot,
-        uint index,
-        uint[] memory initialSiblings
+        uint256 startingRoot,
+        uint256 index,
+        uint256[] memory initialSiblings
     ) internal {
         require(_startingLeafProof(hasher, startingRoot, index, initialSiblings), "Invalid merkle proof of the starting leaf node");
         self.start.root = startingRoot;
@@ -147,8 +147,8 @@ library RollUpLib {
     function update(
         SplitRollUp storage self,
         Hasher memory hasher,
-        uint[] memory initialSiblings,
-        uint[] memory leaves
+        uint256[] memory initialSiblings,
+        uint256[] memory leaves
     ) internal {
         self.result.root = rollUp(hasher, self.result.root, self.result.index, initialSiblings, leaves);
         self.result.index += leaves.length;
@@ -165,23 +165,23 @@ library RollUpLib {
     function update(
         SplitRollUp storage self,
         Hasher memory hasher,
-        uint[] memory leaves
+        uint256[] memory leaves
     ) internal {
         require(
             self.siblings.length != 0,
             "The on-chain siblings are not initialized"
         );
-        uint nextIndex = self.result.index;
-        uint[] memory nextSiblings = self.siblings;
-        uint newRoot;
-        for(uint i = 0; i < leaves.length; i++) {
+        uint256 nextIndex = self.result.index;
+        uint256[] memory nextSiblings = self.siblings;
+        uint256 newRoot;
+        for(uint256 i = 0; i < leaves.length; i++) {
             (newRoot, nextIndex, nextSiblings) = _append(hasher, nextIndex, leaves[i], nextSiblings);
         }
         bytes32 mergedLeaves = merge(self.mergedLeaves, leaves);
         self.result.root = newRoot;
         self.result.index = nextIndex;
         self.mergedLeaves = mergedLeaves;
-        for(uint i = 0; i < nextSiblings.length; i++) {
+        for(uint256 i = 0; i < nextSiblings.length; i++) {
             self.siblings[i] = nextSiblings[i];
         }
     }
@@ -206,9 +206,9 @@ library RollUpLib {
      *      and that will be used to validate the correct sequence of the total
      *      appended leaves through multiple transactions.
      */
-    function merge(bytes32 base, uint[] memory leaves) internal pure returns (bytes32) {
+    function merge(bytes32 base, uint256[] memory leaves) internal pure returns (bytes32) {
         bytes32 merged = base;
-        for(uint i = 0; i < leaves.length; i ++) {
+        for(uint256 i = 0; i < leaves.length; i ++) {
             merged = keccak256(abi.encodePacked(merged, leaves[i]));
         }
         return merged;
@@ -216,7 +216,7 @@ library RollUpLib {
 
     function merge(bytes32 base, bytes32[] memory leaves) internal pure returns (bytes32) {
         bytes32 merged = base;
-        for(uint i = 0; i < leaves.length; i ++) {
+        for(uint256 i = 0; i < leaves.length; i ++) {
             merged = keccak256(abi.encodePacked(merged, leaves[i]));
         }
         return merged;
@@ -224,12 +224,12 @@ library RollUpLib {
 
     function _startingLeafProof(
         Hasher memory self,
-        uint root,
-        uint index,
-        uint[] memory siblings
+        uint256 root,
+        uint256 index,
+        uint256[] memory siblings
     ) internal pure returns (bool) {
-        uint path = index;
-        for(uint i = 0; i < siblings.length; i++) {
+        uint256 path = index;
+        for(uint256 i = 0; i < siblings.length; i++) {
             if(path & 1 == 0) {
                 // Right sibling should be a prehashed zero
                 if(siblings[i] != self.preHashedZero[i]) return false;
@@ -244,18 +244,18 @@ library RollUpLib {
 
     function _append(
         Hasher memory self,
-        uint index,
-        uint leaf,
-        uint[] memory siblings
+        uint256 index,
+        uint256 leaf,
+        uint256[] memory siblings
     ) internal pure returns(
-        uint nextRoot,
-        uint nextIndex,
-        uint[] memory nextSiblings
+        uint256 nextRoot,
+        uint256 nextIndex,
+        uint256[] memory nextSiblings
     ) {
-        nextSiblings = new uint[](siblings.length);
-        uint path = index;
-        uint node = leaf;
-        for(uint level = 0; level < siblings.length; level++) {
+        nextSiblings = new uint256[](siblings.length);
+        uint256 path = index;
+        uint256 node = leaf;
+        for(uint256 level = 0; level < siblings.length; level++) {
             if(path & 1 == 0) {
                 // right empty sibling
                 nextSiblings[level] = node; // current node will be the next merkle proof's left sibling
@@ -278,18 +278,18 @@ library SubTreeRollUpLib {
 
     function rollUpSubTree(
         Hasher memory self,
-        uint startingRoot,
-        uint index,
-        uint subTreeDepth,
-        uint[] memory leaves,
-        uint[] memory subTreeSiblings
-    ) internal pure returns (uint newRoot) {
+        uint256 startingRoot,
+        uint256 index,
+        uint256 subTreeDepth,
+        uint256[] memory leaves,
+        uint256[] memory subTreeSiblings
+    ) internal pure returns (uint256 newRoot) {
         require(index % (1 << subTreeDepth) == 0, "Can't merge a subTree");
         require(_emptySubTreeProof(self, startingRoot, index, subTreeDepth, subTreeSiblings), "Can't merge a sub tree");
-        uint nextIndex = index;
-        uint[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
-        uint[] memory nextSiblings = subTreeSiblings;
-        for(uint i = 0; i < subTrees.length; i++) {
+        uint256 nextIndex = index;
+        uint256[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
+        uint256[] memory nextSiblings = subTreeSiblings;
+        for(uint256 i = 0; i < subTrees.length; i++) {
             (newRoot, nextIndex, nextSiblings) = _appendSubTree(
                 self,
                 nextIndex,
@@ -301,25 +301,25 @@ library SubTreeRollUpLib {
     }
 
     function newSubTreeOPRU(
-        uint startingRoot,
-        uint startingIndex,
-        uint resultRoot,
-        uint subTreeDepth,
-        uint[] memory leaves
+        uint256 startingRoot,
+        uint256 startingIndex,
+        uint256 resultRoot,
+        uint256 subTreeDepth,
+        uint256[] memory leaves
     ) internal pure returns (OPRU memory opru) {
-        uint subTreeSize = 1 << subTreeDepth;
+        uint256 subTreeSize = 1 << subTreeDepth;
         opru.start.root = startingRoot;
         opru.start.index = startingIndex;
         opru.result.root = resultRoot;
         opru.result.index = startingIndex + subTreeSize*((leaves.length / subTreeSize) + (leaves.length % subTreeSize == 0 ? 0 : 1));
-        uint[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
+        uint256[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
         opru.mergedLeaves = merge(bytes32(0), subTrees);
     }
 
     function init(
         SplitRollUp storage self,
-        uint startingRoot,
-        uint index
+        uint256 startingRoot,
+        uint256 index
     ) internal {
         self.start.root = startingRoot;
         self.result.root = startingRoot;
@@ -335,10 +335,10 @@ library SubTreeRollUpLib {
     function initWithSiblings(
         SplitRollUp storage self,
         Hasher memory hasher,
-        uint startingRoot,
-        uint index,
-        uint subTreeDepth,
-        uint[] memory subTreeSiblings
+        uint256 startingRoot,
+        uint256 index,
+        uint256 subTreeDepth,
+        uint256[] memory subTreeSiblings
     ) internal {
         require(_emptySubTreeProof(hasher, startingRoot, index, subTreeDepth, subTreeSiblings), "Can't merge a subTree");
         self.start.root = startingRoot;
@@ -358,9 +358,9 @@ library SubTreeRollUpLib {
     function update(
         SplitRollUp storage self,
         Hasher memory hasher,
-        uint subTreeDepth,
-        uint[] memory subTreeSiblings,
-        uint[] memory leaves
+        uint256 subTreeDepth,
+        uint256[] memory subTreeSiblings,
+        uint256[] memory leaves
     ) internal {
         require(
             _emptySubTreeProof(
@@ -372,11 +372,11 @@ library SubTreeRollUpLib {
             ),
             "Can't merge a subTree"
         );
-        uint[] memory nextSiblings = subTreeSiblings;
-        uint nextIndex = self.result.index;
-        uint[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
-        uint newRoot;
-        for(uint i = 0; i < subTrees.length; i++) {
+        uint256[] memory nextSiblings = subTreeSiblings;
+        uint256 nextIndex = self.result.index;
+        uint256[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
+        uint256 newRoot;
+        for(uint256 i = 0; i < subTrees.length; i++) {
             (newRoot, nextIndex, nextSiblings) = _appendSubTree(
                 hasher,
                 nextIndex,
@@ -400,14 +400,14 @@ library SubTreeRollUpLib {
     function update(
         SplitRollUp storage self,
         Hasher memory hasher,
-        uint subTreeDepth,
-        uint[] memory leaves
+        uint256 subTreeDepth,
+        uint256[] memory leaves
     ) internal {
-        uint nextIndex = self.result.index;
-        uint[] memory nextSiblings = self.siblings;
-        uint[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
-        uint newRoot;
-        for(uint i = 0; i < subTrees.length; i++) {
+        uint256 nextIndex = self.result.index;
+        uint256[] memory nextSiblings = self.siblings;
+        uint256[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
+        uint256 newRoot;
+        for(uint256 i = 0; i < subTrees.length; i++) {
             (newRoot, nextIndex, nextSiblings) = _appendSubTree(
                 hasher,
                 nextIndex,
@@ -419,24 +419,24 @@ library SubTreeRollUpLib {
         self.result.root = newRoot;
         self.result.index = nextIndex;
         self.mergedLeaves = merge(self.mergedLeaves, subTrees);
-        for(uint i = 0; i < nextSiblings.length; i++) {
+        for(uint256 i = 0; i < nextSiblings.length; i++) {
             self.siblings[i] = nextSiblings[i];
         }
     }
 
     function splitToSubTrees(
-        uint[] memory leaves,
-        uint subTreeDepth
-    ) internal pure returns (uint[][] memory subTrees) {
-        uint subTreeSize = 1 << subTreeDepth;
-        uint numOfSubTrees = (leaves.length / subTreeSize) + (leaves.length % subTreeSize == 0 ? 0 : 1);
-        subTrees = new uint[][](numOfSubTrees);
-        for (uint i = 0; i < numOfSubTrees; i++) {
-            subTrees[i] = new uint[](subTreeSize);
+        uint256[] memory leaves,
+        uint256 subTreeDepth
+    ) internal pure returns (uint256[][] memory subTrees) {
+        uint256 subTreeSize = 1 << subTreeDepth;
+        uint256 numOfSubTrees = (leaves.length / subTreeSize) + (leaves.length % subTreeSize == 0 ? 0 : 1);
+        subTrees = new uint256[][](numOfSubTrees);
+        for (uint256 i = 0; i < numOfSubTrees; i++) {
+            subTrees[i] = new uint256[](subTreeSize);
         }
-        uint index = 0;
-        uint subTreeIndex = 0;
-        for(uint i = 0; i < leaves.length; i++) {
+        uint256 index = 0;
+        uint256 subTreeIndex = 0;
+        for(uint256 i = 0; i < leaves.length; i++) {
             subTrees[subTreeIndex][index] = leaves[i];
             if(index < subTreeSize - 1) {
                 index += 1;
@@ -454,28 +454,28 @@ library SubTreeRollUpLib {
         return RollUpLib.verify(self, opru);
     }
 
-    function merge(bytes32 base, uint subTreeDepth, bytes32[] memory leaves) internal pure returns (bytes32) {
-        uint[] memory uintLeaves;
+    function merge(bytes32 base, uint256 subTreeDepth, bytes32[] memory leaves) internal pure returns (bytes32) {
+        uint256[] memory uintLeaves;
         assembly {
             uintLeaves := leaves
         }
         return merge(base, subTreeDepth, uintLeaves);
     }
 
-    function merge(bytes32 base, uint subTreeDepth, uint[] memory leaves) internal pure returns (bytes32) {
-        uint[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
+    function merge(bytes32 base, uint256 subTreeDepth, uint256[] memory leaves) internal pure returns (bytes32) {
+        uint256[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
         return merge(base, subTrees);
     }
 
-    function merge(bytes32 base, uint[][] memory subTrees) internal pure returns (bytes32) {
+    function merge(bytes32 base, uint256[][] memory subTrees) internal pure returns (bytes32) {
         bytes32[] memory subTreeHashes = new bytes32[](subTrees.length);
-        for(uint i = 0; i < subTrees.length; i++) {
+        for(uint256 i = 0; i < subTrees.length; i++) {
             subTreeHashes[i] = keccak256(abi.encodePacked(subTrees[i]));
         }
         return RollUpLib.merge(base, subTreeHashes);
     }
 
-    function mergeResult(uint[] memory leaves, uint subTreeDepth) internal pure returns (
+    function mergeResult(uint256[] memory leaves, uint256 subTreeDepth) internal pure returns (
         bytes32 mergedAsIndividuals,
         bytes32 mergedAsSubTrees
     )
@@ -492,14 +492,14 @@ library SubTreeRollUpLib {
      */
     function _emptySubTreeProof(
         Hasher memory self,
-        uint root,
-        uint index,
-        uint subTreeDepth,
-        uint[] memory siblings
+        uint256 root,
+        uint256 index,
+        uint256 subTreeDepth,
+        uint256[] memory siblings
     ) internal pure returns (bool) {
-        uint subTreePath = index >> subTreeDepth;
-        uint path = subTreePath;
-        for(uint i = 0; i < siblings.length; i++) {
+        uint256 subTreePath = index >> subTreeDepth;
+        uint256 path = subTreePath;
+        for(uint256 i = 0; i < siblings.length; i++) {
             if(path & 1 == 0) {
                 // Right sibling should be a prehashed zero
                 if(siblings[i] != self.preHashedZero[i + subTreeDepth]) return false;
@@ -514,20 +514,20 @@ library SubTreeRollUpLib {
 
     function _appendSubTree(
         Hasher memory self,
-        uint index,
-        uint subTreeDepth,
-        uint[] memory subTreeHashes,
-        uint[] memory siblings
+        uint256 index,
+        uint256 subTreeDepth,
+        uint256[] memory subTreeHashes,
+        uint256[] memory siblings
     ) internal pure returns(
-        uint nextRoot,
-        uint nextIndex,
-        uint[] memory nextSiblings
+        uint256 nextRoot,
+        uint256 nextIndex,
+        uint256[] memory nextSiblings
     ) {
-        nextSiblings = new uint[](siblings.length);
-        uint subTreePath = index >> subTreeDepth;
-        uint path = subTreePath;
-        uint node = _subTreeRoot(self, subTreeDepth, subTreeHashes);
-        for (uint i = 0; i < siblings.length; i++) {
+        nextSiblings = new uint256[](siblings.length);
+        uint256 subTreePath = index >> subTreeDepth;
+        uint256 path = subTreePath;
+        uint256 node = _subTreeRoot(self, subTreeDepth, subTreeHashes);
+        for (uint256 i = 0; i < siblings.length; i++) {
             if (path & 1 == 0) {
                 // right empty sibling
                 nextSiblings[i] = node; // current node will be the next merkle proof's left sibling
@@ -545,9 +545,9 @@ library SubTreeRollUpLib {
 
     function _subTreeRoot(
         Hasher memory self,
-        uint subTreeDepth,
-        uint[] memory leaves
-    ) internal pure returns (uint) {
+        uint256 subTreeDepth,
+        uint256[] memory leaves
+    ) internal pure returns (uint256) {
         /// Example of a sub tree with depth 3
         ///                      1
         ///          10                       11
@@ -565,18 +565,18 @@ library SubTreeRollUpLib {
         /// * (11 << 2) is less than (1101) => we cannot use pre hashed zeroes
         /// * (1 << 3) is less than (1101) => we cannot use pre hashed zeroes
 
-        uint treeSize = 1 << subTreeDepth;
+        uint256 treeSize = 1 << subTreeDepth;
         require(leaves.length <= treeSize, "Overflowed");
 
-        uint[] memory nodes = new uint[](treeSize << 1); /// we'll not use nodes[0]
-        uint emptyNode = treeSize + (leaves.length - 1); /// we do not hash if we can use pre hashed zeroes
-        uint leftMostOfTheFloor = treeSize;
+        uint256[] memory nodes = new uint256[](treeSize << 1); /// we'll not use nodes[0]
+        uint256 emptyNode = treeSize + (leaves.length - 1); /// we do not hash if we can use pre hashed zeroes
+        uint256 leftMostOfTheFloor = treeSize;
 
         /// From the bottom to the top
-        for(uint level = 0; level <= subTreeDepth; level++) {
+        for(uint256 level = 0; level <= subTreeDepth; level++) {
             /// From the right to the left
             for(
-                uint nodeIndex = (treeSize << 1) - 1;
+                uint256 nodeIndex = (treeSize << 1) - 1;
                 nodeIndex >= leftMostOfTheFloor;
                 nodeIndex--
             )
@@ -588,8 +588,8 @@ library SubTreeRollUpLib {
                         nodes[nodeIndex] = leaves[nodeIndex - treeSize];
                     } else {
                         /// Parent node
-                        uint leftChild = nodeIndex << 1;
-                        uint rightChild = leftChild + 1;
+                        uint256 leftChild = nodeIndex << 1;
+                        uint256 rightChild = leftChild + 1;
                         nodes[nodeIndex] = self.parentOf(nodes[leftChild], nodes[rightChild]);
                     }
                 } else {

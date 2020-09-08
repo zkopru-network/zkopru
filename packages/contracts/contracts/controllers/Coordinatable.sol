@@ -21,7 +21,7 @@ contract Coordinatable is Layer2 {
 
     event NewProposal(uint256 proposalNum, bytes32 blockHash);
     event Finalized(bytes32 blockHash);
-    event MassDepositCommit(uint index, bytes32 merged, uint256 fee);
+    event MassDepositCommit(uint256 index, bytes32 merged, uint256 fee);
     event NewErc20(address tokenAddr);
     event NewErc721(address tokenAddr);
 
@@ -108,7 +108,7 @@ contract Coordinatable is Layer2 {
         require(finalization.header.parentBlock != proposal.headerHash, "Reentrancy case");
 
         /// Execute deposits and collect fees
-        for (uint i = 0; i < finalization.massDeposits.length; i++) {
+        for (uint256 i = 0; i < finalization.massDeposits.length; i++) {
             MassDeposit memory deposit = finalization.massDeposits[i];
             bytes32 massDepositHash = deposit.hash();
             require(Layer2.chain.committedDeposits[massDepositHash] > 0, "MassDeposit does not exist.");
@@ -117,7 +117,7 @@ contract Coordinatable is Layer2 {
 
         /// Record mass migrations and collect fees.
         /// A MassMigration becomes a MassDeposit for the migration destination.
-        for (uint i = 0; i < finalization.massMigrations.length; i++) {
+        for (uint256 i = 0; i < finalization.massMigrations.length; i++) {
             bytes32 migrationId = keccak256(
                 abi.encodePacked(
                     finalization.proposalChecksum,
@@ -140,7 +140,7 @@ contract Coordinatable is Layer2 {
         delete Layer2.chain.proposals[finalization.proposalChecksum];
     }
 
-    function withdrawReward(uint amount) public {
+    function withdrawReward(uint256 amount) public {
         address payable proposerAddr = msg.sender;
         Proposer storage proposer = Layer2.chain.proposers[proposerAddr];
         require(proposer.reward >= amount, "You can't withdraw more than you have");

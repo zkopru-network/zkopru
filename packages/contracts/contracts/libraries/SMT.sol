@@ -52,7 +52,7 @@ library SMT254 {
         bytes32[254] memory siblings
     ) internal pure returns (bytes32) {
         bytes32 cursor = value;
-        uint path = uint(leaf);
+        uint256 path = uint256(leaf);
         for (uint16 i = 0; i < siblings.length; i++) {
             if (path % 2 == 0) {
                 // Right sibling
@@ -85,7 +85,7 @@ library SMT254 {
         // Start from the root
         bytes32 root = proof.root;
         // Update the root using append function
-        for (uint i = 0; i < proof.leaves.length; i ++) {
+        for (uint256 i = 0; i < proof.leaves.length; i ++) {
             root = append(root, proof.leaves[i], proof.siblings[i]);
         }
         return root;
@@ -139,7 +139,7 @@ library SMT254 {
         bytes32[] memory leaves
     ) internal pure returns (bytes32 mergedLeaves) {
         mergedLeaves = base;
-        for(uint i = 0; i < leaves.length; i++) {
+        for(uint256 i = 0; i < leaves.length; i++) {
             mergedLeaves = keccak256(abi.encodePacked(mergedLeaves, leaves[i]));
         }
     }

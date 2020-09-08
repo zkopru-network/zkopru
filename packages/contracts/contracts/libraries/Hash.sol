@@ -55,18 +55,18 @@ library Hash {
      * @dev Costs about 100k gas
      */
     function poseidonParentOf(uint256 left, uint256 right) internal pure returns (uint256) {
-        uint[] memory res = new uint[](2);
+        uint256[] memory res = new uint256[](2);
         res[0] = left;
         res[1] = right;
-        try Poseidon3.poseidon(res) returns (uint val) {
+        try Poseidon3.poseidon(res) returns (uint256 val) {
             return val;
         } catch {
             revert("poseidon hash error");
         }
     }
 
-    function poseidonPrehashedZeroes() internal pure returns (uint[] memory preHashed) {
-        preHashed = new uint[](49);
+    function poseidonPrehashedZeroes() internal pure returns (uint256[] memory preHashed) {
+        preHashed = new uint256[](49);
         preHashed[0] = 0;
         preHashed[1] = 10689077478637458878468078122604177599994736273794278078801473125437253970618;
         preHashed[2] = 17576059999322049606061839691393135290055001173295133652835316817738723155723;
@@ -122,12 +122,12 @@ library Hash {
         return Hasher(keccakParentOf, keccakPrehashedZeroes());
     }
 
-    function keccakParentOf(uint left, uint right) internal pure returns (uint) {
-        return uint(keccak256(abi.encodePacked(left, right)));
+    function keccakParentOf(uint256 left, uint256 right) internal pure returns (uint256) {
+        return uint256(keccak256(abi.encodePacked(left, right)));
     }
 
-    function keccakPrehashedZeroes() internal pure returns (uint[] memory preHashed) {
-        preHashed = new uint[](49);
+    function keccakPrehashedZeroes() internal pure returns (uint256[] memory preHashed) {
+        preHashed = new uint256[](49);
         preHashed[0] = 0x0000000000000000000000000000000000000000000000000000000000000000;
         preHashed[1] = 0xad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5;
         preHashed[2] = 0xb4c11951957c6f8f642c4af61cd6b24640fec6dc7fc607ee8206a99e92410d30;
@@ -186,18 +186,18 @@ library Hash {
         return Hasher(mimcParentOf, mimcPrehashedZeroes());
     }
 
-    function mimcHash(uint[] memory inputs) internal pure returns (uint) {
+    function mimcHash(uint256[] memory inputs) internal pure returns (uint256) {
         uint256 R = 0;
         uint256 C = 0;
 
-        for (uint i = 0; i < inputs.length; i++) {
+        for (uint256 i = 0; i < inputs.length; i++) {
             R = addmod(R, inputs[i], k);
             (R, C) = MiMC.MiMCSponge(R, C, 0);
         }
         return R;
     }
 
-    function mimcParentOf(uint left, uint right) internal pure returns (uint) {
+    function mimcParentOf(uint256 left, uint256 right) internal pure returns (uint256) {
         uint256 R = 0;
         uint256 C = 0;
 
@@ -210,8 +210,8 @@ library Hash {
         return R;
     }
 
-    function mimcPrehashedZeroes() internal pure returns (uint[] memory preHashed) {
-        preHashed = new uint[](32);
+    function mimcPrehashedZeroes() internal pure returns (uint256[] memory preHashed) {
+        preHashed = new uint256[](32);
         preHashed[0] = 0;
         preHashed[1] = 20636625426020718969131298365984859231982649550971729229988535915544421356929;
         preHashed[2] = 8234632431858659206959486870703726442454087730228411315786216865106603625166;

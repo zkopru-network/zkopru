@@ -27,21 +27,21 @@ library Deserializer {
      *      https://docs.zkopru.network/how-it-works/block
      * @param paramIndex The index of the block calldata parameter in the external function
      */
-    function blockFromCalldataAt(uint paramIndex)
+    function blockFromCalldataAt(uint256 paramIndex)
     internal
     pure
     returns (Block memory)
     {
         // 4 means the length of the function signature in the calldata
-        uint start = 4 + abi.decode(msg.data[4 + 32*paramIndex:4 + 32*(paramIndex+1)], (uint));
-        uint cp = start + 0x20; //calldata position
+        uint256 start = 4 + abi.decode(msg.data[4 + 32*paramIndex:4 + 32*(paramIndex+1)], (uint256));
+        uint256 cp = start + 0x20; //calldata position
         Block memory _block;
         (_block.header, cp) = dequeueHeader(cp);
         (_block.body.txs, cp) = dequeueTxs(cp);
         (_block.body.massDeposits, cp) = dequeueMassDeposits(cp);
         (_block.body.massMigrations, cp) = dequeueMassMigrations(cp);
         // get data length from the calldata
-        uint dataLen;
+        uint256 dataLen;
         assembly {
             let p := mload(0x40)
             calldatacopy(p, start, 0x20)
@@ -55,9 +55,9 @@ library Deserializer {
         return _block;
     }
 
-    function dequeueHeader(uint calldataPos) internal pure returns (
+    function dequeueHeader(uint256 calldataPos) internal pure returns (
         Header memory header,
-        uint end
+        uint256 end
     ) {
         assembly {
             // Header
@@ -67,12 +67,12 @@ library Deserializer {
         end = calldataPos + 0x174;
     }
 
-    function dequeueTxs(uint calldataPos) internal pure returns (
+    function dequeueTxs(uint256 calldataPos) internal pure returns (
         Transaction[] memory txs,
-        uint end
+        uint256 end
     ) {
-        uint cp = calldataPos;
-        uint txsLen;
+        uint256 cp = calldataPos;
+        uint256 txsLen;
         assembly {            
             // load free memory
             let free_mem := mload(0x40)
@@ -83,17 +83,17 @@ library Deserializer {
             mstore(0x40, add(free_mem, 0x20))
         }
         txs = new Transaction[](txsLen);
-        for (uint i = 0; i < txsLen; i++) {
+        for (uint256 i = 0; i < txsLen; i++) {
             (txs[i], cp) = dequeueTx(cp);
         }
         end = cp;
     }
 
-    function dequeueTx(uint calldataPos) internal pure returns (
+    function dequeueTx(uint256 calldataPos) internal pure returns (
         Transaction memory transaction,
-        uint end
+        uint256 end
     ) {
-        uint cp = calldataPos;
+        uint256 cp = calldataPos;
         uint8 indicator;
         (transaction.inflow, cp) = dequeueInflowArr(cp);
         (transaction.outflow, cp) = dequeueOutflowArr(cp);
@@ -111,12 +111,12 @@ library Deserializer {
         end = cp;
     }
 
-    function dequeueInflowArr(uint calldataPos) internal pure returns (
+    function dequeueInflowArr(uint256 calldataPos) internal pure returns (
         Inflow[] memory inflow,
-        uint end
+        uint256 end
     ) {
-        uint cp = calldataPos;
-        uint inflowLen;
+        uint256 cp = calldataPos;
+        uint256 inflowLen;
         assembly {            
             // load free memory
             let free_mem := mload(0x40)
@@ -127,15 +127,15 @@ library Deserializer {
             mstore(0x40, add(free_mem, 0x20))
         }
         inflow = new Inflow[](inflowLen);
-        for (uint i = 0; i < inflowLen; i++) {
+        for (uint256 i = 0; i < inflowLen; i++) {
             (inflow[i], cp) = dequeueInflow(cp);
         }
         end = cp;
     }
 
-    function dequeueInflow(uint calldataPos) internal pure returns (
+    function dequeueInflow(uint256 calldataPos) internal pure returns (
         Inflow memory inflow,
-        uint end
+        uint256 end
     ) {
         assembly {            
             calldatacopy(inflow, calldataPos, 0x40)
@@ -143,12 +143,12 @@ library Deserializer {
         }
     }
 
-    function dequeueOutflowArr(uint calldataPos) internal pure returns (
+    function dequeueOutflowArr(uint256 calldataPos) internal pure returns (
         Outflow[] memory outflow,
-        uint end
+        uint256 end
     ) {
-        uint cp = calldataPos;
-        uint outflowLen;
+        uint256 cp = calldataPos;
+        uint256 outflowLen;
         assembly {            
             // load free memory
             let free_mem := mload(0x40)
@@ -159,17 +159,17 @@ library Deserializer {
             mstore(0x40, add(free_mem, 0x20))
         }
         outflow = new Outflow[](outflowLen);
-        for (uint i = 0; i < outflowLen; i++) {
+        for (uint256 i = 0; i < outflowLen; i++) {
             (outflow[i], cp) = dequeueOutflow(cp);
         }
         end = cp;
     }
 
-    function dequeueOutflow(uint calldataPos) internal pure returns (
+    function dequeueOutflow(uint256 calldataPos) internal pure returns (
         Outflow memory outflow,
-        uint end
+        uint256 end
     ) {
-        uint cp = calldataPos;
+        uint256 cp = calldataPos;
         assembly {        
             // Outflow.note
             calldatacopy(outflow, cp, 0x20)
@@ -205,9 +205,9 @@ library Deserializer {
         end = cp;
     }
     
-    function dequeueUint(uint calldataPos) internal pure returns (
-        uint val,
-        uint end
+    function dequeueUint(uint256 calldataPos) internal pure returns (
+        uint256 val,
+        uint256 end
     ) {
         assembly {            
             // load free memory
@@ -219,9 +219,9 @@ library Deserializer {
         }
     }
 
-    function dequeueBytes32(uint calldataPos) internal pure returns (
+    function dequeueBytes32(uint256 calldataPos) internal pure returns (
         bytes32 val,
-        uint end
+        uint256 end
     ) {
         assembly {            
             // load free memory
@@ -233,9 +233,9 @@ library Deserializer {
         }
     }
 
-    function dequeueByte(uint calldataPos) internal pure returns (
+    function dequeueByte(uint256 calldataPos) internal pure returns (
         uint8 val,
-        uint end
+        uint256 end
     ) {
         assembly {            
             // load free memory
@@ -248,9 +248,9 @@ library Deserializer {
         }
     }
 
-    function dequeueG1Point(uint calldataPos) internal pure returns (
+    function dequeueG1Point(uint256 calldataPos) internal pure returns (
         G1Point memory point,
-        uint end
+        uint256 end
     ) {
         assembly {
             calldatacopy(point, calldataPos, 0x40)
@@ -258,9 +258,9 @@ library Deserializer {
         }
     }
     
-    function dequeueUint2Arr(uint calldataPos) internal pure returns (
-        uint[2] memory arr,
-        uint end
+    function dequeueUint2Arr(uint256 calldataPos) internal pure returns (
+        uint256[2] memory arr,
+        uint256 end
     ) {
         assembly {
             calldatacopy(arr, calldataPos, 0x40)
@@ -268,30 +268,30 @@ library Deserializer {
         }
     }
 
-    function dequeueG2Point(uint calldataPos) internal pure returns (
+    function dequeueG2Point(uint256 calldataPos) internal pure returns (
         G2Point memory point,
-        uint end
+        uint256 end
     ) {
-        uint cp = calldataPos;
+        uint256 cp = calldataPos;
         (point.X, cp) = dequeueUint2Arr(cp);
         (point.Y, cp) = dequeueUint2Arr(cp);
         end = cp;
     }
 
-    function dequeueProof(uint calldataPos) internal pure returns (
+    function dequeueProof(uint256 calldataPos) internal pure returns (
         Proof memory proof,
-        uint end
+        uint256 end
     ) {
-        uint cp = calldataPos;
+        uint256 cp = calldataPos;
         (proof.a, cp) = dequeueG1Point(cp);
         (proof.b, cp) = dequeueG2Point(cp);
         (proof.c, cp) = dequeueG1Point(cp);
         end = cp;
     }
     
-    function dequeueMemo(uint calldataPos) internal pure returns (
+    function dequeueMemo(uint256 calldataPos) internal pure returns (
         bytes memory memo,
-        uint end
+        uint256 end
     ) {
         assembly {
             let free_mem := mload(0x40)
@@ -303,12 +303,12 @@ library Deserializer {
         }
     }
     
-    function dequeueMassDeposits(uint calldataPos) internal pure returns (
+    function dequeueMassDeposits(uint256 calldataPos) internal pure returns (
         MassDeposit[] memory massDeposits,
-        uint end
+        uint256 end
     ) {
-        uint cp = calldataPos;
-        uint len;
+        uint256 cp = calldataPos;
+        uint256 len;
         assembly {            
             // load free memory
             let free_mem := mload(0x40)
@@ -319,15 +319,15 @@ library Deserializer {
             mstore(0x40, add(free_mem, 0x20))
         }
         massDeposits = new MassDeposit[](len);
-        for (uint i = 0; i < len; i++) {
+        for (uint256 i = 0; i < len; i++) {
             (massDeposits[i], cp) = dequeueMassDeposit(cp);
         }
         end = cp;
     }
     
-    function dequeueMassDeposit(uint calldataPos) internal pure returns (
+    function dequeueMassDeposit(uint256 calldataPos) internal pure returns (
         MassDeposit memory massDeposit,
-        uint end
+        uint256 end
     ) {
         assembly {            
             calldatacopy(massDeposit, calldataPos, 0x40)
@@ -335,12 +335,12 @@ library Deserializer {
         }
     }
 
-    function dequeueMassMigrations(uint calldataPos) internal pure returns (
+    function dequeueMassMigrations(uint256 calldataPos) internal pure returns (
         MassMigration[] memory massMigrations,
-        uint end
+        uint256 end
     ) {
-        uint cp = calldataPos;
-        uint len;
+        uint256 cp = calldataPos;
+        uint256 len;
         assembly {            
             // load free memory
             let free_mem := mload(0x40)
@@ -351,17 +351,17 @@ library Deserializer {
             mstore(0x40, add(free_mem, 0x20))
         }
         massMigrations = new MassMigration[](len);
-        for (uint i = 0; i < len; i++) {
+        for (uint256 i = 0; i < len; i++) {
             (massMigrations[i], cp) = dequeueMassMigration(cp);
         }
         end = cp;
     }
     
-    function dequeueMassMigration(uint calldataPos) internal pure returns (
+    function dequeueMassMigration(uint256 calldataPos) internal pure returns (
         MassMigration memory migration,
-        uint end
+        uint256 end
     ) {
-        uint cp = calldataPos;
+        uint256 cp = calldataPos;
         (migration.destination, cp) = dequeueAddress(cp);
         (migration.totalETH, cp) = dequeueUint(cp);
         (migration.migratingLeaves, cp) = dequeueMassDeposit(cp);
@@ -370,9 +370,9 @@ library Deserializer {
         end = cp;
     }
 
-    function dequeueAddress(uint calldataPos) internal pure returns (
+    function dequeueAddress(uint256 calldataPos) internal pure returns (
         address val,
-        uint end
+        uint256 end
     ) {
         assembly {            
             // load free memory
@@ -385,12 +385,12 @@ library Deserializer {
         }
     }
 
-    function dequeueERC20Migrations(uint calldataPos) internal pure returns (
+    function dequeueERC20Migrations(uint256 calldataPos) internal pure returns (
         ERC20Migration[] memory erc20,
-        uint end
+        uint256 end
     ) {
-        uint cp = calldataPos;
-        uint len;
+        uint256 cp = calldataPos;
+        uint256 len;
         assembly {            
             // load free memory
             let free_mem := mload(0x40)
@@ -401,15 +401,15 @@ library Deserializer {
             mstore(0x40, add(free_mem, 0x20))
         }
         erc20 = new ERC20Migration[](len);
-        for (uint i = 0; i < len; i++) {
+        for (uint256 i = 0; i < len; i++) {
             (erc20[i], cp) = dequeueERC20Migration(cp);
         }
         end = cp;
     }
 
-    function dequeueERC20Migration(uint calldataPos) internal pure returns (
+    function dequeueERC20Migration(uint256 calldataPos) internal pure returns (
         ERC20Migration memory migration,
-        uint end
+        uint256 end
     ) {
         assembly {        
             mstore(migration, 0)
@@ -418,12 +418,12 @@ library Deserializer {
         }
     }
     
-    function dequeueERC721Migrations(uint calldataPos) internal pure returns (
+    function dequeueERC721Migrations(uint256 calldataPos) internal pure returns (
         ERC721Migration[] memory erc721,
-        uint end
+        uint256 end
     ) {
-        uint cp = calldataPos;
-        uint len;
+        uint256 cp = calldataPos;
+        uint256 len;
         assembly {            
             // load free memory
             let free_mem := mload(0x40)
@@ -434,28 +434,28 @@ library Deserializer {
             mstore(0x40, add(free_mem, 0x20))
         }
         erc721 = new ERC721Migration[](len);
-        for (uint i = 0; i < len; i++) {
+        for (uint256 i = 0; i < len; i++) {
             (erc721[i], cp) = dequeueERC721Migration(cp);
         }
         end = cp;
     }
     
-    function dequeueERC721Migration(uint calldataPos) internal pure returns (
+    function dequeueERC721Migration(uint256 calldataPos) internal pure returns (
         ERC721Migration memory migration,
-        uint end
+        uint256 end
     ) {
-        uint cp = calldataPos;
+        uint256 cp = calldataPos;
         (migration.addr, cp) = dequeueAddress(cp);
         (migration.nfts, cp) = dequeueNfts(cp);
         end = cp;
     }
     
-    function dequeueNfts(uint calldataPos) internal pure returns (
-        uint[] memory nfts,
-        uint end
+    function dequeueNfts(uint256 calldataPos) internal pure returns (
+        uint256[] memory nfts,
+        uint256 end
     ) {
-        uint cp = calldataPos;
-        uint len;
+        uint256 cp = calldataPos;
+        uint256 len;
         assembly {            
             // load free memory
             let free_mem := mload(0x40)
@@ -472,32 +472,32 @@ library Deserializer {
         end = cp;
     }
 
-    function headerFromCalldataAt(uint paramIndex) internal pure returns (Header memory) {
-        uint start = 4 + abi.decode(msg.data[4 + 32*paramIndex:4 + 32*(paramIndex+1)], (uint));
-        uint cp = start + 0x20; //calldata position
+    function headerFromCalldataAt(uint256 paramIndex) internal pure returns (Header memory) {
+        uint256 start = 4 + abi.decode(msg.data[4 + 32*paramIndex:4 + 32*(paramIndex+1)], (uint256));
+        uint256 cp = start + 0x20; //calldata position
         Header memory _header;
         (_header, cp) = dequeueHeader(cp);
         return _header;
     }
 
-    function massMigrationFromCalldataAt(uint paramIndex) internal pure returns (MassMigration memory) {
-        uint start = 4 + abi.decode(msg.data[4 + 32*paramIndex:4 + 32*(paramIndex+1)], (uint));
-        uint cp = start + 0x20; //calldata position
+    function massMigrationFromCalldataAt(uint256 paramIndex) internal pure returns (MassMigration memory) {
+        uint256 start = 4 + abi.decode(msg.data[4 + 32*paramIndex:4 + 32*(paramIndex+1)], (uint256));
+        uint256 cp = start + 0x20; //calldata position
         MassMigration memory _massMigration;
         (_massMigration, cp) = dequeueMassMigration(cp);
         return _massMigration;
     }
 
-    function finalizationFromCalldataAt(uint paramIndex) internal pure returns (Finalization memory) {
+    function finalizationFromCalldataAt(uint256 paramIndex) internal pure returns (Finalization memory) {
         /// 4 means the length of the function signature in the calldata
-        uint start = 4 + abi.decode(msg.data[4 + 32*paramIndex:4 + 32*(paramIndex+1)], (uint));
-        uint cp = start + 0x20; //calldata position
+        uint256 start = 4 + abi.decode(msg.data[4 + 32*paramIndex:4 + 32*(paramIndex+1)], (uint256));
+        uint256 cp = start + 0x20; //calldata position
         Finalization memory _finalization;
         (_finalization.proposalChecksum, cp) = dequeueBytes32(cp);
         (_finalization.header, cp) = dequeueHeader(cp);
         (_finalization.massDeposits, cp) = dequeueMassDeposits(cp);
         (_finalization.massMigrations, cp) = dequeueMassMigrations(cp);
-        uint dataLen;
+        uint256 dataLen;
         assembly {
             let p := mload(0x40)
             calldatacopy(p, start, 0x20)

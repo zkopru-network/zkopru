@@ -8,14 +8,14 @@ interface ITxChallenge {
      * @param inflowIndex Index of the inflow note in the tx.
      * @param submission The proposal data which is exactly same with the submitted.
      */
-    function challengeInclusion(uint8 txType, uint txIndex, uint inflowIndex, bytes calldata submission) external;
+    function challengeInclusion(uint8 txType, uint256 txIndex, uint256 inflowIndex, bytes calldata submission) external;
 
     /**
      * @dev Challenge when any submitted transaction has an invalid SNARKs proof
      * @param txIndex Index of the transaction in the tx list of the block body.
      * @param submission The proposal data which is exactly same with the submitted.
      */
-    function challengeTransaction(uint txIndex, bytes calldata submission) external;
+    function challengeTransaction(uint256 txIndex, bytes calldata submission) external;
 
     /**
      * @dev Challenge when the block is trying to use an already used nullifier.
@@ -24,7 +24,7 @@ interface ITxChallenge {
      * @param sibling The sibling data of the nullifier.
      * @param submission The proposal data which is exactly same with the submitted.
      */
-    function challengeUsedNullifier(uint txIndex, uint inflowIndex, bytes32[254] calldata sibling, bytes calldata submission) external;
+    function challengeUsedNullifier(uint256 txIndex, uint256 inflowIndex, bytes32[254] calldata sibling, bytes calldata submission) external;
 
     /**
      * @dev Challenge when a nullifier used twice in a same block.

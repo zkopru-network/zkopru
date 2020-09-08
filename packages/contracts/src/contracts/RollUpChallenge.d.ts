@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class RollUpChallenge extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): RollUpChallenge
+
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -140,6 +142,7 @@ export class RollUpChallenge extends Contract {
       blockData: string | number[],
     ): TransactionObject<void>
   }
+
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

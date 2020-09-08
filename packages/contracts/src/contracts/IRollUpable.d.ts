@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class IRollUpable extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): IRollUpable
+
   methods: {
     newProofOfUTXORollUp(
       startingRoot: number | string,
@@ -49,6 +51,7 @@ export class IRollUpable extends Contract {
       leaves: (number | string)[],
     ): TransactionObject<void>
   }
+
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

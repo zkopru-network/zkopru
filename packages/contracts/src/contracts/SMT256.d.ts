@@ -15,12 +15,15 @@ interface EventOptions {
 
 export class SMT256 extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): SMT256
+
   methods: {
     EXIST(): TransactionObject<string>
 
     NON_EXIST(): TransactionObject<string>
   }
+
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
