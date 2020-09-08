@@ -43,38 +43,38 @@ contract Layer2 is Configurated {
     }
 
     function finalizedUTXORoots(bytes32 utxoRoot) public view returns (bool) {
-        return chain.finalizedUTXORoots[uint(utxoRoot)];
+        return chain.finalizedUTXORoots[uint256(utxoRoot)];
     }
 
-    function proposers(address addr) public view returns (uint stake, uint reward, uint exitAllowance) {
+    function proposers(address addr) public view returns (uint256 stake, uint256 reward, uint256 exitAllowance) {
         Proposer memory proposer = chain.proposers[addr];
         stake = proposer.stake;
         reward = proposer.reward;
         exitAllowance = proposer.exitAllowance;
     }
 
-    function proposals(bytes32 proposalId) public view returns (bytes32 header, uint challengeDue, bool slashed) {
+    function proposals(bytes32 proposalId) public view returns (bytes32 header, uint256 challengeDue, bool slashed) {
         Proposal memory proposal = chain.proposals[proposalId];
         header = proposal.headerHash;
         challengeDue = proposal.challengeDue;
         slashed = proposal.slashed;
     }
 
-    function stagedDeposits() public view returns (bytes32 merged, uint fee) {
+    function stagedDeposits() public view returns (bytes32 merged, uint256 fee) {
         MassDeposit memory massDeposit = chain.stagedDeposits;
         merged = massDeposit.merged;
         fee = massDeposit.fee;
     }
 
-    function stagedSize() public view returns (uint) {
+    function stagedSize() public view returns (uint256) {
         return chain.stagedSize;
     }
 
-    function massDepositId() public view returns (uint) {
+    function massDepositId() public view returns (uint256) {
         return chain.massDepositId;
     }
 
-    function committedDeposits(bytes32 massDepositHash) public view returns (uint) {
+    function committedDeposits(bytes32 massDepositHash) public view returns (uint256) {
         return chain.committedDeposits[massDepositHash];
     }
 
@@ -95,11 +95,11 @@ contract Layer2 is Configurated {
     }
 
     function getVk(uint8 numOfInputs, uint8 numOfOutputs) public view returns (
-        uint[2] memory alfa1,
-        uint[2][2] memory beta2,
-        uint[2][2] memory gamma2,
-        uint[2][2] memory delta2,
-        uint[2][] memory ic
+        uint256[2] memory alfa1,
+        uint256[2][2] memory beta2,
+        uint256[2][2] memory gamma2,
+        uint256[2][2] memory delta2,
+        uint256[2][] memory ic
     ) {
         bytes32 txSig = Types.getSNARKsSignature(numOfInputs, numOfOutputs);
         SNARKsVerifier.VerifyingKey memory vk = vks[txSig];
@@ -111,8 +111,8 @@ contract Layer2 is Configurated {
         gamma2[1] = vk.gamma2.Y;
         delta2[0] = vk.delta2.X;
         delta2[1] = vk.delta2.Y;
-        ic = new uint[2][](vk.ic.length);
-        for(uint i = 0; i < vk.ic.length; i++) {
+        ic = new uint256[2][](vk.ic.length);
+        for(uint256 i = 0; i < vk.ic.length; i++) {
             ic[i] = [vk.ic[i].X, vk.ic[i].Y];
         }
     }

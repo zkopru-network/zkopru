@@ -19,7 +19,7 @@ contract NullifierTreeChallenge is Challengeable {
     using Types for Header;
 
     function challengeNullifierRollUp(
-        uint numOfNullifiers,
+        uint256 numOfNullifiers,
         bytes32[254][] calldata siblings,
         bytes calldata, // serialized parent header data
         bytes calldata blockData // serialized block data
@@ -42,7 +42,7 @@ contract NullifierTreeChallenge is Challengeable {
     function _challengeResultOfNullifierRollUp(
         Block memory l2Block,
         Header memory parentHeader,
-        uint numOfNullifiers,
+        uint256 numOfNullifiers,
         bytes32[254][] memory siblings
     )
         internal
@@ -53,10 +53,10 @@ contract NullifierTreeChallenge is Challengeable {
         // Assign a new array
         bytes32[] memory nullifiers = new bytes32[](numOfNullifiers);
         // Get outputs to append
-        uint index = 0;
-        for (uint i = 0; i < l2Block.body.txs.length; i++) {
+        uint256 index = 0;
+        for (uint256 i = 0; i < l2Block.body.txs.length; i++) {
             Transaction memory transaction = l2Block.body.txs[i];
-            for (uint j = 0; j < transaction.inflow.length; j++) {
+            for (uint256 j = 0; j < transaction.inflow.length; j++) {
                 nullifiers[index++] = transaction.inflow[j].nullifier;
             }
         }

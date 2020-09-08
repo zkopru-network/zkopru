@@ -33,14 +33,14 @@ contract WithdrawalTreeChallenge is Challengeable {
     }
 
     function challengeWithdrawalRoot(
-        uint[] calldata initialSiblings,
+        uint256[] calldata initialSiblings,
         bytes calldata, // serialized parent header
         bytes calldata blockData // serialized block data
     ) external {
         bytes32 proposalId = keccak256(blockData);
         Header memory parentHeader = Deserializer.headerFromCalldataAt(1);
         Block memory l2Block = Deserializer.blockFromCalldataAt(2);
-        uint[] memory withdrawals = _getWithdrawals(
+        uint256[] memory withdrawals = _getWithdrawals(
             l2Block.header.withdrawalIndex - parentHeader.withdrawalIndex,
             l2Block.body.txs
         );
@@ -55,15 +55,15 @@ contract WithdrawalTreeChallenge is Challengeable {
 
     /** Computes challenge here */
     function _getWithdrawals(
-        uint numOfWithdrawals,
+        uint256 numOfWithdrawals,
         Transaction[] memory txs
-    ) private pure returns (uint[] memory withdrawals) {
-        withdrawals = new uint[](numOfWithdrawals);
-        uint index = 0;
+    ) private pure returns (uint256[] memory withdrawals) {
+        withdrawals = new uint256[](numOfWithdrawals);
+        uint256 index = 0;
         // Append UTXOs from transactions
-        for (uint i = 0; i < txs.length; i++) {
+        for (uint256 i = 0; i < txs.length; i++) {
             Transaction memory transaction = txs[i];
-            for(uint j = 0; j < transaction.outflow.length; j++) {
+            for(uint256 j = 0; j < transaction.outflow.length; j++) {
                 if(txs[i].outflow[j].outflowType == uint8(OutflowType.Withdrawal)) {
                     withdrawals[index++] = transaction.outflow[j].note;
                 }
@@ -81,10 +81,10 @@ contract WithdrawalTreeChallenge is Challengeable {
         returns (Challenge memory)
     {
         require(l2Block.header.parentBlock == parentHeader.hash(), "Invalid prev header");
-        uint withdrawalLen = 0;
+        uint256 withdrawalLen = 0;
         // Get withdrawals from transactions
-        for (uint i = 0; i < l2Block.body.txs.length; i++) {
-            for(uint j = 0; j < l2Block.body.txs[i].outflow.length; j++) {
+        for (uint256 i = 0; i < l2Block.body.txs.length; i++) {
+            for(uint256 j = 0; j < l2Block.body.txs[i].outflow.length; j++) {
                 if(l2Block.body.txs[i].outflow[j].outflowType == uint8(OutflowType.Withdrawal)) {
                     withdrawalLen += 1;
                 }
@@ -108,8 +108,8 @@ contract WithdrawalTreeChallenge is Challengeable {
     function _challengeResultOfWithdrawalRoot(
         Block memory l2Block,
         Header memory parentHeader,
-        uint[] memory withdrawals,
-        uint[] memory initialSiblings
+        uint256[] memory withdrawals,
+        uint256[] memory initialSiblings
     )
         internal
         pure
@@ -117,7 +117,7 @@ contract WithdrawalTreeChallenge is Challengeable {
     {
         require(l2Block.header.parentBlock == parentHeader.hash(), "Invalid prev header");
         // Check validity of the roll up using the storage based Poseidon sub-tree roll up
-        uint computedRoot = SubTreeRollUpLib.rollUpSubTree(
+        uint256 computedRoot = SubTreeRollUpLib.rollUpSubTree(
             Hash.keccak(),
             parentHeader.withdrawalRoot,
             parentHeader.withdrawalIndex,

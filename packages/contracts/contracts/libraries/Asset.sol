@@ -19,7 +19,7 @@ library AssetHandler {
     /**
      * @dev It moves assets from layer 1 to the layer 2 anchor contract.
      */
-    function depositFrom(Asset memory self, address from, uint amount) internal returns (bool) {
+    function depositFrom(Asset memory self, address from, uint256 amount) internal returns (bool) {
         if (self.erc20 == address(0)) {
             /// Asset is Ether
             require(amount == msg.value, "Does not receive correct amount");
@@ -34,7 +34,7 @@ library AssetHandler {
     /**
      * @dev It withdraw assets back to the layer 1 from the layer 2 anchor contract.
      */
-    function withdrawTo(Asset memory self, address to, uint amount) internal {
+    function withdrawTo(Asset memory self, address to, uint256 amount) internal {
         if (self.erc20 == address(0)) {
             /// Asset is Ether
             payable(to).transfer(amount);

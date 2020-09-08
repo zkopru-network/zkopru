@@ -95,11 +95,11 @@ contract HeaderChallenge is Challengeable {
         pure
         returns (Challenge memory)
     {
-        uint totalFee = 0;
-        for (uint i = 0; i < _block.body.massDeposits.length; i ++) {
+        uint256 totalFee = 0;
+        for (uint256 i = 0; i < _block.body.massDeposits.length; i ++) {
             totalFee += _block.body.massDeposits[i].fee;
         }
-        for (uint i = 0; i < _block.body.txs.length; i ++) {
+        for (uint256 i = 0; i < _block.body.txs.length; i ++) {
             totalFee += _block.body.txs[i].fee;
         }
         /// FYI, fee in the massMigration is for the destination contract

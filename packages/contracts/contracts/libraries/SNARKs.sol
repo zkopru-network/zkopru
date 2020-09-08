@@ -13,12 +13,12 @@ library SNARKsVerifier {
         G1Point[] ic;
     }
 
-    function zkSNARKs(VerifyingKey memory vk, uint[] memory input, Proof memory proof) internal view returns (bool) {
+    function zkSNARKs(VerifyingKey memory vk, uint256[] memory input, Proof memory proof) internal view returns (bool) {
         uint256 SNARK_SCALAR_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
         require(input.length + 1 == vk.ic.length,"verifier-bad-input");
         // Compute the linear combination vkX
         G1Point memory vkX = G1Point(0, 0);
-        for (uint i = 0; i < input.length; i++) {
+        for (uint256 i = 0; i < input.length; i++) {
             require(input[i] < SNARK_SCALAR_FIELD,"verifier-gte-snark-scalar-field");
             vkX = Pairing.addition(vkX, Pairing.scalar_mul(vk.ic[i + 1], input[i]));
         }

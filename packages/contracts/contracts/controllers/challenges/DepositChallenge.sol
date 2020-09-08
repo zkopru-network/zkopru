@@ -18,7 +18,7 @@ contract DepositChallenge is Challengeable {
     using SNARKsVerifier for SNARKsVerifier.VerifyingKey;
 
     function challengeMassDeposit(
-        uint index,
+        uint256 index,
         bytes calldata blockData
     ) external {
         bytes32 proposalId = keccak256(blockData);
@@ -29,7 +29,7 @@ contract DepositChallenge is Challengeable {
 
     function _challengeMassDeposit(
         Block memory _block,
-        uint _index
+        uint256 _index
     )
         internal
         view

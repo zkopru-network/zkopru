@@ -24,8 +24,8 @@ contract TxChallenge is Challengeable {
     using SNARKsVerifier for SNARKsVerifier.VerifyingKey;
 
     function challengeInclusion(
-        uint txIndex,
-        uint inflowIndex,
+        uint256 txIndex,
+        uint256 inflowIndex,
         bytes calldata blockData
     ) external {
         bytes32 proposalId = keccak256(blockData);
@@ -38,14 +38,14 @@ contract TxChallenge is Challengeable {
         _execute(proposalId, result);
     }
 
-    function challengeTransaction(uint index, bytes calldata blockData) external {
+    function challengeTransaction(uint256 index, bytes calldata blockData) external {
         bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(1);
         Challenge memory result = _challengeResultOfTransaction(_block, index);
         _execute(proposalId, result);
     }
 
-    function challengeAtomicSwap(uint index, bytes calldata blockData) external {
+    function challengeAtomicSwap(uint256 index, bytes calldata blockData) external {
         bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(1);
         Challenge memory result = _challengeAtomicSwap(_block, index);
@@ -53,8 +53,8 @@ contract TxChallenge is Challengeable {
     }
 
     function challengeUsedNullifier(
-        uint txIndex,
-        uint inflowIndex,
+        uint256 txIndex,
+        uint256 inflowIndex,
         bytes32[254] calldata sibling,
         bytes calldata,
         bytes calldata blockData
@@ -84,7 +84,7 @@ contract TxChallenge is Challengeable {
             return true;
         }
         bytes32 parentBlock = l2BlockHash;
-        for (uint i = 0; i < REF_DEPTH; i++) {
+        for (uint256 i = 0; i < REF_DEPTH; i++) {
             parentBlock = Layer2.chain.parentOf[parentBlock];
             if (Layer2.chain.utxoRootOf[parentBlock] == ref) {
                 return true;
@@ -95,15 +95,15 @@ contract TxChallenge is Challengeable {
 
     function _challengeResultOfInclusion(
         Block memory _block,
-        uint txIndex,
-        uint inflowIndex
+        uint256 txIndex,
+        uint256 inflowIndex
     )
         internal
         view
         returns (Challenge memory)
     {
         Transaction memory transaction = _block.body.txs[txIndex];
-        uint ref = transaction.inflow[inflowIndex].inclusionRoot;
+        uint256 ref = transaction.inflow[inflowIndex].inclusionRoot;
         return Challenge(
             !isValidRef(_block.header.hash(), ref),
             _block.header.proposer,
@@ -113,7 +113,7 @@ contract TxChallenge is Challengeable {
 
     function _challengeResultOfTransaction(
         Block memory _block,
-        uint txIndex
+        uint256 txIndex
     )
         internal
         view
@@ -121,7 +121,7 @@ contract TxChallenge is Challengeable {
     {
         Transaction memory transaction = _block.body.txs[txIndex];
 
-        for(uint i = 0; i < transaction.outflow.length; i++) {
+        for(uint256 i = 0; i < transaction.outflow.length; i++) {
             Outflow memory outflow = transaction.outflow[i];
             if(outflow.isUTXO()) { // means UTXO
                 if(!outflow.publicData.isEmpty()) {
@@ -154,23 +154,23 @@ contract TxChallenge is Challengeable {
             );
         }
         /// Slash if its zk SNARKs verification returns false
-        uint[] memory inputs = new uint[](1 + 1 + 2*transaction.inflow.length + 8*transaction.outflow.length);
-        uint index = 0;
-        inputs[index++] = uint(transaction.fee);
+        uint256[] memory inputs = new uint256[](1 + 1 + 2*transaction.inflow.length + 8*transaction.outflow.length);
+        uint256 index = 0;
+        inputs[index++] = uint256(transaction.fee);
         inputs[index++] = transaction.swap;
-        for (uint i = 0; i < transaction.inflow.length; i++) {
-            inputs[index++] = uint(transaction.inflow[i].inclusionRoot);
-            inputs[index++] = uint(transaction.inflow[i].nullifier);
+        for (uint256 i = 0; i < transaction.inflow.length; i++) {
+            inputs[index++] = uint256(transaction.inflow[i].inclusionRoot);
+            inputs[index++] = uint256(transaction.inflow[i].nullifier);
         }
-        for (uint i = 0; i < transaction.outflow.length; i++) {
-            inputs[index++] = uint(transaction.outflow[i].note);
+        for (uint256 i = 0; i < transaction.outflow.length; i++) {
+            inputs[index++] = uint256(transaction.outflow[i].note);
             /// These only exist for migration
-            inputs[index++] = uint(transaction.outflow[i].publicData.to);
-            inputs[index++] = uint(transaction.outflow[i].publicData.eth);
-            inputs[index++] = uint(transaction.outflow[i].publicData.token);
-            inputs[index++] = uint(transaction.outflow[i].publicData.amount);
-            inputs[index++] = uint(transaction.outflow[i].publicData.nft);
-            inputs[index++] = uint(transaction.outflow[i].publicData.fee);
+            inputs[index++] = uint256(transaction.outflow[i].publicData.to);
+            inputs[index++] = uint256(transaction.outflow[i].publicData.eth);
+            inputs[index++] = uint256(transaction.outflow[i].publicData.token);
+            inputs[index++] = uint256(transaction.outflow[i].publicData.amount);
+            inputs[index++] = uint256(transaction.outflow[i].publicData.nft);
+            inputs[index++] = uint256(transaction.outflow[i].publicData.fee);
         }
         if (!vk.zkSNARKs(inputs, transaction.proof)) {
             return Challenge(
@@ -189,15 +189,15 @@ contract TxChallenge is Challengeable {
 
     function _challengeAtomicSwap(
         Block memory _block,
-        uint txIndex
+        uint256 txIndex
     )
         internal
         pure
         returns (Challenge memory)
     {
-        uint swap = _block.body.txs[txIndex].swap;
-        uint counterpart;
-        for(uint i = 0; i < _block.body.txs.length; i++) {
+        uint256 swap = _block.body.txs[txIndex].swap;
+        uint256 counterpart;
+        for(uint256 i = 0; i < _block.body.txs.length; i++) {
             if(
                 swap == _block.body.txs[i].swap &&
                 i != txIndex
@@ -215,8 +215,8 @@ contract TxChallenge is Challengeable {
     function _challengeResultOfUsedNullifier(
         Block memory _block,
         Header memory _parentHeader,
-        uint txIndex,
-        uint inflowIndex,
+        uint256 txIndex,
+        uint256 inflowIndex,
         bytes32[254] memory sibling
     )
         internal
@@ -248,10 +248,10 @@ contract TxChallenge is Challengeable {
         pure
         returns (Challenge memory)
     {
-        uint count = 0;
-        for (uint i = 0; i < _block.body.txs.length; i++) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < _block.body.txs.length; i++) {
             Transaction memory transaction = _block.body.txs[i];
-            for (uint j = 0; j < transaction.inflow.length; j++) {
+            for (uint256 j = 0; j < transaction.inflow.length; j++) {
                 /// Found matched nullifier
                 if (transaction.inflow[j].nullifier == nullifier) count++;
                 if (count >= 2) break;

@@ -25,7 +25,7 @@ contract DeserializationTester {
         return _block.header.proposer;
     }
 
-    function getProposer2(uint, uint, bytes calldata) external pure returns (address) {
+    function getProposer2(uint256, uint256, bytes calldata) external pure returns (address) {
         Block memory _block = Deserializer.blockFromCalldataAt(2);
         return _block.header.proposer;
     }
@@ -39,7 +39,7 @@ contract DeserializationTester {
         return _block.header.parentBlock;
     }
 
-    function getParentBlock2(uint, uint, uint, bytes calldata) external pure returns (bytes32) {
+    function getParentBlock2(uint256, uint256, uint256, bytes calldata) external pure returns (bytes32) {
         Block memory _block = Deserializer.blockFromCalldataAt(3);
         return _block.header.parentBlock;
     }
@@ -93,13 +93,13 @@ contract DeserializationTester {
         return _block.header.migrationRoot;
     }
 
-    function getTxsLen(bytes calldata) external pure returns (uint len) {
+    function getTxsLen(bytes calldata) external pure returns (uint256 len) {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         return _block.body.txs.length;
     }
 
     function getTxInflowLen(
-        uint txIndex,
+        uint256 txIndex,
         bytes calldata
     ) external pure returns (uint256) {
         Block memory _block = Deserializer.blockFromCalldataAt(1);
@@ -107,8 +107,8 @@ contract DeserializationTester {
     }
 
     function getTxInflow(
-        uint txIndex,
-        uint inflowIndex,
+        uint256 txIndex,
+        uint256 inflowIndex,
         bytes calldata
     ) external pure returns (
         uint256 inclusionRoot,
@@ -121,8 +121,8 @@ contract DeserializationTester {
     }
 
     function getTxOutflow(
-        uint txIndex,
-        uint outflowIndex,
+        uint256 txIndex,
+        uint256 outflowIndex,
         bytes calldata
     ) external pure returns (
         uint256 note,
@@ -144,44 +144,44 @@ contract DeserializationTester {
         fee = outflow.publicData.fee;
     }
 
-    function getTxSwap(uint txIndex, bytes calldata) external pure returns (uint256) {
+    function getTxSwap(uint256 txIndex, bytes calldata) external pure returns (uint256) {
         Block memory _block = Deserializer.blockFromCalldataAt(1);
         return _block.body.txs[txIndex].swap;
     }
 
-    function getProof(uint txIndex, bytes calldata) external pure returns (uint256[8] memory proof) {
+    function getProof(uint256 txIndex, bytes calldata) external pure returns (uint256[8] memory proof) {
         Block memory _block = Deserializer.blockFromCalldataAt(1);
         Proof memory _proof = _block.body.txs[txIndex].proof;
         proof = [_proof.a.X, _proof.a.Y, _proof.b.X[0], _proof.b.X[1], _proof.b.Y[0], _proof.b.Y[1], _proof.c.X, _proof.c.Y];
     }
 
-    function getTxFee(uint txIndex, bytes calldata) external pure returns (uint256) {
+    function getTxFee(uint256 txIndex, bytes calldata) external pure returns (uint256) {
         Block memory _block = Deserializer.blockFromCalldataAt(1);
         return _block.body.txs[txIndex].fee;
     }
 
-    function getTxHash(uint txIndex, bytes calldata) external pure returns (bytes32) {
+    function getTxHash(uint256 txIndex, bytes calldata) external pure returns (bytes32) {
         Block memory _block = Deserializer.blockFromCalldataAt(1);
         return _block.body.txs[txIndex].hash();
     }
 
-    function getMassDepositsLen(bytes calldata) external pure returns (uint len) {
+    function getMassDepositsLen(bytes calldata) external pure returns (uint256 len) {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         return _block.body.massDeposits.length;
     }
 
-    function getMassDeposit(uint index, bytes calldata) external pure returns (bytes32 merged, uint256 fee) {
+    function getMassDeposit(uint256 index, bytes calldata) external pure returns (bytes32 merged, uint256 fee) {
         Block memory _block = Deserializer.blockFromCalldataAt(1);
         merged = _block.body.massDeposits[index].merged;
         fee = _block.body.massDeposits[index].fee;
    }
 
-    function getMassMigrationsLen(bytes calldata) external pure returns (uint len) {
+    function getMassMigrationsLen(bytes calldata) external pure returns (uint256 len) {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         return _block.body.massMigrations.length;
     }
 
-    function getMassMigration(uint index, bytes calldata) external pure returns (
+    function getMassMigration(uint256 index, bytes calldata) external pure returns (
         address destination,
         uint256 totalETH,
         bytes32 merged,
@@ -194,7 +194,7 @@ contract DeserializationTester {
         fee = _block.body.massMigrations[index].migratingLeaves.fee;
    }
 
-   function getERC20Migration(uint index, uint erc20Index, bytes calldata) external pure returns (
+   function getERC20Migration(uint256 index, uint256 erc20Index, bytes calldata) external pure returns (
         address token,
         uint256 amount
     ) {
@@ -203,7 +203,7 @@ contract DeserializationTester {
         amount = _block.body.massMigrations[index].erc20[erc20Index].amount;
    }
 
-   function getERC721Migration(uint index, uint erc721Index, bytes calldata) external pure returns (
+   function getERC721Migration(uint256 index, uint256 erc721Index, bytes calldata) external pure returns (
         address token,
         uint256[] memory nfts
     ) {
@@ -232,7 +232,7 @@ contract DeserializationTester {
         return _finalization.header.proposer;
     }
 
-    function getProposer2FromFinalization(uint, uint, bytes calldata) external pure returns (address) {
+    function getProposer2FromFinalization(uint256, uint256, bytes calldata) external pure returns (address) {
         Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(2);
         return _finalization.header.proposer;
     }
@@ -242,7 +242,7 @@ contract DeserializationTester {
         return _finalization.header.parentBlock;
     }
 
-    function getParentBlock2FromFinalization(uint, uint, uint, bytes calldata) external pure returns (bytes32) {
+    function getParentBlock2FromFinalization(uint256, uint256, uint256, bytes calldata) external pure returns (bytes32) {
         Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(3);
         return _finalization.header.parentBlock;
     }
@@ -296,23 +296,23 @@ contract DeserializationTester {
         return _finalization.header.migrationRoot;
     }
 
-    function getMassDepositsLenFromFinalization(bytes calldata) external pure returns (uint len) {
+    function getMassDepositsLenFromFinalization(bytes calldata) external pure returns (uint256 len) {
         Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(0);
         return _finalization.massDeposits.length;
     }
 
-    function getMassDepositFromFinalization(uint index, bytes calldata) external pure returns (bytes32 merged, uint256 fee) {
+    function getMassDepositFromFinalization(uint256 index, bytes calldata) external pure returns (bytes32 merged, uint256 fee) {
         Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(1);
         merged = _finalization.massDeposits[index].merged;
         fee = _finalization.massDeposits[index].fee;
    }
 
-    function getMassMigrationsLenFromFinalization(bytes calldata) external pure returns (uint len) {
+    function getMassMigrationsLenFromFinalization(bytes calldata) external pure returns (uint256 len) {
         Finalization memory _finalization = Deserializer.finalizationFromCalldataAt(0);
         return _finalization.massMigrations.length;
     }
 
-    function getMassMigrationFromFinalization(uint index, bytes calldata) external pure returns (
+    function getMassMigrationFromFinalization(uint256 index, bytes calldata) external pure returns (
         address destination,
         uint256 totalETH,
         bytes32 merged,
@@ -325,7 +325,7 @@ contract DeserializationTester {
         fee = _finalization.massMigrations[index].migratingLeaves.fee;
    }
 
-   function getERC20MigrationFromFinalization(uint index, uint erc20Index, bytes calldata) external pure returns (
+   function getERC20MigrationFromFinalization(uint256 index, uint256 erc20Index, bytes calldata) external pure returns (
         address token,
         uint256 amount
     ) {
@@ -334,7 +334,7 @@ contract DeserializationTester {
         amount = _finalization.massMigrations[index].erc20[erc20Index].amount;
    }
 
-   function getERC721MigrationFromFinalization(uint index, uint erc721Index, bytes calldata) external pure returns (
+   function getERC721MigrationFromFinalization(uint256 index, uint256 erc721Index, bytes calldata) external pure returns (
         address token,
         uint256[] memory nfts
     ) {

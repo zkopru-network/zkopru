@@ -9,5 +9,5 @@ interface IMigratable {
      * @param migrationId Index of a MassMigration to execute.
      * @param to Address of the destination contract.
      */
-    function migrateTo(uint migrationId, address to) external;
+    function migrateTo(uint256 migrationId, address to) external;
 }
