@@ -381,7 +381,7 @@ library Types {
     function getSNARKsSignature(
         uint8 numberOfInputs,
         uint8 numberOfOutputs
-    ) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(numberOfInputs, numberOfOutputs));
+    ) internal pure returns (uint256) {
+        return (uint256(numberOfInputs) << 128) + numberOfOutputs;
     }
 }

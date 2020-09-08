@@ -3,6 +3,7 @@
 import { Unit, soliditySha3Raw } from 'web3-utils'
 import { Bytes32, Uint256, Address } from 'soltypes'
 import BN from 'bn.js'
+import assert from 'assert'
 
 export { logger, logStream } from './logger'
 
@@ -130,7 +131,13 @@ export function hexToBuffer(hex: string, len?: number): Buffer {
 }
 
 export function verifyingKeyIdentifier(nI: number, nO: number): string {
-  return soliditySha3Raw(nI, nO)
+  assert(nI < 256, 'nI is a 8 bit value')
+  assert(nO < 256, 'nI is a 8 bit value')
+  return Uint256.from(`${nI}`)
+    .toBN()
+    .shln(128)
+    .addn(nO)
+    .toString(10)
 }
 
 export function hexify(

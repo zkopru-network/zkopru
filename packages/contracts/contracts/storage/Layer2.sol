@@ -13,7 +13,7 @@ contract Layer2 is Configurated {
     Blockchain chain;
 
     // SNARKs verifying keys assigned by the setup wizard for each tx type
-    mapping(bytes32=>SNARKsVerifier.VerifyingKey) vks;
+    mapping(uint256=>SNARKsVerifier.VerifyingKey) vks;
 
     // Addresses allowed to migrate from. Setup wizard manages the list
     mapping(address=>bool) public allowedMigrants;
@@ -101,7 +101,7 @@ contract Layer2 is Configurated {
         uint256[2][2] memory delta2,
         uint256[2][] memory ic
     ) {
-        bytes32 txSig = Types.getSNARKsSignature(numOfInputs, numOfOutputs);
+        uint256 txSig = Types.getSNARKsSignature(numOfInputs, numOfOutputs);
         SNARKsVerifier.VerifyingKey memory vk = vks[txSig];
         alfa1[0] = vk.alfa1.X;
         alfa1[1] = vk.alfa1.Y;
