@@ -5,12 +5,13 @@ import { SNARKsVerifier } from "./libraries/SNARKs.sol";
 import { Pairing } from "./libraries/Pairing.sol";
 import { ICoordinatable } from "./interfaces/ICoordinatable.sol";
 import { IUserInteractable } from "./interfaces/IUserInteractable.sol";
-import { IRollUpable } from "./interfaces/IRollUpable.sol";
 import { IMigratable } from "./interfaces/IMigratable.sol";
 import { IDepositChallenge } from "./interfaces/IDepositChallenge.sol";
 import { IHeaderChallenge } from "./interfaces/IHeaderChallenge.sol";
 import { IMigrationChallenge } from "./interfaces/IMigrationChallenge.sol";
-import { IRollUpChallenge } from "./interfaces/IRollUpChallenge.sol";
+import { IUtxoTreeChallenge } from "./interfaces/IUtxoTreeChallenge.sol";
+import { IWithdrawalTreeChallenge } from "./interfaces/IWithdrawalTreeChallenge.sol";
+import { INullifierTreeChallenge } from "./interfaces/INullifierTreeChallenge.sol";
 import { ITxChallenge } from "./interfaces/ITxChallenge.sol";
 
 /* solium-disable */
@@ -23,9 +24,15 @@ contract Layer2Controller is Layer2 {
      * @notice This proxies supports the following interfaces
      *          - ICoordinatable.sol
      *          - IUserInteractable.sol
-     *          - IRollUpable.sol
-     *          - IChallengeable.sol
      *          - IMigratable.sol
+     *          - Challenges
+     *              - IDepositChallenge.sol
+     *              - IHeaderChallenge.sol
+     *              - IMigrationChallenge.sol
+     *              - IUtxoTreeChallenge.sol
+     *              - IWithdrawalTreeChallenge.sol
+     *              - INullifierTreeChallenge.sol
+     *              - ITxChallenge.sol
      */
     fallback () external payable {
         address addr = proxied[msg.sig];
@@ -62,20 +69,17 @@ contract Layer2Controller is Layer2 {
         _connect(addr, IUserInteractable(0).payInAdvance.selector);
     }
 
-    function _connectRollUpable(address addr) internal {
-        _connect(addr, IRollUpable(0).newProofOfUTXORollUp.selector);
-        _connect(addr, IRollUpable(0).newProofOfNullifierRollUp.selector);
-        _connect(addr, IRollUpable(0).newProofOfWithdrawalRollUp.selector);
-        _connect(addr, IRollUpable(0).updateProofOfUTXORollUp.selector);
-        _connect(addr, IRollUpable(0).updateProofOfNullifierRollUp.selector);
-        _connect(addr, IRollUpable(0).updateProofOfWithdrawalRollUp.selector);
+    function _connectMigratable(address addr) internal virtual {
+        _connect(addr, IMigratable(0).migrateTo.selector);
     }
 
     function _connectChallengeable(
         address depositChallenge,
         address headerChallenge,
         address migrationChallenge,
-        address rollUpChallenge,
+        address utxoTreeChallenge,
+        address withdrawalTreeChallenge,
+        address nullifierTreeChallenge,
         address txChallenge
     ) internal virtual {
         _connect(depositChallenge, IDepositChallenge(0).challengeMassDeposit.selector);
@@ -86,18 +90,16 @@ contract Layer2Controller is Layer2 {
         _connect(migrationChallenge, IMigrationChallenge(0).challengeMassMigrationToMassDeposit.selector);
         _connect(migrationChallenge, IMigrationChallenge(0).challengeERC20Migration.selector);
         _connect(migrationChallenge, IMigrationChallenge(0).challengeERC721Migration.selector);
-        _connect(rollUpChallenge, IRollUpChallenge(0).challengeUTXORollUp.selector);
-        _connect(rollUpChallenge, IRollUpChallenge(0).challengeNullifierRollUp.selector);
-        _connect(rollUpChallenge, IRollUpChallenge(0).challengeWithdrawalRollUp.selector);
+        _connect(utxoTreeChallenge, IUtxoTreeChallenge(0).challengeUTXOIndex.selector);
+        _connect(utxoTreeChallenge, IUtxoTreeChallenge(0).challengeUTXORoot.selector);
+        _connect(withdrawalTreeChallenge, IWithdrawalTreeChallenge(0).challengeWithdrawalIndex.selector);
+        _connect(withdrawalTreeChallenge, IWithdrawalTreeChallenge(0).challengeWithdrawalRoot.selector);
+        _connect(nullifierTreeChallenge, INullifierTreeChallenge(0).challengeNullifierRollUp.selector);
         _connect(txChallenge, ITxChallenge(0).challengeInclusion.selector);
         _connect(txChallenge, ITxChallenge(0).challengeTransaction.selector);
         _connect(txChallenge, ITxChallenge(0).challengeUsedNullifier.selector);
         _connect(txChallenge, ITxChallenge(0).challengeDuplicatedNullifier.selector);
         _connect(txChallenge, ITxChallenge(0).isValidRef.selector);
-    }
-
-    function _connectMigratable(address addr) internal virtual {
-        _connect(addr, IMigratable(0).migrateTo.selector);
     }
 
     function _connect(address to, bytes4 sig) internal {

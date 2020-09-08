@@ -7,10 +7,11 @@ const TestERC20 = artifacts.require('TestERC20')
 const TestERC721 = artifacts.require('TestERC721')
 const UserInteractable = artifacts.require('UserInteractable')
 const Coordinatable = artifacts.require('Coordinatable')
-const RollUpable = artifacts.require('RollUpable')
-const RollUpChallenge = artifacts.require('RollUpChallenge')
 const DepositChallenge = artifacts.require('DepositChallenge')
 const HeaderChallenge = artifacts.require('HeaderChallenge')
+const UtxoTreeChallenge = artifacts.require('UtxoTreeChallenge')
+const WithdrawalTreeChallenge = artifacts.require('WithdrawalTreeChallenge')
+const NullifierTreeChallenge = artifacts.require('NullifierTreeChallenge')
 const TxChallenge = artifacts.require('TxChallenge')
 const MigrationChallenge = artifacts.require('MigrationChallenge')
 const Migratable = artifacts.require('Migratable')
@@ -37,14 +38,18 @@ module.exports = function migration(deployer, network, accounts) {
     })
     .then(coordinatable => {
       instances.coordinatable = coordinatable
-      return RollUpable.deployed()
+      return UtxoTreeChallenge.deployed()
     })
-    .then(rollUp => {
-      instances.rollup = rollUp
-      return RollUpChallenge.deployed()
+    .then(utxoTreeChallenge => {
+      instances.utxoTreeChallenge = utxoTreeChallenge
+      return WithdrawalTreeChallenge.deployed()
     })
-    .then(rollUpChallenge => {
-      instances.rollUpChallenge = rollUpChallenge
+    .then(withdrawalTreeChallenge => {
+      instances.withdrawalTreeChallenge = withdrawalTreeChallenge
+      return NullifierTreeChallenge.deployed()
+    })
+    .then(nullifierTreeChallenge => {
+      instances.nullifierTreeChallenge = nullifierTreeChallenge
       return HeaderChallenge.deployed()
     })
     .then(headerChallenge => {
@@ -88,12 +93,13 @@ module.exports = function migration(deployer, network, accounts) {
       // Setup proxy
       await zkopru.makeCoordinatable(instances.coordinatable.address)
       await zkopru.makeUserInteractable(instances.ui.address)
-      await zkopru.makeRollUpable(instances.rollup.address)
       await zkopru.makeChallengeable(
         instances.depositChallenge.address,
         instances.headerChallenge.address,
         instances.migrationChallenge.address,
-        instances.rollUpChallenge.address,
+        instances.utxoTreeChallenge.address,
+        instances.withdrawalTreeChallenge.address,
+        instances.nullifierTreeChallenge.address,
         instances.txChallenge.address,
       )
       await zkopru.makeMigratable(instances.migratable.address)

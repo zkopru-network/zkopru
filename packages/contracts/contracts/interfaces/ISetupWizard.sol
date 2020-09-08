@@ -22,18 +22,15 @@ interface ISetupWizard {
     function makeUserInteractable(address addr) external;
 
     /**
-     * @dev It connects this proxy contract to the RollUpable controller.
-     */
-    function makeRollUpable(address addr) external;
-
-    /**
      * @dev It connects this proxy contract to the Challengeable controllers.
      */
     function makeChallengeable(
         address depositChallenge,
         address headerChallenge,
         address migrationChallenge,
-        address rollUpChallenge,
+        address utxoTreeChallenge,
+        address withdrawalTreeChallenge,
+        address nullifierTreeChallenge,
         address txChallenge
     ) external;
 

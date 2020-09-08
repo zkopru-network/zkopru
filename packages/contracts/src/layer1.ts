@@ -9,11 +9,12 @@ import { IERC721Enumerable } from './contracts/IERC721Enumerable'
 import { IHeaderChallenge } from './contracts/IHeaderChallenge'
 import { IMigratable } from './contracts/IMigratable'
 import { IMigrationChallenge } from './contracts/IMigrationChallenge'
-import { IRollUpChallenge } from './contracts/IRollUpChallenge'
-import { IRollUpable } from './contracts/IRollUpable'
+import { INullifierTreeChallenge } from './contracts/INullifierTreeChallenge'
 import { ISetupWizard } from './contracts/ISetupWizard'
 import { ITxChallenge } from './contracts/ITxChallenge'
 import { IUserInteractable } from './contracts/IUserInteractable'
+import { IUtxoTreeChallenge } from './contracts/IUtxoTreeChallenge'
+import { IWithdrawalTreeChallenge } from './contracts/IWithdrawalTreeChallenge'
 import { ZkOptimisticRollUp } from './contracts/ZkOptimisticRollUp'
 
 import { ERC20ABI } from './abis/ERC20'
@@ -24,11 +25,12 @@ import { IERC721EnumerableABI } from './abis/IERC721Enumerable'
 import { IHeaderChallengeABI } from './abis/IHeaderChallenge'
 import { IMigratableABI } from './abis/IMigratable'
 import { IMigrationChallengeABI } from './abis/IMigrationChallenge'
-import { IRollUpChallengeABI } from './abis/IRollUpChallenge'
-import { IRollUpableABI } from './abis/IRollUpable'
+import { INullifierTreeChallengeABI } from './abis/INullifierTreeChallenge'
 import { ISetupWizardABI } from './abis/ISetupWizard'
 import { ITxChallengeABI } from './abis/ITxChallenge'
 import { IUserInteractableABI } from './abis/IUserInteractable'
+import { IUtxoTreeChallengeABI } from './abis/IUtxoTreeChallenge'
+import { IWithdrawalTreeChallengeABI } from './abis/IWithdrawalTreeChallenge'
 import { ZkOptimisticRollUpABI } from './abis/ZkOptimisticRollUp'
 
 export class Layer1 {
@@ -77,22 +79,39 @@ export class Layer1 {
     return new web3.eth.Contract(abi, address, option) as IMigrationChallenge
   }
 
-  static getIRollUpChallenge(
+  static getIUtxoTreeChallenge(
     web3: Web3,
     address: string,
     option?: ContractOptions,
-  ): IRollUpChallenge {
-    const abi: any[] = [...IRollUpChallengeABI]
-    return new web3.eth.Contract(abi, address, option) as IRollUpChallenge
+  ): IUtxoTreeChallenge {
+    const abi: any[] = [...IUtxoTreeChallengeABI]
+    return new web3.eth.Contract(abi, address, option) as IUtxoTreeChallenge
   }
 
-  static getIRollUpable(
+  static getIWithdrawalTreeChallenge(
     web3: Web3,
     address: string,
     option?: ContractOptions,
-  ): IRollUpable {
-    const abi: any[] = [...IRollUpableABI]
-    return new web3.eth.Contract(abi, address, option) as IRollUpable
+  ): IWithdrawalTreeChallenge {
+    const abi: any[] = [...IWithdrawalTreeChallengeABI]
+    return new web3.eth.Contract(
+      abi,
+      address,
+      option,
+    ) as IWithdrawalTreeChallenge
+  }
+
+  static getINullifierTreeChallenge(
+    web3: Web3,
+    address: string,
+    option?: ContractOptions,
+  ): INullifierTreeChallenge {
+    const abi: any[] = [...INullifierTreeChallengeABI]
+    return new web3.eth.Contract(
+      abi,
+      address,
+      option,
+    ) as INullifierTreeChallenge
   }
 
   static getISetupWizard(

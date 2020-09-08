@@ -13,13 +13,22 @@ interface EventOptions {
   topics?: string[]
 }
 
-export class Poseidon3 extends Contract {
+export class IWithdrawalTreeChallenge extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
 
-  clone(): Poseidon3
+  clone(): IWithdrawalTreeChallenge
 
   methods: {
-    poseidon(arg0: (number | string)[]): TransactionObject<string>
+    challengeWithdrawalIndex(
+      parentHeader: string | number[],
+      submission: string | number[],
+    ): TransactionObject<void>
+
+    challengeWithdrawalRoot(
+      initialSiblings: (number | string)[],
+      parentHeader: string | number[],
+      submission: string | number[],
+    ): TransactionObject<void>
   }
 
   events: {

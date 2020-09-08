@@ -18,14 +18,10 @@ export class TxUtil {
     let nonce!: number
     const promises = [
       async () => {
-        try {
-          gas = await tx.estimateGas({
-            ...option,
-            from: account.address,
-          })
-        } catch (err) {
-          throw err
-        }
+        gas = await tx.estimateGas({
+          ...option,
+          from: account.address,
+        })
       },
       async () => {
         gasPrice = await web3.eth.getGasPrice()
@@ -34,11 +30,7 @@ export class TxUtil {
         nonce = await web3.eth.getTransactionCount(account.address, 'pending')
       },
     ].map(fetchTask => fetchTask())
-    try {
-      await Promise.all(promises)
-    } catch (err) {
-      throw err
-    }
+    await Promise.all(promises)
     const txParams = {
       nonce: NumString.from(`${nonce}`)
         .toBytes()

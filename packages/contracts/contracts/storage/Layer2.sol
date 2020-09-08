@@ -8,25 +8,15 @@ import { Configurated } from "./Configurated.sol";
 import { SMT254 } from "../libraries/SMT.sol";
 import { OPRU, SplitRollUp } from "../libraries/Tree.sol";
 
-struct RollUpProofs {
-    SplitRollUp[] ofUTXORollUp;
-    SMT254.OPRU[] ofNullifierRollUp;
-    SplitRollUp[] ofWithdrawalRollUp;
-    mapping(uint8=>mapping(uint=>address)) permittedTo;
-}
-
 contract Layer2 is Configurated {
-    /** State of the layer2 blockchain is maintained by the optimistic roll up */
+    // State of the layer2 blockchain is maintained by the optimistic roll up
     Blockchain chain;
 
-    /** SNARKs verifying keys assigned by the setup wizard for each tx type */
+    // SNARKs verifying keys assigned by the setup wizard for each tx type
     mapping(bytes32=>SNARKsVerifier.VerifyingKey) vks;
 
-    /** Addresses allowed to migrate from. Setup wizard manages the list */
+    // Addresses allowed to migrate from. Setup wizard manages the list
     mapping(address=>bool) public allowedMigrants;
-
-    /** Roll up proofs for challenge */
-    RollUpProofs proof;
 
     function genesis() public view returns (bytes32) {
         return chain.genesis;

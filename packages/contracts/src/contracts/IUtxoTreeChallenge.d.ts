@@ -13,13 +13,24 @@ interface EventOptions {
   topics?: string[]
 }
 
-export class Poseidon3 extends Contract {
+export class IUtxoTreeChallenge extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
 
-  clone(): Poseidon3
+  clone(): IUtxoTreeChallenge
 
   methods: {
-    poseidon(arg0: (number | string)[]): TransactionObject<string>
+    challengeUTXOIndex(
+      deposits: (number | string)[],
+      parentHeader: string | number[],
+      submission: string | number[],
+    ): TransactionObject<void>
+
+    challengeUTXORoot(
+      deposits: (number | string)[],
+      initialSiblings: (number | string)[],
+      parentHeader: string | number[],
+      submission: string | number[],
+    ): TransactionObject<void>
   }
 
   events: {
