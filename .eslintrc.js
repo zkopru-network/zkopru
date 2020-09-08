@@ -69,6 +69,15 @@ module.exports = {
           },
         }]
       },
+      overrides: [
+        {
+          files: "**/*.ts",
+            rules: {
+                "no-useless-constructor": "off",
+                "@typescript-eslint/no-useless-constructor": "error"
+            }
+        }
+      ],
       settings: {
         'import/resolver': {
           typescript: {},

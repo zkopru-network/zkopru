@@ -22,18 +22,21 @@ export const ISetupWizardABI = [
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'address', name: 'addr', type: 'address' }],
-    name: 'makeRollUpable',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
     inputs: [
       { internalType: 'address', name: 'depositChallenge', type: 'address' },
       { internalType: 'address', name: 'headerChallenge', type: 'address' },
       { internalType: 'address', name: 'migrationChallenge', type: 'address' },
-      { internalType: 'address', name: 'rollUpChallenge', type: 'address' },
+      { internalType: 'address', name: 'utxoTreeChallenge', type: 'address' },
+      {
+        internalType: 'address',
+        name: 'withdrawalTreeChallenge',
+        type: 'address',
+      },
+      {
+        internalType: 'address',
+        name: 'nullifierTreeChallenge',
+        type: 'address',
+      },
       { internalType: 'address', name: 'txChallenge', type: 'address' },
     ],
     name: 'makeChallengeable',

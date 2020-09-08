@@ -13,13 +13,18 @@ interface EventOptions {
   topics?: string[]
 }
 
-export class Poseidon3 extends Contract {
+export class INullifierTreeChallenge extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
 
-  clone(): Poseidon3
+  clone(): INullifierTreeChallenge
 
   methods: {
-    poseidon(arg0: (number | string)[]): TransactionObject<string>
+    challengeNullifierRollUp(
+      numOfNullifiers: number | string,
+      siblings: (string | number[])[][],
+      parentHeader: string | number[],
+      submission: string | number[],
+    ): TransactionObject<void>
   }
 
   events: {

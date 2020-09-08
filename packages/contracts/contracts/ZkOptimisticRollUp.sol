@@ -9,7 +9,7 @@ import { Pairing, G1Point, G2Point } from "./libraries/Pairing.sol";
 import { Hash } from "./libraries/Hash.sol";
 import { SMT254 } from "./libraries/SMT.sol";
 
-contract ZkOptimisticRollUp is Layer2Controller {
+contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
     using Types for Header;
     using Types for Blockchain;
 
@@ -39,7 +39,7 @@ contract ZkOptimisticRollUp is Layer2Controller {
         uint[2][2] memory gamma2,
         uint[2][2] memory delta2,
         uint[2][] memory ic
-    ) public onlySetupWizard {
+    ) public override onlySetupWizard {
         bytes32 txSig = Types.getSNARKsSignature(numOfInputs, numOfOutputs);
         SNARKsVerifier.VerifyingKey storage vk = Layer2.vks[txSig];
         vk.alfa1 = G1Point(alfa1[0], alfa1[1]);
@@ -51,7 +51,7 @@ contract ZkOptimisticRollUp is Layer2Controller {
         }
     }
 
-    function makeUserInteractable(address addr) public onlySetupWizard{
+    function makeUserInteractable(address addr) public override onlySetupWizard{
         Layer2Controller._connectUserInteractable(addr);
     }
 
@@ -59,38 +59,37 @@ contract ZkOptimisticRollUp is Layer2Controller {
         Layer2Controller._connectCoordinatable(addr);
     }
 
-
-    function makeRollUpable(address addr) public onlySetupWizard{
-        Layer2Controller._connectRollUpable(addr);
-    }
-
     function makeChallengeable(
         address depositChallenge,
         address headerChallenge,
         address migrationChallenge,
-        address rollUpChallenge,
+        address utxoTreeChallenge,
+        address withdrawalTreeChallenge,
+        address nullifierTreeChallenge,
         address txChallenge
-    ) public onlySetupWizard {
+    ) public override onlySetupWizard {
         Layer2Controller._connectChallengeable(
             depositChallenge,
             headerChallenge,
             migrationChallenge,
-            rollUpChallenge,
+            utxoTreeChallenge,
+            withdrawalTreeChallenge,
+            nullifierTreeChallenge,
             txChallenge
         );
     }
 
-    function makeMigratable(address addr) public onlySetupWizard {
+    function makeMigratable(address addr) public override onlySetupWizard {
         Layer2Controller._connectMigratable(addr);
     }
 
-    function allowMigrants(address[] memory migrants) public onlySetupWizard {
+    function allowMigrants(address[] memory migrants) public override onlySetupWizard {
         for (uint i = 0; i < migrants.length; i++) {
             Layer2.allowedMigrants[migrants[i]] = true;
         }
     }
 
-    function completeSetup() public onlySetupWizard {
+    function completeSetup() public override onlySetupWizard {
         delete setupWizard;
         require(Layer2.chain.latest == bytes32(0), "Already initialized");
         uint[] memory poseidonPreHashes = Hash.poseidonPrehashedZeroes();

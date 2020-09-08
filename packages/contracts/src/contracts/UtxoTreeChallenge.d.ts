@@ -13,10 +13,10 @@ interface EventOptions {
   topics?: string[]
 }
 
-export class ZkOptimisticRollUp extends Contract {
+export class UtxoTreeChallenge extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
 
-  clone(): ZkOptimisticRollUp
+  clone(): UtxoTreeChallenge
 
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
@@ -101,8 +101,6 @@ export class ZkOptimisticRollUp extends Contract {
       2: string
     }>
 
-    proxied(arg0: string | number[]): TransactionObject<string>
-
     registeredERC20s(): TransactionObject<string[]>
 
     registeredERC721s(): TransactionObject<string[]>
@@ -122,48 +120,21 @@ export class ZkOptimisticRollUp extends Contract {
 
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
 
-    registerVk(
-      numOfInputs: number | string,
-      numOfOutputs: number | string,
-      alfa1: (number | string)[],
-      beta2: (number | string)[][],
-      gamma2: (number | string)[][],
-      delta2: (number | string)[][],
-      ic: (number | string)[][],
+    challengeUTXOIndex(
+      deposits: (number | string)[],
+      arg1: string | number[],
+      blockData: string | number[],
     ): TransactionObject<void>
 
-    makeUserInteractable(addr: string): TransactionObject<void>
-
-    makeCoordinatable(addr: string): TransactionObject<void>
-
-    makeChallengeable(
-      depositChallenge: string,
-      headerChallenge: string,
-      migrationChallenge: string,
-      utxoTreeChallenge: string,
-      withdrawalTreeChallenge: string,
-      nullifierTreeChallenge: string,
-      txChallenge: string,
+    challengeUTXORoot(
+      deposits: (number | string)[],
+      initialSiblings: (number | string)[],
+      arg2: string | number[],
+      blockData: string | number[],
     ): TransactionObject<void>
-
-    makeMigratable(addr: string): TransactionObject<void>
-
-    allowMigrants(migrants: string[]): TransactionObject<void>
-
-    completeSetup(): TransactionObject<void>
   }
 
   events: {
-    GenesisBlock: ContractEvent<{
-      blockHash: string
-      proposer: string
-      fromBlock: string
-      parentBlock: string
-      0: string
-      1: string
-      2: string
-      3: string
-    }>
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
 }
