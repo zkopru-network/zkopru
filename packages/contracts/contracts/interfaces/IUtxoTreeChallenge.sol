@@ -8,7 +8,7 @@ interface IUtxoTreeChallenge {
      * @param submission The proposal data which is exactly same with the submitted.
      */
      function challengeUTXOIndex(
-        uint[] calldata deposits,
+        uint256[] calldata deposits,
         bytes calldata parentHeader,
         bytes calldata submission
     ) external;
@@ -21,8 +21,8 @@ interface IUtxoTreeChallenge {
      * @param submission The proposal data which is exactly same with the submitted.
      */
      function challengeUTXORoot(
-        uint[] calldata deposits,
-        uint[] calldata initialSiblings,
+        uint256[] calldata deposits,
+        uint256[] calldata initialSiblings,
         bytes calldata parentHeader,
         bytes calldata submission
     ) external;

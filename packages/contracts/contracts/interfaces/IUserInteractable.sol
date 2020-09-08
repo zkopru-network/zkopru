@@ -1,7 +1,7 @@
 pragma solidity >= 0.6.0;
 
 interface IUserInteractable {
-    event Deposit(uint indexed queuedAt, uint note, uint fee);
+    event Deposit(uint256 indexed queuedAt, uint256 note, uint256 fee);
 
     /**
      * @notice Users can use zkopru network by submitting a new homomorphically hiden note.
@@ -14,13 +14,13 @@ interface IUserInteractable {
      * @param fee Amount of fee to give to the coordinator
      */
     function deposit(
-        uint spendingPubKey,
-        uint salt,
-        uint eth,
+        uint256 spendingPubKey,
+        uint256 salt,
+        uint256 eth,
         address token,
-        uint amount,
-        uint nft,
-        uint fee
+        uint256 amount,
+        uint256 nft,
+        uint256 fee
     ) external payable;
 
     /**
@@ -37,16 +37,16 @@ interface IUserInteractable {
      * @param siblings Inclusion proof data
      */
     function withdraw(
-        uint note,
+        uint256 note,
         address owner,
-        uint eth,
+        uint256 eth,
         address token,
-        uint amount,
-        uint nft,
-        uint fee,
+        uint256 amount,
+        uint256 nft,
+        uint256 fee,
         bytes32 blockHash,
         uint256 leafIndex,
-        uint[] calldata siblings
+        uint256[] calldata siblings
     ) external;
 
     /**
@@ -61,13 +61,13 @@ interface IUserInteractable {
      * @param signature ECDSA signature
      */
     function payInAdvance(
-        uint note,
+        uint256 note,
         address owner,
-        uint eth,
+        uint256 eth,
         address token,
-        uint amount,
-        uint nft,
-        uint fee,
+        uint256 amount,
+        uint256 nft,
+        uint256 fee,
         bytes calldata signature
     ) external;
 }

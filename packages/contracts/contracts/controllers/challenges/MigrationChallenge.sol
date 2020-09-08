@@ -47,7 +47,7 @@ contract MigrationChallenge is Challengeable {
     function challengeERC721Migration(
         address destination,
         address erc721,
-        uint tokenId,
+        uint256 tokenId,
         bytes calldata blockData
     ) external {
         bytes32 proposalId = keccak256(blockData);
@@ -70,7 +70,7 @@ contract MigrationChallenge is Challengeable {
         returns (Challenge memory)
     {
         MassMigration memory submitted;
-        for(uint i = 0; i < _block.body.massMigrations.length; i++) {
+        for(uint256 i = 0; i < _block.body.massMigrations.length; i++) {
             if(destination == _block.body.massMigrations[i].destination) {
                 if(submitted.destination != address(0)) {
                     return Challenge(
@@ -82,11 +82,11 @@ contract MigrationChallenge is Challengeable {
                 submitted = _block.body.massMigrations[i];
             }
         }
-        uint totalETH;
+        uint256 totalETH;
         MassDeposit memory migratingLeaves;
-        for(uint i = 0; i < _block.body.txs.length; i++) {
+        for(uint256 i = 0; i < _block.body.txs.length; i++) {
             Transaction memory transaction = _block.body.txs[i];
-            for(uint j = 0; j < transaction.outflow.length; j++) {
+            for(uint256 j = 0; j < transaction.outflow.length; j++) {
                 Outflow memory outflow = transaction.outflow[j];
                 if(outflow.outflowType == uint8(OutflowType.Migration) && outflow.publicData.to == destination) {
                     totalETH += outflow.publicData.eth;
@@ -122,10 +122,10 @@ contract MigrationChallenge is Challengeable {
         returns (Challenge memory)
     {
         ERC20Migration memory submitted;
-        for(uint i = 0; i < _block.body.massMigrations.length; i++) {
+        for(uint256 i = 0; i < _block.body.massMigrations.length; i++) {
             MassMigration memory massMigration = _block.body.massMigrations[i];
             if(destination == massMigration.destination) {
-                for(uint j = 0; j < massMigration.erc20.length; j++) {
+                for(uint256 j = 0; j < massMigration.erc20.length; j++) {
                     ERC20Migration memory erc20Migration = massMigration.erc20[j];
                     if(erc20Migration.addr == erc20) {
                         if(erc20Migration.addr != address(0)) {
@@ -142,10 +142,10 @@ contract MigrationChallenge is Challengeable {
             }
         }
 
-        uint erc20Amount;
-        for(uint i = 0; i < _block.body.txs.length; i++) {
+        uint256 erc20Amount;
+        for(uint256 i = 0; i < _block.body.txs.length; i++) {
             Transaction memory transaction = _block.body.txs[i];
-            for(uint j = 0; j < transaction.outflow.length; j++) {
+            for(uint256 j = 0; j < transaction.outflow.length; j++) {
                 Outflow memory outflow = transaction.outflow[j];
                 if(
                     outflow.outflowType == uint8(OutflowType.Migration) &&
@@ -167,17 +167,17 @@ contract MigrationChallenge is Challengeable {
         Block memory _block,
         address destination,
         address erc721,
-        uint tokenId
+        uint256 tokenId
     )
         internal
         pure
         returns (Challenge memory)
     {
         ERC721Migration memory submitted;
-        for(uint i = 0; i < _block.body.massMigrations.length; i++) {
+        for(uint256 i = 0; i < _block.body.massMigrations.length; i++) {
             MassMigration memory massMigration = _block.body.massMigrations[i];
             if(destination == massMigration.destination) {
-                for(uint j = 0; j < massMigration.erc721.length; j++) {
+                for(uint256 j = 0; j < massMigration.erc721.length; j++) {
                     ERC721Migration memory erc721Migration = massMigration.erc721[j];
                     if(erc721Migration.addr == erc721) {
                         if(erc721Migration.addr != address(0)) {
@@ -193,8 +193,8 @@ contract MigrationChallenge is Challengeable {
                 }
             }
         }
-        uint submittedNftCount = 0;
-        for (uint i = 0; i < submitted.nfts.length; i++) {
+        uint256 submittedNftCount = 0;
+        for (uint256 i = 0; i < submitted.nfts.length; i++) {
             if(tokenId == submitted.nfts[i]) {
                 submittedNftCount ++;
             }
@@ -207,10 +207,10 @@ contract MigrationChallenge is Challengeable {
             );
         }
 
-        uint computedNftCount;
-        for(uint i = 0; i < _block.body.txs.length; i++) {
+        uint256 computedNftCount;
+        for(uint256 i = 0; i < _block.body.txs.length; i++) {
             Transaction memory transaction = _block.body.txs[i];
-            for(uint j = 0; j < transaction.outflow.length; j++) {
+            for(uint256 j = 0; j < transaction.outflow.length; j++) {
                 Outflow memory outflow = transaction.outflow[j];
                 if(
                     outflow.outflowType == uint8(OutflowType.Migration) &&

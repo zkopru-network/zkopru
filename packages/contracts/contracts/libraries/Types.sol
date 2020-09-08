@@ -7,7 +7,7 @@ struct Blockchain {
     bytes32 latest;
 
     // For coordinating
-    uint proposedBlocks;
+    uint256 proposedBlocks;
     mapping(address=>Proposer) proposers;
     mapping(bytes32=>Proposal) proposals;
     mapping(bytes32=>bool) finalized; // blockhash => finalized?
@@ -19,9 +19,9 @@ struct Blockchain {
 
     // For deposit
     MassDeposit stagedDeposits;
-    uint stagedSize;
-    uint massDepositId;
-    mapping(bytes32=>uint) committedDeposits;
+    uint256 stagedSize;
+    uint256 massDepositId;
+    mapping(bytes32=>uint256) committedDeposits;
 
     // For withdrawal
     mapping(bytes32=>uint256) withdrawalRootOf; // header => withdrawalRoot
@@ -62,8 +62,8 @@ struct ERC721Migration {
 
 struct WithdrawalTree {
     // Merkle tree of WithdrawalTree notes
-    uint root;
-    uint index;
+    uint256 root;
+    uint256 index;
 }
 
 struct Finalization {
@@ -74,14 +74,14 @@ struct Finalization {
 }
 
 struct Proposer {
-    uint stake;
-    uint reward;
-    uint exitAllowance;
+    uint256 stake;
+    uint256 reward;
+    uint256 exitAllowance;
 }
 
 struct Proposal {
     bytes32 headerHash;
-    uint challengeDue;
+    uint256 challengeDue;
     bool slashed;
 }
 
@@ -213,7 +213,7 @@ library Types {
 
     function toBytes(Inflow[] memory inflow) internal pure returns (bytes memory) {
         bytes memory packed;
-        for(uint i = 0; i < inflow.length; i++) {
+        for(uint256 i = 0; i < inflow.length; i++) {
             packed = abi.encodePacked(packed, toBytes(inflow[i]));
         }
         return packed;
@@ -237,7 +237,7 @@ library Types {
 
     function toBytes(Outflow[] memory outflow) internal pure returns (bytes memory) {
         bytes memory packed;
-        for(uint i = 0; i < outflow.length; i++) {
+        for(uint256 i = 0; i < outflow.length; i++) {
             packed = abi.encodePacked(packed, toBytes(outflow[i]));
         }
         return packed;
@@ -296,14 +296,14 @@ library Types {
             massMigration.migratingLeaves.merged,
             massMigration.migratingLeaves.fee
         );
-        for(uint i = 0; i < massMigration.erc20.length; i++) {
+        for(uint256 i = 0; i < massMigration.erc20.length; i++) {
             packed = abi.encodePacked(
                 packed,
                 massMigration.erc20[i].addr,
                 massMigration.erc20[i].amount
             );
         }
-        for(uint i = 0; i < massMigration.erc20.length; i++) {
+        for(uint256 i = 0; i < massMigration.erc20.length; i++) {
             packed = abi.encodePacked(
                 packed,
                 massMigration.erc721[i].addr,
@@ -315,7 +315,7 @@ library Types {
 
     function root(Transaction[] memory transactions) internal pure returns (bytes32) {
         bytes32[] memory leaves = new bytes32[](transactions.length);
-        for(uint i = 0; i < transactions.length; i++) {
+        for(uint256 i = 0; i < transactions.length; i++) {
             leaves[i] = hash(transactions[i]);
         }
         return root(leaves);
@@ -323,7 +323,7 @@ library Types {
 
     function root(MassDeposit[] memory massDeposits) internal pure returns (bytes32) {
         bytes32[] memory leaves = new bytes32[](massDeposits.length);
-        for(uint i = 0; i < massDeposits.length; i++) {
+        for(uint256 i = 0; i < massDeposits.length; i++) {
             leaves[i] = hash(massDeposits[i]);
         }
         return root(leaves);
@@ -331,7 +331,7 @@ library Types {
 
     function root(MassMigration[] memory massMigrations) internal pure returns (bytes32) {
         bytes32[] memory leaves = new bytes32[](massMigrations.length);
-        for(uint i = 0; i < massMigrations.length; i++) {
+        for(uint256 i = 0; i < massMigrations.length; i++) {
             leaves[i] = hash(massMigrations[i]);
         }
         return root(leaves);
@@ -346,7 +346,7 @@ library Types {
         bytes32[] memory nodes = new bytes32[]((leaves.length + 1)/2);
         bool hasEmptyLeaf = leaves.length % 2 == 1;
 
-        for (uint i = 0; i < nodes.length; i++) {
+        for (uint256 i = 0; i < nodes.length; i++) {
             if(hasEmptyLeaf && i == nodes.length - 1) {
                 nodes[i] = keccak256(abi.encodePacked(leaves[i*2], bytes32(0)));
             } else {
@@ -356,7 +356,7 @@ library Types {
         return root(nodes);
     }
 
-    function root(uint[] memory leaves) internal pure returns (bytes32) {
+    function root(uint256[] memory leaves) internal pure returns (bytes32) {
         bytes32[] memory converted;
         assembly {
             converted := leaves

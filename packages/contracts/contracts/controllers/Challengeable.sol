@@ -21,7 +21,7 @@ contract Challengeable is Layer2 {
     function _forfeitAndReward(address proposerAddr, address challenger) internal {
         Proposer storage proposer = Layer2.chain.proposers[proposerAddr];
         /// Reward
-        uint challengeReward = proposer.stake * 2 / 3;
+        uint256 challengeReward = proposer.stake * 2 / 3;
         payable(challenger).transfer(challengeReward);
         /// Forfeit
         proposer.stake = 0;

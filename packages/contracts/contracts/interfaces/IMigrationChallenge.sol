@@ -21,7 +21,7 @@ interface IMigrationChallenge {
     function challengeERC721Migration(
         address destination,
         address erc721,
-        uint tokenId,
+        uint256 tokenId,
         bytes calldata submission
     ) external;
 }

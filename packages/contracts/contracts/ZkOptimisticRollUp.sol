@@ -18,7 +18,7 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
     event GenesisBlock(
         bytes32 blockHash,
         address proposer,
-        uint fromBlock,
+        uint256 fromBlock,
         bytes32 parentBlock
     );
 
@@ -34,11 +34,11 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
     function registerVk(
         uint8 numOfInputs,
         uint8 numOfOutputs,
-        uint[2] memory alfa1,
-        uint[2][2] memory beta2,
-        uint[2][2] memory gamma2,
-        uint[2][2] memory delta2,
-        uint[2][] memory ic
+        uint256[2] memory alfa1,
+        uint256[2][2] memory beta2,
+        uint256[2][2] memory gamma2,
+        uint256[2][2] memory delta2,
+        uint256[2][] memory ic
     ) public override onlySetupWizard {
         bytes32 txSig = Types.getSNARKsSignature(numOfInputs, numOfOutputs);
         SNARKsVerifier.VerifyingKey storage vk = Layer2.vks[txSig];
@@ -46,7 +46,7 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
         vk.beta2 = G2Point(beta2[0], beta2[1]);
         vk.gamma2 = G2Point(gamma2[0], gamma2[1]);
         vk.delta2 = G2Point(delta2[0], delta2[1]);
-        for (uint i = 0; i < ic.length; i++) {
+        for (uint256 i = 0; i < ic.length; i++) {
             vk.ic.push(G1Point(ic[i][0], ic[i][1]));
         }
     }
@@ -84,7 +84,7 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
     }
 
     function allowMigrants(address[] memory migrants) public override onlySetupWizard {
-        for (uint i = 0; i < migrants.length; i++) {
+        for (uint256 i = 0; i < migrants.length; i++) {
             Layer2.allowedMigrants[migrants[i]] = true;
         }
     }
@@ -92,12 +92,12 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
     function completeSetup() public override onlySetupWizard {
         delete setupWizard;
         require(Layer2.chain.latest == bytes32(0), "Already initialized");
-        uint[] memory poseidonPreHashes = Hash.poseidonPrehashedZeroes();
-        uint utxoRoot = poseidonPreHashes[poseidonPreHashes.length - 1];
-        uint[] memory keccakPreHashes = Hash.keccakPrehashedZeroes();
-        uint withdrawalRoot = keccakPreHashes[keccakPreHashes.length - 1];
+        uint256[] memory poseidonPreHashes = Hash.poseidonPrehashedZeroes();
+        uint256 utxoRoot = poseidonPreHashes[poseidonPreHashes.length - 1];
+        uint256[] memory keccakPreHashes = Hash.keccakPrehashedZeroes();
+        uint256 withdrawalRoot = keccakPreHashes[keccakPreHashes.length - 1];
         bytes32 nullifierRoot = bytes32(0);
-        for (uint i = 0; i < NULLIFIER_TREE_DEPTH; i++) {
+        for (uint256 i = 0; i < NULLIFIER_TREE_DEPTH; i++) {
             nullifierRoot = keccak256(abi.encodePacked(nullifierRoot, nullifierRoot));
         }
         bytes32 parentBlock = blockhash(block.number - 1);

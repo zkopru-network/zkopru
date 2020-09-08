@@ -9,11 +9,11 @@ interface ISetupWizard {
     function registerVk(
         uint8 numOfInputs,
         uint8 numOfOutputs,
-        uint[2] calldata alfa1,
-        uint[2][2] calldata beta2,
-        uint[2][2] calldata gamma2,
-        uint[2][2] calldata delta2,
-        uint[2][] calldata ic
+        uint256[2] calldata alfa1,
+        uint256[2][2] calldata beta2,
+        uint256[2][2] calldata gamma2,
+        uint256[2][2] calldata delta2,
+        uint256[2][] calldata ic
     ) external;
 
     /**

@@ -3,7 +3,7 @@ pragma solidity >= 0.6.0;
 interface ICoordinatable {
     event NewProposal(uint256 proposalNum, bytes32 blockHash);
     event Finalized(bytes32 blockHash);
-    event MassDepositCommit(uint index, bytes32 merged, uint256 fee);
+    event MassDepositCommit(uint256 index, bytes32 merged, uint256 fee);
     event NewErc20(address tokenAddr);
     event NewErc721(address tokenAddr);
 
@@ -38,7 +38,7 @@ interface ICoordinatable {
      * @dev Coordinators can withdraw aggregated transaction fees.
      * @param amount Amount to withdraw.
      */
-    function withdrawReward(uint amount) external;
+    function withdrawReward(uint256 amount) external;
 
     /**
      * @dev Coordinator can commit mass deposits. The pending deposits will be automatically

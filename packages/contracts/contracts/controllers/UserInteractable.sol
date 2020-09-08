@@ -8,35 +8,35 @@ import { Hash, Poseidon6, MiMC } from "../libraries/Hash.sol";
 import { WithdrawalTree, Blockchain, Types } from "../libraries/Types.sol";
 
 contract UserInteractable is Layer2 {
-    uint public constant SNARK_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
-    uint public constant RANGE_LIMIT = SNARK_FIELD >> 32;
+    uint256 public constant SNARK_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+    uint256 public constant RANGE_LIMIT = SNARK_FIELD >> 32;
     using RollUpLib for *;
 
-    event Deposit(uint indexed queuedAt, uint note, uint fee);
+    event Deposit(uint256 indexed queuedAt, uint256 note, uint256 fee);
 
     function deposit(
-        uint spendingPubKey,
-        uint salt,
-        uint eth,
+        uint256 spendingPubKey,
+        uint256 salt,
+        uint256 eth,
         address token,
-        uint amount,
-        uint nft,
-        uint fee
+        uint256 amount,
+        uint256 nft,
+        uint256 fee
     ) public payable {
         _deposit(spendingPubKey, salt, eth, token, amount, nft, fee);
     }
     
     function withdraw(
-        uint note,
+        uint256 note,
         address owner,
-        uint eth,
+        uint256 eth,
         address token,
         uint256 amount,
         uint256 nft,
         uint256 fee,
         bytes32 blockHash,
         uint256 leafIndex,
-        uint[] memory siblings
+        uint256[] memory siblings
     ) public {
         return _withdraw(
             note,
@@ -53,13 +53,13 @@ contract UserInteractable is Layer2 {
     }
 
     function payInAdvance(
-        uint note,
+        uint256 note,
         address owner,
-        uint eth,
+        uint256 eth,
         address token,
-        uint amount,
-        uint nft,
-        uint fee,
+        uint256 amount,
+        uint256 nft,
+        uint256 fee,
         bytes memory signature
     ) public payable {
         bytes32 withdrawalHash = _withdrawalHash(
@@ -105,13 +105,13 @@ contract UserInteractable is Layer2 {
     }
 
     function _deposit(
-        uint spendingPubKey,
-        uint salt,
-        uint eth,
+        uint256 spendingPubKey,
+        uint256 salt,
+        uint256 eth,
         address token,
-        uint amount,
-        uint nft,
-        uint fee
+        uint256 amount,
+        uint256 nft,
+        uint256 fee
     ) internal {
         require(msg.value < RANGE_LIMIT, "Too big value can cause the overflow inside the SNARK");
         require(amount < RANGE_LIMIT, "Too big value can cause the overflow inside the SNARK");
@@ -122,17 +122,17 @@ contract UserInteractable is Layer2 {
 
         ///TODO: require(fee >= specified fee);
         /// Validate the note is same with the hash result
-        uint[] memory assetHashInputs = new uint[](4);
+        uint256[] memory assetHashInputs = new uint256[](4);
         assetHashInputs[0] = eth;
-        assetHashInputs[1] = uint(token);
+        assetHashInputs[1] = uint256(token);
         assetHashInputs[2] = amount; //erc20 amount
         assetHashInputs[3] = nft;
-        uint assetHash = Poseidon6.poseidon(assetHashInputs);
-        uint[] memory resultHashInputs = new uint[](3);
+        uint256 assetHash = Poseidon6.poseidon(assetHashInputs);
+        uint256[] memory resultHashInputs = new uint256[](3);
         resultHashInputs[0] = spendingPubKey;
         resultHashInputs[1] = salt;
         resultHashInputs[2] = assetHash;
-        uint note = Poseidon6.poseidon(resultHashInputs);
+        uint256 note = Poseidon6.poseidon(resultHashInputs);
         /// Receive token
         if (token != address(0) && amount != 0) {
             try IERC20(token).transferFrom(msg.sender, address(this), amount) {
@@ -154,16 +154,16 @@ contract UserInteractable is Layer2 {
     }
 
     function _withdraw(
-        uint note,
+        uint256 note,
         address owner,
-        uint eth,
+        uint256 eth,
         address token,
         uint256 amount,
         uint256 nft,
         uint256 fee,
         bytes32 blockHash,
         uint256 leafIndex,
-        uint[] memory siblings
+        uint256[] memory siblings
     ) internal {
         require(nft*amount == 0, "Only ERC20 or ERC721");
         require(Layer2.chain.finalized[blockHash], "Not a finalized block");
@@ -187,7 +187,7 @@ contract UserInteractable is Layer2 {
         // inclusion proof
         bool inclusion = Hash.keccak().merkleProof(
             root,
-            uint(withdrawalHash),
+            uint256(withdrawalHash),
             leafIndex,
             siblings
         );
@@ -216,7 +216,7 @@ contract UserInteractable is Layer2 {
     function _withdrawalHash(
         uint256 note,
         address owner,
-        uint eth,
+        uint256 eth,
         address token,
         uint256 amount,
         uint256 nft,
