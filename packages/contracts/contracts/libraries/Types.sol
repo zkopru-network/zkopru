@@ -1,4 +1,4 @@
-pragma solidity >= 0.6.0;
+pragma solidity = 0.6.12;
 
 import { G1Point, G2Point } from "./Pairing.sol";
 

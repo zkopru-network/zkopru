@@ -1,4 +1,4 @@
-pragma solidity >= 0.6.0;
+pragma solidity = 0.6.12;
 
 struct Hasher {
     function (uint256, uint256) internal pure returns (uint256) parentOf;

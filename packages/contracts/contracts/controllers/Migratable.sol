@@ -1,4 +1,4 @@
-pragma solidity >= 0.6.0;
+pragma solidity = 0.6.12;
 
 import { Layer2 } from "../storage/Layer2.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";

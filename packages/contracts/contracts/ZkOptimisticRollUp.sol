@@ -1,4 +1,4 @@
-pragma solidity >= 0.6.0;
+pragma solidity = 0.6.12;
 
 import { ISetupWizard } from "./interfaces/ISetupWizard.sol";
 import { Layer2 } from "./storage/Layer2.sol";

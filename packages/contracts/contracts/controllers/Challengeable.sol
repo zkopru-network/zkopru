@@ -1,4 +1,4 @@
-pragma solidity >= 0.6.0;
+pragma solidity = 0.6.12;
 
 import { Layer2 } from "../storage/Layer2.sol";
 import {
