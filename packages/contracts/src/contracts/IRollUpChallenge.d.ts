@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class IRollUpChallenge extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): IRollUpChallenge
+
   methods: {
     challengeUTXORollUp(
       proofId: number | string,
@@ -39,6 +41,7 @@ export class IRollUpChallenge extends Contract {
       submission: string | number[],
     ): TransactionObject<void>
   }
+
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
