@@ -172,7 +172,7 @@ contract TxChallenge is Challengeable {
             inputs[index++] = uint256(transaction.outflow[i].publicData.nft);
             inputs[index++] = uint256(transaction.outflow[i].publicData.fee);
         }
-        if (!vk.zkSNARKs(inputs, transaction.proof)) {
+        if (!vk.verifySnarkProof(inputs, transaction.proof)) {
             return Challenge(
                 true,
                 _block.header.proposer,
