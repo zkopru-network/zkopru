@@ -3,7 +3,7 @@ pragma solidity = 0.6.12;
 import { ISetupWizard } from "./interfaces/ISetupWizard.sol";
 import { Layer2 } from "./storage/Layer2.sol";
 import { Layer2Controller } from "./Layer2Controller.sol";
-import { SNARKsVerifier } from "./libraries/SNARKs.sol";
+import { SNARK } from "./libraries/SNARK.sol";
 import { Blockchain, Header, Types } from "./libraries/Types.sol";
 import { Pairing, G1Point, G2Point } from "./libraries/Pairing.sol";
 import { Hash } from "./libraries/Hash.sol";
@@ -40,8 +40,8 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
         uint256[2][2] memory delta2,
         uint256[2][] memory ic
     ) public override onlySetupWizard {
-        uint256 txSig = Types.getSNARKsSignature(numOfInputs, numOfOutputs);
-        SNARKsVerifier.VerifyingKey storage vk = Layer2.vks[txSig];
+        uint256 txSig = Types.getSNARKSignature(numOfInputs, numOfOutputs);
+        SNARK.VerifyingKey storage vk = Layer2.vks[txSig];
         vk.alfa1 = G1Point(alfa1[0], alfa1[1]);
         vk.beta2 = G2Point(beta2[0], beta2[1]);
         vk.gamma2 = G2Point(gamma2[0], gamma2[1]);

@@ -2,7 +2,7 @@ pragma solidity = 0.6.12;
 
 import { Layer2 } from "../../storage/Layer2.sol";
 import { Challengeable } from "../Challengeable.sol";
-import { SNARKsVerifier } from "../../libraries/SNARKs.sol";
+import { SNARK } from "../../libraries/SNARK.sol";
 import { SMT254 } from "../../libraries/SMT.sol";
 import {
     Block,
@@ -21,7 +21,7 @@ contract TxChallenge is Challengeable {
     using Types for Outflow;
     using Types for PublicData;
     using SMT254 for SMT254.OPRU;
-    using SNARKsVerifier for SNARKsVerifier.VerifyingKey;
+    using SNARK for SNARK.VerifyingKey;
 
     function challengeInclusion(
         uint256 txIndex,
@@ -142,7 +142,7 @@ contract TxChallenge is Challengeable {
             }
         }
         /// Slash if the transaction type is not supported
-        SNARKsVerifier.VerifyingKey memory vk = _getVerifyingKey(
+        SNARK.VerifyingKey memory vk = _getVerifyingKey(
             uint8(transaction.inflow.length),
             uint8(transaction.outflow.length)
         );
@@ -153,7 +153,7 @@ contract TxChallenge is Challengeable {
                 "Unsupported tx type"
             );
         }
-        /// Slash if its zk SNARKs verification returns false
+        /// Slash if its zk SNARK verification returns false
         uint256[] memory inputs = new uint256[](1 + 1 + 2*transaction.inflow.length + 8*transaction.outflow.length);
         uint256 index = 0;
         inputs[index++] = uint256(transaction.fee);
@@ -176,7 +176,7 @@ contract TxChallenge is Challengeable {
             return Challenge(
                 true,
                 _block.header.proposer,
-                "SNARKs failed"
+                "SNARK failed"
             );
         }
         /// Passed all tests. It's a valid transaction. Challenge is not accepted
@@ -269,11 +269,11 @@ contract TxChallenge is Challengeable {
     function _getVerifyingKey(
         uint8 numberOfInputs,
         uint8 numberOfOutputs
-    ) internal view returns (SNARKsVerifier.VerifyingKey memory) {
-        return vks[Types.getSNARKsSignature(numberOfInputs, numberOfOutputs)];
+    ) internal view returns (SNARK.VerifyingKey memory) {
+        return vks[Types.getSNARKSignature(numberOfInputs, numberOfOutputs)];
     }
 
-    function _exist(SNARKsVerifier.VerifyingKey memory vk) internal pure returns (bool) {
+    function _exist(SNARK.VerifyingKey memory vk) internal pure returns (bool) {
         if (vk.alfa1.X != 0) {
             return true;
         } else {

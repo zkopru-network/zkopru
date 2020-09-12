@@ -2,7 +2,7 @@ pragma solidity = 0.6.12;
 
 interface ISetupWizard {
     /**
-     * @dev This configures a zk SNARKs verification key to support the given transaction type
+     * @dev This configures a zk SNARK verification key to support the given transaction type
      * @param numOfInputs Number of inflow UTXOs
      * @param numOfOutputs Number of outflow UTXOs
      */
