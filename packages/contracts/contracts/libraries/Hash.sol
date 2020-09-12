@@ -180,7 +180,7 @@ library Hash {
     }
 
     /**
-     * We use poseidon, instead of MiMC because it is cheaper in SNARKs, 
+     * We use poseidon, instead of MiMC because it is cheaper in SNARK, 
      * FYI, MiMC hash is cheaper on EVM(~22000gas) & able ot use 6 depth of the sub tree.
     function mimc() internal pure returns (Hasher memory) {
         return Hasher(mimcParentOf, mimcPrehashedZeroes());

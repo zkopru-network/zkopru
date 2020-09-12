@@ -3,12 +3,9 @@ pragma solidity = 0.6.12;
 import { Pairing, G1Point, G2Point } from "./Pairing.sol";
 import { Proof } from "./Types.sol";
 
-library SNARKsVerifier {
+library SNARK {
     using Pairing for *;
-
-    uint256 constant SNARK_SCALAR_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
-    uint256 constant PRIME_Q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
-
+    
     struct VerifyingKey {
         G1Point alfa1;
         G2Point beta2;
@@ -16,6 +13,9 @@ library SNARKsVerifier {
         G2Point delta2;
         G1Point[] ic;
     }
+
+    uint256 constant SNARK_SCALAR_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+    uint256 constant PRIME_Q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;    
 
     function verifySnarkProof(VerifyingKey memory vk, uint256[] memory input, Proof memory proof) internal view returns (bool) {
         require(input.length + 1 == vk.ic.length,"verifier-bad-input");

@@ -2,7 +2,7 @@ pragma solidity = 0.6.12;
 
 import "../libraries/Types.sol";
 import { Pairing } from "../libraries/Pairing.sol";
-import { SNARKsVerifier } from "../libraries/SNARKs.sol";
+import { SNARK } from "../libraries/SNARK.sol";
 import { Configurated } from "./Configurated.sol";
 
 import { SMT254 } from "../libraries/SMT.sol";
@@ -12,8 +12,8 @@ contract Layer2 is Configurated {
     // State of the layer2 blockchain is maintained by the optimistic roll up
     Blockchain chain;
 
-    // SNARKs verifying keys assigned by the setup wizard for each tx type
-    mapping(uint256=>SNARKsVerifier.VerifyingKey) vks;
+    // SNARK verifying keys assigned by the setup wizard for each tx type
+    mapping(uint256=>SNARK.VerifyingKey) vks;
 
     // Addresses allowed to migrate from. Setup wizard manages the list
     mapping(address=>bool) public allowedMigrants;
@@ -101,8 +101,8 @@ contract Layer2 is Configurated {
         uint256[2][2] memory delta2,
         uint256[2][] memory ic
     ) {
-        uint256 txSig = Types.getSNARKsSignature(numOfInputs, numOfOutputs);
-        SNARKsVerifier.VerifyingKey memory vk = vks[txSig];
+        uint256 txSig = Types.getSNARKSignature(numOfInputs, numOfOutputs);
+        SNARK.VerifyingKey memory vk = vks[txSig];
         alfa1[0] = vk.alfa1.X;
         alfa1[1] = vk.alfa1.Y;
         beta2[0] = vk.beta2.X;

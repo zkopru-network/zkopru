@@ -2,7 +2,7 @@ pragma solidity = 0.6.12;
 
 import { Layer2 } from "../../storage/Layer2.sol";
 import { Challengeable } from "../Challengeable.sol";
-import { SNARKsVerifier } from "../../libraries/SNARKs.sol";
+import { SNARK } from "../../libraries/SNARK.sol";
 import { SMT254 } from "../../libraries/SMT.sol";
 import {
     Block,
@@ -15,7 +15,7 @@ import { Deserializer } from "../../libraries/Deserializer.sol";
 contract DepositChallenge is Challengeable {
     using Types for MassDeposit;
     using SMT254 for SMT254.OPRU;
-    using SNARKsVerifier for SNARKsVerifier.VerifyingKey;
+    using SNARK for SNARK.VerifyingKey;
 
     function challengeMassDeposit(
         uint256 index,

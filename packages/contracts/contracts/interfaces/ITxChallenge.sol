@@ -11,7 +11,7 @@ interface ITxChallenge {
     function challengeInclusion(uint8 txType, uint256 txIndex, uint256 inflowIndex, bytes calldata submission) external;
 
     /**
-     * @dev Challenge when any submitted transaction has an invalid SNARKs proof
+     * @dev Challenge when any submitted transaction has an invalid SNARK proof
      * @param txIndex Index of the transaction in the tx list of the block body.
      * @param submission The proposal data which is exactly same with the submitted.
      */

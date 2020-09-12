@@ -378,7 +378,7 @@ library Types {
     function maxChallengeCost(Block memory submission) internal pure returns (uint256 maxCost) {
     }
 
-    function getSNARKsSignature(
+    function getSNARKSignature(
         uint8 numberOfInputs,
         uint8 numberOfOutputs
     ) internal pure returns (uint256) {
