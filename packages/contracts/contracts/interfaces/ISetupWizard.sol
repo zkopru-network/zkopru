@@ -1,19 +1,19 @@
 pragma solidity = 0.6.12;
+pragma experimental ABIEncoderV2;
+
+import { SNARK } from "../libraries/SNARK.sol";
 
 interface ISetupWizard {
     /**
      * @dev This configures a zk SNARK verification key to support the given transaction type
      * @param numOfInputs Number of inflow UTXOs
      * @param numOfOutputs Number of outflow UTXOs
+     * @param vk SNARK verifying key for the given transaction type
      */
     function registerVk(
         uint8 numOfInputs,
         uint8 numOfOutputs,
-        uint256[2] calldata alfa1,
-        uint256[2][2] calldata beta2,
-        uint256[2][2] calldata gamma2,
-        uint256[2][2] calldata delta2,
-        uint256[2][] calldata ic
+        SNARK.VerifyingKey memory vk
     ) external;
 
     /**

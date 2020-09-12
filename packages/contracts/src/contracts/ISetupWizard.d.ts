@@ -20,11 +20,13 @@ export class ISetupWizard extends Contract {
     registerVk(
       numOfInputs: number | string,
       numOfOutputs: number | string,
-      alfa1: (number | string)[],
-      beta2: (number | string)[][],
-      gamma2: (number | string)[][],
-      delta2: (number | string)[][],
-      ic: (number | string)[][],
+      vk: {
+        alfa1: { X: number | string; Y: number | string }
+        beta2: { X: (number | string)[]; Y: (number | string)[] }
+        gamma2: { X: (number | string)[]; Y: (number | string)[] }
+        delta2: { X: (number | string)[]; Y: (number | string)[] }
+        ic: { X: number | string; Y: number | string }[]
+      },
     ): TransactionObject<void>
 
     makeUserInteractable(addr: string): TransactionObject<void>
