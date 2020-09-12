@@ -1,4 +1,5 @@
 pragma solidity = 0.6.12;
+pragma experimental ABIEncoderV2;
 
 import { ISetupWizard } from "./interfaces/ISetupWizard.sol";
 import { Layer2 } from "./storage/Layer2.sol";
@@ -34,20 +35,17 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
     function registerVk(
         uint8 numOfInputs,
         uint8 numOfOutputs,
-        uint256[2] memory alfa1,
-        uint256[2][2] memory beta2,
-        uint256[2][2] memory gamma2,
-        uint256[2][2] memory delta2,
-        uint256[2][] memory ic
+        SNARK.VerifyingKey memory vk
     ) public override onlySetupWizard {
         uint256 txSig = Types.getSNARKSignature(numOfInputs, numOfOutputs);
-        SNARK.VerifyingKey storage vk = Layer2.vks[txSig];
-        vk.alfa1 = G1Point(alfa1[0], alfa1[1]);
-        vk.beta2 = G2Point(beta2[0], beta2[1]);
-        vk.gamma2 = G2Point(gamma2[0], gamma2[1]);
-        vk.delta2 = G2Point(delta2[0], delta2[1]);
-        for (uint256 i = 0; i < ic.length; i++) {
-            vk.ic.push(G1Point(ic[i][0], ic[i][1]));
+        SNARK.VerifyingKey storage key = Layer2.vks[txSig];
+        key.alfa1 = vk.alfa1;
+        key.beta2 = vk.beta2;
+        key.gamma2 = vk.gamma2;
+        key.delta2 = vk.delta2;
+        require(key.ic.length == 0, "already registered");
+        for (uint256 i = 0; i < vk.ic.length; i++) {
+            key.ic.push(vk.ic[i]);
         }
     }
 

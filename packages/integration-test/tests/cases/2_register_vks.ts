@@ -14,15 +14,13 @@ export const testRegisterVKs = (ctx: CtxProvider) => async () => {
   nIn.forEach(i => {
     nOut.forEach(j => {
       registerVKs.push(async () => {
-        const tx = contract.setup.methods.registerVk(
-          i,
-          j,
-          vks[i][j].vk_alfa_1.slice(0, 2),
-          vks[i][j].vk_beta_2.slice(0, 2),
-          vks[i][j].vk_gamma_2.slice(0, 2),
-          vks[i][j].vk_delta_2.slice(0, 2),
-          vks[i][j].IC.map((arr: string[][]) => arr.slice(0, 2)),
-        )
+        const tx = contract.setup.methods.registerVk(i, j, {
+          alfa1: vks[i][j].vk_alfa_1.slice(0, 2),
+          beta2: vks[i][j].vk_beta_2.slice(0, 2),
+          gamma2: vks[i][j].vk_gamma_2.slice(0, 2),
+          delta2: vks[i][j].vk_delta_2.slice(0, 2),
+          ic: vks[i][j].IC.map((arr: string[][]) => arr.slice(0, 2)),
+        })
         const estimatedGas = await tx.estimateGas()
         const receipt = await tx.send({
           from: accounts.coordinator.ethAddress,
@@ -40,15 +38,13 @@ export const testRegisterVKs = (ctx: CtxProvider) => async () => {
 export const testRegisterVKFails = (ctx: CtxProvider) => async () => {
   const { contract, vks, accounts } = ctx()
   const sampleVk: any = vks[4][4]
-  const tx = contract.setup.methods.registerVk(
-    5,
-    5,
-    sampleVk.vk_alfa_1.slice(0, 2),
-    sampleVk.vk_beta_2.slice(0, 2),
-    sampleVk.vk_gamma_2.slice(0, 2),
-    sampleVk.vk_delta_2.slice(0, 2),
-    sampleVk.IC.map((arr: string[][]) => arr.slice(0, 2)),
-  )
+  const tx = contract.setup.methods.registerVk(5, 5, {
+    alfa1: sampleVk.vk_alfa_1.slice(0, 2),
+    beta2: sampleVk.vk_beta_2.slice(0, 2),
+    gamma2: sampleVk.vk_gamma_2.slice(0, 2),
+    delta2: sampleVk.vk_delta_2.slice(0, 2),
+    ic: sampleVk.IC.map((arr: string[][]) => arr.slice(0, 2)),
+  })
   const estimatedGas = await tx.estimateGas()
   await expect(
     tx.send({ from: accounts.alice.ethAddress, gas: estimatedGas }),
