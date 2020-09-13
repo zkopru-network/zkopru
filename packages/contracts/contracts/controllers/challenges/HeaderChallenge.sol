@@ -17,6 +17,10 @@ contract HeaderChallenge is Challengeable {
     using Types for MassMigration[];
     using Types for Transaction[];
 
+    /**
+     * @dev Challenge when the submitted header's deposit root is invalid.
+     * @param blockData Serialized block data
+     */
     function challengeDepositRoot(bytes calldata blockData) external {
         bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(0);
@@ -24,6 +28,12 @@ contract HeaderChallenge is Challengeable {
         _execute(proposalId, result);
     }
 
+    /**
+     * @dev Challenge when the submitted header's transfer root is invalid.
+     *      The transfer root in the header should be the merkle root of the transfer
+     *      tx hash values.
+     * @param blockData Serialized block data
+     */
     function challengTxRoot(bytes calldata blockData) external {
         bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(0);
@@ -31,6 +41,12 @@ contract HeaderChallenge is Challengeable {
         _execute(proposalId, result);
     }
 
+    /**
+     * @dev Challenge when the submitted header's migration root is invalid.
+     *      The migration root in the header should be the merkle root of the migration
+     *      tx hash values.
+     * @param blockData Serialized block data
+     */
     function challengeMigrationRoot(bytes calldata blockData) external {
         bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(0);
@@ -38,6 +54,11 @@ contract HeaderChallenge is Challengeable {
         _execute(proposalId, result);
     }
 
+    /**
+     * @dev Challenge when the submitted header's total fee is not same with
+     *      the sum of the fees in every transactions in the block.
+     * @param blockData Serialized block data
+     */
     function challengeTotalFee(bytes calldata blockData) external {
         bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(0);

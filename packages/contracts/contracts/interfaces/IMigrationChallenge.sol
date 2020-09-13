@@ -1,20 +1,16 @@
 pragma solidity = 0.6.12;
 
 interface IMigrationChallenge {
-    /**
-     * @param destination Address of another layer 2 contract
-     * @param submission The proposal data which is exactly same with the submitted.
-     */
     function challengeMassMigrationToMassDeposit(
         address destination,
-        bytes calldata submission
+        bytes calldata blockData
     ) external;
 
 
     function challengeERC20Migration(
         address destination,
         address erc20,
-        bytes calldata submission
+        bytes calldata blockData
     ) external;
 
 
@@ -22,6 +18,6 @@ interface IMigrationChallenge {
         address destination,
         address erc721,
         uint256 tokenId,
-        bytes calldata submission
+        bytes calldata blockData
     ) external;
 }

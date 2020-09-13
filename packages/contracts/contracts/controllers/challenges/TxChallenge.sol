@@ -23,6 +23,12 @@ contract TxChallenge is Challengeable {
     using SMT254 for SMT254.OPRU;
     using SNARK for SNARK.VerifyingKey;
 
+    /**
+     * @dev Challenge when any of the used nullifier's inclusion reference is invalid.
+     * @param txIndex Index of the transaction in the tx list of the block body.
+     * @param inflowIndex Index of the inflow note in the tx.
+     * @param blockData Serialized block data
+     */
     function challengeInclusion(
         uint256 txIndex,
         uint256 inflowIndex,
@@ -38,25 +44,43 @@ contract TxChallenge is Challengeable {
         _execute(proposalId, result);
     }
 
-    function challengeTransaction(uint256 index, bytes calldata blockData) external {
+    /**
+     * @dev Challenge when any submitted transaction has an invalid SNARK proof
+     * @param txIndex Index of the transaction in the tx list of the block body.
+     * @param blockData Serialized block data
+     */
+    function challengeTransaction(uint256 txIndex, bytes calldata blockData) external {
         bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(1);
-        Challenge memory result = _challengeResultOfTransaction(_block, index);
+        Challenge memory result = _challengeResultOfTransaction(_block, txIndex);
         _execute(proposalId, result);
     }
 
-    function challengeAtomicSwap(uint256 index, bytes calldata blockData) external {
+    /**
+     * @dev Challenge when the submitted transaction does not follow correct atomic swap protocol
+     * @param txIndex Index of the transaction in the tx list of the block body.
+     * @param blockData Serialized block data
+     */
+    function challengeAtomicSwap(uint256 txIndex, bytes calldata blockData) external {
         bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(1);
-        Challenge memory result = _challengeAtomicSwap(_block, index);
+        Challenge memory result = _challengeAtomicSwap(_block, txIndex);
         _execute(proposalId, result);
     }
 
+    /**
+     * @dev Challenge when the block is trying to use an already used nullifier.
+     * @param txIndex Index of the transaction in the tx list of the block body.
+     * @param inflowIndex Index of the inflow note in the tx.
+     * @param sibling The sibling data of the nullifier.
+     * @param // parentHeader Serialized parent header data
+     * @param blockData Serialized block data
+     */
     function challengeUsedNullifier(
         uint256 txIndex,
         uint256 inflowIndex,
         bytes32[254] calldata sibling,
-        bytes calldata,
+        bytes calldata /**parentHeader*/,
         bytes calldata blockData
     ) external {
         bytes32 proposalId = keccak256(blockData);
@@ -72,6 +96,11 @@ contract TxChallenge is Challengeable {
         _execute(proposalId, result);
     }
 
+    /**
+     * @dev Challenge when a nullifier used twice in a same block.
+     * @param nullifier Double included nullifier.
+     * @param blockData Serialized block data
+     */
     function challengeDuplicatedNullifier(bytes32 nullifier, bytes calldata blockData) external {
         bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(1);
@@ -79,6 +108,16 @@ contract TxChallenge is Challengeable {
         _execute(proposalId, result);
     }
 
+    /**
+     * @notice It checks the validity of an inclusion refernce for a nullifier.
+     * @dev Each nullifier should be paired with an inclusion reference which is a root of
+     *      utxo tree. For the inclusion reference, You can use finalized roots or recent
+     *      blocks' utxo roots. When you use recent blocks' utxo roots, recent REF_DEPTH
+     *      of utxo roots are available. It costs maximum 1800*REF_DEPTH gas to validate
+     *      an inclusion reference during the TX challenge process.
+     * @param l2BlockHash Layer2 block's hash value where to start searching for.
+     * @param ref Utxo root which includes the nullifier's origin utxo.
+     */
     function isValidRef(bytes32 l2BlockHash, uint256 ref) public view returns (bool) {
         if (Layer2.chain.finalizedUTXORoots[ref]) {
             return true;

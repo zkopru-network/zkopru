@@ -20,10 +20,16 @@ contract UtxoTreeChallenge is Challengeable {
     using Types for Outflow;
     using Types for Header;
 
+    /**
+     * @dev Challenge when the submitted block's updated utxo tree index is invalid.
+     * @param deposits Submit all deposit leaves to be merged.
+     * @param // parentHeader  Serialized parent header data
+     * @param blockData Serialized block data
+     */
     function challengeUTXOIndex(
         uint256[] calldata deposits,
-        bytes calldata, // serialized parent header data
-        bytes calldata blockData // serialized block data
+        bytes calldata /** parentHeader */,
+        bytes calldata blockData
     ) external {
         bytes32 proposalId = keccak256(blockData);
         Header memory parentHeader = Deserializer.headerFromCalldataAt(1);
@@ -38,10 +44,17 @@ contract UtxoTreeChallenge is Challengeable {
         _execute(proposalId, result);
     }
 
+    /**
+     * @dev Challenge when the submitted block's updated utxo tree root is invalid.
+     * @param deposits Submit all deposit leaves to be merged.
+     * @param initialSiblings Submit the siblings of the starting index leaf
+     * @param // parentHeader  Serialized parent header data
+     * @param blockData Serialized block data
+     */
     function challengeUTXORoot(
         uint256[] calldata deposits,
         uint256[] calldata initialSiblings,
-        bytes calldata, // serialized parent header data
+        bytes calldata /**parentHeader*/,
         bytes calldata blockData // serialized block data
     ) external {
         bytes32 proposalId = keccak256(blockData);
