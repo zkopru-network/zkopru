@@ -268,7 +268,7 @@ export const MigratableABI = [
   },
   {
     inputs: [
-      { internalType: 'bytes32', name: 'checksum', type: 'bytes32' },
+      { internalType: 'bytes32', name: 'proposalChecksum', type: 'bytes32' },
       { internalType: 'bytes', name: '', type: 'bytes' },
     ],
     name: 'migrateTo',

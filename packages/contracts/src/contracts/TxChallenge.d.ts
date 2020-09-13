@@ -125,12 +125,12 @@ export class TxChallenge extends Contract {
     ): TransactionObject<void>
 
     challengeTransaction(
-      index: number | string,
+      txIndex: number | string,
       blockData: string | number[],
     ): TransactionObject<void>
 
     challengeAtomicSwap(
-      index: number | string,
+      txIndex: number | string,
       blockData: string | number[],
     ): TransactionObject<void>
 

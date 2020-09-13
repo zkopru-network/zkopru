@@ -18,27 +18,31 @@ export class ITxChallenge extends Contract {
   clone(): ITxChallenge
   methods: {
     challengeInclusion(
-      txType: number | string,
       txIndex: number | string,
       inflowIndex: number | string,
-      submission: string | number[],
+      blockData: string | number[],
     ): TransactionObject<void>
 
     challengeTransaction(
       txIndex: number | string,
-      submission: string | number[],
+      blockData: string | number[],
+    ): TransactionObject<void>
+
+    challengeAtomicSwap(
+      txIndex: number | string,
+      blockData: string | number[],
     ): TransactionObject<void>
 
     challengeUsedNullifier(
       txIndex: number | string,
       inflowIndex: number | string,
       sibling: (string | number[])[],
-      submission: string | number[],
+      blockData: string | number[],
     ): TransactionObject<void>
 
     challengeDuplicatedNullifier(
       nullifier: string | number[],
-      submission: string | number[],
+      blockData: string | number[],
     ): TransactionObject<void>
 
     isValidRef(

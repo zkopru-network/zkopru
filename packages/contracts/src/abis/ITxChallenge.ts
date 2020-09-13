@@ -1,10 +1,9 @@
 export const ITxChallengeABI = [
   {
     inputs: [
-      { internalType: 'uint8', name: 'txType', type: 'uint8' },
       { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
       { internalType: 'uint256', name: 'inflowIndex', type: 'uint256' },
-      { internalType: 'bytes', name: 'submission', type: 'bytes' },
+      { internalType: 'bytes', name: 'blockData', type: 'bytes' },
     ],
     name: 'challengeInclusion',
     outputs: [],
@@ -14,7 +13,7 @@ export const ITxChallengeABI = [
   {
     inputs: [
       { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
-      { internalType: 'bytes', name: 'submission', type: 'bytes' },
+      { internalType: 'bytes', name: 'blockData', type: 'bytes' },
     ],
     name: 'challengeTransaction',
     outputs: [],
@@ -24,9 +23,19 @@ export const ITxChallengeABI = [
   {
     inputs: [
       { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
+      { internalType: 'bytes', name: 'blockData', type: 'bytes' },
+    ],
+    name: 'challengeAtomicSwap',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
       { internalType: 'uint256', name: 'inflowIndex', type: 'uint256' },
       { internalType: 'bytes32[254]', name: 'sibling', type: 'bytes32[254]' },
-      { internalType: 'bytes', name: 'submission', type: 'bytes' },
+      { internalType: 'bytes', name: 'blockData', type: 'bytes' },
     ],
     name: 'challengeUsedNullifier',
     outputs: [],
@@ -36,7 +45,7 @@ export const ITxChallengeABI = [
   {
     inputs: [
       { internalType: 'bytes32', name: 'nullifier', type: 'bytes32' },
-      { internalType: 'bytes', name: 'submission', type: 'bytes' },
+      { internalType: 'bytes', name: 'blockData', type: 'bytes' },
     ],
     name: 'challengeDuplicatedNullifier',
     outputs: [],

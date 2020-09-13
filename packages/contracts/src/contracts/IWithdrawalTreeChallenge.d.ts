@@ -19,13 +19,13 @@ export class IWithdrawalTreeChallenge extends Contract {
   methods: {
     challengeWithdrawalIndex(
       parentHeader: string | number[],
-      submission: string | number[],
+      blockData: string | number[],
     ): TransactionObject<void>
 
     challengeWithdrawalRoot(
       initialSiblings: (number | string)[],
       parentHeader: string | number[],
-      submission: string | number[],
+      blockData: string | number[],
     ): TransactionObject<void>
   }
   events: {
