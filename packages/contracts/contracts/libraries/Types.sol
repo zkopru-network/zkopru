@@ -375,7 +375,7 @@ library Types {
     }
 
     // TODO temporal calculation
-    function maxChallengeCost(Block memory submission) internal pure returns (uint256 maxCost) {
+    function maxChallengeCost(Block memory blockData) internal pure returns (uint256 maxCost) {
     }
 
     function getSNARKSignature(

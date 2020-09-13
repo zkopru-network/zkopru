@@ -18,9 +18,14 @@ import { Deserializer } from "../../libraries/Deserializer.sol";
 contract WithdrawalTreeChallenge is Challengeable {
     using Types for Header;
 
+    /**
+     * @dev Challenge when the submitted block's updated withdrawal tree index is invalid.
+     * @param // parentHeader  Serialized parent header data
+     * @param blockData Serialized block data
+     */
     function challengeWithdrawalIndex(
-        bytes calldata, // serialized parent header
-        bytes calldata blockData // serialized block data
+        bytes calldata /** parentHeader */,
+        bytes calldata blockData
     ) external {
         bytes32 proposalId = keccak256(blockData);
         Header memory parentHeader = Deserializer.headerFromCalldataAt(0);
@@ -32,10 +37,16 @@ contract WithdrawalTreeChallenge is Challengeable {
         _execute(proposalId, result);
     }
 
+    /**
+     * @dev Challenge when the submitted block's updated withdrawal tree root is invalid.
+     * @param initialSiblings Submit the siblings of the starting index leaf
+     * @param // parentHeader  Serialized parent header data
+     * @param blockData Serialized block data
+     */
     function challengeWithdrawalRoot(
         uint256[] calldata initialSiblings,
-        bytes calldata, // serialized parent header
-        bytes calldata blockData // serialized block data
+        bytes calldata /** parentHeader */,
+        bytes calldata blockData
     ) external {
         bytes32 proposalId = keccak256(blockData);
         Header memory parentHeader = Deserializer.headerFromCalldataAt(1);

@@ -12,13 +12,21 @@ contract Migratable is Layer2 {
 
     event NewMassMigration(bytes32 checksum, address network, bytes32 merged, uint256 fee);
 
+    /**
+     * @dev You can do the mass migration using this function. To execute
+     *      this function, the destination contract should inherits the
+     *      "Migratable" contract and have registered this current contract's
+     *      address as an allowed migrant.
+     * @param proposalChecksum Checksum of the block where the mass migration is included.
+     * @param // data Serialized mass migration data
+     */
     function migrateTo(
-        bytes32 checksum,
-        bytes calldata
+        bytes32 proposalChecksum,
+        bytes calldata //data
     ) external {
         MassMigration memory migration = Deserializer.massMigrationFromCalldataAt(1);
         address to = migration.destination;
-        bytes32 migrationId = keccak256(abi.encodePacked(checksum, migration.hash()));
+        bytes32 migrationId = keccak256(abi.encodePacked(proposalChecksum, migration.hash()));
         require(chain.migrations[migrationId], "MassMigration does not exist");
         try Migratable(to).acceptMigration(
             migrationId,

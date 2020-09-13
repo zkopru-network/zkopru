@@ -23,6 +23,10 @@ contract MigrationChallenge is Challengeable {
     using SNARK for SNARK.VerifyingKey;
     using Types for Outflow;
 
+    /**
+     * @param destination Address of another layer 2 contract
+     * @param blockData Serialized block data
+     */
     function challengeMassMigrationToMassDeposit(
         address destination,
         bytes calldata blockData
