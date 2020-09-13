@@ -37,7 +37,7 @@ contract DepositChallenge is Challengeable {
     {
         MassDeposit memory massDeposit = _block.body.massDeposits[_index];
         if(chain.committedDeposits[massDeposit.hash()] > 0) {
-            /// This mass deposit does not exist
+            // This mass deposit does not exist
             return Challenge(
                 true,
                 _block.header.proposer,

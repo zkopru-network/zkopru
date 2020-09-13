@@ -35,46 +35,46 @@ contract Coordinatable is Layer2 {
         address payable proposerAddr = msg.sender;
         Proposer storage proposer = Layer2.chain.proposers[proposerAddr];
         require(proposer.exitAllowance <= block.number, "Still in the challenge period");
-        /// Withdraw stake
+        // Withdraw stake
         proposerAddr.transfer(proposer.stake);
-        /// Withdraw reward
+        // Withdraw reward
         payable(proposerAddr).transfer(proposer.reward);
-        /// Delete proposer
+        // Delete proposer
         delete Layer2.chain.proposers[proposerAddr];
     }
 
     function propose(bytes memory data) public {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         bytes32 checksum = keccak256(data);
-        /// The message sender address should be same with the proposer address
+        // The message sender address should be same with the proposer address
         require(_block.header.proposer == msg.sender, "Coordinator account is different with the message sender");
         Proposer storage proposer = Layer2.chain.proposers[msg.sender];
-        /// Check permission
+        // Check permission
         require(isProposable(msg.sender), "Not allowed to propose");
-        /// Duplicated proposal is not allowed
+        // Duplicated proposal is not allowed
         require(Layer2.chain.proposals[checksum].headerHash == bytes32(0), "Already submitted");
         /** LEGACY
-        /// Do not exceed maximum challenging cost
+        // Do not exceed maximum challenging cost
         require(_block.maxChallengeCost() < CHALLENGE_LIMIT, "Its challenge cost exceeds the limit");
         */
-        /// Save opru proposal
+        // Save opru proposal
         bytes32 currentBlockHash = _block.header.hash();
         Layer2.chain.proposals[checksum] = Proposal(
             currentBlockHash,
             block.number + CHALLENGE_PERIOD,
             false
         );
-        /// Record l2 chain
+        // Record l2 chain
         Layer2.chain.parentOf[currentBlockHash] = _block.header.parentBlock;
-        /// Record reference for the inclusion proofs
+        // Record reference for the inclusion proofs
         Layer2.chain.utxoRootOf[currentBlockHash] = _block.header.utxoRoot;
-        /// Record reference for the withdrawal proofs when only if there exists update
+        // Record reference for the withdrawal proofs when only if there exists update
         if (Layer2.chain.withdrawalRootOf[_block.header.parentBlock] != _block.header.withdrawalRoot) {
             Layer2.chain.withdrawalRootOf[currentBlockHash] = _block.header.withdrawalRoot;
         }
-        /// Update exit allowance period
+        // Update exit allowance period
         proposer.exitAllowance = block.number + CHALLENGE_PERIOD;
-        /// Freeze the latest mass deposit for the next block proposer
+        // Freeze the latest mass deposit for the next block proposer
         commitMassDeposit();
         emit NewProposal(Layer2.chain.proposedBlocks, currentBlockHash);
         Layer2.chain.proposedBlocks++;
@@ -98,7 +98,7 @@ contract Coordinatable is Layer2 {
     function finalize(bytes memory) public {
         Finalization memory finalization = Deserializer.finalizationFromCalldataAt(0);
         Proposal storage proposal = Layer2.chain.proposals[finalization.proposalChecksum];
-        /// Check requirements
+        // Check requirements
         require(finalization.massDeposits.root() == finalization.header.depositRoot, "Submitted different deposit root");
         require(finalization.massMigrations.root() == finalization.header.migrationRoot, "Submitted different deposit root");
         require(finalization.header.hash() == proposal.headerHash, "Invalid header data");
@@ -107,7 +107,7 @@ contract Coordinatable is Layer2 {
         require(finalization.header.parentBlock == Layer2.chain.latest, "The latest block should be its parent");
         require(finalization.header.parentBlock != proposal.headerHash, "Reentrancy case");
 
-        /// Execute deposits and collect fees
+        // Execute deposits and collect fees
         for (uint256 i = 0; i < finalization.massDeposits.length; i++) {
             MassDeposit memory deposit = finalization.massDeposits[i];
             bytes32 massDepositHash = deposit.hash();
@@ -115,8 +115,8 @@ contract Coordinatable is Layer2 {
             Layer2.chain.committedDeposits[massDepositHash] -= 1;
         }
 
-        /// Record mass migrations and collect fees.
-        /// A MassMigration becomes a MassDeposit for the migration destination.
+        // Record mass migrations and collect fees.
+        // A MassMigration becomes a MassDeposit for the migration destination.
         for (uint256 i = 0; i < finalization.massMigrations.length; i++) {
             bytes32 migrationId = keccak256(
                 abi.encodePacked(
@@ -128,11 +128,11 @@ contract Coordinatable is Layer2 {
             Layer2.chain.migrations[migrationId] = true;
         }
 
-        /// Give fee to the proposer
+        // Give fee to the proposer
         Proposer storage proposer = Layer2.chain.proposers[finalization.header.proposer];
         proposer.reward += finalization.header.fee;
 
-        /// Update the chain
+        // Update the chain
         Layer2.chain.finalized[proposal.headerHash] = true;
         Layer2.chain.finalizedUTXORoots[finalization.header.utxoRoot] = true;
         Layer2.chain.latest = proposal.headerHash;
@@ -162,7 +162,7 @@ contract Coordinatable is Layer2 {
 
     function isProposable(address proposerAddr) public view returns (bool) {
         Proposer memory  proposer = Layer2.chain.proposers[proposerAddr];
-        /// You can add more consensus logic here
+        // You can add more consensus logic here
         if (proposer.stake >= MINIMUM_STAKE) {
             return true;
         } else {
@@ -171,7 +171,7 @@ contract Coordinatable is Layer2 {
     }
 }
 
-///  TODO - If the gas usage exceeds the challenge limit, the proposer will get slashed
-///  TODO - instant withdrawal
-///  TODO - guarantee of tx including
-///  Some thoughts - There exists a possibility of racing condition to get the slash reward
+//  TODO - If the gas usage exceeds the challenge limit, the proposer will get slashed
+//  TODO - instant withdrawal
+//  TODO - guarantee of tx including
+//  Some thoughts - There exists a possibility of racing condition to get the slash reward

@@ -82,7 +82,7 @@ contract UserInteractable is Layer2 {
                 withdrawalHash
             )
         );
-        /// verify original owner's signature
+        // verify original owner's signature
         require(
             _verifySignature(
                 currentOwner,
@@ -92,15 +92,15 @@ contract UserInteractable is Layer2 {
             "Invalid owner signature"
         );
         require(msg.value == eth, 'not enough ether');
-        /// prepay tokens
+        // prepay tokens
         if(amount!=0) {
             IERC20(token).transferFrom(prepayer, currentOwner, amount);
         } else {
             revert("Does not support NFT prepay");
         }
-        /// prepay ether
+        // prepay ether
         payable(currentOwner).transfer(eth);
-        /// transfer ownership
+        // transfer ownership
         Layer2.chain.newWithdrawalOwner[withdrawalHash] = prepayer;
     }
 
@@ -120,8 +120,8 @@ contract UserInteractable is Layer2 {
         require(eth + fee == msg.value, "Inexact amount of eth");
         require(Layer2.chain.stagedSize < 1024, "Should wait until it is committed");
 
-        ///TODO: require(fee >= specified fee);
-        /// Validate the note is same with the hash result
+        //TODO: require(fee >= specified fee);
+        // Validate the note is same with the hash result
         uint256[] memory assetHashInputs = new uint256[](4);
         assetHashInputs[0] = eth;
         assetHashInputs[1] = uint256(token);
@@ -133,7 +133,7 @@ contract UserInteractable is Layer2 {
         resultHashInputs[1] = salt;
         resultHashInputs[2] = assetHash;
         uint256 note = Poseidon6.poseidon(resultHashInputs);
-        /// Receive token
+        // Receive token
         if (token != address(0) && amount != 0) {
             try IERC20(token).transferFrom(msg.sender, address(this), amount) {
             } catch {
@@ -145,11 +145,11 @@ contract UserInteractable is Layer2 {
                 revert("Transfer NFT failed");
             }
         }
-        /// Update the mass deposit
+        // Update the mass deposit
         Layer2.chain.stagedDeposits.merged = keccak256(abi.encodePacked(Layer2.chain.stagedDeposits.merged, note));
         Layer2.chain.stagedDeposits.fee += fee;
         Layer2.chain.stagedSize += 1;
-        /// Emit event. Coordinator should subscribe this event.
+        // Emit event. Coordinator should subscribe this event.
         emit Deposit(Layer2.chain.massDepositId, note, fee);
     }
 
@@ -192,7 +192,7 @@ contract UserInteractable is Layer2 {
             siblings
         );
         require(inclusion, "The given withdrawal note does not exist");
-        /// Withdraw ETH & get fee
+        // Withdraw ETH & get fee
         if(eth != 0) {
             if(to == msg.sender) {
                 payable(to).transfer(eth + fee);
@@ -201,7 +201,7 @@ contract UserInteractable is Layer2 {
                 payable(msg.sender).transfer(fee);
             }
         }
-        /// Withdrawn token
+        // Withdrawn token
         if (token != address(0)) {
             if (amount != 0) {
                 IERC20(token).transfer(to, amount);
@@ -209,7 +209,7 @@ contract UserInteractable is Layer2 {
                 IERC721(token).transferFrom(address(this), to, nft);
             }
         }
-        /// Mark as withdrawn
+        // Mark as withdrawn
         Layer2.chain.withdrawn[withdrawalHash] = true;
     }
 
