@@ -21,7 +21,7 @@ export class INullifierTreeChallenge extends Contract {
       numOfNullifiers: number | string,
       siblings: (string | number[])[][],
       parentHeader: string | number[],
-      submission: string | number[],
+      blockData: string | number[],
     ): TransactionObject<void>
   }
   events: {

@@ -69,6 +69,13 @@ export const ISetupWizardABI = [
     type: 'function',
   },
   {
+    inputs: [{ internalType: 'address', name: 'addr', type: 'address' }],
+    name: 'makeCoordinatable',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
     inputs: [
       { internalType: 'address', name: 'depositChallenge', type: 'address' },
       { internalType: 'address', name: 'headerChallenge', type: 'address' },
