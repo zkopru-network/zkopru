@@ -18,11 +18,18 @@ import { Deserializer } from "../../libraries/Deserializer.sol";
 contract NullifierTreeChallenge is Challengeable {
     using Types for Header;
 
+    /**
+     * @dev Challenge when the submitted block's nullifier tree transition is invalid.
+     * @param numOfNullifiers Number of used nullifiers to help the computation.
+     * @param siblings Siblings of each nullifier.
+     * @param // parentHeader  Serialized parent header data
+     * @param blockData Serialized block data
+     */
     function challengeNullifierRollUp(
         uint256 numOfNullifiers,
         bytes32[254][] calldata siblings,
-        bytes calldata, // serialized parent header data
-        bytes calldata blockData // serialized block data
+        bytes calldata /** parentHeader */,
+        bytes calldata blockData
     ) external {
         bytes32 proposalId = keccak256(blockData);
         Header memory parentHeader = Deserializer.headerFromCalldataAt(2);

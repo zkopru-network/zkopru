@@ -25,12 +25,20 @@ contract Coordinatable is Layer2 {
     event NewErc20(address tokenAddr);
     event NewErc721(address tokenAddr);
 
+    /**
+     * @notice Coordinator calls this function for the proof of stake.
+     *         Coordinator should pay more than MINIMUM_STAKE. See 'Configurated.sol'
+     *
+     */
     function register() public payable {
         require(msg.value >= MINIMUM_STAKE, "Should stake more than minimum amount of ETH");
         Proposer storage proposer = Layer2.chain.proposers[msg.sender];
         proposer.stake += msg.value;
     }
 
+    /**
+     * @notice Coordinator can withdraw deposited stakes after the challenge period.
+     */
     function deregister() public {
         address payable proposerAddr = msg.sender;
         Proposer storage proposer = Layer2.chain.proposers[proposerAddr];
@@ -43,6 +51,12 @@ contract Coordinatable is Layer2 {
         delete Layer2.chain.proposers[proposerAddr];
     }
 
+    /**
+     * @dev Coordinator proposes a new block using this function. propose() will freeze
+     *      the current mass deposit for the next block proposer, and will go through
+     *      CHALLENGE_PERIOD.
+     * @param data Serialized newly minted block data
+     */
     function propose(bytes memory data) public {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         bytes32 checksum = keccak256(data);
@@ -53,10 +67,6 @@ contract Coordinatable is Layer2 {
         require(isProposable(msg.sender), "Not allowed to propose");
         // Duplicated proposal is not allowed
         require(Layer2.chain.proposals[checksum].headerHash == bytes32(0), "Already submitted");
-        /** LEGACY
-        // Do not exceed maximum challenging cost
-        require(_block.maxChallengeCost() < CHALLENGE_LIMIT, "Its challenge cost exceeds the limit");
-        */
         // Save opru proposal
         bytes32 currentBlockHash = _block.header.hash();
         Layer2.chain.proposals[checksum] = Proposal(
@@ -80,6 +90,12 @@ contract Coordinatable is Layer2 {
         Layer2.chain.proposedBlocks++;
     }
 
+    /**
+     * @dev Coordinator can commit mass deposits. The pending deposits will be automatically
+     *      committed by propose() block. But to start the first propose() block, there
+     *      should be enough pending deposits, and the coordinator will commit them using
+     *      this standalone function.
+     */
     function commitMassDeposit() public {
         if(Layer2.chain.stagedDeposits.merged != bytes32(0)) {
             bytes32 depositHash = Layer2.chain.stagedDeposits.hash();
@@ -95,6 +111,11 @@ contract Coordinatable is Layer2 {
         }
     }
 
+    /**
+     * @dev Coordinator can finalize a submitted block if it isn't slashed during the
+     *      challenge period. It updates the aggregated fee and withdrawal root.
+     * @param // Block data without tx details
+     */
     function finalize(bytes memory) public {
         Finalization memory finalization = Deserializer.finalizationFromCalldataAt(0);
         Proposal storage proposal = Layer2.chain.proposals[finalization.proposalChecksum];
@@ -140,6 +161,10 @@ contract Coordinatable is Layer2 {
         delete Layer2.chain.proposals[finalization.proposalChecksum];
     }
 
+    /**
+     * @dev Coordinators can withdraw aggregated transaction fees.
+     * @param amount Amount to withdraw.
+     */
     function withdrawReward(uint256 amount) public {
         address payable proposerAddr = msg.sender;
         Proposer storage proposer = Layer2.chain.proposers[proposerAddr];
@@ -148,18 +173,31 @@ contract Coordinatable is Layer2 {
         proposer.reward -= amount;
     }
 
-    // TODO 1. verify erc20 token 2. governance to register the token address
+    /**
+     * @dev Provide registered erc20 token information for decryption
+     * TODO
+     * 1. verify erc20 token
+     * 2. governance to register the token address
+     */
     function registerERC20(address tokenAddr) public {
         Layer2.chain.registeredERC20s.push(tokenAddr);
         emit NewErc20(tokenAddr);
     }
 
-    // TODO 1. verify erc721 token 2. governance to register the token address
+    /**
+     * @dev Provide registered erc20 token information for decryption
+     * 1. verify erc721 token
+     * 2. governance to register the token address
+     */
     function registerERC721(address tokenAddr) public {
         Layer2.chain.registeredERC721s.push(tokenAddr);
         emit NewErc721(tokenAddr);
     }
 
+    /**
+     * @dev You can override this function to implement your own consensus logic.
+     * @param proposerAddr Coordinator address to check the allowance of block proposing.
+     */
     function isProposable(address proposerAddr) public view returns (bool) {
         Proposer memory  proposer = Layer2.chain.proposers[proposerAddr];
         // You can add more consensus logic here

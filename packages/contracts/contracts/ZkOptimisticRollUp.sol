@@ -32,6 +32,12 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
         _;
     }
 
+    /**
+     * @dev This configures a zk SNARK verification key to support the given transaction type
+     * @param numOfInputs Number of inflow UTXOs
+     * @param numOfOutputs Number of outflow UTXOs
+     * @param vk SNARK verifying key for the given transaction type
+     */
     function registerVk(
         uint8 numOfInputs,
         uint8 numOfOutputs,
@@ -49,14 +55,23 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
         }
     }
 
+    /**
+     * @dev It connects this proxy contract to the UserInteractable controller.
+     */
     function makeUserInteractable(address addr) public override onlySetupWizard{
         Layer2Controller._connectUserInteractable(addr);
     }
 
-    function makeCoordinatable(address addr) public onlySetupWizard{
+    /**
+     * @dev It connects this proxy contract to the Coordinatable controller.
+     */
+    function makeCoordinatable(address addr) public override onlySetupWizard{
         Layer2Controller._connectCoordinatable(addr);
     }
 
+    /**
+     * @dev It connects this proxy contract to the Challengeable controllers.
+     */
     function makeChallengeable(
         address depositChallenge,
         address headerChallenge,
@@ -77,16 +92,29 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
         );
     }
 
+    /**
+     * @dev It connects this proxy contract to the Migratable controller.
+     */
     function makeMigratable(address addr) public override onlySetupWizard {
         Layer2Controller._connectMigratable(addr);
     }
 
+    /**
+     * @dev Migration process:
+            1. On the destination contract, execute allowMigrants() to configure the allowed migrants.
+               The departure contract should be in the allowed list.
+            2. On the departure contract, execute migrateTo(). See "IMigratable.sol"
+     * @param migrants List of contracts' address to allow migrations.
+     */
     function allowMigrants(address[] memory migrants) public override onlySetupWizard {
         for (uint256 i = 0; i < migrants.length; i++) {
             Layer2.allowedMigrants[migrants[i]] = true;
         }
     }
 
+    /**
+     * @dev If you once execute this, every configuration freezes and does not change forever.
+     */
     function completeSetup() public override onlySetupWizard {
         delete setupWizard;
         require(Layer2.chain.latest == bytes32(0), "Already initialized");
