@@ -548,33 +548,33 @@ library SubTreeRollUpLib {
         uint256 subTreeDepth,
         uint256[] memory leaves
     ) internal pure returns (uint256) {
-        /// Example of a sub tree with depth 3
-        ///                      1
-        ///          10                       11
-        ///    100        101         110           [111]
-        /// 1000 1001  1010 1011   1100 [1101]  [1110] [1111]
-        ///   o   o     o    o       o    x       x       x
-        ///
-        /// whereEmptyNodeStart (1101) = leaves.length + tree_size
-        /// []: nodes that we can use the pre hashed zeroes
-        ///
-        /// * ([1101] << 0) is gte than (1101) => we can use the pre hashed zeroes
-        /// * ([1110] << 0) is gte than (1101) => we can use the pre hashed zeroes
-        /// * ([1111] << 0) is gte than (1101) => we can use pre hashed zeroes
-        /// * ([111] << 1) is gte than (1101) => we can use pre hashed zeroes
-        /// * (11 << 2) is less than (1101) => we cannot use pre hashed zeroes
-        /// * (1 << 3) is less than (1101) => we cannot use pre hashed zeroes
+        // Example of a sub tree with depth 3
+        //                      1
+        //          10                       11
+        //    100        101         110           [111]
+        // 1000 1001  1010 1011   1100 [1101]  [1110] [1111]
+        //   o   o     o    o       o    x       x       x
+        //
+        // whereEmptyNodeStart (1101) = leaves.length + tree_size
+        // []: nodes that we can use the pre hashed zeroes
+        //
+        // * ([1101] << 0) is gte than (1101) => we can use the pre hashed zeroes
+        // * ([1110] << 0) is gte than (1101) => we can use the pre hashed zeroes
+        // * ([1111] << 0) is gte than (1101) => we can use pre hashed zeroes
+        // * ([111] << 1) is gte than (1101) => we can use pre hashed zeroes
+        // * (11 << 2) is less than (1101) => we cannot use pre hashed zeroes
+        // * (1 << 3) is less than (1101) => we cannot use pre hashed zeroes
 
         uint256 treeSize = 1 << subTreeDepth;
         require(leaves.length <= treeSize, "Overflowed");
 
-        uint256[] memory nodes = new uint256[](treeSize << 1); /// we'll not use nodes[0]
-        uint256 emptyNode = treeSize + (leaves.length - 1); /// we do not hash if we can use pre hashed zeroes
+        uint256[] memory nodes = new uint256[](treeSize << 1); // we'll not use nodes[0]
+        uint256 emptyNode = treeSize + (leaves.length - 1); // we do not hash if we can use pre hashed zeroes
         uint256 leftMostOfTheFloor = treeSize;
 
-        /// From the bottom to the top
+        // From the bottom to the top
         for(uint256 level = 0; level <= subTreeDepth; level++) {
-            /// From the right to the left
+            // From the right to the left
             for(
                 uint256 nodeIndex = (treeSize << 1) - 1;
                 nodeIndex >= leftMostOfTheFloor;
@@ -582,18 +582,18 @@ library SubTreeRollUpLib {
             )
             {
                 if (nodeIndex <= emptyNode) {
-                    /// This node is not an empty node
+                    // This node is not an empty node
                     if (level == 0) {
-                        /// Leaf node
+                        // Leaf node
                         nodes[nodeIndex] = leaves[nodeIndex - treeSize];
                     } else {
-                        /// Parent node
+                        // Parent node
                         uint256 leftChild = nodeIndex << 1;
                         uint256 rightChild = leftChild + 1;
                         nodes[nodeIndex] = self.parentOf(nodes[leftChild], nodes[rightChild]);
                     }
                 } else {
-                    /// Use pre hashed
+                    // Use pre hashed
                     nodes[nodeIndex] = self.preHashedZero[level];
                 }
             }

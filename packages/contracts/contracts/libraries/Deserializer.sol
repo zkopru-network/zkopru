@@ -489,7 +489,7 @@ library Deserializer {
     }
 
     function finalizationFromCalldataAt(uint256 paramIndex) internal pure returns (Finalization memory) {
-        /// 4 means the length of the function signature in the calldata
+        // 4 means the length of the function signature in the calldata
         uint256 start = 4 + abi.decode(msg.data[4 + 32*paramIndex:4 + 32*(paramIndex+1)], (uint256));
         uint256 cp = start + 0x20; //calldata position
         Finalization memory _finalization;

@@ -42,7 +42,7 @@ contract Migratable is Layer2 {
                     );
                 }
             }
-            /// Delete mass migration
+            // Delete mass migration
             delete chain.migrations[migrationId];
         } catch {
            revert("Dest contract denied migration");

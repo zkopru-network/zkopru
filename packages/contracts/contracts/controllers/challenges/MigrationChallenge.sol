@@ -129,7 +129,7 @@ contract MigrationChallenge is Challengeable {
                     ERC20Migration memory erc20Migration = massMigration.erc20[j];
                     if(erc20Migration.addr == erc20) {
                         if(erc20Migration.addr != address(0)) {
-                            /// There exist more than 2 of erc20 migration against the address.
+                            // There exist more than 2 of erc20 migration against the address.
                             return Challenge(
                                 true,
                                 _block.header.proposer,
@@ -181,7 +181,7 @@ contract MigrationChallenge is Challengeable {
                     ERC721Migration memory erc721Migration = massMigration.erc721[j];
                     if(erc721Migration.addr == erc721) {
                         if(erc721Migration.addr != address(0)) {
-                            /// There exist more than 2 of erc721 migration against the address.
+                            // There exist more than 2 of erc721 migration against the address.
                             return Challenge(
                                 true,
                                 _block.header.proposer,

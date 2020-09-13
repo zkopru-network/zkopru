@@ -141,7 +141,7 @@ contract TxChallenge is Challengeable {
                 }
             }
         }
-        /// Slash if the transaction type is not supported
+        // Slash if the transaction type is not supported
         SNARK.VerifyingKey memory vk = _getVerifyingKey(
             uint8(transaction.inflow.length),
             uint8(transaction.outflow.length)
@@ -153,7 +153,7 @@ contract TxChallenge is Challengeable {
                 "Unsupported tx type"
             );
         }
-        /// Slash if its zk SNARK verification returns false
+        // Slash if its zk SNARK verification returns false
         uint256[] memory inputs = new uint256[](1 + 1 + 2*transaction.inflow.length + 8*transaction.outflow.length);
         uint256 index = 0;
         inputs[index++] = uint256(transaction.fee);
@@ -164,7 +164,7 @@ contract TxChallenge is Challengeable {
         }
         for (uint256 i = 0; i < transaction.outflow.length; i++) {
             inputs[index++] = uint256(transaction.outflow[i].note);
-            /// These only exist for migration
+            // These only exist for migration
             inputs[index++] = uint256(transaction.outflow[i].publicData.to);
             inputs[index++] = uint256(transaction.outflow[i].publicData.eth);
             inputs[index++] = uint256(transaction.outflow[i].publicData.token);
@@ -179,7 +179,7 @@ contract TxChallenge is Challengeable {
                 "SNARK failed"
             );
         }
-        /// Passed all tests. It's a valid transaction. Challenge is not accepted
+        // Passed all tests. It's a valid transaction. Challenge is not accepted
         return Challenge(
             false,
             _block.header.proposer,
@@ -252,7 +252,7 @@ contract TxChallenge is Challengeable {
         for (uint256 i = 0; i < _block.body.txs.length; i++) {
             Transaction memory transaction = _block.body.txs[i];
             for (uint256 j = 0; j < transaction.inflow.length; j++) {
-                /// Found matched nullifier
+                // Found matched nullifier
                 if (transaction.inflow[j].nullifier == nullifier) count++;
                 if (count >= 2) break;
             }
