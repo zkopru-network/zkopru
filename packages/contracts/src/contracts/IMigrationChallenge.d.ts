@@ -19,20 +19,20 @@ export class IMigrationChallenge extends Contract {
   methods: {
     challengeMassMigrationToMassDeposit(
       destination: string,
-      submission: string | number[],
+      blockData: string | number[],
     ): TransactionObject<void>
 
     challengeERC20Migration(
       destination: string,
       erc20: string,
-      submission: string | number[],
+      blockData: string | number[],
     ): TransactionObject<void>
 
     challengeERC721Migration(
       destination: string,
       erc721: string,
       tokenId: number | string,
-      submission: string | number[],
+      blockData: string | number[],
     ): TransactionObject<void>
   }
   events: {

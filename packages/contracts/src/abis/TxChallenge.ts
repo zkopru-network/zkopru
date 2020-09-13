@@ -253,7 +253,7 @@ export const TxChallengeABI = [
   },
   {
     inputs: [
-      { internalType: 'uint256', name: 'index', type: 'uint256' },
+      { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
       { internalType: 'bytes', name: 'blockData', type: 'bytes' },
     ],
     name: 'challengeTransaction',
@@ -263,7 +263,7 @@ export const TxChallengeABI = [
   },
   {
     inputs: [
-      { internalType: 'uint256', name: 'index', type: 'uint256' },
+      { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
       { internalType: 'bytes', name: 'blockData', type: 'bytes' },
     ],
     name: 'challengeAtomicSwap',

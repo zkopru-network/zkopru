@@ -8,7 +8,7 @@ export const INullifierTreeChallengeABI = [
         type: 'bytes32[254][]',
       },
       { internalType: 'bytes', name: 'parentHeader', type: 'bytes' },
-      { internalType: 'bytes', name: 'submission', type: 'bytes' },
+      { internalType: 'bytes', name: 'blockData', type: 'bytes' },
     ],
     name: 'challengeNullifierRollUp',
     outputs: [],

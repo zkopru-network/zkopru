@@ -21,7 +21,7 @@ export class ICoordinatable extends Contract {
 
     deregister(): TransactionObject<void>
 
-    propose(submission: string | number[]): TransactionObject<void>
+    propose(blockData: string | number[]): TransactionObject<void>
 
     finalize(finalization: string | number[]): TransactionObject<void>
 

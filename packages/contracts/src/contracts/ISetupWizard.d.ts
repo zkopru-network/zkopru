@@ -31,6 +31,8 @@ export class ISetupWizard extends Contract {
 
     makeUserInteractable(addr: string): TransactionObject<void>
 
+    makeCoordinatable(addr: string): TransactionObject<void>
+
     makeChallengeable(
       depositChallenge: string,
       headerChallenge: string,

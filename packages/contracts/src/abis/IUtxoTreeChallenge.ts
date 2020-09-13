@@ -3,7 +3,7 @@ export const IUtxoTreeChallengeABI = [
     inputs: [
       { internalType: 'uint256[]', name: 'deposits', type: 'uint256[]' },
       { internalType: 'bytes', name: 'parentHeader', type: 'bytes' },
-      { internalType: 'bytes', name: 'submission', type: 'bytes' },
+      { internalType: 'bytes', name: 'blockData', type: 'bytes' },
     ],
     name: 'challengeUTXOIndex',
     outputs: [],
@@ -15,7 +15,7 @@ export const IUtxoTreeChallengeABI = [
       { internalType: 'uint256[]', name: 'deposits', type: 'uint256[]' },
       { internalType: 'uint256[]', name: 'initialSiblings', type: 'uint256[]' },
       { internalType: 'bytes', name: 'parentHeader', type: 'bytes' },
-      { internalType: 'bytes', name: 'submission', type: 'bytes' },
+      { internalType: 'bytes', name: 'blockData', type: 'bytes' },
     ],
     name: 'challengeUTXORoot',
     outputs: [],

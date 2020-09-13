@@ -20,14 +20,14 @@ export class IUtxoTreeChallenge extends Contract {
     challengeUTXOIndex(
       deposits: (number | string)[],
       parentHeader: string | number[],
-      submission: string | number[],
+      blockData: string | number[],
     ): TransactionObject<void>
 
     challengeUTXORoot(
       deposits: (number | string)[],
       initialSiblings: (number | string)[],
       parentHeader: string | number[],
-      submission: string | number[],
+      blockData: string | number[],
     ): TransactionObject<void>
   }
   events: {

@@ -119,7 +119,7 @@ export class Migratable extends Contract {
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
 
     migrateTo(
-      checksum: string | number[],
+      proposalChecksum: string | number[],
       arg1: string | number[],
     ): TransactionObject<void>
 

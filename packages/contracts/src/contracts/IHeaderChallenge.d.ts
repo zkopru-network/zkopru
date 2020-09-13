@@ -17,15 +17,15 @@ export class IHeaderChallenge extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
   clone(): IHeaderChallenge
   methods: {
-    challengeDepositRoot(submission: string | number[]): TransactionObject<void>
+    challengeDepositRoot(blockData: string | number[]): TransactionObject<void>
 
-    challengeTxRoot(submission: string | number[]): TransactionObject<void>
+    challengeTxRoot(blockData: string | number[]): TransactionObject<void>
 
     challengeMigrationRoot(
-      submission: string | number[],
+      blockData: string | number[],
     ): TransactionObject<void>
 
-    challengeTotalFee(submission: string | number[]): TransactionObject<void>
+    challengeTotalFee(blockData: string | number[]): TransactionObject<void>
   }
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
