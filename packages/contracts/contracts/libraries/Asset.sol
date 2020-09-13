@@ -21,11 +21,11 @@ library AssetHandler {
      */
     function depositFrom(Asset memory self, address from, uint256 amount) internal returns (bool) {
         if (self.erc20 == address(0)) {
-            /// Asset is Ether
+            // Asset is Ether
             require(amount == msg.value, "Does not receive correct amount");
             require(from == msg.sender, "Different sender");
         } else {
-            /// Asset is ERC20
+            // Asset is ERC20
             IERC20(self.erc20).transferFrom(from, self.wallet, amount);
         }
         return true;
@@ -36,10 +36,10 @@ library AssetHandler {
      */
     function withdrawTo(Asset memory self, address to, uint256 amount) internal {
         if (self.erc20 == address(0)) {
-            /// Asset is Ether
+            // Asset is Ether
             payable(to).transfer(amount);
         } else {
-            /// Asset is ERC20
+            // Asset is ERC20
             IERC20(self.erc20).transfer(to, amount);
         }
     }

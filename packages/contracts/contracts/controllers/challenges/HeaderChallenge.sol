@@ -102,7 +102,7 @@ contract HeaderChallenge is Challengeable {
         for (uint256 i = 0; i < _block.body.txs.length; i ++) {
             totalFee += _block.body.txs[i].fee;
         }
-        /// FYI, fee in the massMigration is for the destination contract
+        // FYI, fee in the massMigration is for the destination contract
         return Challenge(
             totalFee != _block.header.fee,
             _block.header.proposer,
