@@ -60,13 +60,13 @@ contract Coordinatable is Layer2 {
      */
     function propose(bytes memory data) public {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
-        bytes32 checksum = keccak256(data);
         // The message sender address should be same with the proposer address
         require(_block.header.proposer == msg.sender, "Coordinator account is different with the message sender");
         Proposer storage proposer = Layer2.chain.proposers[msg.sender];
         // Check permission
         require(isProposable(msg.sender), "Not allowed to propose");
         // Duplicated proposal is not allowed
+        bytes32 checksum = keccak256(data);
         require(Layer2.chain.proposals[checksum].headerHash == bytes32(0), "Already submitted");
         // Save opru proposal
         bytes32 currentBlockHash = _block.header.hash();
