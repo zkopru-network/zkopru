@@ -251,11 +251,15 @@ contract UserInteractable is Layer2 {
                 payable(msg.sender).transfer(fee);
             }
         }
-        // Withdrawn token
         if (token != address(0)) {
-            if (amount != 0) {
+            // this note contains token value
+            bool isERC20 = Layer2.chain.registeredERC20s[token];
+            bool isERC721 = Layer2.chain.registeredERC721s[token];
+            require(isERC20 || isERC721, "Not a registered token. Reigster that token first");
+            if (isERC20) {
                 IERC20(token).transfer(to, amount);
-            } else {
+            } else if (isERC721){
+                require(nft != 0, "Circuit cannot accept NFT id 0. Please deposit other NFT.");
                 IERC721(token).transferFrom(address(this), to, nft);
             }
         }
