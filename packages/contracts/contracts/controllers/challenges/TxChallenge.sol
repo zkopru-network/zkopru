@@ -162,6 +162,13 @@ contract TxChallenge is Challengeable {
 
         for(uint256 i = 0; i < transaction.outflow.length; i++) {
             Outflow memory outflow = transaction.outflow[i];
+            if (outflow.outflowType > 2) {
+                return Challenge(
+                    true,
+                    _block.header.proposer,
+                    "Outflow type should be one of 0: UTXO, 1: Withdrawal, 2: Migration"
+                );
+            }
             if(outflow.isUTXO()) { // means UTXO
                 if(!outflow.publicData.isEmpty()) {
                     return Challenge(
