@@ -15,26 +15,63 @@ interface EventOptions {
 
 export class IMigrationChallenge extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): IMigrationChallenge
+
   methods: {
-    challengeMassMigrationToMassDeposit(
+    challengeDuplicatedDestination(
       destination: string,
       blockData: string | number[],
     ): TransactionObject<void>
 
-    challengeERC20Migration(
+    challengeTotalEth(
+      migrationIndex: number | string,
+      blockData: string | number[],
+    ): TransactionObject<void>
+
+    challengeMergedLeaves(
+      migrationIndex: number | string,
+      blockData: string | number[],
+    ): TransactionObject<void>
+
+    challengeMigrationFee(
+      migrationIndex: number | string,
+      blockData: string | number[],
+    ): TransactionObject<void>
+
+    challengeDuplicatedERC20Migration(
       destination: string,
       erc20: string,
       blockData: string | number[],
     ): TransactionObject<void>
 
-    challengeERC721Migration(
-      destination: string,
-      erc721: string,
+    challengeERC20Amount(
+      migrationIndex: number | string,
+      erc20Index: number | string,
+      blockData: string | number[],
+    ): TransactionObject<void>
+
+    challengeDuplicatedERC721Migration(
+      migrationIndex: number | string,
+      erc20Address: string,
+      blockData: string | number[],
+    ): TransactionObject<void>
+
+    challengeNonFungibility(
+      migrationIndex: number | string,
+      erc721Index: number | string,
+      tokenId: number | string,
+      blockData: string | number[],
+    ): TransactionObject<void>
+
+    challengeNftExistence(
+      migrationIndex: number | string,
+      erc721Index: number | string,
       tokenId: number | string,
       blockData: string | number[],
     ): TransactionObject<void>
   }
+
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

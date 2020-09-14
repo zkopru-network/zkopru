@@ -87,9 +87,15 @@ contract Layer2Controller is Layer2 {
         _connect(headerChallenge, IHeaderChallenge(0).challengeTxRoot.selector);
         _connect(headerChallenge, IHeaderChallenge(0).challengeMigrationRoot.selector);
         _connect(headerChallenge, IHeaderChallenge(0).challengeTotalFee.selector);
-        _connect(migrationChallenge, IMigrationChallenge(0).challengeMassMigrationToMassDeposit.selector);
-        _connect(migrationChallenge, IMigrationChallenge(0).challengeERC20Migration.selector);
-        _connect(migrationChallenge, IMigrationChallenge(0).challengeERC721Migration.selector);
+        _connect(migrationChallenge, IMigrationChallenge(0).challengeDuplicatedDestination.selector);
+        _connect(migrationChallenge, IMigrationChallenge(0).challengeTotalEth.selector);
+        _connect(migrationChallenge, IMigrationChallenge(0).challengeMergedLeaves.selector);
+        _connect(migrationChallenge, IMigrationChallenge(0).challengeMigrationFee.selector);
+        _connect(migrationChallenge, IMigrationChallenge(0).challengeDuplicatedERC20Migration.selector);
+        _connect(migrationChallenge, IMigrationChallenge(0).challengeERC20Amount.selector);
+        _connect(migrationChallenge, IMigrationChallenge(0).challengeDuplicatedERC721Migration.selector);
+        _connect(migrationChallenge, IMigrationChallenge(0).challengeNonFungibility.selector);
+        _connect(migrationChallenge, IMigrationChallenge(0).challengeNftExistence.selector);
         _connect(utxoTreeChallenge, IUtxoTreeChallenge(0).challengeUTXOIndex.selector);
         _connect(utxoTreeChallenge, IUtxoTreeChallenge(0).challengeUTXORoot.selector);
         _connect(withdrawalTreeChallenge, IWithdrawalTreeChallenge(0).challengeWithdrawalIndex.selector);
