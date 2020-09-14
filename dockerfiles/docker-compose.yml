@@ -2,32 +2,32 @@ version: "3"
 
 services:
   contracts:
-    image: zkoprunet/contracts:feat-78
+    image: zkoprunet/contracts:feat-75
     build:
       context: ../packages/contracts/
       dockerfile: ../../dockerfiles/Contract.dockerfile
   contracts-for-integration-test:
-    image: zkoprunet/contracts-integration-test:feat-78
+    image: zkoprunet/contracts-integration-test:feat-75
     build:
       context: ../packages/contracts/
       dockerfile: ../../dockerfiles/Contract.integration.dockerfile
   circuits:
-    image: zkoprunet/circuits:feat-78
+    image: zkoprunet/circuits:feat-75
     build:
       context: ../packages/circuits/
       dockerfile: ../../dockerfiles/Circuits.dockerfile
   circuits-test:
-    image: zkoprunet/circuits-test:feat-78
+    image: zkoprunet/circuits-test:feat-75
     build:
       context: ../packages/circuits/
       dockerfile: ../../dockerfiles/Circuits.test.dockerfile
   playground:
-    image: zkoprunet/playground:feat-78
+    image: zkoprunet/playground:feat-75
     build:
       context: ../
       dockerfile: dockerfiles/Playground.dockerfile
   coordinator:
-    image: zkoprunet/coordinator:feat-78
+    image: zkoprunet/coordinator:feat-75
     build:
       context: ../
       dockerfile: dockerfiles/Coordinator.dockerfile
