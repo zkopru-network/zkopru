@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class MigrationChallenge extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): MigrationChallenge
+
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -118,24 +120,59 @@ export class MigrationChallenge extends Contract {
 
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
 
-    challengeMassMigrationToMassDeposit(
+    challengeDuplicatedDestination(
       destination: string,
       blockData: string | number[],
     ): TransactionObject<void>
 
-    challengeERC20Migration(
-      destination: string,
-      erc20: string,
+    challengeTotalEth(
+      migrationIndex: number | string,
       blockData: string | number[],
     ): TransactionObject<void>
 
-    challengeERC721Migration(
-      destination: string,
-      erc721: string,
+    challengeMergedLeaves(
+      migrationIndex: number | string,
+      blockData: string | number[],
+    ): TransactionObject<void>
+
+    challengeMigrationFee(
+      migrationIndex: number | string,
+      blockData: string | number[],
+    ): TransactionObject<void>
+
+    challengeDuplicatedERC20Migration(
+      migrationIndex: number | string,
+      erc20Address: string,
+      blockData: string | number[],
+    ): TransactionObject<void>
+
+    challengeERC20Amount(
+      migrationIndex: number | string,
+      erc20Index: number | string,
+      blockData: string | number[],
+    ): TransactionObject<void>
+
+    challengeDuplicatedERC721Migration(
+      migrationIndex: number | string,
+      erc20Address: string,
+      blockData: string | number[],
+    ): TransactionObject<void>
+
+    challengeNonFungibility(
+      migrationIndex: number | string,
+      erc721Index: number | string,
+      tokenId: number | string,
+      blockData: string | number[],
+    ): TransactionObject<void>
+
+    challengeNftExistence(
+      migrationIndex: number | string,
+      erc721Index: number | string,
       tokenId: number | string,
       blockData: string | number[],
     ): TransactionObject<void>
   }
+
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
