@@ -730,6 +730,8 @@ export class Coordinator extends EventEmitter {
 
   private async genFinalization(): Promise<Finalization | undefined> {
     const latest = await this.node.l1Contract.upstream.methods.latest().call()
+    const currentBlockNumber: number = await this.node.l1Contract.web3.eth.getBlockNumber()
+    const l1Config = await this.node.l1Contract.getConfig()
     const unfinalizedProposals = await this.node.db.read(prisma =>
       prisma.proposal.findMany({
         where: {
@@ -739,6 +741,9 @@ export class Coordinator extends EventEmitter {
             { verified: true },
             { isUncle: null },
             { proposalData: { not: null } },
+            {
+              proposedAt: { lt: currentBlockNumber - l1Config.challengePeriod },
+            },
           ],
         },
         take: 1,
