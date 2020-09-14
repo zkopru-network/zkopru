@@ -5,24 +5,15 @@ pragma experimental ABIEncoderV2;
 import { Layer2 } from "../../storage/Layer2.sol";
 import { Challengeable } from "../Challengeable.sol";
 import { SNARK } from "../../libraries/SNARK.sol";
-import { SMT254 } from "../../libraries/SMT.sol";
 import {
     Block,
-    Header,
     Challenge,
     Transaction,
-    Outflow,
-    PublicData,
-    AtomicSwap,
     Types
 } from "../../libraries/Types.sol";
 import { Deserializer } from "../../libraries/Deserializer.sol";
 
-contract TxChallenge is Challengeable {
-    using Types for Header;
-    using Types for Outflow;
-    using Types for PublicData;
-    using SMT254 for SMT254.OPRU;
+contract TxSNARKChallenge is Challengeable {
     using SNARK for SNARK.VerifyingKey;
 
     /**

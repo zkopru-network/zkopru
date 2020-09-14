@@ -34,7 +34,7 @@ library Deserializer {
     returns (Block memory)
     {
         // 4 means the length of the function signature in the calldata
-        uint256 start = 4 + abi.decode(msg.data[4 + 32*paramIndex:4 + 32*(paramIndex+1)], (uint256));
+        uint256 start = getPointerAddress(paramIndex);
         uint256 cp = start + 0x20; //calldata position
         Block memory _block;
         (_block.header, cp) = dequeueHeader(cp);
@@ -474,7 +474,7 @@ library Deserializer {
     }
 
     function headerFromCalldataAt(uint256 paramIndex) internal pure returns (Header memory) {
-        uint256 start = 4 + abi.decode(msg.data[4 + 32*paramIndex:4 + 32*(paramIndex+1)], (uint256));
+        uint256 start = getPointerAddress(paramIndex);
         uint256 cp = start + 0x20; //calldata position
         Header memory _header;
         (_header, cp) = dequeueHeader(cp);
@@ -482,7 +482,7 @@ library Deserializer {
     }
 
     function massMigrationFromCalldataAt(uint256 paramIndex) internal pure returns (MassMigration memory) {
-        uint256 start = 4 + abi.decode(msg.data[4 + 32*paramIndex:4 + 32*(paramIndex+1)], (uint256));
+        uint256 start = getPointerAddress(paramIndex);
         uint256 cp = start + 0x20; //calldata position
         MassMigration memory _massMigration;
         (_massMigration, cp) = dequeueMassMigration(cp);
@@ -491,7 +491,7 @@ library Deserializer {
 
     function finalizationFromCalldataAt(uint256 paramIndex) internal pure returns (Finalization memory) {
         // 4 means the length of the function signature in the calldata
-        uint256 start = 4 + abi.decode(msg.data[4 + 32*paramIndex:4 + 32*(paramIndex+1)], (uint256));
+        uint256 start = getPointerAddress(paramIndex);
         uint256 cp = start + 0x20; //calldata position
         Finalization memory _finalization;
         (_finalization.proposalChecksum, cp) = dequeueBytes32(cp);
@@ -509,5 +509,11 @@ library Deserializer {
             revert("Serialization has a problem");
         }
         return _finalization;
+    }
+
+    function getPointerAddress(uint256 paramIndex) private pure returns (uint256) {
+        uint256 LEFT_PADDING = 4; // function sig 4 bytes
+        uint256 ppParam = LEFT_PADDING + 32 * paramIndex; // pointer of pointer of the given parameter
+        return LEFT_PADDING + abi.decode(msg.data[ppParam:ppParam + 32], (uint256));
     }
 }

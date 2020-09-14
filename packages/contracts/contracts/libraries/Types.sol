@@ -77,7 +77,7 @@ struct Finalization {
 struct Proposer {
     uint256 stake;
     uint256 reward;
-    uint256 exitAllowance;
+    uint256 exitAllowance; // block number
 }
 
 struct Proposal {
