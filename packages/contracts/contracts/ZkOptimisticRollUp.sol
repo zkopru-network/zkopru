@@ -9,7 +9,6 @@ import { SNARK } from "./libraries/SNARK.sol";
 import { Blockchain, Header, Types } from "./libraries/Types.sol";
 import { Pairing, G1Point, G2Point } from "./libraries/Pairing.sol";
 import { Hash } from "./libraries/Hash.sol";
-import { SMT254 } from "./libraries/SMT.sol";
 
 contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
     using Types for Header;
@@ -117,8 +116,8 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
      * @dev If you once execute this, every configuration freezes and does not change forever.
      */
     function completeSetup() public override onlySetupWizard {
-        delete setupWizard;
         require(Layer2.chain.latest == bytes32(0), "Already initialized");
+        delete setupWizard;
         uint256[] memory poseidonPreHashes = Hash.poseidonPrehashedZeroes();
         uint256 utxoRoot = poseidonPreHashes[poseidonPreHashes.length - 1];
         uint256[] memory keccakPreHashes = Hash.keccakPrehashedZeroes();
@@ -129,17 +128,17 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
         }
         bytes32 parentBlock = blockhash(block.number - 1);
         Header memory header = Header(
-            msg.sender,
+            msg.sender, // proposer
             parentBlock,
-            uint256(0),
-            utxoRoot,
-            uint256(0),
-            nullifierRoot,
-            withdrawalRoot,
-            uint256(0),
-            bytes32(0),
-            bytes32(0),
-            bytes32(0)
+            uint256(0),  // total fee
+            utxoRoot, // root of the utxo tree
+            uint256(0), // index of the utxo tree
+            nullifierRoot, // root of the nullifier tree
+            withdrawalRoot, // root of the withdrawal tree
+            uint256(0), // index of the withdrawal tree
+            bytes32(0), // tx root
+            bytes32(0), // mass deposit root
+            bytes32(0) // mass migration root
         );
         bytes32 genesis = header.hash();
         Layer2.chain.init(genesis);
