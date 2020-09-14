@@ -45,14 +45,14 @@ contract TxChallenge is Challengeable {
     }
 
     /**
-     * @dev Challenge when any submitted transaction has an invalid SNARK proof
+     * @dev Challenge when the submitted transaction has an invalid outflow
      * @param txIndex Index of the transaction in the tx list of the block body.
      * @param blockData Serialized block data
      */
-    function challengeTransaction(uint256 txIndex, bytes calldata blockData) external {
+    function challengeOutflow(uint256 txIndex, bytes calldata blockData) external {
         bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(1);
-        Challenge memory result = _challengeResultOfTransaction(_block, txIndex);
+        Challenge memory result = _challengeResultOfOutflow(_block, txIndex);
         _execute(proposalId, result);
     }
 
@@ -146,16 +146,16 @@ contract TxChallenge is Challengeable {
         return Challenge(
             !isValidRef(_block.header.hash(), ref),
             _block.header.proposer,
-            "Inclusion reference validation"
+            "Inclusion reference"
         );
     }
 
-    function _challengeResultOfTransaction(
+    function _challengeResultOfOutflow(
         Block memory _block,
         uint256 txIndex
     )
         internal
-        view
+        pure
         returns (Challenge memory)
     {
         Transaction memory transaction = _block.body.txs[txIndex];
@@ -166,7 +166,7 @@ contract TxChallenge is Challengeable {
                 return Challenge(
                     true,
                     _block.header.proposer,
-                    "Outflow type should be one of 0: UTXO, 1: Withdrawal, 2: Migration"
+                    "Invalid outflow type"
                 );
             }
             if(outflow.isUTXO()) { // means UTXO
@@ -174,7 +174,7 @@ contract TxChallenge is Challengeable {
                     return Challenge(
                         true,
                         _block.header.proposer,
-                        "Outflow should not reveal details"
+                        "No public data"
                     );
                 }
             } else {
@@ -182,55 +182,11 @@ contract TxChallenge is Challengeable {
                     return Challenge(
                         true,
                         _block.header.proposer,
-                        "ERC20 and NFT cannot both exist"
+                        "ERC20 and NFT both exists"
                     );
                 }
             }
         }
-        // Slash if the transaction type is not supported
-        SNARK.VerifyingKey memory vk = _getVerifyingKey(
-            uint8(transaction.inflow.length),
-            uint8(transaction.outflow.length)
-        );
-        if (!_exist(vk)) {
-            return Challenge(
-                true,
-                _block.header.proposer,
-                "Unsupported tx type"
-            );
-        }
-        // Slash if its zk SNARK verification returns false
-        uint256[] memory inputs = new uint256[](1 + 1 + 2*transaction.inflow.length + 8*transaction.outflow.length);
-        uint256 index = 0;
-        inputs[index++] = uint256(transaction.fee);
-        inputs[index++] = transaction.swap;
-        for (uint256 i = 0; i < transaction.inflow.length; i++) {
-            inputs[index++] = uint256(transaction.inflow[i].inclusionRoot);
-            inputs[index++] = uint256(transaction.inflow[i].nullifier);
-        }
-        for (uint256 i = 0; i < transaction.outflow.length; i++) {
-            inputs[index++] = uint256(transaction.outflow[i].note);
-            // These only exist for migration
-            inputs[index++] = uint256(transaction.outflow[i].publicData.to);
-            inputs[index++] = uint256(transaction.outflow[i].publicData.eth);
-            inputs[index++] = uint256(transaction.outflow[i].publicData.token);
-            inputs[index++] = uint256(transaction.outflow[i].publicData.amount);
-            inputs[index++] = uint256(transaction.outflow[i].publicData.nft);
-            inputs[index++] = uint256(transaction.outflow[i].publicData.fee);
-        }
-        if (!vk.verifySnarkProof(inputs, transaction.proof)) {
-            return Challenge(
-                true,
-                _block.header.proposer,
-                "SNARK failed"
-            );
-        }
-        // Passed all tests. It's a valid transaction. Challenge is not accepted
-        return Challenge(
-            false,
-            _block.header.proposer,
-            "Valid transaction"
-        );
     }
 
     function _challengeAtomicSwap(
@@ -254,7 +210,7 @@ contract TxChallenge is Challengeable {
         return Challenge(
             counterpart != 1,
             _block.header.proposer,
-            "Only 1 counterpart tx should exist"
+            "allow only 1 counterpart tx"
         );
     }
 
@@ -280,9 +236,9 @@ contract TxChallenge is Challengeable {
             siblings
         );
         return Challenge(
-            updatedRoot == _parentHeader.nullifierRoot,
+            updatedRoot == _parentHeader.nullifierRoot, // should be updated if the nullifier wasn't used before.
             _block.header.proposer,
-            "Double spending validation"
+            "Double spending"
         );
     }
 
@@ -309,21 +265,5 @@ contract TxChallenge is Challengeable {
             _block.header.proposer,
             "Duplicated nullifier"
         );
-    }
-
-    /** Internal functions to help reusable clean code */
-    function _getVerifyingKey(
-        uint8 numberOfInputs,
-        uint8 numberOfOutputs
-    ) internal view returns (SNARK.VerifyingKey memory) {
-        return vks[Types.getSNARKSignature(numberOfInputs, numberOfOutputs)];
-    }
-
-    function _exist(SNARK.VerifyingKey memory vk) internal pure returns (bool) {
-        if (vk.alfa1.X != 0) {
-            return true;
-        } else {
-            return false;
-        }
     }
 }
