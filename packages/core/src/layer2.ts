@@ -184,7 +184,6 @@ export class L2Chain {
       parent: {
         proposer: Address.from(parentHeader.proposer),
         parentBlock: Bytes32.from(parentHeader.parentBlock),
-        metadata: Bytes32.from(parentHeader.metadata),
         fee: Uint256.from(parentHeader.fee),
         utxoRoot: Uint256.from(parentHeader.utxoRoot),
         utxoIndex: Uint256.from(parentHeader.utxoIndex),

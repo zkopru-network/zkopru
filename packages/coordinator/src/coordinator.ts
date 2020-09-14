@@ -674,9 +674,6 @@ export class Coordinator extends EventEmitter {
     const header: Header = {
       proposer: Address.from(this.account.address),
       parentBlock: Bytes32.from(latest),
-      metadata: Bytes32.from(
-        '0x0000000000000000000000000000000000000000000000000000000000000000',
-      ),
       fee: aggregatedFee.toUint256(),
       utxoRoot: expectedGrove.utxoTreeRoot.toUint256(),
       utxoIndex: expectedGrove.utxoTreeIndex.toUint256(),
