@@ -4,7 +4,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { RollUpLib } from "../libraries/Tree.sol";
 import { Layer2 } from "../storage/Layer2.sol";
-import { Hash, Poseidon6, MiMC } from "../libraries/Hash.sol";
+import { Hash, Poseidon6 } from "../libraries/Hash.sol";
 import { WithdrawalTree, Blockchain, Types } from "../libraries/Types.sol";
 
 contract UserInteractable is Layer2 {
