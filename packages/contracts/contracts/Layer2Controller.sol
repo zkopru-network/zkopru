@@ -2,8 +2,6 @@
 pragma solidity = 0.6.12;
 
 import { Layer2 } from "./storage/Layer2.sol";
-import { SNARK } from "./libraries/SNARK.sol";
-import { Pairing } from "./libraries/Pairing.sol";
 import { ICoordinatable } from "./interfaces/ICoordinatable.sol";
 import { IUserInteractable } from "./interfaces/IUserInteractable.sol";
 import { IMigratable } from "./interfaces/IMigratable.sol";

@@ -3,6 +3,7 @@ pragma solidity = 0.6.12;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { RollUpLib } from "../libraries/Tree.sol";
 import { Layer2 } from "../storage/Layer2.sol";
 import { Hash, Poseidon6 } from "../libraries/Hash.sol";
@@ -12,6 +13,7 @@ contract UserInteractable is Layer2 {
     uint256 public constant SNARK_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     uint256 public constant RANGE_LIMIT = SNARK_FIELD >> 32;
     using RollUpLib for *;
+    using SafeMath for uint256;
 
     event Deposit(uint256 indexed queuedAt, uint256 note, uint256 fee);
 
@@ -152,7 +154,7 @@ contract UserInteractable is Layer2 {
         require(amount < RANGE_LIMIT, "Too big value can cause the overflow inside the SNARK");
         require(nft < SNARK_FIELD, "Does not support too big nubmer of nft id");
         require(amount == 0 || nft == 0, "Only one of ERC20 or ERC721 exists");
-        require(eth + fee == msg.value, "Inexact amount of eth");
+        require(eth.add(fee) == msg.value, "Inexact amount of eth");
         require(Layer2.chain.stagedSize < 1024, "Should wait until it is committed");
 
         if (token != address(0)) {
