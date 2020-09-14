@@ -72,7 +72,6 @@ model Header {
   hash String @id
   proposer String
   parentBlock String
-  metadata String
   fee String
   utxoRoot String
   utxoIndex String

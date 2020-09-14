@@ -20,7 +20,6 @@ function strToField(val: string): Field {
 export const dummyHeader: Header = {
   proposer: Address.from(strToField('proposer').toHex(20)),
   parentBlock: strToField('parentBlock').toBytes32(),
-  metadata: strToField('metadata').toBytes32(),
   fee: strToField('totalFee').toUint256(),
   utxoRoot: strToField('utxoRoot').toUint256(),
   utxoIndex: strToField('utxoIndex').toUint256(),

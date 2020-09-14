@@ -100,7 +100,6 @@ struct Header {
     // basic data
     address proposer;
     bytes32 parentBlock;
-    bytes32 metadata;
     uint256 fee;
 
     // UTXO roll up
@@ -181,7 +180,6 @@ library Types {
             abi.encodePacked(
                 header.proposer,
                 header.parentBlock,
-                header.metadata,
                 header.fee,
                 header.utxoRoot,
                 header.utxoIndex,

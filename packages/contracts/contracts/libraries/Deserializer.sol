@@ -62,9 +62,9 @@ library Deserializer {
         assembly {
             // Header
             mstore(header, 0) // put zeroes into the first 32bytes
-            calldatacopy(add(header, 0x0c), calldataPos, 0x174) // header_len := 0x214 = 0x14 + 16 * 0x20;
+            calldatacopy(add(header, 0x0c), calldataPos, 0x154) // header_len := 0x154 = 0x14 + 10 * 0x20;
         }
-        end = calldataPos + 0x174;
+        end = calldataPos + 0x154;
     }
 
     function dequeueTxs(uint256 calldataPos) internal pure returns (

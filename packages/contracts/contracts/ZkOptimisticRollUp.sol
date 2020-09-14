@@ -130,7 +130,6 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
         Header memory header = Header(
             msg.sender,
             parentBlock,
-            bytes32(0),
             uint256(0),
             utxoRoot,
             uint256(0),

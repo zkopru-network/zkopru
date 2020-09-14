@@ -24,7 +24,6 @@ export const genesis = ({
   return {
     proposer: address,
     parentBlock: parent,
-    metadata: zeroBytes,
     fee: zeroBytes.toUint(),
     utxoRoot,
     utxoIndex: zeroBytes.toUint(),

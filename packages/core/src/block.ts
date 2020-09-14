@@ -47,7 +47,6 @@ export interface MassMigration {
 export interface Header {
   proposer: Address
   parentBlock: Bytes32
-  metadata: Bytes32
   fee: Uint256
   utxoRoot: Uint256
   utxoIndex: Uint256
@@ -90,7 +89,6 @@ export function sqlToHeader(sql: HeaderSql): Header {
   return {
     proposer: Address.from(sql.proposer),
     parentBlock: Bytes32.from(sql.parentBlock),
-    metadata: Bytes32.from(sql.metadata),
     fee: Uint256.from(sql.fee),
     utxoRoot: Uint256.from(sql.utxoRoot),
     utxoIndex: Uint256.from(sql.utxoIndex),
@@ -109,7 +107,6 @@ export function serializeHeader(header: Header): Buffer {
     [
       header.proposer,
       header.parentBlock,
-      header.metadata,
       header.fee,
       header.utxoRoot,
       header.utxoIndex,
@@ -249,7 +246,6 @@ function deserializeHeaderFrom(
   const header: Header = {
     proposer: queue.dequeueToAddress(),
     parentBlock: queue.dequeueToBytes32(),
-    metadata: queue.dequeueToBytes32(),
     fee: queue.dequeueToUint256(),
     utxoRoot: queue.dequeueToUint256(),
     utxoIndex: queue.dequeueToUint256(),
@@ -389,7 +385,6 @@ export function headerHash(header: Header): Bytes32 {
     [
       header.proposer,
       header.parentBlock,
-      header.metadata,
       header.fee,
       header.utxoRoot,
       header.utxoIndex,
@@ -602,7 +597,6 @@ export class Block {
       hash: this.hash.toString(),
       proposer: this.header.proposer.toString(),
       parentBlock: this.header.parentBlock.toString(),
-      metadata: this.header.metadata.toString(),
       fee: this.header.fee.toString(),
       utxoRoot: this.header.utxoRoot.toString(),
       utxoIndex: this.header.utxoIndex.toString(),

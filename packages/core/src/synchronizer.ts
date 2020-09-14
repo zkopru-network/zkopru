@@ -97,7 +97,6 @@ export class Synchronizer {
             hash: blockHash,
             proposer: genesisHeader.proposer.toString(),
             parentBlock: genesisHeader.parentBlock.toString(),
-            metadata: genesisHeader.metadata.toString(),
             fee: genesisHeader.fee.toString(),
             utxoRoot: genesisHeader.utxoRoot.toString(),
             utxoIndex: genesisHeader.utxoIndex.toString(),
@@ -141,33 +140,41 @@ export class Synchronizer {
       .on('data', async event => {
         const { returnValues, blockNumber } = event
         // WRITE DATABASE
-        const { tokenAddr } = returnValues as unknown as { tokenAddr: string }
+        const { tokenAddr } = (returnValues as unknown) as { tokenAddr: string }
         logger.info(`ERC20 token registered: ${tokenAddr}`)
         const tokenRegistry: TokenRegistrySql = {
           address: tokenAddr,
           isERC20: true,
           isERC721: false,
-          identifier: Address.from(tokenAddr).toBN().modn(256),
+          identifier: Address.from(tokenAddr)
+            .toBN()
+            .modn(256),
           blockNumber,
         }
 
-        await this.db.write(prisma => prisma.tokenRegistry.create({ data: tokenRegistry }))
+        await this.db.write(prisma =>
+          prisma.tokenRegistry.create({ data: tokenRegistry }),
+        )
       })
     this.erc721RegistrationSubscriber = this.l1Contract.coordinator.events
       .NewErc721({ fromBlock })
       .on('data', async event => {
         const { returnValues, blockNumber } = event
         // WRITE DATABASE
-        const { tokenAddr } = returnValues as unknown as { tokenAddr: string }
+        const { tokenAddr } = (returnValues as unknown) as { tokenAddr: string }
         logger.info(`ERC721 token registered: ${tokenAddr}`)
         const tokenRegistry: TokenRegistrySql = {
           address: tokenAddr,
           isERC20: false,
           isERC721: true,
-          identifier: Address.from(tokenAddr).toBN().modn(256),
+          identifier: Address.from(tokenAddr)
+            .toBN()
+            .modn(256),
           blockNumber,
         }
-        await this.db.write(prisma => prisma.tokenRegistry.create({ data: tokenRegistry }))
+        await this.db.write(prisma =>
+          prisma.tokenRegistry.create({ data: tokenRegistry }),
+        )
       })
   }
 

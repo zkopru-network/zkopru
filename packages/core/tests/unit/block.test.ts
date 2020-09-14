@@ -39,7 +39,6 @@ describe('block.ts', () => {
     const dHeader = deserializedBlock.header
     expect(dHeader.proposer).toStrictEqual(header.proposer)
     expect(dHeader.parentBlock).toStrictEqual(header.parentBlock)
-    expect(dHeader.metadata).toStrictEqual(header.metadata)
     expect(dHeader.fee).toStrictEqual(header.fee)
     expect(dHeader.utxoRoot).toStrictEqual(header.utxoRoot)
     expect(dHeader.utxoIndex).toStrictEqual(header.utxoIndex)
