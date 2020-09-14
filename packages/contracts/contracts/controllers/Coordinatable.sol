@@ -128,6 +128,7 @@ contract Coordinatable is Layer2 {
         require(!Layer2.chain.finalized[proposal.headerHash], "Already finalized");
         require(finalization.header.parentBlock == Layer2.chain.latest, "The latest block should be its parent");
         require(finalization.header.parentBlock != proposal.headerHash, "Reentrancy case");
+        require(block.number > proposal.challengeDue, "Still in challenge period");
 
         // Execute deposits and collect fees
         for (uint256 i = 0; i < finalization.massDeposits.length; i++) {
