@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class Layer2 extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): Layer2
+
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -98,9 +100,9 @@ export class Layer2 extends Contract {
 
     migrations(migrationHash: string | number[]): TransactionObject<boolean>
 
-    registeredERC20s(): TransactionObject<string[]>
+    registeredERC20s(tokenAddr: string): TransactionObject<boolean>
 
-    registeredERC721s(): TransactionObject<string[]>
+    registeredERC721s(tokenAddr: string): TransactionObject<boolean>
 
     getVk(
       numOfInputs: number | string,
@@ -118,6 +120,7 @@ export class Layer2 extends Contract {
       4: string[][]
     }>
   }
+
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

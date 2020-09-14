@@ -87,12 +87,12 @@ contract Layer2 is Configurated {
         return chain.migrations[migrationHash];
     }
 
-    function registeredERC20s() public view returns (address[] memory) {
-        return chain.registeredERC20s;
+    function registeredERC20s(address tokenAddr) public view returns (bool) {
+        return chain.registeredERC20s[tokenAddr];
     }
 
-    function registeredERC721s() public view returns (address[] memory) {
-        return chain.registeredERC721s;
+    function registeredERC721s(address tokenAddr) public view returns (bool) {
+        return chain.registeredERC721s[tokenAddr];
     }
 
     function getVk(uint8 numOfInputs, uint8 numOfOutputs) public view returns (

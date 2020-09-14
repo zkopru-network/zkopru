@@ -156,7 +156,7 @@ contract TxChallenge is Challengeable {
         uint256 txIndex
     )
         internal
-        pure
+        view
         returns (Challenge memory)
     {
         Transaction memory transaction = _block.body.txs[txIndex];
@@ -170,8 +170,9 @@ contract TxChallenge is Challengeable {
                     "Invalid outflow type"
                 );
             }
-            if(outflow.isUTXO()) { // means UTXO
-                if(!outflow.publicData.isEmpty()) {
+            address tokenAddr = outflow.publicData.token;
+            if(tokenAddr == address(0)) { // means UTXO
+                if (!outflow.publicData.isEmpty()) {
                     return Challenge(
                         true,
                         _block.header.proposer,
@@ -179,12 +180,35 @@ contract TxChallenge is Challengeable {
                     );
                 }
             } else {
-                if(outflow.publicData.amount * outflow.publicData.nft != 0) {
+                bool isERC20 = Layer2.chain.registeredERC20s[tokenAddr];
+                bool isERC721 = Layer2.chain.registeredERC721s[tokenAddr];
+                // means Withdrawal or migration. Inspect revealed token values
+                if (!isERC20 && !isERC721) {
                     return Challenge(
                         true,
                         _block.header.proposer,
-                        "ERC20 and NFT both exists"
+                        "Unregistered token address"
                     );
+                } else if (isERC20 && 0 != outflow.publicData.nft) {
+                    return Challenge(
+                        true,
+                        _block.header.proposer,
+                        "ERC20 cannot have NFT"
+                    );
+                } else if (isERC721) {
+                    if (outflow.publicData.amount != 0) {
+                        return Challenge(
+                            true,
+                            _block.header.proposer,
+                            "ERC721 cannot have amount value"
+                        );
+                    } else if (outflow.publicData.nft == 0) {
+                        return Challenge(
+                            true,
+                            _block.header.proposer,
+                            "Circuit does not support NFT id 0"
+                        );
+                    }
                 }
             }
         }
