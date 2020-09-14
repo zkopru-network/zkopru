@@ -45,11 +45,11 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
     ) public override onlySetupWizard {
         uint256 txSig = Types.getSNARKSignature(numOfInputs, numOfOutputs);
         SNARK.VerifyingKey storage key = Layer2.vks[txSig];
+        require(key.ic.length == 0, "already registered");
         key.alfa1 = vk.alfa1;
         key.beta2 = vk.beta2;
         key.gamma2 = vk.gamma2;
         key.delta2 = vk.delta2;
-        require(key.ic.length == 0, "already registered");
         for (uint256 i = 0; i < vk.ic.length; i++) {
             key.ic.push(vk.ic[i]);
         }
