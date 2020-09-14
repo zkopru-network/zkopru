@@ -28,17 +28,17 @@ library Poseidon6 {
     }
 }
 
-library MiMC {
-    /**
-     * @dev This is a dummy implementation for contract compilation
-     * We'll use a generated library by circomlib instead of this dummy library
-     * Please see
-     * 1. migrations/2_deploy_mimc.js
-     * 2. https://github.com/iden3/circomlib/blob/master/src/mimcsponge_gencontract.js
-     */
-    function MiMCSponge(uint256 in_xL, uint256 in_xR, uint256 in_k) external pure returns (uint256 xL, uint256 xR) {
-    }
-}
+// library MiMC {
+//     /**
+//      * @dev This is a dummy implementation for contract compilation
+//      * We'll use a generated library by circomlib instead of this dummy library
+//      * Please see
+//      * 1. migrations/2_deploy_mimc.js
+//      * 2. https://github.com/iden3/circomlib/blob/master/src/mimcsponge_gencontract.js
+//      */
+//     function MiMCSponge(uint256 in_xL, uint256 in_xR, uint256 in_k) external pure returns (uint256 xL, uint256 xR) {
+//     }
+// }
 
 /**
  * @dev This will be used to provide hash functions to calculate roll up.

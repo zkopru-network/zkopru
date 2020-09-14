@@ -1,14 +1,8 @@
 pragma solidity = 0.6.12;
 
 import { MassDeposit, WithdrawalTree, Types } from "../libraries/Types.sol";
-interface IERC20 {
-    function transfer(address recipient, uint256 amount) external returns (bool);
-    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
-}
-
-interface IERC721 {
-    function transferFrom(address from, address to, uint256 tokenId) external;
-}
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 struct Asset {
     address erc20;
