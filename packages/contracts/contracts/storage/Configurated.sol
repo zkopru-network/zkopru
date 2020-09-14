@@ -2,11 +2,8 @@ pragma solidity = 0.6.12;
 
 
 contract Configurated {
-    /**
-     * Constants to manage this layer2 system.
-     * Rationales: https://github.com/wilsonbeam/zk-optimistic-rollup/wiki
-     */
-    uint256 constant public CHALLENGE_PERIOD = 7 seconds;
+    // 46523 blocks when the challenge period is 7 days and average block time is 13 sec
+    uint256 constant public CHALLENGE_PERIOD = 46523;
     // uint256 constant public CHALLENGE_LIMIT = 8000000;
     uint256 constant public MINIMUM_STAKE = 32 ether;
     uint256 constant public REF_DEPTH = 128;
