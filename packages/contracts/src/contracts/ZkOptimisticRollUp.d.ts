@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class ZkOptimisticRollUp extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): ZkOptimisticRollUp
+
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -101,9 +103,9 @@ export class ZkOptimisticRollUp extends Contract {
 
     proxied(arg0: string | number[]): TransactionObject<string>
 
-    registeredERC20s(): TransactionObject<string[]>
+    registeredERC20s(tokenAddr: string): TransactionObject<boolean>
 
-    registeredERC721s(): TransactionObject<string[]>
+    registeredERC721s(tokenAddr: string): TransactionObject<boolean>
 
     stagedDeposits(): TransactionObject<{
       merged: string
@@ -152,6 +154,7 @@ export class ZkOptimisticRollUp extends Contract {
 
     completeSetup(): TransactionObject<void>
   }
+
   events: {
     GenesisBlock: ContractEvent<{
       blockHash: string

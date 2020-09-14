@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class Layer2Controller extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): Layer2Controller
+
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -101,9 +103,9 @@ export class Layer2Controller extends Contract {
 
     proxied(arg0: string | number[]): TransactionObject<string>
 
-    registeredERC20s(): TransactionObject<string[]>
+    registeredERC20s(tokenAddr: string): TransactionObject<boolean>
 
-    registeredERC721s(): TransactionObject<string[]>
+    registeredERC721s(tokenAddr: string): TransactionObject<boolean>
 
     stagedDeposits(): TransactionObject<{
       merged: string
@@ -120,6 +122,7 @@ export class Layer2Controller extends Contract {
 
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
   }
+
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

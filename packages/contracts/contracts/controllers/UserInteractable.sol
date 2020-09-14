@@ -151,9 +151,22 @@ contract UserInteractable is Layer2 {
         require(msg.value < RANGE_LIMIT, "Too big value can cause the overflow inside the SNARK");
         require(amount < RANGE_LIMIT, "Too big value can cause the overflow inside the SNARK");
         require(nft < SNARK_FIELD, "Does not support too big nubmer of nft id");
-        require(amount * nft == 0, "Only one of ERC20 or ERC721 exists");
+        require(amount == 0 || nft == 0, "Only one of ERC20 or ERC721 exists");
         require(eth + fee == msg.value, "Inexact amount of eth");
         require(Layer2.chain.stagedSize < 1024, "Should wait until it is committed");
+
+        if (token != address(0)) {
+            // this note contains token value
+            bool isERC20 = Layer2.chain.registeredERC20s[token];
+            bool isERC721 = Layer2.chain.registeredERC721s[token];
+            require(isERC20 || isERC721, "Not a registered token. Reigster that token first");
+            if (isERC20) {
+                require(nft == 0, "ERC20 does have NFT field");
+            } else if (isERC721){
+                require(nft != 0, "Circuit cannot accept NFT id 0. Please deposit other NFT.");
+                require(amount == 0, "ERC721 does have amount field");
+            }
+        }
 
         //TODO: require(fee >= specified fee);
         // Validate the note is same with the hash result

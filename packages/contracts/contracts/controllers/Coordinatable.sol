@@ -2,6 +2,7 @@
 pragma solidity = 0.6.12;
 
 import { Layer2 } from "../storage/Layer2.sol";
+import { IERC165 } from "@openzeppelin/contracts/introspection/IERC165.sol";
 import { Hash } from "../libraries/Hash.sol";
 import {
     Header,
@@ -175,6 +176,9 @@ contract Coordinatable is Layer2 {
         proposer.reward -= amount;
     }
 
+
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
     /**
      * @dev Provide registered erc20 token information for decryption
      * TODO
@@ -182,7 +186,16 @@ contract Coordinatable is Layer2 {
      * 2. governance to register the token address
      */
     function registerERC20(address tokenAddr) public {
-        Layer2.chain.registeredERC20s.push(tokenAddr);
+        require(!Layer2.chain.registeredERC20s[tokenAddr], "Already registered");
+        // Make sure that this token is not the ERC721
+        try IERC165(tokenAddr).supportsInterface(_INTERFACE_ID_ERC721) returns (bool erc721) {
+            require(!erc721, "ERC721 token cannot be registered as ERC20 token");
+        } catch Error(string memory /*reason*/) {
+            // pass: it means that this address is not ERC721
+        } catch (bytes memory /*reason*/) {
+            // pass: it means that this address is not ERC721
+        }
+        Layer2.chain.registeredERC20s[tokenAddr] = true;
         emit NewErc20(tokenAddr);
     }
 
@@ -192,7 +205,16 @@ contract Coordinatable is Layer2 {
      * 2. governance to register the token address
      */
     function registerERC721(address tokenAddr) public {
-        Layer2.chain.registeredERC721s.push(tokenAddr);
+        require(!Layer2.chain.registeredERC721s[tokenAddr], "Already registered");
+        // Make sure that this token is not the ERC721
+        try IERC165(tokenAddr).supportsInterface(_INTERFACE_ID_ERC721) returns (bool erc721) {
+            require(erc721, "This address is not ERC721 contract");
+        } catch Error(string memory reason) {
+            revert(reason);
+        } catch (bytes memory reason) {
+            revert(string(reason));
+        }
+        Layer2.chain.registeredERC721s[tokenAddr] = true;
         emit NewErc721(tokenAddr);
     }
 

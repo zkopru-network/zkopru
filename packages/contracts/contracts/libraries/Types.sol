@@ -33,8 +33,8 @@ struct Blockchain {
     mapping(bytes32=>bool) migrations;
 
     // For ERC20 and ERC721
-    address[] registeredERC20s;
-    address[] registeredERC721s;
+    mapping(address=>bool) registeredERC20s;
+    mapping(address=>bool) registeredERC721s;
 }
 
 struct MassDeposit {
