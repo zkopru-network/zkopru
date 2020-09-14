@@ -15,9 +15,7 @@ interface EventOptions {
 
 export class IMigrationChallenge extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-
   clone(): IMigrationChallenge
-
   methods: {
     challengeDuplicatedDestination(
       destination: string,
@@ -71,7 +69,6 @@ export class IMigrationChallenge extends Contract {
       blockData: string | number[],
     ): TransactionObject<void>
   }
-
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
