@@ -13,6 +13,7 @@ import { IUtxoTreeChallenge } from "./interfaces/IUtxoTreeChallenge.sol";
 import { IWithdrawalTreeChallenge } from "./interfaces/IWithdrawalTreeChallenge.sol";
 import { INullifierTreeChallenge } from "./interfaces/INullifierTreeChallenge.sol";
 import { ITxChallenge } from "./interfaces/ITxChallenge.sol";
+import { ITxSNARKChallenge } from "./interfaces/ITxSNARKChallenge.sol";
 
 /* solium-disable */
 
@@ -106,6 +107,8 @@ contract Layer2Controller is Layer2 {
         _connect(txChallenge, ITxChallenge(0).challengeUsedNullifier.selector);
         _connect(txChallenge, ITxChallenge(0).challengeDuplicatedNullifier.selector);
         _connect(txChallenge, ITxChallenge(0).isValidRef.selector);
+        _connect(txChallenge, ITxSNARKChallenge(0).challengeSNARK.selector);
+        _connect(txChallenge, ITxSNARKChallenge(0).hasValidSNARK.selector);
     }
 
     function _connect(address to, bytes4 sig) internal {
