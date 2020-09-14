@@ -15,12 +15,6 @@ library SMT254 {
         bytes32[254][] siblings;
     }
 
-    struct OPRU {
-        bytes32 prev;
-        bytes32 next;
-        bytes32 mergedLeaves;
-    }
-
     function inclusionProof(
         bytes32 root,
         bytes32 leaf,
@@ -73,11 +67,11 @@ library SMT254 {
         bytes32[254] memory siblings
     ) internal pure returns (bytes32 nextRoot) {
         // Prove that the array of sibling is valid and also the leaf does not exist in the tree
-        require(nonInclusionProof(root, leaf, siblings), "Failed to build the previous root using jthe leaf and its sibling");
+        require(nonInclusionProof(root, leaf, siblings), "Failed to build the previous root using the leaf and its sibling");
         // Calculate the new root when the leaf exists using its proven siblings
         nextRoot = calculateRoot(leaf, EXIST, siblings);
         // Make sure it has been updated
-        require(root != nextRoot, "Already exisiting leaf");
+        require(root != nextRoot, "Already existing leaf");
     }
 
     function rollUp(RollUp memory proof) internal pure returns (bytes32) {
@@ -107,32 +101,6 @@ library SMT254 {
         bytes32[254][] memory siblings
     ) internal pure returns (bool) {
         require(nextRoot == rollUp(RollUp(root, leaves, siblings)), "Failed to drive the next root from the proof");
-    }
-
-    function newOPRU(bytes32 startingRoot) internal pure returns (OPRU memory opru) {
-        opru.prev = startingRoot;
-        opru.next = startingRoot;
-        opru.mergedLeaves = bytes32(0);
-    }
-
-    function update(
-        OPRU storage opru,
-        bytes32[] memory leaves,
-        bytes32[254][] memory siblings
-    ) internal {
-        opru.next = rollUp(opru.next, leaves, siblings);
-        opru.mergedLeaves = merge(opru.mergedLeaves, leaves);
-    }
-
-    function verify(
-        OPRU memory opru,
-        bytes32 prev,
-        bytes32 next,
-        bytes32 mergedLeaves
-    ) internal pure returns (bool) {
-        require(opru.prev == prev, "Started with different root");
-        require(opru.mergedLeaves == mergedLeaves, "Appended different leaves");
-        return opru.next == next;
     }
 
     function merge(

@@ -21,7 +21,6 @@ contract TxChallenge is Challengeable {
     using Types for Header;
     using Types for Outflow;
     using Types for PublicData;
-    using SMT254 for SMT254.OPRU;
     using SNARK for SNARK.VerifyingKey;
 
     /**

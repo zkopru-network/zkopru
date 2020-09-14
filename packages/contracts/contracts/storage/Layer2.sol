@@ -7,7 +7,6 @@ import { SNARK } from "../libraries/SNARK.sol";
 import { Configurated } from "./Configurated.sol";
 
 import { SMT254 } from "../libraries/SMT.sol";
-import { OPRU, SplitRollUp } from "../libraries/Tree.sol";
 
 contract Layer2 is Configurated {
     // State of the layer2 blockchain is maintained by the optimistic roll up
