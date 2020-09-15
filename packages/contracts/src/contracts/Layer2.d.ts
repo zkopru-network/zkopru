@@ -15,9 +15,7 @@ interface EventOptions {
 
 export class Layer2 extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-
   clone(): Layer2
-
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -120,7 +118,6 @@ export class Layer2 extends Contract {
       4: string[][]
     }>
   }
-
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

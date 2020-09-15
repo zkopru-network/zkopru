@@ -15,9 +15,7 @@ interface EventOptions {
 
 export class MigrationChallenge extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-
   clone(): MigrationChallenge
-
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -172,7 +170,6 @@ export class MigrationChallenge extends Contract {
       blockData: string | number[],
     ): TransactionObject<void>
   }
-
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

@@ -15,9 +15,7 @@ interface EventOptions {
 
 export class WithdrawalTreeChallenge extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-
   clone(): WithdrawalTreeChallenge
-
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -131,7 +129,6 @@ export class WithdrawalTreeChallenge extends Contract {
       blockData: string | number[],
     ): TransactionObject<void>
   }
-
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

@@ -15,9 +15,7 @@ interface EventOptions {
 
 export class UtxoTreeChallenge extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-
   clone(): UtxoTreeChallenge
-
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -133,7 +131,6 @@ export class UtxoTreeChallenge extends Contract {
       blockData: string | number[],
     ): TransactionObject<void>
   }
-
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

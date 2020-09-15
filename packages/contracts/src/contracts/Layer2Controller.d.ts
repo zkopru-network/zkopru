@@ -15,9 +15,7 @@ interface EventOptions {
 
 export class Layer2Controller extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-
   clone(): Layer2Controller
-
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -122,7 +120,6 @@ export class Layer2Controller extends Contract {
 
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
   }
-
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

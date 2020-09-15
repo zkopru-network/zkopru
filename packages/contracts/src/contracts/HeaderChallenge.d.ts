@@ -15,9 +15,7 @@ interface EventOptions {
 
 export class HeaderChallenge extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-
   clone(): HeaderChallenge
-
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -130,7 +128,6 @@ export class HeaderChallenge extends Contract {
 
     challengeTotalFee(blockData: string | number[]): TransactionObject<void>
   }
-
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
