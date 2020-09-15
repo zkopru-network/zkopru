@@ -16,6 +16,11 @@ contract DepositChallenge is Challengeable {
     using Types for MassDeposit;
     using SNARK for SNARK.VerifyingKey;
 
+    /**
+     * @dev Challenge when a submitted mass deposit is invalid
+     * @param index Index of the mass deposit in the block body's mass deposit array
+     * @param blockData Serialized block data
+     */
     function challengeMassDeposit(
         uint256 index,
         bytes calldata blockData

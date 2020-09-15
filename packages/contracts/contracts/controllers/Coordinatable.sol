@@ -28,9 +28,9 @@ contract Coordinatable is Layer2 {
     event NewErc721(address tokenAddr);
 
     /**
-     * @notice Coordinator calls this function for the proof of stake.
+     * @notice This function will be updated as the governance of Zkopru's been updated.
+     *         Currently Coordinator calls this function for the proof of stake.
      *         Coordinator should pay more than MINIMUM_STAKE. See 'Configurated.sol'
-     *
      */
     function register() public payable {
         require(msg.value >= MINIMUM_STAKE, "Should stake more than minimum amount of ETH");
@@ -39,7 +39,7 @@ contract Coordinatable is Layer2 {
     }
 
     /**
-     * @notice Coordinator can withdraw deposited stakes after the challenge period.
+     * @notice This function will be updated as the governance of Zkopru's been updated.
      */
     function deregister() public {
         address payable proposerAddr = msg.sender;
