@@ -13,9 +13,9 @@ interface EventOptions {
   topics?: string[]
 }
 
-export class ZkOptimisticRollUp extends Contract {
+export class TxSNARKChallenge extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-  clone(): ZkOptimisticRollUp
+  clone(): TxSNARKChallenge
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -99,8 +99,6 @@ export class ZkOptimisticRollUp extends Contract {
       2: string
     }>
 
-    proxied(arg0: string | number[]): TransactionObject<string>
-
     registeredERC20s(tokenAddr: string): TransactionObject<boolean>
 
     registeredERC721s(tokenAddr: string): TransactionObject<boolean>
@@ -120,49 +118,44 @@ export class ZkOptimisticRollUp extends Contract {
 
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
 
-    registerVk(
-      numOfInputs: number | string,
-      numOfOutputs: number | string,
-      vk: {
-        alfa1: { X: number | string; Y: number | string }
-        beta2: { X: (number | string)[]; Y: (number | string)[] }
-        gamma2: { X: (number | string)[]; Y: (number | string)[] }
-        delta2: { X: (number | string)[]; Y: (number | string)[] }
-        ic: { X: number | string; Y: number | string }[]
-      },
+    challengeSNARK(
+      txIndex: number | string,
+      blockData: string | number[],
     ): TransactionObject<void>
 
-    makeUserInteractable(addr: string): TransactionObject<void>
-
-    makeCoordinatable(addr: string): TransactionObject<void>
-
-    makeChallengeable(
-      depositChallenge: string,
-      headerChallenge: string,
-      migrationChallenge: string,
-      utxoTreeChallenge: string,
-      withdrawalTreeChallenge: string,
-      nullifierTreeChallenge: string,
-      txChallenge: string,
-    ): TransactionObject<void>
-
-    makeMigratable(addr: string): TransactionObject<void>
-
-    allowMigrants(migrants: string[]): TransactionObject<void>
-
-    completeSetup(): TransactionObject<void>
+    hasValidSNARK(transaction: {
+      inflow: {
+        inclusionRoot: number | string
+        nullifier: string | number[]
+      }[]
+      outflow: {
+        note: number | string
+        outflowType: number | string
+        publicData: {
+          to: string
+          eth: number | string
+          token: string
+          amount: number | string
+          nft: number | string
+          fee: number | string
+        }
+      }[]
+      swap: number | string
+      fee: number | string
+      proof: {
+        a: { X: number | string; Y: number | string }
+        b: { X: (number | string)[]; Y: (number | string)[] }
+        c: { X: number | string; Y: number | string }
+      }
+      memo: string | number[]
+    }): TransactionObject<{
+      result: boolean
+      reason: string
+      0: boolean
+      1: string
+    }>
   }
   events: {
-    GenesisBlock: ContractEvent<{
-      blockHash: string
-      proposer: string
-      fromBlock: string
-      parentBlock: string
-      0: string
-      1: string
-      2: string
-      3: string
-    }>
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
 }

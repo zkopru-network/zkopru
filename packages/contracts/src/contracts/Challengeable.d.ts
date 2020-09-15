@@ -15,9 +15,7 @@ interface EventOptions {
 
 export class Challengeable extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-
   clone(): Challengeable
-
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -120,7 +118,6 @@ export class Challengeable extends Contract {
 
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
   }
-
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

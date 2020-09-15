@@ -15,9 +15,7 @@ interface EventOptions {
 
 export class TxChallenge extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-
   clone(): TxChallenge
-
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -120,44 +118,40 @@ export class TxChallenge extends Contract {
 
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
 
-    challengeSNARK(
+    challengeInclusion(
+      txIndex: number | string,
+      inflowIndex: number | string,
+      blockData: string | number[],
+    ): TransactionObject<void>
+
+    challengeOutflow(
       txIndex: number | string,
       blockData: string | number[],
     ): TransactionObject<void>
 
-    hasValidSNARK(transaction: {
-      inflow: {
-        inclusionRoot: number | string
-        nullifier: string | number[]
-      }[]
-      outflow: {
-        note: number | string
-        outflowType: number | string
-        publicData: {
-          to: string
-          eth: number | string
-          token: string
-          amount: number | string
-          nft: number | string
-          fee: number | string
-        }
-      }[]
-      swap: number | string
-      fee: number | string
-      proof: {
-        a: { X: number | string; Y: number | string }
-        b: { X: (number | string)[]; Y: (number | string)[] }
-        c: { X: number | string; Y: number | string }
-      }
-      memo: string | number[]
-    }): TransactionObject<{
-      result: boolean
-      reason: string
-      0: boolean
-      1: string
-    }>
-  }
+    challengeAtomicSwap(
+      txIndex: number | string,
+      blockData: string | number[],
+    ): TransactionObject<void>
 
+    challengeUsedNullifier(
+      txIndex: number | string,
+      inflowIndex: number | string,
+      sibling: (string | number[])[],
+      arg3: string | number[],
+      blockData: string | number[],
+    ): TransactionObject<void>
+
+    challengeDuplicatedNullifier(
+      nullifier: string | number[],
+      blockData: string | number[],
+    ): TransactionObject<void>
+
+    isValidRef(
+      l2BlockHash: string | number[],
+      ref: number | string,
+    ): TransactionObject<boolean>
+  }
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

@@ -15,9 +15,7 @@ interface EventOptions {
 
 export class NullifierTreeChallenge extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-
   clone(): NullifierTreeChallenge
-
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -127,7 +125,6 @@ export class NullifierTreeChallenge extends Contract {
       blockData: string | number[],
     ): TransactionObject<void>
   }
-
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
