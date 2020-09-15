@@ -24,16 +24,23 @@ contract MigrationChallenge is Challengeable {
 
 
     /**
-     * @param destination Address of another layer 2 contract
+     * @param massMigrationIdx1 mass migration index in the block body
+     * @param massMigrationIdx2 mass migration index in the block body that has same destination
+            with the first mass migration
      * @param blockData Serialized block data
      */
     function challengeDuplicatedDestination(
-        address destination,
+        uint256 massMigrationIdx1,
+        uint256 massMigrationIdx2,
         bytes calldata blockData
     ) external {
         bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(1);
-        Challenge memory result = _challengeResultOfDuplicatedDestination(_block, destination);
+        Challenge memory result = _challengeResultOfDuplicatedDestination(
+            _block,
+            massMigrationIdx1,
+            massMigrationIdx2
+        );
         _execute(proposalId, result);
     }
 
@@ -82,12 +89,18 @@ contract MigrationChallenge is Challengeable {
 
     function challengeDuplicatedERC20Migration(
         uint256 migrationIndex,
-        address erc20Address,
+        uint256 erc20MingrationIdx1,
+        uint256 erc20MingrationIdx2,
         bytes calldata blockData
     ) external {
         bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(2);
-        Challenge memory result = _challengeResultOfDuplicatedERC20Migration(_block, migrationIndex, erc20Address);
+        Challenge memory result = _challengeResultOfDuplicatedERC20Migration(
+            _block,
+            migrationIndex,
+            erc20MingrationIdx1,
+            erc20MingrationIdx2
+        );
         _execute(proposalId, result);
     }
 
@@ -104,12 +117,18 @@ contract MigrationChallenge is Challengeable {
 
     function challengeDuplicatedERC721Migration(
         uint256 migrationIndex,
-        address erc20Address,
+        uint256 erc721MingrationIdx1,
+        uint256 erc721MingrationIdx2,
         bytes calldata blockData
     ) external {
         bytes32 proposalId = keccak256(blockData);
         Block memory _block = Deserializer.blockFromCalldataAt(2);
-        Challenge memory result = _challengeResultOfDuplicatedERC721Migration(_block, migrationIndex, erc20Address);
+        Challenge memory result = _challengeResultOfDuplicatedERC721Migration(
+            _block,
+            migrationIndex,
+            erc721MingrationIdx1,
+            erc721MingrationIdx2
+        );
         _execute(proposalId, result);
     }
 
@@ -144,26 +163,22 @@ contract MigrationChallenge is Challengeable {
 
     function _challengeResultOfDuplicatedDestination(
         Block memory _block,
-        address destination
+        uint256 massMigrationIdx1,
+        uint256 massMigrationIdx2
     )
         internal
         pure
         returns (Challenge memory)
     {
-        require(destination != address(0), "Invalid destination");
-        uint8 count;
-        for (uint256 i = 0; i < _block.body.massMigrations.length; i++) {
-            if (destination == _block.body.massMigrations[i].destination) {
-                count++;
-            }
-            if (count >= 2) {
-                return Challenge(
-                    true,
-                    _block.header.proposer,
-                    "Duplicated MassMigration destination"
-                );
-            }
-        }
+        require(massMigrationIdx1 < _block.body.massMigrations.length, "out of index");
+        require(massMigrationIdx2 < _block.body.massMigrations.length, "out of index");
+        MassMigration memory m1 = _block.body.massMigrations[massMigrationIdx1];
+        MassMigration memory m2 = _block.body.massMigrations[massMigrationIdx2];
+        return Challenge(
+            m1.destination == m2.destination,
+            _block.header.proposer,
+            "Duplicated MassMigration destination"
+        );
     }
 
     function _challengeResultOfTotalEth(
@@ -251,30 +266,24 @@ contract MigrationChallenge is Challengeable {
     function _challengeResultOfDuplicatedERC20Migration(
         Block memory _block,
         uint256 migrationIndex,
-        address erc20Address
+        uint256 erc20MingrationIdx1,
+        uint256 erc20MingrationIdx2
     )
         internal
         pure
         returns (Challenge memory)
     {
         require(migrationIndex < _block.body.massMigrations.length, "out of index");
-        require(erc20Address != address(0), "Invalid erc20 address");
         MassMigration memory massMigration = _block.body.massMigrations[migrationIndex];
-        uint8 count = 0;
-        for(uint256 j = 0; j < massMigration.erc20.length; j++) {
-            ERC20Migration memory erc20Migration = massMigration.erc20[j];
-            if(erc20Migration.addr == erc20Address) {
-                count++;
-            }
-            if (count >= 2) {
-                // There exist more than 2 of erc20 migration against the address.
-                return Challenge(
-                    true,
-                    _block.header.proposer,
-                    "Duplicated ERC20 migration dests exist"
-                );
-            }
-        }
+        require(erc20MingrationIdx1 < massMigration.erc20.length, "erc20 idx1 out of index");
+        require(erc20MingrationIdx2 < massMigration.erc20.length, "erc20 idx1 out of index");
+        ERC20Migration memory erc20Migration1 = massMigration.erc20[erc20MingrationIdx1];
+        ERC20Migration memory erc20Migration2 = massMigration.erc20[erc20MingrationIdx2];
+        return Challenge(
+            erc20Migration1.addr == erc20Migration2.addr,
+            _block.header.proposer,
+            "Duplicated ERC20 migration dests exist"
+        );
     }
 
     function _challengeResultOfERC20Amount(
@@ -380,30 +389,24 @@ contract MigrationChallenge is Challengeable {
     function _challengeResultOfDuplicatedERC721Migration(
         Block memory _block,
         uint256 migrationIndex,
-        address erc721Address
+        uint256 erc721MingrationIdx1,
+        uint256 erc721MingrationIdx2
     )
         internal
         pure
         returns (Challenge memory)
     {
         require(migrationIndex < _block.body.massMigrations.length, "out of index");
-        require(erc721Address != address(0), "Invalid erc20 address");
         MassMigration memory massMigration = _block.body.massMigrations[migrationIndex];
-        uint8 count = 0;
-        for(uint256 j = 0; j < massMigration.erc20.length; j++) {
-            ERC721Migration memory erc721Migration = massMigration.erc721[j];
-            if(erc721Migration.addr == erc721Address) {
-                count++;
-            }
-            if (count >= 2) {
-                // There exist more than 2 of erc20 migration against the address.
-                return Challenge(
-                    true,
-                    _block.header.proposer,
-                    "Duplicated ERC721 migration dests exist"
-                );
-            }
-        }
+        require(erc721MingrationIdx1 < massMigration.erc721.length, "erc721 idx1 out of index");
+        require(erc721MingrationIdx2 < massMigration.erc721.length, "erc721 idx1 out of index");
+        ERC721Migration memory erc721Migration1 = massMigration.erc721[erc721MingrationIdx1];
+        ERC721Migration memory erc721Migration2 = massMigration.erc721[erc721MingrationIdx2];
+        return Challenge(
+            erc721Migration1.addr == erc721Migration2.addr,
+            _block.header.proposer,
+            "Duplicated ERC721 migration dests exist"
+        );
     }
 
     function _challengeResultOfNonFungibility(

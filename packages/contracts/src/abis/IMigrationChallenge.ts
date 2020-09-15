@@ -1,7 +1,8 @@
 export const IMigrationChallengeABI = [
   {
     inputs: [
-      { internalType: 'address', name: 'destination', type: 'address' },
+      { internalType: 'uint256', name: 'massMigrationIdx1', type: 'uint256' },
+      { internalType: 'uint256', name: 'massMigrationIdx2', type: 'uint256' },
       { internalType: 'bytes', name: 'blockData', type: 'bytes' },
     ],
     name: 'challengeDuplicatedDestination',
@@ -41,8 +42,9 @@ export const IMigrationChallengeABI = [
   },
   {
     inputs: [
-      { internalType: 'address', name: 'destination', type: 'address' },
-      { internalType: 'address', name: 'erc20', type: 'address' },
+      { internalType: 'uint256', name: 'migrationIndex', type: 'uint256' },
+      { internalType: 'uint256', name: 'erc20MingrationIdx1', type: 'uint256' },
+      { internalType: 'uint256', name: 'erc20MingrationIdx2', type: 'uint256' },
       { internalType: 'bytes', name: 'blockData', type: 'bytes' },
     ],
     name: 'challengeDuplicatedERC20Migration',
@@ -64,7 +66,16 @@ export const IMigrationChallengeABI = [
   {
     inputs: [
       { internalType: 'uint256', name: 'migrationIndex', type: 'uint256' },
-      { internalType: 'address', name: 'erc20Address', type: 'address' },
+      {
+        internalType: 'uint256',
+        name: 'erc721MingrationIdx1',
+        type: 'uint256',
+      },
+      {
+        internalType: 'uint256',
+        name: 'erc721MingrationIdx2',
+        type: 'uint256',
+      },
       { internalType: 'bytes', name: 'blockData', type: 'bytes' },
     ],
     name: 'challengeDuplicatedERC721Migration',

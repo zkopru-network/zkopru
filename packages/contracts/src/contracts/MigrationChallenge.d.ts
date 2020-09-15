@@ -119,7 +119,8 @@ export class MigrationChallenge extends Contract {
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
 
     challengeDuplicatedDestination(
-      destination: string,
+      massMigrationIdx1: number | string,
+      massMigrationIdx2: number | string,
       blockData: string | number[],
     ): TransactionObject<void>
 
@@ -140,7 +141,8 @@ export class MigrationChallenge extends Contract {
 
     challengeDuplicatedERC20Migration(
       migrationIndex: number | string,
-      erc20Address: string,
+      erc20MingrationIdx1: number | string,
+      erc20MingrationIdx2: number | string,
       blockData: string | number[],
     ): TransactionObject<void>
 
@@ -152,7 +154,8 @@ export class MigrationChallenge extends Contract {
 
     challengeDuplicatedERC721Migration(
       migrationIndex: number | string,
-      erc20Address: string,
+      erc721MingrationIdx1: number | string,
+      erc721MingrationIdx2: number | string,
       blockData: string | number[],
     ): TransactionObject<void>
 

@@ -3,7 +3,8 @@ pragma solidity = 0.6.12;
 
 interface IMigrationChallenge {
     function challengeDuplicatedDestination(
-        address destination,
+        uint256 massMigrationIdx1,
+        uint256 massMigrationIdx2,
         bytes calldata blockData
     ) external;
 
@@ -23,8 +24,9 @@ interface IMigrationChallenge {
     ) external;
 
     function challengeDuplicatedERC20Migration(
-        address destination,
-        address erc20,
+        uint256 migrationIndex,
+        uint256 erc20MingrationIdx1,
+        uint256 erc20MingrationIdx2,
         bytes calldata blockData
     ) external;
 
@@ -36,7 +38,8 @@ interface IMigrationChallenge {
 
     function challengeDuplicatedERC721Migration(
         uint256 migrationIndex,
-        address erc20Address,
+        uint256 erc721MingrationIdx1,
+        uint256 erc721MingrationIdx2,
         bytes calldata blockData
     ) external;
 
