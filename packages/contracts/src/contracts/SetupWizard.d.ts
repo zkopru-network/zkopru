@@ -50,7 +50,7 @@ export class SetupWizard extends Contract {
     registerVk(
       numOfInputs: number | string,
       numOfOutputs: number | string,
-      alfa1: (number | string)[],
+      alpha1: (number | string)[],
       beta2: (number | string)[][],
       gamma2: (number | string)[][],
       delta2: (number | string)[][],

@@ -1,4 +1,4 @@
-import { ReadStream } from 'fs'
+import { createWriteStream, ReadStream } from 'fs'
 import { Docker } from 'node-docker-api'
 import * as dockerCompose from 'docker-compose'
 import { Container } from 'node-docker-api/lib/container'
@@ -135,6 +135,25 @@ export async function readFromContainer(
           entry.on('end', () => {
             res(Buffer.concat(data))
           })
+        },
+      }),
+    )
+  })
+}
+
+export async function copyFromContainer(
+  container: Container,
+  path: string,
+  dest: string,
+): Promise<void> {
+  const stream: ReadStream = (await container.fs.get({ path })) as ReadStream
+  const file = createWriteStream(dest)
+  return new Promise<void>(res => {
+    stream.pipe(
+      tar.t({
+        onentry: entry => {
+          entry.on('data', c => file.write(c))
+          entry.on('end', res)
         },
       }),
     )

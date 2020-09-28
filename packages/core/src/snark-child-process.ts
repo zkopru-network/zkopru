@@ -1,5 +1,6 @@
 import * as snarkjs from 'snarkjs'
 import * as ffjs from 'ffjavascript'
+import { logger } from '@zkopru/utils'
 
 process.on(
   'message',
@@ -7,12 +8,13 @@ process.on(
     const { vk, proof, signals } = message
     let result!: boolean
     try {
-      result = snarkjs.groth.isValid(
+      result = snarkjs.groth16.verify(
         ffjs.utils.unstringifyBigInts(vk),
-        ffjs.utils.unstringifyBigInts(proof),
         ffjs.utils.unstringifyBigInts(signals),
+        ffjs.utils.unstringifyBigInts(proof),
       )
-    } catch {
+    } catch (e) {
+      logger.error(e)
       result = false
     }
     // send response to master process

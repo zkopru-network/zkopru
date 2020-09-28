@@ -1,10 +1,10 @@
 import path from 'path'
-import { buildKeys } from './testset-zktxs'
+import { getKeysFromContainer } from './key-builder'
 
 // eslint-disable-next-line prettier/prettier
 (async () => {
   const keyPath = path.join(path.dirname(__filename), '../keys')
-  await buildKeys(keyPath)
+  await getKeysFromContainer(keyPath, { build: false })
 })().catch(e => {
   console.error(e)
 })

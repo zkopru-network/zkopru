@@ -6,7 +6,7 @@ template NoteHash() {
     signal input asset_hash;
     signal output out;
 
-    component hash = Poseidon(3, 6, 8, 57);
+    component hash = Poseidon(3);
     hash.inputs[0] <== spending_pubkey;
     hash.inputs[1] <== salt;
     hash.inputs[2] <== asset_hash;

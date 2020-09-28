@@ -1,5 +1,5 @@
+/* global BigInt */
 import BN from 'bn.js'
-import bigInt, { BigInteger } from 'big-integer'
 import { Bytes32, Uint256, Address } from 'soltypes'
 
 export type F = number | string | number[] | Uint8Array | Buffer | BN
@@ -92,8 +92,9 @@ export class Field extends BN {
     return new Address(`0x${this.toString(16, 40)}`)
   }
 
-  toIden3BigInt(): BigInteger {
-    return bigInt(this.toString())
+  toBigInt(): bigint {
+    return BigInt(this.toString())
+    // return ffjs.utils.stringifyBigInts(this.toString())
   }
 
   toTwos(width: number): Field {

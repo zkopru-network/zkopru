@@ -7,7 +7,7 @@ template AssetHash() {
     signal input erc721;
     signal output out;
 
-    component hash = Poseidon(4, 6, 8, 57);
+    component hash = Poseidon(4);
     hash.inputs[0] <== eth;
     hash.inputs[1] <== token_addr;
     hash.inputs[2] <== erc20;

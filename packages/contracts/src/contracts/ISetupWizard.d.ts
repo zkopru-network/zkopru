@@ -15,13 +15,15 @@ interface EventOptions {
 
 export class ISetupWizard extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): ISetupWizard
+
   methods: {
     registerVk(
       numOfInputs: number | string,
       numOfOutputs: number | string,
       vk: {
-        alfa1: { X: number | string; Y: number | string }
+        alpha1: { X: number | string; Y: number | string }
         beta2: { X: (number | string)[]; Y: (number | string)[] }
         gamma2: { X: (number | string)[]; Y: (number | string)[] }
         delta2: { X: (number | string)[]; Y: (number | string)[] }
@@ -49,6 +51,7 @@ export class ISetupWizard extends Contract {
 
     completeSetup(): TransactionObject<void>
   }
+
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

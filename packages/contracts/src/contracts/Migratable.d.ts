@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class Migratable extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): Migratable
+
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -55,7 +57,7 @@ export class Migratable extends Contract {
       numOfInputs: number | string,
       numOfOutputs: number | string,
     ): TransactionObject<{
-      alfa1: string[]
+      alpha1: string[]
       beta2: string[][]
       gamma2: string[][]
       delta2: string[][]
@@ -129,6 +131,7 @@ export class Migratable extends Contract {
       fee: number | string,
     ): TransactionObject<void>
   }
+
   events: {
     NewMassMigration: ContractEvent<{
       checksum: string

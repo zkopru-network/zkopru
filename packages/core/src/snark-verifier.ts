@@ -1,9 +1,8 @@
 import { fork, ChildProcess } from 'child_process'
 import { ZkTx } from '@zkopru/transaction'
-import { verifyingKeyIdentifier, logger } from '@zkopru/utils'
+import { VerifyingKey, verifyingKeyIdentifier, logger } from '@zkopru/utils'
 import { join } from 'path'
 import * as ffjs from 'ffjavascript'
-import { VerifyingKey } from './snark'
 
 export class SNARKVerifier {
   vks: {

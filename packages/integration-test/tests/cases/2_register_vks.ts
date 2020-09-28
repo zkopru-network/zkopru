@@ -15,7 +15,7 @@ export const testRegisterVKs = (ctx: CtxProvider) => async () => {
     nOut.forEach(j => {
       registerVKs.push(async () => {
         const tx = contract.setup.methods.registerVk(i, j, {
-          alfa1: vks[i][j].vk_alfa_1.slice(0, 2),
+          alpha1: vks[i][j].vk_alpha_1.slice(0, 2),
           beta2: vks[i][j].vk_beta_2.slice(0, 2),
           gamma2: vks[i][j].vk_gamma_2.slice(0, 2),
           delta2: vks[i][j].vk_delta_2.slice(0, 2),
@@ -39,7 +39,7 @@ export const testRegisterVKFails = (ctx: CtxProvider) => async () => {
   const { contract, vks, accounts } = ctx()
   const sampleVk: any = vks[4][4]
   const tx = contract.setup.methods.registerVk(5, 5, {
-    alfa1: sampleVk.vk_alfa_1.slice(0, 2),
+    alpha1: sampleVk.vk_alpha_1.slice(0, 2),
     beta2: sampleVk.vk_beta_2.slice(0, 2),
     gamma2: sampleVk.vk_gamma_2.slice(0, 2),
     delta2: sampleVk.vk_delta_2.slice(0, 2),

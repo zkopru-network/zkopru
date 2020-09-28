@@ -1,3 +1,6 @@
+/**
+ * @jest-environment node
+ */
 /* eslint-disable jest/no-hooks */
 import Web3 from 'web3'
 import { WebsocketProvider } from 'web3-core'

@@ -29,13 +29,24 @@ module.exports = function migration(deployer) {
   return deployer.then(async () => {
     const contractsDir = path.join(__dirname, '..', 'build/contracts')
     const artifactor = new Artifactor(contractsDir)
+    const poseidon2 = 'Poseidon2'
     const poseidon3 = 'Poseidon3'
-    const poseidon6 = 'Poseidon6'
+    const poseidon4 = 'Poseidon4'
+    await artifactor
+      .save({
+        contractName: poseidon2,
+        abi: poseidonGenContract.abi,
+        unlinked_binary: poseidonGenContract.createCode(2),
+      })
+      .then(async () => {
+        const Poseidon = artifacts.require(poseidon2)
+        await deployer.deploy(Poseidon)
+      })
     await artifactor
       .save({
         contractName: poseidon3,
         abi: poseidonGenContract.abi,
-        unlinked_binary: poseidonGenContract.createCode(3, 8, 57, SEED),
+        unlinked_binary: poseidonGenContract.createCode(3),
       })
       .then(async () => {
         const Poseidon = artifacts.require(poseidon3)
@@ -43,12 +54,12 @@ module.exports = function migration(deployer) {
       })
     await artifactor
       .save({
-        contractName: poseidon6,
+        contractName: poseidon4,
         abi: poseidonGenContract.abi,
-        unlinked_binary: poseidonGenContract.createCode(6, 8, 57, SEED),
+        unlinked_binary: poseidonGenContract.createCode(4),
       })
       .then(async () => {
-        const Poseidon = artifacts.require(poseidon6)
+        const Poseidon = artifacts.require(poseidon4)
         await deployer.deploy(Poseidon)
       })
   })

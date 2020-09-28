@@ -42,7 +42,7 @@ export function pkToBinary(pk: object): ArrayBuffer {
 
   let size = 40
 
-  // alfa1, beta1, delta1
+  // alpha1, beta1, delta1
   size += 3 * (32 * 2)
 
   // beta2, delta2
@@ -144,7 +144,7 @@ export function pkToBinary(pk: object): ArrayBuffer {
   const pPointsC = alloc(4)
   const pPointsHExps = alloc(4)
 
-  writePoint(provingKey.vk_alfa_1)
+  writePoint(provingKey.vk_alpha_1)
   writePoint(provingKey.vk_beta_1)
   writePoint(provingKey.vk_delta_1)
   writePoint2(provingKey.vk_beta_2)

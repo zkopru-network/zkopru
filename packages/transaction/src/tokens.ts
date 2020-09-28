@@ -19,12 +19,16 @@ export class TokenRegistry {
     return id
   }
 
-  addERC20(...addresses: Address[]) {
-    this.erc20s.push(...addresses)
+  addERC20(...addresses: (Address | string)[]) {
+    this.erc20s.push(
+      ...addresses.map(v => (typeof v === 'string' ? Address.from(v) : v)),
+    )
   }
 
-  addERC721(...addresses: Address[]) {
-    this.erc721s.push(...addresses)
+  addERC721(...addresses: (Address | string)[]) {
+    this.erc721s.push(
+      ...addresses.map(v => (typeof v === 'string' ? Address.from(v) : v)),
+    )
   }
 
   getErc20Addresses(id: number): Field[] {

@@ -57,7 +57,7 @@ export class RollUpChallenge extends Contract {
       numOfInputs: number | string,
       numOfOutputs: number | string,
     ): TransactionObject<{
-      alfa1: string[]
+      alpha1: string[]
       beta2: string[][]
       gamma2: string[][]
       delta2: string[][]

@@ -90,7 +90,7 @@ export class ZkWallet {
     this.node.addAccounts(...accounts)
     if (account) this.setAccount(account)
     this.wizard = new ZkWizard({
-      grove: this.node.l2Chain.grove,
+      utxoTree: this.node.l2Chain.grove.utxoTree,
       path: snarkKeyPath,
     })
   }

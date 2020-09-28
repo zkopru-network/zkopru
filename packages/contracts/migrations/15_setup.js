@@ -115,7 +115,7 @@ module.exports = function migration(deployer, network, accounts) {
           nIn,
           nOut,
           {
-            alfa1: vk.vk_alfa_1.slice(0, 2),
+            alpha1: vk.vk_alpha_1.slice(0, 2),
             beta2: vk.vk_beta_2.slice(0, 2),
             gamma2: vk.vk_gamma_2.slice(0, 2),
             delta2: vk.vk_delta_2.slice(0, 2),

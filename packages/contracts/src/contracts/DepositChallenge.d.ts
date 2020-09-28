@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class DepositChallenge extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): DepositChallenge
+
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -55,7 +57,7 @@ export class DepositChallenge extends Contract {
       numOfInputs: number | string,
       numOfOutputs: number | string,
     ): TransactionObject<{
-      alfa1: string[]
+      alpha1: string[]
       beta2: string[][]
       gamma2: string[][]
       delta2: string[][]
@@ -123,6 +125,7 @@ export class DepositChallenge extends Contract {
       blockData: string | number[],
     ): TransactionObject<void>
   }
+
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

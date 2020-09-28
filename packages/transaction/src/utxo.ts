@@ -1,5 +1,5 @@
 import { randomHex } from 'web3-utils'
-import * as circomlib from 'circomlib'
+import { poseidon } from 'circomlib'
 import * as chacha20 from 'chacha20'
 import { Field, F, Point } from '@zkopru/babyjubjub'
 import { ZkAddress } from './zk-address'
@@ -8,8 +8,6 @@ import { Withdrawal } from './withdrawal'
 import { Migration } from './migration'
 import { ZkOutflow } from './zk_tx'
 import { TokenRegistry } from './tokens'
-
-const poseidonHash = circomlib.poseidon.createHash(6, 8, 57)
 
 export enum UtxoStatus {
   NON_INCLUDED = NoteStatus.NON_INCLUDED,
@@ -75,9 +73,9 @@ export class Utxo extends Note {
   }
 
   nullifier(nullifierSeed: Field, leafIndex: Field): Field {
-    const hash = poseidonHash([
-      nullifierSeed.toIden3BigInt(),
-      leafIndex.toIden3BigInt(),
+    const hash = poseidon([
+      nullifierSeed.toBigInt(),
+      leafIndex.toBigInt(),
     ]).toString()
     if (
       !this.owner.viewingPubKey().eq(Point.fromPrivKey(nullifierSeed.toHex(32)))

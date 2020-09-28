@@ -46,8 +46,8 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
         uint256 txSig = Types.getSNARKSignature(numOfInputs, numOfOutputs);
         SNARK.VerifyingKey storage key = Layer2.vks[txSig];
         require(key.ic.length == 0, "already registered");
-        require(key.alfa1.X == 0, "already registered");
-        require(key.alfa1.Y == 0, "already registered");
+        require(key.alpha1.X == 0, "already registered");
+        require(key.alpha1.Y == 0, "already registered");
         require(key.beta2.X[0] == 0, "already registered");
         require(key.beta2.X[1] == 0, "already registered");
         require(key.beta2.Y[0] == 0, "already registered");
@@ -60,7 +60,7 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
         require(key.delta2.X[1] == 0, "already registered");
         require(key.delta2.Y[0] == 0, "already registered");
         require(key.delta2.Y[1] == 0, "already registered");
-        key.alfa1 = vk.alfa1;
+        key.alpha1 = vk.alpha1;
         key.beta2 = vk.beta2;
         key.gamma2 = vk.gamma2;
         key.delta2 = vk.delta2;

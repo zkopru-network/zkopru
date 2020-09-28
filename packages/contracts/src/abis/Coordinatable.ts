@@ -198,7 +198,7 @@ export const CoordinatableABI = [
     ],
     name: 'getVk',
     outputs: [
-      { internalType: 'uint256[2]', name: 'alfa1', type: 'uint256[2]' },
+      { internalType: 'uint256[2]', name: 'alpha1', type: 'uint256[2]' },
       { internalType: 'uint256[2][2]', name: 'beta2', type: 'uint256[2][2]' },
       { internalType: 'uint256[2][2]', name: 'gamma2', type: 'uint256[2][2]' },
       { internalType: 'uint256[2][2]', name: 'delta2', type: 'uint256[2][2]' },

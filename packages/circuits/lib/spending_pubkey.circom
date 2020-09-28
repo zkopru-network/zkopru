@@ -6,7 +6,7 @@ template SpendingPubKey() {
     signal input nullifier_seed;
     signal output out;
 
-    component hash = Poseidon(3, 6, 8, 57);   // Constant
+    component hash = Poseidon(3);   // Constant
     hash.inputs[0] <== pubkey_x;
     hash.inputs[1] <== pubkey_y;
     hash.inputs[2] <== nullifier_seed;

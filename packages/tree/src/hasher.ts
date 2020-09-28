@@ -1,5 +1,5 @@
 import { soliditySha3 } from 'web3-utils'
-import * as circomlib from 'circomlib'
+import { poseidon } from 'circomlib'
 import { Field } from '@zkopru/babyjubjub'
 import { hexify } from '@zkopru/utils'
 import BN from 'bn.js'
@@ -39,11 +39,8 @@ export function keccakHasher(depth: number): Hasher<BN> {
 }
 
 export function poseidonHasher(depth: number): Hasher<Field> {
-  const poseidonHash = circomlib.poseidon.createHash(3, 8, 57)
   const parentOf = (left: Field, right: Field) => {
-    return Field.from(
-      poseidonHash([left.toIden3BigInt(), right.toIden3BigInt()]).toString(),
-    )
+    return Field.from(poseidon([left.toBigInt(), right.toBigInt()]).toString())
   }
   const preHash = getPreHash(Field.zero, parentOf, depth)
   return { parentOf, preHash }
