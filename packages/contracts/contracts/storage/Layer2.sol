@@ -95,7 +95,7 @@ contract Layer2 is Configurated {
     }
 
     function getVk(uint8 numOfInputs, uint8 numOfOutputs) public view returns (
-        uint256[2] memory alfa1,
+        uint256[2] memory alpha1,
         uint256[2][2] memory beta2,
         uint256[2][2] memory gamma2,
         uint256[2][2] memory delta2,
@@ -103,8 +103,8 @@ contract Layer2 is Configurated {
     ) {
         uint256 txSig = Types.getSNARKSignature(numOfInputs, numOfOutputs);
         SNARK.VerifyingKey memory vk = vks[txSig];
-        alfa1[0] = vk.alfa1.X;
-        alfa1[1] = vk.alfa1.Y;
+        alpha1[0] = vk.alpha1.X;
+        alpha1[1] = vk.alpha1.Y;
         beta2[0] = vk.beta2.X;
         beta2[1] = vk.beta2.Y;
         gamma2[0] = vk.gamma2.X;

@@ -1,3 +1,4 @@
+/* global BigInt */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
   ZkOPRUContract,
@@ -7,13 +8,11 @@ import {
 } from '@zkopru/contracts'
 import { Config } from '@zkopru/prisma'
 import { Account, TransactionReceipt } from 'web3-core'
-import { verifyingKeyIdentifier, hexify } from '@zkopru/utils'
+import { VerifyingKey, verifyingKeyIdentifier, hexify } from '@zkopru/utils'
 import Web3 from 'web3'
 import { ContractOptions } from 'web3-eth-contract'
-import bigInt from 'big-integer'
 import * as ffjs from 'ffjavascript'
 import { soliditySha3 } from 'web3-utils'
-import { VerifyingKey } from './snark'
 
 export class L1Contract extends ZkOPRUContract {
   web3: Web3
@@ -33,54 +32,53 @@ export class L1Contract extends ZkOPRUContract {
     const NUM_OF_OUTPUTS = 4
     const vks: { [txSig: string]: VerifyingKey } = {}
     const tasks: (() => Promise<void>)[] = []
-    // const stringify = (val: unknown) => bigInt(val).toString(10)
+    const bn128 = await ffjs.buildBn128()
+    // const stringify = (val: unknown) => BigInt(val).toString(10)
     for (let nI = 1; nI <= NUM_OF_INPUTS; nI += 1) {
       for (let nO = 1; nO <= NUM_OF_OUTPUTS; nO += 1) {
         tasks.push(async () => {
           const vk = await this.upstream.methods.getVk(nI, nO).call()
           const sig = verifyingKeyIdentifier(nI, nO)
-          const vk_alfa_1 = [
-            bigInt(vk.alfa1[0]),
-            bigInt(vk.alfa1[1]),
-            bigInt('1'),
+          const vk_alpha_1 = [
+            BigInt(vk.alpha1[0]),
+            BigInt(vk.alpha1[1]),
+            BigInt('1'),
           ]
           const vk_beta_2 = [
-            [bigInt(vk.beta2[0][0]), bigInt(vk.beta2[0][1])],
-            [bigInt(vk.beta2[1][0]), bigInt(vk.beta2[1][1])],
-            [bigInt('1'), bigInt('0')],
+            [BigInt(vk.beta2[0][0]), BigInt(vk.beta2[0][1])],
+            [BigInt(vk.beta2[1][0]), BigInt(vk.beta2[1][1])],
+            [BigInt('1'), BigInt('0')],
           ]
           const vk_gamma_2 = [
-            [bigInt(vk.gamma2[0][0]), bigInt(vk.gamma2[0][1])],
-            [bigInt(vk.gamma2[1][0]), bigInt(vk.gamma2[1][1])],
-            [bigInt('1'), bigInt('0')],
+            [BigInt(vk.gamma2[0][0]), BigInt(vk.gamma2[0][1])],
+            [BigInt(vk.gamma2[1][0]), BigInt(vk.gamma2[1][1])],
+            [BigInt('1'), BigInt('0')],
           ]
           const vk_delta_2 = [
-            [bigInt(vk.delta2[0][0]), bigInt(vk.delta2[0][1])],
-            [bigInt(vk.delta2[1][0]), bigInt(vk.delta2[1][1])],
-            [bigInt('1'), bigInt('0')],
+            [BigInt(vk.delta2[0][0]), BigInt(vk.delta2[0][1])],
+            [BigInt(vk.delta2[1][0]), BigInt(vk.delta2[1][1])],
+            [BigInt('1'), BigInt('0')],
           ]
-          const vk_alfabeta_12 = ffjs.bn128.pairing(
-            ffjs.utils.unstringifyBigInts(
-              ffjs.utils.stringifyBigInts(vk_alfa_1),
-            ),
-            ffjs.utils.unstringifyBigInts(
-              ffjs.utils.stringifyBigInts(vk_beta_2),
-            ),
+          const vk_alphabeta_12 = bn128.pairing(
+            bn128.G1.fromObject(vk_alpha_1),
+            bn128.G2.fromObject(vk_beta_2),
           )
-          const IC = vk.ic.map(ic => [bigInt(ic[0]), bigInt(ic[1]), bigInt(1)])
+          const IC = vk.ic.map(ic => [BigInt(ic[0]), BigInt(ic[1]), BigInt(1)])
           vks[sig] = {
             protocol: 'groth',
+            curve: 'bn128',
             nPublic: vk.ic.length - 1,
-            vk_alfa_1,
+            vk_alpha_1,
             vk_beta_2,
             vk_gamma_2,
             vk_delta_2,
-            vk_alfabeta_12,
+            vk_alphabeta_12,
             IC,
           }
         })
       }
     }
+    await bn128.terminate()
     await Promise.all(tasks.map(task => task()))
     return vks
   }

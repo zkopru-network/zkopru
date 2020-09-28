@@ -15,10 +15,13 @@ interface EventOptions {
 
 export class Poseidon3 extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): Poseidon3
+
   methods: {
-    poseidon(arg0: (number | string)[]): TransactionObject<string>
+    poseidon(input: (number | string)[]): TransactionObject<string>
   }
+
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

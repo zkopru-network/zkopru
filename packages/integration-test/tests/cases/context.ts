@@ -13,7 +13,7 @@ import { ZkWallet } from '~zk-wizard'
 import { Layer1 } from '~contracts'
 import { IERC20 } from '~contracts/contracts/IERC20'
 import { IERC721 } from '~contracts/contracts/IERC721'
-import { VerifyingKey } from '~core/snark'
+import { VerifyingKey } from '~utils/snark'
 
 type VKs = { [nIn: number]: { [nOut: number]: VerifyingKey } }
 
@@ -60,25 +60,15 @@ export async function terminate(ctx: CtxProvider) {
     coordinator,
     wallets,
   } = ctx()
-  await Promise.all(
-    [
-      async () => {
-        await layer1Container.stop()
-        await layer1Container.delete()
-      },
-      async () => {
-        await circuitArtifactContainer.stop()
-        await circuitArtifactContainer.delete()
-      },
-      async () => {
-        await coordinator.stop()
-        wallets.alice.node.stopSync()
-        wallets.bob.node.stopSync()
-        wallets.carl.node.stopSync()
-      },
-    ].map(task => task()),
-  )
+  await coordinator.stop()
+  wallets.alice.node.stopSync()
+  wallets.bob.node.stopSync()
+  wallets.carl.node.stopSync()
   await Promise.all(dbs.map(db => db.terminate()))
+  await layer1Container.stop()
+  await layer1Container.delete()
+  await circuitArtifactContainer.stop()
+  await circuitArtifactContainer.delete()
 }
 
 async function getContainers(): Promise<{

@@ -7,7 +7,10 @@
     "wasmsnark": "../../node_modules/wasmsnark",
     "~babyjubjub": "../babyjubjub/dist",
     "~dataset": "../dataset/dist",
-    "~utils": "../utils/dist"
+    "~prisma": "../prisma/dist",
+    "~tree": "../tree/dist",
+    "~utils": "../utils/dist",
+    "~zk-wizard": "../zk-wizard/dist"
   },
   "files": [
     "impls",
@@ -15,9 +18,15 @@
   ],
   "scripts": {
     "prebuild": "shx mkdir -p dist",
+    "phase1:pull": "node dist/pull-phase1.js",
+    "phase1:build": "./script/powers_of_tau_phase_1.sh",
+    "phase2:pull": "node dist/pull-keys.js",
+    "phase2:build": "node dist/build-keys.js",
+    "build-keys": "node dist/build-keys.js",
+    "postbuild-keys": "copyfiles -f keys/vks/* ../contracts/keys/vks",
+    "setup": "yarn phase1:pull && yarn phase2:pull",
     "circuit": "./script/compile_circuits.sh",
-    "setup": "./script/snark_setup.sh",
-    "build:circuit": "yarn circuit && yarn setup",
+    "build:circuit": "yarn phase1:pull && yarn circuit && yarn phase2:build",
     "build": "tsc --build tsconfig.build.json",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "link-modules": "link-module-alias",
@@ -31,13 +40,18 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "circomlib": "^0.1.1"
+    "circom": "0.5.28",
+    "circomlib": "0.2.4",
+    "snarkjs": "0.3.33",
+    "tar": "^6.0.2"
   },
   "devDependencies": {
-    "ffjavascript": "^0.1.2",
+    "@zkopru/utils": "file:../utils",
+    "ffjavascript": "0.2.22",
     "node-docker-api": "^1.1.22",
-    "snarkjs": "0.1.31",
-    "wasmsnark": "^0.0.10"
+    "shelljs": "^0.8.4",
+    "wasmsnark": "^0.0.10",
+    "uuid": "^8.1.0"
   },
   "publishConfig": {
     "access": "public"

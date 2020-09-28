@@ -1,5 +1,5 @@
 import Web3 from 'web3'
-import * as circomlib from 'circomlib'
+import { poseidon } from 'circomlib'
 import { Account, EncryptedKeystoreV3Json, AddAccount } from 'web3-core'
 import { Field, Point, EdDSA, signEdDSA, verifyEdDSA } from '@zkopru/babyjubjub'
 import { Keystore } from '@zkopru/prisma'
@@ -8,8 +8,6 @@ import { hexify } from '@zkopru/utils'
 import createKeccak from 'keccak'
 import assert from 'assert'
 import { TokenRegistry } from '~transaction/tokens'
-
-const poseidonHash = circomlib.poseidon.createHash(6, 8, 57)
 
 export class ZkAccount {
   private p: Field // spending key
@@ -55,10 +53,10 @@ export class ZkAccount {
     )
     const N = Point.fromPrivKey(this.n.toHex(32))
     const P = Field.from(
-      poseidonHash([
-        this.pG.x.toIden3BigInt(),
-        this.pG.y.toIden3BigInt(),
-        this.n.toIden3BigInt(),
+      poseidon([
+        this.pG.x.toBigInt(),
+        this.pG.y.toBigInt(),
+        this.n.toBigInt(),
       ]).toString(),
     )
     this.zkAddress = ZkAddress.from(P, N)

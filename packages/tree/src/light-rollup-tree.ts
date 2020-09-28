@@ -7,7 +7,7 @@ import { toBN } from 'web3-utils'
 import { hexify } from '@zkopru/utils'
 import { DB, TreeSpecies } from '@zkopru/prisma'
 import { Hasher } from './hasher'
-import { MerkleProof, startingLeafProof } from './merkle-proof'
+import { MerkleProof, startingLeafProof, verifyProof } from './merkle-proof'
 
 export interface Leaf<T extends Field | BN> {
   hash: T
@@ -272,12 +272,16 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     }
     const siblings = await this._getSiblings(leafIndex)
     const root = this.root()
-    return {
+    const proof = {
       root,
       index: leafIndex,
       leaf: hash,
       siblings,
     }
+    if (!verifyProof(this.config.hasher, proof)) {
+      throw Error('Created invalid merkle proof')
+    }
+    return proof
   }
 
   private async _getSiblings(leafIndex: T): Promise<T[]> {
@@ -301,15 +305,13 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       } else {
         // should find the node value
         const cached = cachedSiblings[hexify(siblingNodeIndex)]
-        if (this.zero instanceof Field) {
+        if (!cached) {
+          siblings[level] = this.config.hasher.preHash[level]
+        } else if (this.zero instanceof Field) {
           siblings[level] = Field.from(cached)
         } else {
           siblings[level] = toBN(cached)
         }
-        if (siblings[level] === undefined)
-          throw Error(
-            'Sibling was not cached. Make sure you added your public key before scanning',
-          )
       }
     }
     return siblings

@@ -11,7 +11,7 @@ export const ISetupWizardABI = [
               { internalType: 'uint256', name: 'Y', type: 'uint256' },
             ],
             internalType: 'struct G1Point',
-            name: 'alfa1',
+            name: 'alpha1',
             type: 'tuple',
           },
           {

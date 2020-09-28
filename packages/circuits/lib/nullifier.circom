@@ -5,7 +5,7 @@ template Nullifier() {
     signal input leaf_index;
     signal output out;
 
-    component hash = Poseidon(2, 6, 8, 57);   // Constant
+    component hash = Poseidon(2);   // Constant
     hash.inputs[0] <== nullifier_seed;
     hash.inputs[1] <== leaf_index;
     hash.out ==> out;

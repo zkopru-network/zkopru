@@ -139,7 +139,7 @@ export class DB {
   }
 
   static async mockup(name?: string): Promise<MockupDB> {
-    const dbName = name || `mockup-${v4()}.db`
+    const dbName = name || `.mockup/${v4()}.db`
     const dbPath = path.join(path.resolve('.'), dbName)
     const dirPath = path.join(dbPath, '../')
     fs.mkdirSync(dirPath, { recursive: true })

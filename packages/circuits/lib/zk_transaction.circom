@@ -211,28 +211,28 @@ template ZkTransaction(tree_depth, n_i, n_o) {
     var range_limit = (0 - 1) >> 8;
     component inflow_eth_range[n_i];
     for(var i = 0; i < n_i; i ++) {
-        inflow_eth_range[i] = LessThan(254);
+        inflow_eth_range[i] = LessThan(252);
         inflow_eth_range[i].in[0] <== spending_note_eth[i];
         inflow_eth_range[i].in[1] <== range_limit;
         inflow_eth_range[i].out === 1;
     }
     component inflow_erc20_range[n_i];
     for(var i = 0; i < n_i; i ++) {
-        inflow_erc20_range[i] = LessThan(254);
+        inflow_erc20_range[i] = LessThan(252);
         inflow_erc20_range[i].in[0] <== spending_note_erc20[i];
         inflow_erc20_range[i].in[1] <== range_limit;
         inflow_erc20_range[i].out === 1;
     }
     component outflow_eth_range[n_o];
     for(var i = 0; i < n_o; i ++) {
-        outflow_eth_range[i] = LessThan(254);
+        outflow_eth_range[i] = LessThan(252);
         outflow_eth_range[i].in[0] <== new_note_eth[i];
         outflow_eth_range[i].in[1] <== range_limit;
         outflow_eth_range[i].out === 1;
     }
     component outflow_erc20_range[n_o];
     for(var i = 0; i < n_o; i ++) {
-        outflow_erc20_range[i] = LessThan(254);
+        outflow_erc20_range[i] = LessThan(252);
         outflow_erc20_range[i].in[0] <== new_note_erc20[i];
         outflow_erc20_range[i].in[1] <== range_limit;
         outflow_erc20_range[i].out === 1;
@@ -289,59 +289,4 @@ template ZkTransaction(tree_depth, n_i, n_o) {
         non_fungible.post_token_addr[i] <== new_note_token_addr[i];
         non_fungible.post_token_nft[i] <== new_note_erc721[i];
     }
-
-    /** MPC atomic swap: TODO later
-    /// MPC proof
-    component mpc = AtomicSwapMPC();
-    mpc.my_mpc_salt <== binding_factors[0];
-    mpc.order[0] <== binding_factors[1];
-    mpc.order[1] <== binding_factors[2];
-    mpc.order[2] <== binding_factors[3];
-    mpc.giving_token_type <== binding_factors[4];
-    mpc.giving_token_addr <== binding_factors[5];
-    mpc.giving_note_salt <== binding_factors[6];
-    mpc.counterpart_pk[0] <== binding_factors[7];
-    mpc.counterpart_pk[1] <== binding_factors[8];
-    mpc.counterpart_computation[0] <== counterpart_computation[0];
-    mpc.counterpart_computation[1] <== counterpart_computation[1];
-
-    binder[0] === mpc.out[0];
-    binder[1] === mpc.out[1];
-
-    /// eth for swap note
-    component eth_amount = IfElseThen(1);
-    eth_amount.obj1[0] <== mpc.giving_token_type;
-    eth_amount.obj2[0] <== 1;
-    eth_amount.if_v <== mpc.order[0];
-    eth_amount.else_v <== 0;
-    /// erc20 for swap note
-    component erc20_amount = IfElseThen(1);
-    erc20_amount.obj1[0] <== mpc.giving_token_type;
-    erc20_amount.obj2[0] <== 2;
-    erc20_amount.if_v <== mpc.order[1];
-    erc20_amount.else_v <== 0;
-    /// erc721 for swap note
-    component erc721_id = IfElseThen(1);
-    erc721_id.obj1[0] <== mpc.giving_token_type;
-    erc721_id.obj2[0] <== 3;
-    erc721_id.if_v <== mpc.order[2];
-    erc721_id.else_v <== 0;
-    /// If binder is not zero, the last item of new_note[] is the note for the atomic swap.
-    component bound_note[7];
-    for (var i = 0; i < 7; i ++) {
-        bound_note[i] = IfElseThen(1);
-        bound_note[i].obj1[0] <== binder[0];
-        bound_note[i].obj2[0] <== 0;
-        bound_note[i].if_v <== 0;
-        bound_note[i].else_v <== new_note[i][n_o - 1];
-    }
-    /// Bind the note properties to the mpc factors
-    bound_note[0].out === eth_amount.out;
-    bound_note[1].out === mpc.counterpart_pk[0];
-    bound_note[2].out === mpc.counterpart_pk[1];
-    bound_note[3].out === mpc.giving_note_salt;
-    bound_note[4].out === mpc.giving_token_addr;
-    bound_note[5].out === erc20_amount.out;
-    bound_note[6].out === erc721_id.out;
-    */
 }

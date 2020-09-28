@@ -108,7 +108,7 @@ contract TxSNARKChallenge is Challengeable {
     }
 
     function _exist(SNARK.VerifyingKey memory vk) internal pure returns (bool) {
-        if (vk.alfa1.X != 0) {
+        if (vk.alpha1.X != 0) {
             return true;
         } else {
             return false;

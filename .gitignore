@@ -4,6 +4,8 @@ db
 zkopru.db
 .data
 **/*/.data
+.mockup
+**/*/.mockup
 **/*/*.db
 **/*/*.db-journal
 temp

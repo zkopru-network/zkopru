@@ -30,8 +30,8 @@
     "big-integer": "^1.6.48",
     "blake-hash": "^1.1.0",
     "bn.js": "^5.1.1",
-    "circomlib": "^0.1.1",
-    "ffjavascript": "^0.1.2",
+    "circomlib": "0.2.4",
+    "ffjavascript": "0.2.22",
     "soltypes": "^1.3.3",
     "web3-utils": "^1.2.6"
   },

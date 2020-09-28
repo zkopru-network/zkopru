@@ -1,4 +1,9 @@
-import { verifyingKeyIdentifier, logger, root } from '@zkopru/utils'
+import {
+  VerifyingKey,
+  verifyingKeyIdentifier,
+  logger,
+  root,
+} from '@zkopru/utils'
 import { Deposit as DepositSql } from '@zkopru/prisma'
 // import { Point } from '@zkopru/babyjubjub'
 import { Bytes32, Uint256 } from 'soltypes'
@@ -13,7 +18,6 @@ import {
   massDepositHash,
   massMigrationHash,
 } from './block'
-import { VerifyingKey } from './snark'
 import { SNARKVerifier } from './snark-verifier'
 import { L2Chain, Patch } from './layer2'
 import { Challenge, ChallengeCode } from './challenge'

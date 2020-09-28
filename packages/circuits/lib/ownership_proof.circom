@@ -7,7 +7,7 @@ template OwnershipProof() {
     signal private input pub_key[2];
     signal private input sig[3];
     component eddsa = EdDSAPoseidonVerifier()
-    eddsa.enabled <== 1;
+    eddsa.enabled <== 0;
     eddsa.M <== note;
     eddsa.Ax <== pub_key[0];
     eddsa.Ay <== pub_key[1];

@@ -6,7 +6,7 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { RollUpLib } from "../libraries/Tree.sol";
 import { Layer2 } from "../storage/Layer2.sol";
-import { Hash, Poseidon6 } from "../libraries/Hash.sol";
+import { Hash, Poseidon3, Poseidon4 } from "../libraries/Hash.sol";
 import { WithdrawalTree, Blockchain, Types } from "../libraries/Types.sol";
 
 contract UserInteractable is Layer2 {
@@ -177,12 +177,12 @@ contract UserInteractable is Layer2 {
         assetHashInputs[1] = uint256(token);
         assetHashInputs[2] = amount; //erc20 amount
         assetHashInputs[3] = nft;
-        uint256 assetHash = Poseidon6.poseidon(assetHashInputs);
+        uint256 assetHash = Poseidon4.poseidon(assetHashInputs);
         uint256[] memory resultHashInputs = new uint256[](3);
         resultHashInputs[0] = spendingPubKey;
         resultHashInputs[1] = salt;
         resultHashInputs[2] = assetHash;
-        uint256 note = Poseidon6.poseidon(resultHashInputs);
+        uint256 note = Poseidon3.poseidon(resultHashInputs);
         // Receive token
         if (token != address(0) && amount != 0) {
             try IERC20(token).transferFrom(msg.sender, address(this), amount) {

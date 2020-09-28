@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { BigInteger } from 'big-integer'
 import { soliditySha3Raw } from 'web3-utils'
 import { Field } from '@zkopru/babyjubjub'
 import * as Utils from '@zkopru/utils'
@@ -171,7 +170,7 @@ export class ZkTx {
     return this.cache.size
   }
 
-  signals(): BigInteger[] {
+  signals(): bigint[] {
     /**
      * 
     signal input inclusion_references[n_i]; 
@@ -216,7 +215,7 @@ export class ZkTx {
       this.fee,
       this.swap ? this.swap : Field.zero,
     ]
-    return signals.map(f => f.toIden3BigInt())
+    return signals.map(f => f.toBigInt())
   }
 
   static decode(buff: Buffer): ZkTx {
@@ -298,22 +297,22 @@ export class ZkTx {
   }
 
   circomProof(): {
-    pi_a: BigInteger[]
-    pi_b: BigInteger[][]
-    pi_c: BigInteger[]
+    pi_a: bigint[]
+    pi_b: bigint[][]
+    pi_c: bigint[]
     protocol: string
   } {
     if (!this.proof) throw Error('Does not have SNARK proof')
-    const bigOne = Field.from(1).toIden3BigInt()
-    const bigZero = Field.zero.toIden3BigInt()
+    const bigOne = Field.from(1).toBigInt()
+    const bigZero = Field.zero.toBigInt()
     return {
-      pi_a: [...this.proof.pi_a.map(f => f.toIden3BigInt()), bigOne],
+      pi_a: [...this.proof.pi_a.map(f => f.toBigInt()), bigOne],
       pi_b: [
-        ...this.proof.pi_b.map(arr => arr.map(f => f.toIden3BigInt())),
+        ...this.proof.pi_b.map(arr => arr.map(f => f.toBigInt())),
         [bigOne, bigZero],
       ],
-      pi_c: [...this.proof.pi_c.map(f => f.toIden3BigInt()), bigOne],
-      protocol: 'groth',
+      pi_c: [...this.proof.pi_c.map(f => f.toBigInt()), bigOne],
+      protocol: 'groth16',
     }
   }
 }

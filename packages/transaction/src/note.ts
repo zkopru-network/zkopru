@@ -1,8 +1,6 @@
-import * as circomlib from 'circomlib'
+import { poseidon } from 'circomlib'
 import { Field } from '@zkopru/babyjubjub'
 import { ZkAddress } from './zk-address'
-
-const poseidonHash = circomlib.poseidon.createHash(6, 8, 57)
 
 export enum OutflowType {
   UTXO = 0,
@@ -44,22 +42,26 @@ export class Note {
   }
 
   hash(): Field {
-    const assetHash = Field.from(
-      poseidonHash([
-        this.asset.eth.toIden3BigInt(),
-        this.asset.tokenAddr.toIden3BigInt(),
-        this.asset.erc20Amount.toIden3BigInt(),
-        this.asset.nft.toIden3BigInt(),
-      ]).toString(),
-    )
+    const assetHash = this.assetHash()
     const noteHash = Field.from(
-      poseidonHash([
-        this.owner.spendingPubKey().toIden3BigInt(),
-        this.salt.toIden3BigInt(),
-        assetHash.toIden3BigInt(),
+      poseidon([
+        this.owner.spendingPubKey().toBigInt(),
+        this.salt.toBigInt(),
+        assetHash.toBigInt(),
       ]).toString(),
     )
     return noteHash
+  }
+
+  assetHash(): Field {
+    return Field.from(
+      poseidon([
+        this.asset.eth.toBigInt(),
+        this.asset.tokenAddr.toBigInt(),
+        this.asset.erc20Amount.toBigInt(),
+        this.asset.nft.toBigInt(),
+      ]).toString(),
+    )
   }
 
   eth(): Field {

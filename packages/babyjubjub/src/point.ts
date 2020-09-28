@@ -1,5 +1,5 @@
+/* global BigInt */
 import { hexToBuffer, hexify } from '@zkopru/utils'
-import bigInt, { BigInteger } from 'big-integer'
 import * as ffjs from 'ffjavascript'
 import * as circomlib from 'circomlib'
 import createBlakeHash from 'blake-hash'
@@ -13,12 +13,7 @@ export class Point {
   constructor(x: Field, y: Field) {
     this.x = x
     this.y = y
-    if (
-      !circomlib.babyJub.inCurve([
-        this.x.toIden3BigInt(),
-        this.y.toIden3BigInt(),
-      ])
-    ) {
+    if (!circomlib.babyJub.inCurve([this.x.toBigInt(), this.y.toBigInt()])) {
       throw new Error('Given point is not on the Babyjubjub curve')
     }
   }
@@ -70,38 +65,35 @@ export class Point {
 
   static isOnJubjub(x: F, y: F): boolean {
     return circomlib.babyJub.inCurve([
-      Field.from(x).toIden3BigInt(),
-      Field.from(y).toIden3BigInt(),
+      Field.from(x).toBigInt(),
+      Field.from(y).toBigInt(),
     ])
   }
 
   encode(): Buffer {
-    return circomlib.babyJub.packPoint([
-      this.x.toIden3BigInt(),
-      this.y.toIden3BigInt(),
-    ])
+    return circomlib.babyJub.packPoint([this.x.toBigInt(), this.y.toBigInt()])
   }
 
   toHex(): string {
     return hexify(this.encode(), 32)
   }
 
-  toBigIntArr(): BigInteger[] {
-    return [this.x.toIden3BigInt(), this.y.toIden3BigInt(), bigInt(1)]
+  toBigIntArr(): bigint[] {
+    return [this.x.toBigInt(), this.y.toBigInt(), BigInt(1)]
   }
 
   add(p: Point): Point {
     const result = circomlib.babyJub.addPoint(
-      [this.x.toIden3BigInt(), this.y.toIden3BigInt()],
-      [p.x.toIden3BigInt(), p.y.toIden3BigInt()],
+      [this.x.toBigInt(), this.y.toBigInt()],
+      [p.x.toBigInt(), p.y.toBigInt()],
     )
     return Point.from(result[0].toString(), result[1].toString())
   }
 
   mul(n: F): Point {
     const result = circomlib.babyJub.mulPointEscalar(
-      [this.x.toIden3BigInt(), this.y.toIden3BigInt()],
-      Field.from(n).toIden3BigInt(),
+      [this.x.toBigInt(), this.y.toBigInt()],
+      Field.from(n).toBigInt(),
     )
     return Point.from(result[0].toString(), result[1].toString())
   }
@@ -138,12 +130,12 @@ export interface EdDSA {
 
 export function verifyEdDSA(msg: F, sig: EdDSA, pubKey: Point): boolean {
   const result = circomlib.eddsa.verifyPoseidon(
-    Field.from(msg).toIden3BigInt(),
+    Field.from(msg).toBigInt(),
     {
-      R8: [sig.R8.x.toIden3BigInt(), sig.R8.y.toIden3BigInt()],
-      S: sig.S.toIden3BigInt(),
+      R8: [sig.R8.x.toBigInt(), sig.R8.y.toBigInt()],
+      S: sig.S.toBigInt(),
     },
-    [pubKey.x.toIden3BigInt(), pubKey.y.toIden3BigInt()],
+    [pubKey.x.toBigInt(), pubKey.y.toBigInt()],
   )
   return result
 }
@@ -157,10 +149,7 @@ export function signEdDSA({
 }): EdDSA {
   const buff: Buffer =
     typeof privKey === 'string' ? hexToBuffer(privKey) : privKey
-  const result = circomlib.eddsa.signPoseidon(
-    buff,
-    Field.from(msg).toIden3BigInt(),
-  )
+  const result = circomlib.eddsa.signPoseidon(buff, Field.from(msg).toBigInt())
   return {
     R8: Point.from(result.R8[0].toString(), result.R8[1].toString()),
     S: Field.from(result.S.toString()),

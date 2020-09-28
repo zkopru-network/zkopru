@@ -7,7 +7,7 @@ template BranchNode() {
     signal input right;
     signal output parent;
 
-    component hasher = Poseidon(2, 3, 8, 57);   // Constant
+    component hasher = Poseidon(2);   // Constant
     hasher.inputs[0] <== left;
     hasher.inputs[1] <== right;
 

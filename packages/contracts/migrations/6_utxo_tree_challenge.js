@@ -1,7 +1,7 @@
-const Poseidon3 = artifacts.require('Poseidon3')
+const Poseidon2 = artifacts.require('Poseidon2')
 const UtxoTreeChallenge = artifacts.require('UtxoTreeChallenge')
 
 module.exports = function migration(deployer) {
-  deployer.link(Poseidon3, UtxoTreeChallenge)
+  deployer.link(Poseidon2, UtxoTreeChallenge)
   deployer.deploy(UtxoTreeChallenge)
 }

@@ -8,7 +8,7 @@ library SNARK {
     using Pairing for *;
     
     struct VerifyingKey {
-        G1Point alfa1;
+        G1Point alpha1;
         G2Point beta2;
         G2Point gamma2;
         G2Point delta2;
@@ -44,7 +44,7 @@ library SNARK {
         return Pairing.pairing(
             Pairing.negate(proof.a),
             proof.b,
-            vk.alfa1,
+            vk.alpha1,
             vk.beta2,
             vkX,
             vk.gamma2,

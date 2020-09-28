@@ -145,11 +145,12 @@ describe('utxo tree unit test', () => {
     })
     it('should fail to generate a merkle proof with an invalid index', async () => {
       const index = utxoTree.latestLeafIndex().sub(4)
-      const proof = await utxoTree.merkleProof({
-        hash: utxos.utxo1_out_2.hash(),
-        index,
-      })
-      expect(verifyProof(poseidonHasher(depth), proof)).toBe(false)
+      await expect(
+        utxoTree.merkleProof({
+          hash: utxos.utxo1_out_2.hash(),
+          index,
+        }),
+      ).rejects.toThrow('Created invalid merkle proof')
     })
   })
 })

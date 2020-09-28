@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class UserInteractable extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): UserInteractable
+
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -59,7 +61,7 @@ export class UserInteractable extends Contract {
       numOfInputs: number | string,
       numOfOutputs: number | string,
     ): TransactionObject<{
-      alfa1: string[]
+      alpha1: string[]
       beta2: string[][]
       gamma2: string[][]
       delta2: string[][]
@@ -156,6 +158,7 @@ export class UserInteractable extends Contract {
       signature: string | number[],
     ): TransactionObject<void>
   }
+
   events: {
     Deposit: ContractEvent<{
       queuedAt: string

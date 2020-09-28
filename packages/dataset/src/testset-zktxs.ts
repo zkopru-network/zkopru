@@ -170,7 +170,7 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
   await buildKeys(keyPath)
 
   const zkWizard = new ZkWizard({
-    grove,
+    utxoTree: grove.utxoTree,
     path: keyPath,
   })
   const tx1Path = path.join(keyPath, 'txs/zk_tx_1.tx')
@@ -225,7 +225,6 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
     zk_tx_4 = await zkWizard.shield({ tx: txs.tx_4, from: accounts.alice })
     fs.writeFileSync(tx4Path, zk_tx_4.encode())
   }
-  await zkWizard.terminate()
   await mockupDB.terminate()
   return [zk_tx_1, zk_tx_2_1, zk_tx_2_2, zk_tx_3, zk_tx_4]
 }

@@ -1,3 +1,6 @@
+/**
+ * @jest-environment node
+ */
 /* eslint-disable jest/no-hooks */
 import Web3 from 'web3'
 import { WebsocketProvider } from 'web3-core'
@@ -64,12 +67,13 @@ describe('coordinator test to run testnet', () => {
         snark: true,
       },
     })
-  }, 3600000)
+  }, 36000)
   afterAll(async () => {
+    wsProvider.disconnect(0, 'close connection')
+    await coordinator.stop()
+    await mockup.terminate()
     await container.stop()
     await container.delete()
-    await mockup.terminate()
-    wsProvider.disconnect(0, 'close connection')
   }, 10000)
   describe('coordinator', () => {
     it('should be defined', async () => {
@@ -77,7 +81,7 @@ describe('coordinator test to run testnet', () => {
         maxBytes: 131072,
         bootstrap: true,
         priceMultiplier: 48, // 32 gas is the current default price for 1 byte
-        port: 8888,
+        port: 9999,
       })
       expect(coordinator).toBeDefined()
     })

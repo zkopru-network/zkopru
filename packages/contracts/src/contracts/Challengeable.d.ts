@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class Challengeable extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): Challengeable
+
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -55,7 +57,7 @@ export class Challengeable extends Contract {
       numOfInputs: number | string,
       numOfOutputs: number | string,
     ): TransactionObject<{
-      alfa1: string[]
+      alpha1: string[]
       beta2: string[][]
       gamma2: string[][]
       delta2: string[][]
@@ -118,6 +120,7 @@ export class Challengeable extends Contract {
 
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
   }
+
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
