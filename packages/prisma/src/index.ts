@@ -152,7 +152,7 @@ export class DB {
     })
     const terminate = async () => {
       fs.unlinkSync(dbPath)
-      await db.prisma.disconnect()
+      await db.prisma.$disconnect()
     }
     return { db, terminate }
   }

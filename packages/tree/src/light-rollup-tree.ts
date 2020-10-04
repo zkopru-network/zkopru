@@ -89,23 +89,6 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     return [...this.data.siblings].slice(0, this.depth)
   }
 
-  // TODO: remove
-  // async includedInBlock(hash: string) {
-  //   await this.db.write(prisma =>
-  //     prisma.lightTree.update({
-  //       where: {
-  //         species_treeIndex: {
-  //           species: this.species,
-  //           treeIndex: this.metadata.index,
-  //         },
-  //       },
-  //       data: {
-  //         block: hash,
-  //       },
-  //     }),
-  //   )
-  // }
-
   async init() {
     const saveResult = await this.db.write(prisma =>
       prisma.lightTree.create({
@@ -360,7 +343,6 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       const index = (leaf.hash instanceof Field
         ? Field.from(i).add(start)
         : new BN(i).add(start)) as T
-      // TODO batch transaction
       if (leaf.shouldTrack) {
         trackingLeaves.push(index)
       }
@@ -451,27 +433,28 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       }),
     )
     // update cached nodes
-    // TODO prisma batch transaction
-    for (const nodeIndex of Object.keys(cached)) {
-      await this.db.write(prisma =>
-        prisma.treeNode.upsert({
-          where: {
-            treeId_nodeIndex: {
+    await this.db.write(prisma =>
+      prisma.$transaction(
+        Object.keys(cached).map(nodeIndex =>
+          prisma.treeNode.upsert({
+            where: {
+              treeId_nodeIndex: {
+                treeId: this.metadata.id,
+                nodeIndex,
+              },
+            },
+            update: {
+              value: cached[nodeIndex],
+            },
+            create: {
               treeId: this.metadata.id,
               nodeIndex,
+              value: cached[nodeIndex],
             },
-          },
-          update: {
-            value: cached[nodeIndex],
-          },
-          create: {
-            treeId: this.metadata.id,
-            nodeIndex,
-            value: cached[nodeIndex],
-          },
-        }),
-      )
-    }
+          }),
+        ),
+      ),
+    )
     return {
       root,
       index: end,

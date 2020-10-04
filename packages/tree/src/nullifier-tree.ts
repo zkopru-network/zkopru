@@ -22,6 +22,15 @@ export enum SMTLeaf {
   FILLED = 1,
 }
 
+type Leaf = {
+  index: BN
+  val: SMTLeaf
+}
+
+type NodeMap = {
+  [key: string]: BN
+}
+
 export class NullifierTree implements SMT<BN> {
   readonly db: DB
 
@@ -121,19 +130,42 @@ export class NullifierTree implements SMT<BN> {
   async nullify(...leaves: BN[]): Promise<BN> {
     let root: BN = this.rootNode
     await this.lock.acquire('root', async () => {
-      for (const leaf of leaves) {
-        root = await this.updateLeaf(leaf, SMTLeaf.FILLED)
-      }
+      root = await this.update(
+        leaves.map(leaf => ({
+          index: leaf,
+          val: SMTLeaf.FILLED,
+        })),
+        { strictUpdate: true },
+      )
     })
     return root
   }
 
   async recover(...leaves: BN[]) {
     await this.lock.acquire('root', async () => {
-      for (const leaf of leaves) {
-        await this.updateLeaf(leaf, SMTLeaf.EMPTY)
-      }
+      await this.update(
+        leaves.map(leaf => ({
+          index: leaf,
+          val: SMTLeaf.EMPTY,
+        })),
+        { strictUpdate: true },
+      )
     })
+  }
+
+  async dryRunNullify(...leaves: BN[]): Promise<BN> {
+    let result!: BN
+    await this.lock.acquire('root', async () => {
+      const { newRoot } = await this.dryRun(
+        leaves.map(leaf => ({
+          index: leaf,
+          val: SMTLeaf.FILLED,
+        })),
+        { strictUpdate: true },
+      )
+      result = newRoot
+    })
+    return result
   }
 
   private async getSiblings(index: BN): Promise<BN[]> {
@@ -160,84 +192,116 @@ export class NullifierTree implements SMT<BN> {
     return siblings
   }
 
-  private async updateLeaf(index: BN, val: SMTLeaf): Promise<BN> {
-    const nodesToUpdate: TreeNode[] = []
-    const leafNodeIndex = new BN(1).shln(this.depth).or(index)
-    if (leafNodeIndex.lte(index)) throw Error('Leaf index is out of range')
-    const siblings = await this.getSiblings(index)
-    let node = new BN(val)
-    let pathIndex: BN
-    let hasRightSibling: boolean
-    for (let level = 0; level < this.depth; level += 1) {
-      pathIndex = leafNodeIndex.shrn(level)
-      nodesToUpdate.push({
-        treeId: NULLIFIER_TREE_ID,
-        nodeIndex: hexify(pathIndex),
-        value: hexify(node),
-      })
-      hasRightSibling = pathIndex.isEven()
-      if (hasRightSibling) {
-        node = this.hasher.parentOf(node, siblings[level])
-      } else {
-        node = this.hasher.parentOf(siblings[level], node)
+  private async getSiblingNodes(...leafIndices: BN[]): Promise<NodeMap> {
+    // get indexes to retrieve
+    const nodeIndices: string[] = []
+    for (const leafIndex of leafIndices) {
+      const leafPath = new BN(1).shln(this.depth).or(Field.toBN(leafIndex))
+      for (let level = 0; level < this.depth; level += 1) {
+        const pathIndex = leafPath.shrn(level)
+        const siblingIndex = new BN(1).xor(pathIndex)
+        nodeIndices.push(hexify(siblingIndex))
       }
     }
-    // add root node to the list to record
-    nodesToUpdate.push({
-      treeId: NULLIFIER_TREE_ID,
-      nodeIndex: hexify(new BN(1)),
-      value: hexify(node),
-    })
-
-    // need batch query here..
-    for (const node of nodesToUpdate) {
-      await this.db.write(prisma =>
-        prisma.treeNode.upsert({
-          where: {
-            treeId_nodeIndex: {
-              treeId: NULLIFIER_TREE_ID,
-              nodeIndex: node.nodeIndex,
-            },
-          },
-          update: { value: node.value },
-          create: node,
-        }),
-      )
+    // const mutatedNodes: { [nodeIndex: string]: BN } = {}
+    const mutatedNodes: TreeNode[] = await this.db.read(prisma =>
+      prisma.treeNode.findMany({
+        where: {
+          AND: [
+            { treeId: NULLIFIER_TREE_ID },
+            { nodeIndex: { in: [...nodeIndices] } },
+          ],
+        },
+      }),
+    )
+    const siblingNodes: NodeMap = {}
+    for (const node of mutatedNodes) {
+      // key is a hexified node index
+      siblingNodes[node.nodeIndex] = toBN(node.value)
     }
-    logger.trace(`setting new root - ${node}`)
-    this.rootNode = node
+    return siblingNodes
+  }
+
+  /**
+   * @param option if strictUpdate is true, every leaf should update the root
+   */
+  private async update(
+    leaves: Leaf[],
+    option?: { strictUpdate?: boolean },
+  ): Promise<BN> {
+    const { updatedNodes } = await this.dryRun(leaves, option)
+    // need batch query here..
+    await this.db.write(prisma =>
+      prisma.$transaction(
+        Object.keys(updatedNodes).map(nodeIndex =>
+          prisma.treeNode.upsert({
+            where: {
+              treeId_nodeIndex: {
+                treeId: NULLIFIER_TREE_ID,
+                nodeIndex,
+              },
+            },
+            update: { value: hexify(updatedNodes[nodeIndex]) },
+            create: {
+              treeId: NULLIFIER_TREE_ID,
+              nodeIndex,
+              value: hexify(updatedNodes[nodeIndex]),
+            },
+          }),
+        ),
+      ),
+    )
+    const newRoot = updatedNodes[hexify(new BN(1))]
+    logger.trace(`setting new root - ${newRoot}`)
+    this.rootNode = newRoot
     return this.rootNode
   }
 
-  async dryRunNullify(...leaves: BN[]): Promise<BN> {
-    let result!: BN
-    await this.lock.acquire('root', async () => {
-      const originalRoot = await this.getRootNode()
-      let prevRoot: BN = originalRoot
-      const nullified: BN[] = []
-      let duplicated: BN | undefined
-      // nullify items
-      for (const leaf of leaves) {
-        const newRoot = await this.updateLeaf(leaf, SMTLeaf.FILLED)
-        nullified.push(leaf)
-        if (newRoot.eq(prevRoot)) {
-          duplicated = leaf
-          break
+  private async dryRun(
+    leaves: Leaf[],
+    option?: { strictUpdate?: boolean },
+  ): Promise<{ updatedNodes: NodeMap; newRoot: BN }> {
+    // get all sibling nodes
+    const siblingNodes: NodeMap = await this.getSiblingNodes(
+      ...leaves.map(leaf => leaf.index),
+    )
+    const updatedNodes: NodeMap = {}
+    // cache node update
+    const getSibling = (path: BN): BN => {
+      const sibIndex = hexify(new BN(1).xor(path))
+      return (
+        updatedNodes[sibIndex] ||
+        siblingNodes[sibIndex] ||
+        this.hasher.preHash[this.depth - (path.bitLength() - 1)]
+      )
+    }
+
+    let newRoot = await this.getRootNode()
+    // write on the database
+    for (const leaf of leaves) {
+      const { index, val } = leaf
+      const leafNodeIndex = new BN(1).shln(this.depth).or(index)
+      if (leafNodeIndex.lte(index)) throw Error('Leaf index is out of range')
+      let node = new BN(val)
+      let pathIndex: BN
+      let hasRightSibling: boolean
+      for (let level = 0; level < this.depth; level += 1) {
+        pathIndex = leafNodeIndex.shrn(level)
+        updatedNodes[hexify(pathIndex)] = new BN(node)
+        hasRightSibling = pathIndex.isEven()
+        if (hasRightSibling) {
+          node = this.hasher.parentOf(node, getSibling(pathIndex))
+        } else {
+          node = this.hasher.parentOf(getSibling(pathIndex), node)
         }
-        prevRoot = newRoot
       }
-      result = await this.getRootNode()
-      // recover nullified items
-      for (const leaf of nullified) {
-        await this.updateLeaf(leaf, SMTLeaf.EMPTY)
+      // add root node to the list to record
+      if (option?.strictUpdate && newRoot.eq(node)) {
+        throw Error(`Leaf ${index} is not changing the root.`)
       }
-      // emit errors if there were some problems
-      if (duplicated)
-        throw Error(`Already used nullifier: ${duplicated.toString()}`)
-      if (!(await this.getRootNode()).eq(originalRoot)) {
-        throw Error('Dry run should not make any change')
-      }
-    })
-    return result
+      newRoot = node
+    }
+    updatedNodes[hexify(new BN(1))] = newRoot
+    return { updatedNodes, newRoot }
   }
 }

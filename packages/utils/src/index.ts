@@ -10,6 +10,8 @@ export { logger, logStream } from './logger'
 
 export { PromptApp } from './prompt'
 
+export { Worker } from './worker'
+
 export {
   readFromContainer,
   copyFromContainer,

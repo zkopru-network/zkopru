@@ -31,6 +31,7 @@ export class SNARKVerifier {
         const { result } = message as { result: boolean }
         logger.info(`snark result: ${result}`)
         res(result)
+        process.kill()
       })
 
       const proof = ffjs.utils.stringifyBigInts(tx.circomProof())

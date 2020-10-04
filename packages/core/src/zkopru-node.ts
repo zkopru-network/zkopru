@@ -2,9 +2,8 @@
 import { ZkAccount } from '@zkopru/account'
 import { DB, Proposal } from '@zkopru/prisma'
 import { Grove, poseidonHasher, keccakHasher } from '@zkopru/tree'
-import { logger } from '@zkopru/utils'
+import { logger, Worker } from '@zkopru/utils'
 import { Uint256, Address } from 'soltypes'
-import { scheduleJob, Job } from 'node-schedule'
 import { EventEmitter } from 'events'
 import assert from 'assert'
 import { TokenRegistry } from '@zkopru/transaction'
@@ -47,13 +46,15 @@ export class ZkOPRUNode extends EventEmitter {
 
   tokenRegistry: TokenRegistry
 
-  cronJobs: Job[]
-
   fetching: {
     [proposalTx: string]: boolean
   }
 
-  processingBlocks = false
+  statusUpdater: Worker<void>
+
+  blockFetcher: Worker<void>
+
+  blockProcessor: Worker<void>
 
   status: NetworkStatus
 
@@ -90,39 +91,52 @@ export class ZkOPRUNode extends EventEmitter {
     this.accounts = accounts
     this.verifyOption = verifyOption
     this.status = NetworkStatus.STOPPED
-    this.cronJobs = []
     this.fetching = {}
     this.syncing = false
+    this.statusUpdater = new Worker<void>()
+    this.blockFetcher = new Worker<void>()
+    this.blockProcessor = new Worker<void>()
     this.tokenRegistry = new TokenRegistry()
+  }
+
+  isSyncing(): boolean {
+    return this.syncing
   }
 
   startSync() {
     if (!this.syncing) {
+      this.syncing = true
       logger.info('start sync')
       this.setStatus(NetworkStatus.ON_SYNCING)
       this.synchronizer.sync()
-      this.cronJobs = [
-        scheduleJob('*/5 * * * * *', () => {
-          this.updateStatus()
-          this.fetchUnfetchedProposals()
-          this.processBlocks()
-        }),
-      ]
-      this.syncing = true
+      this.statusUpdater.start({
+        task: this.updateStatus.bind(this),
+        interval: 5000,
+      })
+      this.blockFetcher.start({
+        task: this.fetchUnfetchedProposals.bind(this),
+        interval: 5000,
+      })
+      this.blockProcessor.start({
+        task: this.processBlocks.bind(this),
+        interval: 5000,
+      })
     } else {
       logger.info('already on syncing')
     }
   }
 
-  stopSync() {
+  async stopSync() {
     if (this.syncing) {
       logger.info('stop sync')
-      while (this.cronJobs.length > 0) {
-        ;(this.cronJobs.pop() as Job).cancel()
-      }
       this.setStatus(NetworkStatus.STOPPED)
       this.synchronizer.stop()
       this.syncing = false
+      await Promise.all([
+        this.statusUpdater.close(),
+        this.blockFetcher.close(),
+        this.blockProcessor.close(),
+      ])
     } else {
       logger.info('already stopped')
     }
@@ -139,10 +153,8 @@ export class ZkOPRUNode extends EventEmitter {
     this.accounts.push(...newAccounts)
   }
 
-  async processBlocks() {
-    if (this.processingBlocks) return
-    this.processingBlocks = true
-    do {
+  private async processBlocks() {
+    while (this.isSyncing()) {
       try {
         const unprocessed = await this.l2Chain.getOldestUnprocessedBlock()
         logger.trace(`unprocessed: ${unprocessed}`)
@@ -170,8 +182,7 @@ export class ZkOPRUNode extends EventEmitter {
         break
       }
       // eslint-disable-next-line no-constant-condition
-    } while (true)
-    this.processingBlocks = false
+    }
   }
 
   async latestBlock(): Promise<string | null> {
@@ -217,7 +228,7 @@ export class ZkOPRUNode extends EventEmitter {
     }
   }
 
-  async fetchUnfetchedProposals() {
+  private async fetchUnfetchedProposals() {
     const MAX_FETCH_JOB = 10
     const availableFetchJob = Math.max(
       MAX_FETCH_JOB - Object.keys(this.fetching).length,

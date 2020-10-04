@@ -35,6 +35,7 @@ export interface Context {
   coordinator: Coordinator
   vks: VKs
   web3: Web3
+  provider: WebsocketProvider
   zkopruAddress: string
   dbs: MockupDB[]
   contract: L1Contract
@@ -59,16 +60,25 @@ export async function terminate(ctx: CtxProvider) {
     dbs,
     coordinator,
     wallets,
+    provider,
   } = ctx()
-  await coordinator.stop()
-  wallets.alice.node.stopSync()
-  wallets.bob.node.stopSync()
-  wallets.carl.node.stopSync()
-  await Promise.all(dbs.map(db => db.terminate()))
-  await layer1Container.stop()
-  await layer1Container.delete()
-  await circuitArtifactContainer.stop()
-  await circuitArtifactContainer.delete()
+  provider.disconnect(0, 'exit')
+  await Promise.all([
+    coordinator.stop(),
+    wallets.alice.node.stopSync(),
+    wallets.bob.node.stopSync(),
+    wallets.carl.node.stopSync(),
+    wallets.coordinator.node.stopSync(),
+  ])
+  await Promise.all([dbs.map(db => db.terminate())])
+  await Promise.all([
+    await layer1Container.stop(),
+    await circuitArtifactContainer.stop(),
+  ])
+  await Promise.all([
+    await layer1Container.delete(),
+    await circuitArtifactContainer.delete(),
+  ])
 }
 
 async function getContainers(): Promise<{
@@ -335,6 +345,7 @@ export async function initContext(): Promise<Context> {
     circuitArtifactContainer,
     accounts,
     web3,
+    provider,
     zkopruAddress,
     dbs: [...dbs, coordinatorDB],
     contract,

@@ -54,10 +54,10 @@ describe('testnet', () => {
     attachConsoleErrorToPino()
     context = await initContext()
   }, 90000)
-  afterAll(async done => {
+  afterAll(async () => {
+    console.log('terminating...')
     await terminate(ctx)
-    done()
-  })
+  }, 30000)
   describe('contract deployment', () => {
     it('should define zkopru address', () => {
       // eslint-disable-next-line jest/no-if

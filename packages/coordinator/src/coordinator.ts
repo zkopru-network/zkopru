@@ -1,6 +1,5 @@
 import { Field } from '@zkopru/babyjubjub'
 import express, { RequestHandler } from 'express'
-import { scheduleJob, Job } from 'node-schedule'
 import { EventEmitter } from 'events'
 import {
   ZkTx,
@@ -9,7 +8,7 @@ import {
   WithdrawalStatus,
 } from '@zkopru/transaction'
 import { Leaf } from '@zkopru/tree'
-import { logger, root, bnToBytes32, bnToUint256 } from '@zkopru/utils'
+import { logger, root, bnToBytes32, bnToUint256, Worker } from '@zkopru/utils'
 import {
   FullNode,
   BootstrapData,
@@ -78,11 +77,11 @@ export class Coordinator extends EventEmitter {
 
   config: CoordinatorConfig
 
-  genBlockJob?: Job
+  blockProposer: Worker<void>
 
-  finalizationJob?: Job
+  blockFinalizer: Worker<void>
 
-  massDepositCommitJob?: Job
+  massDepositCommitter: Worker<TransactionReceipt | undefined>
 
   proposeLock: AsyncLock
 
@@ -94,6 +93,9 @@ export class Coordinator extends EventEmitter {
     this.config = { priceMultiplier: 32, ...config }
     this.bootstrapCache = {}
     this.proposeLock = new AsyncLock()
+    this.blockProposer = new Worker()
+    this.blockFinalizer = new Worker()
+    this.massDepositCommitter = new Worker()
   }
 
   start() {
@@ -101,8 +103,14 @@ export class Coordinator extends EventEmitter {
     this.node.startSync()
     this.startAPI()
     this.startSubscribeGasPrice()
-    this.startFinalization()
-    this.startCommitMassDeposits()
+    this.blockFinalizer.start({
+      task: this.finalizeBlock.bind(this),
+      interval: 10000,
+    })
+    this.massDepositCommitter.start({
+      task: this.commitMassDeposit.bind(this),
+      interval: 10000,
+    })
     this.node.on('status', async (status: NetworkStatus) => {
       // udpate the txpool using the newly proposed hash
       // if the hash does not exist in the tx pool's block list
@@ -111,11 +119,16 @@ export class Coordinator extends EventEmitter {
       switch (status) {
         case NetworkStatus.SYNCED:
         case NetworkStatus.FULLY_SYNCED:
-          this.startGenBlock()
+          if (!this.blockProposer.isRunning()) {
+            this.blockProposer.start({
+              task: this.proposeTask.bind(this),
+              interval: 10000,
+            })
+          }
           break
         case NetworkStatus.ON_ERROR:
           logger.error(`on error, stop generating new blocks`)
-          this.stopGenBlock()
+          this.blockProposer.stop()
           break
         default:
           break
@@ -129,28 +142,21 @@ export class Coordinator extends EventEmitter {
 
   async stop(): Promise<void> {
     // TODO : stop api & gas price subscriber / remove listeners
-    this.stopGenBlock()
-    this.stopFinalization()
-    this.stopCommitMassDeposits()
+    await Promise.all([
+      this.blockProposer.close(),
+      this.blockFinalizer.close(),
+      this.massDepositCommitter.close(),
+      this.node.stopSync(),
+    ])
     return new Promise(res => {
-      this.node.on('status', status => {
-        if (status === NetworkStatus.STOPPED) {
+      if (this.api) {
+        this.api.close(async () => {
           this.emit('stop')
           res()
-        }
-      })
-      if (this.api) {
-        this.api.close(() => {
-          if (this.node.status === NetworkStatus.STOPPED) {
-            res()
-          } else {
-            this.node.stopSync()
-          }
         })
-      } else if (this.node.status === NetworkStatus.STOPPED) {
-        res()
       } else {
-        this.node.stopSync()
+        this.emit('stop')
+        res()
       }
     })
   }
@@ -434,49 +440,6 @@ export class Coordinator extends EventEmitter {
       ?.muln(this.config.priceMultiplier)
       .toString(10)
     res.send({ weiPerByte })
-  }
-
-  private startGenBlock() {
-    if (!this.genBlockJob) {
-      logger.info('Start block generations')
-      this.genBlockJob = scheduleJob('*/5 * * * * *', () => this.proposeTask())
-    }
-  }
-
-  private stopGenBlock() {
-    logger.info('Stop block generations')
-    if (this.genBlockJob) this.genBlockJob.cancel()
-    this.genBlockJob = undefined
-  }
-
-  private startCommitMassDeposits() {
-    if (!this.massDepositCommitJob) {
-      logger.info('Start to commit mass deposits')
-      this.massDepositCommitJob = scheduleJob('*/15 * * * * *', () =>
-        this.commitMassDeposit(),
-      )
-    }
-  }
-
-  private stopCommitMassDeposits() {
-    logger.info('Stop commit massdeposit')
-    if (this.massDepositCommitJob) this.massDepositCommitJob.cancel()
-    this.massDepositCommitJob = undefined
-  }
-
-  private startFinalization() {
-    if (!this.finalizationJob) {
-      logger.info('Start finalization')
-      this.finalizationJob = scheduleJob('*/5 * * * * *', () =>
-        this.finalizeBlock(),
-      )
-    }
-  }
-
-  private stopFinalization() {
-    logger.info('Stop finalization')
-    if (this.finalizationJob) this.finalizationJob.cancel()
-    this.finalizationJob = undefined
   }
 
   private async proposeTask() {

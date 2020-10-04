@@ -302,42 +302,43 @@ export class L2Chain {
         if (note) myUtxos.push(note)
       }
     }
-    // TODO needs batch transaction
-    for (const note of myUtxos) {
-      const utxoSql = {
-        hash: note
-          .hash()
-          .toUint256()
-          .toString(),
-        eth: note
-          .eth()
-          .toUint256()
-          .toString(),
-        owner: note.owner.toString(),
-        salt: note.salt.toUint256().toString(),
-        tokenAddr: note
-          .tokenAddr()
-          .toAddress()
-          .toString(),
-        erc20Amount: note
-          .erc20Amount()
-          .toUint256()
-          .toString(),
-        nft: note
-          .nft()
-          .toUint256()
-          .toString(),
-        status: UtxoStatus.UNSPENT,
-        usedAt: null,
-      }
-      await this.db.write(prisma =>
-        prisma.utxo.upsert({
-          where: { hash: utxoSql.hash },
-          create: utxoSql,
-          update: utxoSql,
-        }),
-      )
-    }
+    const inputs = myUtxos.map(note => ({
+      hash: note
+        .hash()
+        .toUint256()
+        .toString(),
+      eth: note
+        .eth()
+        .toUint256()
+        .toString(),
+      owner: note.owner.toString(),
+      salt: note.salt.toUint256().toString(),
+      tokenAddr: note
+        .tokenAddr()
+        .toAddress()
+        .toString(),
+      erc20Amount: note
+        .erc20Amount()
+        .toUint256()
+        .toString(),
+      nft: note
+        .nft()
+        .toUint256()
+        .toString(),
+      status: UtxoStatus.UNSPENT,
+      usedAt: null,
+    }))
+    await this.db.write(prisma =>
+      prisma.$transaction(
+        inputs.map(input =>
+          prisma.utxo.upsert({
+            where: { hash: input.hash },
+            create: input,
+            update: input,
+          }),
+        ),
+      ),
+    )
   }
 
   async findMyWithdrawals(txs: ZkTx[], accounts: ZkAccount[]) {
