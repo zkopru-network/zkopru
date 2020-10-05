@@ -1,6 +1,6 @@
 include "../node_modules/circomlib/circuits/babyjub.circom";
 include "../node_modules/circomlib/circuits/comparators.circom";
-include "./utils.circom";
+include "./if_else_then.circom";
 
 template CountSameNFT(n) {
     signal input addr;

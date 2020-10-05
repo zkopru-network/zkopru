@@ -95,5 +95,5 @@ describe('zk_transaction_1_2.test.circom', () => {
     const inputs = ZkWizard.snarkInput({ tx, signer, merkleProof })
     const result: SNARKResult = await genSNARK(inputs, wasm, finalZkey, vk)
     expect(result).toBeDefined()
-  })
+  }, 20000)
 })
