@@ -7,9 +7,8 @@ include "./asset_hash.circom";
 include "./nullifier.circom";
 include "./ownership_proof.circom";
 include "./spending_pubkey.circom";
-//include "./atomic_swap_mpc.circom";
 include "../node_modules/circomlib/circuits/eddsaposeidon.circom";
-include "../node_modules/circomlib/circuits/comparators.circom";
+include "../node_modules/circomlib/circuits/bitify.circom";
 
 /**
  * Note properties
@@ -211,31 +210,23 @@ template ZkTransaction(tree_depth, n_i, n_o) {
     var range_limit = (0 - 1) >> 8;
     component inflow_eth_range[n_i];
     for(var i = 0; i < n_i; i ++) {
-        inflow_eth_range[i] = LessThan(252);
-        inflow_eth_range[i].in[0] <== spending_note_eth[i];
-        inflow_eth_range[i].in[1] <== range_limit;
-        inflow_eth_range[i].out === 1;
+        inflow_eth_range[i] = RangeLimit(245);
+        inflow_eth_range[i].in <== spending_note_eth[i];
     }
     component inflow_erc20_range[n_i];
     for(var i = 0; i < n_i; i ++) {
-        inflow_erc20_range[i] = LessThan(252);
-        inflow_erc20_range[i].in[0] <== spending_note_erc20[i];
-        inflow_erc20_range[i].in[1] <== range_limit;
-        inflow_erc20_range[i].out === 1;
+        inflow_erc20_range[i] = RangeLimit(245);
+        inflow_erc20_range[i].in <== spending_note_erc20[i];
     }
     component outflow_eth_range[n_o];
     for(var i = 0; i < n_o; i ++) {
-        outflow_eth_range[i] = LessThan(252);
-        outflow_eth_range[i].in[0] <== new_note_eth[i];
-        outflow_eth_range[i].in[1] <== range_limit;
-        outflow_eth_range[i].out === 1;
+        outflow_eth_range[i] = RangeLimit(245);
+        outflow_eth_range[i].in <== new_note_eth[i];
     }
     component outflow_erc20_range[n_o];
     for(var i = 0; i < n_o; i ++) {
-        outflow_erc20_range[i] = LessThan(252);
-        outflow_erc20_range[i].in[0] <== new_note_erc20[i];
-        outflow_erc20_range[i].in[1] <== range_limit;
-        outflow_erc20_range[i].out === 1;
+        outflow_erc20_range[i] = RangeLimit(245);
+        outflow_erc20_range[i].in <== new_note_erc20[i];
     }
 
     /// Zero sum proof of ETH
