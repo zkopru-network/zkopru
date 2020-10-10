@@ -9,6 +9,18 @@ import {
 } from "../libraries/Types.sol";
 
 contract Challengeable is Layer2 {
+    function _execute(bytes32 proposalId, Challenge memory result) internal {
+        require(result.slash, result.message);
+
+        Proposal storage proposal = Layer2.chain.proposals[proposalId];
+        // Check basic challenge conditions
+        _checkChallengeCondition(proposal);
+        // Since the challenge satisfies the given conditions, slash the optimistic rollup proposer
+        proposal.slashed = true; // Record it as slashed;
+        _forfeitAndReward(result.proposer, msg.sender);
+        // TODO log message
+    }
+    
     // Duplicated codes: solidity does not allow linear inheritance
     function _checkChallengeCondition(Proposal storage proposal) internal view {
         // Check the optimistic roll up is in the challenge period
@@ -29,17 +41,5 @@ contract Challengeable is Layer2 {
         proposer.reward = 0;
         // Delete proposer
         delete Layer2.chain.proposers[proposerAddr];
-    }
-
-    function _execute(bytes32 proposalId, Challenge memory result) internal {
-        require(result.slash, result.message);
-
-        Proposal storage proposal = Layer2.chain.proposals[proposalId];
-        // Check basic challenge conditions
-        _checkChallengeCondition(proposal);
-        // Since the challenge satisfies the given conditions, slash the optimistic rollup proposer
-        proposal.slashed = true; // Record it as slashed;
-        _forfeitAndReward(result.proposer, msg.sender);
-        // TODO log message
     }
 }
