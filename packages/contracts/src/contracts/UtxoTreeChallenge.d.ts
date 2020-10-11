@@ -21,6 +21,8 @@ export class UtxoTreeChallenge extends Contract {
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
+    MAX_BLOCK_SIZE(): TransactionObject<string>
+
     MAX_UTXO(): TransactionObject<string>
 
     MAX_WITHDRAWAL(): TransactionObject<string>

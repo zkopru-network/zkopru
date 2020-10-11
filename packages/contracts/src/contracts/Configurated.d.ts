@@ -15,9 +15,13 @@ interface EventOptions {
 
 export class Configurated extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): Configurated
+
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
+
+    MAX_BLOCK_SIZE(): TransactionObject<string>
 
     MAX_UTXO(): TransactionObject<string>
 
@@ -41,6 +45,7 @@ export class Configurated extends Contract {
 
     WITHDRAWAL_TREE_DEPTH(): TransactionObject<string>
   }
+
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

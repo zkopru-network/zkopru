@@ -60,6 +60,8 @@ contract Coordinatable is Layer2 {
      * @param data Serialized newly minted block data
      */
     function propose(bytes memory data) public {
+        // Limit the maximum length
+        require(data.length <= MAX_BLOCK_SIZE);
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         // The message sender address should be same with the proposer address
         require(_block.header.proposer == msg.sender, "Coordinator account is different with the message sender");

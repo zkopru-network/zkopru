@@ -28,6 +28,13 @@ export const UserInteractableABI = [
   },
   {
     inputs: [],
+    name: 'MAX_BLOCK_SIZE',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
     name: 'MAX_UTXO',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',

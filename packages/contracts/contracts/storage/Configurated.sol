@@ -13,6 +13,7 @@ contract Configurated {
     uint256 constant public WITHDRAWAL_TREE_DEPTH = 48;
     uint256 constant public MAX_WITHDRAWAL = (1 << WITHDRAWAL_TREE_DEPTH);
     uint256 constant public NULLIFIER_TREE_DEPTH = 254;
+    uint256 constant public MAX_BLOCK_SIZE = 200000; // 3.2M gas for calldata
 
     uint256 constant public UTXO_SUB_TREE_DEPTH = 5; // 32 items at once
     uint256 constant public UTXO_SUB_TREE_SIZE = 1 << UTXO_SUB_TREE_DEPTH;
