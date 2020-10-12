@@ -87,22 +87,26 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
      * @dev It connects this proxy contract to the Challengeable controllers.
      */
     function makeChallengeable(
-        address depositChallenge,
-        address headerChallenge,
-        address migrationChallenge,
-        address utxoTreeChallenge,
-        address withdrawalTreeChallenge,
-        address nullifierTreeChallenge,
-        address txChallenge
+        address challengeable,
+        address depositValidator,
+        address headerValidator,
+        address migrationValidator,
+        address utxoTreeValidator,
+        address withdrawalTreeValidator,
+        address nullifierTreeValidator,
+        address txValidator,
+        address txSNARKValidator
     ) public override onlySetupWizard {
         Layer2Controller._connectChallengeable(
-            depositChallenge,
-            headerChallenge,
-            migrationChallenge,
-            utxoTreeChallenge,
-            withdrawalTreeChallenge,
-            nullifierTreeChallenge,
-            txChallenge
+            challengeable,
+            depositValidator,
+            headerValidator,
+            migrationValidator,
+            utxoTreeValidator,
+            withdrawalTreeValidator,
+            nullifierTreeValidator,
+            txValidator,
+            txSNARKValidator
         );
     }
 

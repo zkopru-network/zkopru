@@ -24,6 +24,36 @@ import {
 
 library Deserializer {
     /**
+     * @dev This retrieves block data from the calldata and returns its hash value.
+     * @param paramIndex The index of the block calldata parameter in the external function
+     */
+    function proposalIdFromCalldata(uint256 paramIndex)
+    internal
+    pure
+    returns (bytes32 proposalId)
+    {
+        uint256 pointer = getPointerAddress(paramIndex);
+        uint256 len = abi.decode(msg.data[pointer:pointer+32], (uint256));
+        return keccak256(bytes(msg.data[pointer + 32: pointer + 32 + len]));
+    }
+
+    /**
+     * @dev This retrieves block data from the calldata and returns its hash value.
+     * @param paramIndex The index of the block calldata parameter in the external function
+     */
+    function proposerAddressFromCalldata(uint256 paramIndex)
+    internal
+    pure
+    returns (address proposer)
+    {
+        uint256 start = getPointerAddress(paramIndex);
+        uint256 cp = start + 0x20; //calldata position
+        Header memory header;
+        (header, cp) = dequeueHeader(cp);
+        return header.proposer;
+    }
+
+    /**
      * @dev Block data will be serialized with the following structure
      *      https://docs.zkopru.network/how-it-works/block
      * @param paramIndex The index of the block calldata parameter in the external function

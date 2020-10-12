@@ -21,15 +21,15 @@ const zkopruTS = `import Web3 from 'web3'
 import { ContractOptions } from 'web3-eth-contract'
 ${importContracts([
   'ICoordinatable',
-  'IDepositChallenge',
-  'IHeaderChallenge',
-  'IMigratable',
-  'IMigrationChallenge',
-  'IUtxoTreeChallenge',
-  'IWithdrawalTreeChallenge',
-  'INullifierTreeChallenge',
   'ISetupWizard',
-  'ITxChallenge',
+  'IDepositValidator',
+  'IHeaderValidator',
+  'IMigratable',
+  'IMigrationValidator',
+  'IUtxoTreeValidator',
+  'IWithdrawalTreeValidator',
+  'INullifierTreeValidator',
+  'ITxValidator',
   'IUserInteractable',
   'ZkOptimisticRollUp',
 ])}
@@ -45,13 +45,13 @@ export class ZkOPRUContract {
   migrator: IMigratable
 
   challenger: {
-    deposit: IDepositChallenge
-    migration: IMigrationChallenge
-    header: IHeaderChallenge
-    tx: ITxChallenge
-    utxoTree: IUtxoTreeChallenge
-    withdrawalTree: IWithdrawalTreeChallenge
-    nullifierTree: INullifierTreeChallenge
+    deposit: IDepositValidator
+    migration: IMigrationValidator
+    header: IHeaderValidator
+    tx: ITxValidator
+    utxoTree: IUtxoTreeValidator
+    withdrawalTree: IWithdrawalTreeValidator
+    nullifierTree: INullifierTreeValidator
   }
 
   setup: ISetupWizard
@@ -62,13 +62,13 @@ export class ZkOPRUContract {
     this.user = Layer1.getIUserInteractable(web3, address, option)
     this.migrator = Layer1.getIMigratable(web3, address, option)
     this.challenger = {
-      deposit: Layer1.getIDepositChallenge(web3, address, option),
-      migration: Layer1.getIMigrationChallenge(web3, address, option),
-      header: Layer1.getIHeaderChallenge(web3, address, option),
-      tx: Layer1.getITxChallenge(web3, address, option),
-      utxoTree: Layer1.getIUtxoTreeChallenge(web3, address, option),
-      withdrawalTree: Layer1.getIWithdrawalTreeChallenge(web3, address, option),
-      nullifierTree: Layer1.getINullifierTreeChallenge(web3, address, option),
+      deposit: Layer1.getIDepositValidator(web3, address, option),
+      migration: Layer1.getIMigrationValidator(web3, address, option),
+      header: Layer1.getIHeaderValidator(web3, address, option),
+      tx: Layer1.getITxValidator(web3, address, option),
+      utxoTree: Layer1.getIUtxoTreeValidator(web3, address, option),
+      withdrawalTree: Layer1.getIWithdrawalTreeValidator(web3, address, option),
+      nullifierTree: Layer1.getINullifierTreeValidator(web3, address, option),
     }
     this.setup = Layer1.getISetupWizard(web3, address, option)
   }
@@ -76,15 +76,15 @@ export class ZkOPRUContract {
 
 const list = [
   'ICoordinatable',
-  'IDepositChallenge',
-  'IHeaderChallenge',
+  'IDepositValidator',
+  'IHeaderValidator',
   'IMigratable',
-  'IMigrationChallenge',
-  'IUtxoTreeChallenge',
-  'IWithdrawalTreeChallenge',
-  'INullifierTreeChallenge',
+  'IMigrationValidator',
+  'IUtxoTreeValidator',
+  'IWithdrawalTreeValidator',
+  'INullifierTreeValidator',
   'ISetupWizard',
-  'ITxChallenge',
+  'ITxValidator',
   'IUserInteractable',
   'ERC20',
   'ERC721',

@@ -25,6 +25,8 @@ export class ZkOptimisticRollUp extends Contract {
 
     MAX_UTXO(): TransactionObject<string>
 
+    MAX_VALIDATION_GAS(): TransactionObject<string>
+
     MAX_WITHDRAWAL(): TransactionObject<string>
 
     MINIMUM_STAKE(): TransactionObject<string>
@@ -120,6 +122,8 @@ export class ZkOptimisticRollUp extends Contract {
 
     utxoRootOf(header: string | number[]): TransactionObject<string>
 
+    validators(arg0: string | number[]): TransactionObject<string>
+
     withdrawalRootOf(header: string | number[]): TransactionObject<string>
 
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
@@ -141,13 +145,15 @@ export class ZkOptimisticRollUp extends Contract {
     makeCoordinatable(addr: string): TransactionObject<void>
 
     makeChallengeable(
-      depositChallenge: string,
-      headerChallenge: string,
-      migrationChallenge: string,
-      utxoTreeChallenge: string,
-      withdrawalTreeChallenge: string,
-      nullifierTreeChallenge: string,
-      txChallenge: string,
+      challengeable: string,
+      depositValidator: string,
+      headerValidator: string,
+      migrationValidator: string,
+      utxoTreeValidator: string,
+      withdrawalTreeValidator: string,
+      nullifierTreeValidator: string,
+      txValidator: string,
+      txSNARKValidator: string,
     ): TransactionObject<void>
 
     makeMigratable(addr: string): TransactionObject<void>

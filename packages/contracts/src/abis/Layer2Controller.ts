@@ -23,6 +23,13 @@ export const Layer2ControllerABI = [
   },
   {
     inputs: [],
+    name: 'MAX_VALIDATION_GAS',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
     name: 'MAX_WITHDRAWAL',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
@@ -238,6 +245,13 @@ export const Layer2ControllerABI = [
     inputs: [{ internalType: 'bytes32', name: 'header', type: 'bytes32' }],
     name: 'utxoRootOf',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'bytes4', name: '', type: 'bytes4' }],
+    name: 'validators',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
   },

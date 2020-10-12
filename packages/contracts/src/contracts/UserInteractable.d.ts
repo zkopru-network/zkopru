@@ -25,6 +25,8 @@ export class UserInteractable extends Contract {
 
     MAX_UTXO(): TransactionObject<string>
 
+    MAX_VALIDATION_GAS(): TransactionObject<string>
+
     MAX_WITHDRAWAL(): TransactionObject<string>
 
     MINIMUM_STAKE(): TransactionObject<string>
@@ -107,6 +109,8 @@ export class UserInteractable extends Contract {
       2: string
     }>
 
+    proxied(arg0: string | number[]): TransactionObject<string>
+
     registeredERC20s(tokenAddr: string): TransactionObject<boolean>
 
     registeredERC721s(tokenAddr: string): TransactionObject<boolean>
@@ -121,6 +125,8 @@ export class UserInteractable extends Contract {
     stagedSize(): TransactionObject<string>
 
     utxoRootOf(header: string | number[]): TransactionObject<string>
+
+    validators(arg0: string | number[]): TransactionObject<string>
 
     withdrawalRootOf(header: string | number[]): TransactionObject<string>
 

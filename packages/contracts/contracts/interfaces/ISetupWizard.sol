@@ -16,13 +16,15 @@ interface ISetupWizard {
     function makeCoordinatable(address addr) external;
 
     function makeChallengeable(
-        address depositChallenge,
-        address headerChallenge,
-        address migrationChallenge,
-        address utxoTreeChallenge,
-        address withdrawalTreeChallenge,
-        address nullifierTreeChallenge,
-        address txChallenge
+        address challengeable,
+        address depositValidator,
+        address headerValidator,
+        address migrationValidator,
+        address utxoTreeValidator,
+        address withdrawalTreeValidator,
+        address nullifierTreeValidator,
+        address txValidator,
+        address txSNARKValidator
     ) external;
 
     function makeMigratable(address addr) external;

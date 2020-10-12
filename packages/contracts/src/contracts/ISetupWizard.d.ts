@@ -36,13 +36,15 @@ export class ISetupWizard extends Contract {
     makeCoordinatable(addr: string): TransactionObject<void>
 
     makeChallengeable(
-      depositChallenge: string,
-      headerChallenge: string,
-      migrationChallenge: string,
-      utxoTreeChallenge: string,
-      withdrawalTreeChallenge: string,
-      nullifierTreeChallenge: string,
-      txChallenge: string,
+      challengeable: string,
+      depositValidator: string,
+      headerValidator: string,
+      migrationValidator: string,
+      utxoTreeValidator: string,
+      withdrawalTreeValidator: string,
+      nullifierTreeValidator: string,
+      txValidator: string,
+      txSNARKValidator: string,
     ): TransactionObject<void>
 
     makeMigratable(addr: string): TransactionObject<void>

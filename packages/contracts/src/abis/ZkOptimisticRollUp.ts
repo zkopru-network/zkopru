@@ -61,6 +61,13 @@ export const ZkOptimisticRollUpABI = [
   },
   {
     inputs: [],
+    name: 'MAX_VALIDATION_GAS',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
     name: 'MAX_WITHDRAWAL',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
@@ -280,6 +287,13 @@ export const ZkOptimisticRollUpABI = [
     type: 'function',
   },
   {
+    inputs: [{ internalType: 'bytes4', name: '', type: 'bytes4' }],
+    name: 'validators',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
     inputs: [{ internalType: 'bytes32', name: 'header', type: 'bytes32' }],
     name: 'withdrawalRootOf',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
@@ -372,21 +386,23 @@ export const ZkOptimisticRollUpABI = [
   },
   {
     inputs: [
-      { internalType: 'address', name: 'depositChallenge', type: 'address' },
-      { internalType: 'address', name: 'headerChallenge', type: 'address' },
-      { internalType: 'address', name: 'migrationChallenge', type: 'address' },
-      { internalType: 'address', name: 'utxoTreeChallenge', type: 'address' },
+      { internalType: 'address', name: 'challengeable', type: 'address' },
+      { internalType: 'address', name: 'depositValidator', type: 'address' },
+      { internalType: 'address', name: 'headerValidator', type: 'address' },
+      { internalType: 'address', name: 'migrationValidator', type: 'address' },
+      { internalType: 'address', name: 'utxoTreeValidator', type: 'address' },
       {
         internalType: 'address',
-        name: 'withdrawalTreeChallenge',
+        name: 'withdrawalTreeValidator',
         type: 'address',
       },
       {
         internalType: 'address',
-        name: 'nullifierTreeChallenge',
+        name: 'nullifierTreeValidator',
         type: 'address',
       },
-      { internalType: 'address', name: 'txChallenge', type: 'address' },
+      { internalType: 'address', name: 'txValidator', type: 'address' },
+      { internalType: 'address', name: 'txSNARKValidator', type: 'address' },
     ],
     name: 'makeChallengeable',
     outputs: [],

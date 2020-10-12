@@ -25,6 +25,8 @@ export class Layer2Controller extends Contract {
 
     MAX_UTXO(): TransactionObject<string>
 
+    MAX_VALIDATION_GAS(): TransactionObject<string>
+
     MAX_WITHDRAWAL(): TransactionObject<string>
 
     MINIMUM_STAKE(): TransactionObject<string>
@@ -119,6 +121,8 @@ export class Layer2Controller extends Contract {
     stagedSize(): TransactionObject<string>
 
     utxoRootOf(header: string | number[]): TransactionObject<string>
+
+    validators(arg0: string | number[]): TransactionObject<string>
 
     withdrawalRootOf(header: string | number[]): TransactionObject<string>
 

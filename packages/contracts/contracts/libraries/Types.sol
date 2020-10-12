@@ -86,12 +86,6 @@ struct Proposal {
     bool slashed;
 }
 
-struct Challenge {
-    bool slash;
-    address proposer;
-    string message;
-}
-
 struct Block {
     Header header;
     Body body;

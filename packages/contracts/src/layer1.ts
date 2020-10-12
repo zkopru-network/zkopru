@@ -4,33 +4,33 @@ import { ContractOptions } from 'web3-eth-contract'
 import { ERC20 } from './contracts/ERC20'
 import { ERC721 } from './contracts/ERC721'
 import { ICoordinatable } from './contracts/ICoordinatable'
-import { IDepositChallenge } from './contracts/IDepositChallenge'
+import { IDepositValidator } from './contracts/IDepositValidator'
 import { IERC721Enumerable } from './contracts/IERC721Enumerable'
-import { IHeaderChallenge } from './contracts/IHeaderChallenge'
+import { IHeaderValidator } from './contracts/IHeaderValidator'
 import { IMigratable } from './contracts/IMigratable'
-import { IMigrationChallenge } from './contracts/IMigrationChallenge'
-import { INullifierTreeChallenge } from './contracts/INullifierTreeChallenge'
+import { IMigrationValidator } from './contracts/IMigrationValidator'
+import { INullifierTreeValidator } from './contracts/INullifierTreeValidator'
 import { ISetupWizard } from './contracts/ISetupWizard'
-import { ITxChallenge } from './contracts/ITxChallenge'
+import { ITxValidator } from './contracts/ITxValidator'
 import { IUserInteractable } from './contracts/IUserInteractable'
-import { IUtxoTreeChallenge } from './contracts/IUtxoTreeChallenge'
-import { IWithdrawalTreeChallenge } from './contracts/IWithdrawalTreeChallenge'
+import { IUtxoTreeValidator } from './contracts/IUtxoTreeValidator'
+import { IWithdrawalTreeValidator } from './contracts/IWithdrawalTreeValidator'
 import { ZkOptimisticRollUp } from './contracts/ZkOptimisticRollUp'
 
 import { ERC20ABI } from './abis/ERC20'
 import { ERC721ABI } from './abis/ERC721'
 import { ICoordinatableABI } from './abis/ICoordinatable'
-import { IDepositChallengeABI } from './abis/IDepositChallenge'
+import { IDepositValidatorABI } from './abis/IDepositValidator'
 import { IERC721EnumerableABI } from './abis/IERC721Enumerable'
-import { IHeaderChallengeABI } from './abis/IHeaderChallenge'
+import { IHeaderValidatorABI } from './abis/IHeaderValidator'
 import { IMigratableABI } from './abis/IMigratable'
-import { IMigrationChallengeABI } from './abis/IMigrationChallenge'
-import { INullifierTreeChallengeABI } from './abis/INullifierTreeChallenge'
+import { IMigrationValidatorABI } from './abis/IMigrationValidator'
+import { INullifierTreeValidatorABI } from './abis/INullifierTreeValidator'
 import { ISetupWizardABI } from './abis/ISetupWizard'
-import { ITxChallengeABI } from './abis/ITxChallenge'
+import { ITxValidatorABI } from './abis/ITxValidator'
 import { IUserInteractableABI } from './abis/IUserInteractable'
-import { IUtxoTreeChallengeABI } from './abis/IUtxoTreeChallenge'
-import { IWithdrawalTreeChallengeABI } from './abis/IWithdrawalTreeChallenge'
+import { IUtxoTreeValidatorABI } from './abis/IUtxoTreeValidator'
+import { IWithdrawalTreeValidatorABI } from './abis/IWithdrawalTreeValidator'
 import { ZkOptimisticRollUpABI } from './abis/ZkOptimisticRollUp'
 
 export class Layer1 {
@@ -43,22 +43,22 @@ export class Layer1 {
     return new web3.eth.Contract(abi, address, option) as ICoordinatable
   }
 
-  static getIDepositChallenge(
+  static getIDepositValidator(
     web3: Web3,
     address: string,
     option?: ContractOptions,
-  ): IDepositChallenge {
-    const abi: any[] = [...IDepositChallengeABI]
-    return new web3.eth.Contract(abi, address, option) as IDepositChallenge
+  ): IDepositValidator {
+    const abi: any[] = [...IDepositValidatorABI]
+    return new web3.eth.Contract(abi, address, option) as IDepositValidator
   }
 
-  static getIHeaderChallenge(
+  static getIHeaderValidator(
     web3: Web3,
     address: string,
     option?: ContractOptions,
-  ): IHeaderChallenge {
-    const abi: any[] = [...IHeaderChallengeABI]
-    return new web3.eth.Contract(abi, address, option) as IHeaderChallenge
+  ): IHeaderValidator {
+    const abi: any[] = [...IHeaderValidatorABI]
+    return new web3.eth.Contract(abi, address, option) as IHeaderValidator
   }
 
   static getIMigratable(
@@ -70,48 +70,48 @@ export class Layer1 {
     return new web3.eth.Contract(abi, address, option) as IMigratable
   }
 
-  static getIMigrationChallenge(
+  static getIMigrationValidator(
     web3: Web3,
     address: string,
     option?: ContractOptions,
-  ): IMigrationChallenge {
-    const abi: any[] = [...IMigrationChallengeABI]
-    return new web3.eth.Contract(abi, address, option) as IMigrationChallenge
+  ): IMigrationValidator {
+    const abi: any[] = [...IMigrationValidatorABI]
+    return new web3.eth.Contract(abi, address, option) as IMigrationValidator
   }
 
-  static getIUtxoTreeChallenge(
+  static getIUtxoTreeValidator(
     web3: Web3,
     address: string,
     option?: ContractOptions,
-  ): IUtxoTreeChallenge {
-    const abi: any[] = [...IUtxoTreeChallengeABI]
-    return new web3.eth.Contract(abi, address, option) as IUtxoTreeChallenge
+  ): IUtxoTreeValidator {
+    const abi: any[] = [...IUtxoTreeValidatorABI]
+    return new web3.eth.Contract(abi, address, option) as IUtxoTreeValidator
   }
 
-  static getIWithdrawalTreeChallenge(
+  static getIWithdrawalTreeValidator(
     web3: Web3,
     address: string,
     option?: ContractOptions,
-  ): IWithdrawalTreeChallenge {
-    const abi: any[] = [...IWithdrawalTreeChallengeABI]
+  ): IWithdrawalTreeValidator {
+    const abi: any[] = [...IWithdrawalTreeValidatorABI]
     return new web3.eth.Contract(
       abi,
       address,
       option,
-    ) as IWithdrawalTreeChallenge
+    ) as IWithdrawalTreeValidator
   }
 
-  static getINullifierTreeChallenge(
+  static getINullifierTreeValidator(
     web3: Web3,
     address: string,
     option?: ContractOptions,
-  ): INullifierTreeChallenge {
-    const abi: any[] = [...INullifierTreeChallengeABI]
+  ): INullifierTreeValidator {
+    const abi: any[] = [...INullifierTreeValidatorABI]
     return new web3.eth.Contract(
       abi,
       address,
       option,
-    ) as INullifierTreeChallenge
+    ) as INullifierTreeValidator
   }
 
   static getISetupWizard(
@@ -123,13 +123,13 @@ export class Layer1 {
     return new web3.eth.Contract(abi, address, option) as ISetupWizard
   }
 
-  static getITxChallenge(
+  static getITxValidator(
     web3: Web3,
     address: string,
     option?: ContractOptions,
-  ): ITxChallenge {
-    const abi: any[] = [...ITxChallengeABI]
-    return new web3.eth.Contract(abi, address, option) as ITxChallenge
+  ): ITxValidator {
+    const abi: any[] = [...ITxValidatorABI]
+    return new web3.eth.Contract(abi, address, option) as ITxValidator
   }
 
   static getIUserInteractable(

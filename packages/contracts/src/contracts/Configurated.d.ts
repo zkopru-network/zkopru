@@ -25,6 +25,8 @@ export class Configurated extends Contract {
 
     MAX_UTXO(): TransactionObject<string>
 
+    MAX_VALIDATION_GAS(): TransactionObject<string>
+
     MAX_WITHDRAWAL(): TransactionObject<string>
 
     MINIMUM_STAKE(): TransactionObject<string>

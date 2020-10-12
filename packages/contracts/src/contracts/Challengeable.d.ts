@@ -25,6 +25,8 @@ export class Challengeable extends Contract {
 
     MAX_UTXO(): TransactionObject<string>
 
+    MAX_VALIDATION_GAS(): TransactionObject<string>
+
     MAX_WITHDRAWAL(): TransactionObject<string>
 
     MINIMUM_STAKE(): TransactionObject<string>
@@ -103,6 +105,8 @@ export class Challengeable extends Contract {
       2: string
     }>
 
+    proxied(arg0: string | number[]): TransactionObject<string>
+
     registeredERC20s(tokenAddr: string): TransactionObject<boolean>
 
     registeredERC721s(tokenAddr: string): TransactionObject<boolean>
@@ -118,12 +122,22 @@ export class Challengeable extends Contract {
 
     utxoRootOf(header: string | number[]): TransactionObject<string>
 
+    validators(arg0: string | number[]): TransactionObject<string>
+
     withdrawalRootOf(header: string | number[]): TransactionObject<string>
 
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
   }
 
   events: {
+    Slash: ContractEvent<{
+      blockHash: string
+      proposer: string
+      reason: string
+      0: string
+      1: string
+      2: string
+    }>
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
 }

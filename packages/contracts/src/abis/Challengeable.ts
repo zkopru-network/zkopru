@@ -1,5 +1,31 @@
 export const ChallengeableABI = [
   {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'bytes32',
+        name: 'blockHash',
+        type: 'bytes32',
+      },
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'proposer',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'string',
+        name: 'reason',
+        type: 'string',
+      },
+    ],
+    name: 'Slash',
+    type: 'event',
+  },
+  { stateMutability: 'payable', type: 'fallback' },
+  {
     inputs: [],
     name: 'CHALLENGE_PERIOD',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
@@ -16,6 +42,13 @@ export const ChallengeableABI = [
   {
     inputs: [],
     name: 'MAX_UTXO',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'MAX_VALIDATION_GAS',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
@@ -196,6 +229,13 @@ export const ChallengeableABI = [
     type: 'function',
   },
   {
+    inputs: [{ internalType: 'bytes4', name: '', type: 'bytes4' }],
+    name: 'proxied',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
     inputs: [{ internalType: 'address', name: 'tokenAddr', type: 'address' }],
     name: 'registeredERC20s',
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
@@ -234,6 +274,13 @@ export const ChallengeableABI = [
     type: 'function',
   },
   {
+    inputs: [{ internalType: 'bytes4', name: '', type: 'bytes4' }],
+    name: 'validators',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
     inputs: [{ internalType: 'bytes32', name: 'header', type: 'bytes32' }],
     name: 'withdrawalRootOf',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
@@ -247,4 +294,5 @@ export const ChallengeableABI = [
     stateMutability: 'view',
     type: 'function',
   },
+  { stateMutability: 'payable', type: 'receive' },
 ]

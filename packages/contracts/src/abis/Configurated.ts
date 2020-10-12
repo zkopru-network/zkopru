@@ -22,6 +22,13 @@ export const ConfiguratedABI = [
   },
   {
     inputs: [],
+    name: 'MAX_VALIDATION_GAS',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
     name: 'MAX_WITHDRAWAL',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',

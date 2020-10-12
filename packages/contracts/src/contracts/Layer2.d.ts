@@ -25,6 +25,8 @@ export class Layer2 extends Contract {
 
     MAX_UTXO(): TransactionObject<string>
 
+    MAX_VALIDATION_GAS(): TransactionObject<string>
+
     MAX_WITHDRAWAL(): TransactionObject<string>
 
     MINIMUM_STAKE(): TransactionObject<string>
@@ -46,6 +48,10 @@ export class Layer2 extends Contract {
     WITHDRAWAL_TREE_DEPTH(): TransactionObject<string>
 
     allowedMigrants(arg0: string): TransactionObject<boolean>
+
+    proxied(arg0: string | number[]): TransactionObject<string>
+
+    validators(arg0: string | number[]): TransactionObject<string>
 
     genesis(): TransactionObject<string>
 

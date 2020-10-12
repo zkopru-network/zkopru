@@ -5,21 +5,18 @@ import { Layer2 } from "./storage/Layer2.sol";
 import { ICoordinatable } from "./interfaces/ICoordinatable.sol";
 import { IUserInteractable } from "./interfaces/IUserInteractable.sol";
 import { IMigratable } from "./interfaces/IMigratable.sol";
-import { IDepositChallenge } from "./interfaces/IDepositChallenge.sol";
-import { IHeaderChallenge } from "./interfaces/IHeaderChallenge.sol";
-import { IMigrationChallenge } from "./interfaces/IMigrationChallenge.sol";
-import { IUtxoTreeChallenge } from "./interfaces/IUtxoTreeChallenge.sol";
-import { IWithdrawalTreeChallenge } from "./interfaces/IWithdrawalTreeChallenge.sol";
-import { INullifierTreeChallenge } from "./interfaces/INullifierTreeChallenge.sol";
-import { ITxChallenge } from "./interfaces/ITxChallenge.sol";
-import { ITxSNARKChallenge } from "./interfaces/ITxSNARKChallenge.sol";
+import { IDepositValidator } from "./interfaces/validators/IDepositValidator.sol";
+import { IHeaderValidator } from "./interfaces/validators/IHeaderValidator.sol";
+import { IMigrationValidator } from "./interfaces/validators/IMigrationValidator.sol";
+import { IUtxoTreeValidator } from "./interfaces/validators/IUtxoTreeValidator.sol";
+import { IWithdrawalTreeValidator } from "./interfaces/validators/IWithdrawalTreeValidator.sol";
+import { INullifierTreeValidator } from "./interfaces/validators/INullifierTreeValidator.sol";
+import { ITxValidator } from "./interfaces/validators/ITxValidator.sol";
+import { ITxSNARKValidator } from "./interfaces/validators/ITxSNARKValidator.sol";
 
 /* solium-disable */
 
 contract Layer2Controller is Layer2 {
-    /** Addresses where to execute the given function call */
-    mapping(bytes4=>address) public proxied;
-
     /**
      * @notice This proxies supports the following interfaces
      *          - ICoordinatable.sol
@@ -34,8 +31,8 @@ contract Layer2Controller is Layer2 {
      *              - INullifierTreeChallenge.sol
      *              - ITxChallenge.sol
      */
-    fallback () external payable {
-        address addr = proxied[msg.sig];
+    fallback () external payable virtual {
+        address addr = Layer2.proxied[msg.sig];
         require(addr != address(0), "There is no proxy contract");
         (bool success, bytes memory result) = addr.delegatecall(msg.data);
         require(success, string(result));
@@ -46,7 +43,7 @@ contract Layer2Controller is Layer2 {
     */
     receive() external payable {
         bytes4 sig = ICoordinatable(0).register.selector;
-        address addr = proxied[sig];
+        address addr = Layer2.proxied[sig];
         (bool success, bytes memory result) = addr.delegatecall(msg.data);
         require(success, string(result));
     }
@@ -74,43 +71,75 @@ contract Layer2Controller is Layer2 {
     }
 
     function _connectChallengeable(
-        address depositChallenge,
-        address headerChallenge,
-        address migrationChallenge,
-        address utxoTreeChallenge,
-        address withdrawalTreeChallenge,
-        address nullifierTreeChallenge,
-        address txChallenge
+        address challengeable,
+        address depositValidator,
+        address headerValidator,
+        address migrationValidator,
+        address utxoTreeValidator,
+        address withdrawalTreeValidator,
+        address nullifierTreeValidator,
+        address txValidator,
+        address txSNARKValidator
     ) internal virtual {
-        _connect(depositChallenge, IDepositChallenge(0).challengeMassDeposit.selector);
-        _connect(headerChallenge, IHeaderChallenge(0).challengeDepositRoot.selector);
-        _connect(headerChallenge, IHeaderChallenge(0).challengeTxRoot.selector);
-        _connect(headerChallenge, IHeaderChallenge(0).challengeMigrationRoot.selector);
-        _connect(headerChallenge, IHeaderChallenge(0).challengeTotalFee.selector);
-        _connect(migrationChallenge, IMigrationChallenge(0).challengeDuplicatedDestination.selector);
-        _connect(migrationChallenge, IMigrationChallenge(0).challengeTotalEth.selector);
-        _connect(migrationChallenge, IMigrationChallenge(0).challengeMergedLeaves.selector);
-        _connect(migrationChallenge, IMigrationChallenge(0).challengeMigrationFee.selector);
-        _connect(migrationChallenge, IMigrationChallenge(0).challengeDuplicatedERC20Migration.selector);
-        _connect(migrationChallenge, IMigrationChallenge(0).challengeERC20Amount.selector);
-        _connect(migrationChallenge, IMigrationChallenge(0).challengeDuplicatedERC721Migration.selector);
-        _connect(migrationChallenge, IMigrationChallenge(0).challengeNonFungibility.selector);
-        _connect(migrationChallenge, IMigrationChallenge(0).challengeNftExistence.selector);
-        _connect(utxoTreeChallenge, IUtxoTreeChallenge(0).challengeUTXOIndex.selector);
-        _connect(utxoTreeChallenge, IUtxoTreeChallenge(0).challengeUTXORoot.selector);
-        _connect(withdrawalTreeChallenge, IWithdrawalTreeChallenge(0).challengeWithdrawalIndex.selector);
-        _connect(withdrawalTreeChallenge, IWithdrawalTreeChallenge(0).challengeWithdrawalRoot.selector);
-        _connect(nullifierTreeChallenge, INullifierTreeChallenge(0).challengeNullifierRollUp.selector);
-        _connect(txChallenge, ITxChallenge(0).challengeInclusion.selector);
-        _connect(txChallenge, ITxChallenge(0).challengeTransaction.selector);
-        _connect(txChallenge, ITxChallenge(0).challengeUsedNullifier.selector);
-        _connect(txChallenge, ITxChallenge(0).challengeDuplicatedNullifier.selector);
-        _connect(txChallenge, ITxChallenge(0).isValidRef.selector);
-        _connect(txChallenge, ITxSNARKChallenge(0).challengeSNARK.selector);
-        _connect(txChallenge, ITxSNARKChallenge(0).hasValidSNARK.selector);
+        _connect(challengeable, IDepositValidator(0).validateMassDeposit.selector);
+        _connect(challengeable, IHeaderValidator(0).validateDepositRoot.selector);
+        _connect(challengeable, IHeaderValidator(0).validateTxRoot.selector);
+        _connect(challengeable, IHeaderValidator(0).validateMigrationRoot.selector);
+        _connect(challengeable, IHeaderValidator(0).validateTotalFee.selector);
+        _connect(challengeable, IMigrationValidator(0).validateDuplicatedDestination.selector);
+        _connect(challengeable, IMigrationValidator(0).validateTotalEth.selector);
+        _connect(challengeable, IMigrationValidator(0).validateMergedLeaves.selector);
+        _connect(challengeable, IMigrationValidator(0).validateMigrationFee.selector);
+        _connect(challengeable, IMigrationValidator(0).validateDuplicatedERC20Migration.selector);
+        _connect(challengeable, IMigrationValidator(0).validateERC20Amount.selector);
+        _connect(challengeable, IMigrationValidator(0).validateDuplicatedERC721Migration.selector);
+        _connect(challengeable, IMigrationValidator(0).validateNonFungibility.selector);
+        _connect(challengeable, IMigrationValidator(0).validateNftExistence.selector);
+        _connect(challengeable, IUtxoTreeValidator(0).validateUTXOIndex.selector);
+        _connect(challengeable, IUtxoTreeValidator(0).validateUTXORoot.selector);
+        _connect(challengeable, IWithdrawalTreeValidator(0).validateWithdrawalIndex.selector);
+        _connect(challengeable, IWithdrawalTreeValidator(0).validateWithdrawalRoot.selector);
+        _connect(challengeable, INullifierTreeValidator(0).validateNullifierRollUp.selector);
+        _connect(challengeable, ITxValidator(0).validateInclusion.selector);
+        _connect(challengeable, ITxValidator(0).validateOutflow.selector);
+        _connect(challengeable, ITxValidator(0).validateUsedNullifier.selector);
+        _connect(challengeable, ITxValidator(0).validateDuplicatedNullifier.selector);
+        _connect(challengeable, ITxValidator(0).isValidRef.selector);
+        _connect(challengeable, ITxSNARKValidator(0).validateSNARK.selector);
+        _connect(challengeable, ITxSNARKValidator(0).hasValidSNARK.selector);
+        _connectValidator(depositValidator, IDepositValidator(0).validateMassDeposit.selector);
+        _connectValidator(headerValidator, IHeaderValidator(0).validateDepositRoot.selector);
+        _connectValidator(headerValidator, IHeaderValidator(0).validateTxRoot.selector);
+        _connectValidator(headerValidator, IHeaderValidator(0).validateMigrationRoot.selector);
+        _connectValidator(headerValidator, IHeaderValidator(0).validateTotalFee.selector);
+        _connectValidator(migrationValidator, IMigrationValidator(0).validateDuplicatedDestination.selector);
+        _connectValidator(migrationValidator, IMigrationValidator(0).validateTotalEth.selector);
+        _connectValidator(migrationValidator, IMigrationValidator(0).validateMergedLeaves.selector);
+        _connectValidator(migrationValidator, IMigrationValidator(0).validateMigrationFee.selector);
+        _connectValidator(migrationValidator, IMigrationValidator(0).validateDuplicatedERC20Migration.selector);
+        _connectValidator(migrationValidator, IMigrationValidator(0).validateERC20Amount.selector);
+        _connectValidator(migrationValidator, IMigrationValidator(0).validateDuplicatedERC721Migration.selector);
+        _connectValidator(migrationValidator, IMigrationValidator(0).validateNonFungibility.selector);
+        _connectValidator(migrationValidator, IMigrationValidator(0).validateNftExistence.selector);
+        _connectValidator(utxoTreeValidator, IUtxoTreeValidator(0).validateUTXOIndex.selector);
+        _connectValidator(utxoTreeValidator, IUtxoTreeValidator(0).validateUTXORoot.selector);
+        _connectValidator(withdrawalTreeValidator, IWithdrawalTreeValidator(0).validateWithdrawalIndex.selector);
+        _connectValidator(withdrawalTreeValidator, IWithdrawalTreeValidator(0).validateWithdrawalRoot.selector);
+        _connectValidator(nullifierTreeValidator, INullifierTreeValidator(0).validateNullifierRollUp.selector);
+        _connectValidator(txValidator, ITxValidator(0).validateInclusion.selector);
+        _connectValidator(txValidator, ITxValidator(0).validateOutflow.selector);
+        _connectValidator(txValidator, ITxValidator(0).validateUsedNullifier.selector);
+        _connectValidator(txValidator, ITxValidator(0).validateDuplicatedNullifier.selector);
+        _connectValidator(txValidator, ITxValidator(0).isValidRef.selector);
+        _connectValidator(txSNARKValidator, ITxSNARKValidator(0).validateSNARK.selector);
+        _connectValidator(txSNARKValidator, ITxSNARKValidator(0).hasValidSNARK.selector);
     }
 
     function _connect(address to, bytes4 sig) internal {
         proxied[sig] = to;
+    }
+
+    function _connectValidator(address to, bytes4 sig) internal {
+        validators[sig] = to;
     }
 }
