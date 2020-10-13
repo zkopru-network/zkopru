@@ -150,25 +150,15 @@ contract UserInteractable is Layer2 {
         uint256 nft,
         uint256 fee
     ) internal {
+        // range check
         require(msg.value < RANGE_LIMIT, "Too big value can cause the overflow inside the SNARK");
         require(amount < RANGE_LIMIT, "Too big value can cause the overflow inside the SNARK");
         require(nft < SNARK_FIELD, "Does not support too big nubmer of nft id");
-        require(amount == 0 || nft == 0, "Only one of ERC20 or ERC721 exists");
+        // check eth value
         require(eth.add(fee) == msg.value, "Inexact amount of eth");
         require(Layer2.chain.stagedSize < 1024, "Should wait until it is committed");
-
-        if (token != address(0)) {
-            // this note contains token value
-            bool isERC20 = Layer2.chain.registeredERC20s[token];
-            bool isERC721 = Layer2.chain.registeredERC721s[token];
-            require(isERC20 || isERC721, "Not a registered token. Reigster that token first");
-            if (isERC20) {
-                require(nft == 0, "ERC20 does have NFT field");
-            } else if (isERC721){
-                require(nft != 0, "Circuit cannot accept NFT id 0. Please deposit other NFT.");
-                require(amount == 0, "ERC721 does have amount field");
-            }
-        }
+        // check note fields
+        require(_checkNoteFields(eth, token, amount, nft));
 
         //TODO: require(fee >= specified fee);
         // Validate the note is same with the hash result
@@ -215,7 +205,7 @@ contract UserInteractable is Layer2 {
         uint256 leafIndex,
         uint256[] memory siblings
     ) internal {
-        require(nft*amount == 0, "Only ERC20 or ERC721");
+        require(_checkNoteFields(eth, token, amount, nft));
         require(Layer2.chain.finalized[blockHash], "Not a finalized block");
         uint256 root = Layer2.chain.withdrawalRootOf[blockHash];
         bytes32 withdrawalHash = _withdrawalHash(
@@ -251,17 +241,12 @@ contract UserInteractable is Layer2 {
                 payable(msg.sender).transfer(fee);
             }
         }
-        if (token != address(0)) {
-            // this note contains token value
-            bool isERC20 = Layer2.chain.registeredERC20s[token];
-            bool isERC721 = Layer2.chain.registeredERC721s[token];
-            require(isERC20 || isERC721, "Not a registered token. Reigster that token first");
-            if (isERC20) {
-                IERC20(token).transfer(to, amount);
-            } else if (isERC721){
-                require(nft != 0, "Circuit cannot accept NFT id 0. Please deposit other NFT.");
-                IERC721(token).transferFrom(address(this), to, nft);
-            }
+        // Withdraw tokens if exists
+        if (Layer2.chain.registeredERC20s[token]) {
+            IERC20(token).transfer(to, amount);
+        } else if (Layer2.chain.registeredERC721s[token]){
+            require(nft != 0, "Circuit cannot accept NFT id 0. Please deposit other NFT.");
+            IERC721(token).transferFrom(address(this), to, nft);
         }
         // Mark as withdrawn
         Layer2.chain.withdrawn[withdrawalHash] = true;
@@ -308,5 +293,29 @@ contract UserInteractable is Layer2 {
         }
         bytes32 prefixedHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", message));
         return signer == ecrecover(prefixedHash, v, r, s);
+    }
+
+    function _checkNoteFields(
+        uint256 eth,
+        address token,
+        uint256 amount,
+        uint256 nft
+    ) internal view returns (bool) {
+        if (token == address(0)) {
+            require(nft == 0 && amount == 0, "Ether note does not have amount field & nft field");
+            require(eth != 0, "Should have ETH field");
+        } else {
+            // this note contains token value
+            bool isERC20 = Layer2.chain.registeredERC20s[token];
+            bool isERC721 = Layer2.chain.registeredERC721s[token];
+            require(isERC20 || isERC721, "Not a registered token. Reigster that token first");
+            if (isERC20) {
+                require(nft == 0, "ERC20 does have NFT field");
+            } else if (isERC721){
+                require(nft != 0, "Circuit cannot accept NFT id 0. Please deposit other NFT.");
+                require(amount == 0, "ERC721 does have amount field");
+            }
+        }
+        return true;
     }
 }
