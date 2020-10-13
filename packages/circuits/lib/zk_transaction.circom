@@ -7,6 +7,7 @@ include "./asset_hash.circom";
 include "./nullifier.circom";
 include "./ownership_proof.circom";
 include "./spending_pubkey.circom";
+include "./range_limit.circom";
 include "../node_modules/circomlib/circuits/eddsaposeidon.circom";
 include "../node_modules/circomlib/circuits/bitify.circom";
 
