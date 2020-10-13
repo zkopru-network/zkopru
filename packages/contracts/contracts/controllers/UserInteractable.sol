@@ -136,7 +136,8 @@ contract UserInteractable is Layer2 {
             revert("Does not support NFT prepay");
         }
         // prepay ether
-        payable(currentOwner).transfer(eth);
+        (bool success, ) = currentOwner.call{ value: eth }("");
+        require(success, "Failed to send ETH to the withdrawer");
         // transfer ownership
         Layer2.chain.newWithdrawalOwner[withdrawalHash] = prepayer;
     }
@@ -243,10 +244,17 @@ contract UserInteractable is Layer2 {
         // Withdraw ETH & get fee
         if(eth != 0) {
             if(to == msg.sender) {
-                payable(to).transfer(eth + fee);
+                (bool success, ) = to.call{ value: eth.add(fee) }("");
+                require(success, "Failed to send ETH & fee");
             } else {
-                payable(to).transfer(eth);
-                payable(msg.sender).transfer(fee);
+                {
+                    (bool success, ) = to.call{ value: eth }("");
+                    require(success, "Failed to send ETH");
+                }
+                {
+                    (bool success, ) = msg.sender.call{ value: fee }("");
+                    require(success, "Failed to send fee");
+                }
             }
         }
         // Withdraw tokens if exists
