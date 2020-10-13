@@ -7,10 +7,12 @@
     "packages/*"
   ],
   "scripts": {
-    "bootstrap": "yarn && yarn pull:images && yarn build && lerna run pull && lerna run gendata",
+    "bootstrap": "yarn && yarn images pull && yarn build && lerna run pull && lerna run gendata",
     "postinstall": "lerna bootstrap && yarn clean && shx rm -rf packages/*/node_modules",
-    "pull:images": "docker-compose -f dockerfiles/docker-compose.yml pull",
-    "build:images": "docker-compose -f dockerfiles/docker-compose.yml build",
+    "images": "docker-compose -f dockerfiles/docker-compose.yml",
+    "images:pull": "docker-compose -f dockerfiles/docker-compose.yml pull",
+    "images:build": "docker-compose -f dockerfiles/docker-compose.yml build",
+    "images:push": "docker-compose -f dockerfiles/docker-compose.yml push",
     "predevelop": "yarn build:ts && docker-compose -f docker-compose.dev.yml build",
     "develop": "(sleep 10; open-cli http://localhost:4321) & (sleep 10; open-cli http://localhost:1234) & docker-compose -f docker-compose.dev.yml up --force-recreate -V",
     "develop:instant": "yarn build:ts && docker-compose -f docker-compose.instant-block.yml up --build --force-recreate -V",
