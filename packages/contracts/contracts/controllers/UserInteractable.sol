@@ -151,8 +151,9 @@ contract UserInteractable is Layer2 {
         uint256 fee
     ) internal {
         // range check
-        require(msg.value < RANGE_LIMIT, "Too big value can cause the overflow inside the SNARK");
         require(amount < RANGE_LIMIT, "Too big value can cause the overflow inside the SNARK");
+        require(eth < RANGE_LIMIT, "Too big value can cause the overflow inside the SNARK");
+        require(fee < RANGE_LIMIT, "Too big value can cause the overflow inside the SNARK");
         require(nft < SNARK_FIELD, "Does not support too big nubmer of nft id");
         // check eth value
         require(eth.add(fee) == msg.value, "Inexact amount of eth");
@@ -187,8 +188,8 @@ contract UserInteractable is Layer2 {
         }
         // Update the mass deposit
         Layer2.chain.stagedDeposits.merged = keccak256(abi.encodePacked(Layer2.chain.stagedDeposits.merged, note));
-        Layer2.chain.stagedDeposits.fee += fee;
-        Layer2.chain.stagedSize += 1;
+        Layer2.chain.stagedDeposits.fee = Layer2.chain.stagedDeposits.fee.add(fee);
+        Layer2.chain.stagedSize = Layer2.chain.stagedSize.add(1);
         // Emit event. Coordinator should subscribe this event.
         emit Deposit(Layer2.chain.massDepositId, note, fee);
     }
@@ -205,7 +206,14 @@ contract UserInteractable is Layer2 {
         uint256 leafIndex,
         uint256[] memory siblings
     ) internal {
+        // range check
+        require(amount < RANGE_LIMIT, "Too big value can cause the overflow inside the SNARK");
+        require(eth < RANGE_LIMIT, "Too big value can cause the overflow inside the SNARK");
+        require(fee < RANGE_LIMIT, "Too big value can cause the overflow inside the SNARK");
+        require(nft < SNARK_FIELD, "Does not support too big nubmer of nft id");
+        // check note fields
         require(_checkNoteFields(eth, token, amount, nft));
+        // check the reference block is finalized
         require(Layer2.chain.finalized[blockHash], "Not a finalized block");
         uint256 root = Layer2.chain.withdrawalRootOf[blockHash];
         bytes32 withdrawalHash = _withdrawalHash(
