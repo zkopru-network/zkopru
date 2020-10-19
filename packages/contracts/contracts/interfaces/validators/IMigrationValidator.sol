@@ -38,8 +38,8 @@ interface IMigrationValidator {
     function validateDuplicatedERC20Migration(
         bytes calldata blockData,
         uint256 migrationIndex,
-        uint256 erc20MingrationIdx1,
-        uint256 erc20MingrationIdx2
+        uint256 erc20MigrationIdx1,
+        uint256 erc20MigrationIdx2
     )
     external
     view
@@ -57,8 +57,8 @@ interface IMigrationValidator {
     function validateDuplicatedERC721Migration(
         bytes calldata blockData,
         uint256 migrationIndex,
-        uint256 erc721MingrationIdx1,
-        uint256 erc721MingrationIdx2
+        uint256 erc721MigrationIdx1,
+        uint256 erc721MigrationIdx2
     )
     external
     view

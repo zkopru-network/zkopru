@@ -172,8 +172,8 @@ export class MigrationValidator extends Contract {
     validateDuplicatedERC20Migration(
       arg0: string | number[],
       migrationIndex: number | string,
-      erc20MingrationIdx1: number | string,
-      erc20MingrationIdx2: number | string,
+      erc20MigrationIdx1: number | string,
+      erc20MigrationIdx2: number | string,
     ): TransactionObject<{
       slash: boolean
       reason: string
@@ -195,8 +195,8 @@ export class MigrationValidator extends Contract {
     validateDuplicatedERC721Migration(
       arg0: string | number[],
       migrationIndex: number | string,
-      erc721MingrationIdx1: number | string,
-      erc721MingrationIdx2: number | string,
+      erc721MigrationIdx1: number | string,
+      erc721MigrationIdx2: number | string,
     ): TransactionObject<{
       slash: boolean
       reason: string
