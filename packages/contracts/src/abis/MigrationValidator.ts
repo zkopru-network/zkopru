@@ -325,8 +325,8 @@ export const MigrationValidatorABI = [
     inputs: [
       { internalType: 'bytes', name: '', type: 'bytes' },
       { internalType: 'uint256', name: 'migrationIndex', type: 'uint256' },
-      { internalType: 'uint256', name: 'erc20MingrationIdx1', type: 'uint256' },
-      { internalType: 'uint256', name: 'erc20MingrationIdx2', type: 'uint256' },
+      { internalType: 'uint256', name: 'erc20MigrationIdx1', type: 'uint256' },
+      { internalType: 'uint256', name: 'erc20MigrationIdx2', type: 'uint256' },
     ],
     name: 'validateDuplicatedERC20Migration',
     outputs: [
@@ -354,16 +354,8 @@ export const MigrationValidatorABI = [
     inputs: [
       { internalType: 'bytes', name: '', type: 'bytes' },
       { internalType: 'uint256', name: 'migrationIndex', type: 'uint256' },
-      {
-        internalType: 'uint256',
-        name: 'erc721MingrationIdx1',
-        type: 'uint256',
-      },
-      {
-        internalType: 'uint256',
-        name: 'erc721MingrationIdx2',
-        type: 'uint256',
-      },
+      { internalType: 'uint256', name: 'erc721MigrationIdx1', type: 'uint256' },
+      { internalType: 'uint256', name: 'erc721MigrationIdx2', type: 'uint256' },
     ],
     name: 'validateDuplicatedERC721Migration',
     outputs: [

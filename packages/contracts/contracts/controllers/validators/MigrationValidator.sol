@@ -139,8 +139,8 @@ contract MigrationValidator is Layer2, IMigrationValidator {
     function validateDuplicatedERC20Migration(
         bytes calldata,
         uint256 migrationIndex,
-        uint256 erc20MingrationIdx1,
-        uint256 erc20MingrationIdx2
+        uint256 erc20MigrationIdx1,
+        uint256 erc20MigrationIdx2
     )
     external
     view
@@ -150,10 +150,10 @@ contract MigrationValidator is Layer2, IMigrationValidator {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         require(migrationIndex < _block.body.massMigrations.length, "out of index");
         MassMigration memory massMigration = _block.body.massMigrations[migrationIndex];
-        require(erc20MingrationIdx1 < massMigration.erc20.length, "erc20 idx1 out of index");
-        require(erc20MingrationIdx2 < massMigration.erc20.length, "erc20 idx1 out of index");
-        ERC20Migration memory erc20Migration1 = massMigration.erc20[erc20MingrationIdx1];
-        ERC20Migration memory erc20Migration2 = massMigration.erc20[erc20MingrationIdx2];
+        require(erc20MigrationIdx1 < massMigration.erc20.length, "erc20 idx1 out of index");
+        require(erc20MigrationIdx2 < massMigration.erc20.length, "erc20 idx1 out of index");
+        ERC20Migration memory erc20Migration1 = massMigration.erc20[erc20MigrationIdx1];
+        ERC20Migration memory erc20Migration2 = massMigration.erc20[erc20MigrationIdx2];
         return (
             erc20Migration1.addr == erc20Migration2.addr,
             "Duplicated ERC20 migration dests exist"
@@ -198,8 +198,8 @@ contract MigrationValidator is Layer2, IMigrationValidator {
     function validateDuplicatedERC721Migration(
         bytes calldata,
         uint256 migrationIndex,
-        uint256 erc721MingrationIdx1,
-        uint256 erc721MingrationIdx2
+        uint256 erc721MigrationIdx1,
+        uint256 erc721MigrationIdx2
     )
     external
     view
@@ -209,10 +209,10 @@ contract MigrationValidator is Layer2, IMigrationValidator {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         require(migrationIndex < _block.body.massMigrations.length, "out of index");
         MassMigration memory massMigration = _block.body.massMigrations[migrationIndex];
-        require(erc721MingrationIdx1 < massMigration.erc721.length, "erc721 idx1 out of index");
-        require(erc721MingrationIdx2 < massMigration.erc721.length, "erc721 idx1 out of index");
-        ERC721Migration memory erc721Migration1 = massMigration.erc721[erc721MingrationIdx1];
-        ERC721Migration memory erc721Migration2 = massMigration.erc721[erc721MingrationIdx2];
+        require(erc721MigrationIdx1 < massMigration.erc721.length, "erc721 idx1 out of index");
+        require(erc721MigrationIdx2 < massMigration.erc721.length, "erc721 idx1 out of index");
+        ERC721Migration memory erc721Migration1 = massMigration.erc721[erc721MigrationIdx1];
+        ERC721Migration memory erc721Migration2 = massMigration.erc721[erc721MigrationIdx2];
         return (
             erc721Migration1.addr == erc721Migration2.addr,
             "Duplicated ERC721 migration dests exist"
