@@ -22,3 +22,5 @@ export {
   GrovePatch,
   GroveSnapshot as DryPatchResult,
 } from './grove'
+
+export { MerkleTree, SMT } from './utils'
