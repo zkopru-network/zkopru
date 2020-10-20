@@ -17,7 +17,7 @@ const TxValidator = artifacts.require('TxValidator')
 const TxSNARKValidator = artifacts.require('TxSNARKValidator')
 const MigrationValidator = artifacts.require('MigrationValidator')
 const Migratable = artifacts.require('Migratable')
-const ZkOPRU = artifacts.require('ZkOptimisticRollUp')
+const ZkOPRU = artifacts.require('Zkopru')
 
 const instances = {}
 
@@ -96,7 +96,7 @@ module.exports = function migration(deployer, network, accounts) {
         network: deployer.network_id,
       })
       save({
-        name: 'ZkOptimisticRollUp',
+        name: 'Zkopru',
         address: zkopru.address,
         network: deployer.network_id,
       })

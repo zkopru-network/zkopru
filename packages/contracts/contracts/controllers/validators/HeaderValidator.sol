@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity = 0.6.12;
 
-import { Layer2 } from "../../storage/Layer2.sol";
+import { Storage } from "../../storage/Storage.sol";
 import {
     Block,
     Transaction,
@@ -12,7 +12,7 @@ import {
 import { Deserializer } from "../../libraries/Deserializer.sol";
 import { IHeaderValidator } from "../../interfaces/validators/IHeaderValidator.sol";
 
-contract HeaderValidator is Layer2, IHeaderValidator {
+contract HeaderValidator is Storage, IHeaderValidator {
     using Types for MassDeposit[];
     using Types for MassMigration[];
     using Types for Transaction[];
@@ -28,10 +28,8 @@ contract HeaderValidator is Layer2, IHeaderValidator {
     returns (bool slash, string memory reason)
     {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
-        return (
-            _block.header.depositRoot != _block.body.massDeposits.root(),
-            "Deposit root validation"
-        );
+        // code H1: Header has invalid deposit root
+        return (_block.header.depositRoot != _block.body.massDeposits.root(), "H1");
     }
 
     /**
@@ -47,10 +45,8 @@ contract HeaderValidator is Layer2, IHeaderValidator {
     returns (bool slash, string memory reason)
     {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
-        return (
-            _block.header.txRoot != _block.body.txs.root(),
-            "Transaction root validation"
-        );
+        // code H2: Header has invalid transaction root
+        return (_block.header.txRoot != _block.body.txs.root(), "H2");
     }
 
     /**
@@ -66,10 +62,8 @@ contract HeaderValidator is Layer2, IHeaderValidator {
     returns (bool slash, string memory reason)
     {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
-        return (
-            _block.header.migrationRoot != _block.body.massMigrations.root(),
-            "Transaction root validation"
-        );
+        // code H3: Header has invalid migration root
+        return (_block.header.migrationRoot != _block.body.massMigrations.root(), "H3");
     }
 
     /**
@@ -92,9 +86,7 @@ contract HeaderValidator is Layer2, IHeaderValidator {
             totalFee += _block.body.txs[i].fee;
         }
         // FYI, fee in the massMigration is for the destination contract
-        return (
-            totalFee != _block.header.fee,
-            "Total fee validation"
-        );
+        // code H4: Header has invalid total fee value
+        return (totalFee != _block.header.fee, "H4");
     }
 }

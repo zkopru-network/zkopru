@@ -3,14 +3,14 @@ pragma solidity = 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import { ISetupWizard } from "./interfaces/ISetupWizard.sol";
-import { Layer2 } from "./storage/Layer2.sol";
-import { Layer2Controller } from "./Layer2Controller.sol";
+import { Storage } from "./storage/Storage.sol";
+import { Proxy } from "./Proxy.sol";
 import { SNARK } from "./libraries/SNARK.sol";
 import { Blockchain, Header, Types } from "./libraries/Types.sol";
 import { Pairing, G1Point, G2Point } from "./libraries/Pairing.sol";
 import { Hash } from "./libraries/Hash.sol";
 
-contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
+contract Zkopru is Proxy, ISetupWizard {
     using Types for Header;
     using Types for Blockchain;
 
@@ -44,7 +44,7 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
         SNARK.VerifyingKey memory vk
     ) public override onlySetupWizard {
         uint256 txSig = Types.getSNARKSignature(numOfInputs, numOfOutputs);
-        SNARK.VerifyingKey storage key = Layer2.vks[txSig];
+        SNARK.VerifyingKey storage key = Storage.vks[txSig];
         require(key.ic.length == 0, "already registered");
         require(key.alpha1.X == 0, "already registered");
         require(key.alpha1.Y == 0, "already registered");
@@ -73,14 +73,14 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
      * @dev It connects this proxy contract to the UserInteractable controller.
      */
     function makeUserInteractable(address addr) public override onlySetupWizard{
-        Layer2Controller._connectUserInteractable(addr);
+        Proxy._connectUserInteractable(addr);
     }
 
     /**
      * @dev It connects this proxy contract to the Coordinatable controller.
      */
     function makeCoordinatable(address addr) public override onlySetupWizard{
-        Layer2Controller._connectCoordinatable(addr);
+        Proxy._connectCoordinatable(addr);
     }
 
     /**
@@ -97,7 +97,7 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
         address txValidator,
         address txSNARKValidator
     ) public override onlySetupWizard {
-        Layer2Controller._connectChallengeable(
+        Proxy._connectChallengeable(
             challengeable,
             depositValidator,
             headerValidator,
@@ -114,7 +114,7 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
      * @dev It connects this proxy contract to the Migratable controller.
      */
     function makeMigratable(address addr) public override onlySetupWizard {
-        Layer2Controller._connectMigratable(addr);
+        Proxy._connectMigratable(addr);
     }
 
     /**
@@ -126,7 +126,7 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
      */
     function allowMigrants(address[] memory migrants) public override onlySetupWizard {
         for (uint256 i = 0; i < migrants.length; i++) {
-            Layer2.allowedMigrants[migrants[i]] = true;
+            Storage.allowedMigrants[migrants[i]] = true;
         }
     }
 
@@ -134,7 +134,7 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
      * @dev If you once execute this, every configuration freezes and does not change forever.
      */
     function completeSetup() public override onlySetupWizard {
-        require(Layer2.chain.latest == bytes32(0), "Already initialized");
+        require(Storage.chain.latest == bytes32(0), "Already initialized");
         delete setupWizard;
         uint256[] memory poseidonPreHashes = Hash.poseidonPrehashedZeroes();
         uint256 utxoRoot = poseidonPreHashes[poseidonPreHashes.length - 1];
@@ -159,7 +159,7 @@ contract ZkOptimisticRollUp is Layer2Controller, ISetupWizard {
             bytes32(0) // mass migration root
         );
         bytes32 genesis = header.hash();
-        Layer2.chain.init(genesis);
+        Storage.chain.init(genesis);
         emit GenesisBlock(
             genesis,
             msg.sender,

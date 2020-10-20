@@ -105,7 +105,7 @@ async function getAddresses(
 }> {
   const deployed = await readFromContainer(
     layer1Container,
-    '/proj/build/deployed/ZkOptimisticRollUp.json',
+    '/proj/build/deployed/Zkopru.json',
   )
   const deployedERC20 = await readFromContainer(
     layer1Container,

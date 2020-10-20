@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity = 0.6.12;
 
-import { Layer2 } from "../storage/Layer2.sol";
+import { Storage } from "../storage/Storage.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { MassDeposit, MassMigration, Types } from "../libraries/Types.sol";
 import { Deserializer } from "../libraries/Deserializer.sol";
 
 
-contract Migratable is Layer2 {
+contract Migratable is Storage {
     using Types for *;
 
     event NewMassMigration(bytes32 checksum, address network, bytes32 merged, uint256 fee);
@@ -59,8 +59,8 @@ contract Migratable is Layer2 {
     }
 
     function acceptMigration(bytes32 checksum, bytes32 merged, uint256 fee) external virtual {
-        require(Layer2.allowedMigrants[msg.sender], "Not an allowed departure");
-        Layer2.chain.committedDeposits[MassDeposit(merged,fee).hash()] += 1;
+        require(Storage.allowedMigrants[msg.sender], "Not an allowed departure");
+        Storage.chain.committedDeposits[MassDeposit(merged,fee).hash()] += 1;
         emit NewMassMigration(checksum, msg.sender, merged, fee);
     }
 }

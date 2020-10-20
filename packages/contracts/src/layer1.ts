@@ -11,11 +11,12 @@ import { IMigratable } from './contracts/IMigratable'
 import { IMigrationValidator } from './contracts/IMigrationValidator'
 import { INullifierTreeValidator } from './contracts/INullifierTreeValidator'
 import { ISetupWizard } from './contracts/ISetupWizard'
+import { ITxSNARKValidator } from './contracts/ITxSNARKValidator'
 import { ITxValidator } from './contracts/ITxValidator'
 import { IUserInteractable } from './contracts/IUserInteractable'
 import { IUtxoTreeValidator } from './contracts/IUtxoTreeValidator'
 import { IWithdrawalTreeValidator } from './contracts/IWithdrawalTreeValidator'
-import { ZkOptimisticRollUp } from './contracts/ZkOptimisticRollUp'
+import { Zkopru } from './contracts/Zkopru'
 
 import { ERC20ABI } from './abis/ERC20'
 import { ERC721ABI } from './abis/ERC721'
@@ -27,11 +28,12 @@ import { IMigratableABI } from './abis/IMigratable'
 import { IMigrationValidatorABI } from './abis/IMigrationValidator'
 import { INullifierTreeValidatorABI } from './abis/INullifierTreeValidator'
 import { ISetupWizardABI } from './abis/ISetupWizard'
+import { ITxSNARKValidatorABI } from './abis/ITxSNARKValidator'
 import { ITxValidatorABI } from './abis/ITxValidator'
 import { IUserInteractableABI } from './abis/IUserInteractable'
 import { IUtxoTreeValidatorABI } from './abis/IUtxoTreeValidator'
 import { IWithdrawalTreeValidatorABI } from './abis/IWithdrawalTreeValidator'
-import { ZkOptimisticRollUpABI } from './abis/ZkOptimisticRollUp'
+import { ZkopruABI } from './abis/Zkopru'
 
 export class Layer1 {
   static getICoordinatable(
@@ -132,6 +134,15 @@ export class Layer1 {
     return new web3.eth.Contract(abi, address, option) as ITxValidator
   }
 
+  static getITxSNARKValidator(
+    web3: Web3,
+    address: string,
+    option?: ContractOptions,
+  ): ITxSNARKValidator {
+    const abi: any[] = [...ITxSNARKValidatorABI]
+    return new web3.eth.Contract(abi, address, option) as ITxSNARKValidator
+  }
+
   static getIUserInteractable(
     web3: Web3,
     address: string,
@@ -168,12 +179,12 @@ export class Layer1 {
     return new web3.eth.Contract(abi, address, option) as IERC721Enumerable
   }
 
-  static getZkOptimisticRollUp(
+  static getZkopru(
     web3: Web3,
     address: string,
     option?: ContractOptions,
-  ): ZkOptimisticRollUp {
-    const abi: any[] = [...ZkOptimisticRollUpABI]
-    return new web3.eth.Contract(abi, address, option) as ZkOptimisticRollUp
+  ): Zkopru {
+    const abi: any[] = [...ZkopruABI]
+    return new web3.eth.Contract(abi, address, option) as Zkopru
   }
 }

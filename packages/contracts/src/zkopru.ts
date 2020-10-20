@@ -7,16 +7,17 @@ import { IMigratable } from './contracts/IMigratable'
 import { IMigrationValidator } from './contracts/IMigrationValidator'
 import { INullifierTreeValidator } from './contracts/INullifierTreeValidator'
 import { ISetupWizard } from './contracts/ISetupWizard'
+import { ITxSNARKValidator } from './contracts/ITxSNARKValidator'
 import { ITxValidator } from './contracts/ITxValidator'
 import { IUserInteractable } from './contracts/IUserInteractable'
 import { IUtxoTreeValidator } from './contracts/IUtxoTreeValidator'
 import { IWithdrawalTreeValidator } from './contracts/IWithdrawalTreeValidator'
-import { ZkOptimisticRollUp } from './contracts/ZkOptimisticRollUp'
+import { Zkopru } from './contracts/Zkopru'
 
 import { Layer1 } from './layer1'
 
 export class ZkOPRUContract {
-  upstream: ZkOptimisticRollUp
+  upstream: Zkopru
 
   coordinator: ICoordinatable
 
@@ -29,6 +30,7 @@ export class ZkOPRUContract {
     migration: IMigrationValidator
     header: IHeaderValidator
     tx: ITxValidator
+    snark: ITxSNARKValidator
     utxoTree: IUtxoTreeValidator
     withdrawalTree: IWithdrawalTreeValidator
     nullifierTree: INullifierTreeValidator
@@ -37,7 +39,7 @@ export class ZkOPRUContract {
   setup: ISetupWizard
 
   constructor(web3: Web3, address: string, option?: ContractOptions) {
-    this.upstream = Layer1.getZkOptimisticRollUp(web3, address, option)
+    this.upstream = Layer1.getZkopru(web3, address, option)
     this.coordinator = Layer1.getICoordinatable(web3, address, option)
     this.user = Layer1.getIUserInteractable(web3, address, option)
     this.migrator = Layer1.getIMigratable(web3, address, option)
@@ -46,6 +48,7 @@ export class ZkOPRUContract {
       migration: Layer1.getIMigrationValidator(web3, address, option),
       header: Layer1.getIHeaderValidator(web3, address, option),
       tx: Layer1.getITxValidator(web3, address, option),
+      snark: Layer1.getITxSNARKValidator(web3, address, option),
       utxoTree: Layer1.getIUtxoTreeValidator(web3, address, option),
       withdrawalTree: Layer1.getIWithdrawalTreeValidator(web3, address, option),
       nullifierTree: Layer1.getINullifierTreeValidator(web3, address, option),

@@ -2,7 +2,7 @@
 pragma solidity = 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import { Layer2 } from "../../storage/Layer2.sol";
+import { Storage } from "../../storage/Storage.sol";
 import { SNARK } from "../../libraries/SNARK.sol";
 import {
     Block,
@@ -12,7 +12,7 @@ import {
 import { Deserializer } from "../../libraries/Deserializer.sol";
 import { ITxSNARKValidator } from "../../interfaces/validators/ITxSNARKValidator.sol";
 
-contract TxSNARKValidator is Layer2, ITxSNARKValidator {
+contract TxSNARKValidator is Storage, ITxSNARKValidator {
     using SNARK for SNARK.VerifyingKey;
 
     /**
@@ -44,7 +44,7 @@ contract TxSNARKValidator is Layer2, ITxSNARKValidator {
      external
      view
      override
-     returns (bool result, string memory reason)
+     returns (bool validity, string memory reason)
     {
         // Transaction memory transaction = _block.body.txs[txIndex];
         // Slash if the transaction type is not supported
@@ -53,7 +53,8 @@ contract TxSNARKValidator is Layer2, ITxSNARKValidator {
             uint8(transaction.outflow.length)
         );
         if (!_exist(vk)) {
-            return (true, "Unsupported tx type");
+            // code S1: Unsupported transaction type
+            return (true, "S1");
         }
         // Slash if its zk SNARK verification returns false
         uint256[] memory inputs = new uint256[](1 + 1 + 2*transaction.inflow.length + 8*transaction.outflow.length);
@@ -74,11 +75,10 @@ contract TxSNARKValidator is Layer2, ITxSNARKValidator {
             inputs[index++] = uint256(transaction.outflow[i].publicData.nft);
             inputs[index++] = uint256(transaction.outflow[i].publicData.fee);
         }
-        result = vk.verifySnarkProof(inputs, transaction.proof);
-        if (result) {
-            reason = "Valid SNARK.";
-        } else {
-            reason = "Invalid SNARK.";
+        validity = vk.verifySnarkProof(inputs, transaction.proof);
+        if (!validity) {
+            // code S2: Invalid snark proof
+            reason = "S2";
         }
     }
     

@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity = 0.6.12;
 
-import { Layer2 } from "../storage/Layer2.sol";
+import { Storage } from "../storage/Storage.sol";
 import { Deserializer } from "../libraries/Deserializer.sol";
 import {
     Proposer,
     Proposal
 } from "../libraries/Types.sol";
 
-contract Challengeable is Layer2 {
+contract Challengeable is Storage {
     event Slash(bytes32 blockHash, address proposer, string reason);
 
     /**
      * @dev This is a proxy contract of proxy. The challenger will send a transaction to the
-     *      main contract ZkOptimisticRollUp.sol, then it will redirect its challenge txs to
+     *      main contract Zkopru.sol, then it will redirect its challenge txs to
      *      this contract. Then, this contract will check its gas usage using delegatecall by
      *      redirecting the tx to the corresponding validator contract.
-     *      1. ZkOptimisticRollUp.sol => Challengeable.sol
+     *      1. Zkopru.sol => Challengeable.sol
      *         : Pass storage using delegate call
      *      2. Challengeable.sol => XXXValidator.sol
      *         : Pass storage and validate the challenge. It also measure gas consumption.
@@ -26,7 +26,7 @@ contract Challengeable is Layer2 {
      */
     fallback() external payable {
         // Get corresponding validator
-        address validator = Layer2.validators[msg.sig];
+        address validator = Storage.validators[msg.sig];
         require(validator != address(0), "There is no proxy contract");
         // Run validation. Here it uses delegatecall to measure the gas consumption regardless of its revert.
         uint256 startingGas = gasleft();
@@ -59,7 +59,7 @@ contract Challengeable is Layer2 {
     function _execute(string memory reason) internal {
         bytes32 proposalId = Deserializer.proposalIdFromCalldata(0);
         address proposer = Deserializer.proposerAddressFromCalldata(0);
-        Proposal storage proposal = Layer2.chain.proposals[proposalId];
+        Proposal storage proposal = Storage.chain.proposals[proposalId];
         // Check basic challenge conditions
         _checkChallengeCondition(proposal);
         // Since the challenge satisfies the given conditions, slash the optimistic rollup proposer
@@ -80,7 +80,7 @@ contract Challengeable is Layer2 {
     }
 
     function _forfeitAndReward(address proposerAddr, address challenger) internal {
-        Proposer storage proposer = Layer2.chain.proposers[proposerAddr];
+        Proposer storage proposer = Storage.chain.proposers[proposerAddr];
         // Reward
         uint256 challengeReward = proposer.stake * 2 / 3;
         payable(challenger).transfer(challengeReward);
@@ -88,6 +88,6 @@ contract Challengeable is Layer2 {
         proposer.stake = 0;
         proposer.reward = 0;
         // Delete proposer
-        delete Layer2.chain.proposers[proposerAddr];
+        delete Storage.chain.proposers[proposerAddr];
     }
 }

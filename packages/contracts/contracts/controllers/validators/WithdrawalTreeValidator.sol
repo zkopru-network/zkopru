@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity = 0.6.12;
 
-import { Layer2 } from "../../storage/Layer2.sol";
+import { Storage } from "../../storage/Storage.sol";
 import { Challengeable } from "../Challengeable.sol";
-import { SubTreeRollUpLib } from "../../libraries/Tree.sol";
+import { SubTreeLib } from "../../libraries/MerkleTree.sol";
 import { Hash } from "../../libraries/Hash.sol";
 import {
     Block,
@@ -16,7 +16,7 @@ import {
 import { Deserializer } from "../../libraries/Deserializer.sol";
 import { IWithdrawalTreeValidator } from "../../interfaces/validators/IWithdrawalTreeValidator.sol";
 
-contract WithdrawalTreeValidator is Layer2, IWithdrawalTreeValidator {
+contract WithdrawalTreeValidator is Storage, IWithdrawalTreeValidator {
     using Types for Header;
 
     /**
@@ -46,15 +46,11 @@ contract WithdrawalTreeValidator is Layer2, IWithdrawalTreeValidator {
             }
         }
         if (withdrawalLen != l2Block.header.withdrawalIndex - parentHeader.withdrawalIndex) {
-            return (
-                true,
-                "Invalid withdrawal index"
-            );
+            // code W1: The updated number of total Withdarawls is not correct.
+            return (true, "W1");
         } else if (l2Block.header.withdrawalIndex > MAX_WITHDRAWAL) {
-            return (
-                true,
-                "withdrawal tree flushed"
-            );
+            // code W2: The updated number of total Withdrawals is exceeding the maximum value.
+            return (true, "W2");
         }
     }
 
@@ -82,7 +78,7 @@ contract WithdrawalTreeValidator is Layer2, IWithdrawalTreeValidator {
             l2Block.body.txs
         );
         // Check validity of the roll up using the storage based Poseidon sub-tree roll up
-        uint256 computedRoot = SubTreeRollUpLib.rollUpSubTree(
+        uint256 computedRoot = SubTreeLib.appendSubTree(
             Hash.keccak(),
             parentHeader.withdrawalRoot,
             parentHeader.withdrawalIndex,
@@ -91,10 +87,8 @@ contract WithdrawalTreeValidator is Layer2, IWithdrawalTreeValidator {
             initialSiblings
         );
         // Computed new utxo root is different with the submitted
-        return (
-            computedRoot != l2Block.header.withdrawalRoot,
-            "Withdrawal tree root"
-        );
+        // code W3: The updated withdrawal tree root is not correct.
+        return (computedRoot != l2Block.header.withdrawalRoot, "W3");
     }
 
     /** Computes challenge here */

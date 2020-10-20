@@ -8,7 +8,7 @@ import { Configurated } from "./Configurated.sol";
 
 import { SMT254 } from "../libraries/SMT.sol";
 
-contract Layer2 is Configurated {
+contract Storage is Configurated {
     // State of the layer2 blockchain is maintained by the optimistic roll up
     Blockchain chain;
 

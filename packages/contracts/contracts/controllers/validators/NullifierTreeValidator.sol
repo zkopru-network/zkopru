@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity = 0.6.12;
 
-import { Layer2 } from "../../storage/Layer2.sol";
+import { Storage } from "../../storage/Storage.sol";
 import { SMT254 } from "../../libraries/SMT.sol";
 import { Hash } from "../../libraries/Hash.sol";
 import {
@@ -15,7 +15,7 @@ import {
 import { Deserializer } from "../../libraries/Deserializer.sol";
 import { INullifierTreeValidator } from "../../interfaces/validators/INullifierTreeValidator.sol";
 
-contract NullifierTreeValidator is Layer2, INullifierTreeValidator {
+contract NullifierTreeValidator is Storage, INullifierTreeValidator {
     using Types for Header;
 
     /**
@@ -52,15 +52,13 @@ contract NullifierTreeValidator is Layer2, INullifierTreeValidator {
         require(index == numOfNullifiers, "Invalid numOfNullifier");
 
         // Get rolled up root
-        bytes32 computedRoot = SMT254.rollUp(
+        bytes32 computedRoot = SMT254.fill(
             _parentHeader.nullifierRoot,
             nullifiers,
             siblings
         );
         // Computed new nullifier root is different with the submitted
-        return (
-            _block.header.nullifierRoot != computedRoot,
-            "Nullifier root"
-        );
+        // code N1: Nullifier root is different
+        return (_block.header.nullifierRoot != computedRoot, "N1");
     }
 }

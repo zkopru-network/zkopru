@@ -13,10 +13,10 @@ interface EventOptions {
   topics?: string[]
 }
 
-export class TxSNARKValidator extends Contract {
+export class Proxy extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
 
-  clone(): TxSNARKValidator
+  clone(): Proxy
 
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
@@ -127,48 +127,6 @@ export class TxSNARKValidator extends Contract {
     withdrawalRootOf(header: string | number[]): TransactionObject<string>
 
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
-
-    validateSNARK(
-      arg0: string | number[],
-      txIndex: number | string,
-    ): TransactionObject<{
-      slash: boolean
-      reason: string
-      0: boolean
-      1: string
-    }>
-
-    hasValidSNARK(transaction: {
-      inflow: {
-        inclusionRoot: number | string
-        nullifier: string | number[]
-      }[]
-      outflow: {
-        note: number | string
-        outflowType: number | string
-        publicData: {
-          to: string
-          eth: number | string
-          token: string
-          amount: number | string
-          nft: number | string
-          fee: number | string
-        }
-      }[]
-      swap: number | string
-      fee: number | string
-      proof: {
-        a: { X: number | string; Y: number | string }
-        b: { X: (number | string)[]; Y: (number | string)[] }
-        c: { X: number | string; Y: number | string }
-      }
-      memo: string | number[]
-    }): TransactionObject<{
-      validity: boolean
-      reason: string
-      0: boolean
-      1: string
-    }>
   }
 
   events: {

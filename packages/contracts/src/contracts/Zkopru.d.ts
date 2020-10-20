@@ -13,10 +13,10 @@ interface EventOptions {
   topics?: string[]
 }
 
-export class ZkOptimisticRollUp extends Contract {
+export class Zkopru extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
 
-  clone(): ZkOptimisticRollUp
+  clone(): Zkopru
 
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>

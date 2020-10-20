@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity = 0.6.12;
 
-import { Layer2 } from "./storage/Layer2.sol";
+import { Storage } from "./storage/Storage.sol";
 import { ICoordinatable } from "./interfaces/ICoordinatable.sol";
 import { IUserInteractable } from "./interfaces/IUserInteractable.sol";
 import { IMigratable } from "./interfaces/IMigratable.sol";
@@ -16,7 +16,7 @@ import { ITxSNARKValidator } from "./interfaces/validators/ITxSNARKValidator.sol
 
 /* solium-disable */
 
-contract Layer2Controller is Layer2 {
+contract Proxy is Storage {
     /**
      * @notice This proxies supports the following interfaces
      *          - ICoordinatable.sol
@@ -32,7 +32,7 @@ contract Layer2Controller is Layer2 {
      *              - ITxChallenge.sol
      */
     fallback () external payable virtual {
-        address addr = Layer2.proxied[msg.sig];
+        address addr = Storage.proxied[msg.sig];
         require(addr != address(0), "There is no proxy contract");
         (bool success, bytes memory result) = addr.delegatecall(msg.data);
         require(success, string(result));
@@ -43,7 +43,7 @@ contract Layer2Controller is Layer2 {
     */
     receive() external payable {
         bytes4 sig = ICoordinatable(0).register.selector;
-        address addr = Layer2.proxied[sig];
+        address addr = Storage.proxied[sig];
         (bool success, bytes memory result) = addr.delegatecall(msg.data);
         require(success, string(result));
     }
@@ -102,6 +102,7 @@ contract Layer2Controller is Layer2 {
         _connect(challengeable, INullifierTreeValidator(0).validateNullifierRollUp.selector);
         _connect(challengeable, ITxValidator(0).validateInclusion.selector);
         _connect(challengeable, ITxValidator(0).validateOutflow.selector);
+        _connect(challengeable, ITxValidator(0).validateAtomicSwap.selector);
         _connect(challengeable, ITxValidator(0).validateUsedNullifier.selector);
         _connect(challengeable, ITxValidator(0).validateDuplicatedNullifier.selector);
         _connect(challengeable, ITxValidator(0).isValidRef.selector);
@@ -128,6 +129,7 @@ contract Layer2Controller is Layer2 {
         _connectValidator(nullifierTreeValidator, INullifierTreeValidator(0).validateNullifierRollUp.selector);
         _connectValidator(txValidator, ITxValidator(0).validateInclusion.selector);
         _connectValidator(txValidator, ITxValidator(0).validateOutflow.selector);
+        _connectValidator(txValidator, ITxValidator(0).validateAtomicSwap.selector);
         _connectValidator(txValidator, ITxValidator(0).validateUsedNullifier.selector);
         _connectValidator(txValidator, ITxValidator(0).validateDuplicatedNullifier.selector);
         _connectValidator(txValidator, ITxValidator(0).isValidRef.selector);

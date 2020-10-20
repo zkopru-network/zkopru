@@ -29,7 +29,7 @@ describe('integration test to run testnet', () => {
     await container.start()
     const deployed = await readFromContainer(
       container,
-      '/proj/build/deployed/ZkOptimisticRollUp.json',
+      '/proj/build/deployed/Zkopru.json',
     )
     address = JSON.parse(deployed.toString()).address
     const status = await container.status()
