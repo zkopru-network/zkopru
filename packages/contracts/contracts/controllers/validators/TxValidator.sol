@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity = 0.6.12;
 
-import { Layer2 } from "../../storage/Layer2.sol";
+import { Storage } from "../../storage/Storage.sol";
 import { SMT254 } from "../../libraries/SMT.sol";
 import {
     Block,
@@ -15,7 +15,7 @@ import {
 import { Deserializer } from "../../libraries/Deserializer.sol";
 import { ITxValidator } from "../../interfaces/validators/ITxValidator.sol";
 
-contract TxValidator is Layer2, ITxValidator {
+contract TxValidator is Storage, ITxValidator {
     using Types for Header;
     using Types for Outflow;
     using Types for PublicData;
@@ -39,10 +39,8 @@ contract TxValidator is Layer2, ITxValidator {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         Transaction memory transaction = _block.body.txs[txIndex];
         uint256 ref = transaction.inflow[inflowIndex].inclusionRoot;
-        return (
-            !isValidRef(_block.header.hash(), ref),
-            "Inclusion reference"
-        );
+        // code T1: An inflow is referencing an invalid UTXO root.
+        return (!isValidRef(_block.header.hash(), ref), "T1");
     }
 
     /**
@@ -64,26 +62,32 @@ contract TxValidator is Layer2, ITxValidator {
         for(uint256 i = 0; i < transaction.outflow.length; i++) {
             Outflow memory outflow = transaction.outflow[i];
             if (outflow.outflowType > 2) {
-                return (true, "Invalid outflow type");
+                // code T2: An outflow has an invalid type. Only 0, 1, and 2 are allowed.
+                return (true, "T2");
             }
             address tokenAddr = outflow.publicData.token;
             if(tokenAddr == address(0)) { // means UTXO
                 if (!outflow.publicData.isEmpty()) {
-                    return (true, "No public data");
+                    // code T3: A migration or withdrawal outflow should have the public data field
+                    return (true, "T3");
                 }
             } else {
-                bool isERC20 = Layer2.chain.registeredERC20s[tokenAddr];
-                bool isERC721 = Layer2.chain.registeredERC721s[tokenAddr];
+                bool isERC20 = Storage.chain.registeredERC20s[tokenAddr];
+                bool isERC721 = Storage.chain.registeredERC721s[tokenAddr];
                 // means Withdrawal or migration. Inspect revealed token values
                 if (!isERC20 && !isERC721) {
-                    return (true, "Unregistered token address");
+                    // code T4: Transaction is including unregistered token
+                    return (true, "T4");
                 } else if (isERC20 && 0 != outflow.publicData.nft) {
-                    return (true, "ERC20 cannot have NFT");
+                    // code T5: A note including ERC20 cannot have NFT field.
+                    return (true, "T5");
                 } else if (isERC721) {
                     if (outflow.publicData.amount != 0) {
-                        return (true, "ERC721 cannot have amount value");
+                        // code T6: A note including NFT cannot have ERC20 field.
+                        return (true, "T6");
                     } else if (outflow.publicData.nft == 0) {
-                        return (true, "Circuit does not support NFT id 0");
+                        // code T7: ZK SNARK Circuit does not support NFT which id is 0
+                        return (true, "T7");
                     }
                 }
             }
@@ -115,7 +119,8 @@ contract TxValidator is Layer2, ITxValidator {
                 counterpart++;
              }
         }
-        return (counterpart != 1, "allow only 1 counterpart tx");
+        // T8: Atomic swap transaction allows only 1 counterpart transaction.
+        return (counterpart != 1, "T8");
     }
 
     /**
@@ -145,15 +150,14 @@ contract TxValidator is Layer2, ITxValidator {
         bytes32[254][] memory siblings = new bytes32[254][](1);
         nullifiers[0] = usedNullifier;
         siblings[0] = sibling;
-        bytes32 updatedRoot = SMT254.rollUp(
+        bytes32 updatedRoot = SMT254.fill(
             _parentHeader.nullifierRoot,
             nullifiers,
             siblings
         );
-        return (
-            updatedRoot == _parentHeader.nullifierRoot, // should be updated if the nullifier wasn't used before.
-            "Double spending"
-        );
+        // should be updated if the nullifier wasn't used before.
+        // code T9: Transaction is using an already spent nullifier.
+        return (updatedRoot == _parentHeader.nullifierRoot,  "T9");
     }
 
     /**
@@ -181,7 +185,8 @@ contract TxValidator is Layer2, ITxValidator {
             }
             if (count >= 2) break;
         }
-        return (count >= 2, "Duplicated nullifier");
+        // code T10: Some transactions in the block are trying to use a same nullifier.
+        return (count >= 2, "T10");
     }
 
     /**
@@ -191,7 +196,7 @@ contract TxValidator is Layer2, ITxValidator {
      *      blocks' utxo roots. When you use recent blocks' utxo roots, recent REF_DEPTH
      *      of utxo roots are available. It costs maximum 1800*REF_DEPTH gas to validate
      *      an inclusion reference during the TX challenge process.
-     * @param l2BlockHash Layer2 block's hash value where to start searching for.
+     * @param l2BlockHash Storage block's hash value where to start searching for.
      * @param ref Utxo root which includes the nullifier's origin utxo.
      */
     function isValidRef(bytes32 l2BlockHash, uint256 ref)
@@ -200,13 +205,13 @@ contract TxValidator is Layer2, ITxValidator {
     override
     returns (bool)
     {
-        if (Layer2.chain.finalizedUTXORoots[ref]) {
+        if (Storage.chain.finalizedUTXORoots[ref]) {
             return true;
         }
         bytes32 parentBlock = l2BlockHash;
         for (uint256 i = 0; i < REF_DEPTH; i++) {
-            parentBlock = Layer2.chain.parentOf[parentBlock];
-            if (Layer2.chain.utxoRootOf[parentBlock] == ref) {
+            parentBlock = Storage.chain.parentOf[parentBlock];
+            if (Storage.chain.utxoRootOf[parentBlock] == ref) {
                 return true;
             }
         }

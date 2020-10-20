@@ -4,15 +4,15 @@ pragma solidity = 0.6.12;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { RollUpLib } from "../libraries/Tree.sol";
-import { Layer2 } from "../storage/Layer2.sol";
+import { MerkleTreeLib } from "../libraries/MerkleTree.sol";
+import { Storage } from "../storage/Storage.sol";
 import { Hash, Poseidon3, Poseidon4 } from "../libraries/Hash.sol";
 import { WithdrawalTree, Blockchain, Types } from "../libraries/Types.sol";
 
-contract UserInteractable is Layer2 {
+contract UserInteractable is Storage {
     uint256 public constant SNARK_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     uint256 public constant RANGE_LIMIT = SNARK_FIELD >> 32;
-    using RollUpLib for *;
+    using MerkleTreeLib for *;
     using SafeMath for uint256;
 
     event Deposit(uint256 indexed queuedAt, uint256 note, uint256 fee);
@@ -108,9 +108,9 @@ contract UserInteractable is Layer2 {
             nft,
             fee
         );
-        require(!Layer2.chain.withdrawn[withdrawalHash], "Already withdrawn");
+        require(!Storage.chain.withdrawn[withdrawalHash], "Already withdrawn");
 
-        address newOwner = Layer2.chain.newWithdrawalOwner[withdrawalHash];
+        address newOwner = Storage.chain.newWithdrawalOwner[withdrawalHash];
         address currentOwner = newOwner == address(0) ? owner : newOwner;
         address prepayer = msg.sender;
         bytes32 payInAdvanceMsg = keccak256(
@@ -139,7 +139,7 @@ contract UserInteractable is Layer2 {
         (bool success, ) = currentOwner.call{ value: eth }("");
         require(success, "Failed to send ETH to the withdrawer");
         // transfer ownership
-        Layer2.chain.newWithdrawalOwner[withdrawalHash] = prepayer;
+        Storage.chain.newWithdrawalOwner[withdrawalHash] = prepayer;
     }
 
     function _deposit(
@@ -158,7 +158,7 @@ contract UserInteractable is Layer2 {
         require(nft < SNARK_FIELD, "Does not support too big nubmer of nft id");
         // check eth value
         require(eth.add(fee) == msg.value, "Inexact amount of eth");
-        require(Layer2.chain.stagedSize < 1024, "Should wait until it is committed");
+        require(Storage.chain.stagedSize < 1024, "Should wait until it is committed");
         // check note fields
         require(_checkNoteFields(eth, token, amount, nft));
 
@@ -188,11 +188,11 @@ contract UserInteractable is Layer2 {
             }
         }
         // Update the mass deposit
-        Layer2.chain.stagedDeposits.merged = keccak256(abi.encodePacked(Layer2.chain.stagedDeposits.merged, note));
-        Layer2.chain.stagedDeposits.fee = Layer2.chain.stagedDeposits.fee.add(fee);
-        Layer2.chain.stagedSize = Layer2.chain.stagedSize.add(1);
+        Storage.chain.stagedDeposits.merged = keccak256(abi.encodePacked(Storage.chain.stagedDeposits.merged, note));
+        Storage.chain.stagedDeposits.fee = Storage.chain.stagedDeposits.fee.add(fee);
+        Storage.chain.stagedSize = Storage.chain.stagedSize.add(1);
         // Emit event. Coordinator should subscribe this event.
-        emit Deposit(Layer2.chain.massDepositId, note, fee);
+        emit Deposit(Storage.chain.massDepositId, note, fee);
     }
 
     function _withdraw(
@@ -215,8 +215,8 @@ contract UserInteractable is Layer2 {
         // check note fields
         require(_checkNoteFields(eth, token, amount, nft));
         // check the reference block is finalized
-        require(Layer2.chain.finalized[blockHash], "Not a finalized block");
-        uint256 root = Layer2.chain.withdrawalRootOf[blockHash];
+        require(Storage.chain.finalized[blockHash], "Not a finalized block");
+        uint256 root = Storage.chain.withdrawalRootOf[blockHash];
         bytes32 withdrawalHash = _withdrawalHash(
             note,
             owner,
@@ -227,10 +227,10 @@ contract UserInteractable is Layer2 {
             fee
         );
         // Should not allow double-withdrawing
-        require(!Layer2.chain.withdrawn[withdrawalHash], "Already withdrawn");
+        require(!Storage.chain.withdrawn[withdrawalHash], "Already withdrawn");
         // Check whether new owner exists
-        address to = Layer2.chain.newWithdrawalOwner[withdrawalHash] != address(0)
-            ? Layer2.chain.newWithdrawalOwner[withdrawalHash]
+        address to = Storage.chain.newWithdrawalOwner[withdrawalHash] != address(0)
+            ? Storage.chain.newWithdrawalOwner[withdrawalHash]
             : owner;
 
         // inclusion proof
@@ -258,14 +258,14 @@ contract UserInteractable is Layer2 {
             }
         }
         // Withdraw tokens if exists
-        if (Layer2.chain.registeredERC20s[token]) {
+        if (Storage.chain.registeredERC20s[token]) {
             IERC20(token).transfer(to, amount);
-        } else if (Layer2.chain.registeredERC721s[token]){
+        } else if (Storage.chain.registeredERC721s[token]){
             require(nft != 0, "Circuit cannot accept NFT id 0. Please deposit other NFT.");
             IERC721(token).transferFrom(address(this), to, nft);
         }
         // Mark as withdrawn
-        Layer2.chain.withdrawn[withdrawalHash] = true;
+        Storage.chain.withdrawn[withdrawalHash] = true;
     }
 
     function _withdrawalHash(
@@ -322,8 +322,8 @@ contract UserInteractable is Layer2 {
             require(eth != 0, "Should have ETH field");
         } else {
             // this note contains token value
-            bool isERC20 = Layer2.chain.registeredERC20s[token];
-            bool isERC721 = Layer2.chain.registeredERC721s[token];
+            bool isERC20 = Storage.chain.registeredERC20s[token];
+            bool isERC721 = Storage.chain.registeredERC721s[token];
             require(isERC20 || isERC721, "Not a registered token. Reigster that token first");
             if (isERC20) {
                 require(nft == 0, "ERC20 does have NFT field");

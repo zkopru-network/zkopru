@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity = 0.6.12;
 
-import { Layer2 } from "../../storage/Layer2.sol";
+import { Storage } from "../../storage/Storage.sol";
 import {
     Block,
     MassDeposit,
@@ -10,7 +10,7 @@ import {
 import { Deserializer } from "../../libraries/Deserializer.sol";
 import { IDepositValidator } from "../../interfaces/validators/IDepositValidator.sol";
 
-contract DepositValidator is Layer2, IDepositValidator {
+contract DepositValidator is Storage, IDepositValidator {
     using Types for MassDeposit;
 
     /**
@@ -27,8 +27,8 @@ contract DepositValidator is Layer2, IDepositValidator {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         MassDeposit memory massDeposit = _block.body.massDeposits[index];
         if(chain.committedDeposits[massDeposit.hash()] == 0) {
-            // This mass deposit does not exist
-            return (true, "This deposit queue is not committed");
+            // code D1: "This deposit queue is not committed"
+            return (true, "D1");
         }
     }
 }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity = 0.6.12;
 
-import { Layer2 } from "../../storage/Layer2.sol";
+import { Storage } from "../../storage/Storage.sol";
 import {
     Block,
     Transaction,
@@ -16,7 +16,7 @@ import {
 import { Deserializer } from "../../libraries/Deserializer.sol";
 import { IMigrationValidator } from "../../interfaces/validators/IMigrationValidator.sol";
 
-contract MigrationValidator is Layer2, IMigrationValidator {
+contract MigrationValidator is Storage, IMigrationValidator {
     using Types for Outflow;
 
     /**
@@ -40,7 +40,8 @@ contract MigrationValidator is Layer2, IMigrationValidator {
         require(massMigrationIdx2 < _block.body.massMigrations.length, "out of index");
         MassMigration memory m1 = _block.body.massMigrations[massMigrationIdx1];
         MassMigration memory m2 = _block.body.massMigrations[massMigrationIdx2];
-        return (m1.destination == m2.destination, "Duplicated MassMigration destination");
+        // code M1: Duplicated MassMigration destinations exist
+        return (m1.destination == m2.destination, "M1");
     }
 
     /**
@@ -69,7 +70,8 @@ contract MigrationValidator is Layer2, IMigrationValidator {
                 }
             }
         }
-        return (totalETH != migration.totalETH, "Invalid total ETH");
+        // code M2: MassMigration is carrying invalid amount of ETH
+        return (totalETH != migration.totalETH, "M2");
     }
 
     /**
@@ -98,10 +100,8 @@ contract MigrationValidator is Layer2, IMigrationValidator {
                 }
             }
         }
-        return (
-            migratingLeaves.merged != migration.migratingLeaves.merged,
-            "Invalid merged leaves "
-        );
+        // code M3: MassMigration is carrying invalid merged leaves value
+        return (migratingLeaves.merged != migration.migratingLeaves.merged, "M3");
     }
 
     /**
@@ -130,10 +130,8 @@ contract MigrationValidator is Layer2, IMigrationValidator {
                 }
             }
         }
-        return (
-            migratingLeaves.fee != migration.migratingLeaves.fee,
-            "Invalid migration fee aggregation"
-        );
+        // code M4: Aggregated migration fee is not correct
+        return (migratingLeaves.fee != migration.migratingLeaves.fee, "M4");
     }
 
     function validateDuplicatedERC20Migration(
@@ -154,10 +152,8 @@ contract MigrationValidator is Layer2, IMigrationValidator {
         require(erc20MigrationIdx2 < massMigration.erc20.length, "erc20 idx1 out of index");
         ERC20Migration memory erc20Migration1 = massMigration.erc20[erc20MigrationIdx1];
         ERC20Migration memory erc20Migration2 = massMigration.erc20[erc20MigrationIdx2];
-        return (
-            erc20Migration1.addr == erc20Migration2.addr,
-            "Duplicated ERC20 migration dests exist"
-        );
+        // code M5: Duplicated ERC20 migration destinations exist
+        return (erc20Migration1.addr == erc20Migration2.addr, "M5");
     }
 
     function validateERC20Amount(
@@ -189,10 +185,8 @@ contract MigrationValidator is Layer2, IMigrationValidator {
                 }
             }
         }
-        return (
-            erc20Amount == erc20Migration.amount,
-            "Migrating amount of token is invalid"
-        );
+        // code M6: MassMigration is carrying invalid amount of token
+        return (erc20Amount == erc20Migration.amount, "M6");
     }
 
     function validateDuplicatedERC721Migration(
@@ -213,10 +207,8 @@ contract MigrationValidator is Layer2, IMigrationValidator {
         require(erc721MigrationIdx2 < massMigration.erc721.length, "erc721 idx1 out of index");
         ERC721Migration memory erc721Migration1 = massMigration.erc721[erc721MigrationIdx1];
         ERC721Migration memory erc721Migration2 = massMigration.erc721[erc721MigrationIdx2];
-        return (
-            erc721Migration1.addr == erc721Migration2.addr,
-            "Duplicated ERC721 migration dests exist"
-        );
+        // code M7: Duplicated ERC721 migration destinations exist
+        return (erc721Migration1.addr == erc721Migration2.addr, "M7");
     }
 
     function validateNonFungibility(
@@ -243,7 +235,8 @@ contract MigrationValidator is Layer2, IMigrationValidator {
         }
         if(nftCount > 1) {
             // NFT id should be unique
-            return (true, "It destroys the non-fungibility");
+            // code M8: MassMigration is destroying the non-fungibility of a token
+            return (true, "M8");
         }
     }
 
@@ -288,9 +281,7 @@ contract MigrationValidator is Layer2, IMigrationValidator {
             }
             if (nftExistsInMigrationLeaves) break;
         }
-        return (
-            shouldMigrateNft != nftExistsInMigrationLeaves,
-            "NFT does not match"
-        );
+        // code M9: MassMigration is not including an NFT
+        return (shouldMigrateNft != nftExistsInMigrationLeaves, "M9");
     }
 }

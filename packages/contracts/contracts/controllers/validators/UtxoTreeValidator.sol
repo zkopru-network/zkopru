@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity = 0.6.12;
 
-import { Layer2 } from "../../storage/Layer2.sol";
-import { SubTreeRollUpLib } from "../../libraries/Tree.sol";
+import { Storage } from "../../storage/Storage.sol";
+import { SubTreeLib } from "../../libraries/MerkleTree.sol";
 import { Hash } from "../../libraries/Hash.sol";
 import {
     Block,
@@ -16,7 +16,7 @@ import {
 import { Deserializer } from "../../libraries/Deserializer.sol";
 import { IUtxoTreeValidator } from "../../interfaces/validators/IUtxoTreeValidator.sol";
 
-contract UtxoTreeValidator is Layer2, IUtxoTreeValidator {
+contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
     using Types for Outflow;
     using Types for Header;
 
@@ -52,9 +52,11 @@ contract UtxoTreeValidator is Layer2, IUtxoTreeValidator {
             }
         }
         if (utxoLen != _block.header.utxoIndex - _parentHeader.utxoIndex) {
-            return (true, "Invalid UTXO index");
+            // code U1: The updated number of total UTXO is not correct.
+            return (true, "U1");
         } else if (_block.header.utxoIndex > MAX_UTXO) {
-            return (true, "utxo tree flushed");
+            // code U2: The updated number of total UTXO is exceeding the maximum value.
+            return (true, "U2");
         }
     }
 
@@ -87,7 +89,7 @@ contract UtxoTreeValidator is Layer2, IUtxoTreeValidator {
         );
         require(_block.header.parentBlock == parentHeader.hash(), "Invalid prev header");
         // Check validity of the roll up using the storage based Poseidon sub-tree roll up
-        uint256 computedRoot = SubTreeRollUpLib.rollUpSubTree(
+        uint256 computedRoot = SubTreeLib.appendSubTree(
             Hash.poseidon(),
             parentHeader.utxoRoot,
             parentHeader.utxoIndex,
@@ -96,7 +98,8 @@ contract UtxoTreeValidator is Layer2, IUtxoTreeValidator {
             _initialSiblings
         );
         // Computed new utxo root is different with the submitted
-        return (computedRoot != _block.header.utxoRoot, "Invalid UTXO root");
+        // code U3: The updated utxo tree root is not correct.
+        return (computedRoot != _block.header.utxoRoot, "U3");
     }
 
     function _checkDepositDataValidity(

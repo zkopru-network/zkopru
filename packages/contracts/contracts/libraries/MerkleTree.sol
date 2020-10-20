@@ -13,10 +13,10 @@ struct Tree {
     uint256 index;
 }
 
-library RollUpLib {
+library MerkleTreeLib {
     using SafeMath for uint256;
 
-    function rollUp(
+    function append(
         Hasher memory self,
         uint256 startingRoot,
         uint256 index,
@@ -60,14 +60,6 @@ library RollUpLib {
             path >>= 1;
         }
         return node;
-    }
-
-    /**
-     * @dev It returns an initialized merkle tree which leaves are all empty.
-     */
-    function newTree(Hasher memory hasher) internal pure returns (Tree memory tree) {
-        tree.root = hasher.preHashedZero[hasher.preHashedZero.length - 1];
-        tree.index = 0;
     }
 
     function _startingLeafProof(
@@ -127,11 +119,11 @@ library RollUpLib {
     }
 }
 
-library SubTreeRollUpLib {
-    using RollUpLib for Hasher;
-    using RollUpLib for bytes32;
+library SubTreeLib {
+    using MerkleTreeLib for Hasher;
+    using MerkleTreeLib for bytes32;
 
-    function rollUpSubTree(
+    function appendSubTree(
         Hasher memory self,
         uint256 startingRoot,
         uint256 index,

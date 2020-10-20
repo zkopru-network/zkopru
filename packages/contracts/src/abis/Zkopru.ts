@@ -1,4 +1,43 @@
-export const TxSNARKValidatorABI = [
+export const ZkopruABI = [
+  {
+    inputs: [
+      { internalType: 'address', name: '_setupWizard', type: 'address' },
+    ],
+    stateMutability: 'nonpayable',
+    type: 'constructor',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'bytes32',
+        name: 'blockHash',
+        type: 'bytes32',
+      },
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'proposer',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'fromBlock',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'bytes32',
+        name: 'parentBlock',
+        type: 'bytes32',
+      },
+    ],
+    name: 'GenesisBlock',
+    type: 'event',
+  },
+  { stateMutability: 'payable', type: 'fallback' },
   {
     inputs: [],
     name: 'CHALLENGE_PERIOD',
@@ -268,107 +307,129 @@ export const TxSNARKValidatorABI = [
     stateMutability: 'view',
     type: 'function',
   },
+  { stateMutability: 'payable', type: 'receive' },
   {
     inputs: [
-      { internalType: 'bytes', name: '', type: 'bytes' },
-      { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
-    ],
-    name: 'validateSNARK',
-    outputs: [
-      { internalType: 'bool', name: 'slash', type: 'bool' },
-      { internalType: 'string', name: 'reason', type: 'string' },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
+      { internalType: 'uint8', name: 'numOfInputs', type: 'uint8' },
+      { internalType: 'uint8', name: 'numOfOutputs', type: 'uint8' },
       {
         components: [
           {
             components: [
-              {
-                internalType: 'uint256',
-                name: 'inclusionRoot',
-                type: 'uint256',
-              },
-              { internalType: 'bytes32', name: 'nullifier', type: 'bytes32' },
+              { internalType: 'uint256', name: 'X', type: 'uint256' },
+              { internalType: 'uint256', name: 'Y', type: 'uint256' },
             ],
-            internalType: 'struct Inflow[]',
-            name: 'inflow',
-            type: 'tuple[]',
-          },
-          {
-            components: [
-              { internalType: 'uint256', name: 'note', type: 'uint256' },
-              { internalType: 'uint8', name: 'outflowType', type: 'uint8' },
-              {
-                components: [
-                  { internalType: 'address', name: 'to', type: 'address' },
-                  { internalType: 'uint256', name: 'eth', type: 'uint256' },
-                  { internalType: 'address', name: 'token', type: 'address' },
-                  { internalType: 'uint256', name: 'amount', type: 'uint256' },
-                  { internalType: 'uint256', name: 'nft', type: 'uint256' },
-                  { internalType: 'uint256', name: 'fee', type: 'uint256' },
-                ],
-                internalType: 'struct PublicData',
-                name: 'publicData',
-                type: 'tuple',
-              },
-            ],
-            internalType: 'struct Outflow[]',
-            name: 'outflow',
-            type: 'tuple[]',
-          },
-          { internalType: 'uint256', name: 'swap', type: 'uint256' },
-          { internalType: 'uint256', name: 'fee', type: 'uint256' },
-          {
-            components: [
-              {
-                components: [
-                  { internalType: 'uint256', name: 'X', type: 'uint256' },
-                  { internalType: 'uint256', name: 'Y', type: 'uint256' },
-                ],
-                internalType: 'struct G1Point',
-                name: 'a',
-                type: 'tuple',
-              },
-              {
-                components: [
-                  { internalType: 'uint256[2]', name: 'X', type: 'uint256[2]' },
-                  { internalType: 'uint256[2]', name: 'Y', type: 'uint256[2]' },
-                ],
-                internalType: 'struct G2Point',
-                name: 'b',
-                type: 'tuple',
-              },
-              {
-                components: [
-                  { internalType: 'uint256', name: 'X', type: 'uint256' },
-                  { internalType: 'uint256', name: 'Y', type: 'uint256' },
-                ],
-                internalType: 'struct G1Point',
-                name: 'c',
-                type: 'tuple',
-              },
-            ],
-            internalType: 'struct Proof',
-            name: 'proof',
+            internalType: 'struct G1Point',
+            name: 'alpha1',
             type: 'tuple',
           },
-          { internalType: 'bytes', name: 'memo', type: 'bytes' },
+          {
+            components: [
+              { internalType: 'uint256[2]', name: 'X', type: 'uint256[2]' },
+              { internalType: 'uint256[2]', name: 'Y', type: 'uint256[2]' },
+            ],
+            internalType: 'struct G2Point',
+            name: 'beta2',
+            type: 'tuple',
+          },
+          {
+            components: [
+              { internalType: 'uint256[2]', name: 'X', type: 'uint256[2]' },
+              { internalType: 'uint256[2]', name: 'Y', type: 'uint256[2]' },
+            ],
+            internalType: 'struct G2Point',
+            name: 'gamma2',
+            type: 'tuple',
+          },
+          {
+            components: [
+              { internalType: 'uint256[2]', name: 'X', type: 'uint256[2]' },
+              { internalType: 'uint256[2]', name: 'Y', type: 'uint256[2]' },
+            ],
+            internalType: 'struct G2Point',
+            name: 'delta2',
+            type: 'tuple',
+          },
+          {
+            components: [
+              { internalType: 'uint256', name: 'X', type: 'uint256' },
+              { internalType: 'uint256', name: 'Y', type: 'uint256' },
+            ],
+            internalType: 'struct G1Point[]',
+            name: 'ic',
+            type: 'tuple[]',
+          },
         ],
-        internalType: 'struct Transaction',
-        name: 'transaction',
+        internalType: 'struct SNARK.VerifyingKey',
+        name: 'vk',
         type: 'tuple',
       },
     ],
-    name: 'hasValidSNARK',
-    outputs: [
-      { internalType: 'bool', name: 'validity', type: 'bool' },
-      { internalType: 'string', name: 'reason', type: 'string' },
+    name: 'registerVk',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'addr', type: 'address' }],
+    name: 'makeUserInteractable',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'addr', type: 'address' }],
+    name: 'makeCoordinatable',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'address', name: 'challengeable', type: 'address' },
+      { internalType: 'address', name: 'depositValidator', type: 'address' },
+      { internalType: 'address', name: 'headerValidator', type: 'address' },
+      { internalType: 'address', name: 'migrationValidator', type: 'address' },
+      { internalType: 'address', name: 'utxoTreeValidator', type: 'address' },
+      {
+        internalType: 'address',
+        name: 'withdrawalTreeValidator',
+        type: 'address',
+      },
+      {
+        internalType: 'address',
+        name: 'nullifierTreeValidator',
+        type: 'address',
+      },
+      { internalType: 'address', name: 'txValidator', type: 'address' },
+      { internalType: 'address', name: 'txSNARKValidator', type: 'address' },
     ],
-    stateMutability: 'view',
+    name: 'makeChallengeable',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'addr', type: 'address' }],
+    name: 'makeMigratable',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'address[]', name: 'migrants', type: 'address[]' },
+    ],
+    name: 'allowMigrants',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'completeSetup',
+    outputs: [],
+    stateMutability: 'nonpayable',
     type: 'function',
   },
 ]
