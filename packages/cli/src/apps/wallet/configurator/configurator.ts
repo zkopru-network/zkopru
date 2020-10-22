@@ -1,5 +1,5 @@
 import Web3 from 'web3'
-import { ZkOPRUNode, NetworkStatus } from '@zkopru/core'
+import { ZkopruNode, NetworkStatus } from '@zkopru/core'
 import { ZkAccount, HDWallet } from '@zkopru/account'
 import { DB, EncryptedWallet } from '@zkopru/prisma'
 import { PromptApp } from '@zkopru/utils'
@@ -44,7 +44,7 @@ export interface Context {
   provider?: WebsocketProvider
   db?: DB
   wallet?: HDWallet
-  node?: ZkOPRUNode
+  node?: ZkopruNode
   accounts?: ZkAccount[]
   passwordHash?: string
   isInitialSetup?: boolean

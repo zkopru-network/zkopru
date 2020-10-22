@@ -21,4 +21,9 @@ interface IHeaderValidator {
     external
     view
     returns (bool slash, string memory reason);
+
+    function validateParentBlock(bytes calldata blockData)
+    external
+    view
+    returns (bool slash, string memory reason);
 }

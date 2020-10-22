@@ -1,7 +1,7 @@
 /* global BigInt */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  ZkOPRUContract,
+  ZkopruContract,
   TransactionObject,
   Tx,
   TxUtil,
@@ -14,7 +14,7 @@ import { ContractOptions } from 'web3-eth-contract'
 import * as ffjs from 'ffjavascript'
 import { soliditySha3 } from 'web3-utils'
 
-export class L1Contract extends ZkOPRUContract {
+export class L1Contract extends ZkopruContract {
   web3: Web3
 
   address: string

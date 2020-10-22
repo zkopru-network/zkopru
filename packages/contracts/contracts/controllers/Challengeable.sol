@@ -44,7 +44,7 @@ contract Challengeable is Storage {
             (slash, reason) = (true, "Exceeds maximum gas for validation process");
         }
         // Execute slash
-        require(slash);
+        require(slash, "Couldn't find slash condition");
         _execute(reason);
     }
 
@@ -63,9 +63,10 @@ contract Challengeable is Storage {
         // Check basic challenge conditions
         _checkChallengeCondition(proposal);
         // Since the challenge satisfies the given conditions, slash the optimistic rollup proposer
-        proposal.slashed = true; // Record it as slashed;
+        Storage.chain.slashed[proposal.headerHash] = true; // Record it as slashed;
         _forfeitAndReward(proposer, msg.sender);
         // Emit event
+        Storage.chain.slashed[proposal.headerHash] = true;
         emit Slash(proposal.headerHash, proposer, reason);
     }
 
@@ -74,7 +75,7 @@ contract Challengeable is Storage {
         // Check the optimistic roll up is in the challenge period
         require(proposal.challengeDue > block.number, "Out of challenge period");
         // Check it is already slashed
-        require(!proposal.slashed, "Already slashed");
+        require(!Storage.chain.slashed[proposal.headerHash], "Already slashed");
         // Check the optimistic rollup exists
         require(proposal.headerHash != bytes32(0), "Does not exist");
     }

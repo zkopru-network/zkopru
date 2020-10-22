@@ -12,7 +12,7 @@ import {
 import { Field, F } from '@zkopru/babyjubjub'
 import { Layer1, TransactionObject, Tx, TxUtil } from '@zkopru/contracts'
 import { HDWallet, ZkAccount } from '@zkopru/account'
-import { ZkOPRUNode } from '@zkopru/core'
+import { ZkopruNode } from '@zkopru/core'
 import { DB, Withdrawal as WithdrawalSql } from '@zkopru/prisma'
 import { logger } from '@zkopru/utils'
 import { soliditySha3 } from 'web3-utils'
@@ -35,7 +35,7 @@ export class ZkWallet {
 
   private wallet: HDWallet
 
-  node: ZkOPRUNode
+  node: ZkopruNode
 
   coordinator: string
 
@@ -70,7 +70,7 @@ export class ZkWallet {
     db: DB
     wallet: HDWallet
     account?: ZkAccount
-    node: ZkOPRUNode
+    node: ZkopruNode
     accounts: ZkAccount[]
     erc20: Address[]
     erc721: Address[]

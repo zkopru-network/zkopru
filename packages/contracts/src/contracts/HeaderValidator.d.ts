@@ -163,6 +163,15 @@ export class HeaderValidator extends Contract {
       0: boolean
       1: string
     }>
+
+    validateParentBlock(
+      arg0: string | number[],
+    ): TransactionObject<{
+      slash: boolean
+      reason: string
+      0: boolean
+      1: string
+    }>
   }
 
   events: {

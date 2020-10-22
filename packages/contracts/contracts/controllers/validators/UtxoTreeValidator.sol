@@ -37,11 +37,16 @@ contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
     returns (bool slash, string memory reason)
     {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
-        Header memory _parentHeader = Deserializer.headerFromCalldataAt(1);
-        // This will revert when the submitted header and deposit data is not appropriate
-        _checkDepositDataValidity(_parentHeader,_block, _deposits);
-        // check header
-        require(_block.header.parentBlock == _parentHeader.hash(), "Invalid prev header");
+        // This will revert when the submitted deposit data does not match with the block
+        require(_checkSubmittedDeposits(_block, _deposits), "Submitted invalid deposits");
+        // This will revert when the submitted header data does not match with the block
+        Header memory parentHeader = Deserializer.headerFromCalldataAt(1);
+        require(_block.header.parentBlock == parentHeader.hash(), "Invalid prev header");
+        if (_block.header.utxoIndex > MAX_UTXO) {
+            // code U2: The updated number of total UTXO is exceeding the maximum value.
+            return (true, "U2");
+        }
+        // Add the deposit lengths to the utxo first
         uint256 utxoLen = _deposits.length;
         // Append UTXOs from transactions
         for (uint256 i = 0; i < _block.body.txs.length; i++) {
@@ -51,12 +56,9 @@ contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
                 }
             }
         }
-        if (utxoLen != _block.header.utxoIndex - _parentHeader.utxoIndex) {
+        if (utxoLen != _block.header.utxoIndex - parentHeader.utxoIndex) {
             // code U1: The updated number of total UTXO is not correct.
             return (true, "U1");
-        } else if (_block.header.utxoIndex > MAX_UTXO) {
-            // code U2: The updated number of total UTXO is exceeding the maximum value.
-            return (true, "U2");
         }
     }
 
@@ -79,15 +81,17 @@ contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
     returns (bool slash, string memory reason)
     {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
+        // This will revert when the submitted deposit data does not match with the block
+        require(_checkSubmittedDeposits(_block, _deposits), "Submitted invalid deposits");
+        // This will revert when the submitted header data does not match with the block
         Header memory parentHeader = Deserializer.headerFromCalldataAt(1);
-        // This will revert when the submitted header and deposit data is not appropriate
-        _checkDepositDataValidity(parentHeader, _block, _deposits);
+        require(_block.header.parentBlock == parentHeader.hash(), "Invalid prev header");
+        // Get utxos
         uint256[] memory utxos = _getUTXOs(
             _block.header.utxoIndex - parentHeader.utxoIndex,
             _deposits,
             _block.body.txs
         );
-        require(_block.header.parentBlock == parentHeader.hash(), "Invalid prev header");
         // Check validity of the roll up using the storage based Poseidon sub-tree roll up
         uint256 computedRoot = SubTreeLib.appendSubTree(
             Hash.poseidon(),
@@ -102,17 +106,14 @@ contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
         return (computedRoot != _block.header.utxoRoot, "U3");
     }
 
-    function _checkDepositDataValidity(
-        Header memory parentHeader,
+    function _checkSubmittedDeposits(
         Block memory _block,
         uint256[] memory deposits
     )
         internal
         pure
+        returns (bool)
     {
-        // Check submitted prev header equals to the parent of the submitted block
-        require (parentHeader.hash() == _block.header.parentBlock, "invalid prev header");
-
         // Check submitted deposits are equal to the leaves in the MassDeposits
         uint256 depositIndex = 0;
         for(uint256 i = 0; i < _block.body.massDeposits.length; i++) {
@@ -121,10 +122,10 @@ contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
                 // merge deposits until it matches with the submitted mass deposit's merged leaves.
                 merged = keccak256(abi.encodePacked(merged, deposits[depositIndex]));
                 depositIndex++;
-                if (depositIndex > deposits.length) revert("invalid deposit data");
+                if (depositIndex > deposits.length) return false;
             }
         }
-        require (depositIndex == deposits.length, "invalid deposit data");
+        return depositIndex == deposits.length;
     }
 
     function _getUTXOs(

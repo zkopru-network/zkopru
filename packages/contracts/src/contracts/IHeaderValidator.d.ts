@@ -54,6 +54,15 @@ export class IHeaderValidator extends Contract {
       0: boolean
       1: string
     }>
+
+    validateParentBlock(
+      blockData: string | number[],
+    ): TransactionObject<{
+      slash: boolean
+      reason: string
+      0: boolean
+      1: string
+    }>
   }
 
   events: {

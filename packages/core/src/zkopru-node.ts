@@ -27,7 +27,7 @@ export enum BlockEvents {
   ON_FETCHED = 'onFetched',
 }
 
-export class ZkOPRUNode extends EventEmitter {
+export class ZkopruNode extends EventEmitter {
   db: DB
 
   l1Contract: L1Contract

@@ -11,11 +11,11 @@ import { L2Chain } from './layer2'
 import { BootstrapHelper } from './bootstrap'
 import { Block, headerHash } from './block'
 import { Synchronizer } from './synchronizer'
-import { ZkOPRUNode } from './zkopru-node'
+import { ZkopruNode } from './zkopru-node'
 
 type provider = WebsocketProvider | IpcProvider
 
-export class LightNode extends ZkOPRUNode {
+export class LightNode extends ZkopruNode {
   constructor({
     db,
     l1Contract,
@@ -124,7 +124,7 @@ export class LightNode extends ZkOPRUNode {
     // retrieve l2 chain from database
     const networkId = await web3.eth.net.getId()
     const chainId = await web3.eth.getChainId()
-    const l2Chain: L2Chain = await ZkOPRUNode.getOrInitChain(
+    const l2Chain: L2Chain = await ZkopruNode.getOrInitChain(
       db,
       l1Contract,
       networkId,
