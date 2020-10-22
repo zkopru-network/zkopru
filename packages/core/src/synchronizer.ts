@@ -24,6 +24,8 @@ export class Synchronizer {
 
   proposalSubscriber?: EventEmitter
 
+  slashSubscriber?: EventEmitter
+
   finalizationSubscriber?: EventEmitter
 
   erc20RegistrationSubscriber?: EventEmitter
@@ -56,6 +58,7 @@ export class Synchronizer {
   stop() {
     const subscribers = [
       this.proposalSubscriber,
+      this.slashSubscriber,
       this.erc20RegistrationSubscriber,
       this.erc721RegistrationSubscriber,
       this.depositSubscriber,
@@ -324,6 +327,58 @@ export class Synchronizer {
       .on('error', err => {
         // TODO
         logger.info(`synchronizer.js: NewProposal Event error occured`, err)
+      })
+  }
+
+  async listenSlash(cb?: (hash: string) => void) {
+    const lastSlash = await this.db.read(prisma =>
+      prisma.slash.findMany({
+        orderBy: { slashedAt: 'desc' },
+        take: 1,
+      }),
+    )
+    const fromBlock = lastSlash[0]?.slashedAt || 0
+    this.slashSubscriber = this.l1Contract.challenger.events
+      .Slash({ fromBlock })
+      .on('connected', subId => {
+        logger.info(`synchronizer.js: Slash listner is connected. Id: ${subId}`)
+      })
+      .on('data', async event => {
+        const { returnValues, blockNumber, transactionHash } = event
+        const hash = Bytes32.from(returnValues.blockHash).toString()
+        const proposer = Bytes32.from(returnValues.proposer).toString()
+        const reason = Bytes32.from(returnValues.reason).toString()
+
+        logger.debug(`slashed hash@!${hash}`)
+        logger.debug(`${JSON.stringify(event.returnValues)}`)
+        await this.db.write(prisma =>
+          prisma.slash.upsert({
+            where: { hash },
+            create: {
+              proposer,
+              reason,
+              executionTx: transactionHash,
+              slashedAt: blockNumber,
+              block: { connect: { hash } },
+            },
+            update: {
+              proposer,
+              reason,
+              executionTx: transactionHash,
+              slashedAt: blockNumber,
+              block: { connect: { hash } },
+            },
+          }),
+        )
+        if (cb) cb(hash)
+      })
+      .on('changed', event => {
+        // TODO removed
+        logger.info(`synchronizer.js: Slash Event changed`, event)
+      })
+      .on('error', err => {
+        // TODO removed
+        logger.info(`synchronizer.js: Slash Event error occured`, err)
       })
   }
 

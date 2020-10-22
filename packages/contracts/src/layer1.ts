@@ -3,6 +3,7 @@ import Web3 from 'web3'
 import { ContractOptions } from 'web3-eth-contract'
 import { ERC20 } from './contracts/ERC20'
 import { ERC721 } from './contracts/ERC721'
+import { IChallengeable } from './contracts/IChallengeable'
 import { ICoordinatable } from './contracts/ICoordinatable'
 import { IDepositValidator } from './contracts/IDepositValidator'
 import { IERC721Enumerable } from './contracts/IERC721Enumerable'
@@ -20,6 +21,7 @@ import { Zkopru } from './contracts/Zkopru'
 
 import { ERC20ABI } from './abis/ERC20'
 import { ERC721ABI } from './abis/ERC721'
+import { IChallengeableABI } from './abis/IChallengeable'
 import { ICoordinatableABI } from './abis/ICoordinatable'
 import { IDepositValidatorABI } from './abis/IDepositValidator'
 import { IERC721EnumerableABI } from './abis/IERC721Enumerable'
@@ -43,6 +45,15 @@ export class Layer1 {
   ): ICoordinatable {
     const abi: any[] = [...ICoordinatableABI]
     return new web3.eth.Contract(abi, address, option) as ICoordinatable
+  }
+
+  static getIChallengeable(
+    web3: Web3,
+    address: string,
+    option?: ContractOptions,
+  ): IChallengeable {
+    const abi: any[] = [...IChallengeableABI]
+    return new web3.eth.Contract(abi, address, option) as IChallengeable
   }
 
   static getIDepositValidator(
