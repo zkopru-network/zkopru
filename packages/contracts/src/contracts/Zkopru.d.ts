@@ -15,9 +15,7 @@ interface EventOptions {
 
 export class Zkopru extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-
   clone(): Zkopru
-
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -162,7 +160,6 @@ export class Zkopru extends Contract {
 
     completeSetup(): TransactionObject<void>
   }
-
   events: {
     GenesisBlock: ContractEvent<{
       blockHash: string

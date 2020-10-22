@@ -15,9 +15,7 @@ interface EventOptions {
 
 export class Storage extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-
   clone(): Storage
-
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -128,7 +126,6 @@ export class Storage extends Contract {
       4: string[][]
     }>
   }
-
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

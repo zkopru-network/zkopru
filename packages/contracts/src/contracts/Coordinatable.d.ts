@@ -15,9 +15,7 @@ interface EventOptions {
 
 export class Coordinatable extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-
   clone(): Coordinatable
-
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -146,7 +144,6 @@ export class Coordinatable extends Contract {
 
     isProposable(proposerAddr: string): TransactionObject<boolean>
   }
-
   events: {
     Finalized: ContractEvent<string>
     MassDepositCommit: ContractEvent<{

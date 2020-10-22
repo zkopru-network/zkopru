@@ -15,9 +15,7 @@ interface EventOptions {
 
 export class Proxy extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-
   clone(): Proxy
-
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -128,7 +126,6 @@ export class Proxy extends Contract {
 
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
   }
-
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

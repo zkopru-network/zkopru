@@ -15,9 +15,7 @@ interface EventOptions {
 
 export class IHeaderValidator extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-
   clone(): IHeaderValidator
-
   methods: {
     validateDepositRoot(
       blockData: string | number[],
@@ -64,7 +62,6 @@ export class IHeaderValidator extends Contract {
       1: string
     }>
   }
-
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

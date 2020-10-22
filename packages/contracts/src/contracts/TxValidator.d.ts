@@ -15,9 +15,7 @@ interface EventOptions {
 
 export class TxValidator extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-
   clone(): TxValidator
-
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -187,7 +185,6 @@ export class TxValidator extends Contract {
       ref: number | string,
     ): TransactionObject<boolean>
   }
-
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

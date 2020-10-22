@@ -15,9 +15,7 @@ interface EventOptions {
 
 export class IUtxoTreeValidator extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-
   clone(): IUtxoTreeValidator
-
   methods: {
     validateUTXOIndex(
       blockData: string | number[],
@@ -42,7 +40,6 @@ export class IUtxoTreeValidator extends Contract {
       1: string
     }>
   }
-
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
