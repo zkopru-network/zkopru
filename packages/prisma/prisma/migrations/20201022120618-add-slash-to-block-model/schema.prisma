@@ -5,9 +5,9 @@ generator client {
   output = "../generated/postgres-migrator"
 }
 
-datasource sqlite {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+datasource postgres {
+  provider = "postgres"
+  url = "***"
 }
 
 model EncryptedWallet {
@@ -66,16 +66,8 @@ model Block {
   hash String @id
   header Header @relation(fields: [hash], references: [hash])
   proposal Proposal
+  slashed Boolean?
   bootstrap Bootstrap?
-  slash Slash?
-}
-
-model Slash {
-  hash String @id
-  proposer String
-  reason String
-  slashedAt Int
-  block Block @relation(fields: [hash], references: [hash])
 }
 
 model Header {

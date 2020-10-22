@@ -5,9 +5,9 @@ generator client {
   output = "../generated/postgres-migrator"
 }
 
-datasource sqlite {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+datasource postgres {
+  provider = "postgres"
+  url = "***"
 }
 
 model EncryptedWallet {
