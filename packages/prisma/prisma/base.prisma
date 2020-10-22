@@ -74,6 +74,7 @@ model Slash {
   hash String @id
   proposer String
   reason String
+  executionTx String
   slashedAt Int
   block Block @relation(fields: [hash], references: [hash])
 }
