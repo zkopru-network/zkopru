@@ -541,6 +541,8 @@ export class Block {
 
   body: Body
 
+  slashed?: boolean
+
   verified?: boolean
 
   bootstrap?: {
@@ -553,11 +555,13 @@ export class Block {
   constructor({
     hash,
     verified,
+    slashed,
     header,
     body,
     bootstrap,
   }: {
     hash: Bytes32
+    slashed?: boolean
     verified?: boolean
     header: Header
     body: Body
@@ -569,6 +573,7 @@ export class Block {
     }
   }) {
     this.hash = hash
+    this.slashed = slashed
     this.verified = verified
     this.header = header
     this.body = body
@@ -589,6 +594,7 @@ export class Block {
   toSqlObj(): BlockSql {
     return {
       hash: this.hash.toString(),
+      slashed: this.slashed || null,
     }
   }
 
