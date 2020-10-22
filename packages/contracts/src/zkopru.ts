@@ -1,5 +1,6 @@
 import Web3 from 'web3'
 import { ContractOptions } from 'web3-eth-contract'
+import { IChallengeable } from './contracts/IChallengeable'
 import { ICoordinatable } from './contracts/ICoordinatable'
 import { IDepositValidator } from './contracts/IDepositValidator'
 import { IHeaderValidator } from './contracts/IHeaderValidator'
@@ -25,7 +26,9 @@ export class ZkopruContract {
 
   migrator: IMigratable
 
-  challenger: {
+  challenger: IChallengeable
+
+  validators: {
     deposit: IDepositValidator
     migration: IMigrationValidator
     header: IHeaderValidator
@@ -43,7 +46,8 @@ export class ZkopruContract {
     this.coordinator = Layer1.getICoordinatable(web3, address, option)
     this.user = Layer1.getIUserInteractable(web3, address, option)
     this.migrator = Layer1.getIMigratable(web3, address, option)
-    this.challenger = {
+    this.challenger = Layer1.getIChallengeable(web3, address, option)
+    this.validators = {
       deposit: Layer1.getIDepositValidator(web3, address, option),
       migration: Layer1.getIMigrationValidator(web3, address, option),
       header: Layer1.getIHeaderValidator(web3, address, option),
