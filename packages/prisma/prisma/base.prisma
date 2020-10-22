@@ -66,6 +66,7 @@ model Block {
   hash String @id
   header Header @relation(fields: [hash], references: [hash])
   proposal Proposal
+  slashed Boolean?
   bootstrap Bootstrap?
 }
 
