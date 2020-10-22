@@ -15,9 +15,7 @@ interface EventOptions {
 
 export class ITxSNARKValidator extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-
   clone(): ITxSNARKValidator
-
   methods: {
     validateSNARK(
       blockData: string | number[],
@@ -61,7 +59,6 @@ export class ITxSNARKValidator extends Contract {
       1: string
     }>
   }
-
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
