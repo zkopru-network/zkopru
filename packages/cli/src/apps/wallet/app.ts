@@ -1,4 +1,4 @@
-import { ZkOPRUNode } from '@zkopru/core'
+import { ZkopruNode } from '@zkopru/core'
 import { ZkWallet } from '@zkopru/zk-wizard'
 import { Dashboard } from '../../dashboard'
 import { AppMenu, Context } from './prompts'
@@ -19,7 +19,7 @@ import AtomicSwapTake from './prompts/menus/account-detail-swap-take'
 import AtomicSwapTakeEth from './prompts/menus/account-detail-swap-take-eth'
 
 export class WalletDashboard extends Dashboard<Context, ZkWallet> {
-  node: ZkOPRUNode
+  node: ZkopruNode
 
   constructor(zkWallet: ZkWallet, onCancel: () => Promise<void>) {
     super({ isReady: true }, zkWallet)

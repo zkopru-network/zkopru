@@ -1,7 +1,7 @@
 import chalk from 'chalk'
 import {
   FullNode,
-  ZkOPRUNode,
+  ZkopruNode,
   LightNode,
   HttpBootstrapHelper,
 } from '@zkopru/core'
@@ -17,7 +17,7 @@ export default class LoadNode extends Configurator {
     if (!context.accounts) throw Error('Wallet is not set')
     if (!context.provider.connected)
       throw Error('Websocket provider is not connected')
-    let node: ZkOPRUNode
+    let node: ZkopruNode
     const { provider, db, accounts } = context
     const { address, coordinator: bootstrap } = this.base
     if (this.base.fullnode) {

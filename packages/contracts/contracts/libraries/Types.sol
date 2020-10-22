@@ -12,6 +12,7 @@ struct Blockchain {
     mapping(address=>Proposer) proposers;
     mapping(bytes32=>Proposal) proposals;
     mapping(bytes32=>bool) finalized; // blockhash => finalized?
+    mapping(bytes32=>bool) slashed; // blockhash => slashed
 
     // For inclusion reference
     mapping(bytes32=>bytes32) parentOf; // childBlockHash => parentBlockHash
@@ -83,7 +84,6 @@ struct Proposer {
 struct Proposal {
     bytes32 headerHash;
     uint256 challengeDue;
-    bool slashed;
 }
 
 struct Block {

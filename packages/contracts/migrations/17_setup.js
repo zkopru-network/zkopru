@@ -17,7 +17,7 @@ const TxValidator = artifacts.require('TxValidator')
 const TxSNARKValidator = artifacts.require('TxSNARKValidator')
 const MigrationValidator = artifacts.require('MigrationValidator')
 const Migratable = artifacts.require('Migratable')
-const ZkOPRU = artifacts.require('Zkopru')
+const Zkopru = artifacts.require('Zkopru')
 
 const instances = {}
 
@@ -80,7 +80,7 @@ module.exports = function migration(deployer, network, accounts) {
     })
     .then(migratable => {
       instances.migratable = migratable
-      return ZkOPRU.deployed()
+      return Zkopru.deployed()
     })
     .then(async zkopru => {
       console.log(`Deployed ZKOPRU at:\n${zkopru.address}`)

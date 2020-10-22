@@ -39,4 +39,14 @@ export const IHeaderValidatorABI = [
     stateMutability: 'view',
     type: 'function',
   },
+  {
+    inputs: [{ internalType: 'bytes', name: 'blockData', type: 'bytes' }],
+    name: 'validateParentBlock',
+    outputs: [
+      { internalType: 'bool', name: 'slash', type: 'bool' },
+      { internalType: 'string', name: 'reason', type: 'string' },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
 ]

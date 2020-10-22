@@ -89,4 +89,19 @@ contract HeaderValidator is Storage, IHeaderValidator {
         // code H4: Header has invalid total fee value
         return (totalFee != _block.header.fee, "H4");
     }
+
+    /**
+     * @dev Challenge when the submitted header's parent block is already slashed
+     * @param // blockData Serialized block data
+     */
+    function validateParentBlock(bytes calldata)
+    external
+    view
+    override
+    returns (bool slash, string memory reason)
+    {
+        Block memory _block = Deserializer.blockFromCalldataAt(0);
+        // code H5: Parent block is a slasehd block.
+        return (Storage.chain.slashed[_block.header.parentBlock], "H5");
+    }
 }

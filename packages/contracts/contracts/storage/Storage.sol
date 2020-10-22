@@ -63,7 +63,7 @@ contract Storage is Configurated {
         Proposal memory proposal = chain.proposals[proposalId];
         header = proposal.headerHash;
         challengeDue = proposal.challengeDue;
-        slashed = proposal.slashed;
+        slashed = chain.slashed[proposal.headerHash];
     }
 
     function stagedDeposits() public view returns (bytes32 merged, uint256 fee) {

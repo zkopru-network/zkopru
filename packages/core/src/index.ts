@@ -1,4 +1,4 @@
-export { ZkOPRUNode, NetworkStatus } from './zkopru-node'
+export { ZkopruNode, NetworkStatus } from './zkopru-node'
 export { FullNode } from './full-node'
 export { LightNode } from './light-node'
 export { Verifier, VerifyOption } from './verifier'

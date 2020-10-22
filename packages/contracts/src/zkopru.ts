@@ -16,7 +16,7 @@ import { Zkopru } from './contracts/Zkopru'
 
 import { Layer1 } from './layer1'
 
-export class ZkOPRUContract {
+export class ZkopruContract {
   upstream: Zkopru
 
   coordinator: ICoordinatable

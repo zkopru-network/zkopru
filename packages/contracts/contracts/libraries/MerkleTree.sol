@@ -8,11 +8,6 @@ struct Hasher {
     uint256[] preHashedZero;
 }
 
-struct Tree {
-    uint256 root;
-    uint256 index;
-}
-
 library MerkleTreeLib {
     using SafeMath for uint256;
 
@@ -132,7 +127,7 @@ library SubTreeLib {
         uint256[] memory subTreeSiblings
     ) internal pure returns (uint256 newRoot) {
         require(index % (1 << subTreeDepth) == 0, "Can't merge a subTree");
-        require(_emptySubTreeProof(self, startingRoot, index, subTreeDepth, subTreeSiblings), "Can't merge a sub tree");
+        require(_emptySubTreeProof(self, startingRoot, index, subTreeDepth, subTreeSiblings), "Insertion is not allowed");
         uint256 nextIndex = index;
         uint256[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
         uint256[] memory nextSiblings = subTreeSiblings;
@@ -200,17 +195,19 @@ library SubTreeLib {
         Hasher memory self,
         uint256 index,
         uint256 subTreeDepth,
-        uint256[] memory subTreeHashes,
+        uint256[] memory leaves,
         uint256[] memory siblings
     ) internal pure returns(
         uint256 nextRoot,
         uint256 nextIndex,
         uint256[] memory nextSiblings
     ) {
+        uint256 subTreeSize = 1 << subTreeDepth;
+        require(leaves.length <= subTreeSize, "Overflowed");
         nextSiblings = new uint256[](siblings.length);
         uint256 subTreePath = index >> subTreeDepth;
         uint256 path = subTreePath;
-        uint256 node = _subTreeRoot(self, subTreeDepth, subTreeHashes);
+        uint256 node = _subTreeRoot(self, subTreeDepth, leaves);
         for (uint256 i = 0; i < siblings.length; i++) {
             if (path % 2 == 0) {
                 // right empty sibling
@@ -284,5 +281,6 @@ library SubTreeLib {
             leftMostOfTheFloor >>= 1;
             emptyNode >>= 1;
         }
+        return nodes[1];
     }
 }

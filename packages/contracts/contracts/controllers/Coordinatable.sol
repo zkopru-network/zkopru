@@ -75,8 +75,7 @@ contract Coordinatable is Storage {
         bytes32 currentBlockHash = _block.header.hash();
         Storage.chain.proposals[checksum] = Proposal(
             currentBlockHash,
-            block.number + CHALLENGE_PERIOD,
-            false
+            block.number + CHALLENGE_PERIOD
         );
         // Record l2 chain
         Storage.chain.parentOf[currentBlockHash] = _block.header.parentBlock;
@@ -127,7 +126,7 @@ contract Coordinatable is Storage {
         require(finalization.massDeposits.root() == finalization.header.depositRoot, "Submitted different deposit root");
         require(finalization.massMigrations.root() == finalization.header.migrationRoot, "Submitted different deposit root");
         require(finalization.header.hash() == proposal.headerHash, "Invalid header data");
-        require(!proposal.slashed, "Slashed roll up can't be finalized");
+        require(!Storage.chain.slashed[proposal.headerHash], "Slashed roll up can't be finalized");
         require(!Storage.chain.finalized[proposal.headerHash], "Already finalized");
         require(finalization.header.parentBlock == Storage.chain.latest, "The latest block should be its parent");
         require(finalization.header.parentBlock != proposal.headerHash, "Reentrancy case");
