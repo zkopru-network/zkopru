@@ -594,7 +594,6 @@ export class Block {
   toSqlObj(): BlockSql {
     return {
       hash: this.hash.toString(),
-      slashed: this.slashed || null,
     }
   }
 
