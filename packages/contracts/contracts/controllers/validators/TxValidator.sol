@@ -66,29 +66,40 @@ contract TxValidator is Storage, ITxValidator {
                 return (true, "T2");
             }
             address tokenAddr = outflow.publicData.token;
-            if(tokenAddr == address(0)) { // means UTXO
+            if (outflow.outflowType == 0) { // means UTXO
                 if (!outflow.publicData.isEmpty()) {
-                    // code T3: A migration or withdrawal outflow should have the public data field
+                    // code T3: UTXO type of outflow cannot have public data
                     return (true, "T3");
                 }
-            } else {
+            } else if (outflow.publicData.token != address(0)) {
+                // (ETH + token) withdrawal or migration
                 bool isERC20 = Storage.chain.registeredERC20s[tokenAddr];
                 bool isERC721 = Storage.chain.registeredERC721s[tokenAddr];
                 // means Withdrawal or migration. Inspect revealed token values
                 if (!isERC20 && !isERC721) {
                     // code T4: Transaction is including unregistered token
                     return (true, "T4");
-                } else if (isERC20 && 0 != outflow.publicData.nft) {
-                    // code T5: A note including ERC20 cannot have NFT field.
-                    return (true, "T5");
+                } else if (isERC20) {
+                    if (outflow.publicData.nft != 0) {
+                        // code T5: This note cannot have NFT field.
+                        return (true, "T5");
+                    }
                 } else if (isERC721) {
                     if (outflow.publicData.amount != 0) {
-                        // code T6: A note including NFT cannot have ERC20 field.
+                        // code T6: This note cannot have ERC20 field.
                         return (true, "T6");
                     } else if (outflow.publicData.nft == 0) {
                         // code T7: ZK SNARK Circuit does not support NFT which id is 0
                         return (true, "T7");
                     }
+                }
+            } else {
+                // ETH withdrawal or migration
+                if (outflow.publicData.nft != 0) {
+                    return (true, "T5");
+                }
+                if (outflow.publicData.amount != 0) {
+                    return (true, "T6");
                 }
             }
         }
@@ -109,18 +120,37 @@ contract TxValidator is Storage, ITxValidator {
     returns (bool slash, string memory reason)
     {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
-        uint256 swap = _block.body.txs[txIndex].swap;
-        uint256 counterpart;
+        Transaction memory txA = _block.body.txs[txIndex];
+        require(txA.swap != 0, "This tx does not have atomic swap.");
         for(uint256 i = 0; i < _block.body.txs.length; i++) {
+            // skip when txA == txB
+            if (i == txIndex) continue;
+            // Search transaction
+            Transaction memory txB = _block.body.txs[i];
             if(
-                swap == _block.body.txs[i].swap &&
-                i != txIndex
-             ) {
-                counterpart++;
-             }
+                _includeSwapNote(txB, txA.swap) &&
+                _includeSwapNote(txA, txB.swap)
+            ) {
+                return (false, "");
+            }
         }
-        // T8: Atomic swap transaction allows only 1 counterpart transaction.
-        return (counterpart != 1, "T8");
+        // Failed to find the tx pair. Slash.
+        return (true, "T8");
+    }
+
+    function _includeSwapNote(
+        Transaction memory transaction,
+        uint256 expectedNote
+    )
+    pure
+    internal
+    returns (bool)
+    {
+        if (transaction.swap == 0) return false;
+        for (uint256 i = 0; i < transaction.outflow.length; i++) {
+            if (transaction.outflow[i].note == expectedNote) return true;
+        }
+        return false;
     }
 
     /**
