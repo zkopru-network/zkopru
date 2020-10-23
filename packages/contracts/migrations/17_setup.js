@@ -147,10 +147,15 @@ module.exports = function migration(deployer, network, accounts) {
         }
       }
       // await wizard.allowMigrants(...)
+
+      const coordinatable = await Coordinatable.at(zkopru.address)
+      // register erc20
+      await coordinatable.registerERC20(instances.erc20.address)
+      // register erc721
+      await coordinatable.registerERC721(instances.erc721.address)
       // Complete setup
       await zkopru.completeSetup()
       if (network === 'testnet') {
-        const coordinatable = await Coordinatable.at(zkopru.address)
         // Register as coordinator
         await coordinatable.register({ value: '32000000000000000000' })
       }
