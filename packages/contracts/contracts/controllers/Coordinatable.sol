@@ -2,6 +2,7 @@
 pragma solidity = 0.6.12;
 
 import { Storage } from "../storage/Storage.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC165 } from "@openzeppelin/contracts/introspection/IERC165.sol";
 import { Hash } from "../libraries/Hash.sol";
 import {
@@ -188,13 +189,38 @@ contract Coordinatable is Storage {
      */
     function registerERC20(address tokenAddr) public {
         require(!Storage.chain.registeredERC20s[tokenAddr], "Already registered");
-        // Make sure that this token is not the ERC721
-        try IERC165(tokenAddr).supportsInterface(_INTERFACE_ID_ERC721) returns (bool erc721) {
-            require(!erc721, "ERC721 token cannot be registered as ERC20 token");
-        } catch Error(string memory /*reason*/) {
-            // pass: it means that this address is not ERC721
+        // Make sure that this token is ERC20
+        try IERC20(tokenAddr).transfer(address(this), 0) returns (bool result) {
+            require(result, "Failed to send dummy tx");
+        } catch Error(string memory reason) {
+            revert(reason);
         } catch (bytes memory /*reason*/) {
             // pass: it means that this address is not ERC721
+            revert("does not support transfer()");
+        }
+        try IERC20(tokenAddr).transferFrom(address(this), address(this), 0) returns (bool result) {
+            require(result, "Failed to send dummy tx");
+        } catch Error(string memory reason) {
+            revert(reason);
+        } catch (bytes memory /*reason*/) {
+            // pass: it means that this address is not ERC721
+            revert("does not support transfer()");
+        }
+        try IERC20(tokenAddr).balanceOf(address(this)) returns (uint256) {
+            // success
+        } catch Error(string memory reason) {
+            revert(reason);
+        } catch (bytes memory /*reason*/) {
+            // pass: it means that this address is not ERC721
+            revert("does not support transfer()");
+        }
+        // Make sure that this token is not an ERC721
+        try IERC165(tokenAddr).supportsInterface(_INTERFACE_ID_ERC721) returns (bool erc721) {
+            require(!erc721, "This address seems an ERC721 contract");
+        } catch Error(string memory /*reason*/) {
+            // success
+        } catch (bytes memory /*reason*/) {
+            // success
         }
         Storage.chain.registeredERC20s[tokenAddr] = true;
         emit NewErc20(tokenAddr);
@@ -207,9 +233,9 @@ contract Coordinatable is Storage {
      */
     function registerERC721(address tokenAddr) public {
         require(!Storage.chain.registeredERC721s[tokenAddr], "Already registered");
-        // Make sure that this token is not the ERC721
+        // Make sure that this token is an ERC721
         try IERC165(tokenAddr).supportsInterface(_INTERFACE_ID_ERC721) returns (bool erc721) {
-            require(erc721, "This address is not ERC721 contract");
+            require(erc721, "This address is not an ERC721 contract");
         } catch Error(string memory reason) {
             revert(reason);
         } catch (bytes memory reason) {
