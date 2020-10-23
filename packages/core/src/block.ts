@@ -652,9 +652,13 @@ export class Block {
   }
 
   static fromTx(tx: Transaction, verified?: boolean): Block {
-    // if (!proposal.proposalData) throw Error('Not fetched yet')
-    // const tx = JSON.parse(proposal.proposalData) as Transaction
-    const queue = new Utils.StringifiedHexQueue(tx.input)
+    return Block.from(tx.input, verified)
+  }
+
+  static from(data: string | Buffer, verified?: boolean): Block {
+    const queue = new Utils.StringifiedHexQueue(
+      typeof data === 'string' ? data : data.toString('hex'),
+    )
     // remove function selector
     const selector = queue.dequeue(4)
     const paramPosition = queue.dequeue(32)

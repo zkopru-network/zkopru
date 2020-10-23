@@ -2,6 +2,8 @@ import {
   append,
   merkleProof as mtMerkleProof,
   merkleRoot,
+  appendAsSubTrees,
+  splitToSubTrees,
 } from './merkle-tree-sol'
 import {
   fill,
@@ -12,10 +14,15 @@ import {
   calculateRoot,
 } from './smt-sol'
 
-export const MerkleTree = {
+export const MerkleTreeLib = {
   append,
   merkleProof: mtMerkleProof,
   merkleRoot,
+}
+
+export const SubTreeLib = {
+  appendAsSubTrees,
+  splitToSubTrees,
 }
 
 export const SMT = {
