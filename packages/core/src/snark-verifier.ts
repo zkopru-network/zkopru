@@ -13,6 +13,11 @@ export class SNARKVerifier {
     this.vks = vks || {}
   }
 
+  hasVK(inflowLen: number, outflowLen: number): boolean {
+    const registeredVk = this.vks[verifyingKeyIdentifier(inflowLen, outflowLen)]
+    return !!registeredVk
+  }
+
   async verifyTx(tx: ZkTx): Promise<boolean> {
     return new Promise<boolean>(res => {
       const registeredVk = this.vks[
