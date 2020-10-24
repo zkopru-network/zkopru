@@ -7,12 +7,12 @@ import { Uint256, Address } from 'soltypes'
 import { EventEmitter } from 'events'
 import assert from 'assert'
 import { TokenRegistry } from '@zkopru/transaction'
-import { L1Contract } from './layer1'
-import { Verifier, VerifyOption } from './verifier'
-import { L2Chain } from './layer2'
+import { L1Contract } from '../context/layer1'
+import { Verifier, VerifyOption } from '../verifier'
+import { L2Chain } from '../context/layer2'
 import { BootstrapHelper } from './bootstrap'
 import { Synchronizer } from './synchronizer'
-import { Block, Header } from './block'
+import { Block, Header } from '../block'
 
 export enum NetworkStatus {
   STOPPED = 'stopped',

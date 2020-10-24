@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/camelcase */
-// eslint-disable-next-line max-classes-per-file
 import {
   ZkTx,
   ZkInflow,
@@ -8,74 +7,20 @@ import {
   SNARK,
   OutflowType,
 } from '@zkopru/transaction'
-import {
-  Block as BlockSql,
-  Header as HeaderSql,
-  BootstrapCreateInput,
-} from '@zkopru/prisma'
+import { Header as HeaderSql } from '@zkopru/prisma'
 import * as Utils from '@zkopru/utils'
 import { Field } from '@zkopru/babyjubjub'
-import { soliditySha3, soliditySha3Raw } from 'web3-utils'
+import { soliditySha3Raw } from 'web3-utils'
 import { Bytes32, Uint256, Address } from 'soltypes'
-import { Transaction } from 'web3-core'
-import assert from 'assert'
-// import { soliditySha3 } from 'web3-utils'
-
-export interface MassDeposit {
-  merged: Bytes32
-  fee: Uint256
-}
-
-export interface ERC20Migration {
-  addr: Address
-  amount: Uint256
-}
-
-export interface ERC721Migration {
-  addr: Address
-  nfts: Uint256[]
-}
-
-export interface MassMigration {
-  destination: Address
-  totalETH: Uint256
-  migratingLeaves: MassDeposit
-  erc20: ERC20Migration[]
-  erc721: ERC721Migration[]
-}
-
-export interface Header {
-  proposer: Address
-  parentBlock: Bytes32
-  fee: Uint256
-  utxoRoot: Uint256
-  utxoIndex: Uint256
-  withdrawalRoot: Uint256
-  withdrawalIndex: Uint256
-  nullifierRoot: Bytes32
-  txRoot: Bytes32
-  depositRoot: Bytes32
-  migrationRoot: Bytes32
-}
-
-export interface Body {
-  txs: ZkTx[]
-  massDeposits: MassDeposit[]
-  massMigrations: MassMigration[]
-}
-
-export interface Finalization {
-  proposalChecksum: Bytes32
-  header: Header
-  massDeposits: MassDeposit[]
-  massMigration: MassMigration[]
-}
-
-export enum VerifyResult {
-  INVALIDATED,
-  PARTIALLY_VERIFIED,
-  FULLY_VERIFIED,
-}
+import {
+  Body,
+  ERC20Migration,
+  ERC721Migration,
+  Finalization,
+  Header,
+  MassDeposit,
+  MassMigration,
+} from './types'
 
 export function headerToSql(header: Header): HeaderSql {
   const sql: HeaderSql = {} as HeaderSql
@@ -239,7 +184,7 @@ export function serializeFinalization(finalization: Finalization): Buffer {
   ])
 }
 
-function deserializeHeaderFrom(
+export function deserializeHeaderFrom(
   rawData: string,
 ): { header: Header; rest: string } {
   const queue = new Utils.StringifiedHexQueue(rawData)
@@ -259,7 +204,9 @@ function deserializeHeaderFrom(
   return { header, rest: queue.dequeueAll() }
 }
 
-function deserializeTxsFrom(rawData: string): { txs: ZkTx[]; rest: string } {
+export function deserializeTxsFrom(
+  rawData: string,
+): { txs: ZkTx[]; rest: string } {
   const queue = new Utils.StringifiedHexQueue(rawData)
   const txsLength: number = queue.dequeueToNumber(2)
   const txs: ZkTx[] = []
@@ -319,7 +266,7 @@ function deserializeTxsFrom(rawData: string): { txs: ZkTx[]; rest: string } {
   return { txs, rest: queue.dequeueAll() }
 }
 
-function deserializeMassDeposits(
+export function deserializeMassDeposits(
   rawData: string,
 ): { massDeposits: MassDeposit[]; rest: string } {
   const queue = new Utils.StringifiedHexQueue(rawData)
@@ -334,7 +281,7 @@ function deserializeMassDeposits(
   return { massDeposits, rest: queue.dequeueAll() }
 }
 
-function deserializeMassMigrations(
+export function deserializeMassMigrations(
   rawData: string,
 ): { massMigrations: MassMigration[]; rest: string } {
   const queue = new Utils.StringifiedHexQueue(rawData)
@@ -396,8 +343,7 @@ export function headerHash(header: Header): Bytes32 {
       header.migrationRoot,
     ].map(val => val.toBuffer()),
   )
-  const result = soliditySha3(`0x${concatenated.toString('hex')}`)
-  if (!result) throw Error('Failed to get header hash')
+  const result = soliditySha3Raw(`0x${concatenated.toString('hex')}`)
   return Bytes32.from(result)
 }
 
@@ -405,8 +351,7 @@ export function massDepositHash(massDeposit: MassDeposit): Bytes32 {
   const concatenated = Buffer.concat(
     [massDeposit.merged, massDeposit.fee].map(val => val.toBuffer()),
   )
-  const result = soliditySha3(`0x${concatenated.toString('hex')}`)
-  if (!result) throw Error('Failed to get header hash')
+  const result = soliditySha3Raw(`0x${concatenated.toString('hex')}`)
   return Bytes32.from(result)
 }
 
@@ -434,8 +379,7 @@ export function massMigrationHash(massMigration: MassMigration): Bytes32 {
       }, Buffer.from([])),
     ])
   }
-  const result = soliditySha3(`0x${concatenated.toString('hex')}`)
-  if (!result) throw Error('Failed to get header hash')
+  const result = soliditySha3Raw(`0x${concatenated.toString('hex')}`)
   return Bytes32.from(result)
 }
 
@@ -532,161 +476,4 @@ export function getMassMigrations(txs: ZkTx[]): MassMigration[] {
     migrations.push(getMassMigrationToAddress(dest, migratingNotes))
   }
   return migrations
-}
-
-export class Block {
-  hash: Bytes32
-
-  header: Header
-
-  body: Body
-
-  slashed?: boolean
-
-  verified?: boolean
-
-  bootstrap?: {
-    utxoTreeIndex: Uint256
-    utxoBootstrap: Uint256[]
-    withdrawalTreeIndex: Uint256
-    withdrawalBootstrap: Bytes32[]
-  }
-
-  constructor({
-    hash,
-    verified,
-    slashed,
-    header,
-    body,
-    bootstrap,
-  }: {
-    hash: Bytes32
-    slashed?: boolean
-    verified?: boolean
-    header: Header
-    body: Body
-    bootstrap?: {
-      utxoTreeIndex: Uint256
-      utxoBootstrap: Uint256[]
-      withdrawalTreeIndex: Uint256
-      withdrawalBootstrap: Bytes32[]
-    }
-  }) {
-    this.hash = hash
-    this.slashed = slashed
-    this.verified = verified
-    this.header = header
-    this.body = body
-    this.bootstrap = bootstrap
-  }
-
-  getFinalization(): Finalization {
-    const data = `0x${this.serializeBlock().toString('hex')}`
-    const checksum = soliditySha3Raw(data)
-    return {
-      proposalChecksum: Bytes32.from(checksum),
-      header: this.header,
-      massDeposits: this.body.massDeposits,
-      massMigration: this.body.massMigrations,
-    }
-  }
-
-  toSqlObj(): BlockSql {
-    return {
-      hash: this.hash.toString(),
-    }
-  }
-
-  getHeaderSql(): HeaderSql {
-    return {
-      hash: this.hash.toString(),
-      proposer: this.header.proposer.toString(),
-      parentBlock: this.header.parentBlock.toString(),
-      fee: this.header.fee.toString(),
-      utxoRoot: this.header.utxoRoot.toString(),
-      utxoIndex: this.header.utxoIndex.toString(),
-      nullifierRoot: this.header.nullifierRoot.toString(),
-      withdrawalRoot: this.header.withdrawalRoot.toString(),
-      withdrawalIndex: this.header.withdrawalIndex.toString(),
-      txRoot: this.header.txRoot.toString(),
-      depositRoot: this.header.depositRoot.toString(),
-      migrationRoot: this.header.migrationRoot.toString(),
-    }
-  }
-
-  getSqlObjs(): {
-    block: BlockSql
-    header: HeaderSql
-    bootstrap: BootstrapCreateInput | undefined
-  } {
-    const hash = this.hash.toString()
-    const block = this.toSqlObj()
-    const header = this.getHeaderSql()
-    const bootstrap = this.bootstrap
-      ? {
-          blockHash: hash,
-          utxoTreeIndex: parseInt(this.bootstrap.utxoTreeIndex.toString(), 10),
-          utxoBootstrap: JSON.stringify(
-            this.bootstrap.utxoBootstrap.map(val => val.toString()),
-          ),
-          withdrawalTreeIndex: parseInt(
-            this.bootstrap.withdrawalTreeIndex.toString(),
-            10,
-          ),
-          withdrawalBootstrap: JSON.stringify(
-            this.bootstrap.withdrawalBootstrap.map(val => val.toString()),
-          ),
-        }
-      : undefined
-    return { block, header, bootstrap }
-  }
-
-  serializeBlock(): Buffer {
-    const arr: Buffer[] = []
-    // Header
-    const headerBytes = serializeHeader(this.header)
-    arr.push(headerBytes)
-    const bodyBytes = serializeBody(this.body)
-    arr.push(bodyBytes)
-    return Buffer.concat(arr)
-  }
-
-  static fromTx(tx: Transaction, verified?: boolean): Block {
-    return Block.from(tx.input, verified)
-  }
-
-  static from(data: string | Buffer, verified?: boolean): Block {
-    const queue = new Utils.StringifiedHexQueue(
-      typeof data === 'string' ? data : data.toString('hex'),
-    )
-    // remove function selector
-    const selector = queue.dequeue(4)
-    const paramPosition = queue.dequeue(32)
-    const bytesLength = queue.dequeue(32)
-    assert([selector, paramPosition, bytesLength])
-    const rawData = queue.dequeueAll()
-    const deserializedHeader = deserializeHeaderFrom(rawData)
-    const deserializedTxs = deserializeTxsFrom(deserializedHeader.rest)
-    const deserializedMassDeposits = deserializeMassDeposits(
-      deserializedTxs.rest,
-    )
-    const deserializedMassMigrations = deserializeMassMigrations(
-      deserializedMassDeposits.rest,
-    )
-    const { header } = deserializedHeader
-    const { txs } = deserializedTxs
-    const { massDeposits } = deserializedMassDeposits
-    const { massMigrations } = deserializedMassMigrations
-    const body: Body = {
-      txs,
-      massDeposits,
-      massMigrations,
-    }
-    return new Block({
-      hash: headerHash(header),
-      verified,
-      header,
-      body,
-    })
-  }
 }

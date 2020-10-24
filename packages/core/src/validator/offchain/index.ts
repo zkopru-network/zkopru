@@ -1,4 +1,4 @@
-import { L2Chain } from '../../layer2'
+import { L2Chain } from '../../context/layer2'
 import {
   BlockValidator,
   DepositValidator,

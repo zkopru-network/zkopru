@@ -3,7 +3,7 @@ import { bnToBytes32, bnToUint256 } from '@zkopru/utils'
 import { Address, Bytes32 } from 'soltypes'
 import BN from 'bn.js'
 import { Config } from '@zkopru/prisma'
-import { Header } from './block'
+import { Header } from './types'
 
 export const genesis = ({
   address,

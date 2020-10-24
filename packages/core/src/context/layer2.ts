@@ -28,8 +28,8 @@ import {
   VerifyResult,
   MassDeposit,
   massDepositHash,
-} from './block'
-import { BootstrapData } from './bootstrap'
+} from '../block'
+import { BootstrapData } from '../node/bootstrap'
 
 export interface Patch {
   result: VerifyResult

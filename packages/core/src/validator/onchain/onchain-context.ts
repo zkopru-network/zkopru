@@ -1,4 +1,4 @@
-import { L1Contract } from '../../layer1'
+import { L1Contract } from '../../context/layer1'
 
 export class OnchainValidatorContext {
   layer1: L1Contract

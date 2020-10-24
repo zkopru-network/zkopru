@@ -9,9 +9,9 @@ import {
 } from '@zkopru/prisma'
 import { EventEmitter } from 'events'
 import { Bytes32, Address, Uint256 } from 'soltypes'
-import { L1Contract } from './layer1'
-import { headerHash } from './block'
-import { genesis } from './genesis'
+import { L1Contract } from '../context/layer1'
+import { headerHash } from '../block'
+import { genesis } from '../block/genesis'
 
 export class Synchronizer {
   db: DB
