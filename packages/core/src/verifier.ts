@@ -18,8 +18,8 @@ import {
   massDepositHash,
   massMigrationHash,
 } from './block'
-import { SNARKVerifier } from './snark-verifier'
-import { L2Chain, Patch } from './layer2'
+import { SNARKVerifier } from './snark/snark-verifier'
+import { L2Chain, Patch } from './context/layer2'
 import { Challenge, ChallengeCode } from './challenge'
 
 export interface VerifyOption {

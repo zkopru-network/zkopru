@@ -9,7 +9,7 @@ import { headerHash } from '../../block'
 import { CODE } from '../code'
 import { BlockData, HeaderData, Slash, TxValidator } from '../types'
 import { blockDataToBlock, headerDataToHeader } from '../utils'
-import { L2Chain } from '../../layer2'
+import { L2Chain } from '../../context/layer2'
 import { OffchainValidatorContext } from './offchain-context'
 
 export class OffchainTxValidator extends OffchainValidatorContext

@@ -1,4 +1,4 @@
-import { L2Chain } from '../../layer2'
+import { L2Chain } from '../../context/layer2'
 
 export class OffchainValidatorContext {
   layer2: L2Chain
