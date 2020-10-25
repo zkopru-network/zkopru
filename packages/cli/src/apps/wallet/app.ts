@@ -29,7 +29,7 @@ export class WalletDashboard extends Dashboard<Context, ZkWallet> {
     }
     const { node } = zkWallet
     this.node = node
-    this.node.startSync()
+    this.node.start()
     this.addPromptApp(AppMenu.TOP_MENU, new TopMenu(option))
     this.addPromptApp(AppMenu.ON_SYNCING, new OnSyncing(option))
     this.addPromptApp(AppMenu.ACCOUNT_DETAIL, new AccountDetail(option))

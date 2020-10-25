@@ -65,10 +65,10 @@ export async function terminate(ctx: CtxProvider) {
   provider.disconnect(0, 'exit')
   await Promise.all([
     coordinator.stop(),
-    wallets.alice.node.stopSync(),
-    wallets.bob.node.stopSync(),
-    wallets.carl.node.stopSync(),
-    wallets.coordinator.node.stopSync(),
+    wallets.alice.node.stop(),
+    wallets.bob.node.stop(),
+    wallets.carl.node.stop(),
+    wallets.coordinator.node.stop(),
   ])
   await Promise.all([dbs.map(db => db.terminate())])
   await Promise.all([
@@ -335,10 +335,10 @@ export async function initContext(): Promise<Context> {
       erc721s: [erc721Address],
     },
   })
-  wallets.alice.node.startSync()
-  wallets.bob.node.startSync()
-  wallets.carl.node.startSync()
-  wallets.coordinator.node.startSync()
+  wallets.alice.node.start()
+  wallets.bob.node.start()
+  wallets.carl.node.start()
+  wallets.coordinator.node.start()
 
   return {
     layer1Container,

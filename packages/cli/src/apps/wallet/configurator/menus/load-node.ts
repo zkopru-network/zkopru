@@ -34,15 +34,6 @@ export default class LoadNode extends Configurator {
         db,
         accounts,
         bootstrapHelper: new HttpBootstrapHelper(bootstrap),
-        option: {
-          header: true,
-          deposit: true,
-          migration: true,
-          outputRollUp: true,
-          withdrawalRollUp: true,
-          nullifierRollUp: false, // Only for FULL NODE
-          snark: false,
-        },
       })
       this.print(chalk.blue(`Bootstrap light node from ${bootstrap}`))
       await (node as LightNode).bootstrap()

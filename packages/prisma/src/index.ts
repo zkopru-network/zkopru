@@ -108,7 +108,7 @@ export class DB {
     await this.lock.acquire([Lock.EXCLUSIVE], async () => {
       result = await query(this.prisma)
     })
-    if (result === undefined) throw Error('Failed to write data from db')
+    if (result === undefined) throw Error('Failed to write data to db')
     return result
   }
 

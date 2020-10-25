@@ -9,30 +9,20 @@ import { Grove, GrovePatch, Leaf } from '@zkopru/tree'
 import BN from 'bn.js'
 import AsyncLock from 'async-lock'
 import { Bytes32, Address, Uint256 } from 'soltypes'
-import { logger } from '@zkopru/utils'
+import { logger, VerifyingKey } from '@zkopru/utils'
 import { Field } from '@zkopru/babyjubjub'
 import {
   OutflowType,
   UtxoStatus,
   WithdrawalStatus,
-  ZkTx,
-  Utxo,
   Withdrawal,
-  ZkOutflow,
   TokenRegistry,
 } from '@zkopru/transaction'
-import { ZkAccount } from '@zkopru/account'
-import {
-  Block,
-  Header,
-  VerifyResult,
-  MassDeposit,
-  massDepositHash,
-} from '../block'
+import { Block, Header, MassDeposit, massDepositHash } from '../block'
 import { BootstrapData } from '../node/bootstrap'
+import { SNARKVerifier } from '../snark/snark-verifier'
 
 export interface Patch {
-  result: VerifyResult
   block: Bytes32
   header: Header
   prevHeader: Header
@@ -44,16 +34,27 @@ export interface Patch {
 export class L2Chain {
   config: Config
 
+  snarkVerifier: SNARKVerifier
+
   lock: AsyncLock
 
   grove: Grove
 
+  tokenRegistry: TokenRegistry
+
   db: DB
 
-  constructor(db: DB, grove: Grove, config: Config) {
+  constructor(
+    db: DB,
+    grove: Grove,
+    config: Config,
+    vks: { [txType: string]: VerifyingKey },
+  ) {
     this.db = db
     this.grove = grove
     this.config = config
+    this.snarkVerifier = new SNARKVerifier(vks)
+    this.tokenRegistry = new TokenRegistry()
     this.lock = new AsyncLock()
   }
 
@@ -225,11 +226,8 @@ export class L2Chain {
 
   async applyPatch(patch: Patch) {
     logger.info('layer2.ts: applyPatch()')
-    const { result, block, header, prevHeader, treePatch, massDeposits } = patch
+    const { block, header, prevHeader, treePatch, massDeposits } = patch
     // Apply tree patch
-    if (result === VerifyResult.INVALIDATED) {
-      throw Error('Invalid result cannot make a patch')
-    }
     const { utxoTreeId, withdrawalTreeId } = await this.grove.applyGrovePatch(
       treePatch,
     )
@@ -285,111 +283,6 @@ export class L2Chain {
         data: { status: WithdrawalStatus.UNFINALIZED },
       }),
     )
-  }
-
-  async findMyUtxos(
-    txs: ZkTx[],
-    accounts: ZkAccount[],
-    tokenRegistry: TokenRegistry,
-  ) {
-    const txsWithMemo = txs.filter(tx => tx.memo)
-    logger.info(`findMyUtxos`)
-    const myUtxos: Utxo[] = []
-    for (const tx of txsWithMemo) {
-      for (const account of accounts) {
-        const note = account.decrypt(tx, tokenRegistry)
-        logger.info(`decrypt result ${note}`)
-        if (note) myUtxos.push(note)
-      }
-    }
-    const inputs = myUtxos.map(note => ({
-      hash: note
-        .hash()
-        .toUint256()
-        .toString(),
-      eth: note
-        .eth()
-        .toUint256()
-        .toString(),
-      owner: note.owner.toString(),
-      salt: note.salt.toUint256().toString(),
-      tokenAddr: note
-        .tokenAddr()
-        .toAddress()
-        .toString(),
-      erc20Amount: note
-        .erc20Amount()
-        .toUint256()
-        .toString(),
-      nft: note
-        .nft()
-        .toUint256()
-        .toString(),
-      status: UtxoStatus.UNSPENT,
-      usedAt: null,
-    }))
-    await this.db.write(prisma =>
-      prisma.$transaction(
-        inputs.map(input =>
-          prisma.utxo.upsert({
-            where: { hash: input.hash },
-            create: input,
-            update: input,
-          }),
-        ),
-      ),
-    )
-  }
-
-  async findMyWithdrawals(txs: ZkTx[], accounts: ZkAccount[]) {
-    logger.info(`findMyWithdrawals`)
-    const outflows = txs.reduce(
-      (acc, tx) => [
-        ...acc,
-        ...tx.outflow.filter(outflow =>
-          outflow.outflowType.eqn(OutflowType.WITHDRAWAL),
-        ),
-      ],
-      [] as ZkOutflow[],
-    )
-    logger.debug(
-      `withdrawal address =>
-      ${outflows.map(outflow => outflow.data?.to.toAddress().toString())}`,
-    )
-    logger.debug(`my address =>${accounts.map(account => account.ethAddress)}`)
-    const myWithdrawalOutputs: ZkOutflow[] = outflows.filter(
-      outflow =>
-        outflow.data &&
-        accounts
-          .map(account => account.ethAddress)
-          .includes(outflow.data?.to.toAddress().toString()),
-    )
-    // TODO needs batch transaction
-    for (const output of myWithdrawalOutputs) {
-      if (!output.data) throw Error('Withdrawal does not have public data')
-      const withdrawalSql = {
-        hash: output.note.toUint256().toString(),
-        withdrawalHash: Withdrawal.withdrawalHash(
-          output.note,
-          output.data,
-        ).toString(),
-        to: output.data.to.toAddress().toString(),
-        eth: output.data.eth.toUint256().toString(),
-        tokenAddr: output.data.tokenAddr.toAddress().toString(),
-        erc20Amount: output.data.erc20Amount.toUint256().toString(),
-        nft: output.data.nft.toUint256().toString(),
-        fee: output.data.fee.toUint256().toString(),
-        status: WithdrawalStatus.WITHDRAWABLE,
-      }
-      logger.info(`found my withdrawal: ${withdrawalSql.hash}`)
-      await this.db.write(prisma =>
-        prisma.withdrawal.upsert({
-          where: { hash: withdrawalSql.hash },
-          create: withdrawalSql,
-          update: withdrawalSql,
-        }),
-      )
-    }
   }
 
   async applyBootstrap(block: Block, bootstrapData: BootstrapData) {
@@ -619,5 +512,32 @@ export class L2Chain {
       withdrawals,
       nullifiers,
     }
+  }
+
+  async getTokenRegistry(): Promise<TokenRegistry> {
+    const newRegistrations = await this.db.read(prisma =>
+      prisma.tokenRegistry.findMany({
+        where: {
+          blockNumber: { gte: this.tokenRegistry.blockNumber },
+        },
+      }),
+    )
+    newRegistrations.forEach(registration => {
+      const tokenAddress = Address.from(registration.address)
+      if (
+        registration.isERC20 &&
+        !this.tokenRegistry.erc20s.find(addr => addr.eq(tokenAddress))
+      ) {
+        this.tokenRegistry.addERC20(tokenAddress)
+      } else if (
+        registration.isERC721 &&
+        !this.tokenRegistry.erc721s.find(addr => addr.eq(tokenAddress))
+      ) {
+        this.tokenRegistry.addERC721(tokenAddress)
+      }
+      if (registration.blockNumber > this.tokenRegistry.blockNumber)
+        this.tokenRegistry.blockNumber = registration.blockNumber
+    })
+    return this.tokenRegistry
   }
 }

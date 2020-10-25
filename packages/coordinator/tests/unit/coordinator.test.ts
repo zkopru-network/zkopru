@@ -57,15 +57,6 @@ describe('coordinator test to run testnet', () => {
       address,
       db: mockup.db,
       accounts,
-      option: {
-        header: true,
-        deposit: true,
-        migration: true,
-        outputRollUp: true,
-        withdrawalRollUp: true,
-        nullifierRollUp: true, // Only for FULL NODE
-        snark: true,
-      },
     })
   }, 36000)
   afterAll(async () => {

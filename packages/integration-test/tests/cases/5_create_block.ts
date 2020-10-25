@@ -29,7 +29,7 @@ export const waitCoordinatorToProcessTheNewBlock = (
   let msToWait = 25000
   let processedBlocks!: number
   while (msToWait > 0) {
-    processedBlocks = coordinator.node.latestProcessed || 0
+    processedBlocks = coordinator.node.synchronizer.latestProcessed || 0
     if (processedBlocks === 1) break
     msToWait -= 1000
     await sleep(1000)
@@ -42,15 +42,15 @@ export const testBlockSync = (ctx: CtxProvider) => async () => {
   let msToWait = 5000
   while (msToWait > 0) {
     if (
-      wallets.alice.node.latestProcessed === 1 &&
-      wallets.bob.node.latestProcessed === 1 &&
-      wallets.carl.node.latestProcessed === 1
+      wallets.alice.node.synchronizer.latestProcessed === 1 &&
+      wallets.bob.node.synchronizer.latestProcessed === 1 &&
+      wallets.carl.node.synchronizer.latestProcessed === 1
     )
       break
     msToWait -= 1000
     await sleep(1000)
   }
-  expect(wallets.alice.node.latestProcessed).toStrictEqual(1)
-  expect(wallets.bob.node.latestProcessed).toStrictEqual(1)
-  expect(wallets.carl.node.latestProcessed).toStrictEqual(1)
+  expect(wallets.alice.node.synchronizer.latestProcessed).toStrictEqual(1)
+  expect(wallets.bob.node.synchronizer.latestProcessed).toStrictEqual(1)
+  expect(wallets.carl.node.synchronizer.latestProcessed).toStrictEqual(1)
 }

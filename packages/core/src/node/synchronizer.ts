@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { logger } from '@zkopru/utils'
+import assert from 'assert'
+import { logger, Worker } from '@zkopru/utils'
 import {
   DB,
   Header as HeaderSql,
@@ -10,10 +11,20 @@ import {
 import { EventEmitter } from 'events'
 import { Bytes32, Address, Uint256 } from 'soltypes'
 import { L1Contract } from '../context/layer1'
-import { headerHash } from '../block'
+import { Block, headerHash } from '../block'
 import { genesis } from '../block/genesis'
 
-export class Synchronizer {
+export enum NetworkStatus {
+  STOPPED = 'stopped',
+  ON_SYNCING = 'on syncing',
+  ON_FETCHED = 'onFetched',
+  ON_PROCESSING = 'processing',
+  SYNCED = 'synced',
+  FULLY_SYNCED = 'fully synced',
+  ON_ERROR = 'on error',
+}
+
+export class Synchronizer extends EventEmitter {
   db: DB
 
   l1Contract!: L1Contract
@@ -34,16 +45,37 @@ export class Synchronizer {
 
   isListening: boolean
 
+  latestProcessed?: number
+
+  status: NetworkStatus
+
+  workers: {
+    statusUpdater: Worker<void>
+    blockFetcher: Worker<void>
+  }
+
+  fetching: {
+    [proposalTx: string]: boolean
+  }
+
   constructor(db: DB, l1Contract: L1Contract) {
+    super()
     this.db = db
     this.l1Contract = l1Contract
     this.isListening = false
+    this.fetching = {}
+    this.status = NetworkStatus.STOPPED
+    this.workers = {
+      statusUpdater: new Worker<void>(),
+      blockFetcher: new Worker<void>(),
+    }
   }
 
   sync(
     proposalCB?: (hash: string) => void,
     finalizationCB?: (hash: string) => void,
   ) {
+    this.setStatus(NetworkStatus.ON_SYNCING)
     if (!this.isListening) {
       this.listenGenesis()
       this.listenTokenRegistry()
@@ -53,9 +85,18 @@ export class Synchronizer {
       this.listenFinalization(finalizationCB)
       this.isListening = true
     }
+    this.workers.statusUpdater.start({
+      task: this.updateStatus.bind(this),
+      interval: 5000,
+    })
+    this.workers.blockFetcher.start({
+      task: this.fetchUnfetchedProposals.bind(this),
+      interval: 5000,
+    })
   }
 
-  stop() {
+  async stop() {
+    this.setStatus(NetworkStatus.STOPPED)
     const subscribers = [
       this.proposalSubscriber,
       this.slashSubscriber,
@@ -67,6 +108,65 @@ export class Synchronizer {
     ]
     subscribers.forEach(subscriber => subscriber?.removeAllListeners())
     this.isListening = false
+    await Promise.all([
+      this.workers.statusUpdater.close(),
+      this.workers.blockFetcher.close(),
+    ])
+  }
+
+  isSynced(): boolean {
+    return this.status === NetworkStatus.FULLY_SYNCED
+  }
+
+  async updateStatus() {
+    const unfetched = await this.db.read(prisma =>
+      prisma.proposal.count({
+        where: { proposalData: null },
+      }),
+    )
+    const unprocessed = await this.db.read(prisma =>
+      prisma.proposal.count({
+        where: { AND: [{ verified: null }, { isUncle: null }] },
+      }),
+    )
+    const haveFetchedAll = unfetched === 0
+    const haveProcessedAll = unprocessed === 0
+    if (!haveFetchedAll) {
+      this.setStatus(NetworkStatus.ON_SYNCING)
+    } else if (!haveProcessedAll) {
+      this.setStatus(NetworkStatus.ON_PROCESSING)
+    } else {
+      const layer1ProposedBlocks = Uint256.from(
+        await this.l1Contract.upstream.methods.proposedBlocks().call(),
+      )
+        .toBN()
+        .subn(1) // proposal num starts from 0
+      logger.trace(`total proposed: ${layer1ProposedBlocks.toString(10)}`)
+      logger.trace(`total processed: ${this.latestProcessed}`)
+      if (layer1ProposedBlocks.eqn(this.latestProcessed || 0)) {
+        this.setStatus(NetworkStatus.FULLY_SYNCED)
+      } else if (layer1ProposedBlocks.ltn((this.latestProcessed || 0) + 2)) {
+        this.setStatus(NetworkStatus.SYNCED)
+      } else {
+        this.setStatus(NetworkStatus.ON_SYNCING)
+      }
+    }
+  }
+
+  setLatestProcessed(proposalNum: number) {
+    if ((this.latestProcessed || 0) < proposalNum) {
+      logger.info(`Latest processed: ${proposalNum}`)
+      this.latestProcessed = proposalNum
+    }
+  }
+
+  private setStatus(status: NetworkStatus) {
+    if (this.status !== status) {
+      this.status = status
+      // this.emit('status', status, this.latestProposedHash)
+      logger.info(`sync status: ${status}`)
+      this.emit('status', status)
+    }
   }
 
   async listenGenesis() {
@@ -423,5 +523,76 @@ export class Synchronizer {
         // TODO removed
         logger.info(`synchronizer.js: Finalization Event error occured`, err)
       })
+  }
+
+  async fetchUnfetchedProposals() {
+    const MAX_FETCH_JOB = 10
+    const availableFetchJob = Math.max(
+      MAX_FETCH_JOB - Object.keys(this.fetching).length,
+      0,
+    )
+    if (availableFetchJob === 0) return
+    const candidates = await this.db.read(prisma =>
+      prisma.proposal.findMany({
+        where: {
+          AND: [{ proposalData: null }, { proposalTx: { not: null } }],
+        },
+        orderBy: {
+          proposalNum: 'asc',
+        },
+        take: availableFetchJob,
+      }),
+    )
+
+    candidates.forEach(candidate => {
+      assert(candidate.proposalTx)
+      this.fetch(candidate.proposalTx)
+    })
+  }
+
+  async fetch(proposalTx: string) {
+    logger.info('fetched block proposal')
+    if (this.fetching[proposalTx]) return
+    const proposalData = await this.l1Contract.web3.eth.getTransaction(
+      proposalTx,
+    )
+    if (!proposalData.blockHash) {
+      logger.trace(`pended proposal tx: ${proposalTx}`)
+      return
+    }
+    this.fetching[proposalTx] = true
+    const block = Block.fromTx(proposalData)
+    const header = block.getHeaderSql()
+    try {
+      await this.db.write(prisma =>
+        prisma.proposal.update({
+          where: { hash: header.hash },
+          data: {
+            block: {
+              upsert: {
+                create: {
+                  header: {
+                    create: header,
+                  },
+                },
+                update: {
+                  header: {
+                    connect: {
+                      hash: header.hash,
+                    },
+                  },
+                },
+              },
+            },
+            proposalData: JSON.stringify(proposalData),
+          },
+        }),
+      )
+    } catch (err) {
+      logger.error(err)
+      process.exit()
+    }
+    this.emit(NetworkStatus.ON_FETCHED, block)
+    delete this.fetching[proposalTx]
   }
 }

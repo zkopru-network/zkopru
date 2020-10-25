@@ -50,9 +50,3 @@ export interface Finalization {
   massDeposits: MassDeposit[]
   massMigration: MassMigration[]
 }
-
-export enum VerifyResult {
-  INVALIDATED,
-  PARTIALLY_VERIFIED,
-  FULLY_VERIFIED,
-}

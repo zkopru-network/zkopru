@@ -5,13 +5,14 @@ import { verifyProof } from '@zkopru/tree'
 import { DB } from '@zkopru/prisma'
 import { Bytes32 } from 'soltypes'
 import { logger } from '@zkopru/utils'
-import { L1Contract } from '../context/layer1'
-import { Verifier, VerifyOption } from '../verifier'
-import { L2Chain } from '../context/layer2'
-import { BootstrapHelper } from './bootstrap'
-import { Block, headerHash } from '../block'
-import { Synchronizer } from './synchronizer'
-import { ZkopruNode } from './zkopru-node'
+import { L1Contract } from '../../context/layer1'
+import { L2Chain } from '../../context/layer2'
+import { BootstrapHelper } from '../bootstrap'
+import { Block, headerHash } from '../../block'
+import { Synchronizer } from '../synchronizer'
+import { ZkopruNode } from '../zkopru-node'
+import { LightNodeBlockProcessor } from './processor'
+import { Tracker } from '../tracker'
 
 type provider = WebsocketProvider | IpcProvider
 
@@ -20,45 +21,42 @@ export class LightNode extends ZkopruNode {
     db,
     l1Contract,
     l2Chain,
-    verifier,
     synchronizer,
+    tracker,
+    blockProcessor,
     bootstrapHelper,
-    accounts,
-    verifyOption,
   }: {
     db: DB
     l1Contract: L1Contract
     l2Chain: L2Chain
-    verifier: Verifier
     bootstrapHelper: BootstrapHelper
     synchronizer: Synchronizer
-    accounts: ZkAccount[]
-    verifyOption: VerifyOption
+    tracker: Tracker
+    blockProcessor: LightNodeBlockProcessor
+    accounts?: ZkAccount[]
   }) {
     super({
       db,
       l1Contract,
       l2Chain,
-      verifier,
       synchronizer,
+      blockProcessor,
+      tracker,
       bootstrapHelper,
-      accounts,
-      verifyOption,
     })
-    if (verifyOption.nullifierRollUp) {
-      throw Error('Light node cannot process nullifier verifications')
-    }
   }
 
-  async startSync() {
+  async start() {
     await this.bootstrap()
-    super.startSync()
+    super.start()
   }
 
   async bootstrap() {
     if (!this.bootstrapHelper) return
-    const latest = await this.l1Contract.upstream.methods.latest().call()
-    const latestBlockFromDB = await this.l2Chain.getBlock(Bytes32.from(latest))
+    const latest = await this.context.layer1.upstream.methods.latest().call()
+    const latestBlockFromDB = await this.context.layer2.getBlock(
+      Bytes32.from(latest),
+    )
     if (latestBlockFromDB && latestBlockFromDB.verified) {
       return
     }
@@ -67,22 +65,22 @@ export class LightNode extends ZkopruNode {
       logger.error('bootstrap api is not giving proposalTx')
       return
     }
-    const proposalData = await this.l1Contract.web3.eth.getTransaction(
+    const proposalData = await this.context.layer1.web3.eth.getTransaction(
       bootstrapData.proposal.proposalTx,
     )
     // console.log('bootstrap should give proposal num and etc', proposalData)
     const block = Block.fromTx(proposalData)
     const headerProof = headerHash(block.header).eq(Bytes32.from(latest))
     const utxoMerkleProof = verifyProof(
-      this.l2Chain.grove.config.utxoHasher,
+      this.context.layer2.grove.config.utxoHasher,
       bootstrapData.utxoStartingLeafProof,
     )
     const withdrawalMerkleProof = verifyProof(
-      this.l2Chain.grove.config.withdrawalHasher,
+      this.context.layer2.grove.config.withdrawalHasher,
       bootstrapData.withdrawalStartingLeafProof,
     )
     if (headerProof && utxoMerkleProof && withdrawalMerkleProof) {
-      await this.l2Chain.applyBootstrap(block, bootstrapData)
+      await this.context.layer2.applyBootstrap(block, bootstrapData)
     }
   }
 
@@ -92,30 +90,21 @@ export class LightNode extends ZkopruNode {
     db,
     accounts,
     bootstrapHelper,
-    option,
   }: {
     provider: provider
     address: string
     db: DB
-    accounts: ZkAccount[]
+    accounts?: ZkAccount[]
     bootstrapHelper: BootstrapHelper
-    option?: VerifyOption
   }): Promise<LightNode> {
     if (!provider.connected) throw Error('provider is not connected')
-    const verifyOption = option || {
-      header: true,
-      deposit: true,
-      migration: true,
-      outputRollUp: true,
-      withdrawalRollUp: true,
-      nullifierRollUp: false,
-      snark: false,
-    }
     if (!bootstrapHelper)
       throw Error('You need bootstrap node to run light node')
     const web3: Web3 = new Web3(provider)
     // Add zk account to the web3 object if it exists
+    const tracker = new Tracker(db)
     if (accounts) {
+      await tracker.addAccounts(...accounts)
       for (const account of accounts) {
         web3.eth.accounts.wallet.add(account.toAddAccount())
       }
@@ -124,7 +113,7 @@ export class LightNode extends ZkopruNode {
     // retrieve l2 chain from database
     const networkId = await web3.eth.net.getId()
     const chainId = await web3.eth.getChainId()
-    const l2Chain: L2Chain = await ZkopruNode.getOrInitChain(
+    const l2Chain: L2Chain = await ZkopruNode.initLayer2(
       db,
       l1Contract,
       networkId,
@@ -132,22 +121,24 @@ export class LightNode extends ZkopruNode {
       address,
       accounts,
     )
-    let vks = {}
-    if (verifyOption.snark) {
-      vks = await l1Contract.getVKs()
-    }
-    const verifier = new Verifier(verifyOption, vks)
-    // If the chain needs bootstraping, fetch bootstrap data and apply
-    const synchronizer = new Synchronizer(db, l1Contract)
-    return new LightNode({
+    const blockProcessor = new LightNodeBlockProcessor({
       db,
       l1Contract,
       l2Chain,
-      verifier,
-      synchronizer,
-      bootstrapHelper,
-      accounts,
-      verifyOption,
+      tracker,
     })
+    // If the chain needs bootstraping, fetch bootstrap data and apply
+    const synchronizer = new Synchronizer(db, l1Contract)
+    const node = new LightNode({
+      db,
+      l1Contract,
+      l2Chain,
+      synchronizer,
+      tracker,
+      bootstrapHelper,
+      blockProcessor,
+      accounts,
+    })
+    return node
   }
 }
