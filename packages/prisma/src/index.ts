@@ -59,6 +59,7 @@ export {
   Proposal,
   Withdrawal,
   TokenRegistry,
+  Tracker,
 } from '../generated/base'
 
 export interface MockupDB {
