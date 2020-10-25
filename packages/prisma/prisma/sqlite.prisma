@@ -1,3 +1,5 @@
+// This is an auto generated schema for each datasource.
+
 generator client {
   provider = "prisma-client-js"
   previewFeatures = ["transactionApi"]
@@ -47,6 +49,12 @@ model Config {
   withdrawalSubTreeDepth Int
   withdrawalSubTreeSize Int
   @@id([networkId, chainId, address])
+}
+
+model Tracker {
+  id Int @id @default(autoincrement())
+  viewier String? @unique
+  address String? @unique
 }
 
 model Proposal {
