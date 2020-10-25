@@ -200,8 +200,8 @@ export class L1Contract extends ZkopruContract {
     return this.config
   }
 
-  async sendTx(
-    tx: TransactionObject<void>,
+  async sendTx<T>(
+    tx: TransactionObject<T>,
     account: Account,
     option?: Tx,
   ): Promise<TransactionReceipt | undefined> {

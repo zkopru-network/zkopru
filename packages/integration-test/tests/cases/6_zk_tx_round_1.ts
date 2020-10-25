@@ -160,7 +160,7 @@ export const testNewBlockProposal = (
     }
     await sleep(1000)
   } while (!updated)
-  const newBlock = await wallets.alice.node.l2Chain.getBlock(
+  const newBlock = await wallets.alice.node.context.layer2.getBlock(
     Bytes32.from(newBlockHash),
   )
   expect(newBlock?.body.txs).toHaveLength(3)

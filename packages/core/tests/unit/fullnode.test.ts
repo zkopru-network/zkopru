@@ -65,15 +65,6 @@ describe('integration test to run testnet', () => {
         address,
         db: mockup.db,
         accounts,
-        option: {
-          header: true,
-          deposit: true,
-          migration: true,
-          outputRollUp: true,
-          withdrawalRollUp: true,
-          nullifierRollUp: true, // Only for FULL NODE
-          snark: true,
-        },
       })
       expect(fullNode).toBeDefined()
     }, 60000)

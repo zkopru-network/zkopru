@@ -66,15 +66,6 @@ describe('integration test to run testnet', () => {
         db: mockup.db,
         accounts,
         bootstrapHelper: new HttpBootstrapHelper('http://localhost:8888'),
-        option: {
-          header: true,
-          deposit: true,
-          migration: true,
-          outputRollUp: true,
-          withdrawalRollUp: true,
-          nullifierRollUp: false, // Only for FULL NODE
-          snark: false,
-        },
       })
       expect(lightNode).toBeDefined()
     }, 60000)

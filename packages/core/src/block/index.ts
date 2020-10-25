@@ -9,7 +9,6 @@ export {
   Header,
   Body,
   Finalization,
-  VerifyResult,
 } from './types'
 
 export {

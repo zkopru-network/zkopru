@@ -5,8 +5,8 @@ export default class CoordinatorInfo extends App {
   static code = AppMenu.COORDINATOR_INFO
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
-    const { l1Contract } = this.base.node
-    const { stake, reward, exitAllowance } = await l1Contract.upstream.methods.proposers(this.base.account.address).call()
+    const { layer1 } = this.base.node.context
+    const { stake, reward, exitAllowance } = await layer1.upstream.methods.proposers(this.base.account.address).call()
     this.print(`Coordinator information
     Staked amount       : ${stake}
     Accumulated rewards : ${reward}

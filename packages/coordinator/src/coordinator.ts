@@ -100,7 +100,7 @@ export class Coordinator extends EventEmitter {
 
   start() {
     logger.info('Coordinator started')
-    this.node.startSync()
+    this.node.start()
     this.startAPI()
     this.startSubscribeGasPrice()
     this.blockFinalizer.start({
@@ -111,7 +111,7 @@ export class Coordinator extends EventEmitter {
       task: this.commitMassDeposit.bind(this),
       interval: 10000,
     })
-    this.node.on('status', async (status: NetworkStatus) => {
+    this.node.synchronizer.on('status', async (status: NetworkStatus) => {
       // udpate the txpool using the newly proposed hash
       // if the hash does not exist in the tx pool's block list
       // create an observer to fetch the block data from database
@@ -134,7 +134,7 @@ export class Coordinator extends EventEmitter {
           break
       }
     })
-    this.node.on('onFetched', (block: Block) => {
+    this.node.synchronizer.on('onFetched', (block: Block) => {
       this.txPool.markAsIncluded(block.body.txs)
     })
     this.emit('start')
@@ -146,7 +146,7 @@ export class Coordinator extends EventEmitter {
       this.blockProposer.close(),
       this.blockFinalizer.close(),
       this.massDepositCommitter.close(),
-      this.node.stopSync(),
+      this.node.stop(),
     ])
     return new Promise(res => {
       if (this.api) {
@@ -167,23 +167,23 @@ export class Coordinator extends EventEmitter {
     nOut: number,
     vk: any,
   ): Promise<TransactionReceipt | undefined> {
-    const tx = this.node.l1Contract.setup.methods.registerVk(nIn, nOut, {
+    const tx = this.node.context.layer1.setup.methods.registerVk(nIn, nOut, {
       alpha1: vk.vk_alpha_1.slice(0, 2),
       beta2: vk.vk_beta_2.slice(0, 2),
       gamma2: vk.vk_gamma_2.slice(0, 2),
       delta2: vk.vk_delta_2.slice(0, 2),
       ic: vk.IC.map(arr => arr.slice(0, 2)),
     })
-    return this.node.l1Contract.sendTx(tx, this.account)
+    return this.node.context.layer1.sendTx(tx, this.account)
   }
 
   async completeSetup(): Promise<TransactionReceipt | undefined> {
-    const tx = this.node.l1Contract.setup.methods.completeSetup()
-    return this.node.l1Contract.sendTx(tx, this.account)
+    const tx = this.node.context.layer1.setup.methods.completeSetup()
+    return this.node.context.layer1.sendTx(tx, this.account)
   }
 
   async commitMassDeposit(): Promise<TransactionReceipt | undefined> {
-    const stagedDeposits = await this.node.l1Contract.upstream.methods
+    const stagedDeposits = await this.node.context.layer1.upstream.methods
       .stagedDeposits()
       .call()
     if (
@@ -191,24 +191,24 @@ export class Coordinator extends EventEmitter {
         .toBN()
         .gtn(0)
     ) {
-      const tx = this.node.l1Contract.coordinator.methods.commitMassDeposit()
-      return this.node.l1Contract.sendTx(tx, this.account)
+      const tx = this.node.context.layer1.coordinator.methods.commitMassDeposit()
+      return this.node.context.layer1.sendTx(tx, this.account)
     }
     return undefined
   }
 
   async registerAsCoordinator(): Promise<TransactionReceipt | undefined> {
-    const { minimumStake } = this.node.l2Chain.config
-    const tx = this.node.l1Contract.coordinator.methods.register()
-    return this.node.l1Contract.sendTx(tx, this.account, {
+    const { minimumStake } = this.node.context.layer2.config
+    const tx = this.node.context.layer1.coordinator.methods.register()
+    return this.node.context.layer1.sendTx(tx, this.account, {
       value: minimumStake,
     })
     // return this.sendTx(tx)
   }
 
   async deregister(): Promise<TransactionReceipt | undefined> {
-    const tx = this.node.l1Contract.coordinator.methods.deregister()
-    return this.node.l1Contract.sendTx(tx, this.account)
+    const tx = this.node.context.layer1.coordinator.methods.deregister()
+    return this.node.context.layer1.sendTx(tx, this.account)
   }
 
   async getPendingMassDeposits(): Promise<PendingMassDeposits> {
@@ -216,13 +216,14 @@ export class Coordinator extends EventEmitter {
     let consumedBytes = 0
     let aggregatedFee: Field = Field.zero
     // 1. pick mass deposits
-    const commits: MassDepositSql[] = await this.node.db.read(prisma =>
-      prisma.massDeposit.findMany({
-        where: { includedIn: null },
-      }),
+    const commits: MassDepositSql[] = await this.node.context.layer2.db.read(
+      prisma =>
+        prisma.massDeposit.findMany({
+          where: { includedIn: null },
+        }),
     )
     commits.sort((a, b) => parseInt(a.index, 10) - parseInt(b.index, 10))
-    const pendingDeposits = await this.node.db.read(prisma =>
+    const pendingDeposits = await this.node.context.layer2.db.read(prisma =>
       prisma.deposit.findMany({
         where: { queuedAt: { in: commits.map(commit => commit.index) } },
       }),
@@ -274,13 +275,13 @@ export class Coordinator extends EventEmitter {
   private async startSubscribeGasPrice() {
     if (this.gasPriceSubscriber) return
     this.gasPrice = Field.from(
-      await this.node.l1Contract.web3.eth.getGasPrice(),
+      await this.node.context.layer1.web3.eth.getGasPrice(),
     )
-    this.gasPriceSubscriber = this.node.l1Contract.web3.eth.subscribe(
+    this.gasPriceSubscriber = this.node.context.layer1.web3.eth.subscribe(
       'newBlockHeaders',
       async () => {
         this.gasPrice = Field.from(
-          await this.node.l1Contract.web3.eth.getGasPrice(),
+          await this.node.context.layer1.web3.eth.getGasPrice(),
         )
       },
     )
@@ -292,7 +293,7 @@ export class Coordinator extends EventEmitter {
     logger.info(txData)
     const zkTx = ZkTx.decode(Buffer.from(txData, 'hex'))
     // const zkTx = ZkTx.decode(txData)
-    const result = await this.node.verifier.snarkVerifier.verifyTx(zkTx)
+    const result = await this.node.context.layer2.snarkVerifier.verifyTx(zkTx)
     if (result) {
       logger.info('add a transaction')
       await this.txPool.addToTxPool(zkTx)
@@ -321,7 +322,7 @@ export class Coordinator extends EventEmitter {
     // TODO verify request
     // TODO check fee
     const siblings: string[] = JSON.parse(withdrawal.siblings)
-    const tx = this.node.l1Contract.user.methods.payInAdvance(
+    const tx = this.node.context.layer1.user.methods.payInAdvance(
       hash,
       to,
       eth,
@@ -340,7 +341,7 @@ export class Coordinator extends EventEmitter {
       nft,
       fee,
     )
-    const receipt = await this.node.l1Contract.sendTx(tx, this.account, {
+    const receipt = await this.node.context.layer1.sendTx(tx, this.account, {
       value: eth,
     })
     if (receipt) {
@@ -360,7 +361,7 @@ export class Coordinator extends EventEmitter {
         siblings: JSON.stringify(siblings),
         status: WithdrawalStatus.UNFINALIZED,
       }
-      await this.node.db.write(prisma =>
+      await this.node.context.layer2.db.write(prisma =>
         prisma.withdrawal.upsert({
           where: { hash },
           create: data,
@@ -387,7 +388,7 @@ export class Coordinator extends EventEmitter {
     if (hash) {
       hashForBootstrapBlock = hash
     } else {
-      hashForBootstrapBlock = await this.node.l1Contract.upstream.methods
+      hashForBootstrapBlock = await this.node.context.layer1.upstream.methods
         .latest()
         .call()
     }
@@ -395,8 +396,8 @@ export class Coordinator extends EventEmitter {
       res.send(this.bootstrapCache[hashForBootstrapBlock])
     }
     const blockHash = Bytes32.from(hashForBootstrapBlock)
-    const block = await this.node.l2Chain.getBlock(blockHash)
-    const proposal = await this.node.l2Chain.getProposal(blockHash)
+    const block = await this.node.context.layer2.getBlock(blockHash)
+    const proposal = await this.node.context.layer2.getProposal(blockHash)
     if (!proposal) {
       const message = `Failed to find a proposal for the requested  ${hash}`
       logger.info(message)
@@ -449,7 +450,7 @@ export class Coordinator extends EventEmitter {
       try {
         const receipt = await this.proposeNewBlock()
         if (receipt) {
-          await this.node.updateStatus()
+          await this.node.synchronizer.updateStatus()
         }
       } catch (err) {
         logger.error(`Error occurred during block proposing.`)
@@ -463,9 +464,9 @@ export class Coordinator extends EventEmitter {
       logger.trace('Skip gen block. Gas price is not synced yet')
       return undefined
     }
-    if (this.node.status !== NetworkStatus.FULLY_SYNCED) {
+    if (!this.node.synchronizer.isSynced()) {
       logger.trace(
-        `Skip gen block. Syncing layer 2 with the layer 1 - status: ${this.node.status}`,
+        `Skip gen block. Syncing layer 2 with the layer 1 - status: ${this.node.synchronizer.status}`,
       )
       return undefined
     }
@@ -481,7 +482,7 @@ export class Coordinator extends EventEmitter {
       return undefined
     }
     const blockHash = headerHash(block.header)
-    const siblingProposals = await this.node.db.read(prisma =>
+    const siblingProposals = await this.node.context.layer2.db.read(prisma =>
       prisma.proposal.findMany({
         where: {
           OR: [
@@ -509,7 +510,7 @@ export class Coordinator extends EventEmitter {
       serializeBody(block.body),
     ])
     const blockData = `0x${bytes.toString('hex')}`
-    const proposeTx = this.node.l1Contract.coordinator.methods.propose(
+    const proposeTx = this.node.context.layer1.coordinator.methods.propose(
       blockData,
     )
     let expectedGas: number
@@ -528,10 +529,14 @@ export class Coordinator extends EventEmitter {
       )
       return undefined
     }
-    const receipt = await this.node.l1Contract.sendTx(proposeTx, this.account, {
-      gas: expectedGas,
-      gasPrice: this.gasPrice.toString(),
-    })
+    const receipt = await this.node.context.layer1.sendTx(
+      proposeTx,
+      this.account,
+      {
+        gas: expectedGas,
+        gasPrice: this.gasPrice.toString(),
+      },
+    )
     if (receipt) {
       logger.info(`Proposed a new block: ${blockHash}`)
     } else {
@@ -620,7 +625,7 @@ export class Coordinator extends EventEmitter {
     }
     // TODO acquire lock during gen block
     const massMigrations: MassMigration[] = getMassMigrations(txs)
-    const expectedGrove = await this.node.l2Chain.grove.dryPatch({
+    const expectedGrove = await this.node.context.layer2.grove.dryPatch({
       utxos,
       withdrawals,
       nullifiers,
@@ -660,7 +665,7 @@ export class Coordinator extends EventEmitter {
     if (!finalization) return
     logger.info('finalization')
     const blockHash = headerHash(finalization.header).toString()
-    const tx = this.node.l1Contract.coordinator.methods.finalize(
+    const tx = this.node.context.layer1.coordinator.methods.finalize(
       `0x${serializeFinalization(finalization).toString('hex')}`,
     )
     let finalizable = false
@@ -673,9 +678,9 @@ export class Coordinator extends EventEmitter {
     }
     if (finalizable) {
       try {
-        const receipt = await this.node.l1Contract.sendTx(tx, this.account)
+        const receipt = await this.node.context.layer1.sendTx(tx, this.account)
         if (receipt) {
-          await this.node.db.write(prisma =>
+          await this.node.context.layer2.db.write(prisma =>
             prisma.proposal.update({
               where: { hash: blockHash },
               data: { finalized: true },
@@ -692,25 +697,30 @@ export class Coordinator extends EventEmitter {
   }
 
   private async genFinalization(): Promise<Finalization | undefined> {
-    const latest = await this.node.l1Contract.upstream.methods.latest().call()
-    const currentBlockNumber: number = await this.node.l1Contract.web3.eth.getBlockNumber()
-    const l1Config = await this.node.l1Contract.getConfig()
-    const unfinalizedProposals = await this.node.db.read(prisma =>
-      prisma.proposal.findMany({
-        where: {
-          AND: [
-            { finalized: null },
-            { block: { header: { parentBlock: latest } } },
-            { verified: true },
-            { isUncle: null },
-            { proposalData: { not: null } },
-            {
-              proposedAt: { lt: currentBlockNumber - l1Config.challengePeriod },
-            },
-          ],
-        },
-        take: 1,
-      }),
+    const latest = await this.node.context.layer1.upstream.methods
+      .latest()
+      .call()
+    const currentBlockNumber: number = await this.node.context.layer1.web3.eth.getBlockNumber()
+    const l1Config = await this.node.context.layer1.getConfig()
+    const unfinalizedProposals = await this.node.context.layer2.db.read(
+      prisma =>
+        prisma.proposal.findMany({
+          where: {
+            AND: [
+              { finalized: null },
+              { block: { header: { parentBlock: latest } } },
+              { verified: true },
+              { isUncle: null },
+              { proposalData: { not: null } },
+              {
+                proposedAt: {
+                  lt: currentBlockNumber - l1Config.challengePeriod,
+                },
+              },
+            ],
+          },
+          take: 1,
+        }),
     )
     const proposalToFinalize = unfinalizedProposals[0]
     if (!proposalToFinalize) return undefined

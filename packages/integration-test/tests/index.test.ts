@@ -114,7 +114,7 @@ describe('testnet', () => {
     let newGroveSnapshot!: GroveSnapshot
     beforeAll(async () => {
       const { coordinator } = ctx()
-      prevGroveSnapshot = await coordinator.node.l2Chain.grove.getSnapshot()
+      prevGroveSnapshot = await coordinator.node.context.layer2.grove.getSnapshot()
     })
     describe('register coordinator account', () => {
       // later it should be replaced with the burn auction
@@ -123,7 +123,7 @@ describe('testnet', () => {
     describe('coordinator creates the first block when the aggregated fee is enough', () => {
       afterAll(async () => {
         const { coordinator } = ctx()
-        newGroveSnapshot = await coordinator.node.l2Chain.grove.getSnapshot()
+        newGroveSnapshot = await coordinator.node.context.layer2.grove.getSnapshot()
       })
       it(
         'should propose a new block within a few seconds',
