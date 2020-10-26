@@ -36,6 +36,7 @@ import BN from 'bn.js'
 import { soliditySha3Raw } from 'web3-utils'
 import assert from 'assert'
 import AsyncLock from 'async-lock'
+import { Layer1 } from '@zkopru/contracts'
 import { TxMemPool, TxPoolInterface } from './tx_pool'
 
 export interface CoordinatorConfig {
@@ -199,11 +200,16 @@ export class Coordinator extends EventEmitter {
 
   async registerAsCoordinator(): Promise<TransactionReceipt | undefined> {
     const { minimumStake } = this.node.context.layer2.config
-    const tx = this.node.context.layer1.coordinator.methods.register()
+    const consensus = await this.node.context.layer1.upstream.methods
+      .consensusProvider()
+      .call()
+    const tx = Layer1.getIBurnAuction(
+      this.node.context.layer1.web3,
+      consensus,
+    ).methods.register()
     return this.node.context.layer1.sendTx(tx, this.account, {
       value: minimumStake,
     })
-    // return this.sendTx(tx)
   }
 
   async deregister(): Promise<TransactionReceipt | undefined> {

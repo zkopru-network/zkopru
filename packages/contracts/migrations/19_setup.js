@@ -17,6 +17,8 @@ const TxValidator = artifacts.require('TxValidator')
 const TxSNARKValidator = artifacts.require('TxSNARKValidator')
 const MigrationValidator = artifacts.require('MigrationValidator')
 const Migratable = artifacts.require('Migratable')
+const Configurable = artifacts.require('Configurable')
+const BurnAuction = artifacts.require('BurnAuction')
 const Zkopru = artifacts.require('Zkopru')
 
 const instances = {}
@@ -80,6 +82,14 @@ module.exports = function migration(deployer, network, accounts) {
     })
     .then(migratable => {
       instances.migratable = migratable
+      return Configurable.deployed()
+    })
+    .then(configurable => {
+      instances.configurable = configurable
+      return BurnAuction.deployed()
+    })
+    .then(burnAuction => {
+      instances.burnAuction = burnAuction
       return Zkopru.deployed()
     })
     .then(async zkopru => {
@@ -115,6 +125,9 @@ module.exports = function migration(deployer, network, accounts) {
         instances.txSNARKValidator.address,
       )
       await zkopru.makeMigratable(instances.migratable.address)
+      await zkopru.makeConfigurable(instances.configurable.address)
+      const configurable = await Configurable.at(zkopru.address)
+      await configurable.setConsensusProvider(instances.burnAuction.address)
       if (network === 'integrationtest') {
         // integration test will run the below steps manually.
         return
@@ -157,7 +170,7 @@ module.exports = function migration(deployer, network, accounts) {
       await zkopru.completeSetup()
       if (network === 'testnet') {
         // Register as coordinator
-        await coordinatable.register({ value: '32000000000000000000' })
+        await instances.burnAuction.register({ value: '32000000000000000000' })
       }
     })
 }

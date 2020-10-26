@@ -5,6 +5,7 @@
 
 import { toWei } from 'web3-utils'
 import { verifyingKeyIdentifier, sleep } from '@zkopru/utils'
+import { Layer1 } from '@zkopru/contracts'
 import { Address } from 'soltypes'
 import { ZkWallet } from '@zkopru/zk-wizard'
 import { CtxProvider } from './context'
@@ -45,10 +46,11 @@ export const testRejectVkRegistration = (ctx: CtxProvider) => async () => {
 }
 
 export const registerCoordinator = (ctx: CtxProvider) => async () => {
-  const { wallets, contract, zkopruAddress } = ctx()
+  const { wallets, web3, contract } = ctx()
+  const consensus = await contract.upstream.methods.consensusProvider().call()
   await wallets.coordinator.sendLayer1Tx({
-    contract: zkopruAddress,
-    tx: contract.coordinator.methods.register(),
+    contract: consensus,
+    tx: Layer1.getIBurnAuction(web3, consensus).methods.register(),
     option: {
       value: toWei('32', 'ether'),
     },

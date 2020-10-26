@@ -5,6 +5,7 @@ import { Storage } from "../storage/Storage.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC165 } from "@openzeppelin/contracts/introspection/IERC165.sol";
 import { Hash } from "../libraries/Hash.sol";
+import { IConsensusProvider } from "../../consensus/interfaces/IConsensusProvider.sol";
 import {
     Header,
     Proposer,
@@ -34,8 +35,12 @@ contract Coordinatable is Storage {
      *         Coordinator should pay more than MINIMUM_STAKE. See 'Configurated.sol'
      */
     function register() public payable {
+        stake(msg.sender);
+    }
+
+    function stake(address coordinator) public payable {
         require(msg.value >= MINIMUM_STAKE, "Should stake more than minimum amount of ETH");
-        Proposer storage proposer = Storage.chain.proposers[msg.sender];
+        Proposer storage proposer = Storage.chain.proposers[coordinator];
         proposer.stake += msg.value;
     }
 
@@ -253,7 +258,7 @@ contract Coordinatable is Storage {
         Proposer memory  proposer = Storage.chain.proposers[proposerAddr];
         // You can add more consensus logic here
         if (proposer.stake >= MINIMUM_STAKE) {
-            return true;
+            return IConsensusProvider(consensusProvider).isProposable(proposerAddr);
         } else {
             return false;
         }

@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class TxValidator extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): TxValidator
+
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -51,6 +53,8 @@ export class TxValidator extends Contract {
       massDepositHash: string | number[],
     ): TransactionObject<string>
 
+    consensusProvider(): TransactionObject<string>
+
     finalizedUTXORoots(utxoRoot: string | number[]): TransactionObject<boolean>
 
     genesis(): TransactionObject<string>
@@ -76,6 +80,8 @@ export class TxValidator extends Contract {
     massDepositId(): TransactionObject<string>
 
     migrations(migrationHash: string | number[]): TransactionObject<boolean>
+
+    owner(): TransactionObject<string>
 
     parentOf(header: string | number[]): TransactionObject<string>
 
@@ -109,6 +115,8 @@ export class TxValidator extends Contract {
 
     registeredERC721s(tokenAddr: string): TransactionObject<boolean>
 
+    renounceOwnership(): TransactionObject<void>
+
     stagedDeposits(): TransactionObject<{
       merged: string
       fee: string
@@ -117,6 +125,8 @@ export class TxValidator extends Contract {
     }>
 
     stagedSize(): TransactionObject<string>
+
+    transferOwnership(newOwner: string): TransactionObject<void>
 
     utxoRootOf(header: string | number[]): TransactionObject<string>
 
@@ -185,7 +195,14 @@ export class TxValidator extends Contract {
       ref: number | string,
     ): TransactionObject<boolean>
   }
+
   events: {
+    OwnershipTransferred: ContractEvent<{
+      previousOwner: string
+      newOwner: string
+      0: string
+      1: string
+    }>
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
 }

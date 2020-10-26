@@ -2,34 +2,34 @@ version: "3.4"
 
 services:
   contracts:
-    image: zkoprunet/contracts:refactor-128
+    image: zkoprunet/contracts:feat-126
     build:
       context: ../packages/contracts/
       dockerfile: ../../dockerfiles/Contract.dockerfile
   contracts-for-integration-test:
-    image: zkoprunet/contracts-integration-test:refactor-128
+    image: zkoprunet/contracts-integration-test:feat-126
     build:
       context: ../packages/contracts/
       dockerfile: ../../dockerfiles/Contract.integration.dockerfile
   circuits:
-    image: zkoprunet/circuits:refactor-128
+    image: zkoprunet/circuits:feat-126
     build:
       context: ../packages/circuits/
       target: phase2
       dockerfile: ../../dockerfiles/Circuits.dockerfile
   circuits-phase-1:
-    image: zkoprunet/circuits-phase-1:refactor-128
+    image: zkoprunet/circuits-phase-1:feat-126
     build:
       context: ../packages/circuits/
       target: phase1
       dockerfile: ../../dockerfiles/Circuits.dockerfile
   playground:
-    image: zkoprunet/playground:refactor-128
+    image: zkoprunet/playground:feat-126
     build:
       context: ../
       dockerfile: dockerfiles/Playground.dockerfile
   coordinator:
-    image: zkoprunet/coordinator:refactor-128
+    image: zkoprunet/coordinator:feat-126
     build:
       context: ../
       dockerfile: dockerfiles/Coordinator.dockerfile

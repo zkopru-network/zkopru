@@ -63,6 +63,13 @@ export const ISetupWizardABI = [
   },
   {
     inputs: [{ internalType: 'address', name: 'addr', type: 'address' }],
+    name: 'makeConfigurable',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'addr', type: 'address' }],
     name: 'makeUserInteractable',
     outputs: [],
     stateMutability: 'nonpayable',

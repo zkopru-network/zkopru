@@ -14,23 +14,12 @@ contract Zkopru is Proxy, ISetupWizard {
     using Types for Header;
     using Types for Blockchain;
 
-    address setupWizard;
-
     event GenesisBlock(
         bytes32 blockHash,
         address proposer,
         uint256 fromBlock,
         bytes32 parentBlock
     );
-
-    constructor(address _setupWizard) public {
-        setupWizard = _setupWizard;
-    }
-
-    modifier onlySetupWizard {
-        require(msg.sender == setupWizard, "Not authorized");
-        _;
-    }
 
     /**
      * @dev This configures a zk SNARK verification key to support the given transaction type
@@ -42,7 +31,7 @@ contract Zkopru is Proxy, ISetupWizard {
         uint8 numOfInputs,
         uint8 numOfOutputs,
         SNARK.VerifyingKey memory vk
-    ) public override onlySetupWizard {
+    ) public override onlyOwner {
         uint256 txSig = Types.getSNARKSignature(numOfInputs, numOfOutputs);
         SNARK.VerifyingKey storage key = Storage.vks[txSig];
         require(key.ic.length == 0, "already registered");
@@ -72,14 +61,21 @@ contract Zkopru is Proxy, ISetupWizard {
     /**
      * @dev It connects this proxy contract to the UserInteractable controller.
      */
-    function makeUserInteractable(address addr) public override onlySetupWizard{
+    function makeUserInteractable(address addr) public override onlyOwner {
         Proxy._connectUserInteractable(addr);
     }
 
     /**
      * @dev It connects this proxy contract to the Coordinatable controller.
      */
-    function makeCoordinatable(address addr) public override onlySetupWizard{
+    function makeConfigurable(address addr) public override onlyOwner {
+        Proxy._connectConfigurable(addr);
+    }
+
+    /**
+     * @dev It connects this proxy contract to the Coordinatable controller.
+     */
+    function makeCoordinatable(address addr) public override onlyOwner {
         Proxy._connectCoordinatable(addr);
     }
 
@@ -96,7 +92,7 @@ contract Zkopru is Proxy, ISetupWizard {
         address nullifierTreeValidator,
         address txValidator,
         address txSNARKValidator
-    ) public override onlySetupWizard {
+    ) public override onlyOwner {
         Proxy._connectChallengeable(
             challengeable,
             depositValidator,
@@ -113,7 +109,7 @@ contract Zkopru is Proxy, ISetupWizard {
     /**
      * @dev It connects this proxy contract to the Migratable controller.
      */
-    function makeMigratable(address addr) public override onlySetupWizard {
+    function makeMigratable(address addr) public override onlyOwner {
         Proxy._connectMigratable(addr);
     }
 
@@ -124,7 +120,7 @@ contract Zkopru is Proxy, ISetupWizard {
             2. On the departure contract, execute migrateTo(). See "IMigratable.sol"
      * @param migrants List of contracts' address to allow migrations.
      */
-    function allowMigrants(address[] memory migrants) public override onlySetupWizard {
+    function allowMigrants(address[] memory migrants) public override onlyOwner {
         for (uint256 i = 0; i < migrants.length; i++) {
             Storage.allowedMigrants[migrants[i]] = true;
         }
@@ -133,9 +129,8 @@ contract Zkopru is Proxy, ISetupWizard {
     /**
      * @dev If you once execute this, every configuration freezes and does not change forever.
      */
-    function completeSetup() public override onlySetupWizard {
+    function completeSetup() public override onlyOwner {
         require(Storage.chain.latest == bytes32(0), "Already initialized");
-        delete setupWizard;
         uint256[] memory poseidonPreHashes = Hash.poseidonPrehashedZeroes();
         uint256 utxoRoot = poseidonPreHashes[poseidonPreHashes.length - 1];
         uint256[] memory keccakPreHashes = Hash.keccakPrehashedZeroes();

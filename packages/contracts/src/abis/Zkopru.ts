@@ -1,12 +1,5 @@
 export const ZkopruABI = [
   {
-    inputs: [
-      { internalType: 'address', name: '_setupWizard', type: 'address' },
-    ],
-    stateMutability: 'nonpayable',
-    type: 'constructor',
-  },
-  {
     anonymous: false,
     inputs: [
       {
@@ -35,6 +28,25 @@ export const ZkopruABI = [
       },
     ],
     name: 'GenesisBlock',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'previousOwner',
+        type: 'address',
+      },
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'newOwner',
+        type: 'address',
+      },
+    ],
+    name: 'OwnershipTransferred',
     type: 'event',
   },
   { stateMutability: 'payable', type: 'fallback' },
@@ -153,6 +165,13 @@ export const ZkopruABI = [
     type: 'function',
   },
   {
+    inputs: [],
+    name: 'consensusProvider',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
     inputs: [{ internalType: 'bytes32', name: 'utxoRoot', type: 'bytes32' }],
     name: 'finalizedUTXORoots',
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
@@ -202,6 +221,13 @@ export const ZkopruABI = [
     ],
     name: 'migrations',
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'owner',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
   },
@@ -264,6 +290,13 @@ export const ZkopruABI = [
   },
   {
     inputs: [],
+    name: 'renounceOwnership',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [],
     name: 'stagedDeposits',
     outputs: [
       { internalType: 'bytes32', name: 'merged', type: 'bytes32' },
@@ -277,6 +310,13 @@ export const ZkopruABI = [
     name: 'stagedSize',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'newOwner', type: 'address' }],
+    name: 'transferOwnership',
+    outputs: [],
+    stateMutability: 'nonpayable',
     type: 'function',
   },
   {
@@ -373,6 +413,13 @@ export const ZkopruABI = [
   {
     inputs: [{ internalType: 'address', name: 'addr', type: 'address' }],
     name: 'makeUserInteractable',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'addr', type: 'address' }],
+    name: 'makeConfigurable',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',

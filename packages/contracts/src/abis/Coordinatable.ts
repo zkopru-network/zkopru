@@ -78,6 +78,25 @@ export const CoordinatableABI = [
     type: 'event',
   },
   {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'previousOwner',
+        type: 'address',
+      },
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'newOwner',
+        type: 'address',
+      },
+    ],
+    name: 'OwnershipTransferred',
+    type: 'event',
+  },
+  {
     inputs: [],
     name: 'CHALLENGE_PERIOD',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
@@ -192,6 +211,13 @@ export const CoordinatableABI = [
     type: 'function',
   },
   {
+    inputs: [],
+    name: 'consensusProvider',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
     inputs: [{ internalType: 'bytes32', name: 'utxoRoot', type: 'bytes32' }],
     name: 'finalizedUTXORoots',
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
@@ -241,6 +267,13 @@ export const CoordinatableABI = [
     ],
     name: 'migrations',
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'owner',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
   },
@@ -303,6 +336,13 @@ export const CoordinatableABI = [
   },
   {
     inputs: [],
+    name: 'renounceOwnership',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [],
     name: 'stagedDeposits',
     outputs: [
       { internalType: 'bytes32', name: 'merged', type: 'bytes32' },
@@ -316,6 +356,13 @@ export const CoordinatableABI = [
     name: 'stagedSize',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'newOwner', type: 'address' }],
+    name: 'transferOwnership',
+    outputs: [],
+    stateMutability: 'nonpayable',
     type: 'function',
   },
   {
@@ -349,6 +396,13 @@ export const CoordinatableABI = [
   {
     inputs: [],
     name: 'register',
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'coordinator', type: 'address' }],
+    name: 'stake',
     outputs: [],
     stateMutability: 'payable',
     type: 'function',

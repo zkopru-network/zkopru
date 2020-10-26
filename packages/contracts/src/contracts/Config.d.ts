@@ -13,9 +13,11 @@ interface EventOptions {
   topics?: string[]
 }
 
-export class Configurated extends Contract {
+export class Config extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
-  clone(): Configurated
+
+  clone(): Config
+
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -44,8 +46,23 @@ export class Configurated extends Contract {
     WITHDRAWAL_SUB_TREE_SIZE(): TransactionObject<string>
 
     WITHDRAWAL_TREE_DEPTH(): TransactionObject<string>
+
+    consensusProvider(): TransactionObject<string>
+
+    owner(): TransactionObject<string>
+
+    renounceOwnership(): TransactionObject<void>
+
+    transferOwnership(newOwner: string): TransactionObject<void>
   }
+
   events: {
+    OwnershipTransferred: ContractEvent<{
+      previousOwner: string
+      newOwner: string
+      0: string
+      1: string
+    }>
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
 }

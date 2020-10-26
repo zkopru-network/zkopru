@@ -1,4 +1,4 @@
-export const UtxoTreeValidatorABI = [
+export const ConfigurableABI = [
   {
     anonymous: false,
     inputs: [
@@ -16,6 +16,20 @@ export const UtxoTreeValidatorABI = [
       },
     ],
     name: 'OwnershipTransferred',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: false, internalType: 'string', name: 'name', type: 'string' },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'value',
+        type: 'uint256',
+      },
+    ],
+    name: 'Update',
     type: 'event',
   },
   {
@@ -316,36 +330,45 @@ export const UtxoTreeValidatorABI = [
     type: 'function',
   },
   {
-    inputs: [
-      { internalType: 'bytes', name: '', type: 'bytes' },
-      { internalType: 'bytes', name: '', type: 'bytes' },
-      { internalType: 'uint256[]', name: '_deposits', type: 'uint256[]' },
-    ],
-    name: 'validateUTXOIndex',
-    outputs: [
-      { internalType: 'bool', name: 'slash', type: 'bool' },
-      { internalType: 'string', name: 'reason', type: 'string' },
-    ],
-    stateMutability: 'view',
+    inputs: [{ internalType: 'uint256', name: 'blockSize', type: 'uint256' }],
+    name: 'setMaxBlockSize',
+    outputs: [],
+    stateMutability: 'nonpayable',
     type: 'function',
   },
   {
-    inputs: [
-      { internalType: 'bytes', name: '', type: 'bytes' },
-      { internalType: 'bytes', name: '', type: 'bytes' },
-      { internalType: 'uint256[]', name: '_deposits', type: 'uint256[]' },
-      {
-        internalType: 'uint256[]',
-        name: '_initialSiblings',
-        type: 'uint256[]',
-      },
-    ],
-    name: 'validateUTXORoot',
-    outputs: [
-      { internalType: 'bool', name: 'slash', type: 'bool' },
-      { internalType: 'string', name: 'reason', type: 'string' },
-    ],
-    stateMutability: 'view',
+    inputs: [{ internalType: 'uint256', name: 'maxGas', type: 'uint256' }],
+    name: 'setMaxValidationGas',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'uint256', name: 'period', type: 'uint256' }],
+    name: 'setChallengePeriod',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'uint256', name: 'stake', type: 'uint256' }],
+    name: 'setMinimumStake',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'uint256', name: 'depth', type: 'uint256' }],
+    name: 'setReferenceDepth',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'provider', type: 'address' }],
+    name: 'setConsensusProvider',
+    outputs: [],
+    stateMutability: 'nonpayable',
     type: 'function',
   },
 ]

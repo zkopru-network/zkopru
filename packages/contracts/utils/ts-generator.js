@@ -81,25 +81,6 @@ export class ZkopruContract {
   }
 }`
 
-const list = [
-  'ICoordinatable',
-  'IChallengeable',
-  'IDepositValidator',
-  'IHeaderValidator',
-  'IMigratable',
-  'IMigrationValidator',
-  'IUtxoTreeValidator',
-  'IWithdrawalTreeValidator',
-  'INullifierTreeValidator',
-  'ISetupWizard',
-  'ITxValidator',
-  'ITxSNARKValidator',
-  'IUserInteractable',
-  'ERC20',
-  'ERC721',
-  'IERC721Enumerable',
-  'Zkopru',
-]
 const importABIs = list =>
   `${abis.reduce((prev, name) => {
     if (!list.includes(name)) return prev
@@ -121,6 +102,27 @@ const staticClasses = list =>
 `
   }, '')}`
 
+const list = [
+  'IBurnAuction',
+  'IConsensusProvider',
+  'ICoordinatable',
+  'IChallengeable',
+  'IDepositValidator',
+  'IHeaderValidator',
+  'IMigratable',
+  'IMigrationValidator',
+  'IUtxoTreeValidator',
+  'IWithdrawalTreeValidator',
+  'INullifierTreeValidator',
+  'ISetupWizard',
+  'ITxValidator',
+  'ITxSNARKValidator',
+  'IUserInteractable',
+  'ERC20',
+  'ERC721',
+  'IERC721Enumerable',
+  'Zkopru',
+]
 const layer1TS = `/* eslint-disable @typescript-eslint/no-explicit-any */
 import Web3 from 'web3'
 import { ContractOptions } from 'web3-eth-contract'

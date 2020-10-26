@@ -2,6 +2,7 @@
 pragma solidity = 0.6.12;
 
 import { Storage } from "./storage/Storage.sol";
+import { IConfigurable } from "./interfaces/IConfigurable.sol";
 import { ICoordinatable } from "./interfaces/ICoordinatable.sol";
 import { IUserInteractable } from "./interfaces/IUserInteractable.sol";
 import { IMigratable } from "./interfaces/IMigratable.sol";
@@ -42,14 +43,20 @@ contract Proxy is Storage {
      * @dev See Coordinatable.sol's register() function
     */
     receive() external payable {
-        bytes4 sig = ICoordinatable(0).register.selector;
-        address addr = Storage.proxied[sig];
-        (bool success, bytes memory result) = addr.delegatecall(msg.data);
-        require(success, string(result));
+    }
+
+    function _connectConfigurable(address addr) internal virtual {
+        _connect(addr, IConfigurable(0).setMaxBlockSize.selector);
+        _connect(addr, IConfigurable(0).setMaxValidationGas.selector);
+        _connect(addr, IConfigurable(0).setChallengePeriod.selector);
+        _connect(addr, IConfigurable(0).setMinimumStake.selector);
+        _connect(addr, IConfigurable(0).setReferenceDepth.selector);
+        _connect(addr, IConfigurable(0).setConsensusProvider.selector);
     }
 
     function _connectCoordinatable(address addr) internal {
         _connect(addr, ICoordinatable(0).register.selector);
+        _connect(addr, ICoordinatable(0).stake.selector);
         _connect(addr, ICoordinatable(0).deregister.selector);
         _connect(addr, ICoordinatable(0).propose.selector);
         _connect(addr, ICoordinatable(0).finalize.selector);

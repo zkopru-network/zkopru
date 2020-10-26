@@ -13,10 +13,10 @@ interface EventOptions {
   topics?: string[]
 }
 
-export class Challengeable extends Contract {
+export class Configurable extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
 
-  clone(): Challengeable
+  clone(): Configurable
 
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
@@ -135,6 +135,18 @@ export class Challengeable extends Contract {
     withdrawalRootOf(header: string | number[]): TransactionObject<string>
 
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
+
+    setMaxBlockSize(blockSize: number | string): TransactionObject<void>
+
+    setMaxValidationGas(maxGas: number | string): TransactionObject<void>
+
+    setChallengePeriod(period: number | string): TransactionObject<void>
+
+    setMinimumStake(stake: number | string): TransactionObject<void>
+
+    setReferenceDepth(depth: number | string): TransactionObject<void>
+
+    setConsensusProvider(provider: string): TransactionObject<void>
   }
 
   events: {
@@ -144,13 +156,11 @@ export class Challengeable extends Contract {
       0: string
       1: string
     }>
-    Slash: ContractEvent<{
-      blockHash: string
-      proposer: string
-      reason: string
+    Update: ContractEvent<{
+      name: string
+      value: string
       0: string
       1: string
-      2: string
     }>
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

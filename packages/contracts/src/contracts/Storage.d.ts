@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class Storage extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): Storage
+
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -47,7 +49,15 @@ export class Storage extends Contract {
 
     allowedMigrants(arg0: string): TransactionObject<boolean>
 
+    consensusProvider(): TransactionObject<string>
+
+    owner(): TransactionObject<string>
+
     proxied(arg0: string | number[]): TransactionObject<string>
+
+    renounceOwnership(): TransactionObject<void>
+
+    transferOwnership(newOwner: string): TransactionObject<void>
 
     validators(arg0: string | number[]): TransactionObject<string>
 
@@ -126,7 +136,14 @@ export class Storage extends Contract {
       4: string[][]
     }>
   }
+
   events: {
+    OwnershipTransferred: ContractEvent<{
+      previousOwner: string
+      newOwner: string
+      0: string
+      1: string
+    }>
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
 }

@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class ISetupWizard extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): ISetupWizard
+
   methods: {
     registerVk(
       numOfInputs: number | string,
@@ -28,6 +30,8 @@ export class ISetupWizard extends Contract {
         ic: { X: number | string; Y: number | string }[]
       },
     ): TransactionObject<void>
+
+    makeConfigurable(addr: string): TransactionObject<void>
 
     makeUserInteractable(addr: string): TransactionObject<void>
 
@@ -51,6 +55,7 @@ export class ISetupWizard extends Contract {
 
     completeSetup(): TransactionObject<void>
   }
+
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

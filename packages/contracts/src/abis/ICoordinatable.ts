@@ -92,6 +92,13 @@ export const ICoordinatableABI = [
     type: 'function',
   },
   {
+    inputs: [{ internalType: 'address', name: 'coordinator', type: 'address' }],
+    name: 'stake',
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+  {
     inputs: [{ internalType: 'bytes', name: 'blockData', type: 'bytes' }],
     name: 'propose',
     outputs: [],

@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class Coordinatable extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): Coordinatable
+
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
@@ -51,6 +53,8 @@ export class Coordinatable extends Contract {
       massDepositHash: string | number[],
     ): TransactionObject<string>
 
+    consensusProvider(): TransactionObject<string>
+
     finalizedUTXORoots(utxoRoot: string | number[]): TransactionObject<boolean>
 
     genesis(): TransactionObject<string>
@@ -76,6 +80,8 @@ export class Coordinatable extends Contract {
     massDepositId(): TransactionObject<string>
 
     migrations(migrationHash: string | number[]): TransactionObject<boolean>
+
+    owner(): TransactionObject<string>
 
     parentOf(header: string | number[]): TransactionObject<string>
 
@@ -109,6 +115,8 @@ export class Coordinatable extends Contract {
 
     registeredERC721s(tokenAddr: string): TransactionObject<boolean>
 
+    renounceOwnership(): TransactionObject<void>
+
     stagedDeposits(): TransactionObject<{
       merged: string
       fee: string
@@ -117,6 +125,8 @@ export class Coordinatable extends Contract {
     }>
 
     stagedSize(): TransactionObject<string>
+
+    transferOwnership(newOwner: string): TransactionObject<void>
 
     utxoRootOf(header: string | number[]): TransactionObject<string>
 
@@ -127,6 +137,8 @@ export class Coordinatable extends Contract {
     withdrawn(leaf: string | number[]): TransactionObject<boolean>
 
     register(): TransactionObject<void>
+
+    stake(coordinator: string): TransactionObject<void>
 
     deregister(): TransactionObject<void>
 
@@ -144,6 +156,7 @@ export class Coordinatable extends Contract {
 
     isProposable(proposerAddr: string): TransactionObject<boolean>
   }
+
   events: {
     Finalized: ContractEvent<string>
     MassDepositCommit: ContractEvent<{
@@ -159,6 +172,12 @@ export class Coordinatable extends Contract {
     NewProposal: ContractEvent<{
       proposalNum: string
       blockHash: string
+      0: string
+      1: string
+    }>
+    OwnershipTransferred: ContractEvent<{
+      previousOwner: string
+      newOwner: string
       0: string
       1: string
     }>

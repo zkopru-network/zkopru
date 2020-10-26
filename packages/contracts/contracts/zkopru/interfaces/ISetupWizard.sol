@@ -11,6 +11,8 @@ interface ISetupWizard {
         SNARK.VerifyingKey memory vk
     ) external;
 
+    function makeConfigurable(address addr) external;
+
     function makeUserInteractable(address addr) external;
 
     function makeCoordinatable(address addr) external;

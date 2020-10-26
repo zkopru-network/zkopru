@@ -4,11 +4,11 @@ pragma solidity = 0.6.12;
 import "../libraries/Types.sol";
 import { Pairing } from "../libraries/Pairing.sol";
 import { SNARK } from "../libraries/SNARK.sol";
-import { Configurated } from "./Configurated.sol";
+import { Config } from "./Config.sol";
 
 import { SMT254 } from "../libraries/SMT.sol";
 
-contract Storage is Configurated {
+contract Storage is Config {
     // State of the layer2 blockchain is maintained by the optimistic roll up
     Blockchain chain;
 
