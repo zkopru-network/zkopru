@@ -37,7 +37,7 @@ import { soliditySha3Raw } from 'web3-utils'
 import assert from 'assert'
 import AsyncLock from 'async-lock'
 import { Layer1 } from '@zkopru/contracts'
-import { TxMemPool, TxPoolInterface } from './tx_pool'
+import { TxMemPool, TxPoolInterface } from './tx-pool'
 
 export interface CoordinatorConfig {
   maxBytes: number

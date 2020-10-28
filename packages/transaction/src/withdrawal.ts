@@ -2,7 +2,7 @@ import { Field, F } from '@zkopru/babyjubjub'
 import { Uint256, Bytes32 } from 'soltypes'
 import { soliditySha3 } from 'web3-utils'
 import { ZkAddress } from './zk-address'
-import { ZkOutflow, PublicData } from './zk_tx'
+import { ZkOutflow, PublicData } from './zk-tx'
 import { Note, OutflowType, NoteStatus, Asset } from './note'
 
 export enum WithdrawalStatus {

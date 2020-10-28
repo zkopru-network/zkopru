@@ -6,7 +6,7 @@ import { ZkAddress } from './zk-address'
 import { Note, OutflowType, NoteStatus, Asset } from './note'
 import { Withdrawal } from './withdrawal'
 import { Migration } from './migration'
-import { ZkOutflow } from './zk_tx'
+import { ZkOutflow } from './zk-tx'
 import { TokenRegistry } from './tokens'
 
 export enum UtxoStatus {

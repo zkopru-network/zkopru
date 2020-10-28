@@ -1,6 +1,6 @@
 import { Field, F } from '@zkopru/babyjubjub'
 import { ZkAddress } from './zk-address'
-import { ZkOutflow } from './zk_tx'
+import { ZkOutflow } from './zk-tx'
 import { Note, OutflowType, Asset } from './note'
 
 export enum MigrationStatus {
