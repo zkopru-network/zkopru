@@ -2,11 +2,12 @@ import { Field } from '@zkopru/babyjubjub'
 import { ZkTx } from '@zkopru/transaction'
 import { root, logger } from '@zkopru/utils'
 import assert from 'assert'
+import BN from 'bn.js'
 
 export interface TxPoolInterface {
   pendingNum(): number
   addToTxPool(zkTx: ZkTx): Promise<void>
-  pickTxs(maxBytes: number, minPricePerByte: Field): Promise<ZkTx[] | null>
+  pickTxs(maxBytes: number, minPricePerByte: BN): Promise<ZkTx[] | null>
   markAsIncluded(txs: ZkTx[]): void
   pendingTxs(): ZkTx[]
 }
@@ -38,10 +39,7 @@ export class TxMemPool implements TxPoolInterface {
     this.txs[txHash.toString()] = zkTx
   }
 
-  async pickTxs(
-    maxBytes: number,
-    minPricePerByte: Field,
-  ): Promise<ZkTx[] | null> {
+  async pickTxs(maxBytes: number, minPricePerByte: BN): Promise<ZkTx[] | null> {
     // TODO add atomic swap tx logic here
     let available = maxBytes
     const sorted = this.getSortedTxs()

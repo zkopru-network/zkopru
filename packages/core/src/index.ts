@@ -27,4 +27,5 @@ export {
   sqlToHeader,
 } from './block'
 export { L1Contract } from './context/layer1'
+export { L2Chain } from './context/layer2'
 export { SNARKVerifier } from './snark/snark-verifier'

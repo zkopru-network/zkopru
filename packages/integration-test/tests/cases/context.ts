@@ -329,7 +329,7 @@ export async function initContext(): Promise<Context> {
     accounts,
     config: {
       provider,
-      coordinator: `http://localhost:${coordinator.config.port}`,
+      coordinator: `http://localhost:${coordinator.context.config.port}`,
       address: zkopruAddress,
       erc20s: [erc20Address],
       erc721s: [erc721Address],

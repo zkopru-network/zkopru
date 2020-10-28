@@ -114,7 +114,7 @@ describe('testnet', () => {
     let newGroveSnapshot!: GroveSnapshot
     beforeAll(async () => {
       const { coordinator } = ctx()
-      prevGroveSnapshot = await coordinator.node.context.layer2.grove.getSnapshot()
+      prevGroveSnapshot = await coordinator.layer2().grove.getSnapshot()
     })
     describe('register coordinator account', () => {
       // later it should be replaced with the burn auction
@@ -123,7 +123,7 @@ describe('testnet', () => {
     describe('coordinator creates the first block when the aggregated fee is enough', () => {
       afterAll(async () => {
         const { coordinator } = ctx()
-        newGroveSnapshot = await coordinator.node.context.layer2.grove.getSnapshot()
+        newGroveSnapshot = await coordinator.layer2().grove.getSnapshot()
       })
       it(
         'should propose a new block within a few seconds',
@@ -165,7 +165,7 @@ describe('testnet', () => {
     describe('users send zk txs to the coordinator', () => {
       beforeAll(async () => {
         do {
-          const latest = await context.coordinator.node.latestBlock()
+          const latest = await context.coordinator.node().latestBlock()
           if (latest !== null) {
             prevLatestBlock = latest
             break

@@ -146,7 +146,7 @@ export const testNewBlockProposal = (
     const aliceLatestBlock = await wallets.alice.node.latestBlock()
     const bobLatestBlock = await wallets.bob.node.latestBlock()
     const carlLatestBlock = await wallets.carl.node.latestBlock()
-    const coordinatorLatestBlock = await coordinator.node.latestBlock()
+    const coordinatorLatestBlock = await coordinator.node().latestBlock()
     if (
       aliceLatestBlock === bobLatestBlock &&
       aliceLatestBlock === carlLatestBlock &&

@@ -76,8 +76,10 @@ export const depositERC721 = (ctx: CtxProvider) => async () => {
 
 export const testMassDeposits = (ctx: CtxProvider) => async () => {
   const { coordinator } = ctx()
-  await coordinator.commitMassDeposit()
+  await coordinator.commitMassDepositTask()
   await sleep(1000)
-  const pendingMassDeposits = await coordinator.getPendingMassDeposits()
+  const pendingMassDeposits = await coordinator
+    .layer2()
+    .getPendingMassDeposits()
   expect(pendingMassDeposits.leaves).toHaveLength(5)
 }

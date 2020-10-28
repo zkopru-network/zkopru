@@ -29,7 +29,7 @@ export const waitCoordinatorToProcessTheNewBlock = (
   let msToWait = 25000
   let processedBlocks!: number
   while (msToWait > 0) {
-    processedBlocks = coordinator.node.synchronizer.latestProcessed || 0
+    processedBlocks = coordinator.node().synchronizer.latestProcessed || 0
     if (processedBlocks === 1) break
     msToWait -= 1000
     await sleep(1000)

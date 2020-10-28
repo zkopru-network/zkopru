@@ -85,11 +85,9 @@ export const updateVerifyingKeys = (ctx: CtxProvider) => async () => {
         nO,
         vks[sig],
       )
-      coordinator.node.context.layer2.snarkVerifier.addVerifyingKey(
-        nI,
-        nO,
-        vks[sig],
-      )
+      coordinator
+        .node()
+        .context.layer2.snarkVerifier.addVerifyingKey(nI, nO, vks[sig])
     }
   }
 }

@@ -9,7 +9,7 @@ export default class CommitDeposits extends App {
     logger.info('Commit depostis')
     let receipt: TransactionReceipt | undefined
     try {
-      receipt = await this.base.commitMassDeposit()
+      receipt = await this.base.commitMassDepositTask()
     } catch (err) {
       logger.error(err)
     } finally {
