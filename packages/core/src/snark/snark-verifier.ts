@@ -1,8 +1,32 @@
 import { fork, ChildProcess } from 'child_process'
 import { ZkTx } from '@zkopru/transaction'
-import { VerifyingKey, verifyingKeyIdentifier, logger } from '@zkopru/utils'
+import { logger } from '@zkopru/utils'
 import { join } from 'path'
+import assert from 'assert'
+import { Uint256 } from 'soltypes'
 import * as ffjs from 'ffjavascript'
+
+export interface VerifyingKey {
+  protocol: string
+  nPublic: number
+  curve: string
+  vk_alpha_1: BigInt[]
+  vk_beta_2: BigInt[][]
+  vk_gamma_2: BigInt[][]
+  vk_delta_2: BigInt[][]
+  vk_alphabeta_12: BigInt
+  IC: BigInt[][]
+}
+
+export function verifyingKeyIdentifier(nI: number, nO: number): string {
+  assert(nI < 256, 'nI is a 8 bit value')
+  assert(nO < 256, 'nI is a 8 bit value')
+  return Uint256.from(`${nI}`)
+    .toBN()
+    .shln(128)
+    .addn(nO)
+    .toString(10)
+}
 
 export class SNARKVerifier {
   vks: {

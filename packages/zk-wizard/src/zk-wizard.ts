@@ -11,9 +11,10 @@ import {
   ZkAddress,
 } from '@zkopru/transaction'
 import { MerkleProof, UtxoTree } from '@zkopru/tree'
+import { logger } from '@zkopru/utils'
 import path from 'path'
-import { logger, SNARKResult, genSNARK } from '@zkopru/utils'
 import fs from 'fs'
+import { SNARKResult, genSNARK } from './snark'
 
 export class ZkWizard {
   path: string

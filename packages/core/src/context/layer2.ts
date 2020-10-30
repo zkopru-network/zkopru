@@ -9,7 +9,7 @@ import { Grove, GrovePatch, Leaf } from '@zkopru/tree'
 import BN from 'bn.js'
 import AsyncLock from 'async-lock'
 import { Bytes32, Address, Uint256 } from 'soltypes'
-import { logger, VerifyingKey } from '@zkopru/utils'
+import { logger } from '@zkopru/utils'
 import { Field } from '@zkopru/babyjubjub'
 import {
   OutflowType,
@@ -20,7 +20,7 @@ import {
 } from '@zkopru/transaction'
 import { Block, Header, MassDeposit, massDepositHash } from '../block'
 import { BootstrapData } from '../node/bootstrap'
-import { SNARKVerifier } from '../snark/snark-verifier'
+import { SNARKVerifier, VerifyingKey } from '../snark/snark-verifier'
 
 export interface Patch {
   block: Bytes32

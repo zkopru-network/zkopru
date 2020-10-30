@@ -8,7 +8,7 @@
 import { v4 } from 'uuid'
 import { Field } from '~babyjubjub'
 import { DB, TreeSpecies, MockupDB } from '~prisma'
-import { genSNARK, SNARKResult } from '~utils/snark'
+import { genSNARK, SNARKResult } from '~zk-wizard/snark'
 import { ZkWizard } from '~zk-wizard'
 import {
   checkPhase1Setup,

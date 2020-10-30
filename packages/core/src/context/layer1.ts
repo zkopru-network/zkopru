@@ -8,11 +8,12 @@ import {
 } from '@zkopru/contracts'
 import { Config } from '@zkopru/prisma'
 import { Account, TransactionReceipt } from 'web3-core'
-import { VerifyingKey, verifyingKeyIdentifier, hexify } from '@zkopru/utils'
+import { hexify } from '@zkopru/utils'
 import Web3 from 'web3'
 import { ContractOptions } from 'web3-eth-contract'
 import * as ffjs from 'ffjavascript'
 import { soliditySha3 } from 'web3-utils'
+import { verifyingKeyIdentifier, VerifyingKey } from '../snark/snark-verifier'
 
 export class L1Contract extends ZkopruContract {
   web3: Web3
