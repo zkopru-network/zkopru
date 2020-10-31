@@ -231,10 +231,11 @@ Currently, Zkopru is using prebuilt docker images for local testing to reduce th
     * `packages/prisma/prisma/postgres-migrator.prisma`
     * `packages/prisma/prisma/sqlite-migrator.prisma`
 2. Then run `yarn build:prisma`. This will update the prisma client typescript and the mockup sqlite db file.
-3. If you want to create a migration file for postgres, run `cd packages/prisma && yarn gen-migration:postgres`.
+3. To save the changes, run `yarn save:prisma`.
+4. (optional) If you want to create a migration file for postgres manually, run `cd packages/prisma && yarn gen-migration:postgres`.
    You may have to run this command before running the integration test.
-4. (optional) Migration may cause some problems, sometimes you need to clean up the `packages/prisma/prisma/migrations` directory.
-5. (optional) To commit the change, clean up and squash the recent migrations into a single migration.
+5. (optional) Migration may cause some problems, sometimes you need to clean up the `packages/prisma/prisma/migrations` directory.
+6. (optional) To commit the change, clean up and squash the recent migrations into a single migration.
     And then, force stage the migration using `git add packages/prisma/prisma/migrations --force`.
 
 ### Explore database
@@ -275,7 +276,11 @@ You can open the Prisma Studio to explore the database with following steps:
     yarn build:prisma
     ```
 
-3. Update mockup database (WIP)
+3. Update mockup database.
+
+    ```shell
+    yarn save:prisma
+    ```
 
 ### Optional commands
 

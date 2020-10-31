@@ -16,7 +16,7 @@
   "scripts": {
     "prebuild:prisma": "./script/generate-prisma.sh",
     "build:prisma": "yarn build:base & yarn build:postgres & yarn build:sqlite",
-    "postbuild:prisma": "yarn gen-migration:postgres && yarn gen-mockup",
+    "save:prisma": "yarn gen-migration:postgres && yarn gen-mockup",
     "build:base": "prisma generate --schema prisma/base.prisma",
     "build:postgres": "prisma generate --schema prisma/postgres.prisma",
     "build:sqlite": "prisma generate --schema prisma/sqlite.prisma",
