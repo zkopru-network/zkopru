@@ -3,7 +3,7 @@ RUN apk add --no-cache --virtual .gyp \
         python \
         make \
         g++ \
-    && npm install -g truffle ganache-cli \
+    && npm install -g truffle ganache-cli --unsafe-perm=true --allow-root \
     && apk del .gyp
 RUN apk add git
 WORKDIR /proj

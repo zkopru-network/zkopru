@@ -5,7 +5,7 @@ WORKDIR /proj
 
 RUN npm install -g node-gyp-build
 RUN ln -s "$(which nodejs)" /usr/bin/node
-RUN npm install -g truffle ganache-cli
+RUN npm install -g truffle ganache-cli --unsafe-perm=true --allow-root
 
 # Install yarn
 RUN git clone --depth=1 https://github.com/zkopru-network/zkopru
