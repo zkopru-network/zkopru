@@ -10,7 +10,7 @@ PHASE_1_FINAL=$PTAU_ARTIFACTS/pot17_final.ptau
 cd $WORK_DIR
 mkdir -p $VK_ARTIFACTS
 mkdir -p $ZKEY_ARTIFACTS
-MAX_JOB=16
+MAX_JOB=1
 i=0
 
 phase2() {
