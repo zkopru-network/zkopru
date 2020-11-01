@@ -32,7 +32,7 @@ export function calculateRoot(
   siblings: BN[],
 ): BN {
   assert(
-    siblings.length === hasher.preHash.length,
+    siblings.length === hasher.preHash.length - 1,
     'Invalid length of siblings',
   )
   let cursor = value

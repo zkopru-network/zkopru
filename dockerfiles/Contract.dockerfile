@@ -16,5 +16,5 @@ COPY ./truffle-config.js /proj/truffle-config.js
 RUN truffle compile
 EXPOSE 5000
 COPY ./keys /proj/keys
-RUN ganache-cli --db=/data -i 20200406 -p 5000 --deterministic --host 0.0.0.0 & sleep 5 && truffle migrate --network testnet
-CMD ganache-cli --db=/data -i 20200406 -p 5000 --deterministic --host 0.0.0.0
+RUN ganache-cli --db=/data -i 20200406 -p 5000 --gasLimit 12000000 --deterministic --host 0.0.0.0 & sleep 5 && truffle migrate --network testnet
+CMD ganache-cli --db=/data -i 20200406 -p 5000 --gasLimit 12000000 --deterministic --host 0.0.0.0

@@ -34,7 +34,7 @@ describe('withdrawal tree unit test', () => {
   const withdrawalTreeInitialData = {
     root: genesisRoot(keccakHasher(depth)),
     index: Field.zero,
-    siblings: preHashes,
+    siblings: preHashes.slice(0, -1),
   }
   let mockup: MockupDB
   beforeAll(async () => {

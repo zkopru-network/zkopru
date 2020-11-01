@@ -7,7 +7,7 @@ import { OutflowType, ZkOutflow } from '@zkopru/transaction'
 import BN from 'bn.js'
 import { L2Chain } from '../../context/layer2'
 import { Block, headerHash } from '../../block'
-import { BlockData, HeaderData, Slash, UtxoTreeValidator } from '../types'
+import { BlockData, HeaderData, Validation, UtxoTreeValidator } from '../types'
 import { blockDataToBlock, headerDataToHeader } from '../utils'
 import { OffchainValidatorContext } from './offchain-context'
 import { CODE } from '../code'
@@ -52,7 +52,7 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
     blockData: BlockData,
     parentHeaderData: HeaderData,
     deposits: Uint256[],
-  ): Promise<Slash> {
+  ): Promise<Validation> {
     const block = blockDataToBlock(blockData)
     const parentHeader = headerDataToHeader(parentHeaderData)
     assert(
@@ -91,8 +91,8 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
     blockData: BlockData,
     parentHeaderData: HeaderData,
     deposits: Uint256[],
-    initialSiblings: Uint256[],
-  ): Promise<Slash> {
+    subTreeSiblings: Uint256[],
+  ): Promise<Validation> {
     const block = blockDataToBlock(blockData)
     assert(
       OffchainUtxoTreeValidator.checkSubmittedDeposits(block, deposits),
@@ -120,7 +120,7 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
       Field.from(parentHeader.utxoIndex.toString()),
       this.SUB_TREE_DEPTH,
       newUtxos,
-      initialSiblings.map(sib => Field.from(sib.toString())),
+      subTreeSiblings.map(sib => Field.from(sib.toString())),
     )
     return {
       slashable: !computedRoot.eq(block.header.utxoRoot.toBN()),

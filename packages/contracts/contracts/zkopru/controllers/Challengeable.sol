@@ -31,7 +31,7 @@ contract Challengeable is Storage {
         // Run validation. Here it uses delegatecall to measure the gas consumption regardless of its revert.
         uint256 startingGas = gasleft();
         (bool success, bytes memory result) = validator.delegatecall(msg.data);
-        uint256 usedGasForValidation = gasleft() - startingGas;
+        uint256 usedGasForValidation = startingGas - gasleft();
         // Check validation result
         bool slash;
         string memory reason;
@@ -44,7 +44,7 @@ contract Challengeable is Storage {
             (slash, reason) = (true, "Exceeds maximum gas for validation process");
         }
         // Execute slash
-        require(slash, "Couldn't find slash condition");
+        require(slash, success ? "Couldn't find slash condition" : string(result));
         _execute(reason);
     }
 

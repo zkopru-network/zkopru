@@ -105,7 +105,7 @@ describe('testnet', () => {
       it(
         'coordinator should have 5 pending deposits',
         testMassDeposits(ctx),
-        10000,
+        30000,
       )
     })
   })
@@ -128,12 +128,12 @@ describe('testnet', () => {
       it(
         'should propose a new block within a few seconds',
         waitCoordinatorToProposeANewBlock(ctx),
-        20000,
+        30000,
       )
       it(
         'should process the new submitted block',
         waitCoordinatorToProcessTheNewBlock(ctx),
-        26000,
+        30000,
       )
     })
     describe('new block should update trees', () => {
@@ -152,7 +152,7 @@ describe('testnet', () => {
       it(
         'wallets should have updated processed block number',
         testBlockSync(ctx),
-        6000,
+        15000,
       )
     })
   })

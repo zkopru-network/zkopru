@@ -13,7 +13,7 @@ import { ZkWallet } from '~zk-wizard'
 import { Layer1 } from '~contracts'
 import { IERC20 } from '~contracts/contracts/IERC20'
 import { IERC721 } from '~contracts/contracts/IERC721'
-import { VerifyingKey } from '~utils/snark'
+import { VerifyingKey } from '~zk-wizard/snark'
 
 type VKs = { [nIn: number]: { [nOut: number]: VerifyingKey } }
 

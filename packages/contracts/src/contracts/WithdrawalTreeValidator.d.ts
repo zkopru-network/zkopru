@@ -149,7 +149,7 @@ export class WithdrawalTreeValidator extends Contract {
     validateWithdrawalRoot(
       arg0: string | number[],
       arg1: string | number[],
-      initialSiblings: (number | string)[],
+      subTreeSiblings: (number | string)[],
     ): TransactionObject<{
       slash: boolean
       reason: string

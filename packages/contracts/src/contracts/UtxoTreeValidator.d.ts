@@ -151,7 +151,7 @@ export class UtxoTreeValidator extends Contract {
       arg0: string | number[],
       arg1: string | number[],
       _deposits: (number | string)[],
-      _initialSiblings: (number | string)[],
+      _subTreeSiblings: (number | string)[],
     ): TransactionObject<{
       slash: boolean
       reason: string

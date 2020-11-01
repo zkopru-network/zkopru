@@ -36,7 +36,10 @@ library Deserializer {
         // Get the position where the block data starts.
         uint256 pointer = getPointerAddress(paramIndex);
         // The first 32 bytes are the length of the bytes data.
-        uint256 len = abi.decode(msg.data[pointer:pointer+32], (uint256));
+        uint256 len;
+        assembly {
+            len := calldataload(pointer)
+        }
         // Using slice function memcopy the calldata into the hash function.
         return keccak256(bytes(msg.data[pointer + 32: pointer + 32 + len]));
     }
@@ -75,7 +78,10 @@ library Deserializer {
         // Get the position where the block data starts.
         uint256 start = getPointerAddress(paramIndex);
         // The first 32 bytes are the length of the bytes data.
-        uint256 len = abi.decode(msg.data[start:start+32], (uint256));
+        uint256 len;
+        assembly {
+            len := calldataload(start)
+        }
         uint256 cp = start + 0x20;
         // Deserialize block data
         Block memory _block;
@@ -760,7 +766,10 @@ library Deserializer {
         (_finalization.header, cp) = dequeueHeader(cp);
         (_finalization.massDeposits, cp) = dequeueMassDeposits(cp);
         (_finalization.massMigrations, cp) = dequeueMassMigrations(cp);
-        uint256 len = abi.decode(msg.data[start:start+32], (uint256));
+        uint256 len;
+        assembly {
+            len := calldataload(start)
+        }
         if(len != cp - start - 0x20) {
             revert("Serialization has a problem");
         }
@@ -769,7 +778,11 @@ library Deserializer {
 
     function getPointerAddress(uint256 paramIndex) private pure returns (uint256) {
         uint256 LEFT_PADDING = 4; // function sig 4 bytes
-        uint256 ppParam = LEFT_PADDING + 32 * paramIndex; // pointer of pointer of the given parameter
-        return LEFT_PADDING + abi.decode(msg.data[ppParam:ppParam + 32], (uint256));
+        uint256 pp = LEFT_PADDING + 32 * paramIndex; // pointer of pointer of the given parameter
+        uint256 p;
+        assembly {
+            p := calldataload(pp)
+        }
+        return LEFT_PADDING + p;
     }
 }

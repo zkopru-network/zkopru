@@ -1,6 +1,5 @@
 import { Bytes32, Uint256 } from 'soltypes'
-import { challengeCodeToString } from '../code'
-import { BlockData, HeaderData, Slash, TxValidator } from '../types'
+import { BlockData, HeaderData, OnchainValidation, TxValidator } from '../types'
 import { blockDataToHexString, headerDataToHexString } from '../utils'
 import { OnchainValidatorContext } from './onchain-context'
 
@@ -10,44 +9,38 @@ export class OnchainTxValidator extends OnchainValidatorContext
     block: BlockData,
     txIndex: Uint256,
     inflowIndex: Uint256,
-  ): Promise<Slash> {
+  ): Promise<OnchainValidation> {
     const tx = this.layer1.validators.tx.methods.validateInclusion(
       blockDataToHexString(block),
       txIndex.toString(),
       inflowIndex.toString(),
     )
-    const result = await tx.call()
-    const slash: Slash = {
-      slashable: result.slash,
-      reason: challengeCodeToString(result.reason),
-    }
-    return slash
+    const result = await this.isSlashable(tx)
+    return result
   }
 
-  async validateOutflow(block: BlockData, txIndex: Uint256): Promise<Slash> {
+  async validateOutflow(
+    block: BlockData,
+    txIndex: Uint256,
+  ): Promise<OnchainValidation> {
     const tx = this.layer1.validators.tx.methods.validateOutflow(
       blockDataToHexString(block),
       txIndex.toString(),
     )
-    const result = await tx.call()
-    const slash: Slash = {
-      slashable: result.slash,
-      reason: challengeCodeToString(result.reason),
-    }
-    return slash
+    const result = await this.isSlashable(tx)
+    return result
   }
 
-  async validateAtomicSwap(block: BlockData, txIndex: Uint256): Promise<Slash> {
+  async validateAtomicSwap(
+    block: BlockData,
+    txIndex: Uint256,
+  ): Promise<OnchainValidation> {
     const tx = this.layer1.validators.tx.methods.validateAtomicSwap(
       blockDataToHexString(block),
       txIndex.toString(),
     )
-    const result = await tx.call()
-    const slash: Slash = {
-      slashable: result.slash,
-      reason: challengeCodeToString(result.reason),
-    }
-    return slash
+    const result = await this.isSlashable(tx)
+    return result
   }
 
   async validateUsedNullifier(
@@ -56,7 +49,7 @@ export class OnchainTxValidator extends OnchainValidatorContext
     txIndex: Uint256,
     inflowIndex: Uint256,
     siblings: Bytes32[],
-  ): Promise<Slash> {
+  ): Promise<OnchainValidation> {
     const tx = this.layer1.validators.tx.methods.validateUsedNullifier(
       blockDataToHexString(block),
       headerDataToHexString(parentHeader),
@@ -64,27 +57,19 @@ export class OnchainTxValidator extends OnchainValidatorContext
       inflowIndex.toString(),
       siblings.map(s => s.toString()),
     )
-    const result = await tx.call()
-    const slash: Slash = {
-      slashable: result.slash,
-      reason: challengeCodeToString(result.reason),
-    }
-    return slash
+    const result = await this.isSlashable(tx)
+    return result
   }
 
   async validateDuplicatedNullifier(
     block: BlockData,
     txIndex: Bytes32,
-  ): Promise<Slash> {
+  ): Promise<OnchainValidation> {
     const tx = this.layer1.validators.tx.methods.validateDuplicatedNullifier(
       blockDataToHexString(block),
       txIndex.toString(),
     )
-    const result = await tx.call()
-    const slash: Slash = {
-      slashable: result.slash,
-      reason: challengeCodeToString(result.reason),
-    }
-    return slash
+    const result = await this.isSlashable(tx)
+    return result
   }
 }

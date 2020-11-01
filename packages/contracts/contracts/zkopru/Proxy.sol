@@ -114,7 +114,6 @@ contract Proxy is Storage {
         _connect(challengeable, ITxValidator(0).validateDuplicatedNullifier.selector);
         _connect(challengeable, ITxValidator(0).isValidRef.selector);
         _connect(challengeable, ITxSNARKValidator(0).validateSNARK.selector);
-        _connect(challengeable, ITxSNARKValidator(0).hasValidSNARK.selector);
         _connectValidator(depositValidator, IDepositValidator(0).validateMassDeposit.selector);
         _connectValidator(headerValidator, IHeaderValidator(0).validateDepositRoot.selector);
         _connectValidator(headerValidator, IHeaderValidator(0).validateTxRoot.selector);
@@ -141,7 +140,6 @@ contract Proxy is Storage {
         _connectValidator(txValidator, ITxValidator(0).validateDuplicatedNullifier.selector);
         _connectValidator(txValidator, ITxValidator(0).isValidRef.selector);
         _connectValidator(txSNARKValidator, ITxSNARKValidator(0).validateSNARK.selector);
-        _connectValidator(txSNARKValidator, ITxSNARKValidator(0).hasValidSNARK.selector);
     }
 
     function _connect(address to, bytes4 sig) internal {

@@ -62,7 +62,7 @@ describe('multiplier.test.circom', () => {
   it('should create SNARK proof', async () => {
     const result: SNARKResult = await genSNARK(validData, wasm, finalZkey, vk)
     expect(result).toBeDefined()
-  })
+  }, 30000)
   it('should throw error with invalid inputs', async () => {
     await expect(genSNARK(invalidData, wasm, finalZkey, vk)).rejects.toThrow(
       Error,

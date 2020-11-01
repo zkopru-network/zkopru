@@ -1,10 +1,13 @@
 export { CODE } from './code'
 export { OnchainValidator } from './onchain'
 export { OffchainValidator } from './offchain'
+export { ValidatorBase } from './validator'
 export {
-  Slash,
+  Validation,
+  OnchainValidation,
   BlockData,
   HeaderData,
+  BlockValidator,
   HeaderValidator,
   MigrationValidator,
   TxValidator,
@@ -12,5 +15,5 @@ export {
   WithdrawalTreeValidator,
   UtxoTreeValidator,
   NullifierTreeValidator,
-  BlockValidator,
+  ChallengeTx,
 } from './types'

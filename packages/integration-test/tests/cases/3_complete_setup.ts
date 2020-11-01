@@ -4,10 +4,11 @@
 /* eslint-disable jest/require-top-level-describe */
 
 import { toWei } from 'web3-utils'
-import { verifyingKeyIdentifier, sleep } from '@zkopru/utils'
+import { sleep } from '@zkopru/utils'
 import { Layer1 } from '@zkopru/contracts'
 import { Address } from 'soltypes'
 import { ZkWallet } from '@zkopru/zk-wizard'
+import { verifyingKeyIdentifier } from '@zkopru/core'
 import { CtxProvider } from './context'
 
 export const testCompleteSetup = (ctx: CtxProvider) => async () => {

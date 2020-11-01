@@ -1,5 +1,3 @@
-const fs = require('fs')
-
 const Poseidon2 = artifacts.require('Poseidon2')
 const Zkopru = artifacts.require('Zkopru')
 

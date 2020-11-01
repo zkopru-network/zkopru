@@ -14,12 +14,25 @@ export const testRegisterVKs = (ctx: CtxProvider) => async () => {
   nIn.forEach(i => {
     nOut.forEach(j => {
       registerVKs.push(async () => {
+        const vk = vks[i][j]
         const tx = contract.setup.methods.registerVk(i, j, {
-          alpha1: vks[i][j].vk_alpha_1.slice(0, 2),
-          beta2: vks[i][j].vk_beta_2.slice(0, 2),
-          gamma2: vks[i][j].vk_gamma_2.slice(0, 2),
-          delta2: vks[i][j].vk_delta_2.slice(0, 2),
-          ic: vks[i][j].IC.map((arr: string[][]) => arr.slice(0, 2)),
+          alpha1: { X: vk.vk_alpha_1[0], Y: vk.vk_alpha_1[1] },
+          beta2: {
+            X: vk.vk_beta_2[0].reverse(),
+            Y: vk.vk_beta_2[1].reverse(),
+          },
+          gamma2: {
+            X: vk.vk_gamma_2[0].reverse(),
+            Y: vk.vk_gamma_2[1].reverse(),
+          },
+          delta2: {
+            X: vk.vk_delta_2[0].reverse(),
+            Y: vk.vk_delta_2[1].reverse(),
+          },
+          ic: vk.IC.map((ic: string[][]) => ({
+            X: ic[0],
+            Y: ic[1],
+          })),
         })
         const estimatedGas = await tx.estimateGas()
         const receipt = await tx.send({
@@ -37,13 +50,25 @@ export const testRegisterVKs = (ctx: CtxProvider) => async () => {
 
 export const testRegisterVKFails = (ctx: CtxProvider) => async () => {
   const { contract, vks, accounts } = ctx()
-  const sampleVk: any = vks[4][4]
+  const sampleVk: any = vks[3][3]
   const tx = contract.setup.methods.registerVk(5, 5, {
-    alpha1: sampleVk.vk_alpha_1.slice(0, 2),
-    beta2: sampleVk.vk_beta_2.slice(0, 2),
-    gamma2: sampleVk.vk_gamma_2.slice(0, 2),
-    delta2: sampleVk.vk_delta_2.slice(0, 2),
-    ic: sampleVk.IC.map((arr: string[][]) => arr.slice(0, 2)),
+    alpha1: { X: sampleVk.vk_alpha_1[0], Y: sampleVk.vk_alpha_1[1] },
+    beta2: {
+      X: sampleVk.vk_beta_2[0].reverse(),
+      Y: sampleVk.vk_beta_2[1].reverse(),
+    },
+    gamma2: {
+      X: sampleVk.vk_gamma_2[0].reverse(),
+      Y: sampleVk.vk_gamma_2[1].reverse(),
+    },
+    delta2: {
+      X: sampleVk.vk_delta_2[0].reverse(),
+      Y: sampleVk.vk_delta_2[1].reverse(),
+    },
+    ic: sampleVk.IC.map((ic: string[][]) => ({
+      X: ic[0],
+      Y: ic[1],
+    })),
   })
   const estimatedGas = await tx.estimateGas()
   await expect(

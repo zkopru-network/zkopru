@@ -4,10 +4,10 @@ pragma solidity = 0.6.12;
 library SMT254 {
     // in Solidity: keccak256('exist')
     // in Web3JS: soliditySha3('exist')
-    bytes32 constant public EXIST = 0xb0b4e07bb5592f3d3821b2c1331b436763d7be555cf452d6c6836f74d5201e85;
+    bytes32 constant public EXIST = bytes32(uint256(1));
     // in Solidity: keccak256(abi.encodePacked(bytes32(0)))
     // in Web3JS: soliditySha3(0)
-    bytes32 constant public NON_EXIST = 0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563;
+    bytes32 constant public NON_EXIST = 0;
 
     function inclusionProof(
         bytes32 root,

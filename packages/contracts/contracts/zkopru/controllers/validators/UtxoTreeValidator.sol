@@ -42,10 +42,6 @@ contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
         // This will revert when the submitted header data does not match with the block
         Header memory parentHeader = Deserializer.headerFromCalldataAt(1);
         require(_block.header.parentBlock == parentHeader.hash(), "Invalid prev header");
-        if (_block.header.utxoIndex > MAX_UTXO) {
-            // code U2: The updated number of total UTXO is exceeding the maximum value.
-            return (true, "U2");
-        }
         // Add the deposit lengths to the utxo first
         uint256 utxoLen = _deposits.length;
         // Append UTXOs from transactions
@@ -56,9 +52,14 @@ contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
                 }
             }
         }
-        if (utxoLen != _block.header.utxoIndex - parentHeader.utxoIndex) {
+        uint256 numOfSubTrees = utxoLen / UTXO_SUB_TREE_SIZE;
+        uint256 nextIndex = parentHeader.utxoIndex + UTXO_SUB_TREE_SIZE * numOfSubTrees;
+        if (nextIndex != _block.header.utxoIndex) {
             // code U1: The updated number of total UTXO is not correct.
             return (true, "U1");
+        } else if (nextIndex > MAX_UTXO) {
+            // code U1: The updated number of total UTXO is not correct.
+            return (true, "U2");
         }
     }
 
@@ -67,13 +68,13 @@ contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
      * @param // block Serialized block data
      * @param // parentHeader Serialized details of its parent header
      * @param _deposits Submit all deposit leaves to be merged.
-     * @param _initialSiblings Submit the siblings of the starting index leaf
+     * @param _subTreeSiblings Submit the siblings of the starting index leaf
      */
     function validateUTXORoot(
         bytes calldata, // blockData
         bytes calldata, // parentHeader
         uint256[] calldata _deposits,
-        uint256[] calldata _initialSiblings
+        uint256[] calldata _subTreeSiblings
     )
     external
     view
@@ -87,11 +88,7 @@ contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
         Header memory parentHeader = Deserializer.headerFromCalldataAt(1);
         require(_block.header.parentBlock == parentHeader.hash(), "Invalid prev header");
         // Get utxos
-        uint256[] memory utxos = _getUTXOs(
-            _block.header.utxoIndex - parentHeader.utxoIndex,
-            _deposits,
-            _block.body.txs
-        );
+        uint256[] memory utxos = _getUTXOs(_deposits, _block.body.txs);
         // Check validity of the roll up using the storage based Poseidon sub-tree roll up
         uint256 computedRoot = SubTreeLib.appendSubTree(
             Hash.poseidon(),
@@ -99,7 +96,7 @@ contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
             parentHeader.utxoIndex,
             UTXO_SUB_TREE_DEPTH,
             utxos,
-            _initialSiblings
+            _subTreeSiblings
         );
         // Computed new utxo root is different with the submitted
         // code U3: The updated utxo tree root is not correct.
@@ -129,10 +126,20 @@ contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
     }
 
     function _getUTXOs(
-        uint256 numOfUTXOs,
         uint256[] memory deposits,
         Transaction[] memory txs
     ) private pure returns (uint256[] memory utxos) {
+        // Calculate the length of the utxo array
+        uint256 numOfUTXOs = deposits.length;
+        for (uint256 i = 0; i < txs.length; i++) {
+            Transaction memory transaction = txs[i];
+            for(uint256 j = 0; j < transaction.outflow.length; j++) {
+                if(transaction.outflow[j].isUTXO()) {
+                    numOfUTXOs++;
+                }
+            }
+        }
+        // Make the utxo array
         utxos = new uint256[](numOfUTXOs);
         uint256 index = 0;
         // Append deposits first
@@ -148,6 +155,5 @@ contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
                 }
             }
         }
-        require(numOfUTXOs == index, "Run index challenge");
     }
 }

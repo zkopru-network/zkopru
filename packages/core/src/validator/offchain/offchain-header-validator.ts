@@ -3,15 +3,15 @@ import { root } from '@zkopru/utils'
 import BN from 'bn.js'
 import { massDepositHash, massMigrationHash } from '../../block'
 import { CODE } from '../code'
-import { BlockData, HeaderValidator, Slash } from '../types'
+import { BlockData, HeaderValidator, Validation } from '../types'
 import { blockDataToBlock } from '../utils'
 import { OffchainValidatorContext } from './offchain-context'
 
 export class OffchainHeaderValidator extends OffchainValidatorContext
   implements HeaderValidator {
-  async validateDepositRoot(data: BlockData): Promise<Slash> {
+  async validateDepositRoot(data: BlockData): Promise<Validation> {
     const block = blockDataToBlock(data)
-    const slash: Slash = {
+    const slash: Validation = {
       slashable: !block.header.depositRoot.eq(
         root(block.body.massDeposits.map(massDepositHash)),
       ),
@@ -20,9 +20,9 @@ export class OffchainHeaderValidator extends OffchainValidatorContext
     return slash
   }
 
-  async validateTxRoot(data: BlockData): Promise<Slash> {
+  async validateTxRoot(data: BlockData): Promise<Validation> {
     const block = blockDataToBlock(data)
-    const slash: Slash = {
+    const slash: Validation = {
       slashable: !block.header.txRoot.eq(
         root(block.body.txs.map(tx => tx.hash())),
       ),
@@ -31,9 +31,9 @@ export class OffchainHeaderValidator extends OffchainValidatorContext
     return slash
   }
 
-  async validateMigrationRoot(data: BlockData): Promise<Slash> {
+  async validateMigrationRoot(data: BlockData): Promise<Validation> {
     const block = blockDataToBlock(data)
-    const slash: Slash = {
+    const slash: Validation = {
       slashable: !block.header.migrationRoot.eq(
         root(block.body.massMigrations.map(massMigrationHash)),
       ),
@@ -42,7 +42,7 @@ export class OffchainHeaderValidator extends OffchainValidatorContext
     return slash
   }
 
-  async validateTotalFee(data: BlockData): Promise<Slash> {
+  async validateTotalFee(data: BlockData): Promise<Validation> {
     const block = blockDataToBlock(data)
     let fee = new BN(0)
     for (const massDeposit of block.body.massDeposits) {
@@ -54,14 +54,14 @@ export class OffchainHeaderValidator extends OffchainValidatorContext
     for (const tx of block.body.txs) {
       fee = fee.add(tx.fee)
     }
-    const slash: Slash = {
+    const slash: Validation = {
       slashable: !fee.eq(block.header.fee.toBN()),
       reason: CODE.H4,
     }
     return slash
   }
 
-  async validateParentBlock(data: BlockData): Promise<Slash> {
+  async validateParentBlock(data: BlockData): Promise<Validation> {
     const block = blockDataToBlock(data)
     const slashed = await this.layer2.db.read(prisma =>
       prisma.slash.findOne({

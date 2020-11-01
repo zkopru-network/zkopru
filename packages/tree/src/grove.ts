@@ -322,7 +322,7 @@ export class Grove {
       utxo.index,
     )
     let root: Field = this.utxoTree.root()
-    const siblings = [...this.config.utxoHasher.preHash]
+    const siblings = [...this.config.utxoHasher.preHash.slice(0, -1)]
     cachedSiblings.forEach((obj: TreeNode) => {
       const level =
         1 +
@@ -362,7 +362,7 @@ export class Grove {
       withdrawal.index,
     )
     let root: BN = this.withdrawalTree.root()
-    const siblings = [...this.config.withdrawalHasher.preHash]
+    const siblings = [...this.config.withdrawalHasher.preHash.slice(0, -1)]
     cachedSiblings.forEach((obj: TreeNode) => {
       const level =
         1 +
@@ -403,7 +403,7 @@ export class Grove {
     } else {
       root = genesisRoot(hasher)
       index = Field.zero
-      siblings = hasher.preHash
+      siblings = hasher.preHash.slice(0, -1)
     }
     const data = {
       root: root.toString(10),
@@ -446,7 +446,7 @@ export class Grove {
       // NTODO
       root = genesisRoot(hasher)
       index = new BN(0)
-      siblings = hasher.preHash
+      siblings = hasher.preHash.slice(0, -1)
     }
     const data = {
       root: hexify(root),

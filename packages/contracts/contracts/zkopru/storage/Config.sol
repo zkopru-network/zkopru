@@ -16,10 +16,9 @@ contract Config is Ownable {
     uint256 constant public WITHDRAWAL_SUB_TREE_SIZE = 1 << WITHDRAWAL_SUB_TREE_DEPTH;
 
     uint256 public MAX_BLOCK_SIZE = 200000; // 3.2M gas for calldata
-    uint256 public MAX_VALIDATION_GAS = 3000000; // 3M gas
+    uint256 public MAX_VALIDATION_GAS = 12000000; // 6M gas
     // 46523 blocks when the challenge period is 7 days and average block time is 13 sec
     uint256 public CHALLENGE_PERIOD = 46523;
-    // uint256 constant public CHALLENGE_LIMIT = 8000000;
     uint256 public MINIMUM_STAKE = 32 ether;
     uint256 public REF_DEPTH = 128;
 

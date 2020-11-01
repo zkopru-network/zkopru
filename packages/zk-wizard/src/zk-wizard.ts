@@ -144,8 +144,8 @@ export class ZkWizard {
       fee: tx.fee,
       proof: {
         pi_a: result.proof.pi_a.map(Field.from),
-        pi_b: result.proof.pi_b.map((arr: F[]) =>
-          arr.map((val: F) => Field.from(val)),
+        pi_b: result.proof.pi_b.map(
+          (arr: F[]) => arr.map((val: F) => Field.from(val)), // caution: snarkjs G2Point is reversed.
         ),
         pi_c: result.proof.pi_c.map(Field.from),
       },

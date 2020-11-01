@@ -336,7 +336,7 @@ export const UtxoTreeValidatorABI = [
       { internalType: 'uint256[]', name: '_deposits', type: 'uint256[]' },
       {
         internalType: 'uint256[]',
-        name: '_initialSiblings',
+        name: '_subTreeSiblings',
         type: 'uint256[]',
       },
     ],

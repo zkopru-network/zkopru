@@ -6,7 +6,7 @@ export const CODE = {
   H2: 'Header has invalid transaction root.',
   H3: 'Header has invalid migration root.',
   H4: 'Header has invalid total fee value.',
-  H5: 'Parent block is a slasehd block.',
+  H5: 'Parent block is a slashed block.',
   // Migration challenge
   M1: 'Duplicated MassMigration destinations exist.',
   M2: 'MassMigration is carrying invalid amount of ETH.',

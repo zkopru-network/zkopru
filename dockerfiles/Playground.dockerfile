@@ -16,12 +16,12 @@ RUN yarn build
 
 WORKDIR /proj/zkopru/packages/cli
 
-RUN  ganache-cli --db=/proj/data -i 20200406 -p 5000 --deterministic --host 0.0.0.0 & \
+RUN  ganache-cli --db=/proj/data -i 20200406 -p 5000 --gasLimit 12000000 --deterministic --host 0.0.0.0 & \
         sleep 5 && cd /proj/zkopru/packages/contracts && truffle migrate --network testnet
 
 COPY ./packages/dataset/keys /proj/zkopru/packages/cli/keys
 
-CMD  ganache-cli --db=/proj/data -i 20200406 -p 5000 --deterministic --host 0.0.0.0 > /dev/null & \
+CMD  ganache-cli --db=/proj/data -i 20200406 -p 5000 --gasLimit 12000000 --deterministic --host 0.0.0.0 > /dev/null & \
         sleep 1;\
         node /proj/zkopru/packages/cli/dist/apps/coordinator/cli.js \
         --nonInteractive --config /proj/zkopru/packages/cli/coordinator.playground.json > /dev/null & \
