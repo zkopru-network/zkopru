@@ -4,13 +4,14 @@ pragma experimental ABIEncoderV2;
 
 import { ISetupWizard } from "./interfaces/ISetupWizard.sol";
 import { Storage } from "./storage/Storage.sol";
+import { Reader } from "./storage/Reader.sol";
 import { Proxy } from "./Proxy.sol";
 import { SNARK } from "./libraries/SNARK.sol";
 import { Blockchain, Header, Types } from "./libraries/Types.sol";
 import { Pairing, G1Point, G2Point } from "./libraries/Pairing.sol";
 import { Hash } from "./libraries/Hash.sol";
 
-contract Zkopru is Proxy, ISetupWizard {
+contract Zkopru is Proxy, Reader, ISetupWizard {
     using Types for Header;
     using Types for Blockchain;
 

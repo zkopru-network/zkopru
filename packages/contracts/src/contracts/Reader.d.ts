@@ -13,10 +13,10 @@ interface EventOptions {
   topics?: string[]
 }
 
-export class Proxy extends Contract {
+export class Reader extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
 
-  clone(): Proxy
+  clone(): Reader
 
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
@@ -60,6 +60,81 @@ export class Proxy extends Contract {
     transferOwnership(newOwner: string): TransactionObject<void>
 
     validators(arg0: string | number[]): TransactionObject<string>
+
+    genesis(): TransactionObject<string>
+
+    latest(): TransactionObject<string>
+
+    proposedBlocks(): TransactionObject<string>
+
+    parentOf(header: string | number[]): TransactionObject<string>
+
+    utxoRootOf(header: string | number[]): TransactionObject<string>
+
+    withdrawalRootOf(header: string | number[]): TransactionObject<string>
+
+    finalizedUTXORoots(utxoRoot: string | number[]): TransactionObject<boolean>
+
+    proposers(
+      addr: string,
+    ): TransactionObject<{
+      stake: string
+      reward: string
+      exitAllowance: string
+      0: string
+      1: string
+      2: string
+    }>
+
+    proposals(
+      proposalId: string | number[],
+    ): TransactionObject<{
+      header: string
+      challengeDue: string
+      slashed: boolean
+      0: string
+      1: string
+      2: boolean
+    }>
+
+    stagedDeposits(): TransactionObject<{
+      merged: string
+      fee: string
+      0: string
+      1: string
+    }>
+
+    stagedSize(): TransactionObject<string>
+
+    massDepositId(): TransactionObject<string>
+
+    committedDeposits(
+      massDepositHash: string | number[],
+    ): TransactionObject<string>
+
+    withdrawn(leaf: string | number[]): TransactionObject<boolean>
+
+    migrations(migrationHash: string | number[]): TransactionObject<boolean>
+
+    registeredERC20s(tokenAddr: string): TransactionObject<boolean>
+
+    registeredERC721s(tokenAddr: string): TransactionObject<boolean>
+
+    getVk(
+      numOfInputs: number | string,
+      numOfOutputs: number | string,
+    ): TransactionObject<{
+      alpha1: string[]
+      beta2: string[][]
+      gamma2: string[][]
+      delta2: string[][]
+      ic: string[][]
+      0: string[]
+      1: string[][]
+      2: string[][]
+      3: string[][]
+      4: string[][]
+    }>
   }
 
   events: {

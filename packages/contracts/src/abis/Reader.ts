@@ -1,4 +1,4 @@
-export const TxValidatorABI = [
+export const ReaderABI = [
   {
     anonymous: false,
     inputs: [
@@ -166,81 +166,152 @@ export const TxValidatorABI = [
     type: 'function',
   },
   {
-    inputs: [
-      { internalType: 'bytes', name: '', type: 'bytes' },
-      { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
-      { internalType: 'uint256', name: 'inflowIndex', type: 'uint256' },
-    ],
-    name: 'validateInclusion',
-    outputs: [
-      { internalType: 'bool', name: 'slash', type: 'bool' },
-      { internalType: 'string', name: 'reason', type: 'string' },
-    ],
+    inputs: [],
+    name: 'genesis',
+    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
     stateMutability: 'view',
     type: 'function',
   },
   {
-    inputs: [
-      { internalType: 'bytes', name: '', type: 'bytes' },
-      { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
-    ],
-    name: 'validateOutflow',
-    outputs: [
-      { internalType: 'bool', name: 'slash', type: 'bool' },
-      { internalType: 'string', name: 'reason', type: 'string' },
-    ],
+    inputs: [],
+    name: 'latest',
+    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
     stateMutability: 'view',
     type: 'function',
   },
   {
-    inputs: [
-      { internalType: 'bytes', name: '', type: 'bytes' },
-      { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
-    ],
-    name: 'validateAtomicSwap',
-    outputs: [
-      { internalType: 'bool', name: 'slash', type: 'bool' },
-      { internalType: 'string', name: 'reason', type: 'string' },
-    ],
+    inputs: [],
+    name: 'proposedBlocks',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
   },
   {
-    inputs: [
-      { internalType: 'bytes', name: '', type: 'bytes' },
-      { internalType: 'bytes', name: '', type: 'bytes' },
-      { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
-      { internalType: 'uint256', name: 'inflowIndex', type: 'uint256' },
-      { internalType: 'bytes32[254]', name: 'sibling', type: 'bytes32[254]' },
-    ],
-    name: 'validateUsedNullifier',
-    outputs: [
-      { internalType: 'bool', name: 'slash', type: 'bool' },
-      { internalType: 'string', name: 'reason', type: 'string' },
-    ],
+    inputs: [{ internalType: 'bytes32', name: 'header', type: 'bytes32' }],
+    name: 'parentOf',
+    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
     stateMutability: 'view',
     type: 'function',
   },
   {
-    inputs: [
-      { internalType: 'bytes', name: '', type: 'bytes' },
-      { internalType: 'bytes32', name: 'nullifier', type: 'bytes32' },
-    ],
-    name: 'validateDuplicatedNullifier',
-    outputs: [
-      { internalType: 'bool', name: 'slash', type: 'bool' },
-      { internalType: 'string', name: 'reason', type: 'string' },
-    ],
+    inputs: [{ internalType: 'bytes32', name: 'header', type: 'bytes32' }],
+    name: 'utxoRootOf',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
   },
   {
-    inputs: [
-      { internalType: 'bytes32', name: 'l2BlockHash', type: 'bytes32' },
-      { internalType: 'uint256', name: 'ref', type: 'uint256' },
-    ],
-    name: 'isValidRef',
+    inputs: [{ internalType: 'bytes32', name: 'header', type: 'bytes32' }],
+    name: 'withdrawalRootOf',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'bytes32', name: 'utxoRoot', type: 'bytes32' }],
+    name: 'finalizedUTXORoots',
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'addr', type: 'address' }],
+    name: 'proposers',
+    outputs: [
+      { internalType: 'uint256', name: 'stake', type: 'uint256' },
+      { internalType: 'uint256', name: 'reward', type: 'uint256' },
+      { internalType: 'uint256', name: 'exitAllowance', type: 'uint256' },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'bytes32', name: 'proposalId', type: 'bytes32' }],
+    name: 'proposals',
+    outputs: [
+      { internalType: 'bytes32', name: 'header', type: 'bytes32' },
+      { internalType: 'uint256', name: 'challengeDue', type: 'uint256' },
+      { internalType: 'bool', name: 'slashed', type: 'bool' },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'stagedDeposits',
+    outputs: [
+      { internalType: 'bytes32', name: 'merged', type: 'bytes32' },
+      { internalType: 'uint256', name: 'fee', type: 'uint256' },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'stagedSize',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'massDepositId',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'bytes32', name: 'massDepositHash', type: 'bytes32' },
+    ],
+    name: 'committedDeposits',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'bytes32', name: 'leaf', type: 'bytes32' }],
+    name: 'withdrawn',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'bytes32', name: 'migrationHash', type: 'bytes32' },
+    ],
+    name: 'migrations',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'tokenAddr', type: 'address' }],
+    name: 'registeredERC20s',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'tokenAddr', type: 'address' }],
+    name: 'registeredERC721s',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'uint8', name: 'numOfInputs', type: 'uint8' },
+      { internalType: 'uint8', name: 'numOfOutputs', type: 'uint8' },
+    ],
+    name: 'getVk',
+    outputs: [
+      { internalType: 'uint256[2]', name: 'alpha1', type: 'uint256[2]' },
+      { internalType: 'uint256[2][2]', name: 'beta2', type: 'uint256[2][2]' },
+      { internalType: 'uint256[2][2]', name: 'gamma2', type: 'uint256[2][2]' },
+      { internalType: 'uint256[2][2]', name: 'delta2', type: 'uint256[2][2]' },
+      { internalType: 'uint256[2][]', name: 'ic', type: 'uint256[2][]' },
+    ],
     stateMutability: 'view',
     type: 'function',
   },
