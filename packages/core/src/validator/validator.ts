@@ -321,6 +321,7 @@ export abstract class ValidatorBase {
     const validateAtomicSwapCalls: FnCall[] = []
     const validateUsedNullifierCalls: FnCall[] = []
     const validateDuplicatedNullifierCalls: FnCall[] = []
+    const validateSNARKCalls: FnCall[] = []
 
     let usedNullifiers: BN[] | undefined
     if (this.layer2.grove.nullifierTree) {
@@ -382,6 +383,9 @@ export abstract class ValidatorBase {
           Uint256.from(i.toString()),
         ),
       )
+      validateSNARKCalls.push(
+        toFnCall('validateSNARK', block, Uint256.from(i.toString())),
+      )
     }
     return {
       onchainValidator,
@@ -393,22 +397,6 @@ export abstract class ValidatorBase {
         ...validateUsedNullifierCalls,
         ...validateDuplicatedNullifierCalls,
       ],
-    }
-  }
-
-  protected async validateSNARK(block: Block): Promise<ValidateFnCalls> {
-    const onchainValidator = this.onchain.snark
-    const offchainValidator = this.offchain.snark
-    const validateSNARKCalls: FnCall[] = []
-    for (let i = 0; i < block.body.txs.length; i += 1) {
-      validateSNARKCalls.push(
-        toFnCall('validateSNARK', block, Uint256.from(i.toString())),
-      )
-    }
-    return {
-      onchainValidator,
-      offchainValidator,
-      fnCalls: validateSNARKCalls,
     }
   }
 

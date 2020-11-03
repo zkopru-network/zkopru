@@ -13,7 +13,6 @@ import { IUtxoTreeValidator } from "./interfaces/validators/IUtxoTreeValidator.s
 import { IWithdrawalTreeValidator } from "./interfaces/validators/IWithdrawalTreeValidator.sol";
 import { INullifierTreeValidator } from "./interfaces/validators/INullifierTreeValidator.sol";
 import { ITxValidator } from "./interfaces/validators/ITxValidator.sol";
-import { ITxSNARKValidator } from "./interfaces/validators/ITxSNARKValidator.sol";
 
 /* solium-disable */
 
@@ -85,8 +84,7 @@ contract Proxy is Storage {
         address utxoTreeValidator,
         address withdrawalTreeValidator,
         address nullifierTreeValidator,
-        address txValidator,
-        address txSNARKValidator
+        address txValidator
     ) internal virtual {
         _connect(challengeable, IDepositValidator(0).validateMassDeposit.selector);
         _connect(challengeable, IHeaderValidator(0).validateDepositRoot.selector);
@@ -113,7 +111,7 @@ contract Proxy is Storage {
         _connect(challengeable, ITxValidator(0).validateUsedNullifier.selector);
         _connect(challengeable, ITxValidator(0).validateDuplicatedNullifier.selector);
         _connect(challengeable, ITxValidator(0).isValidRef.selector);
-        _connect(challengeable, ITxSNARKValidator(0).validateSNARK.selector);
+        _connect(challengeable, ITxValidator(0).validateSNARK.selector);
         _connectValidator(depositValidator, IDepositValidator(0).validateMassDeposit.selector);
         _connectValidator(headerValidator, IHeaderValidator(0).validateDepositRoot.selector);
         _connectValidator(headerValidator, IHeaderValidator(0).validateTxRoot.selector);
@@ -139,7 +137,7 @@ contract Proxy is Storage {
         _connectValidator(txValidator, ITxValidator(0).validateUsedNullifier.selector);
         _connectValidator(txValidator, ITxValidator(0).validateDuplicatedNullifier.selector);
         _connectValidator(txValidator, ITxValidator(0).isValidRef.selector);
-        _connectValidator(txSNARKValidator, ITxSNARKValidator(0).validateSNARK.selector);
+        _connectValidator(txValidator, ITxValidator(0).validateSNARK.selector);
     }
 
     function _connect(address to, bytes4 sig) internal {

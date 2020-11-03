@@ -72,4 +72,16 @@ export class OnchainTxValidator extends OnchainValidatorContext
     const result = await this.isSlashable(tx)
     return result
   }
+
+  async validateSNARK(
+    block: BlockData,
+    txIndex: Uint256,
+  ): Promise<OnchainValidation> {
+    const tx = this.layer1.validators.tx.methods.validateSNARK(
+      blockDataToHexString(block),
+      txIndex.toString(),
+    )
+    const result = await this.isSlashable(tx)
+    return result
+  }
 }

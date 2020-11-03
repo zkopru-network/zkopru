@@ -2,13 +2,13 @@
 pragma solidity = 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import { TxSNARKValidator } from "../../contracts/zkopru/controllers/validators/TxSNARKValidator.sol";
 import { SNARK } from "../../contracts/zkopru/libraries/SNARK.sol";
+import { TxValidator } from "../../contracts/zkopru/controllers/validators/TxValidator.sol";
 import { Proof, Block, Transaction, Types } from "../../contracts/zkopru/libraries/Types.sol";
 import { G1Point, G2Point } from "../../contracts/zkopru/libraries/Pairing.sol";
 import { Deserializer } from "../../contracts/zkopru/libraries/Deserializer.sol";
 
-contract SNARKTester is TxSNARKValidator {
+contract SNARKTester is TxValidator {
     using SNARK for SNARK.VerifyingKey;
 
     string public val;
@@ -35,21 +35,6 @@ contract SNARKTester is TxSNARKValidator {
     ) public {
         uint256 txSig = Types.getSNARKSignature(numOfInputs, numOfOutputs);
         SNARK.VerifyingKey storage key = vks[txSig];
-        require(key.ic.length == 0, "already registered");
-        require(key.alpha1.X == 0, "already registered");
-        require(key.alpha1.Y == 0, "already registered");
-        require(key.beta2.X[0] == 0, "already registered");
-        require(key.beta2.X[1] == 0, "already registered");
-        require(key.beta2.Y[0] == 0, "already registered");
-        require(key.beta2.Y[1] == 0, "already registered");
-        require(key.gamma2.X[0] == 0, "already registered");
-        require(key.gamma2.X[1] == 0, "already registered");
-        require(key.gamma2.Y[0] == 0, "already registered");
-        require(key.gamma2.Y[1] == 0, "already registered");
-        require(key.delta2.X[0] == 0, "already registered");
-        require(key.delta2.X[1] == 0, "already registered");
-        require(key.delta2.Y[0] == 0, "already registered");
-        require(key.delta2.Y[1] == 0, "already registered");
         key.alpha1 = vk.alpha1;
         key.beta2 = vk.beta2;
         key.gamma2 = vk.gamma2;

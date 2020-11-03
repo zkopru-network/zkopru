@@ -27,5 +27,10 @@ interface ITxValidator {
     view
     returns (bool slash, string memory reason);
 
+    function validateSNARK(bytes calldata blockData, uint256 txIndex)
+    external
+    view
+    returns (bool slash, string memory reason);
+
     function isValidRef(bytes32 l2BlockHash, uint256 ref) external view returns (bool);
 }

@@ -8,7 +8,6 @@ import { IMigratable } from './contracts/IMigratable'
 import { IMigrationValidator } from './contracts/IMigrationValidator'
 import { INullifierTreeValidator } from './contracts/INullifierTreeValidator'
 import { ISetupWizard } from './contracts/ISetupWizard'
-import { ITxSNARKValidator } from './contracts/ITxSNARKValidator'
 import { ITxValidator } from './contracts/ITxValidator'
 import { IUserInteractable } from './contracts/IUserInteractable'
 import { IUtxoTreeValidator } from './contracts/IUtxoTreeValidator'
@@ -33,7 +32,6 @@ export class ZkopruContract {
     migration: IMigrationValidator
     header: IHeaderValidator
     tx: ITxValidator
-    snark: ITxSNARKValidator
     utxoTree: IUtxoTreeValidator
     withdrawalTree: IWithdrawalTreeValidator
     nullifierTree: INullifierTreeValidator
@@ -52,7 +50,6 @@ export class ZkopruContract {
       migration: Layer1.getIMigrationValidator(web3, address, option),
       header: Layer1.getIHeaderValidator(web3, address, option),
       tx: Layer1.getITxValidator(web3, address, option),
-      snark: Layer1.getITxSNARKValidator(web3, address, option),
       utxoTree: Layer1.getIUtxoTreeValidator(web3, address, option),
       withdrawalTree: Layer1.getIWithdrawalTreeValidator(web3, address, option),
       nullifierTree: Layer1.getINullifierTreeValidator(web3, address, option),

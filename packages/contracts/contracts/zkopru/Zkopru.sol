@@ -91,8 +91,7 @@ contract Zkopru is Proxy, Reader, ISetupWizard {
         address utxoTreeValidator,
         address withdrawalTreeValidator,
         address nullifierTreeValidator,
-        address txValidator,
-        address txSNARKValidator
+        address txValidator
     ) public override onlyOwner {
         Proxy._connectChallengeable(
             challengeable,
@@ -102,8 +101,7 @@ contract Zkopru is Proxy, Reader, ISetupWizard {
             utxoTreeValidator,
             withdrawalTreeValidator,
             nullifierTreeValidator,
-            txValidator,
-            txSNARKValidator
+            txValidator
         );
     }
 

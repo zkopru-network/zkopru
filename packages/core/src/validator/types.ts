@@ -138,9 +138,6 @@ export interface TxValidator {
     block: BlockData,
     txIndex: Bytes32,
   ) => Promise<Validation>
-}
-
-export interface TxSNARKValidator {
   validateSNARK: (block: BlockData, txIndex: Uint256) => Promise<Validation>
 }
 
@@ -152,7 +149,6 @@ export interface BlockValidator {
   withdrawalTree?: WithdrawalTreeValidator
   nullifierTree?: NullifierTreeValidator
   tx?: TxValidator
-  snark?: TxSNARKValidator
 }
 
 export type FnCall = {

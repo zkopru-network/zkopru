@@ -21,7 +21,6 @@ export class FullValidator extends Validator {
       this.validateUtxoTree,
       this.validateWithdrawalTree,
       this.validateTx,
-      this.validateSNARK,
     ]
     const validationCalls = await Promise.all(
       validateFns.map(async fn => {

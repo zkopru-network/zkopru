@@ -5,7 +5,6 @@ import {
   HeaderValidator,
   MigrationValidator,
   NullifierTreeValidator,
-  TxSNARKValidator,
   TxValidator,
   UtxoTreeValidator,
   WithdrawalTreeValidator,
@@ -14,7 +13,6 @@ import { OffchainDepositValidator } from './offchain-deposit-validator'
 import { OffchainHeaderValidator } from './offchain-header-validator'
 import { OffchainMigrationValidator } from './offchain-migration-validator'
 import { OffchainNullifierTreeValidator } from './offchain-nullifier-tree-validator'
-import { OffchainTxSNARKValidator } from './offchain-snark-validator'
 import { OffchainTxValidator } from './offchain-tx-validator'
 import { OffchainUtxoTreeValidator } from './offchain-utxo-tree-validator'
 import { OffchainWithdrawalTreeValidator } from './offchain-withdrawal-tree-validator'
@@ -34,8 +32,6 @@ export class OffchainValidator implements BlockValidator {
 
   tx: TxValidator
 
-  snark: TxSNARKValidator
-
   constructor(layer2: L2Chain) {
     this.deposit = new OffchainDepositValidator(layer2)
     this.header = new OffchainHeaderValidator(layer2)
@@ -44,6 +40,5 @@ export class OffchainValidator implements BlockValidator {
     this.nullifierTree = new OffchainNullifierTreeValidator(layer2)
     this.withdrawalTree = new OffchainWithdrawalTreeValidator(layer2)
     this.tx = new OffchainTxValidator(layer2)
-    this.snark = new OffchainTxSNARKValidator(layer2)
   }
 }
