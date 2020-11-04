@@ -7,6 +7,8 @@ interface ITxValidator {
     view
     returns (bool slash, string memory reason);
 
+    function isValidRef(bytes32 l2BlockHash, uint256 ref) external view returns (bool);
+
     function validateOutflow(bytes calldata blockData, uint256 txIndex)
     external
     view
@@ -14,23 +16,21 @@ interface ITxValidator {
 
     function validateAtomicSwap(bytes calldata blockData, uint256 txIndex)
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 
     function validateUsedNullifier(bytes calldata blockData, bytes calldata parentHeader, uint256 txIndex, uint256 inflowIndex, bytes32[254] calldata sibling)
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 
     function validateDuplicatedNullifier(bytes calldata blockData, bytes32 nullifier)
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 
     function validateSNARK(bytes calldata blockData, uint256 txIndex)
     external
     view
     returns (bool slash, string memory reason);
-
-    function isValidRef(bytes32 l2BlockHash, uint256 ref) external view returns (bool);
 }

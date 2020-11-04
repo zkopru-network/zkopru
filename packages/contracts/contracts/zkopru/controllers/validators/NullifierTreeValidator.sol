@@ -32,7 +32,7 @@ contract NullifierTreeValidator is Storage, INullifierTreeValidator {
         bytes32[254][] calldata siblings
     )
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {

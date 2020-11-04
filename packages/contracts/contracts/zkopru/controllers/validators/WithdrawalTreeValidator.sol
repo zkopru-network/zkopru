@@ -29,7 +29,7 @@ contract WithdrawalTreeValidator is Storage, IWithdrawalTreeValidator {
         bytes calldata // parentHeader
     )
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {
@@ -68,7 +68,7 @@ contract WithdrawalTreeValidator is Storage, IWithdrawalTreeValidator {
         uint256[] calldata subTreeSiblings
     )
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {

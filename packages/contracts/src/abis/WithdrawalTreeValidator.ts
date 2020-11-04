@@ -175,7 +175,7 @@ export const WithdrawalTreeValidatorABI = [
       { internalType: 'bool', name: 'slash', type: 'bool' },
       { internalType: 'string', name: 'reason', type: 'string' },
     ],
-    stateMutability: 'view',
+    stateMutability: 'pure',
     type: 'function',
   },
   {
@@ -189,7 +189,7 @@ export const WithdrawalTreeValidatorABI = [
       { internalType: 'bool', name: 'slash', type: 'bool' },
       { internalType: 'string', name: 'reason', type: 'string' },
     ],
-    stateMutability: 'view',
+    stateMutability: 'pure',
     type: 'function',
   },
 ]

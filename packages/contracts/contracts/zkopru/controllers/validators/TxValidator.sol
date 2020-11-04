@@ -50,6 +50,35 @@ contract TxValidator is Storage, ITxValidator {
     }
 
     /**
+     * @notice It checks the validity of an inclusion refernce for a nullifier.
+     * @dev Each nullifier should be paired with an inclusion reference which is a root of
+     *      utxo tree. For the inclusion reference, You can use finalized roots or recent
+     *      blocks' utxo roots. When you use recent blocks' utxo roots, recent REF_DEPTH
+     *      of utxo roots are available. It costs maximum 1800*REF_DEPTH gas to validate
+     *      an inclusion reference during the TX challenge process.
+     * @param l2BlockHash Storage block's hash value where to start searching for.
+     * @param ref Utxo root which includes the nullifier's origin utxo.
+     */
+    function isValidRef(bytes32 l2BlockHash, uint256 ref)
+    public
+    view
+    override
+    returns (bool)
+    {
+        if (Storage.chain.finalizedUTXORoots[ref]) {
+            return true;
+        }
+        bytes32 parentBlock = l2BlockHash;
+        for (uint256 i = 0; i < REF_DEPTH; i++) {
+            parentBlock = Storage.chain.parentOf[parentBlock];
+            if (Storage.chain.utxoRootOf[parentBlock] == ref) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * @dev Challenge when the submitted transaction has an invalid outflow
      * @param // blockData Serialized block data
      * @param txIndex Index of the transaction in the tx list of the block body.
@@ -121,7 +150,7 @@ contract TxValidator is Storage, ITxValidator {
         uint256 txIndex
     )
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {
@@ -175,7 +204,7 @@ contract TxValidator is Storage, ITxValidator {
         bytes32[254] calldata sibling
     )
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {
@@ -206,7 +235,7 @@ contract TxValidator is Storage, ITxValidator {
         bytes32 nullifier
     )
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {
@@ -223,35 +252,6 @@ contract TxValidator is Storage, ITxValidator {
         }
         // code T10: Some transactions in the block are trying to use a same nullifier.
         return (count >= 2, "T10");
-    }
-
-    /**
-     * @notice It checks the validity of an inclusion refernce for a nullifier.
-     * @dev Each nullifier should be paired with an inclusion reference which is a root of
-     *      utxo tree. For the inclusion reference, You can use finalized roots or recent
-     *      blocks' utxo roots. When you use recent blocks' utxo roots, recent REF_DEPTH
-     *      of utxo roots are available. It costs maximum 1800*REF_DEPTH gas to validate
-     *      an inclusion reference during the TX challenge process.
-     * @param l2BlockHash Storage block's hash value where to start searching for.
-     * @param ref Utxo root which includes the nullifier's origin utxo.
-     */
-    function isValidRef(bytes32 l2BlockHash, uint256 ref)
-    public
-    view
-    override
-    returns (bool)
-    {
-        if (Storage.chain.finalizedUTXORoots[ref]) {
-            return true;
-        }
-        bytes32 parentBlock = l2BlockHash;
-        for (uint256 i = 0; i < REF_DEPTH; i++) {
-            parentBlock = Storage.chain.parentOf[parentBlock];
-            if (Storage.chain.utxoRootOf[parentBlock] == ref) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**

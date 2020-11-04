@@ -8,7 +8,7 @@ interface IMigrationValidator {
         uint256 massMigrationIdx2
     )
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 
     function validateTotalEth(
@@ -16,7 +16,7 @@ interface IMigrationValidator {
         uint256 migrationIndex
     )
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 
     function validateMergedLeaves(
@@ -24,7 +24,7 @@ interface IMigrationValidator {
         uint256 migrationIndex
     )
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 
     function validateMigrationFee(
@@ -32,7 +32,7 @@ interface IMigrationValidator {
         uint256 migrationIndex
     )
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 
     function validateDuplicatedERC20Migration(
@@ -42,7 +42,7 @@ interface IMigrationValidator {
         uint256 erc20MigrationIdx2
     )
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 
     function validateERC20Amount(
@@ -51,7 +51,7 @@ interface IMigrationValidator {
         uint256 erc20Index
     )
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 
     function validateDuplicatedERC721Migration(
@@ -61,7 +61,7 @@ interface IMigrationValidator {
         uint256 erc721MigrationIdx2
     )
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 
     function validateNonFungibility(
@@ -71,7 +71,7 @@ interface IMigrationValidator {
         uint256 tokenId
     )
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 
     function validateNftExistence(
@@ -81,6 +81,6 @@ interface IMigrationValidator {
         uint256 tokenId
     )
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 }

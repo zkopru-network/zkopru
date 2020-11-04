@@ -8,7 +8,7 @@ interface IUtxoTreeValidator {
         uint256[] calldata deposits
     )
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 
     function validateUTXORoot(
@@ -18,6 +18,6 @@ interface IUtxoTreeValidator {
         uint256[] calldata initialSiblings
     )
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 }

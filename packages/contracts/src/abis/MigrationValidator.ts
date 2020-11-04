@@ -176,7 +176,7 @@ export const MigrationValidatorABI = [
       { internalType: 'bool', name: 'slash', type: 'bool' },
       { internalType: 'string', name: 'reason', type: 'string' },
     ],
-    stateMutability: 'view',
+    stateMutability: 'pure',
     type: 'function',
   },
   {
@@ -189,7 +189,7 @@ export const MigrationValidatorABI = [
       { internalType: 'bool', name: 'slash', type: 'bool' },
       { internalType: 'string', name: 'reason', type: 'string' },
     ],
-    stateMutability: 'view',
+    stateMutability: 'pure',
     type: 'function',
   },
   {
@@ -202,7 +202,7 @@ export const MigrationValidatorABI = [
       { internalType: 'bool', name: 'slash', type: 'bool' },
       { internalType: 'string', name: 'reason', type: 'string' },
     ],
-    stateMutability: 'view',
+    stateMutability: 'pure',
     type: 'function',
   },
   {
@@ -215,7 +215,7 @@ export const MigrationValidatorABI = [
       { internalType: 'bool', name: 'slash', type: 'bool' },
       { internalType: 'string', name: 'reason', type: 'string' },
     ],
-    stateMutability: 'view',
+    stateMutability: 'pure',
     type: 'function',
   },
   {
@@ -230,7 +230,7 @@ export const MigrationValidatorABI = [
       { internalType: 'bool', name: 'slash', type: 'bool' },
       { internalType: 'string', name: 'reason', type: 'string' },
     ],
-    stateMutability: 'view',
+    stateMutability: 'pure',
     type: 'function',
   },
   {
@@ -244,7 +244,7 @@ export const MigrationValidatorABI = [
       { internalType: 'bool', name: 'slash', type: 'bool' },
       { internalType: 'string', name: 'reason', type: 'string' },
     ],
-    stateMutability: 'view',
+    stateMutability: 'pure',
     type: 'function',
   },
   {
@@ -259,7 +259,7 @@ export const MigrationValidatorABI = [
       { internalType: 'bool', name: 'slash', type: 'bool' },
       { internalType: 'string', name: 'reason', type: 'string' },
     ],
-    stateMutability: 'view',
+    stateMutability: 'pure',
     type: 'function',
   },
   {
@@ -274,7 +274,7 @@ export const MigrationValidatorABI = [
       { internalType: 'bool', name: 'slash', type: 'bool' },
       { internalType: 'string', name: 'reason', type: 'string' },
     ],
-    stateMutability: 'view',
+    stateMutability: 'pure',
     type: 'function',
   },
   {
@@ -289,7 +289,7 @@ export const MigrationValidatorABI = [
       { internalType: 'bool', name: 'slash', type: 'bool' },
       { internalType: 'string', name: 'reason', type: 'string' },
     ],
-    stateMutability: 'view',
+    stateMutability: 'pure',
     type: 'function',
   },
 ]

@@ -31,7 +31,7 @@ contract MigrationValidator is Storage, IMigrationValidator {
         uint256 massMigrationIdx2
     )
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {
@@ -53,7 +53,7 @@ contract MigrationValidator is Storage, IMigrationValidator {
         uint256 migrationIndex
     )
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {
@@ -83,7 +83,7 @@ contract MigrationValidator is Storage, IMigrationValidator {
         uint256 migrationIndex
     )
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {
@@ -113,7 +113,7 @@ contract MigrationValidator is Storage, IMigrationValidator {
         uint256 migrationIndex
     )
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {
@@ -141,7 +141,7 @@ contract MigrationValidator is Storage, IMigrationValidator {
         uint256 erc20MigrationIdx2
     )
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {
@@ -162,7 +162,7 @@ contract MigrationValidator is Storage, IMigrationValidator {
         uint256 erc20Index
     )
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {
@@ -196,7 +196,7 @@ contract MigrationValidator is Storage, IMigrationValidator {
         uint256 erc721MigrationIdx2
     )
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {
@@ -218,7 +218,7 @@ contract MigrationValidator is Storage, IMigrationValidator {
         uint256 tokenId
     )
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {
@@ -247,7 +247,7 @@ contract MigrationValidator is Storage, IMigrationValidator {
         uint256 tokenId
     )
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {
