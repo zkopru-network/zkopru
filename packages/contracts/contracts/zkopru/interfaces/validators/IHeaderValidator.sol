@@ -4,22 +4,22 @@ pragma solidity = 0.6.12;
 interface IHeaderValidator {
     function validateDepositRoot(bytes calldata blockData)
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 
     function validateTxRoot(bytes calldata blockData)
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 
     function validateMigrationRoot(bytes calldata blockData)
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 
     function validateTotalFee(bytes calldata blockData)
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 
     function validateParentBlock(bytes calldata blockData)

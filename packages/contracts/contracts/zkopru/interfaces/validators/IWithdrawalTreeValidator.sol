@@ -7,7 +7,7 @@ interface IWithdrawalTreeValidator {
         bytes calldata parentHeader
     )
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 
     function validateWithdrawalRoot(
@@ -16,6 +16,6 @@ interface IWithdrawalTreeValidator {
         uint256[] calldata initialSiblings
     )
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 }

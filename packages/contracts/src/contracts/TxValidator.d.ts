@@ -72,6 +72,11 @@ export class TxValidator extends Contract {
       1: string
     }>
 
+    isValidRef(
+      l2BlockHash: string | number[],
+      ref: number | string,
+    ): TransactionObject<boolean>
+
     validateOutflow(
       arg0: string | number[],
       txIndex: number | string,
@@ -114,11 +119,6 @@ export class TxValidator extends Contract {
       0: boolean
       1: string
     }>
-
-    isValidRef(
-      l2BlockHash: string | number[],
-      ref: number | string,
-    ): TransactionObject<boolean>
 
     validateSNARK(
       arg0: string | number[],

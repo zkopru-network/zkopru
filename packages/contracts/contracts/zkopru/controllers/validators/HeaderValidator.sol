@@ -23,7 +23,7 @@ contract HeaderValidator is Storage, IHeaderValidator {
      */
     function validateDepositRoot(bytes calldata)
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {
@@ -40,7 +40,7 @@ contract HeaderValidator is Storage, IHeaderValidator {
      */
     function validateTxRoot(bytes calldata)
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {
@@ -57,7 +57,7 @@ contract HeaderValidator is Storage, IHeaderValidator {
      */
     function validateMigrationRoot(bytes calldata)
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {
@@ -73,7 +73,7 @@ contract HeaderValidator is Storage, IHeaderValidator {
      */
     function validateTotalFee(bytes calldata)
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {

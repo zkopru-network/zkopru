@@ -32,7 +32,7 @@ contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
         uint256[] calldata _deposits
     )
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {
@@ -77,7 +77,7 @@ contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
         uint256[] calldata _subTreeSiblings
     )
     external
-    view
+    pure
     override
     returns (bool slash, string memory reason)
     {

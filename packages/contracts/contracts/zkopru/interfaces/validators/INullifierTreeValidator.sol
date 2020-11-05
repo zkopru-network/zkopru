@@ -9,6 +9,6 @@ interface INullifierTreeValidator {
         bytes32[254][] calldata siblings
     )
     external
-    view
+    pure
     returns (bool slash, string memory reason);
 }
