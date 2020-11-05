@@ -25,8 +25,7 @@ interface ISetupWizard {
         address utxoTreeValidator,
         address withdrawalTreeValidator,
         address nullifierTreeValidator,
-        address txValidator,
-        address txSNARKValidator
+        address txValidator
     ) external;
 
     function makeMigratable(address addr) external;

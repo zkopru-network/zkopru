@@ -163,7 +163,6 @@ export class Zkopru extends Contract {
       withdrawalTreeValidator: string,
       nullifierTreeValidator: string,
       txValidator: string,
-      txSNARKValidator: string,
     ): TransactionObject<void>
 
     makeMigratable(addr: string): TransactionObject<void>

@@ -100,7 +100,6 @@ export const ISetupWizardABI = [
         type: 'address',
       },
       { internalType: 'address', name: 'txValidator', type: 'address' },
-      { internalType: 'address', name: 'txSNARKValidator', type: 'address' },
     ],
     name: 'makeChallengeable',
     outputs: [],

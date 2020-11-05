@@ -31,7 +31,6 @@ ${importContracts([
   'IWithdrawalTreeValidator',
   'INullifierTreeValidator',
   'ITxValidator',
-  'ITxSNARKValidator',
   'IUserInteractable',
   'Zkopru',
 ])}
@@ -53,7 +52,6 @@ export class ZkopruContract {
     migration: IMigrationValidator
     header: IHeaderValidator
     tx: ITxValidator
-    snark: ITxSNARKValidator
     utxoTree: IUtxoTreeValidator
     withdrawalTree: IWithdrawalTreeValidator
     nullifierTree: INullifierTreeValidator
@@ -72,7 +70,6 @@ export class ZkopruContract {
       migration: Layer1.getIMigrationValidator(web3, address, option),
       header: Layer1.getIHeaderValidator(web3, address, option),
       tx: Layer1.getITxValidator(web3, address, option),
-      snark: Layer1.getITxSNARKValidator(web3, address, option),
       utxoTree: Layer1.getIUtxoTreeValidator(web3, address, option),
       withdrawalTree: Layer1.getIWithdrawalTreeValidator(web3, address, option),
       nullifierTree: Layer1.getINullifierTreeValidator(web3, address, option),
@@ -116,7 +113,6 @@ const list = [
   'INullifierTreeValidator',
   'ISetupWizard',
   'ITxValidator',
-  'ITxSNARKValidator',
   'IUserInteractable',
   'ERC20',
   'ERC721',

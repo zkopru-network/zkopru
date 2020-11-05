@@ -119,6 +119,16 @@ export class TxValidator extends Contract {
       l2BlockHash: string | number[],
       ref: number | string,
     ): TransactionObject<boolean>
+
+    validateSNARK(
+      arg0: string | number[],
+      txIndex: number | string,
+    ): TransactionObject<{
+      slash: boolean
+      reason: string
+      0: boolean
+      1: string
+    }>
   }
 
   events: {

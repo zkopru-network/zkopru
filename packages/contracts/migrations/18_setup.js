@@ -14,7 +14,6 @@ const UtxoTreeValidator = artifacts.require('UtxoTreeValidator')
 const WithdrawalTreeValidator = artifacts.require('WithdrawalTreeValidator')
 const NullifierTreeValidator = artifacts.require('NullifierTreeValidator')
 const TxValidator = artifacts.require('TxValidator')
-const TxSNARKValidator = artifacts.require('TxSNARKValidator')
 const MigrationValidator = artifacts.require('MigrationValidator')
 const Migratable = artifacts.require('Migratable')
 const Configurable = artifacts.require('Configurable')
@@ -62,10 +61,6 @@ module.exports = function migration(deployer, network, accounts) {
     })
     .then(txValidator => {
       instances.txValidator = txValidator
-      return TxSNARKValidator.deployed()
-    })
-    .then(txSNARKValidator => {
-      instances.txSNARKValidator = txSNARKValidator
       return DepositValidator.deployed()
     })
     .then(depositValidator => {
@@ -122,7 +117,6 @@ module.exports = function migration(deployer, network, accounts) {
         instances.withdrawalTreeValidator.address,
         instances.nullifierTreeValidator.address,
         instances.txValidator.address,
-        instances.txSNARKValidator.address,
       )
       await zkopru.makeMigratable(instances.migratable.address)
       await zkopru.makeConfigurable(instances.configurable.address)

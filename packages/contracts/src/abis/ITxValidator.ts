@@ -70,6 +70,19 @@ export const ITxValidatorABI = [
   },
   {
     inputs: [
+      { internalType: 'bytes', name: 'blockData', type: 'bytes' },
+      { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
+    ],
+    name: 'validateSNARK',
+    outputs: [
+      { internalType: 'bool', name: 'slash', type: 'bool' },
+      { internalType: 'string', name: 'reason', type: 'string' },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
       { internalType: 'bytes32', name: 'l2BlockHash', type: 'bytes32' },
       { internalType: 'uint256', name: 'ref', type: 'uint256' },
     ],

@@ -14,7 +14,6 @@ import { IMigratable } from './contracts/IMigratable'
 import { IMigrationValidator } from './contracts/IMigrationValidator'
 import { INullifierTreeValidator } from './contracts/INullifierTreeValidator'
 import { ISetupWizard } from './contracts/ISetupWizard'
-import { ITxSNARKValidator } from './contracts/ITxSNARKValidator'
 import { ITxValidator } from './contracts/ITxValidator'
 import { IUserInteractable } from './contracts/IUserInteractable'
 import { IUtxoTreeValidator } from './contracts/IUtxoTreeValidator'
@@ -34,7 +33,6 @@ import { IMigratableABI } from './abis/IMigratable'
 import { IMigrationValidatorABI } from './abis/IMigrationValidator'
 import { INullifierTreeValidatorABI } from './abis/INullifierTreeValidator'
 import { ISetupWizardABI } from './abis/ISetupWizard'
-import { ITxSNARKValidatorABI } from './abis/ITxSNARKValidator'
 import { ITxValidatorABI } from './abis/ITxValidator'
 import { IUserInteractableABI } from './abis/IUserInteractable'
 import { IUtxoTreeValidatorABI } from './abis/IUtxoTreeValidator'
@@ -165,15 +163,6 @@ export class Layer1 {
   ): ITxValidator {
     const abi: any[] = [...ITxValidatorABI]
     return new web3.eth.Contract(abi, address, option) as ITxValidator
-  }
-
-  static getITxSNARKValidator(
-    web3: Web3,
-    address: string,
-    option?: ContractOptions,
-  ): ITxSNARKValidator {
-    const abi: any[] = [...ITxSNARKValidatorABI]
-    return new web3.eth.Contract(abi, address, option) as ITxSNARKValidator
   }
 
   static getIUserInteractable(

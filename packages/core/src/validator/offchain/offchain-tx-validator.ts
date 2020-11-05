@@ -208,6 +208,25 @@ export class OffchainTxValidator extends OffchainValidatorContext
     return false
   }
 
+  async validateSNARK(data: BlockData, txIndex: Uint256): Promise<Validation> {
+    const block = blockDataToBlock(data)
+    const tx = block.body.txs[txIndex.toBN().toNumber()]
+    let slash: Validation
+    if (!this.layer2.snarkVerifier.hasVK(tx.inflow.length, tx.outflow.length)) {
+      slash = {
+        slashable: true,
+        reason: CODE.S1,
+      }
+    } else {
+      const verified = await this.layer2.snarkVerifier.verifyTx(tx)
+      slash = {
+        slashable: !verified,
+        reason: CODE.S2,
+      }
+    }
+    return slash
+  }
+
   private includeSwapNote(tx: ZkTx, expected: Field) {
     if (!tx.swap || tx.swap.eqn(0)) return false
     for (let i = 0; i < tx.outflow.length; i += 1) {
