@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class IERC721 extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): IERC721
+
   methods: {
     supportsInterface(
       interfaceId: string | number[],
@@ -51,6 +53,7 @@ export class IERC721 extends Contract {
       tokenId: number | string,
     ): TransactionObject<void>
   }
+
   events: {
     Approval: ContractEvent<{
       owner: string

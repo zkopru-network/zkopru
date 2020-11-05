@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class Migrations extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): Migrations
+
   methods: {
     last_completed_migration(): TransactionObject<string>
 
@@ -25,6 +27,7 @@ export class Migrations extends Contract {
 
     upgrade(new_address: string): TransactionObject<void>
   }
+
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

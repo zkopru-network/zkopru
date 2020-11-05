@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class TestERC721 extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): TestERC721
+
   methods: {
     approve(to: string, tokenId: number | string): TransactionObject<void>
 
@@ -68,6 +70,7 @@ export class TestERC721 extends Contract {
       tokenId: number | string,
     ): TransactionObject<void>
   }
+
   events: {
     Approval: ContractEvent<{
       owner: string

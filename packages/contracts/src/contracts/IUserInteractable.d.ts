@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class IUserInteractable extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): IUserInteractable
+
   methods: {
     deposit(
       spendingPubKey: number | string,
@@ -51,6 +53,7 @@ export class IUserInteractable extends Contract {
       signature: string | number[],
     ): TransactionObject<void>
   }
+
   events: {
     Deposit: ContractEvent<{
       queuedAt: string

@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class IERC721Enumerable extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): IERC721Enumerable
+
   methods: {
     approve(to: string, tokenId: number | string): TransactionObject<void>
 
@@ -60,6 +62,7 @@ export class IERC721Enumerable extends Contract {
 
     tokenByIndex(index: number | string): TransactionObject<string>
   }
+
   events: {
     Approval: ContractEvent<{
       owner: string

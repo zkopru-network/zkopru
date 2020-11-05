@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class IERC721Receiver extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): IERC721Receiver
+
   methods: {
     onERC721Received(
       operator: string,
@@ -24,6 +26,7 @@ export class IERC721Receiver extends Contract {
       data: string | number[],
     ): TransactionObject<string>
   }
+
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
