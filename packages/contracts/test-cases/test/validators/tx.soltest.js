@@ -13,7 +13,7 @@ const { Block } = require('~core/block')
 const { expect } = chai
 const { toBN } = web3.utils
 
-const SNARKTester = artifacts.require('SNARKTester')
+const TxValidatorTester = artifacts.require('TxValidatorTester')
 
 const compare = (a, b) => {
   expect(toBN(a).toString()).equal(toBN(b).toString())
@@ -32,7 +32,7 @@ function loadVkJsonFiles() {
     nOut.forEach(j => {
       const vkPath = path.join(
         __dirname,
-        `../../keys/vks/zk_transaction_${i}_${j}.vk.json`,
+        `../../../keys/vks/zk_transaction_${i}_${j}.vk.json`,
       )
       const vk = JSON.parse(fs.readFileSync(vkPath))
       vks[i][j] = vk
@@ -53,7 +53,7 @@ contract('SNARK verify test', async accounts => {
   let snarkTester
   let vks
   before(async () => {
-    snarkTester = await SNARKTester.new()
+    snarkTester = await TxValidatorTester.new()
     vks = loadVkJsonFiles()
     for (let i = 1; i <= 4; i += 1) {
       for (let j = 1; j <= 4; j += 1) {
