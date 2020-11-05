@@ -49,92 +49,17 @@ export class Challengeable extends Contract {
 
     allowedMigrants(arg0: string): TransactionObject<boolean>
 
-    committedDeposits(
-      massDepositHash: string | number[],
-    ): TransactionObject<string>
-
     consensusProvider(): TransactionObject<string>
-
-    finalizedUTXORoots(utxoRoot: string | number[]): TransactionObject<boolean>
-
-    genesis(): TransactionObject<string>
-
-    getVk(
-      numOfInputs: number | string,
-      numOfOutputs: number | string,
-    ): TransactionObject<{
-      alpha1: string[]
-      beta2: string[][]
-      gamma2: string[][]
-      delta2: string[][]
-      ic: string[][]
-      0: string[]
-      1: string[][]
-      2: string[][]
-      3: string[][]
-      4: string[][]
-    }>
-
-    latest(): TransactionObject<string>
-
-    massDepositId(): TransactionObject<string>
-
-    migrations(migrationHash: string | number[]): TransactionObject<boolean>
 
     owner(): TransactionObject<string>
 
-    parentOf(header: string | number[]): TransactionObject<string>
-
-    proposals(
-      proposalId: string | number[],
-    ): TransactionObject<{
-      header: string
-      challengeDue: string
-      slashed: boolean
-      0: string
-      1: string
-      2: boolean
-    }>
-
-    proposedBlocks(): TransactionObject<string>
-
-    proposers(
-      addr: string,
-    ): TransactionObject<{
-      stake: string
-      reward: string
-      exitAllowance: string
-      0: string
-      1: string
-      2: string
-    }>
-
     proxied(arg0: string | number[]): TransactionObject<string>
-
-    registeredERC20s(tokenAddr: string): TransactionObject<boolean>
-
-    registeredERC721s(tokenAddr: string): TransactionObject<boolean>
 
     renounceOwnership(): TransactionObject<void>
 
-    stagedDeposits(): TransactionObject<{
-      merged: string
-      fee: string
-      0: string
-      1: string
-    }>
-
-    stagedSize(): TransactionObject<string>
-
     transferOwnership(newOwner: string): TransactionObject<void>
 
-    utxoRootOf(header: string | number[]): TransactionObject<string>
-
     validators(arg0: string | number[]): TransactionObject<string>
-
-    withdrawalRootOf(header: string | number[]): TransactionObject<string>
-
-    withdrawn(leaf: string | number[]): TransactionObject<boolean>
   }
 
   events: {
