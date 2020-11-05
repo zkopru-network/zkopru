@@ -45,10 +45,12 @@ contract WithdrawalTreeValidator is Storage, IWithdrawalTreeValidator {
                 }
             }
         }
-        if (withdrawalLen != l2Block.header.withdrawalIndex - parentHeader.withdrawalIndex) {
+        uint256 numOfSubTrees = withdrawalLen / WITHDRAWAL_SUB_TREE_SIZE;
+        uint256 nextIndex = parentHeader.withdrawalIndex + WITHDRAWAL_SUB_TREE_SIZE * numOfSubTrees;
+        if (nextIndex != l2Block.header.withdrawalIndex) {
             // code W1: The updated number of total Withdarawls is not correct.
             return (true, "W1");
-        } else if (l2Block.header.withdrawalIndex > MAX_WITHDRAWAL) {
+        } else if (nextIndex > MAX_WITHDRAWAL) {
             // code W2: The updated number of total Withdrawals is exceeding the maximum value.
             return (true, "W2");
         }
@@ -58,12 +60,12 @@ contract WithdrawalTreeValidator is Storage, IWithdrawalTreeValidator {
      * @dev Challenge when the submitted block's updated withdrawal tree root is invalid.
      * @param // blockData Serialized block data
      * @param // parentHeader  Serialized parent header data
-     * @param initialSiblings Submit the siblings of the starting index leaf
+     * @param subTreeSiblings Submit the siblings of the starting index leaf
      */
     function validateWithdrawalRoot(
         bytes calldata, // blockData
         bytes calldata, // parentHeader
-        uint256[] calldata initialSiblings
+        uint256[] calldata subTreeSiblings
     )
     external
     view
@@ -73,10 +75,7 @@ contract WithdrawalTreeValidator is Storage, IWithdrawalTreeValidator {
         Block memory l2Block = Deserializer.blockFromCalldataAt(0);
         Header memory parentHeader = Deserializer.headerFromCalldataAt(1);
         require(l2Block.header.parentBlock == parentHeader.hash(), "Invalid prev header");
-        uint256[] memory withdrawals = _getWithdrawals(
-            l2Block.header.withdrawalIndex - parentHeader.withdrawalIndex,
-            l2Block.body.txs
-        );
+        uint256[] memory withdrawals = _getWithdrawals(l2Block.body.txs);
         // Check validity of the roll up using the storage based Poseidon sub-tree roll up
         uint256 computedRoot = SubTreeLib.appendSubTree(
             Hash.keccak(),
@@ -84,7 +83,7 @@ contract WithdrawalTreeValidator is Storage, IWithdrawalTreeValidator {
             parentHeader.withdrawalIndex,
             WITHDRAWAL_SUB_TREE_DEPTH,
             withdrawals,
-            initialSiblings
+            subTreeSiblings
         );
         // Computed new utxo root is different with the submitted
         // code W3: The updated withdrawal tree root is not correct.
@@ -93,9 +92,19 @@ contract WithdrawalTreeValidator is Storage, IWithdrawalTreeValidator {
 
     /** Computes challenge here */
     function _getWithdrawals(
-        uint256 numOfWithdrawals,
         Transaction[] memory txs
     ) private pure returns (uint256[] memory withdrawals) {
+        // Calculate the length of the withdrawal array
+        uint256 numOfWithdrawals;
+        for (uint256 i = 0; i < txs.length; i++) {
+            Transaction memory transaction = txs[i];
+            for(uint256 j = 0; j < transaction.outflow.length; j++) {
+                if(txs[i].outflow[j].outflowType == uint8(OutflowType.Withdrawal)) {
+                    numOfWithdrawals++;
+                }
+            }
+        }
+        // Make the withdrawal array
         withdrawals = new uint256[](numOfWithdrawals);
         uint256 index = 0;
         // Append UTXOs from transactions
@@ -107,6 +116,5 @@ contract WithdrawalTreeValidator is Storage, IWithdrawalTreeValidator {
                 }
             }
         }
-        require(numOfWithdrawals == index, "Run index challenge");
     }
 }

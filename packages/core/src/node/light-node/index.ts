@@ -11,8 +11,9 @@ import { BootstrapHelper } from '../bootstrap'
 import { Block, headerHash } from '../../block'
 import { Synchronizer } from '../synchronizer'
 import { ZkopruNode } from '../zkopru-node'
-import { LightNodeBlockProcessor } from './processor'
+import { BlockProcessor } from '../block-processor'
 import { Tracker } from '../tracker'
+import { LightValidator } from './lightnode-validator'
 
 type provider = WebsocketProvider | IpcProvider
 
@@ -32,7 +33,7 @@ export class LightNode extends ZkopruNode {
     bootstrapHelper: BootstrapHelper
     synchronizer: Synchronizer
     tracker: Tracker
-    blockProcessor: LightNodeBlockProcessor
+    blockProcessor: BlockProcessor
     accounts?: ZkAccount[]
   }) {
     super({
@@ -121,9 +122,10 @@ export class LightNode extends ZkopruNode {
       address,
       accounts,
     )
-    const blockProcessor = new LightNodeBlockProcessor({
+    const validator = new LightValidator(l1Contract, l2Chain)
+    const blockProcessor = new BlockProcessor({
       db,
-      l1Contract,
+      validator,
       l2Chain,
       tracker,
     })

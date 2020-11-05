@@ -33,7 +33,7 @@ describe('nullifier tree unit test', () => {
     it('should not be able to generate an inclusion proof for a non existing item', async () => {
       await expect(
         nullifierTree.getInclusionProof(toBN(12345)),
-      ).rejects.toThrow('Generated invalid proof')
+      ).rejects.toThrow('Generated invalid inclusion proof')
     }, 60000)
     it('should be able to generate an inclusion proof for an existing item', async () => {
       await nullifierTree.nullify(toBN(123456))
@@ -46,7 +46,7 @@ describe('nullifier tree unit test', () => {
       await nullifierTree.nullify(toBN(1234567))
       await expect(
         nullifierTree.getNonInclusionProof(toBN(1234567)),
-      ).rejects.toThrow('Generated invalid proof')
+      ).rejects.toThrow('Generated invalid non inclusion proof')
     }, 60000)
     it('should be able to generate a non-inclusion proof for an non-existing item', async () => {
       const proof = await nullifierTree.getNonInclusionProof(toBN(12345678))

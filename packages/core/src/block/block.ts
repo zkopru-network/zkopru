@@ -138,19 +138,18 @@ export class Block {
   }
 
   static fromTx(tx: Transaction, verified?: boolean): Block {
-    return Block.from(tx.input, verified)
-  }
-
-  static from(data: string | Buffer, verified?: boolean): Block {
-    const queue = new Utils.StringifiedHexQueue(
-      typeof data === 'string' ? data : data.toString('hex'),
-    )
+    const queue = new Utils.StringifiedHexQueue(tx.input)
     // remove function selector
     const selector = queue.dequeue(4)
     const paramPosition = queue.dequeue(32)
     const bytesLength = queue.dequeue(32)
     assert([selector, paramPosition, bytesLength])
     const rawData = queue.dequeueAll()
+    return Block.from(rawData, verified)
+  }
+
+  static from(data: string | Buffer, verified?: boolean): Block {
+    const rawData = Utils.hexify(data)
     const deserializedHeader = deserializeHeaderFrom(rawData)
     const deserializedTxs = deserializeTxsFrom(deserializedHeader.rest)
     const deserializedMassDeposits = deserializeMassDeposits(

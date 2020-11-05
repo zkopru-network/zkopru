@@ -45,18 +45,19 @@ export class L1Contract extends ZkopruContract {
             BigInt(vk.alpha1[1]),
             BigInt('1'),
           ]
+          // caution: snarkjs G2Point is reversed
           const vk_beta_2 = [
-            [BigInt(vk.beta2[0][0]), BigInt(vk.beta2[0][1])],
+            [BigInt(vk.beta2[0][1]), BigInt(vk.beta2[0][0])],
             [BigInt(vk.beta2[1][0]), BigInt(vk.beta2[1][1])],
             [BigInt('1'), BigInt('0')],
           ]
           const vk_gamma_2 = [
-            [BigInt(vk.gamma2[0][0]), BigInt(vk.gamma2[0][1])],
+            [BigInt(vk.gamma2[0][1]), BigInt(vk.gamma2[0][0])],
             [BigInt(vk.gamma2[1][0]), BigInt(vk.gamma2[1][1])],
             [BigInt('1'), BigInt('0')],
           ]
           const vk_delta_2 = [
-            [BigInt(vk.delta2[0][0]), BigInt(vk.delta2[0][1])],
+            [BigInt(vk.delta2[0][1]), BigInt(vk.delta2[0][0])],
             [BigInt(vk.delta2[1][0]), BigInt(vk.delta2[1][1])],
             [BigInt('1'), BigInt('0')],
           ]

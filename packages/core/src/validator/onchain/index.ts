@@ -17,7 +17,7 @@ import { OnchainNullifierTreeValidator } from './onchain-nullifier-tree-validato
 import { OnchainTxSNARKValidator } from './onchain-snark-validator'
 import { OnchainTxValidator } from './onchain-tx-validator'
 import { OnchainUtxoTreeValidator } from './onchain-utxo-tree-validator'
-import { OnchainWithdrawalTreeValidator } from './onchain-withdrawal-tree-nullifier'
+import { OnchainWithdrawalTreeValidator } from './onchain-withdrawal-tree-validator'
 
 export class OnchainValidator implements BlockValidator {
   deposit: DepositValidator

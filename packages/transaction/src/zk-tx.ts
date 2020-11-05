@@ -101,12 +101,13 @@ export class ZkTx {
         ]),
       ),
       this.fee.toBuffer('be', 32),
+      // caution: snarkjs G1Point is reversed
       this.proof.pi_a[0].toBuffer('be', 32),
       this.proof.pi_a[1].toBuffer('be', 32),
-      this.proof.pi_b[0][0].toBuffer('be', 32),
       this.proof.pi_b[0][1].toBuffer('be', 32),
-      this.proof.pi_b[1][0].toBuffer('be', 32),
+      this.proof.pi_b[0][0].toBuffer('be', 32),
       this.proof.pi_b[1][1].toBuffer('be', 32),
+      this.proof.pi_b[1][0].toBuffer('be', 32),
       this.proof.pi_c[0].toBuffer('be', 32),
       this.proof.pi_c[1].toBuffer('be', 32),
       Uint8Array.from([
@@ -146,10 +147,11 @@ export class ZkTx {
         this.swap ? this.swap.toBuffer('be', 32) : Uint256.from('0').toBuffer(),
         this.proof.pi_a[0].toBuffer('be', 32),
         this.proof.pi_a[1].toBuffer('be', 32),
-        this.proof.pi_b[0][0].toBuffer('be', 32),
+        // caution: snarkjs G2Point is reversed
         this.proof.pi_b[0][1].toBuffer('be', 32),
-        this.proof.pi_b[1][0].toBuffer('be', 32),
+        this.proof.pi_b[0][0].toBuffer('be', 32),
         this.proof.pi_b[1][1].toBuffer('be', 32),
+        this.proof.pi_b[1][0].toBuffer('be', 32),
         this.proof.pi_c[0].toBuffer('be', 32),
         this.proof.pi_c[1].toBuffer('be', 32),
         this.fee.toBuffer('be', 32),
@@ -266,15 +268,16 @@ export class ZkTx {
         Field.fromBuffer(queue.dequeue(32)),
         Field.fromBuffer(queue.dequeue(32)),
       ],
+      // caution: snarkjs G2Point is reversed
       pi_b: [
         [
           Field.fromBuffer(queue.dequeue(32)),
           Field.fromBuffer(queue.dequeue(32)),
-        ],
+        ].reverse(),
         [
           Field.fromBuffer(queue.dequeue(32)),
           Field.fromBuffer(queue.dequeue(32)),
-        ],
+        ].reverse(),
       ],
       pi_c: [
         Field.fromBuffer(queue.dequeue(32)),

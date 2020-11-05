@@ -55,7 +55,7 @@ export class NullifierTree implements SMT<BN> {
     this.db = db
     this.hasher = hasher
     this.depth = depth
-    if (hasher.preHash.length < depth)
+    if (hasher.preHash.length <= depth)
       throw Error('Hasher should have enough prehased values')
   }
 
@@ -66,6 +66,26 @@ export class NullifierTree implements SMT<BN> {
     })
     if (!root) throw Error('Failed to get root node')
     return root
+  }
+
+  async findUsedNullifier(...nullifiers: BN[]): Promise<BN[]> {
+    const usedNullifierNodeIndices = await this.db.read(prisma =>
+      prisma.treeNode.findMany({
+        select: { nodeIndex: true },
+        where: {
+          nodeIndex: {
+            in: nullifiers
+              .map(index => new BN(1).shln(this.depth).or(index))
+              .map(nullifier => hexify(nullifier)),
+          },
+          value: hexify(SMTLeaf.FILLED),
+        },
+      }),
+    )
+    const usedNullifiers = usedNullifierNodeIndices.map(nullifier =>
+      toBN(nullifier.nodeIndex).sub(new BN(1).shln(this.depth)),
+    )
+    return usedNullifiers
   }
 
   private async getRootNode(): Promise<BN> {
@@ -103,7 +123,7 @@ export class NullifierTree implements SMT<BN> {
       }
     })
     if (!verifyProof(this.hasher, merkleProof)) {
-      throw Error('Generated invalid proof')
+      throw Error('Generated invalid inclusion proof')
     }
     return merkleProof
   }
@@ -122,7 +142,7 @@ export class NullifierTree implements SMT<BN> {
     })
 
     if (!verifyProof(this.hasher, merkleProof)) {
-      throw Error('Generated invalid proof')
+      throw Error('Generated invalid non inclusion proof')
     }
     return merkleProof
   }
@@ -282,7 +302,7 @@ export class NullifierTree implements SMT<BN> {
       const { index, val } = leaf
       const leafNodeIndex = new BN(1).shln(this.depth).or(index)
       if (leafNodeIndex.lte(index)) throw Error('Leaf index is out of range')
-      let node = new BN(val)
+      let node = toBN(val)
       let pathIndex: BN
       let hasRightSibling: boolean
       for (let level = 0; level < this.depth; level += 1) {

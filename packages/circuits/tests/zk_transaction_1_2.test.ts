@@ -45,7 +45,7 @@ describe('zk_transaction_1_2.test.circom', () => {
   const utxoTreeInitialData = {
     root: genesisRoot(poseidonHasher(depth)),
     index: Field.zero,
-    siblings: preHashes,
+    siblings: preHashes.slice(0, -1),
   }
   let mockup: MockupDB
   beforeAll(async () => {

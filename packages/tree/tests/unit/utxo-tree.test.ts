@@ -1,59 +1,23 @@
 /* eslint-disable jest/no-disabled-tests */
 /* eslint-disable jest/no-hooks */
-import { v4 } from 'uuid'
 import { Field } from '~babyjubjub'
-import {
-  UtxoTree,
-  TreeConfig,
-  poseidonHasher,
-  Leaf,
-  genesisRoot,
-  verifyProof,
-} from '~tree'
+import { UtxoTree, poseidonHasher, Leaf, verifyProof } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
 import { accounts } from '~dataset/testset-keys'
-import { DB, TreeSpecies, MockupDB } from '~prisma'
+import { MockupDB } from '~prisma'
 
 describe('utxo tree unit test', () => {
   let utxoTree: UtxoTree
-  const utxoTreeMetadata = {
-    id: v4(),
-    index: 1,
-    species: TreeSpecies.UTXO,
-    start: Field.from(0),
-    end: Field.from(0),
-  }
-  const depth = 31
-  const utxoTreeConfig: TreeConfig<Field> = {
-    hasher: poseidonHasher(depth),
-    forceUpdate: true,
-    fullSync: true,
-  }
-  const preHashes = poseidonHasher(depth).preHash
-  const utxoTreeInitialData = {
-    root: genesisRoot(poseidonHasher(depth)),
-    index: Field.zero,
-    siblings: preHashes,
-  }
   let mockup: MockupDB
+  const depth = 48
   beforeAll(async () => {
     // const db = nSQL()
-    mockup = await DB.mockup()
-    utxoTree = new UtxoTree({
-      db: mockup.db,
-      metadata: utxoTreeMetadata,
-      data: utxoTreeInitialData,
-      config: utxoTreeConfig,
-    })
-    await utxoTree.init()
+    const { tree, db } = await UtxoTree.sample(depth)
+    utxoTree = tree
+    mockup = db
   })
   afterAll(async () => {
     await mockup.terminate()
-  })
-  describe('root()', () => {
-    it('should return the genesis root value for its initial root', () => {
-      expect(utxoTree.root().eq(utxoTreeInitialData.root)).toStrictEqual(true)
-    })
   })
   describe('dryAppend', () => {
     let prevRoot: Field

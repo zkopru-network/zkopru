@@ -7,7 +7,7 @@ import assert from 'assert'
 import { Address, Bytes32, Uint256 } from 'soltypes'
 import { headerHash } from '../../block'
 import { CODE } from '../code'
-import { BlockData, HeaderData, Slash, TxValidator } from '../types'
+import { BlockData, HeaderData, Validation, TxValidator } from '../types'
 import { blockDataToBlock, headerDataToHeader } from '../utils'
 import { L2Chain } from '../../context/layer2'
 import { OffchainValidatorContext } from './offchain-context'
@@ -25,7 +25,7 @@ export class OffchainTxValidator extends OffchainValidatorContext
     data: BlockData,
     txIndex: Uint256,
     inflowIndex: Uint256,
-  ): Promise<Slash> {
+  ): Promise<Validation> {
     const block = blockDataToBlock(data)
     const tx = block.body.txs[txIndex.toBN().toNumber()]
     const ref = tx.inflow[inflowIndex.toBN().toNumber()].root
@@ -38,7 +38,10 @@ export class OffchainTxValidator extends OffchainValidatorContext
     }
   }
 
-  async validateOutflow(data: BlockData, txIndex: Uint256): Promise<Slash> {
+  async validateOutflow(
+    data: BlockData,
+    txIndex: Uint256,
+  ): Promise<Validation> {
     const block = blockDataToBlock(data)
     const tx = block.body.txs[txIndex.toBN().toNumber()]
     for (let i = 0; i < tx.outflow.length; i += 1) {
@@ -50,12 +53,13 @@ export class OffchainTxValidator extends OffchainValidatorContext
       if (outflow.outflowType.eqn(0)) {
         // UTXO type
         const isEmpty =
-          outflow.data?.to.eqn(0) &&
-          outflow.data?.eth.eqn(0) &&
-          outflow.data?.tokenAddr.eqn(0) &&
-          outflow.data?.erc20Amount.eqn(0) &&
-          outflow.data?.nft.eqn(0) &&
-          outflow.data?.fee.eqn(0)
+          !outflow.data ||
+          (outflow.data.to.eqn(0) &&
+            outflow.data.eth.eqn(0) &&
+            outflow.data.tokenAddr.eqn(0) &&
+            outflow.data.erc20Amount.eqn(0) &&
+            outflow.data.nft.eqn(0) &&
+            outflow.data.fee.eqn(0))
         if (!isEmpty) {
           return { slashable: true, reason: CODE.T3 }
         }
@@ -95,7 +99,10 @@ export class OffchainTxValidator extends OffchainValidatorContext
     return { slashable: false }
   }
 
-  async validateAtomicSwap(data: BlockData, txIndex: Uint256): Promise<Slash> {
+  async validateAtomicSwap(
+    data: BlockData,
+    txIndex: Uint256,
+  ): Promise<Validation> {
     const block = blockDataToBlock(data)
     const txA = block.body.txs[txIndex.toBN().toNumber()]
     assert(txA.swap, 'This tx does not have atomic swap')
@@ -117,7 +124,7 @@ export class OffchainTxValidator extends OffchainValidatorContext
     txIndex: Uint256,
     inflowIndex: Uint256,
     siblings: Bytes32[],
-  ): Promise<Slash> {
+  ): Promise<Validation> {
     const block = blockDataToBlock(blockData)
     const parentHeader = headerDataToHeader(parentHeaderData)
     const usedNullifier =
@@ -140,7 +147,7 @@ export class OffchainTxValidator extends OffchainValidatorContext
   async validateDuplicatedNullifier(
     data: BlockData,
     nullifier: Bytes32,
-  ): Promise<Slash> {
+  ): Promise<Validation> {
     const block = blockDataToBlock(data)
     let count = 0
     for (const tx of block.body.txs) {

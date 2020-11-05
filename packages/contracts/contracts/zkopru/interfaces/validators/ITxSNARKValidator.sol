@@ -14,9 +14,4 @@ interface ITxSNARKValidator {
     external
     view
     returns (bool slash, string memory reason);
-
-    /**
-     * @dev This function Is also called for the try/catch statement in validateSNARK() function.
-     */
-    function hasValidSNARK(Transaction memory transaction) external view returns (bool result, string memory reason);
 }

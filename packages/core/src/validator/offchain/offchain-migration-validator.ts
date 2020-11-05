@@ -5,7 +5,7 @@ import BN from 'bn.js'
 import { Bytes32, Uint256 } from 'soltypes'
 import { soliditySha3Raw } from 'web3-utils'
 import { CODE } from '../code'
-import { BlockData, MigrationValidator, Slash } from '../types'
+import { BlockData, MigrationValidator, Validation } from '../types'
 import { blockDataToBlock } from '../utils'
 import { OffchainValidatorContext } from './offchain-context'
 
@@ -15,13 +15,13 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
     data: BlockData,
     migrationIndex1: Uint256,
     migrationIndex2: Uint256,
-  ): Promise<Slash> {
+  ): Promise<Validation> {
     const block = blockDataToBlock(data)
     const migration1 =
       block.body.massMigrations[migrationIndex1.toBN().toNumber()]
     const migration2 =
       block.body.massMigrations[migrationIndex2.toBN().toNumber()]
-    const slash: Slash = {
+    const slash: Validation = {
       slashable: migration1.destination.eq(migration2.destination),
       reason: CODE.M1,
     }
@@ -31,7 +31,7 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
   async validateTotalEth(
     data: BlockData,
     migrationIndex: Uint256,
-  ): Promise<Slash> {
+  ): Promise<Validation> {
     const block = blockDataToBlock(data)
     // get target migration
     const migration =
@@ -51,7 +51,7 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
       totalETH = totalETH.add(outflow.data.eth)
     }
     // Return the result
-    const slash: Slash = {
+    const slash: Validation = {
       slashable: !totalETH.eq(migration.totalETH.toBN()),
       reason: CODE.M2,
     }
@@ -61,7 +61,7 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
   async validateMergedLeaves(
     data: BlockData,
     migrationIndex: Uint256,
-  ): Promise<Slash> {
+  ): Promise<Validation> {
     const block = blockDataToBlock(data)
     // get target migration
     const migration =
@@ -81,7 +81,7 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
       merged = soliditySha3Raw(merged, note)
     }
     // Return the result
-    const slash: Slash = {
+    const slash: Validation = {
       slashable: migration.migratingLeaves.merged.eq(Bytes32.from(merged)),
       reason: CODE.M3,
     }
@@ -91,7 +91,7 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
   async validateMigrationFee(
     data: BlockData,
     migrationIndex: Uint256,
-  ): Promise<Slash> {
+  ): Promise<Validation> {
     const block = blockDataToBlock(data)
     // get target migration
     const migration =
@@ -110,7 +110,7 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
       migrationFee = migrationFee.add(fee)
     }
     // Return the result
-    const slash: Slash = {
+    const slash: Validation = {
       slashable: !migration.migratingLeaves.fee.toBN().eq(migrationFee),
       reason: CODE.M4,
     }
@@ -122,7 +122,7 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
     migrationIndex: Uint256,
     erc20Idx1: Uint256,
     erc20Idx2: Uint256,
-  ): Promise<Slash> {
+  ): Promise<Validation> {
     const block = blockDataToBlock(data)
     // get target migration
     const migration =
@@ -130,7 +130,7 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
     const erc20Migration1 = migration.erc20[erc20Idx1.toBN().toNumber()]
     const erc20Migration2 = migration.erc20[erc20Idx2.toBN().toNumber()]
     // Return the result
-    const slash: Slash = {
+    const slash: Validation = {
       slashable: erc20Migration1.addr.eq(erc20Migration2.addr),
       reason: CODE.M5,
     }
@@ -141,7 +141,7 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
     data: BlockData,
     migrationIndex: Uint256,
     erc20Idx: Uint256,
-  ): Promise<Slash> {
+  ): Promise<Validation> {
     const block = blockDataToBlock(data)
     // get target migration
     const migration =
@@ -165,7 +165,7 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
       tokenAmount = tokenAmount.add(amount)
     }
     // Return the result
-    const slash: Slash = {
+    const slash: Validation = {
       slashable: !erc20Migration.amount.toBN().eq(tokenAmount),
       reason: CODE.M6,
     }
@@ -177,7 +177,7 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
     migrationIndex: Uint256,
     erc721Idx1: Uint256,
     erc721Idx2: Uint256,
-  ): Promise<Slash> {
+  ): Promise<Validation> {
     const block = blockDataToBlock(data)
     // get target migration
     const migration =
@@ -185,7 +185,7 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
     const erc721Migration1 = migration.erc721[erc721Idx1.toBN().toNumber()]
     const erc721Migration2 = migration.erc721[erc721Idx2.toBN().toNumber()]
     // Return the result
-    const slash: Slash = {
+    const slash: Validation = {
       slashable: erc721Migration1.addr.eq(erc721Migration2.addr),
       reason: CODE.M7,
     }
@@ -197,7 +197,7 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
     migrationIndex: Uint256,
     erc721Idx: Uint256,
     tokenId: Uint256,
-  ): Promise<Slash> {
+  ): Promise<Validation> {
     const block = blockDataToBlock(data)
     // get target migration
     const migration =
@@ -215,7 +215,7 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
       return [...arr, ...filteredOutflow]
     }, [] as ZkOutflow[])
     // Return the result
-    const slash: Slash = {
+    const slash: Validation = {
       // NFT cannot exists more than 1
       slashable: migrationOutflowArr.length > 1,
       reason: CODE.M8,
@@ -228,7 +228,7 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
     migrationIndex: Uint256,
     erc721Idx: Uint256,
     tokenId: Uint256,
-  ): Promise<Slash> {
+  ): Promise<Validation> {
     const block = blockDataToBlock(data)
     // get target migration
     const migration =
@@ -247,7 +247,7 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
       return [...arr, ...filteredOutflow]
     }, [] as ZkOutflow[])
     // Return the result
-    const slash: Slash = {
+    const slash: Validation = {
       // NFT cannot exists more than 1
       slashable: nftsToMigrate.length !== migrationOutflowArr.length,
       reason: CODE.M9,

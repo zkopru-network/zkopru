@@ -28,4 +28,4 @@ export {
 } from './block'
 export { L1Contract } from './context/layer1'
 export { L2Chain } from './context/layer2'
-export { SNARKVerifier } from './snark/snark-verifier'
+export { SNARKVerifier, verifyingKeyIdentifier } from './snark/snark-verifier'

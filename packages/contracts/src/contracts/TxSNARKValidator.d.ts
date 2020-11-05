@@ -145,38 +145,6 @@ export class TxSNARKValidator extends Contract {
       0: boolean
       1: string
     }>
-
-    hasValidSNARK(transaction: {
-      inflow: {
-        inclusionRoot: number | string
-        nullifier: string | number[]
-      }[]
-      outflow: {
-        note: number | string
-        outflowType: number | string
-        publicData: {
-          to: string
-          eth: number | string
-          token: string
-          amount: number | string
-          nft: number | string
-          fee: number | string
-        }
-      }[]
-      swap: number | string
-      fee: number | string
-      proof: {
-        a: { X: number | string; Y: number | string }
-        b: { X: (number | string)[]; Y: (number | string)[] }
-        c: { X: number | string; Y: number | string }
-      }
-      memo: string | number[]
-    }): TransactionObject<{
-      validity: boolean
-      reason: string
-      0: boolean
-      1: string
-    }>
   }
 
   events: {

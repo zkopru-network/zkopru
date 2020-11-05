@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity = 0.6.12;
+pragma experimental ABIEncoderV2;
 
 import { Pairing, G1Point, G2Point } from "./Pairing.sol";
 import { Proof } from "./Types.sol";
@@ -16,9 +17,9 @@ library SNARK {
     }
 
     uint256 constant SNARK_SCALAR_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
-    uint256 constant PRIME_Q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;    
+    uint256 constant PRIME_Q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
 
-    function verifySnarkProof(VerifyingKey memory vk, uint256[] memory input, Proof memory proof) internal view returns (bool) {
+    function verify(VerifyingKey memory vk, uint256[] memory input, Proof memory proof) internal view returns (bool) {
         require(input.length + 1 == vk.ic.length,"verifier-bad-input");
         // Compute the linear combination vkX
         G1Point memory vkX = G1Point(0, 0);

@@ -14,46 +14,38 @@ import {
   ZkTx,
 } from '@zkopru/transaction'
 import { Address, Uint256 } from 'soltypes'
-import { TransactionObject } from '@zkopru/contracts'
-import { L1Contract } from '../context/layer1'
 import { L2Chain, Patch } from '../context/layer2'
 import { Block, Header, massDepositHash } from '../block'
-import { OffchainValidator, OnchainValidator } from '../validator'
+import { ValidatorBase as Validator } from '../validator'
 import { Tracker } from './tracker'
 
-export abstract class BlockProcessor extends EventEmitter {
+export class BlockProcessor extends EventEmitter {
   db: DB
 
   layer2: L2Chain
 
   tracker: Tracker
 
-  validators: {
-    onchain: OnchainValidator
-    offchain: OffchainValidator
-  }
+  validator: Validator
 
   worker: Worker<void>
 
   constructor({
     db,
-    l1Contract,
     l2Chain,
     tracker,
+    validator,
   }: {
     db: DB
-    l1Contract: L1Contract
     l2Chain: L2Chain
     tracker: Tracker
+    validator: Validator
   }) {
     super()
     this.db = db
     this.layer2 = l2Chain
     this.tracker = tracker
-    this.validators = {
-      onchain: new OnchainValidator(l1Contract),
-      offchain: new OffchainValidator(l2Chain),
-    }
+    this.validator = validator
     this.worker = new Worker<void>()
   }
 
@@ -212,6 +204,7 @@ export abstract class BlockProcessor extends EventEmitter {
       } catch (err) {
         // TODO needs to provide roll back & resync option
         // sync & process error
+        console.error(err)
         logger.warn(`Failed process a block - ${err}`)
         break
       }
@@ -258,8 +251,8 @@ export abstract class BlockProcessor extends EventEmitter {
 
     logger.info(`Processing block ${block.hash.toString()}`)
     // validate the block details and get challenge if it has any invalid data.
-    const slashTx = await this.validate(parent, block)
-    if (slashTx) {
+    const challengeTx = await this.validator.validate(parent, block)
+    if (challengeTx) {
       // implement challenge here & mark as invalidated
       await this.db.write(prisma =>
         prisma.proposal.update({
@@ -275,7 +268,7 @@ export abstract class BlockProcessor extends EventEmitter {
       )
       logger.warn('challenge')
       // TODO slasher option
-      this.emit('slash', slashTx)
+      this.emit('slash', challengeTx)
       return proposal.proposalNum
     }
     // generate a patch
@@ -324,14 +317,4 @@ export abstract class BlockProcessor extends EventEmitter {
     }
     return patch
   }
-
-  abstract validate(
-    parent: Header,
-    block: Block,
-  ): Promise<TransactionObject<{
-    slash: boolean
-    reason: string
-    0: boolean
-    1: string
-  }> | null>
 }

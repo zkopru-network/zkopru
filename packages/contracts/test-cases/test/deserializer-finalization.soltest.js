@@ -85,7 +85,9 @@ contract('Finalization serialize-deserialize tests', async accounts => {
     it('should have correct mass deposit root', async () => {
       const mdRoot = await dt.getMassDepositRootFromFinalization(rawData)
       compare(header.depositRoot, mdRoot)
-      const computedMdRoot = await dt.computeDepositRootFromFinalization(rawData)
+      const computedMdRoot = await dt.computeDepositRootFromFinalization(
+        rawData,
+      )
       console.log('l1 computed', computedMdRoot.toString())
       console.log('l2 computed', header.depositRoot.toString())
       compare(header.depositRoot, computedMdRoot)
@@ -93,7 +95,9 @@ contract('Finalization serialize-deserialize tests', async accounts => {
     it('should have correct mass migration root', async () => {
       const mmRoot = await dt.getMassMigrationRootFromFinalization(rawData)
       compare(header.migrationRoot, mmRoot)
-      const computedMMRoot = await dt.computeMigrationRootFromFinalization(rawData)
+      const computedMMRoot = await dt.computeMigrationRootFromFinalization(
+        rawData,
+      )
       compare(header.migrationRoot, computedMMRoot)
     })
   })

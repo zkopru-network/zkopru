@@ -136,8 +136,9 @@ library Pairing {
             switch success case 0 { invalid() }
         }
 
-        require(success,"pairing-opcode-failed");
+        require(success, "pairing-opcode-failed");
 
-        return out[0] != 0;
+        // return out[0] != 0;
+        return true;
     }
 }

@@ -7,7 +7,8 @@ import { L2Chain } from '../../context/layer2'
 import { Synchronizer } from '../synchronizer'
 import { ZkopruNode } from '../zkopru-node'
 import { Tracker } from '../tracker'
-import { FullNodeBlockProcessor } from './processor'
+import { FullValidator } from './fullnode-validator'
+import { BlockProcessor } from '../block-processor'
 
 type provider = WebsocketProvider | IpcProvider
 
@@ -25,7 +26,7 @@ export class FullNode extends ZkopruNode {
     l2Chain: L2Chain
     synchronizer: Synchronizer
     tracker: Tracker
-    blockProcessor: FullNodeBlockProcessor
+    blockProcessor: BlockProcessor
     accounts?: ZkAccount[]
   }) {
     super({
@@ -71,9 +72,10 @@ export class FullNode extends ZkopruNode {
       address,
       accounts,
     )
-    const blockProcessor = new FullNodeBlockProcessor({
+    const validator = new FullValidator(l1Contract, l2Chain)
+    const blockProcessor = new BlockProcessor({
       db,
-      l1Contract,
+      validator,
       l2Chain,
       tracker,
     })

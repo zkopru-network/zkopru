@@ -18,6 +18,8 @@ library MerkleTreeLib {
         uint256[] memory leaves,
         uint256[] memory initialSiblings
     ) internal pure returns (uint256 newRoot) {
+        newRoot = startingRoot;
+        require(self.preHashedZero.length == initialSiblings.length + 1, "Submitted invalid length of siblings");
         require(_startingLeafProof(self, startingRoot, index, initialSiblings), "Invalid merkle proof of starting leaf node");
         uint256 nextIndex = index;
         uint256[] memory nextSiblings = initialSiblings;
@@ -126,7 +128,12 @@ library SubTreeLib {
         uint256[] memory leaves,
         uint256[] memory subTreeSiblings
     ) internal pure returns (uint256 newRoot) {
+        newRoot = startingRoot;
         require(index % (1 << subTreeDepth) == 0, "Can't merge a subTree");
+        require(
+            self.preHashedZero.length == subTreeDepth + subTreeSiblings.length + 1,
+            "Should submit subtree's siblings"
+        );
         require(_emptySubTreeProof(self, startingRoot, index, subTreeDepth, subTreeSiblings), "Insertion is not allowed");
         uint256 nextIndex = index;
         uint256[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
@@ -140,6 +147,7 @@ library SubTreeLib {
                 nextSiblings
             );
         }
+        return newRoot;
     }
 
     function splitToSubTrees(
@@ -250,19 +258,19 @@ library SubTreeLib {
         require(leaves.length <= treeSize, "Overflowed");
 
         uint256[] memory nodes = new uint256[](treeSize << 1); // we'll not use nodes[0]
-        uint256 emptyNode = treeSize + (leaves.length - 1); // we do not hash if we can use pre hashed zeroes
-        uint256 leftMostOfTheFloor = treeSize;
+        uint256 emptyNode = treeSize + leaves.length; // we do not hash if we can use pre hashed zeroes
 
         // From the bottom to the top
         for (uint256 level = 0; level <= subTreeDepth; level++) {
+            uint256 leftMostOfTheFloor = treeSize >> level;
             // From the right to the left
             for (
-                uint256 nodeIndex = (treeSize << 1) - 1;
+                uint256 nodeIndex = (leftMostOfTheFloor << 1 ) - 1;
                 nodeIndex >= leftMostOfTheFloor;
                 nodeIndex--
             )
             {
-                if (nodeIndex <= emptyNode) {
+                if (nodeIndex < emptyNode) {
                     // This node is not an empty node
                     if (level == 0) {
                         // Leaf node

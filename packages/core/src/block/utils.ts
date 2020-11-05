@@ -100,10 +100,11 @@ export function serializeTxs(txs: ZkTx[]): Buffer {
     if (!proof) throw Error('SNARK proof should exist')
     arr.push(proof.pi_a[0].toBuffer('be', 32))
     arr.push(proof.pi_a[1].toBuffer('be', 32))
-    arr.push(proof.pi_b[0][0].toBuffer('be', 32))
+    // caution: snarkjs G2Point is reversed
     arr.push(proof.pi_b[0][1].toBuffer('be', 32))
-    arr.push(proof.pi_b[1][0].toBuffer('be', 32))
+    arr.push(proof.pi_b[0][0].toBuffer('be', 32))
     arr.push(proof.pi_b[1][1].toBuffer('be', 32))
+    arr.push(proof.pi_b[1][0].toBuffer('be', 32))
     arr.push(proof.pi_c[0].toBuffer('be', 32))
     arr.push(proof.pi_c[1].toBuffer('be', 32))
 
@@ -245,8 +246,14 @@ export function deserializeTxsFrom(
     const proof: SNARK = {
       pi_a: [Field.from(queue.dequeue(32)), Field.from(queue.dequeue(32))],
       pi_b: [
-        [Field.from(queue.dequeue(32)), Field.from(queue.dequeue(32))],
-        [Field.from(queue.dequeue(32)), Field.from(queue.dequeue(32))],
+        [
+          Field.from(queue.dequeue(32)),
+          Field.from(queue.dequeue(32)),
+        ].reverse(),
+        [
+          Field.from(queue.dequeue(32)),
+          Field.from(queue.dequeue(32)),
+        ].reverse(),
       ],
       pi_c: [Field.from(queue.dequeue(32)), Field.from(queue.dequeue(32))],
     }

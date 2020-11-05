@@ -1,11 +1,16 @@
-import { Hasher, poseidonHasher, SubTreeLib } from '@zkopru/tree'
+import { Hasher, keccakHasher, SubTreeLib } from '@zkopru/tree'
 import assert from 'assert'
 import { Uint256 } from 'soltypes'
 import { OutflowType, ZkOutflow } from '@zkopru/transaction'
 import BN from 'bn.js'
 import { L2Chain } from '../../context/layer2'
 import { headerHash } from '../../block'
-import { BlockData, HeaderData, Slash, WithdrawalTreeValidator } from '../types'
+import {
+  BlockData,
+  HeaderData,
+  Validation,
+  WithdrawalTreeValidator,
+} from '../types'
 import { blockDataToBlock, headerDataToHeader } from '../utils'
 import { OffchainValidatorContext } from './offchain-context'
 import { CODE } from '../code'
@@ -20,7 +25,7 @@ export class OffchainWithdrawalTreeValidator extends OffchainValidatorContext
 
   constructor(layer2: L2Chain) {
     super(layer2)
-    this.hasher = poseidonHasher(layer2.config.withdrawalTreeDepth)
+    this.hasher = keccakHasher(layer2.config.withdrawalTreeDepth)
     this.MAX_WITHDRAWAL = new BN(1).shln(layer2.config.withdrawalTreeDepth)
     this.SUB_TREE_DEPTH = layer2.config.withdrawalSubTreeDepth
   }
@@ -28,7 +33,7 @@ export class OffchainWithdrawalTreeValidator extends OffchainValidatorContext
   async validateWithdrawalIndex(
     blockData: BlockData,
     parentHeaderData: HeaderData,
-  ): Promise<Slash> {
+  ): Promise<Validation> {
     const block = blockDataToBlock(blockData)
     const parentHeader = headerDataToHeader(parentHeaderData)
     assert(
@@ -62,8 +67,8 @@ export class OffchainWithdrawalTreeValidator extends OffchainValidatorContext
   async validateWithdrawalRoot(
     blockData: BlockData,
     parentHeaderData: HeaderData,
-    initialSiblings: Uint256[],
-  ): Promise<Slash> {
+    subTreeSiblings: Uint256[],
+  ): Promise<Validation> {
     const block = blockDataToBlock(blockData)
     const parentHeader = headerDataToHeader(parentHeaderData)
     assert(
@@ -84,7 +89,7 @@ export class OffchainWithdrawalTreeValidator extends OffchainValidatorContext
       parentHeader.withdrawalIndex.toBN(),
       this.SUB_TREE_DEPTH,
       newWithdrawals,
-      initialSiblings.map(sib => sib.toBN()),
+      subTreeSiblings.map(sib => sib.toBN()),
     )
     return {
       slashable: !computedRoot.eq(block.header.withdrawalRoot.toBN()),

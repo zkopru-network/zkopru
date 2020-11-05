@@ -15,7 +15,6 @@ function appendLeaf<T extends Field | BN>(
   nextIndex: T
   nextSiblings: T[]
 } {
-  assert(siblings.length === hasher.preHash.length, 'Invalid sibling length')
   const nextSiblings = [...siblings]
   const path = index
   let node: T = leaf
@@ -45,7 +44,6 @@ function startingLeafProof<T extends Field | BN>(
   index: T,
   siblings: T[],
 ): boolean {
-  assert(siblings.length === hasher.preHash.length, 'Invalid sibling length')
   const path = index
   let node: T = hasher.preHash[0]
   for (let level = 0; level < siblings.length; level += 1) {
@@ -68,7 +66,6 @@ export function merkleRoot<T extends Field | BN>(
   index: T,
   siblings: T[],
 ): T {
-  assert(siblings.length === hasher.preHash.length, 'Invalid sibling length')
   const path = index
   let node: T = leaf
   for (let level = 0; level < siblings.length; level += 1) {
@@ -100,6 +97,10 @@ export function append<T extends Field | BN>(
   leaves: T[],
   initialSiblings: T[],
 ): T {
+  assert(
+    hasher.preHash.length === initialSiblings.length + 1,
+    'Submitted invalid length of siblings',
+  )
   assert(
     startingLeafProof(hasher, startingRoot, index, initialSiblings),
     'Invalid merkle proof of starting leaf node',
@@ -141,14 +142,14 @@ function subTreeRoot<T extends Field | BN>(
   const treeSize = 1 << subTreeDepth
   assert(leaves.length <= treeSize, 'Overflowed')
   const nodes: (T | undefined)[] = Array(treeSize << 1) // we'll not use nodes[0]
-  let emptyNode = treeSize + (leaves.length - 1) // we do not hash if we can use pre hashed zeroes
-  let leftMostOfTheFloor = treeSize
+  let emptyNode = treeSize + leaves.length // we do not hash if we can use pre hashed zeroes
 
   // From the bottom to the top
   for (let level = 0; level <= subTreeDepth; level += 1) {
+    let leftMostOfTheFloor = treeSize >> level
     // From the right to the left
     for (
-      let nodeIndex = (treeSize << 1) - 1;
+      let nodeIndex = (leftMostOfTheFloor << 1) - 1;
       nodeIndex >= leftMostOfTheFloor;
       nodeIndex -= 1
     ) {
@@ -223,19 +224,22 @@ function emptySubTreeProof<T extends Field | BN>(
   root: T,
   index: T,
   subTreeDepth: number,
-  siblings: T[],
+  subTreeSiblings: T[],
 ): boolean {
   const subTreePath = index.shrn(subTreeDepth)
   let path = subTreePath
-  for (let level = 0; level < siblings.length; level += 1) {
+  for (let level = 0; level < subTreeSiblings.length; level += 1) {
     if (path.isEven()) {
       // right sibling should be a prehashed zero
-      if (!siblings[level].eq(hasher.preHash[level + subTreeDepth]))
+      if (!subTreeSiblings[level].eq(hasher.preHash[level + subTreeDepth])) {
         return false
+      }
     } else {
       // left sibling should not be a prehashed zero
       // eslint-disable-next-line no-lonely-if
-      if (siblings[level].eq(hasher.preHash[level + subTreeDepth])) return false
+      if (subTreeSiblings[level].eq(hasher.preHash[level + subTreeDepth])) {
+        return false
+      }
     }
     path = path.shrn(1)
   }
@@ -244,7 +248,7 @@ function emptySubTreeProof<T extends Field | BN>(
     root,
     hasher.preHash[subTreeDepth],
     subTreePath,
-    siblings,
+    subTreeSiblings,
   )
 }
 
@@ -254,8 +258,7 @@ export function splitToSubTrees<T extends Field | BN>(
   subTreeDepth: number,
 ): T[][] {
   const subTreeSize = 1 << subTreeDepth
-  const numOfSubTrees =
-    leaves.length / subTreeSize + (leaves.length % subTreeSize === 0 ? 0 : 1)
+  const numOfSubTrees = Math.ceil(leaves.length / subTreeSize)
   const subTrees: T[][] = Array(numOfSubTrees).fill(
     Array(subTreeSize).fill(hasher.preHash[0]),
   )
@@ -283,6 +286,10 @@ export function appendAsSubTrees<T extends Field | BN>(
 ): T {
   assert(index.modn(1 << subTreeDepth) === 0, 'Cannot merge subtree')
   assert(
+    hasher.preHash.length === subTreeDepth + subTreeSiblings.length + 1,
+    "Should submit subtree's siblings",
+  )
+  assert(
     emptySubTreeProof(
       hasher,
       startingRoot,
@@ -296,7 +303,7 @@ export function appendAsSubTrees<T extends Field | BN>(
   let nextIndex = index
   let nextSiblings = [...subTreeSiblings]
   const subTrees = splitToSubTrees(hasher, leaves, subTreeDepth)
-  for (let i = 0; i < leaves.length; i += 1) {
+  for (let i = 0; i < subTrees.length; i += 1) {
     const updated = appendSubTree(
       hasher,
       nextIndex,

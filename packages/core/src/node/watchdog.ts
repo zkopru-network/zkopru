@@ -1,6 +1,6 @@
 import { Account } from 'web3-core'
 import { TransactionObject } from '@zkopru/contracts'
-import { L1Contract } from '~core/context/layer1'
+import { L1Contract } from '../context/layer1'
 
 export class Watchdog {
   layer1: L1Contract

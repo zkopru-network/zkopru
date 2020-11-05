@@ -332,7 +332,7 @@ export const WithdrawalTreeValidatorABI = [
     inputs: [
       { internalType: 'bytes', name: '', type: 'bytes' },
       { internalType: 'bytes', name: '', type: 'bytes' },
-      { internalType: 'uint256[]', name: 'initialSiblings', type: 'uint256[]' },
+      { internalType: 'uint256[]', name: 'subTreeSiblings', type: 'uint256[]' },
     ],
     name: 'validateWithdrawalRoot',
     outputs: [

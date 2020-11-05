@@ -162,11 +162,15 @@ export class Coordinator extends EventEmitter {
     vk: any,
   ): Promise<TransactionReceipt | undefined> {
     const tx = this.layer1().setup.methods.registerVk(nIn, nOut, {
-      alpha1: vk.vk_alpha_1.slice(0, 2),
-      beta2: vk.vk_beta_2.slice(0, 2),
-      gamma2: vk.vk_gamma_2.slice(0, 2),
-      delta2: vk.vk_delta_2.slice(0, 2),
-      ic: vk.IC.map(arr => arr.slice(0, 2)),
+      // caution: snarkjs G2Point is reversed
+      alpha1: { X: vk.vk_alpha_1[0], Y: vk.vk_alpha_1[1] },
+      beta2: { X: vk.vk_beta_2[0].reverse(), Y: vk.vk_beta_2[1].reverse() },
+      gamma2: { X: vk.vk_gamma_2[0].reverse(), Y: vk.vk_gamma_2[1].reverse() },
+      delta2: { X: vk.vk_delta_2[0].reverse(), Y: vk.vk_delta_2[1].reverse() },
+      ic: vk.IC.map((ic: string[][]) => ({
+        X: ic[0],
+        Y: ic[1],
+      })),
     })
     return this.layer1().sendTx(tx, this.context.account)
   }
