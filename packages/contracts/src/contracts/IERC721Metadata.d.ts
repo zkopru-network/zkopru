@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class IERC721Metadata extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): IERC721Metadata
+
   methods: {
     approve(to: string, tokenId: number | string): TransactionObject<void>
 
@@ -57,6 +59,7 @@ export class IERC721Metadata extends Contract {
 
     tokenURI(tokenId: number | string): TransactionObject<string>
   }
+
   events: {
     Approval: ContractEvent<{
       owner: string

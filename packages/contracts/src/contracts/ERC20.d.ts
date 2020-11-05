@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class ERC20 extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): ERC20
+
   methods: {
     name(): TransactionObject<string>
 
@@ -55,6 +57,7 @@ export class ERC20 extends Contract {
       subtractedValue: number | string,
     ): TransactionObject<boolean>
   }
+
   events: {
     Approval: ContractEvent<{
       owner: string

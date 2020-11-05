@@ -15,12 +15,15 @@ interface EventOptions {
 
 export class IERC165 extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): IERC165
+
   methods: {
     supportsInterface(
       interfaceId: string | number[],
     ): TransactionObject<boolean>
   }
+
   events: {
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

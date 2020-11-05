@@ -15,7 +15,9 @@ interface EventOptions {
 
 export class IERC20 extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): IERC20
+
   methods: {
     totalSupply(): TransactionObject<string>
 
@@ -39,6 +41,7 @@ export class IERC20 extends Contract {
       amount: number | string,
     ): TransactionObject<boolean>
   }
+
   events: {
     Approval: ContractEvent<{
       owner: string
