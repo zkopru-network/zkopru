@@ -53,7 +53,7 @@ model Config {
 
 model Tracker {
   id Int @id @default(autoincrement())
-  viewier String? @unique
+  viewer String? @unique
   address String? @unique
 }
 
