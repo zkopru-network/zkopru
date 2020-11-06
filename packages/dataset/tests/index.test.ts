@@ -3,7 +3,7 @@
  */
 
 import { getDummyBody } from '../src/testset-block'
-import { accounts } from '../src/testset-keys'
+import { accounts } from '../src/testset-predefined'
 import { loadZkTxs } from '../src/testset-zktxs'
 
 describe('index', () => {

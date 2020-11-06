@@ -5,71 +5,11 @@ import { Field } from '@zkopru/babyjubjub'
 import { ZkTx, Utxo, UtxoStatus } from '@zkopru/transaction'
 import { ZkWizard } from '@zkopru/zk-wizard'
 import { keccakHasher, poseidonHasher, Grove } from '@zkopru/tree'
-import * as utils from '@zkopru/utils'
-import tar from 'tar'
 import { DB, TreeSpecies } from '@zkopru/prisma'
-import { accounts, address } from './testset-keys'
+import { accounts, address } from './testset-predefined'
 import { utxos } from './testset-utxos'
 import { txs } from './testset-txs'
-
-export async function loadCircuits() {
-  // It may take about an hour. If you want to skip building image,
-  // run `yarn pull:images` on the root directory
-  const container = await utils.pullOrBuildAndGetContainer({
-    compose: [__dirname, '../../../dockerfiles'],
-    service: 'circuits',
-  })
-  const nIn = [1, 2, 3, 4]
-  const nOut = [1, 2, 3, 4]
-  const keyPath = path.join(path.dirname(__filename), '../keys')
-  const txPath = path.join(keyPath, 'txs')
-  const pkPath = path.join(keyPath, 'pks')
-  const vkPath = path.join(keyPath, 'vks')
-  const ccPath = path.join(keyPath, 'circuits')
-  if (!fs.existsSync(txPath)) await fs.mkdirp(txPath)
-  if (!fs.existsSync(pkPath)) await fs.mkdirp(pkPath)
-  if (!fs.existsSync(vkPath)) await fs.mkdirp(vkPath)
-  if (!fs.existsSync(ccPath)) await fs.mkdirp(ccPath)
-  for (const i of nIn) {
-    for (const o of nOut) {
-      const circuit = await utils.readFromContainer(
-        container,
-        `/proj/build/circuits/zk_transaction_${i}_${o}.wasm`,
-      )
-      const pk = await utils.readFromContainer(
-        container,
-        `/proj/build/pks/zk_transaction_${i}_${o}.pk.bin`,
-      )
-      const vk = await utils.readFromContainer(
-        container,
-        `/proj/build/vks/zk_transaction_${i}_${o}.vk.json`,
-      )
-      fs.writeFileSync(
-        path.join(ccPath, `zk_transaction_${i}_${o}.wasm`),
-        circuit,
-      )
-      fs.writeFileSync(path.join(pkPath, `zk_transaction_${i}_${o}.pk.bin`), pk)
-      fs.writeFileSync(
-        path.join(vkPath, `zk_transaction_${i}_${o}.vk.json`),
-        vk,
-      )
-    }
-  }
-  await container.stop()
-  await container.delete()
-}
-
-export async function buildKeys(keyPath: string) {
-  if (!fs.existsSync(keyPath)) {
-    loadCircuits()
-      .then(() => {
-        tar
-          .c({}, ['keys/pks', 'keys/vks', 'keys/circuits'])
-          .pipe(fs.createWriteStream('keys.tgz'))
-      })
-      .catch(console.error)
-  }
-}
+import { loadKeys } from './testset-keys'
 
 export async function loadGrove(db: DB): Promise<{ grove: Grove }> {
   const grove = new Grove(db, {
@@ -167,17 +107,21 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
     utxos.utxo4_in_3,
   ])
   const keyPath = path.join(path.dirname(__filename), '../keys')
-  await buildKeys(keyPath)
+  const txsPath = path.join(path.dirname(__filename), '../txs')
+  if (!fs.existsSync(txsPath)) {
+    fs.mkdirSync(txsPath)
+  }
+  await loadKeys(keyPath)
 
   const zkWizard = new ZkWizard({
     utxoTree: grove.utxoTree,
     path: keyPath,
   })
-  const tx1Path = path.join(keyPath, 'txs/zk_tx_1.tx')
-  const tx2_1Path = path.join(keyPath, 'txs/zk_tx_2_1.tx')
-  const tx2_2Path = path.join(keyPath, 'txs/zk_tx_2_2.tx')
-  const tx3Path = path.join(keyPath, 'txs/zk_tx_3.tx')
-  const tx4Path = path.join(keyPath, 'txs/zk_tx_4.tx')
+  const tx1Path = path.join(txsPath, 'zk_tx_1.tx')
+  const tx2_1Path = path.join(txsPath, 'zk_tx_2_1.tx')
+  const tx2_2Path = path.join(txsPath, 'zk_tx_2_2.tx')
+  const tx3Path = path.join(txsPath, 'zk_tx_3.tx')
+  const tx4Path = path.join(txsPath, 'zk_tx_4.tx')
   let zk_tx_1: ZkTx
   try {
     zk_tx_1 = ZkTx.decode(fs.readFileSync(tx1Path))

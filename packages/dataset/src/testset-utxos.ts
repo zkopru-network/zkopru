@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { Field } from '@zkopru/babyjubjub'
 import { TokenUtils, Utxo, Withdrawal } from '@zkopru/transaction'
-import { accounts, address, nfts } from './testset-keys'
+import { accounts, address, nfts } from './testset-predefined'
 
 const utxo1_in_1: Utxo = Utxo.newEtherNote({
   owner: accounts.alice.zkAddress,
