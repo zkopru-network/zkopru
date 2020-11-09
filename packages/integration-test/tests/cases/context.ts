@@ -250,7 +250,7 @@ export async function getWallet({
     erc20: erc20s.map(Address.from),
     erc721: erc721s.map(Address.from),
     coordinator,
-    snarkKeyPath: path.join(__dirname, '../../../dataset/keys'),
+    snarkKeyPath: path.join(__dirname, '../../../circuits/keys'),
   })
   zkWallet.setAccount(account)
   return { zkWallet, mockupDB }

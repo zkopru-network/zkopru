@@ -15,14 +15,7 @@ services:
     image: zkoprunet/circuits:feat-130
     build:
       context: ../packages/circuits/
-      target: phase2
-      dockerfile: ../../dockerfiles/Circuits.dockerfile
-  circuits-phase-1:
-    image: zkoprunet/circuits-phase-1:feat-130
-    build:
-      context: ../packages/circuits/
-      target: phase1
-      dockerfile: ../../dockerfiles/Circuits.dockerfile
+      dockerfile: ../../dockerfiles/Circuits.light.dockerfile
   playground:
     image: zkoprunet/playground:feat-130
     build:
