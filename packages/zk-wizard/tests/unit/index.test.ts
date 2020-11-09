@@ -8,7 +8,7 @@ import { ZkTx, Utxo, UtxoStatus, TokenRegistry } from '@zkopru/transaction'
 import { ZkWizard } from '@zkopru/zk-wizard'
 import { keccakHasher, poseidonHasher, Grove } from '@zkopru/tree'
 import { DB, MockupDB, TreeSpecies } from '@zkopru/prisma'
-import { accounts, address } from '~dataset/testset-keys'
+import { accounts, address } from '~dataset/testset-predefined'
 import { utxos } from '~dataset/testset-utxos'
 import { txs } from '~dataset/testset-txs'
 

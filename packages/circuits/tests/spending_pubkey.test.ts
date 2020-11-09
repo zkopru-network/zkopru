@@ -13,7 +13,7 @@ import {
   phase2Setup,
   prepareArtifactsDirectory,
 } from './helper'
-import { accounts } from '~dataset/testset-keys'
+import { accounts } from '~dataset/testset-predefined'
 
 const fileName = 'spending_pubkey.test.circom'
 const artifacts = getArtifactPaths(fileName)

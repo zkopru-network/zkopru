@@ -14,7 +14,7 @@ import {
   prepareArtifactsDirectory,
 } from './helper'
 import { utxos } from '~dataset/testset-utxos'
-import { accounts } from '~dataset/testset-keys'
+import { accounts } from '~dataset/testset-predefined'
 
 const fileName = 'note_hash.test.circom'
 const artifacts = getArtifactPaths(fileName)

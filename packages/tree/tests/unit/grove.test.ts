@@ -6,7 +6,7 @@ import { DB, MockupDB } from '~prisma'
 import { Field } from '~babyjubjub'
 import { Grove, poseidonHasher, keccakHasher, Leaf } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
-import { address, accounts } from '~dataset/testset-keys'
+import { accounts, address } from '~dataset/testset-predefined'
 
 /* eslint-disable jest/no-hooks */
 describe('grove full sync grove()', () => {

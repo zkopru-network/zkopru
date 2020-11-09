@@ -13,7 +13,7 @@ import {
   verifyProof,
 } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
-import { address } from '~dataset/testset-keys'
+import { address } from '~dataset/testset-predefined'
 
 describe('withdrawal tree unit test', () => {
   let withdrawalTree: WithdrawalTree

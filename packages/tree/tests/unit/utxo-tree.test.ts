@@ -3,7 +3,7 @@
 import { Field } from '~babyjubjub'
 import { UtxoTree, poseidonHasher, Leaf, verifyProof } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
-import { accounts } from '~dataset/testset-keys'
+import { accounts } from '~dataset/testset-predefined'
 import { MockupDB } from '~prisma'
 
 describe('utxo tree unit test', () => {

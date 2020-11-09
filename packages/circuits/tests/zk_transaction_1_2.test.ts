@@ -20,7 +20,7 @@ import {
 import { UtxoTree, TreeConfig, poseidonHasher, genesisRoot } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
 import { txs } from '~dataset/testset-txs'
-import { accounts } from '~dataset/testset-keys'
+import { accounts } from '~dataset/testset-predefined'
 
 const fileName = 'zk_transaction_1_2.test.circom'
 const artifacts = getArtifactPaths(fileName)
