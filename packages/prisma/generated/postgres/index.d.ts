@@ -6034,11 +6034,6 @@ export type UtxoSelect = {
   index?: boolean
   nullifier?: boolean
   usedAt?: boolean
-  tree?: boolean | LightTreeArgs
-}
-
-export type UtxoInclude = {
-  tree?: boolean | LightTreeArgs
 }
 
 export type UtxoGetPayload<
@@ -6050,17 +6045,12 @@ export type UtxoGetPayload<
   ? never
   : S extends UtxoArgs | FindManyUtxoArgs
   ? 'include' extends U
-    ? Utxo  & {
-      [P in TrueKeys<S['include']>]:
-      P extends 'tree'
-      ? LightTreeGetPayload<S['include'][P]> | null : never
-    }
+    ? Utxo 
   : 'select' extends U
     ? {
       [P in TrueKeys<S['select']>]:P extends keyof Utxo ? Utxo[P]
 : 
-      P extends 'tree'
-      ? LightTreeGetPayload<S['select'][P]> | null : never
+ never
     }
   : Utxo
 : Utxo
@@ -6232,7 +6222,6 @@ export declare class Prisma__UtxoClient<T> implements Promise<T> {
   constructor(_dmmf: DMMFClass, _fetcher: PrismaClientFetcher, _queryType: 'query' | 'mutation', _rootField: string, _clientMethod: string, _args: any, _dataPath: string[], _errorFormat: ErrorFormat, _measurePerformance?: boolean | undefined, _isList?: boolean);
   readonly [Symbol.toStringTag]: 'PrismaClientPromise';
 
-  tree<T extends LightTreeArgs = {}>(args?: Subset<T, LightTreeArgs>): CheckSelect<T, Prisma__LightTreeClient<LightTree | null>, Prisma__LightTreeClient<LightTreeGetPayload<T> | null>>;
 
   private get _document();
   /**
@@ -6268,10 +6257,6 @@ export type FindOneUtxoArgs = {
   **/
   select?: UtxoSelect | null
   /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: UtxoInclude | null
-  /**
    * Filter, which Utxo to fetch.
   **/
   where: UtxoWhereUniqueInput
@@ -6286,10 +6271,6 @@ export type FindManyUtxoArgs = {
    * Select specific fields to fetch from the Utxo
   **/
   select?: UtxoSelect | null
-  /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: UtxoInclude | null
   /**
    * Filter, which Utxos to fetch.
   **/
@@ -6323,10 +6304,6 @@ export type UtxoCreateArgs = {
   **/
   select?: UtxoSelect | null
   /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: UtxoInclude | null
-  /**
    * The data needed to create a Utxo.
   **/
   data: UtxoCreateInput
@@ -6341,10 +6318,6 @@ export type UtxoUpdateArgs = {
    * Select specific fields to fetch from the Utxo
   **/
   select?: UtxoSelect | null
-  /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: UtxoInclude | null
   /**
    * The data needed to update a Utxo.
   **/
@@ -6374,10 +6347,6 @@ export type UtxoUpsertArgs = {
   **/
   select?: UtxoSelect | null
   /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: UtxoInclude | null
-  /**
    * The filter to search for the Utxo to update in case it exists.
   **/
   where: UtxoWhereUniqueInput
@@ -6401,10 +6370,6 @@ export type UtxoDeleteArgs = {
   **/
   select?: UtxoSelect | null
   /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: UtxoInclude | null
-  /**
    * Filter which Utxo to delete.
   **/
   where: UtxoWhereUniqueInput
@@ -6427,10 +6392,6 @@ export type UtxoArgs = {
    * Select specific fields to fetch from the Utxo
   **/
   select?: UtxoSelect | null
-  /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: UtxoInclude | null
 }
 
 
@@ -6541,11 +6502,6 @@ export type WithdrawalSelect = {
   includedIn?: boolean
   prepayer?: boolean
   siblings?: boolean
-  tree?: boolean | LightTreeArgs
-}
-
-export type WithdrawalInclude = {
-  tree?: boolean | LightTreeArgs
 }
 
 export type WithdrawalGetPayload<
@@ -6557,17 +6513,12 @@ export type WithdrawalGetPayload<
   ? never
   : S extends WithdrawalArgs | FindManyWithdrawalArgs
   ? 'include' extends U
-    ? Withdrawal  & {
-      [P in TrueKeys<S['include']>]:
-      P extends 'tree'
-      ? LightTreeGetPayload<S['include'][P]> | null : never
-    }
+    ? Withdrawal 
   : 'select' extends U
     ? {
       [P in TrueKeys<S['select']>]:P extends keyof Withdrawal ? Withdrawal[P]
 : 
-      P extends 'tree'
-      ? LightTreeGetPayload<S['select'][P]> | null : never
+ never
     }
   : Withdrawal
 : Withdrawal
@@ -6739,7 +6690,6 @@ export declare class Prisma__WithdrawalClient<T> implements Promise<T> {
   constructor(_dmmf: DMMFClass, _fetcher: PrismaClientFetcher, _queryType: 'query' | 'mutation', _rootField: string, _clientMethod: string, _args: any, _dataPath: string[], _errorFormat: ErrorFormat, _measurePerformance?: boolean | undefined, _isList?: boolean);
   readonly [Symbol.toStringTag]: 'PrismaClientPromise';
 
-  tree<T extends LightTreeArgs = {}>(args?: Subset<T, LightTreeArgs>): CheckSelect<T, Prisma__LightTreeClient<LightTree | null>, Prisma__LightTreeClient<LightTreeGetPayload<T> | null>>;
 
   private get _document();
   /**
@@ -6775,10 +6725,6 @@ export type FindOneWithdrawalArgs = {
   **/
   select?: WithdrawalSelect | null
   /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: WithdrawalInclude | null
-  /**
    * Filter, which Withdrawal to fetch.
   **/
   where: WithdrawalWhereUniqueInput
@@ -6793,10 +6739,6 @@ export type FindManyWithdrawalArgs = {
    * Select specific fields to fetch from the Withdrawal
   **/
   select?: WithdrawalSelect | null
-  /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: WithdrawalInclude | null
   /**
    * Filter, which Withdrawals to fetch.
   **/
@@ -6830,10 +6772,6 @@ export type WithdrawalCreateArgs = {
   **/
   select?: WithdrawalSelect | null
   /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: WithdrawalInclude | null
-  /**
    * The data needed to create a Withdrawal.
   **/
   data: WithdrawalCreateInput
@@ -6848,10 +6786,6 @@ export type WithdrawalUpdateArgs = {
    * Select specific fields to fetch from the Withdrawal
   **/
   select?: WithdrawalSelect | null
-  /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: WithdrawalInclude | null
   /**
    * The data needed to update a Withdrawal.
   **/
@@ -6881,10 +6815,6 @@ export type WithdrawalUpsertArgs = {
   **/
   select?: WithdrawalSelect | null
   /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: WithdrawalInclude | null
-  /**
    * The filter to search for the Withdrawal to update in case it exists.
   **/
   where: WithdrawalWhereUniqueInput
@@ -6908,10 +6838,6 @@ export type WithdrawalDeleteArgs = {
   **/
   select?: WithdrawalSelect | null
   /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: WithdrawalInclude | null
-  /**
    * Filter which Withdrawal to delete.
   **/
   where: WithdrawalWhereUniqueInput
@@ -6934,10 +6860,6 @@ export type WithdrawalArgs = {
    * Select specific fields to fetch from the Withdrawal
   **/
   select?: WithdrawalSelect | null
-  /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: WithdrawalInclude | null
 }
 
 
@@ -7042,11 +6964,6 @@ export type MigrationSelect = {
   treeId?: boolean
   index?: boolean
   usedFor?: boolean
-  tree?: boolean | LightTreeArgs
-}
-
-export type MigrationInclude = {
-  tree?: boolean | LightTreeArgs
 }
 
 export type MigrationGetPayload<
@@ -7058,17 +6975,12 @@ export type MigrationGetPayload<
   ? never
   : S extends MigrationArgs | FindManyMigrationArgs
   ? 'include' extends U
-    ? Migration  & {
-      [P in TrueKeys<S['include']>]:
-      P extends 'tree'
-      ? LightTreeGetPayload<S['include'][P]> | null : never
-    }
+    ? Migration 
   : 'select' extends U
     ? {
       [P in TrueKeys<S['select']>]:P extends keyof Migration ? Migration[P]
 : 
-      P extends 'tree'
-      ? LightTreeGetPayload<S['select'][P]> | null : never
+ never
     }
   : Migration
 : Migration
@@ -7240,7 +7152,6 @@ export declare class Prisma__MigrationClient<T> implements Promise<T> {
   constructor(_dmmf: DMMFClass, _fetcher: PrismaClientFetcher, _queryType: 'query' | 'mutation', _rootField: string, _clientMethod: string, _args: any, _dataPath: string[], _errorFormat: ErrorFormat, _measurePerformance?: boolean | undefined, _isList?: boolean);
   readonly [Symbol.toStringTag]: 'PrismaClientPromise';
 
-  tree<T extends LightTreeArgs = {}>(args?: Subset<T, LightTreeArgs>): CheckSelect<T, Prisma__LightTreeClient<LightTree | null>, Prisma__LightTreeClient<LightTreeGetPayload<T> | null>>;
 
   private get _document();
   /**
@@ -7276,10 +7187,6 @@ export type FindOneMigrationArgs = {
   **/
   select?: MigrationSelect | null
   /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: MigrationInclude | null
-  /**
    * Filter, which Migration to fetch.
   **/
   where: MigrationWhereUniqueInput
@@ -7294,10 +7201,6 @@ export type FindManyMigrationArgs = {
    * Select specific fields to fetch from the Migration
   **/
   select?: MigrationSelect | null
-  /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: MigrationInclude | null
   /**
    * Filter, which Migrations to fetch.
   **/
@@ -7331,10 +7234,6 @@ export type MigrationCreateArgs = {
   **/
   select?: MigrationSelect | null
   /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: MigrationInclude | null
-  /**
    * The data needed to create a Migration.
   **/
   data: MigrationCreateInput
@@ -7349,10 +7248,6 @@ export type MigrationUpdateArgs = {
    * Select specific fields to fetch from the Migration
   **/
   select?: MigrationSelect | null
-  /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: MigrationInclude | null
   /**
    * The data needed to update a Migration.
   **/
@@ -7382,10 +7277,6 @@ export type MigrationUpsertArgs = {
   **/
   select?: MigrationSelect | null
   /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: MigrationInclude | null
-  /**
    * The filter to search for the Migration to update in case it exists.
   **/
   where: MigrationWhereUniqueInput
@@ -7409,10 +7300,6 @@ export type MigrationDeleteArgs = {
   **/
   select?: MigrationSelect | null
   /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: MigrationInclude | null
-  /**
    * Filter which Migration to delete.
   **/
   where: MigrationWhereUniqueInput
@@ -7435,10 +7322,6 @@ export type MigrationArgs = {
    * Select specific fields to fetch from the Migration
   **/
   select?: MigrationSelect | null
-  /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: MigrationInclude | null
 }
 
 
@@ -7932,15 +7815,6 @@ export type LightTreeSelect = {
   root?: boolean
   index?: boolean
   siblings?: boolean
-  Utxo?: boolean | FindManyUtxoArgs
-  Withdrawal?: boolean | FindManyWithdrawalArgs
-  Migration?: boolean | FindManyMigrationArgs
-}
-
-export type LightTreeInclude = {
-  Utxo?: boolean | FindManyUtxoArgs
-  Withdrawal?: boolean | FindManyWithdrawalArgs
-  Migration?: boolean | FindManyMigrationArgs
 }
 
 export type LightTreeGetPayload<
@@ -7952,25 +7826,12 @@ export type LightTreeGetPayload<
   ? never
   : S extends LightTreeArgs | FindManyLightTreeArgs
   ? 'include' extends U
-    ? LightTree  & {
-      [P in TrueKeys<S['include']>]:
-      P extends 'Utxo'
-      ? Array<UtxoGetPayload<S['include'][P]>> :
-      P extends 'Withdrawal'
-      ? Array<WithdrawalGetPayload<S['include'][P]>> :
-      P extends 'Migration'
-      ? Array<MigrationGetPayload<S['include'][P]>> : never
-    }
+    ? LightTree 
   : 'select' extends U
     ? {
       [P in TrueKeys<S['select']>]:P extends keyof LightTree ? LightTree[P]
 : 
-      P extends 'Utxo'
-      ? Array<UtxoGetPayload<S['select'][P]>> :
-      P extends 'Withdrawal'
-      ? Array<WithdrawalGetPayload<S['select'][P]>> :
-      P extends 'Migration'
-      ? Array<MigrationGetPayload<S['select'][P]>> : never
+ never
     }
   : LightTree
 : LightTree
@@ -8142,11 +8003,6 @@ export declare class Prisma__LightTreeClient<T> implements Promise<T> {
   constructor(_dmmf: DMMFClass, _fetcher: PrismaClientFetcher, _queryType: 'query' | 'mutation', _rootField: string, _clientMethod: string, _args: any, _dataPath: string[], _errorFormat: ErrorFormat, _measurePerformance?: boolean | undefined, _isList?: boolean);
   readonly [Symbol.toStringTag]: 'PrismaClientPromise';
 
-  Utxo<T extends FindManyUtxoArgs = {}>(args?: Subset<T, FindManyUtxoArgs>): CheckSelect<T, Promise<Array<Utxo>>, Promise<Array<UtxoGetPayload<T>>>>;
-
-  Withdrawal<T extends FindManyWithdrawalArgs = {}>(args?: Subset<T, FindManyWithdrawalArgs>): CheckSelect<T, Promise<Array<Withdrawal>>, Promise<Array<WithdrawalGetPayload<T>>>>;
-
-  Migration<T extends FindManyMigrationArgs = {}>(args?: Subset<T, FindManyMigrationArgs>): CheckSelect<T, Promise<Array<Migration>>, Promise<Array<MigrationGetPayload<T>>>>;
 
   private get _document();
   /**
@@ -8182,10 +8038,6 @@ export type FindOneLightTreeArgs = {
   **/
   select?: LightTreeSelect | null
   /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: LightTreeInclude | null
-  /**
    * Filter, which LightTree to fetch.
   **/
   where: LightTreeWhereUniqueInput
@@ -8200,10 +8052,6 @@ export type FindManyLightTreeArgs = {
    * Select specific fields to fetch from the LightTree
   **/
   select?: LightTreeSelect | null
-  /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: LightTreeInclude | null
   /**
    * Filter, which LightTrees to fetch.
   **/
@@ -8237,10 +8085,6 @@ export type LightTreeCreateArgs = {
   **/
   select?: LightTreeSelect | null
   /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: LightTreeInclude | null
-  /**
    * The data needed to create a LightTree.
   **/
   data: LightTreeCreateInput
@@ -8255,10 +8099,6 @@ export type LightTreeUpdateArgs = {
    * Select specific fields to fetch from the LightTree
   **/
   select?: LightTreeSelect | null
-  /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: LightTreeInclude | null
   /**
    * The data needed to update a LightTree.
   **/
@@ -8288,10 +8128,6 @@ export type LightTreeUpsertArgs = {
   **/
   select?: LightTreeSelect | null
   /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: LightTreeInclude | null
-  /**
    * The filter to search for the LightTree to update in case it exists.
   **/
   where: LightTreeWhereUniqueInput
@@ -8315,10 +8151,6 @@ export type LightTreeDeleteArgs = {
   **/
   select?: LightTreeSelect | null
   /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: LightTreeInclude | null
-  /**
    * Filter which LightTree to delete.
   **/
   where: LightTreeWhereUniqueInput
@@ -8341,10 +8173,6 @@ export type LightTreeArgs = {
    * Select specific fields to fetch from the LightTree
   **/
   select?: LightTreeSelect | null
-  /**
-   * Choose, which related nodes to fetch as well.
-  **/
-  include?: LightTreeInclude | null
 }
 
 
@@ -9127,7 +8955,6 @@ export type UtxoWhereInput = {
   index?: string | StringNullableFilter | null
   nullifier?: string | StringNullableFilter | null
   usedAt?: string | StringNullableFilter | null
-  tree?: LightTreeWhereInput | null
 }
 
 export type UtxoOrderByInput = {
@@ -9169,7 +8996,6 @@ export type WithdrawalWhereInput = {
   includedIn?: string | StringNullableFilter | null
   prepayer?: string | StringNullableFilter | null
   siblings?: string | StringNullableFilter | null
-  tree?: LightTreeWhereInput | null
 }
 
 export type WithdrawalOrderByInput = {
@@ -9212,7 +9038,6 @@ export type MigrationWhereInput = {
   treeId?: string | StringNullableFilter | null
   index?: string | StringNullableFilter | null
   usedFor?: string | StringNullableFilter | null
-  tree?: LightTreeWhereInput | null
 }
 
 export type MigrationOrderByInput = {
@@ -9265,9 +9090,6 @@ export type LightTreeWhereInput = {
   root?: string | StringFilter
   index?: string | StringFilter
   siblings?: string | StringFilter
-  Utxo?: UtxoListRelationFilter
-  Withdrawal?: WithdrawalListRelationFilter
-  Migration?: MigrationListRelationFilter
 }
 
 export type LightTreeOrderByInput = {
@@ -9640,10 +9462,10 @@ export type UtxoCreateInput = {
   erc20Amount?: string | null
   nft?: string | null
   status?: number | null
+  treeId?: string | null
   index?: string | null
   nullifier?: string | null
   usedAt?: string | null
-  tree?: LightTreeCreateOneWithoutUtxoInput
 }
 
 export type UtxoUpdateInput = {
@@ -9655,10 +9477,10 @@ export type UtxoUpdateInput = {
   erc20Amount?: string | NullableStringFieldUpdateOperationsInput | null
   nft?: string | NullableStringFieldUpdateOperationsInput | null
   status?: number | NullableIntFieldUpdateOperationsInput | null
+  treeId?: string | NullableStringFieldUpdateOperationsInput | null
   index?: string | NullableStringFieldUpdateOperationsInput | null
   nullifier?: string | NullableStringFieldUpdateOperationsInput | null
   usedAt?: string | NullableStringFieldUpdateOperationsInput | null
-  tree?: LightTreeUpdateOneWithoutUtxoInput
 }
 
 export type UtxoUpdateManyMutationInput = {
@@ -9670,6 +9492,7 @@ export type UtxoUpdateManyMutationInput = {
   erc20Amount?: string | NullableStringFieldUpdateOperationsInput | null
   nft?: string | NullableStringFieldUpdateOperationsInput | null
   status?: number | NullableIntFieldUpdateOperationsInput | null
+  treeId?: string | NullableStringFieldUpdateOperationsInput | null
   index?: string | NullableStringFieldUpdateOperationsInput | null
   nullifier?: string | NullableStringFieldUpdateOperationsInput | null
   usedAt?: string | NullableStringFieldUpdateOperationsInput | null
@@ -9687,11 +9510,11 @@ export type WithdrawalCreateInput = {
   to: string
   fee: string
   status?: number | null
+  treeId?: string | null
   index?: string | null
   includedIn?: string | null
   prepayer?: string | null
   siblings?: string | null
-  tree?: LightTreeCreateOneWithoutWithdrawalInput
 }
 
 export type WithdrawalUpdateInput = {
@@ -9706,11 +9529,11 @@ export type WithdrawalUpdateInput = {
   to?: string | StringFieldUpdateOperationsInput
   fee?: string | StringFieldUpdateOperationsInput
   status?: number | NullableIntFieldUpdateOperationsInput | null
+  treeId?: string | NullableStringFieldUpdateOperationsInput | null
   index?: string | NullableStringFieldUpdateOperationsInput | null
   includedIn?: string | NullableStringFieldUpdateOperationsInput | null
   prepayer?: string | NullableStringFieldUpdateOperationsInput | null
   siblings?: string | NullableStringFieldUpdateOperationsInput | null
-  tree?: LightTreeUpdateOneWithoutWithdrawalInput
 }
 
 export type WithdrawalUpdateManyMutationInput = {
@@ -9725,6 +9548,7 @@ export type WithdrawalUpdateManyMutationInput = {
   to?: string | StringFieldUpdateOperationsInput
   fee?: string | StringFieldUpdateOperationsInput
   status?: number | NullableIntFieldUpdateOperationsInput | null
+  treeId?: string | NullableStringFieldUpdateOperationsInput | null
   index?: string | NullableStringFieldUpdateOperationsInput | null
   includedIn?: string | NullableStringFieldUpdateOperationsInput | null
   prepayer?: string | NullableStringFieldUpdateOperationsInput | null
@@ -9742,9 +9566,9 @@ export type MigrationCreateInput = {
   to?: string | null
   fee?: string | null
   status?: number | null
+  treeId?: string | null
   index?: string | null
   usedFor?: string | null
-  tree?: LightTreeCreateOneWithoutMigrationInput
 }
 
 export type MigrationUpdateInput = {
@@ -9758,9 +9582,9 @@ export type MigrationUpdateInput = {
   to?: string | NullableStringFieldUpdateOperationsInput | null
   fee?: string | NullableStringFieldUpdateOperationsInput | null
   status?: number | NullableIntFieldUpdateOperationsInput | null
+  treeId?: string | NullableStringFieldUpdateOperationsInput | null
   index?: string | NullableStringFieldUpdateOperationsInput | null
   usedFor?: string | NullableStringFieldUpdateOperationsInput | null
-  tree?: LightTreeUpdateOneWithoutMigrationInput
 }
 
 export type MigrationUpdateManyMutationInput = {
@@ -9774,6 +9598,7 @@ export type MigrationUpdateManyMutationInput = {
   to?: string | NullableStringFieldUpdateOperationsInput | null
   fee?: string | NullableStringFieldUpdateOperationsInput | null
   status?: number | NullableIntFieldUpdateOperationsInput | null
+  treeId?: string | NullableStringFieldUpdateOperationsInput | null
   index?: string | NullableStringFieldUpdateOperationsInput | null
   usedFor?: string | NullableStringFieldUpdateOperationsInput | null
 }
@@ -9804,9 +9629,6 @@ export type LightTreeCreateInput = {
   root: string
   index: string
   siblings: string
-  Utxo?: UtxoCreateManyWithoutTreeInput
-  Withdrawal?: WithdrawalCreateManyWithoutTreeInput
-  Migration?: MigrationCreateManyWithoutTreeInput
 }
 
 export type LightTreeUpdateInput = {
@@ -9817,9 +9639,6 @@ export type LightTreeUpdateInput = {
   root?: string | StringFieldUpdateOperationsInput
   index?: string | StringFieldUpdateOperationsInput
   siblings?: string | StringFieldUpdateOperationsInput
-  Utxo?: UtxoUpdateManyWithoutTreeInput
-  Withdrawal?: WithdrawalUpdateManyWithoutTreeInput
-  Migration?: MigrationUpdateManyWithoutTreeInput
 }
 
 export type LightTreeUpdateManyMutationInput = {
@@ -9948,32 +9767,9 @@ export type BlockListRelationFilter = {
   none?: BlockWhereInput
 }
 
-export type LightTreeRelationFilter = {
-  is?: LightTreeWhereInput | null
-  isNot?: LightTreeWhereInput | null
-}
-
 export type TreeIdNodeIndexCompoundUniqueInput = {
   treeId: string
   nodeIndex: string
-}
-
-export type UtxoListRelationFilter = {
-  every?: UtxoWhereInput
-  some?: UtxoWhereInput
-  none?: UtxoWhereInput
-}
-
-export type WithdrawalListRelationFilter = {
-  every?: WithdrawalWhereInput
-  some?: WithdrawalWhereInput
-  none?: WithdrawalWhereInput
-}
-
-export type MigrationListRelationFilter = {
-  every?: MigrationWhereInput
-  some?: MigrationWhereInput
-  none?: MigrationWhereInput
 }
 
 export type BoolFilter = {
@@ -10108,99 +9904,6 @@ export type BlockUpdateOneWithoutBootstrapInput = {
   delete?: boolean
   update?: BlockUpdateWithoutBootstrapDataInput
   upsert?: BlockUpsertWithoutBootstrapInput
-}
-
-export type LightTreeCreateOneWithoutUtxoInput = {
-  create?: LightTreeCreateWithoutUtxoInput
-  connect?: LightTreeWhereUniqueInput
-}
-
-export type LightTreeUpdateOneWithoutUtxoInput = {
-  create?: LightTreeCreateWithoutUtxoInput
-  connect?: LightTreeWhereUniqueInput
-  disconnect?: boolean
-  delete?: boolean
-  update?: LightTreeUpdateWithoutUtxoDataInput
-  upsert?: LightTreeUpsertWithoutUtxoInput
-}
-
-export type LightTreeCreateOneWithoutWithdrawalInput = {
-  create?: LightTreeCreateWithoutWithdrawalInput
-  connect?: LightTreeWhereUniqueInput
-}
-
-export type LightTreeUpdateOneWithoutWithdrawalInput = {
-  create?: LightTreeCreateWithoutWithdrawalInput
-  connect?: LightTreeWhereUniqueInput
-  disconnect?: boolean
-  delete?: boolean
-  update?: LightTreeUpdateWithoutWithdrawalDataInput
-  upsert?: LightTreeUpsertWithoutWithdrawalInput
-}
-
-export type LightTreeCreateOneWithoutMigrationInput = {
-  create?: LightTreeCreateWithoutMigrationInput
-  connect?: LightTreeWhereUniqueInput
-}
-
-export type LightTreeUpdateOneWithoutMigrationInput = {
-  create?: LightTreeCreateWithoutMigrationInput
-  connect?: LightTreeWhereUniqueInput
-  disconnect?: boolean
-  delete?: boolean
-  update?: LightTreeUpdateWithoutMigrationDataInput
-  upsert?: LightTreeUpsertWithoutMigrationInput
-}
-
-export type UtxoCreateManyWithoutTreeInput = {
-  create?: Enumerable<UtxoCreateWithoutTreeInput>
-  connect?: Enumerable<UtxoWhereUniqueInput>
-}
-
-export type WithdrawalCreateManyWithoutTreeInput = {
-  create?: Enumerable<WithdrawalCreateWithoutTreeInput>
-  connect?: Enumerable<WithdrawalWhereUniqueInput>
-}
-
-export type MigrationCreateManyWithoutTreeInput = {
-  create?: Enumerable<MigrationCreateWithoutTreeInput>
-  connect?: Enumerable<MigrationWhereUniqueInput>
-}
-
-export type UtxoUpdateManyWithoutTreeInput = {
-  create?: Enumerable<UtxoCreateWithoutTreeInput>
-  connect?: Enumerable<UtxoWhereUniqueInput>
-  set?: Enumerable<UtxoWhereUniqueInput>
-  disconnect?: Enumerable<UtxoWhereUniqueInput>
-  delete?: Enumerable<UtxoWhereUniqueInput>
-  update?: Enumerable<UtxoUpdateWithWhereUniqueWithoutTreeInput>
-  updateMany?: Enumerable<UtxoUpdateManyWithWhereNestedInput> | null
-  deleteMany?: Enumerable<UtxoScalarWhereInput>
-  upsert?: Enumerable<UtxoUpsertWithWhereUniqueWithoutTreeInput>
-}
-
-export type WithdrawalUpdateManyWithoutTreeInput = {
-  create?: Enumerable<WithdrawalCreateWithoutTreeInput>
-  connect?: Enumerable<WithdrawalWhereUniqueInput>
-  set?: Enumerable<WithdrawalWhereUniqueInput>
-  disconnect?: Enumerable<WithdrawalWhereUniqueInput>
-  delete?: Enumerable<WithdrawalWhereUniqueInput>
-  update?: Enumerable<WithdrawalUpdateWithWhereUniqueWithoutTreeInput>
-  updateMany?: Enumerable<WithdrawalUpdateManyWithWhereNestedInput> | null
-  deleteMany?: Enumerable<WithdrawalScalarWhereInput>
-  upsert?: Enumerable<WithdrawalUpsertWithWhereUniqueWithoutTreeInput>
-}
-
-export type MigrationUpdateManyWithoutTreeInput = {
-  create?: Enumerable<MigrationCreateWithoutTreeInput>
-  connect?: Enumerable<MigrationWhereUniqueInput>
-  set?: Enumerable<MigrationWhereUniqueInput>
-  disconnect?: Enumerable<MigrationWhereUniqueInput>
-  delete?: Enumerable<MigrationWhereUniqueInput>
-  update?: Enumerable<MigrationUpdateWithWhereUniqueWithoutTreeInput>
-  updateMany?: Enumerable<MigrationUpdateManyWithWhereNestedInput> | null
-  deleteMany?: Enumerable<MigrationScalarWhereInput>
-  upsert?: Enumerable<MigrationUpsertWithWhereUniqueWithoutTreeInput>
 }
 
 export type BoolFieldUpdateOperationsInput = {
@@ -10445,247 +10148,6 @@ export type BlockUpsertWithoutBootstrapInput = {
   create: BlockCreateWithoutBootstrapInput
 }
 
-export type LightTreeCreateWithoutUtxoInput = {
-  id?: string
-  species: number
-  start: string
-  end: string
-  root: string
-  index: string
-  siblings: string
-  Withdrawal?: WithdrawalCreateManyWithoutTreeInput
-  Migration?: MigrationCreateManyWithoutTreeInput
-}
-
-export type LightTreeUpdateWithoutUtxoDataInput = {
-  id?: string | StringFieldUpdateOperationsInput
-  species?: number | IntFieldUpdateOperationsInput
-  start?: string | StringFieldUpdateOperationsInput
-  end?: string | StringFieldUpdateOperationsInput
-  root?: string | StringFieldUpdateOperationsInput
-  index?: string | StringFieldUpdateOperationsInput
-  siblings?: string | StringFieldUpdateOperationsInput
-  Withdrawal?: WithdrawalUpdateManyWithoutTreeInput
-  Migration?: MigrationUpdateManyWithoutTreeInput
-}
-
-export type LightTreeUpsertWithoutUtxoInput = {
-  update: LightTreeUpdateWithoutUtxoDataInput
-  create: LightTreeCreateWithoutUtxoInput
-}
-
-export type LightTreeCreateWithoutWithdrawalInput = {
-  id?: string
-  species: number
-  start: string
-  end: string
-  root: string
-  index: string
-  siblings: string
-  Utxo?: UtxoCreateManyWithoutTreeInput
-  Migration?: MigrationCreateManyWithoutTreeInput
-}
-
-export type LightTreeUpdateWithoutWithdrawalDataInput = {
-  id?: string | StringFieldUpdateOperationsInput
-  species?: number | IntFieldUpdateOperationsInput
-  start?: string | StringFieldUpdateOperationsInput
-  end?: string | StringFieldUpdateOperationsInput
-  root?: string | StringFieldUpdateOperationsInput
-  index?: string | StringFieldUpdateOperationsInput
-  siblings?: string | StringFieldUpdateOperationsInput
-  Utxo?: UtxoUpdateManyWithoutTreeInput
-  Migration?: MigrationUpdateManyWithoutTreeInput
-}
-
-export type LightTreeUpsertWithoutWithdrawalInput = {
-  update: LightTreeUpdateWithoutWithdrawalDataInput
-  create: LightTreeCreateWithoutWithdrawalInput
-}
-
-export type LightTreeCreateWithoutMigrationInput = {
-  id?: string
-  species: number
-  start: string
-  end: string
-  root: string
-  index: string
-  siblings: string
-  Utxo?: UtxoCreateManyWithoutTreeInput
-  Withdrawal?: WithdrawalCreateManyWithoutTreeInput
-}
-
-export type LightTreeUpdateWithoutMigrationDataInput = {
-  id?: string | StringFieldUpdateOperationsInput
-  species?: number | IntFieldUpdateOperationsInput
-  start?: string | StringFieldUpdateOperationsInput
-  end?: string | StringFieldUpdateOperationsInput
-  root?: string | StringFieldUpdateOperationsInput
-  index?: string | StringFieldUpdateOperationsInput
-  siblings?: string | StringFieldUpdateOperationsInput
-  Utxo?: UtxoUpdateManyWithoutTreeInput
-  Withdrawal?: WithdrawalUpdateManyWithoutTreeInput
-}
-
-export type LightTreeUpsertWithoutMigrationInput = {
-  update: LightTreeUpdateWithoutMigrationDataInput
-  create: LightTreeCreateWithoutMigrationInput
-}
-
-export type UtxoCreateWithoutTreeInput = {
-  hash: string
-  eth?: string | null
-  owner?: string | null
-  salt?: string | null
-  tokenAddr?: string | null
-  erc20Amount?: string | null
-  nft?: string | null
-  status?: number | null
-  index?: string | null
-  nullifier?: string | null
-  usedAt?: string | null
-}
-
-export type WithdrawalCreateWithoutTreeInput = {
-  hash: string
-  withdrawalHash: string
-  eth: string
-  owner?: string | null
-  salt?: string | null
-  tokenAddr: string
-  erc20Amount: string
-  nft: string
-  to: string
-  fee: string
-  status?: number | null
-  index?: string | null
-  includedIn?: string | null
-  prepayer?: string | null
-  siblings?: string | null
-}
-
-export type MigrationCreateWithoutTreeInput = {
-  hash: string
-  eth?: string | null
-  owner?: string | null
-  salt?: string | null
-  tokenAddr?: string | null
-  erc20Amount?: string | null
-  nft?: string | null
-  to?: string | null
-  fee?: string | null
-  status?: number | null
-  index?: string | null
-  usedFor?: string | null
-}
-
-export type UtxoUpdateWithWhereUniqueWithoutTreeInput = {
-  where: UtxoWhereUniqueInput
-  data: UtxoUpdateWithoutTreeDataInput
-}
-
-export type UtxoUpdateManyWithWhereNestedInput = {
-  where: UtxoScalarWhereInput
-  data: UtxoUpdateManyDataInput
-}
-
-export type UtxoScalarWhereInput = {
-  AND?: Enumerable<UtxoScalarWhereInput>
-  OR?: Array<UtxoScalarWhereInput>
-  NOT?: Enumerable<UtxoScalarWhereInput>
-  hash?: string | StringFilter
-  eth?: string | StringNullableFilter | null
-  owner?: string | StringNullableFilter | null
-  salt?: string | StringNullableFilter | null
-  tokenAddr?: string | StringNullableFilter | null
-  erc20Amount?: string | StringNullableFilter | null
-  nft?: string | StringNullableFilter | null
-  status?: number | IntNullableFilter | null
-  treeId?: string | StringNullableFilter | null
-  index?: string | StringNullableFilter | null
-  nullifier?: string | StringNullableFilter | null
-  usedAt?: string | StringNullableFilter | null
-}
-
-export type UtxoUpsertWithWhereUniqueWithoutTreeInput = {
-  where: UtxoWhereUniqueInput
-  update: UtxoUpdateWithoutTreeDataInput
-  create: UtxoCreateWithoutTreeInput
-}
-
-export type WithdrawalUpdateWithWhereUniqueWithoutTreeInput = {
-  where: WithdrawalWhereUniqueInput
-  data: WithdrawalUpdateWithoutTreeDataInput
-}
-
-export type WithdrawalUpdateManyWithWhereNestedInput = {
-  where: WithdrawalScalarWhereInput
-  data: WithdrawalUpdateManyDataInput
-}
-
-export type WithdrawalScalarWhereInput = {
-  AND?: Enumerable<WithdrawalScalarWhereInput>
-  OR?: Array<WithdrawalScalarWhereInput>
-  NOT?: Enumerable<WithdrawalScalarWhereInput>
-  hash?: string | StringFilter
-  withdrawalHash?: string | StringFilter
-  eth?: string | StringFilter
-  owner?: string | StringNullableFilter | null
-  salt?: string | StringNullableFilter | null
-  tokenAddr?: string | StringFilter
-  erc20Amount?: string | StringFilter
-  nft?: string | StringFilter
-  to?: string | StringFilter
-  fee?: string | StringFilter
-  status?: number | IntNullableFilter | null
-  treeId?: string | StringNullableFilter | null
-  index?: string | StringNullableFilter | null
-  includedIn?: string | StringNullableFilter | null
-  prepayer?: string | StringNullableFilter | null
-  siblings?: string | StringNullableFilter | null
-}
-
-export type WithdrawalUpsertWithWhereUniqueWithoutTreeInput = {
-  where: WithdrawalWhereUniqueInput
-  update: WithdrawalUpdateWithoutTreeDataInput
-  create: WithdrawalCreateWithoutTreeInput
-}
-
-export type MigrationUpdateWithWhereUniqueWithoutTreeInput = {
-  where: MigrationWhereUniqueInput
-  data: MigrationUpdateWithoutTreeDataInput
-}
-
-export type MigrationUpdateManyWithWhereNestedInput = {
-  where: MigrationScalarWhereInput
-  data: MigrationUpdateManyDataInput
-}
-
-export type MigrationScalarWhereInput = {
-  AND?: Enumerable<MigrationScalarWhereInput>
-  OR?: Array<MigrationScalarWhereInput>
-  NOT?: Enumerable<MigrationScalarWhereInput>
-  hash?: string | StringFilter
-  eth?: string | StringNullableFilter | null
-  owner?: string | StringNullableFilter | null
-  salt?: string | StringNullableFilter | null
-  tokenAddr?: string | StringNullableFilter | null
-  erc20Amount?: string | StringNullableFilter | null
-  nft?: string | StringNullableFilter | null
-  to?: string | StringNullableFilter | null
-  fee?: string | StringNullableFilter | null
-  status?: number | IntNullableFilter | null
-  treeId?: string | StringNullableFilter | null
-  index?: string | StringNullableFilter | null
-  usedFor?: string | StringNullableFilter | null
-}
-
-export type MigrationUpsertWithWhereUniqueWithoutTreeInput = {
-  where: MigrationWhereUniqueInput
-  update: MigrationUpdateWithoutTreeDataInput
-  create: MigrationCreateWithoutTreeInput
-}
-
 export type BlockUpdateWithoutHeaderDataInput = {
   proposal?: ProposalUpdateOneRequiredWithoutBlockInput
   bootstrap?: BootstrapUpdateOneWithoutBlockInput
@@ -10694,100 +10156,6 @@ export type BlockUpdateWithoutHeaderDataInput = {
 
 export type BlockUpdateManyDataInput = {
 
-}
-
-export type UtxoUpdateWithoutTreeDataInput = {
-  hash?: string | StringFieldUpdateOperationsInput
-  eth?: string | NullableStringFieldUpdateOperationsInput | null
-  owner?: string | NullableStringFieldUpdateOperationsInput | null
-  salt?: string | NullableStringFieldUpdateOperationsInput | null
-  tokenAddr?: string | NullableStringFieldUpdateOperationsInput | null
-  erc20Amount?: string | NullableStringFieldUpdateOperationsInput | null
-  nft?: string | NullableStringFieldUpdateOperationsInput | null
-  status?: number | NullableIntFieldUpdateOperationsInput | null
-  index?: string | NullableStringFieldUpdateOperationsInput | null
-  nullifier?: string | NullableStringFieldUpdateOperationsInput | null
-  usedAt?: string | NullableStringFieldUpdateOperationsInput | null
-}
-
-export type UtxoUpdateManyDataInput = {
-  hash?: string | StringFieldUpdateOperationsInput
-  eth?: string | NullableStringFieldUpdateOperationsInput | null
-  owner?: string | NullableStringFieldUpdateOperationsInput | null
-  salt?: string | NullableStringFieldUpdateOperationsInput | null
-  tokenAddr?: string | NullableStringFieldUpdateOperationsInput | null
-  erc20Amount?: string | NullableStringFieldUpdateOperationsInput | null
-  nft?: string | NullableStringFieldUpdateOperationsInput | null
-  status?: number | NullableIntFieldUpdateOperationsInput | null
-  index?: string | NullableStringFieldUpdateOperationsInput | null
-  nullifier?: string | NullableStringFieldUpdateOperationsInput | null
-  usedAt?: string | NullableStringFieldUpdateOperationsInput | null
-}
-
-export type WithdrawalUpdateWithoutTreeDataInput = {
-  hash?: string | StringFieldUpdateOperationsInput
-  withdrawalHash?: string | StringFieldUpdateOperationsInput
-  eth?: string | StringFieldUpdateOperationsInput
-  owner?: string | NullableStringFieldUpdateOperationsInput | null
-  salt?: string | NullableStringFieldUpdateOperationsInput | null
-  tokenAddr?: string | StringFieldUpdateOperationsInput
-  erc20Amount?: string | StringFieldUpdateOperationsInput
-  nft?: string | StringFieldUpdateOperationsInput
-  to?: string | StringFieldUpdateOperationsInput
-  fee?: string | StringFieldUpdateOperationsInput
-  status?: number | NullableIntFieldUpdateOperationsInput | null
-  index?: string | NullableStringFieldUpdateOperationsInput | null
-  includedIn?: string | NullableStringFieldUpdateOperationsInput | null
-  prepayer?: string | NullableStringFieldUpdateOperationsInput | null
-  siblings?: string | NullableStringFieldUpdateOperationsInput | null
-}
-
-export type WithdrawalUpdateManyDataInput = {
-  hash?: string | StringFieldUpdateOperationsInput
-  withdrawalHash?: string | StringFieldUpdateOperationsInput
-  eth?: string | StringFieldUpdateOperationsInput
-  owner?: string | NullableStringFieldUpdateOperationsInput | null
-  salt?: string | NullableStringFieldUpdateOperationsInput | null
-  tokenAddr?: string | StringFieldUpdateOperationsInput
-  erc20Amount?: string | StringFieldUpdateOperationsInput
-  nft?: string | StringFieldUpdateOperationsInput
-  to?: string | StringFieldUpdateOperationsInput
-  fee?: string | StringFieldUpdateOperationsInput
-  status?: number | NullableIntFieldUpdateOperationsInput | null
-  index?: string | NullableStringFieldUpdateOperationsInput | null
-  includedIn?: string | NullableStringFieldUpdateOperationsInput | null
-  prepayer?: string | NullableStringFieldUpdateOperationsInput | null
-  siblings?: string | NullableStringFieldUpdateOperationsInput | null
-}
-
-export type MigrationUpdateWithoutTreeDataInput = {
-  hash?: string | StringFieldUpdateOperationsInput
-  eth?: string | NullableStringFieldUpdateOperationsInput | null
-  owner?: string | NullableStringFieldUpdateOperationsInput | null
-  salt?: string | NullableStringFieldUpdateOperationsInput | null
-  tokenAddr?: string | NullableStringFieldUpdateOperationsInput | null
-  erc20Amount?: string | NullableStringFieldUpdateOperationsInput | null
-  nft?: string | NullableStringFieldUpdateOperationsInput | null
-  to?: string | NullableStringFieldUpdateOperationsInput | null
-  fee?: string | NullableStringFieldUpdateOperationsInput | null
-  status?: number | NullableIntFieldUpdateOperationsInput | null
-  index?: string | NullableStringFieldUpdateOperationsInput | null
-  usedFor?: string | NullableStringFieldUpdateOperationsInput | null
-}
-
-export type MigrationUpdateManyDataInput = {
-  hash?: string | StringFieldUpdateOperationsInput
-  eth?: string | NullableStringFieldUpdateOperationsInput | null
-  owner?: string | NullableStringFieldUpdateOperationsInput | null
-  salt?: string | NullableStringFieldUpdateOperationsInput | null
-  tokenAddr?: string | NullableStringFieldUpdateOperationsInput | null
-  erc20Amount?: string | NullableStringFieldUpdateOperationsInput | null
-  nft?: string | NullableStringFieldUpdateOperationsInput | null
-  to?: string | NullableStringFieldUpdateOperationsInput | null
-  fee?: string | NullableStringFieldUpdateOperationsInput | null
-  status?: number | NullableIntFieldUpdateOperationsInput | null
-  index?: string | NullableStringFieldUpdateOperationsInput | null
-  usedFor?: string | NullableStringFieldUpdateOperationsInput | null
 }
 
 /**

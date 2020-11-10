@@ -55,6 +55,7 @@ export {
   BootstrapCreateInput,
   Config,
   Deposit,
+  Utxo,
   MassDeposit,
   Proposal,
   Withdrawal,

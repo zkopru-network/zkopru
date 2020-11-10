@@ -2626,10 +2626,10 @@
 "@zkopru/account@file:packages/account":
   version "1.0.0-beta.2"
   dependencies:
-    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-account-1.0.0-beta.2-f086243e-57ad-4ba6-8a22-df8907d184a7-1604049904376/node_modules/@zkopru/babyjubjub"
-    "@zkopru/prisma" "file:../../../.cache/yarn/v6/npm-@zkopru-account-1.0.0-beta.2-f086243e-57ad-4ba6-8a22-df8907d184a7-1604049904376/node_modules/@zkopru/prisma"
-    "@zkopru/transaction" "file:../../../.cache/yarn/v6/npm-@zkopru-account-1.0.0-beta.2-f086243e-57ad-4ba6-8a22-df8907d184a7-1604049904376/node_modules/@zkopru/transaction"
-    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-account-1.0.0-beta.2-f086243e-57ad-4ba6-8a22-df8907d184a7-1604049904376/node_modules/@zkopru/utils"
+    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-account-1.0.0-beta.2-ca6bfee4-ed39-4800-8e74-f8c641bd3bfd-1605192866013/node_modules/@zkopru/babyjubjub"
+    "@zkopru/prisma" "file:../../../.cache/yarn/v6/npm-@zkopru-account-1.0.0-beta.2-ca6bfee4-ed39-4800-8e74-f8c641bd3bfd-1605192866013/node_modules/@zkopru/prisma"
+    "@zkopru/transaction" "file:../../../.cache/yarn/v6/npm-@zkopru-account-1.0.0-beta.2-ca6bfee4-ed39-4800-8e74-f8c641bd3bfd-1605192866013/node_modules/@zkopru/transaction"
+    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-account-1.0.0-beta.2-ca6bfee4-ed39-4800-8e74-f8c641bd3bfd-1605192866013/node_modules/@zkopru/utils"
     bip39 "^3.0.2"
     circomlib "0.2.4"
     hdkey "^1.1.1"
@@ -2642,7 +2642,7 @@
 "@zkopru/babyjubjub@file:packages/babyjubjub":
   version "1.0.0-beta.2"
   dependencies:
-    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-babyjubjub-1.0.0-beta.2-3af1c379-e6dc-4fa5-b705-049e8ca31366-1604049904366/node_modules/@zkopru/utils"
+    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-babyjubjub-1.0.0-beta.2-5a6d4d30-e1ab-4057-91a7-47a0e46dc5bc-1605192866010/node_modules/@zkopru/utils"
     big-integer "^1.6.48"
     blake-hash "^1.1.0"
     bn.js "^5.1.1"
@@ -2665,13 +2665,13 @@
 "@zkopru/coordinator@file:packages/coordinator":
   version "1.0.0-beta.2"
   dependencies:
-    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-07ea9742-3ed7-4397-ba44-3cae1220b7f0-1604049904384/node_modules/@zkopru/babyjubjub"
-    "@zkopru/contracts" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-07ea9742-3ed7-4397-ba44-3cae1220b7f0-1604049904384/node_modules/@zkopru/contracts"
-    "@zkopru/core" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-07ea9742-3ed7-4397-ba44-3cae1220b7f0-1604049904384/node_modules/@zkopru/core"
-    "@zkopru/prisma" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-07ea9742-3ed7-4397-ba44-3cae1220b7f0-1604049904384/node_modules/@zkopru/prisma"
-    "@zkopru/transaction" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-07ea9742-3ed7-4397-ba44-3cae1220b7f0-1604049904384/node_modules/@zkopru/transaction"
-    "@zkopru/tree" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-07ea9742-3ed7-4397-ba44-3cae1220b7f0-1604049904384/node_modules/@zkopru/tree"
-    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-07ea9742-3ed7-4397-ba44-3cae1220b7f0-1604049904384/node_modules/@zkopru/utils"
+    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-c9a2da0c-b25c-4b47-b9fb-90201e5f458b-1605192866014/node_modules/@zkopru/babyjubjub"
+    "@zkopru/contracts" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-c9a2da0c-b25c-4b47-b9fb-90201e5f458b-1605192866014/node_modules/@zkopru/contracts"
+    "@zkopru/core" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-c9a2da0c-b25c-4b47-b9fb-90201e5f458b-1605192866014/node_modules/@zkopru/core"
+    "@zkopru/prisma" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-c9a2da0c-b25c-4b47-b9fb-90201e5f458b-1605192866014/node_modules/@zkopru/prisma"
+    "@zkopru/transaction" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-c9a2da0c-b25c-4b47-b9fb-90201e5f458b-1605192866014/node_modules/@zkopru/transaction"
+    "@zkopru/tree" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-c9a2da0c-b25c-4b47-b9fb-90201e5f458b-1605192866014/node_modules/@zkopru/tree"
+    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-c9a2da0c-b25c-4b47-b9fb-90201e5f458b-1605192866014/node_modules/@zkopru/utils"
     async-lock "^1.2.2"
     big-integer "^1.6.48"
     bip39 "^3.0.2"
@@ -2696,13 +2696,13 @@
 "@zkopru/core@file:packages/core":
   version "1.0.0-beta.2"
   dependencies:
-    "@zkopru/account" "file:../../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-803b78e9-3de1-4e23-97f1-81525b57bd9b-1604049904378/node_modules/@zkopru/account"
-    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-803b78e9-3de1-4e23-97f1-81525b57bd9b-1604049904378/node_modules/@zkopru/babyjubjub"
-    "@zkopru/contracts" "file:../../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-803b78e9-3de1-4e23-97f1-81525b57bd9b-1604049904378/node_modules/@zkopru/contracts"
-    "@zkopru/prisma" "file:../../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-803b78e9-3de1-4e23-97f1-81525b57bd9b-1604049904378/node_modules/@zkopru/prisma"
-    "@zkopru/transaction" "file:../../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-803b78e9-3de1-4e23-97f1-81525b57bd9b-1604049904378/node_modules/@zkopru/transaction"
-    "@zkopru/tree" "file:../../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-803b78e9-3de1-4e23-97f1-81525b57bd9b-1604049904378/node_modules/@zkopru/tree"
-    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-803b78e9-3de1-4e23-97f1-81525b57bd9b-1604049904378/node_modules/@zkopru/utils"
+    "@zkopru/account" "file:../../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-d69cbb95-da02-4d1a-96c9-0aa60d9025ab-1605192866015/node_modules/@zkopru/account"
+    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-d69cbb95-da02-4d1a-96c9-0aa60d9025ab-1605192866015/node_modules/@zkopru/babyjubjub"
+    "@zkopru/contracts" "file:../../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-d69cbb95-da02-4d1a-96c9-0aa60d9025ab-1605192866015/node_modules/@zkopru/contracts"
+    "@zkopru/prisma" "file:../../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-d69cbb95-da02-4d1a-96c9-0aa60d9025ab-1605192866015/node_modules/@zkopru/prisma"
+    "@zkopru/transaction" "file:../../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-d69cbb95-da02-4d1a-96c9-0aa60d9025ab-1605192866015/node_modules/@zkopru/transaction"
+    "@zkopru/tree" "file:../../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-d69cbb95-da02-4d1a-96c9-0aa60d9025ab-1605192866015/node_modules/@zkopru/tree"
+    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-d69cbb95-da02-4d1a-96c9-0aa60d9025ab-1605192866015/node_modules/@zkopru/utils"
     async-lock "^1.2.2"
     big-integer "^1.6.48"
     bn.js "^5.1.1"
@@ -2722,8 +2722,8 @@
   version "1.0.0-beta.2"
   dependencies:
     "@prisma/client" "2.7.1"
-    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-prisma-1.0.0-beta.2-633d9ab6-6e96-4555-b39a-3a8fe5faec65-1604049904371/node_modules/@zkopru/babyjubjub"
-    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-prisma-1.0.0-beta.2-633d9ab6-6e96-4555-b39a-3a8fe5faec65-1604049904371/node_modules/@zkopru/utils"
+    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-prisma-1.0.0-beta.2-e16f2bf5-f7ad-426d-9b5c-5c6704b5c9c9-1605192866007/node_modules/@zkopru/babyjubjub"
+    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-prisma-1.0.0-beta.2-e16f2bf5-f7ad-426d-9b5c-5c6704b5c9c9-1605192866007/node_modules/@zkopru/utils"
     async-lock "^1.2.2"
     big-integer "^1.6.48"
     bn.js "^5.1.1"
@@ -2737,13 +2737,13 @@
 "@zkopru/transaction@file:packages/transaction":
   version "1.0.0-beta.2"
   dependencies:
-    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-transaction-1.0.0-beta.2-da59fcc6-bb40-4bb9-9db5-c160ac27dbe6-1604049904369/node_modules/@zkopru/babyjubjub"
-    "@zkopru/prisma" "file:../../../.cache/yarn/v6/npm-@zkopru-transaction-1.0.0-beta.2-da59fcc6-bb40-4bb9-9db5-c160ac27dbe6-1604049904369/node_modules/@zkopru/prisma"
-    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-transaction-1.0.0-beta.2-da59fcc6-bb40-4bb9-9db5-c160ac27dbe6-1604049904369/node_modules/@zkopru/utils"
+    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-transaction-1.0.0-beta.2-8ed76144-4271-43e2-a36d-9d943372689c-1605192866012/node_modules/@zkopru/babyjubjub"
+    "@zkopru/prisma" "file:../../../.cache/yarn/v6/npm-@zkopru-transaction-1.0.0-beta.2-8ed76144-4271-43e2-a36d-9d943372689c-1605192866012/node_modules/@zkopru/prisma"
+    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-transaction-1.0.0-beta.2-8ed76144-4271-43e2-a36d-9d943372689c-1605192866012/node_modules/@zkopru/utils"
     big-integer "^1.6.48"
     bs58 "^4.0.1"
     chacha20 "^0.1.4"
-    circomlib "^0.1.1"
+    circomlib "0.2.4"
     keccak "^3.0.1"
     snarkjs "0.3.33"
     soltypes "^1.3.3"
@@ -2752,9 +2752,9 @@
 "@zkopru/tree@file:packages/tree":
   version "1.0.0-beta.2"
   dependencies:
-    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-tree-1.0.0-beta.2-0d578c24-3754-4533-8c6f-ebaa8e3cd9d7-1604049904386/node_modules/@zkopru/babyjubjub"
-    "@zkopru/prisma" "file:../../../.cache/yarn/v6/npm-@zkopru-tree-1.0.0-beta.2-0d578c24-3754-4533-8c6f-ebaa8e3cd9d7-1604049904386/node_modules/@zkopru/prisma"
-    "@zkopru/transaction" "file:../../../.cache/yarn/v6/npm-@zkopru-tree-1.0.0-beta.2-0d578c24-3754-4533-8c6f-ebaa8e3cd9d7-1604049904386/node_modules/@zkopru/transaction"
+    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-tree-1.0.0-beta.2-6393840e-8619-4404-add7-50fb014353cb-1605192866018/node_modules/@zkopru/babyjubjub"
+    "@zkopru/prisma" "file:../../../.cache/yarn/v6/npm-@zkopru-tree-1.0.0-beta.2-6393840e-8619-4404-add7-50fb014353cb-1605192866018/node_modules/@zkopru/prisma"
+    "@zkopru/transaction" "file:../../../.cache/yarn/v6/npm-@zkopru-tree-1.0.0-beta.2-6393840e-8619-4404-add7-50fb014353cb-1605192866018/node_modules/@zkopru/transaction"
     async-lock "^1.2.2"
     big-integer "^1.6.48"
     bn.js "^5.1.1"
@@ -2784,14 +2784,14 @@
 "@zkopru/zk-wizard@file:packages/zk-wizard":
   version "1.0.0-beta.2"
   dependencies:
-    "@zkopru/account" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-ea3330ba-2ef1-4f9e-989c-d08f92da8109-1604049904381/node_modules/@zkopru/account"
-    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-ea3330ba-2ef1-4f9e-989c-d08f92da8109-1604049904381/node_modules/@zkopru/babyjubjub"
-    "@zkopru/contracts" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-ea3330ba-2ef1-4f9e-989c-d08f92da8109-1604049904381/node_modules/@zkopru/contracts"
-    "@zkopru/core" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-ea3330ba-2ef1-4f9e-989c-d08f92da8109-1604049904381/node_modules/@zkopru/core"
-    "@zkopru/prisma" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-ea3330ba-2ef1-4f9e-989c-d08f92da8109-1604049904381/node_modules/@zkopru/prisma"
-    "@zkopru/transaction" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-ea3330ba-2ef1-4f9e-989c-d08f92da8109-1604049904381/node_modules/@zkopru/transaction"
-    "@zkopru/tree" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-ea3330ba-2ef1-4f9e-989c-d08f92da8109-1604049904381/node_modules/@zkopru/tree"
-    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-ea3330ba-2ef1-4f9e-989c-d08f92da8109-1604049904381/node_modules/@zkopru/utils"
+    "@zkopru/account" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-e5a13157-17a8-4337-a1cd-95f21eede557-1605192866017/node_modules/@zkopru/account"
+    "@zkopru/babyjubjub" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-e5a13157-17a8-4337-a1cd-95f21eede557-1605192866017/node_modules/@zkopru/babyjubjub"
+    "@zkopru/contracts" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-e5a13157-17a8-4337-a1cd-95f21eede557-1605192866017/node_modules/@zkopru/contracts"
+    "@zkopru/core" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-e5a13157-17a8-4337-a1cd-95f21eede557-1605192866017/node_modules/@zkopru/core"
+    "@zkopru/prisma" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-e5a13157-17a8-4337-a1cd-95f21eede557-1605192866017/node_modules/@zkopru/prisma"
+    "@zkopru/transaction" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-e5a13157-17a8-4337-a1cd-95f21eede557-1605192866017/node_modules/@zkopru/transaction"
+    "@zkopru/tree" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-e5a13157-17a8-4337-a1cd-95f21eede557-1605192866017/node_modules/@zkopru/tree"
+    "@zkopru/utils" "file:../../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-e5a13157-17a8-4337-a1cd-95f21eede557-1605192866017/node_modules/@zkopru/utils"
     big-integer "^1.6.48"
     circom_runtime "^0.0.3"
     ffjavascript "0.2.22"
@@ -3551,7 +3551,7 @@ before-after-hook@^2.0.0:
   resolved "https://registry.yarnpkg.com/before-after-hook/-/before-after-hook-2.1.0.tgz#b6c03487f44e24200dd30ca5e6a1979c5d2fb635"
   integrity sha512-IWIbu7pMqyw3EAJHzzHbWa85b6oud/yfKYg5rqB5hNE8CeMi3nX+2C2sj0HswfblST86hpVEOAb9x34NZd6P7A==
 
-big-integer@^1.6.32, big-integer@^1.6.42, big-integer@^1.6.48:
+big-integer@^1.6.42, big-integer@^1.6.48:
   version "1.6.48"
   resolved "https://registry.yarnpkg.com/big-integer/-/big-integer-1.6.48.tgz#8fd88bd1632cba4a1c8c3e3d7159f08bb95b4b9e"
   integrity sha512-j51egjPa7/i+RdiRuJbPdJ2FIUYYPhvYLjzoYbcMMm62ooO6F94fETG4MTs46zPAF9Brs04OajboA/qTGuz78w==
@@ -4299,38 +4299,6 @@ circom@0.5.28:
     tmp-promise "^2.0.2"
     wasmbuilder "0.0.10"
 
-circom@0.5.3:
-  version "0.5.3"
-  resolved "https://registry.yarnpkg.com/circom/-/circom-0.5.3.tgz#bf157c17ec973f1960b09b505ab6a8a23946d4de"
-  integrity sha512-uKmcWE+qvy7+wJ4aXxv2cfNJxhdAV7NiXwCWsiBCzwhzFpA2P+JQQGgUj7C1GIMiJLNmmhx62jWnXW+fQ2PvBw==
-  dependencies:
-    big-integer "^1.6.32"
-    chai "^4.2.0"
-    circom_runtime "0.0.3"
-    ffiasm "0.0.2"
-    ffjavascript "0.0.3"
-    ffwasm "0.0.6"
-    fnv-plus "^1.3.1"
-    r1csfile "0.0.3"
-    tmp-promise "^2.0.2"
-    wasmbuilder "0.0.10"
-
-circom_runtime@0.0.3, circom_runtime@^0.0.3:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/circom_runtime/-/circom_runtime-0.0.3.tgz#079d698bf8b95b0661f78bfccaf88784218bf2ad"
-  integrity sha512-z4ypbs9cTQn7+2FHZNTnccMj6kQCcKT2agYqCrm2kdLBJh9LDoxU1JVu5mSnVuOtgc7BclQ7r0xclG0zP2rxhw==
-  dependencies:
-    big-integer "^1.6.48"
-    fnv-plus "^1.3.1"
-
-circom_runtime@0.0.6:
-  version "0.0.6"
-  resolved "https://registry.yarnpkg.com/circom_runtime/-/circom_runtime-0.0.6.tgz#ef20ed273f03a5fdd699fd889b01feb9e13ada44"
-  integrity sha512-o0T5MuWzxnxinWG3+CygS/kZouoP+z5ZrufUwqKJy3gsVFJhkbqMpfKmcBGjhExB3uatA7cKyOiRAOLOz5+t5w==
-  dependencies:
-    ffjavascript "0.1.0"
-    fnv-plus "^1.3.1"
-
 circom_runtime@0.1.4:
   version "0.1.4"
   resolved "https://registry.yarnpkg.com/circom_runtime/-/circom_runtime-0.1.4.tgz#eb8802f8743224ee603f70894b6f107d225463e4"
@@ -4347,6 +4315,14 @@ circom_runtime@0.1.5:
     ffjavascript "0.2.10"
     fnv-plus "^1.3.1"
 
+circom_runtime@^0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/circom_runtime/-/circom_runtime-0.0.3.tgz#079d698bf8b95b0661f78bfccaf88784218bf2ad"
+  integrity sha512-z4ypbs9cTQn7+2FHZNTnccMj6kQCcKT2agYqCrm2kdLBJh9LDoxU1JVu5mSnVuOtgc7BclQ7r0xclG0zP2rxhw==
+  dependencies:
+    big-integer "^1.6.48"
+    fnv-plus "^1.3.1"
+
 circomlib@0.2.4:
   version "0.2.4"
   resolved "https://registry.yarnpkg.com/circomlib/-/circomlib-0.2.4.tgz#5c487e69738c90bd73527d8830d2b2413d6f68ff"
@@ -4356,19 +4332,6 @@ circomlib@0.2.4:
     blake2b "^2.1.3"
     circom "0.5.21"
     ffjavascript "0.1.0"
-
-circomlib@^0.1.1:
-  version "0.1.2"
-  resolved "https://registry.yarnpkg.com/circomlib/-/circomlib-0.1.2.tgz#5f7e28f9d5ad0a8c05382a6d8a58ac8d4dc31228"
-  integrity sha512-pZMDmcQp9Z/XJ1MpycJDaNEtOKS8G3QGFlKszwEZHZLRch44M8yxoDcYGcjaI8lprh/8QHEHLyeVZWwGTiRacQ==
-  dependencies:
-    blake-hash "^1.1.0"
-    blake2b "^2.1.3"
-    circom "0.5.3"
-    ffjavascript "0.0.3"
-    snarkjs "^0.1.22"
-    typedarray-to-buffer "^3.1.5"
-    web3 "^1.2.6"
 
 class-is@^1.1.0:
   version "1.1.0"
@@ -6731,11 +6694,6 @@ fast-write-atomic@0.2.1:
   resolved "https://registry.yarnpkg.com/fast-write-atomic/-/fast-write-atomic-0.2.1.tgz#7ee8ef0ce3c1f531043c09ae8e5143361ab17ede"
   integrity sha512-WvJe06IfNYlr+6cO3uQkdKdy3Cb1LlCJSF8zRs2eT8yuhdbSlR9nIt+TgQ92RUxiRrQm+/S7RARnMfCs5iuAjw==
 
-fastfile@0.0.1:
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/fastfile/-/fastfile-0.0.1.tgz#bf12427f476d32220c45d890529df00347a61eb1"
-  integrity sha512-Fk8PWafGWGEUw7oPq/dJen92ASxknCEy4ZC8n4VEvSwCp/jcReyEmVoWsRIWTf+IvAp2MzvFi54vOPeK2LQZtQ==
-
 fastfile@0.0.12:
   version "0.0.12"
   resolved "https://registry.yarnpkg.com/fastfile/-/fastfile-0.0.12.tgz#302597fe2d0d19e1405851685a5ddce03e1dd6e8"
@@ -6801,15 +6759,6 @@ fetch-ponyfill@^4.0.0:
   dependencies:
     node-fetch "~1.7.1"
 
-ffiasm@0.0.2:
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/ffiasm/-/ffiasm-0.0.2.tgz#2445ae08d0d78369312eb394129440731f73b364"
-  integrity sha512-o/CL7F4IodB7eRHCOQL1SrqN2DIPHrQbEwjPY7NIyeBRdnB3G0xo6b6Mj44SKiWFnvpQMb3n4N7acjD3vv4NVQ==
-  dependencies:
-    big-integer "^1.6.48"
-    ejs "^3.0.1"
-    yargs "^15.3.1"
-
 ffiasm@0.1.1:
   version "0.1.1"
   resolved "https://registry.yarnpkg.com/ffiasm/-/ffiasm-0.1.1.tgz#34ca6a00a875b5a926f66fd46e79530194e9c312"
@@ -6818,13 +6767,6 @@ ffiasm@0.1.1:
     big-integer "^1.6.48"
     ejs "^3.0.1"
     yargs "^15.3.1"
-
-ffjavascript@0.0.3:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/ffjavascript/-/ffjavascript-0.0.3.tgz#4f3f91ae02a9fedaed0bd1fae4c54709dc029250"
-  integrity sha512-uXbiC7cNbFzNJCdkGlbQf2d7GciY1ICMcBeAA7+D8RHPr9Y5zYiDRWtU5etjAV8TplE7eZQ9Iqd9ieFi0ARJLA==
-  dependencies:
-    big-integer "^1.6.48"
 
 ffjavascript@0.1.0:
   version "0.1.0"
@@ -6868,14 +6810,6 @@ ffjavascript@0.2.4:
     big-integer "^1.6.48"
     wasmcurves "0.0.4"
     worker-threads "^1.0.0"
-
-ffwasm@0.0.6:
-  version "0.0.6"
-  resolved "https://registry.yarnpkg.com/ffwasm/-/ffwasm-0.0.6.tgz#ec9a16e92b820ffb1cd8871b4237fe90db45e704"
-  integrity sha512-bEBKYANozdyZBCGE6XLg4s/CaJRZdFGQgbthy7EZ4OhNCIpycgklS5mlf88Bw4fXSddlU1V9iYXI4JwfGO3BhQ==
-  dependencies:
-    big-integer "^1.6.48"
-    wasmbuilder "0.0.10"
 
 ffwasm@0.0.7:
   version "0.0.7"
@@ -8366,11 +8300,6 @@ invert-kv@^1.0.0:
   resolved "https://registry.yarnpkg.com/invert-kv/-/invert-kv-1.0.0.tgz#104a8e4aaca6d3d8cd157a8ef8bfab2d7a3ffdb6"
   integrity sha1-EEqOSqym09jNFXqO+L+rLXo//bY=
 
-invert-kv@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/invert-kv/-/invert-kv-2.0.0.tgz#7393f5afa59ec9ff5f67a27620d11c226e3eec02"
-  integrity sha512-wPVv/y/QQ/Uiirj/vh3oP+1Ww+AWehmi1g5fFWGPF6IpCBCDVrhgHRMvrLfdYcwDh3QJbGXDW4JAuzxElLSqKA==
-
 ip@1.1.5:
   version "1.1.5"
   resolved "https://registry.yarnpkg.com/ip/-/ip-1.1.5.tgz#bdded70114290828c0a039e72ef25f5aaec4354a"
@@ -9595,13 +9524,6 @@ lcid@^1.0.0:
   dependencies:
     invert-kv "^1.0.0"
 
-lcid@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/lcid/-/lcid-2.0.0.tgz#6ef5d2df60e52f82eb228a4c373e8d1f397253cf"
-  integrity sha512-avPEb8P8EGnwXKClwsNUgryVjllcRqtMYa49NTsbQagYuT1DcXnl1915oxWjoyGrXR6zH/Y0Zc96xWsPcoDKeA==
-  dependencies:
-    invert-kv "^2.0.0"
-
 left-pad@^1.3.0:
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/left-pad/-/left-pad-1.3.0.tgz#5b8a3a7765dfe001261dde915589e782f8c94d1e"
@@ -10196,13 +10118,6 @@ makeerror@1.0.x:
   dependencies:
     tmpl "1.0.x"
 
-map-age-cleaner@^0.1.1:
-  version "0.1.3"
-  resolved "https://registry.yarnpkg.com/map-age-cleaner/-/map-age-cleaner-0.1.3.tgz#7d583a7306434c055fe474b0f45078e6e1b4b92a"
-  integrity sha512-bJzx6nMoP6PDLPBFmg7+xRKeFZvFboMrGlxmNj9ClvX53KrmvM5bXFXEWjbz4cz1AFn+jWJ9z/DJSz7hrs0w3w==
-  dependencies:
-    p-defer "^1.0.0"
-
 map-cache@^0.2.2:
   version "0.2.2"
   resolved "https://registry.yarnpkg.com/map-cache/-/map-cache-0.2.2.tgz#c32abd0bd6525d9b051645bb4f26ac5dc98a0dbf"
@@ -10324,15 +10239,6 @@ mem@^1.1.0:
   integrity sha1-Xt1StIXKHZAP5kiVUFOZoN+kX3Y=
   dependencies:
     mimic-fn "^1.0.0"
-
-mem@^4.0.0:
-  version "4.3.0"
-  resolved "https://registry.yarnpkg.com/mem/-/mem-4.3.0.tgz#461af497bc4ae09608cdb2e60eefb69bff744178"
-  integrity sha512-qX2bG48pTqYRVmDB37rn/6PT7LcR8T7oAX3bf99u1Tt1nzxYfxkgqDwUwolPlXweM0XzBOBFzSx4kfp7KP1s/w==
-  dependencies:
-    map-age-cleaner "^0.1.1"
-    mimic-fn "^2.0.0"
-    p-is-promise "^2.0.0"
 
 memdown@^1.0.0:
   version "1.4.1"
@@ -10568,7 +10474,7 @@ mimic-fn@^1.0.0:
   resolved "https://registry.yarnpkg.com/mimic-fn/-/mimic-fn-1.2.0.tgz#820c86a39334640e99516928bd03fca88057d022"
   integrity sha512-jf84uxzwiuiIVKiOLpfYk7N46TSy8ubTonmneY9vrpHNAnp0QBt2BxWV9dO3/j+BoVAb+a5G6YDPW3M5HOdMWQ==
 
-mimic-fn@^2.0.0, mimic-fn@^2.1.0:
+mimic-fn@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/mimic-fn/-/mimic-fn-2.1.0.tgz#7ed2c2ccccaf84d3ffcb7a69b57711fc2083401b"
   integrity sha512-OqbOk5oEQeAZ8WXWydlu9HJjz9WVdEIvamMCcXmuqUYjTknH/sqsWvhQ3vgwKFRR1HpjvNBKQ37nbJgYzGqGcg==
@@ -11514,15 +11420,6 @@ os-locale@^2.0.0:
     lcid "^1.0.0"
     mem "^1.1.0"
 
-os-locale@^3.0.0:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/os-locale/-/os-locale-3.1.0.tgz#a802a6ee17f24c10483ab9935719cef4ed16bf1a"
-  integrity sha512-Z8l3R4wYWM40/52Z+S265okfFj8Kt2cC2MKY+xNi3kFs+XGI7WXu/I309QQQYbRW4ijiZ+yxs9pqEhJh0DqW3Q==
-  dependencies:
-    execa "^1.0.0"
-    lcid "^2.0.0"
-    mem "^4.0.0"
-
 os-name@^3.1.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/os-name/-/os-name-3.1.0.tgz#dec19d966296e1cd62d701a5a66ee1ddeae70801"
@@ -11554,11 +11451,6 @@ p-cancelable@^1.0.0:
   resolved "https://registry.yarnpkg.com/p-cancelable/-/p-cancelable-1.1.0.tgz#d078d15a3af409220c886f1d9a0ca2e441ab26cc"
   integrity sha512-s73XxOZ4zpt1edZYZzvhqFa6uvQc1vwUa0K0BdtIZgQMAJj9IbebH+JkgKZc9h+B05PKHLOTl4ajG1BmNrVZlw==
 
-p-defer@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/p-defer/-/p-defer-1.0.0.tgz#9f6eb182f6c9aa8cd743004a7d4f96b196b0fb0c"
-  integrity sha1-n26xgvbJqozXQwBKfU+WsZaw+ww=
-
 p-each-series@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/p-each-series/-/p-each-series-1.0.0.tgz#930f3d12dd1f50e7434457a22cd6f04ac6ad7f71"
@@ -11577,11 +11469,6 @@ p-finally@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/p-finally/-/p-finally-1.0.0.tgz#3fbcfb15b899a44123b34b6dcc18b724336a2cae"
   integrity sha1-P7z7FbiZpEEjs0ttzBi3JDNqLK4=
-
-p-is-promise@^2.0.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/p-is-promise/-/p-is-promise-2.1.0.tgz#918cebaea248a62cf7ffab8e3bca8c5f882fc42e"
-  integrity sha512-Y3W0wlRPK8ZMRbNq97l4M5otioeA5lm1z7bkNkxCka8HSPjR0xRWmpCmc9utiaLP9Jb1eD8BgeIxTW4AIF45Pg==
 
 p-limit@^1.1.0:
   version "1.3.0"
@@ -12437,21 +12324,6 @@ r1csfile@0.0.16:
     "@iden3/bigarray" "0.0.2"
     fastfile "0.0.18"
     ffjavascript "0.2.22"
-
-r1csfile@0.0.3:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/r1csfile/-/r1csfile-0.0.3.tgz#61cef5a842a607800dc7a341d72eb31040ffacfa"
-  integrity sha512-TNrodnbHw5yAMv2gj0Ezf22XS3q8zGEjdPHZLBmJauIPFxm6QmyzxlB92yZ5WNkjEtJiS7p1hvkO9/RsJXRDjw==
-  dependencies:
-    big-integer "^1.6.48"
-
-r1csfile@0.0.5:
-  version "0.0.5"
-  resolved "https://registry.yarnpkg.com/r1csfile/-/r1csfile-0.0.5.tgz#63e2a74f833693356f18d517b9fc42238df7e187"
-  integrity sha512-B+BdKPb/WUTp4N/3X4d1Spgx9Ojx5tFVejGZRJxpTtzq34mC8Vi/czWfiPj85V8kud31lCfYcZ16z7+czvM0Sw==
-  dependencies:
-    fastfile "0.0.1"
-    ffjavascript "0.1.0"
 
 randomatic@^3.0.0:
   version "3.1.1"
@@ -13586,19 +13458,6 @@ snarkjs@0.3.33:
     ffjavascript "0.2.21"
     logplease "^1.2.15"
     r1csfile "0.0.12"
-
-snarkjs@^0.1.22:
-  version "0.1.31"
-  resolved "https://registry.yarnpkg.com/snarkjs/-/snarkjs-0.1.31.tgz#a9cf6982c2aa4b1b0da224a339c6370accda4041"
-  integrity sha512-Xu9Ai89GPLUI6hSyVkc6LRE3sUEje7+eokHeKkb4sZuWW4JqPKWRW7ZtwM7VjsisgVM2gVAg9IYsMD4k+MhuPA==
-  dependencies:
-    chai "^4.2.0"
-    circom_runtime "0.0.6"
-    escape-string-regexp "^1.0.5"
-    ffjavascript "0.1.0"
-    keccak "^3.0.0"
-    r1csfile "0.0.5"
-    yargs "^12.0.5"
 
 socks-proxy-agent@^4.0.0:
   version "4.0.2"
@@ -15830,7 +15689,7 @@ y18n@^3.2.1:
   resolved "https://registry.yarnpkg.com/y18n/-/y18n-3.2.1.tgz#6d15fba884c08679c0d77e88e7759e811e07fa41"
   integrity sha1-bRX7qITAhnnA136I53WegR4H+kE=
 
-"y18n@^3.2.1 || ^4.0.0", y18n@^4.0.0:
+y18n@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/y18n/-/y18n-4.0.0.tgz#95ef94f85ecc81d007c264e190a120f0a3c8566b"
   integrity sha512-r9S/ZyXu/Xu9q1tYlpsLIsa3EeLXXk0VwlxqTcFRfg9EhMW+17kbt9G0NrgCmhGb5vT2hyhJZLfDGx+7+5Uj/w==
@@ -15871,14 +15730,6 @@ yargs-parser@13.1.2, yargs-parser@^13.1.2:
   version "13.1.2"
   resolved "https://registry.yarnpkg.com/yargs-parser/-/yargs-parser-13.1.2.tgz#130f09702ebaeef2650d54ce6e3e5706f7a4fb38"
   integrity sha512-3lbsNRf/j+A4QuSZfDRA7HRSfWrzO0YjqTJd5kjAq37Zep1CEgaYmrH9Q3GwPiB9cHyd1Y1UwggGhJGoxipbzg==
-  dependencies:
-    camelcase "^5.0.0"
-    decamelize "^1.2.0"
-
-yargs-parser@^11.1.1:
-  version "11.1.1"
-  resolved "https://registry.yarnpkg.com/yargs-parser/-/yargs-parser-11.1.1.tgz#879a0865973bca9f6bab5cbdf3b1c67ec7d3bcf4"
-  integrity sha512-C6kB/WJDiaxONLJQnF8ccx9SEeoTTLek8RVbaOIsrAUS8VrBEXfmeSnCZxygc+XC2sNMBIwOOnfcxiynjHsVSQ==
   dependencies:
     camelcase "^5.0.0"
     decamelize "^1.2.0"
@@ -15959,24 +15810,6 @@ yargs@^10.0.3:
     which-module "^2.0.0"
     y18n "^3.2.1"
     yargs-parser "^8.1.0"
-
-yargs@^12.0.5:
-  version "12.0.5"
-  resolved "https://registry.yarnpkg.com/yargs/-/yargs-12.0.5.tgz#05f5997b609647b64f66b81e3b4b10a368e7ad13"
-  integrity sha512-Lhz8TLaYnxq/2ObqHDql8dX8CJi97oHxrjUcYtzKbbykPtVW9WB+poxI+NM2UIzsMgNCZTIf0AQwsjK5yMAqZw==
-  dependencies:
-    cliui "^4.0.0"
-    decamelize "^1.2.0"
-    find-up "^3.0.0"
-    get-caller-file "^1.0.1"
-    os-locale "^3.0.0"
-    require-directory "^2.1.1"
-    require-main-filename "^1.0.1"
-    set-blocking "^2.0.0"
-    string-width "^2.0.0"
-    which-module "^2.0.0"
-    y18n "^3.2.1 || ^4.0.0"
-    yargs-parser "^11.1.1"
 
 yargs@^14.2.2, yargs@^14.2.3:
   version "14.2.3"

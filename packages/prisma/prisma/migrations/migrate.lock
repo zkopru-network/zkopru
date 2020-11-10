@@ -12,3 +12,4 @@
 20201022142906-add-execute-tx-field-to-slash-model
 20201025112802-add-tracker-model
 20201112160610-fix-model-name
+20201112200707-remove-unused-fields

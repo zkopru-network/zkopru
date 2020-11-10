@@ -4,12 +4,12 @@ generator client {
   provider = "prisma-client-js"
   previewFeatures = ["transactionApi"]
   binaryTargets = ["darwin", "windows", "native", "linux-musl", "debian-openssl-1.0.x", "debian-openssl-1.1.x"]
-  output = "../generated/sqlite"
+  output = "../generated/postgres-migrator"
 }
 
-datasource sqlite {
-  provider = "sqlite"
-  url      = "sqlite://filepath"
+datasource postgres {
+  provider = "postgres"
+  url = "***"
 }
 
 model EncryptedWallet {
