@@ -7,7 +7,7 @@ import { Field } from '@zkopru/babyjubjub'
 import { ZkTx, Utxo, UtxoStatus, TokenRegistry } from '@zkopru/transaction'
 import { ZkWizard } from '@zkopru/zk-wizard'
 import { keccakHasher, poseidonHasher, Grove } from '@zkopru/tree'
-import { DB, MockupDB, TreeSpecies } from '@zkopru/prisma'
+import { DB, MockupDB } from '@zkopru/prisma'
 import { accounts, address } from '~dataset/testset-predefined'
 import { utxos } from '~dataset/testset-utxos'
 import { txs } from '~dataset/testset-txs'
@@ -51,11 +51,6 @@ async function loadGrove(db: DB): Promise<{ grove: Grove }> {
 }
 
 async function saveUtxos(db: DB, utxos: Utxo[]): Promise<DB> {
-  const utxoTree = await db.read(prisma =>
-    prisma.lightTree.findOne({ where: { species: TreeSpecies.UTXO } }),
-  )
-  if (!utxoTree) throw Error('Failed to get utxo gree from grove')
-  const utxoTreeId = utxoTree.id
   for (let i = 0; i < utxos.length; i += 1) {
     const utxo = utxos[i]
     await db.write(prisma =>
@@ -85,7 +80,6 @@ async function saveUtxos(db: DB, utxos: Utxo[]): Promise<DB> {
             .toString(),
           status: UtxoStatus.NON_INCLUDED,
           index: i.toString(),
-          tree: { connect: { id: utxoTreeId } },
         },
       }),
     )

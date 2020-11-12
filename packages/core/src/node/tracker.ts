@@ -20,8 +20,8 @@ export class Tracker {
     const l2Accounts: ZkViewer[] = []
     const l1Accounts: Address[] = []
     for (const tracker of trackers) {
-      if (tracker.viewier) {
-        l2Accounts.push(ZkViewer.from(tracker.viewier))
+      if (tracker.viewer) {
+        l2Accounts.push(ZkViewer.from(tracker.viewer))
       }
       if (tracker.address) {
         l1Accounts.push(Address.from(tracker.address))
@@ -46,8 +46,10 @@ export class Tracker {
       this.withdrawalTrackers.push(...unregistered)
       return prisma.$transaction(
         unregistered.map(account =>
-          prisma.tracker.create({
-            data: { address: account.toString() },
+          prisma.tracker.upsert({
+            where: { address: account.toString() },
+            create: { address: account.toString() },
+            update: { address: account.toString() },
           }),
         ),
       )
@@ -63,8 +65,10 @@ export class Tracker {
       this.transferTrackers.push(...unregistered)
       return prisma.$transaction(
         unregistered.map(account =>
-          prisma.tracker.create({
-            data: { viewier: account.encodeViewingKey() },
+          prisma.tracker.upsert({
+            where: { viewer: account.encodeViewingKey() },
+            create: { viewer: account.encodeViewingKey() },
+            update: { viewer: account.encodeViewingKey() },
           }),
         ),
       )

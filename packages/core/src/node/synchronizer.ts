@@ -256,7 +256,11 @@ export class Synchronizer extends EventEmitter {
         }
 
         await this.db.write(prisma =>
-          prisma.tokenRegistry.create({ data: tokenRegistry }),
+          prisma.tokenRegistry.upsert({
+            where: { address: tokenAddr },
+            create: tokenRegistry,
+            update: tokenRegistry,
+          }),
         )
       })
     this.erc721RegistrationSubscriber = this.l1Contract.coordinator.events
@@ -276,7 +280,11 @@ export class Synchronizer extends EventEmitter {
           blockNumber,
         }
         await this.db.write(prisma =>
-          prisma.tokenRegistry.create({ data: tokenRegistry }),
+          prisma.tokenRegistry.upsert({
+            where: { address: tokenAddr },
+            create: tokenRegistry,
+            update: tokenRegistry,
+          }),
         )
       })
   }

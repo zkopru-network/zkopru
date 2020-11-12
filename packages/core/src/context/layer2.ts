@@ -11,14 +11,8 @@ import AsyncLock from 'async-lock'
 import { Bytes32, Address, Uint256 } from 'soltypes'
 import { logger } from '@zkopru/utils'
 import { Field } from '@zkopru/babyjubjub'
-import {
-  OutflowType,
-  UtxoStatus,
-  WithdrawalStatus,
-  Withdrawal,
-  TokenRegistry,
-} from '@zkopru/transaction'
-import { Block, Header, MassDeposit, massDepositHash } from '../block'
+import { OutflowType, Withdrawal, TokenRegistry } from '@zkopru/transaction'
+import { Block, Header, MassDeposit } from '../block'
 import { BootstrapData } from '../node/bootstrap'
 import { SNARKVerifier, VerifyingKey } from '../snark/snark-verifier'
 
@@ -272,67 +266,6 @@ export class L2Chain {
     return canonical.length === 1
   }
 
-  async applyPatch(patch: Patch) {
-    logger.info('layer2.ts: applyPatch()')
-    const { block, header, prevHeader, treePatch, massDeposits } = patch
-    // Apply tree patch
-    const { utxoTreeId, withdrawalTreeId } = await this.grove.applyGrovePatch(
-      treePatch,
-    )
-    await this.nullifyUtxos(block, treePatch.nullifiers)
-    // Update mass deposits inclusion status
-    if (massDeposits) {
-      await this.markMassDepositsAsIncludedIn(massDeposits, block)
-    }
-    await this.markUtxosAsUnspent(patch.treePatch?.utxos || [])
-    await this.markWithdrawalsAsUnfinalized(patch.treePatch?.withdrawals || [])
-    const utxoLeafStartIndex = header.utxoIndex
-      .toBN()
-      .gt(prevHeader.utxoIndex.toBN())
-      ? prevHeader.utxoIndex.toBN() // appending to an exising utxo tree
-      : new BN(0) // started new utxo tree
-    await this.updateUtxoLeafIndexes(
-      utxoTreeId,
-      utxoLeafStartIndex,
-      patch.treePatch?.utxos || [],
-    )
-    const withdrawalLeafStartIndex = header.withdrawalIndex
-      .toBN()
-      .gt(prevHeader.withdrawalIndex.toBN())
-      ? prevHeader.withdrawalIndex.toBN() // appending to an exising utxo tree
-      : new BN(0) // started new utxo tree
-    await this.updateWithdrawalLeafIndexes(
-      withdrawalTreeId,
-      withdrawalLeafStartIndex,
-      patch.treePatch?.withdrawals || [],
-    )
-    await this.updateWithdrawalProof(block, patch.treePatch?.withdrawals || [])
-  }
-
-  private async markUtxosAsUnspent(utxos: Leaf<Field>[]) {
-    await this.db.write(prisma =>
-      prisma.utxo.updateMany({
-        where: {
-          hash: { in: utxos.map(utxo => utxo.hash.toUint256().toString()) },
-        },
-        data: { status: UtxoStatus.UNSPENT },
-      }),
-    )
-  }
-
-  private async markWithdrawalsAsUnfinalized(withdrawals: Leaf<BN>[]) {
-    await this.db.write(prisma =>
-      prisma.withdrawal.updateMany({
-        where: {
-          hash: {
-            in: withdrawals.map(Withdrawal => Withdrawal.hash.toString()),
-          },
-        },
-        data: { status: WithdrawalStatus.UNFINALIZED },
-      }),
-    )
-  }
-
   async applyBootstrap(block: Block, bootstrapData: BootstrapData) {
     this.grove.applyBootstrap(bootstrapData)
     const blockSql = { ...block.toSqlObj() }
@@ -354,133 +287,6 @@ export class L2Chain {
         },
       }),
     )
-  }
-
-  private async markMassDepositsAsIncludedIn(
-    massDepositHashes: Bytes32[],
-    block: Bytes32,
-  ) {
-    const nonIncluded = await this.db.read(prisma =>
-      prisma.massDeposit.findMany({
-        where: {
-          includedIn: null,
-        },
-      }),
-    )
-    const candidates: { [index: string]: MassDepositSql } = {}
-    nonIncluded.forEach(md => {
-      candidates[md.index] = md
-    })
-
-    // TODO need batch query
-    const indexes: string[] = []
-    for (const hash of massDepositHashes) {
-      for (const index of Object.keys(candidates).sort()) {
-        const md = candidates[index]
-        if (
-          hash.eq(
-            massDepositHash({
-              merged: Bytes32.from(md.merged),
-              fee: Uint256.from(md.fee),
-            }),
-          )
-        ) {
-          indexes.push(index)
-          delete candidates[index]
-          break
-        }
-      }
-    }
-    await this.db.write(prisma =>
-      prisma.massDeposit.updateMany({
-        where: { index: { in: indexes } },
-        data: { includedIn: block.toString() },
-      }),
-    )
-  }
-
-  private async nullifyUtxos(blockHash: Bytes32, nullifiers: BN[]) {
-    await this.db.write(prisma =>
-      prisma.utxo.updateMany({
-        where: { nullifier: { in: nullifiers.map(v => v.toString()) } },
-        data: {
-          status: UtxoStatus.SPENT,
-          usedAt: blockHash.toString(),
-        },
-      }),
-    )
-  }
-
-  private async updateUtxoLeafIndexes(
-    utxoTreeId: string,
-    startIndex: BN,
-    utxos: Leaf<Field>[],
-  ) {
-    for (let i = 0; i < utxos.length; i += 1) {
-      const index = startIndex.addn(i)
-      const leaf = utxos[i]
-      const { hash, shouldTrack } = leaf
-      logger.debug(leaf)
-      logger.debug(`hash: ${hash}, shouldTrack: ${shouldTrack}`)
-      if (shouldTrack) {
-        await this.db.write(prisma =>
-          prisma.utxo.update({
-            where: { hash: hash.toString() },
-            data: {
-              index: index.toString(),
-              tree: { connect: { id: utxoTreeId } },
-            },
-          }),
-        )
-      }
-    }
-  }
-
-  private async updateWithdrawalLeafIndexes(
-    withdrawalTreeId: string,
-    startIndex: BN,
-    withdrawals: Leaf<BN>[],
-  ) {
-    for (let i = 0; i < withdrawals.length; i += 1) {
-      const index = startIndex.addn(i)
-      const leaf = withdrawals[i]
-      const { noteHash, shouldTrack } = leaf
-      if (!noteHash) throw Error('Withdrawal leaf should contain note hash')
-      if (shouldTrack) {
-        await this.db.write(prisma =>
-          prisma.withdrawal.update({
-            where: { hash: noteHash.toString() },
-            data: {
-              index: index.toString(),
-              tree: { connect: { id: withdrawalTreeId } },
-            },
-          }),
-        )
-      }
-    }
-  }
-
-  private async updateWithdrawalProof(
-    blockHash: Bytes32,
-    withdrawals: Leaf<BN>[],
-  ) {
-    const myWithdrawals = withdrawals.filter(w => w.shouldTrack)
-    for (const withdrawal of myWithdrawals) {
-      const { noteHash } = withdrawal
-      if (!noteHash) throw Error('Withdrawal does not have note hash')
-      const merkleProof = await this.grove.withdrawalMerkleProof(noteHash)
-      await this.db.write(prisma =>
-        prisma.withdrawal.update({
-          where: { hash: noteHash.toString() },
-          data: {
-            includedIn: blockHash.toString(),
-            siblings: JSON.stringify(
-              merkleProof.siblings.map(sib => sib.toString(10)),
-            ),
-          },
-        }),
-      )
-    }
   }
 
   async getGrovePatch(block: Block): Promise<GrovePatch> {

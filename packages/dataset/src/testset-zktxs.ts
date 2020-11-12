@@ -54,7 +54,6 @@ export async function saveUtxos(db: DB, utxos: Utxo[]): Promise<DB> {
     prisma.lightTree.findOne({ where: { species: TreeSpecies.UTXO } }),
   )
   if (!utxoTree) throw Error('Failed to get utxo gree from grove')
-  const utxoTreeId = utxoTree.id
   for (let i = 0; i < utxos.length; i += 1) {
     const utxo = utxos[i]
     await db.write(prisma =>
@@ -84,7 +83,6 @@ export async function saveUtxos(db: DB, utxos: Utxo[]): Promise<DB> {
             .toString(),
           status: UtxoStatus.NON_INCLUDED,
           index: i.toString(),
-          tree: { connect: { id: utxoTreeId } },
         },
       }),
     )

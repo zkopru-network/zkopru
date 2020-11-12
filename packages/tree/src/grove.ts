@@ -309,16 +309,14 @@ export class Grove {
     const utxo = await this.db.read(prisma =>
       prisma.utxo.findOne({
         where: { hash: hash.toString(10) },
-        include: { tree: true },
       }),
     )
     if (!utxo) throw Error('Failed to find the utxo')
-    if (!utxo.tree) throw Error('It is not included in a block yet')
     if (!utxo.index) throw Error('It is not included in a block yet')
 
     const cachedSiblings = await this.db.preset.getCachedSiblings(
       this.config.utxoTreeDepth,
-      utxo.tree.id,
+      this.utxoTree.metadata.id,
       utxo.index,
     )
     let root: Field = this.utxoTree.root()
@@ -349,16 +347,14 @@ export class Grove {
     const withdrawal = await this.db.read(prisma =>
       prisma.withdrawal.findOne({
         where: { hash: hash.toString(10) },
-        include: { tree: true },
       }),
     )
     if (!withdrawal) throw Error('Failed to find the withdrawal')
-    if (!withdrawal.tree) throw Error('It is not included in a block yet')
     if (!withdrawal.index) throw Error('It is not included in a block yet')
 
     const cachedSiblings = await this.db.preset.getCachedSiblings(
       this.config.withdrawalTreeDepth,
-      withdrawal.tree.id,
+      this.withdrawalTree.metadata.id,
       withdrawal.index,
     )
     let root: BN = this.withdrawalTree.root()

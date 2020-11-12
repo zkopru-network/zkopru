@@ -95,6 +95,15 @@ export class Utxo extends Note {
     return outflow
   }
 
+  static nullifier(nullifierSeed: Field, leafIndex: Field): Field {
+    const hash = poseidon([
+      nullifierSeed.toBigInt(),
+      leafIndex.toBigInt(),
+    ]).toString()
+    const val = Field.from(hash)
+    return val
+  }
+
   static decrypt({
     utxoHash,
     memo,
