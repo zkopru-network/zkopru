@@ -59,8 +59,7 @@ export class LightValidator extends Validator {
       logger.warn('Challenge exists')
       // Do not send challenge tx to save gas.
       // TODO give option to send challenge tx also in the light node.
-    } else {
-      return result
+      // return result.tx
     }
     return undefined
   }

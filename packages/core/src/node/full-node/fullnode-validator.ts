@@ -58,6 +58,9 @@ export class FullValidator extends Validator {
         return result
       }),
     )
+    for (const result of offchainResult.filter(result => result.slashable)) {
+      logger.warn(`challenge: ${result.reason}`)
+    }
     const onchainResult: OnchainValidation[] = await Promise.all(
       fnCalls.map(fnCall => {
         const result = onchainValidator[fnCall.name].call(
