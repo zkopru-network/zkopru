@@ -261,7 +261,7 @@ export abstract class ValidatorBase {
       throw Error('Utxo tree is returning invalid starting leaf proof.')
     }
     const fnCalls: FnCall[] = [
-      // toFnCall('validateUTXOIndex', block, parent, deposits),
+      toFnCall('validateUTXOIndex', block, parent, deposits),
       toFnCall(
         'validateUTXORoot',
         block,

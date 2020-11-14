@@ -52,7 +52,7 @@ contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
                 }
             }
         }
-        uint256 numOfSubTrees = utxoLen / UTXO_SUB_TREE_SIZE;
+        uint256 numOfSubTrees = utxoLen / UTXO_SUB_TREE_SIZE + (utxoLen % UTXO_SUB_TREE_SIZE != 0 ? 1 : 0);
         uint256 nextIndex = parentHeader.utxoIndex + UTXO_SUB_TREE_SIZE * numOfSubTrees;
         if (nextIndex != _block.header.utxoIndex) {
             // code U1: The updated number of total UTXO is not correct.

@@ -164,6 +164,8 @@ module.exports = function migration(deployer, network, accounts) {
       await zkopru.completeSetup()
       if (network === 'testnet') {
         // Register as coordinator
+        const configurable = await Configurable.at(zkopru.address)
+        await configurable.setChallengePeriod(30)
         await instances.burnAuction.register({ value: '32000000000000000000' })
       }
     })

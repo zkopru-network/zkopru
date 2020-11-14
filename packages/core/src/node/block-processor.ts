@@ -329,19 +329,25 @@ export class BlockProcessor extends EventEmitter {
   }
 
   private async applyPatch(patch: Patch) {
-    logger.info('layer2.ts: applyPatch()')
+    logger.trace('layer2.ts: applyPatch()')
     const { block, treePatch, massDeposits } = patch
-    // Apply tree patch
-    await this.layer2.grove.applyGrovePatch(treePatch)
     await this.nullifyUsedUtxos(block, treePatch.nullifiers)
+    logger.trace('nullify used utxos')
     // Update mass deposits inclusion status
     if (massDeposits) {
       await this.markMassDepositsAsIncludedIn(massDeposits, block)
     }
+    logger.trace('mark mass deposits included in the given block')
     await this.markUtxosAsUnspent(patch.treePatch?.utxos || [])
+    logger.trace('mark utxos as unspent')
     await this.markWithdrawalsAsUnfinalized(patch.treePatch?.withdrawals || [])
+    logger.trace('mark withdrawals as unfinalized')
+    // Apply tree patch
+    await this.layer2.grove.applyGrovePatch(treePatch)
     await this.updateMyUtxos(this.tracker.transferTrackers, patch)
-    await this.updateMyWithdrawals(patch)
+    logger.trace('update my utxos')
+    await this.updateMyWithdrawals(this.tracker.withdrawalTrackers, patch)
+    logger.trace('update my withdrawals')
   }
 
   private async markUtxosAsUnspent(utxos: Leaf<Field>[]) {
@@ -471,7 +477,7 @@ export class BlockProcessor extends EventEmitter {
     )
   }
 
-  private async updateMyWithdrawals(patch: Patch) {
+  private async updateMyWithdrawals(accounts: Address[], patch: Patch) {
     const myStoredWithdrawals = await this.db.read(prisma =>
       prisma.withdrawal.findMany({
         where: {
@@ -482,10 +488,11 @@ export class BlockProcessor extends EventEmitter {
               return leaf.noteHash?.toString()
             }),
           },
+          to: { in: accounts.map(account => account.toString()) },
         },
       }),
     )
-    const startingWithdrawalIndex = patch.prevHeader.utxoIndex.toBN()
+    const startingWithdrawalIndex = patch.prevHeader.withdrawalIndex.toBN()
     const withdrawalsToUpdate: {
       hash: string
       index: string
@@ -494,16 +501,15 @@ export class BlockProcessor extends EventEmitter {
     }[] = []
     for (const withdrawalData of myStoredWithdrawals) {
       const orderInArr = patch.treePatch.withdrawals.findIndex(withdrawal =>
-        new BN(withdrawalData.hash).eq(withdrawal.hash),
+        new BN(withdrawalData.withdrawalHash).eq(withdrawal.hash),
       )
       assert(orderInArr >= 0)
-      const index = Field.from(
-        startingWithdrawalIndex.addn(orderInArr).toString(),
-      )
+      const index = startingWithdrawalIndex.addn(orderInArr)
       const { noteHash } = patch.treePatch.withdrawals[orderInArr]
       if (!noteHash) throw Error('Withdrawal does not have note hash')
       const merkleProof = await this.layer2.grove.withdrawalMerkleProof(
         noteHash,
+        index,
       )
       withdrawalsToUpdate.push({
         hash: withdrawalData.hash,

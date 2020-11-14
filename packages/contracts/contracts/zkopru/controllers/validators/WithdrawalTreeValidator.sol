@@ -45,7 +45,7 @@ contract WithdrawalTreeValidator is Storage, IWithdrawalTreeValidator {
                 }
             }
         }
-        uint256 numOfSubTrees = withdrawalLen / WITHDRAWAL_SUB_TREE_SIZE;
+        uint256 numOfSubTrees = withdrawalLen / WITHDRAWAL_SUB_TREE_SIZE + (withdrawalLen % WITHDRAWAL_SUB_TREE_SIZE != 0 ? 1 : 0);
         uint256 nextIndex = parentHeader.withdrawalIndex + WITHDRAWAL_SUB_TREE_SIZE * numOfSubTrees;
         if (nextIndex != l2Block.header.withdrawalIndex) {
             // code W1: The updated number of total Withdarawls is not correct.
@@ -75,7 +75,7 @@ contract WithdrawalTreeValidator is Storage, IWithdrawalTreeValidator {
         Block memory l2Block = Deserializer.blockFromCalldataAt(0);
         Header memory parentHeader = Deserializer.headerFromCalldataAt(1);
         require(l2Block.header.parentBlock == parentHeader.hash(), "Invalid prev header");
-        uint256[] memory withdrawals = _getWithdrawals(l2Block.body.txs);
+        uint256[] memory withdrawals = _getWithdrawalHashes(l2Block.body.txs);
         // Check validity of the roll up using the storage based Poseidon sub-tree roll up
         uint256 computedRoot = SubTreeLib.appendSubTree(
             Hash.keccak(),
@@ -91,7 +91,7 @@ contract WithdrawalTreeValidator is Storage, IWithdrawalTreeValidator {
     }
 
     /** Computes challenge here */
-    function _getWithdrawals(
+    function _getWithdrawalHashes(
         Transaction[] memory txs
     ) private pure returns (uint256[] memory withdrawals) {
         // Calculate the length of the withdrawal array
@@ -111,8 +111,18 @@ contract WithdrawalTreeValidator is Storage, IWithdrawalTreeValidator {
         for (uint256 i = 0; i < txs.length; i++) {
             Transaction memory transaction = txs[i];
             for(uint256 j = 0; j < transaction.outflow.length; j++) {
-                if(txs[i].outflow[j].outflowType == uint8(OutflowType.Withdrawal)) {
-                    withdrawals[index++] = transaction.outflow[j].note;
+                Outflow memory outflow = transaction.outflow[j];
+                if(outflow.outflowType == uint8(OutflowType.Withdrawal)) {
+                    bytes32 withdrawalHash = keccak256(abi.encodePacked(
+                        outflow.note,
+                        outflow.publicData.to,
+                        outflow.publicData.eth,
+                        outflow.publicData.token,
+                        outflow.publicData.amount,
+                        outflow.publicData.nft,
+                        outflow.publicData.fee
+                    ));
+                    withdrawals[index++] = uint256(withdrawalHash);
                 }
             }
         }

@@ -343,19 +343,23 @@ export class Grove {
     return proof
   }
 
-  async withdrawalMerkleProof(hash: BN): Promise<MerkleProof<BN>> {
+  async withdrawalMerkleProof(
+    noteHash: BN,
+    index?: BN,
+  ): Promise<MerkleProof<BN>> {
     const withdrawal = await this.db.read(prisma =>
       prisma.withdrawal.findOne({
-        where: { hash: hash.toString(10) },
+        where: { hash: noteHash.toString(10) },
       }),
     )
     if (!withdrawal) throw Error('Failed to find the withdrawal')
-    if (!withdrawal.index) throw Error('It is not included in a block yet')
+    const leafIndex = index?.toString() || withdrawal.index
+    if (!leafIndex) throw Error('It is not included in a block yet')
 
     const cachedSiblings = await this.db.preset.getCachedSiblings(
       this.config.withdrawalTreeDepth,
       this.withdrawalTree.metadata.id,
-      withdrawal.index,
+      leafIndex,
     )
     let root: BN = this.withdrawalTree.root()
     const siblings = [...this.config.withdrawalHasher.preHash.slice(0, -1)]
@@ -372,7 +376,7 @@ export class Grove {
     })
     const proof = {
       root,
-      index: toBN(withdrawal.index),
+      index: toBN(leafIndex),
       leaf: toBN(withdrawal.withdrawalHash),
       siblings,
     }

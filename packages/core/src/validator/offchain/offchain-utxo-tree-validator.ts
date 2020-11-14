@@ -20,11 +20,14 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
 
   SUB_TREE_DEPTH: number
 
+  SUB_TREE_SIZE: number
+
   constructor(layer2: L2Chain) {
     super(layer2)
     this.hasher = poseidonHasher(layer2.config.utxoTreeDepth)
     this.MAX_UTXO = new BN(1).shln(layer2.config.utxoTreeDepth)
     this.SUB_TREE_DEPTH = layer2.config.utxoSubTreeDepth
+    this.SUB_TREE_SIZE = layer2.config.utxoSubTreeSize
   }
 
   private static checkSubmittedDeposits(
@@ -77,12 +80,13 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
         ),
       ]
     }, [] as ZkOutflow[])
-    const totalNumOfUtxos = deposits.length + utxoOutflowArr.length
+    const numOfUtxos = deposits.length + utxoOutflowArr.length
+    const numOfSubTrees = Math.ceil(numOfUtxos / this.SUB_TREE_SIZE)
+    const nextIndex = parentHeader.utxoIndex
+      .toBN()
+      .addn(this.SUB_TREE_SIZE * numOfSubTrees)
     return {
-      slashable: !block.header.utxoIndex
-        .toBN()
-        .sub(parentHeader.utxoIndex.toBN())
-        .eqn(totalNumOfUtxos),
+      slashable: !block.header.utxoIndex.toBN().eq(nextIndex),
       reason: CODE.U1,
     }
   }
