@@ -284,7 +284,9 @@ export class TxBuilder {
           )}`,
         )
       }
-      spendings.push(spending)
+      if (spending.eth().gtn(0)) {
+        spendings.push(spending)
+      }
     }
 
     // Calculate ETH change
