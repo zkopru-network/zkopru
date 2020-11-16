@@ -38,12 +38,20 @@ import {
 import { GroveSnapshot } from '~tree/grove'
 import {
   buildZkTxAliceSendEthToBob,
-  buildZkTxBobSendERC20ToCarl,
+  buildZkTxBobSendERC20ToCarl as buildZkTxBobSendErc20ToCarl,
   buildZkTxCarlSendNftToAlice,
-  testSendZkTxsToCoordinator,
-  testNewBlockProposal,
-  testNewSpendableUtxos,
+  testRound1SendZkTxsToCoordinator,
+  testRound1NewBlockProposal,
+  testRound1NewSpendableUtxos,
 } from './cases/6_zk_tx_round_1'
+import {
+  buildZkTxAliceWithrawNFT,
+  buildZkTxBobWithdrawEth,
+  buildZkTxCarlWithdrawErc20,
+  testRound2NewBlockProposal,
+  testRound2NewSpendableUtxos,
+  testRound2SendZkTxsToCoordinator,
+} from './cases/7_zk_tx_round_2'
 
 jestExtendToCompareBigNumber(expect)
 
@@ -157,11 +165,16 @@ describe('testnet', () => {
     })
   })
   describe('6: Zk Transactions round 1', () => {
-    let aliceZkTx: ZkTx
-    let bobZkTx: ZkTx
-    let carlZkTx: ZkTx
+    let aliceTransfer: ZkTx
+    let bobTransfer: ZkTx
+    let carlTransfer: ZkTx
     let prevLatestBlock: string
-    const subCtx = () => ({ aliceZkTx, bobZkTx, carlZkTx, prevLatestBlock })
+    const subCtx = () => ({
+      aliceTransfer,
+      bobTransfer,
+      carlTransfer,
+      prevLatestBlock,
+    })
     describe('users send zk txs to the coordinator', () => {
       beforeAll(async () => {
         do {
@@ -174,43 +187,69 @@ describe('testnet', () => {
         } while (!prevLatestBlock)
       }, 30000)
       it('create 3 transactions: alice transfer 1 Ether to Bob. Bob transfer 1 ERC20 to Carl, and Carl transfer 1 nft to Alice', async () => {
-        aliceZkTx = await buildZkTxAliceSendEthToBob(ctx)
-        bobZkTx = await buildZkTxBobSendERC20ToCarl(ctx)
-        carlZkTx = await buildZkTxCarlSendNftToAlice(ctx)
+        aliceTransfer = await buildZkTxAliceSendEthToBob(ctx)
+        bobTransfer = await buildZkTxBobSendErc20ToCarl(ctx)
+        carlTransfer = await buildZkTxCarlSendNftToAlice(ctx)
       }, 300000)
       it(
         'they should send zk transactions to the coordinator',
-        testSendZkTxsToCoordinator(ctx, subCtx),
+        testRound1SendZkTxsToCoordinator(ctx, subCtx),
         60000,
       )
       it(
         'coordinator should propose a new block and wallet clients subscribe them',
-        testNewBlockProposal(ctx, subCtx),
+        testRound1NewBlockProposal(ctx, subCtx),
         600000,
       )
       it(
         'wallets should have new spendable utxos as they sync the new block',
-        testNewSpendableUtxos(ctx),
+        testRound1NewSpendableUtxos(ctx),
         40000,
       )
     })
-    describe('coordinitator creates the 2nd block including zk txs', () => {
-      it.todo('should contain 3 valid txs')
-      it.todo('should not include the invalid tx')
-      it.todo('should update the utxo tree')
-      it.todo('should update the nullifier tree')
-    })
-    describe('users subscribe Proposal() event and try to decrypt memos', () => {
-      it.todo('bob should receive Ether')
-      it.todo('carl should receive ERC20')
-      it.todo('alice should receive ERC721')
-    })
   })
-  describe('6: Zk Transactions round 2', () => {
-    describe('users send zk txs to the coordinator', () => {
-      it.todo('alice creates a zk tx to send ERC721 to Bob')
-      it.todo('carl creates a zk tx to send ERC20 to alice')
-      it.todo('bob creates a zk tx to merge his utxos into 1 utxo')
+  describe('7: Zk Transactions round 2', () => {
+    let aliceWithdrawal: ZkTx
+    let bobWithdrawal: ZkTx
+    let carlWithdrawal: ZkTx
+    let prevLatestBlock: string
+    const subCtx = () => ({
+      aliceWithdrawal,
+      bobWithdrawal,
+      carlWithdrawal,
+      prevLatestBlock,
+    })
+    describe('users withdraw their assets from the layer 2', () => {
+      beforeAll(async () => {
+        do {
+          const latest = await context.coordinator.node().latestBlock()
+          if (latest !== null) {
+            prevLatestBlock = latest
+            break
+          }
+          await sleep(1000)
+        } while (!prevLatestBlock)
+      }, 30000)
+      it('create 3 transactions: alice withdraw 1 NFT. Bob withdraw 1 ETH, and Carl withdraw 1 ERC20', async () => {
+        aliceWithdrawal = await buildZkTxAliceWithrawNFT(ctx)
+        bobWithdrawal = await buildZkTxBobWithdrawEth(ctx)
+        carlWithdrawal = await buildZkTxCarlWithdrawErc20(ctx)
+      }, 300000)
+      it(
+        'they should send zk transactions to the coordinator',
+        testRound2SendZkTxsToCoordinator(ctx, subCtx),
+        60000,
+      )
+      it(
+        'coordinator should propose a new block and wallet clients subscribe them',
+        testRound2NewBlockProposal(ctx, subCtx),
+        600000,
+      )
+      it(
+        'wallets should have new spendable utxos as they sync the new block',
+        testRound2NewSpendableUtxos(ctx),
+        40000,
+      )
     })
     describe('coordinator creates the 3rd block including zk txs', () => {
       it.todo('should contain 3 valid txs')
