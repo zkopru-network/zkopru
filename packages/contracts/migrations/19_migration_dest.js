@@ -73,10 +73,6 @@ module.exports = function migration(deployer, network, accounts) {
     await dest.makeConfigurable(instances.configurable.address)
     const configurable = await Configurable.at(dest.address)
     await configurable.setConsensusProvider(instances.burnAuction.address)
-    if (network === 'integrationtest') {
-      // integration test will run the below steps manually.
-      return
-    }
     // Setup zkSNARKs
     // Setup migrations
     const keyDir = path.join(__dirname, '../keys/vks')
