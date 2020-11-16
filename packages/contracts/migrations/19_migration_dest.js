@@ -44,32 +44,22 @@ module.exports = function migration(deployer, network, accounts) {
     instances.migrationValidator = await MigrationValidator.deployed()
     // consensus
     instances.burnAuction = await BurnAuction.deployed()
-    console.log(
-      Object.keys(instances).map(key => `${key}: ${instances[key].address}`),
-    )
-    const zkopru = await Zkopru.deployed()
-    instances.zkopru = zkopru
-    console.log(`Deployed ZKOPRU at:\n${zkopru.address}`)
+    // migration source
+    const source = await Zkopru.deployed()
+    // migration destination
+    const dest = await Zkopru.new()
+
+    console.log(`Deployed ZKOPRU 2 at:\n${dest.address}`)
     // Save deployed addresses
     save({
-      name: 'TestERC20',
-      address: instances.erc20.address,
-      network: deployer.network_id,
-    })
-    save({
-      name: 'TestERC721',
-      address: instances.erc721.address,
-      network: deployer.network_id,
-    })
-    save({
-      name: 'Zkopru',
-      address: zkopru.address,
+      name: 'Zkopru2',
+      address: dest.address,
       network: deployer.network_id,
     })
     // Setup proxy
-    await zkopru.makeCoordinatable(instances.coordinatable.address)
-    await zkopru.makeUserInteractable(instances.ui.address)
-    await zkopru.makeChallengeable(
+    await dest.makeCoordinatable(instances.coordinatable.address)
+    await dest.makeUserInteractable(instances.ui.address)
+    await dest.makeChallengeable(
       instances.challengeable.address,
       instances.depositValidator.address,
       instances.headerValidator.address,
@@ -79,9 +69,9 @@ module.exports = function migration(deployer, network, accounts) {
       instances.nullifierTreeValidator.address,
       instances.txValidator.address,
     )
-    await zkopru.makeMigratable(instances.migratable.address)
-    await zkopru.makeConfigurable(instances.configurable.address)
-    const configurable = await Configurable.at(zkopru.address)
+    await dest.makeMigratable(instances.migratable.address)
+    await dest.makeConfigurable(instances.configurable.address)
+    const configurable = await Configurable.at(dest.address)
     await configurable.setConsensusProvider(instances.burnAuction.address)
     if (network === 'integrationtest') {
       // integration test will run the below steps manually.
@@ -111,21 +101,21 @@ module.exports = function migration(deployer, network, accounts) {
             path.join(keyDir, `/zk_transaction_${nIn}_${nOut}.vk.json`),
           ),
         )
-        await zkopru.registerVk(...vkToInput(nIn, nOut, vk))
+        await dest.registerVk(...vkToInput(nIn, nOut, vk))
       }
     }
     // await wizard.allowMigrants(...)
 
-    const coordinatable = await Coordinatable.at(zkopru.address)
+    const coordinatable = await Coordinatable.at(dest.address)
     // register erc20
     await coordinatable.registerERC20(instances.erc20.address)
     // register erc721
     await coordinatable.registerERC721(instances.erc721.address)
     // Complete setup
-    await zkopru.completeSetup()
+    await dest.completeSetup()
     if (network === 'testnet') {
       // Register as coordinator
-      const configurable = await Configurable.at(zkopru.address)
+      const configurable = await Configurable.at(dest.address)
       await configurable.setChallengePeriod(30)
       await instances.burnAuction.register({ value: '32000000000000000000' })
     }
