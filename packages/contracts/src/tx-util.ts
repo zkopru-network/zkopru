@@ -6,13 +6,13 @@ import Transaction from 'ethereumjs-tx'
 import { TransactionObject, Tx } from './contracts/types'
 
 export class TxUtil {
-  static async sendTx<T>(
+  static async getSignedTransaction<T>(
     tx: TransactionObject<T>,
     address: string,
     web3: Web3,
     account: Account,
     option?: Tx,
-  ): Promise<TransactionReceipt | undefined> {
+  ): Promise<string> {
     let gas!: number
     let gasPrice!: string
     let nonce!: number
@@ -55,11 +55,26 @@ export class TxUtil {
       ? account.privateKey.substr(2)
       : account.privateKey
     ethTx.sign(Buffer.from(hexStr, 'hex'))
+    return `0x${ethTx.serialize().toString('hex')}`
+  }
+
+  static async sendTx<T>(
+    tx: TransactionObject<T>,
+    address: string,
+    web3: Web3,
+    account: Account,
+    option?: Tx,
+  ): Promise<TransactionReceipt | undefined> {
+    const signedTx = await this.getSignedTransaction(
+      tx,
+      address,
+      web3,
+      account,
+      option,
+    )
     let receipt: TransactionReceipt
     try {
-      receipt = await web3.eth.sendSignedTransaction(
-        `0x${ethTx.serialize().toString('hex')}`,
-      )
+      receipt = await web3.eth.sendSignedTransaction(signedTx)
     } catch (err) {
       throw Error(err)
     }
