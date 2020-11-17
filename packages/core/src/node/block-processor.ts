@@ -296,7 +296,6 @@ export class BlockProcessor extends EventEmitter {
         erc20Amount: output.data.erc20Amount.toUint256().toString(),
         nft: output.data.nft.toUint256().toString(),
         fee: output.data.fee.toUint256().toString(),
-        status: WithdrawalStatus.WITHDRAWABLE,
       }
       logger.info(`found my withdrawal: ${withdrawalSql.hash}`)
       await this.db.write(prisma =>
@@ -366,7 +365,10 @@ export class BlockProcessor extends EventEmitter {
       prisma.withdrawal.updateMany({
         where: {
           hash: {
-            in: withdrawals.map(Withdrawal => Withdrawal.hash.toString()),
+            in: withdrawals.map(withdrawal => {
+              assert(withdrawal.noteHash)
+              return withdrawal.noteHash.toString()
+            }),
           },
         },
         data: { status: WithdrawalStatus.UNFINALIZED },
