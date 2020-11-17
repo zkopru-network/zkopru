@@ -12,7 +12,7 @@ import {
 import { OutflowType, Withdrawal } from '@zkopru/transaction'
 import { Leaf } from '@zkopru/tree'
 import { logger, root, bnToBytes32, bnToUint256 } from '@zkopru/utils'
-import { Address, Bytes32 } from 'soltypes'
+import { Address } from 'soltypes'
 import BN from 'bn.js'
 import { GeneratorBase } from '../interfaces/generator-base'
 
@@ -26,7 +26,7 @@ export class BlockGenerator extends GeneratorBase {
     let consumedBytes = 32 // bytes length
     let aggregatedFee: Field = Field.zero
 
-    const { layer2 } = this.context.node.context
+    const { layer2 } = this.context.node
     // 1. pick mass deposits
     const pendingMassDeposits = await layer2.getPendingMassDeposits()
     consumedBytes += pendingMassDeposits.calldataSize
@@ -87,11 +87,11 @@ export class BlockGenerator extends GeneratorBase {
       return [...arr, ...tx.inflow.map(inflow => inflow.nullifier)]
     }, [] as Field[])
 
-    const latest = await this.context.node.latestBlock()
-    logger.info(`Trying to create a child block of ${latest}`)
-    if (!latest) {
+    if (!this.context.node.synchronizer.isSynced()) {
       throw Error('Layer 2 chain is not synced yet.')
     }
+    const latest = await this.context.node.latestBlock()
+    logger.info(`Trying to create a child block of ${latest}`)
     // TODO acquire lock during gen block
     const massMigrations: MassMigration[] = getMassMigrations(txs)
     const expectedGrove = await layer2.grove.dryPatch({
@@ -110,7 +110,7 @@ export class BlockGenerator extends GeneratorBase {
     const { massDeposits } = pendingMassDeposits
     const header: Header = {
       proposer: Address.from(this.context.account.address),
-      parentBlock: Bytes32.from(latest),
+      parentBlock: latest,
       fee: aggregatedFee.toUint256(),
       utxoRoot: expectedGrove.utxoTreeRoot.toUint256(),
       utxoIndex: expectedGrove.utxoTreeIndex.toUint256(),

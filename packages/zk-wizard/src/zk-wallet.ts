@@ -90,7 +90,7 @@ export class ZkWallet {
     this.node.tracker.addAccounts(...accounts)
     if (account) this.setAccount(account)
     this.wizard = new ZkWizard({
-      utxoTree: this.node.context.layer2.grove.utxoTree,
+      utxoTree: this.node.layer2.grove.utxoTree,
       path: snarkKeyPath,
     })
   }
@@ -234,7 +234,7 @@ export class ZkWallet {
       erc721: {},
     }
     const promises: (() => Promise<void>)[] = []
-    const { web3 } = this.node.context.layer1
+    const { web3 } = this.node.layer1
     promises.push(async () => {
       balance.eth = await web3.eth.getBalance(targetAccount.ethAddress)
     })
@@ -271,7 +271,7 @@ export class ZkWallet {
       throw Error('Provide account parameter or set default account')
     const promises: (() => Promise<void>)[] = []
     const nfts: string[] = []
-    const { web3 } = this.node.context.layer1
+    const { web3 } = this.node.layer1
     // 0x4f6ccce7 = tokenOfOwnerByIndex func sig
     const supportEnumeration = await Layer1.getIERC721Enumerable(
       web3,
@@ -407,7 +407,7 @@ export class ZkWallet {
     if (!withdrawal.includedIn) throw Error('No block hash which includes it')
     if (!withdrawal.index) throw Error('No leaf index')
     const siblings: string[] = JSON.parse(withdrawal.siblings)
-    const tx = this.node.context.layer1.user.methods.withdraw(
+    const tx = this.node.layer1.user.methods.withdraw(
       withdrawal.hash,
       withdrawal.to,
       withdrawal.eth,
@@ -419,10 +419,7 @@ export class ZkWallet {
       withdrawal.index,
       siblings,
     )
-    const receipt = await this.node.context.layer1.sendTx(
-      tx,
-      this.account.ethAccount,
-    )
+    const receipt = await this.node.layer1.sendTx(tx, this.account.ethAccount)
     if (receipt) {
       await this.db.write(prisma =>
         prisma.withdrawal.update({
@@ -494,7 +491,7 @@ export class ZkWallet {
     signer?: Account
     option?: Tx
   }): Promise<TransactionReceipt | undefined> {
-    const { web3 } = this.node.context.layer1
+    const { web3 } = this.node.layer1
     const from = signer || this.account?.ethAccount
     if (!from) throw Error(`You need to set 'from' account`)
     const result = await TxUtil.sendTx(
@@ -566,9 +563,7 @@ export class ZkWallet {
         from: fromAccount,
         encryptTo,
       })
-      const snarkValid = await this.node.context.layer2.snarkVerifier.verifyTx(
-        zkTx,
-      )
+      const snarkValid = await this.node.layer2.snarkVerifier.verifyTx(zkTx)
       assert(snarkValid, 'generated snark proof is invalid')
       for (const outflow of tx.outflow) {
         await this.saveOutflow(outflow)
@@ -611,7 +606,7 @@ export class ZkWallet {
       logger.error('Account is not set')
       return false
     }
-    const tx = this.node.context.layer1.user.methods.deposit(
+    const tx = this.node.layer1.user.methods.deposit(
       note.owner.spendingPubKey().toString(),
       note.salt.toUint256().toString(),
       note
@@ -632,16 +627,12 @@ export class ZkWallet {
         .toString(),
       fee.toUint256().toString(),
     )
-    const receipt = await this.node.context.layer1.sendTx(
-      tx,
-      this.account.ethAccount,
-      {
-        value: note
-          .eth()
-          .add(fee)
-          .toString(),
-      },
-    )
+    const receipt = await this.node.layer1.sendTx(tx, this.account.ethAccount, {
+      value: note
+        .eth()
+        .add(fee)
+        .toString(),
+    })
     // TODO check what web3 methods returns when it failes
     if (receipt) {
       await this.saveOutflow(note)

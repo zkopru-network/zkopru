@@ -3,6 +3,7 @@ import { ZkAccount } from '@zkopru/account'
 import { DB } from '@zkopru/prisma'
 import { Grove, poseidonHasher, keccakHasher } from '@zkopru/tree'
 import { logger } from '@zkopru/utils'
+import { Bytes32 } from 'soltypes'
 import { L1Contract } from '../context/layer1'
 import { L2Chain } from '../context/layer2'
 import { BootstrapHelper } from './bootstrap'
@@ -18,10 +19,14 @@ export class ZkopruNode {
 
   tracker: Tracker
 
-  context: {
+  private context: {
     layer1: L1Contract
     layer2: L2Chain
   }
+
+  layer1: L1Contract
+
+  layer2: L2Chain
 
   blockProcessor: BlockProcessor
 
@@ -54,6 +59,8 @@ export class ZkopruNode {
       layer1: l1Contract,
       layer2: l2Chain,
     }
+    this.layer1 = this.context.layer1
+    this.layer2 = this.context.layer2
     this.synchronizer = synchronizer
     this.running = false
     this.blockProcessor = blockProcessor
@@ -90,12 +97,21 @@ export class ZkopruNode {
     }
   }
 
-  async latestBlock(): Promise<string | null> {
-    if (this.synchronizer.isSynced()) {
-      const latestHash = await this.context.layer2.getLatestVerified()
-      return latestHash
-    }
-    return null
+  async latestBlock(): Promise<Bytes32> {
+    const lastVerifiedProposal = (
+      await this.db.read(prisma =>
+        prisma.proposal.findMany({
+          where: {
+            AND: [{ verified: true }, { isUncle: null }],
+          },
+          orderBy: { proposalNum: 'desc' },
+          include: { block: { include: { header: true } } },
+          take: 1,
+        }),
+      )
+    ).pop()
+    if (!lastVerifiedProposal) throw Error('no verified proposal')
+    return Bytes32.from(lastVerifiedProposal.hash)
   }
 
   static async initLayer2(

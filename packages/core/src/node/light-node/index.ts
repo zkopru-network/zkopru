@@ -54,10 +54,8 @@ export class LightNode extends ZkopruNode {
 
   async bootstrap() {
     if (!this.bootstrapHelper) return
-    const latest = await this.context.layer1.upstream.methods.latest().call()
-    const latestBlockFromDB = await this.context.layer2.getBlock(
-      Bytes32.from(latest),
-    )
+    const latest = await this.layer1.upstream.methods.latest().call()
+    const latestBlockFromDB = await this.layer2.getBlock(Bytes32.from(latest))
     if (latestBlockFromDB && latestBlockFromDB.verified) {
       return
     }
@@ -66,22 +64,22 @@ export class LightNode extends ZkopruNode {
       logger.error('bootstrap api is not giving proposalTx')
       return
     }
-    const proposalData = await this.context.layer1.web3.eth.getTransaction(
+    const proposalData = await this.layer1.web3.eth.getTransaction(
       bootstrapData.proposal.proposalTx,
     )
     // console.log('bootstrap should give proposal num and etc', proposalData)
     const block = Block.fromTx(proposalData)
     const headerProof = headerHash(block.header).eq(Bytes32.from(latest))
     const utxoMerkleProof = verifyProof(
-      this.context.layer2.grove.config.utxoHasher,
+      this.layer2.grove.config.utxoHasher,
       bootstrapData.utxoStartingLeafProof,
     )
     const withdrawalMerkleProof = verifyProof(
-      this.context.layer2.grove.config.withdrawalHasher,
+      this.layer2.grove.config.withdrawalHasher,
       bootstrapData.withdrawalStartingLeafProof,
     )
     if (headerProof && utxoMerkleProof && withdrawalMerkleProof) {
-      await this.context.layer2.applyBootstrap(block, bootstrapData)
+      await this.layer2.applyBootstrap(block, bootstrapData)
     }
   }
 

@@ -8,7 +8,7 @@ export class BlockProposer extends ProposerBase {
     if (!this.context.gasPrice) {
       throw Error('coordinator.js: Gas price is not synced')
     }
-    const { layer1, layer2 } = this.context.node.context
+    const { layer1, layer2 } = this.context.node
     const siblingProposals = await layer2.db.read(prisma =>
       prisma.proposal.findMany({
         where: {

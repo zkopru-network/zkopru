@@ -58,7 +58,7 @@ export class CoordinatorApi {
     logger.info(txData)
     const zkTx = ZkTx.decode(Buffer.from(txData, 'hex'))
     // const zkTx = ZkTx.decode(txData)
-    const { layer2 } = this.context.node.context
+    const { layer2 } = this.context.node
     const result = await layer2.snarkVerifier.verifyTx(zkTx)
     if (result) {
       logger.info('add a transaction')
@@ -71,7 +71,7 @@ export class CoordinatorApi {
   }
 
   private instantWithdrawHandler: RequestHandler = async (req, res) => {
-    const { layer1, layer2 } = this.context.node.context
+    const { layer1, layer2 } = this.context.node
     const withdrawalData = req.body
     const withdrawal = JSON.parse(withdrawalData)
     const {
@@ -144,7 +144,7 @@ export class CoordinatorApi {
   }
 
   private bootstrapHandler: RequestHandler = async (req, res) => {
-    const { layer1, layer2 } = this.context.node.context
+    const { layer1, layer2 } = this.context.node
     const { hash } = req.query
     logger.info(`bootstrap called for ${hash}`)
     let hashForBootstrapBlock: string

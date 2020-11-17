@@ -8,6 +8,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable jest/no-hooks */
 import { ZkTx } from '@zkopru/transaction'
+import { Bytes32 } from 'soltypes'
 import { Context, initContext, terminate } from './cases/context'
 import {
   testAliceAccount,
@@ -52,6 +53,7 @@ import {
   testRound2NewSpendableUtxos,
   testRound2SendZkTxsToCoordinator,
 } from './cases/7_zk_tx_round_2'
+import { testGetWithdrawablesOfAlice } from './cases/8_instant_withdrawals'
 
 jestExtendToCompareBigNumber(expect)
 
@@ -168,7 +170,7 @@ describe('testnet', () => {
     let aliceTransfer: ZkTx
     let bobTransfer: ZkTx
     let carlTransfer: ZkTx
-    let prevLatestBlock: string
+    let prevLatestBlock: Bytes32
     const subCtx = () => ({
       aliceTransfer,
       bobTransfer,
@@ -212,7 +214,7 @@ describe('testnet', () => {
     let aliceWithdrawal: ZkTx
     let bobWithdrawal: ZkTx
     let carlWithdrawal: ZkTx
-    let prevLatestBlock: string
+    let prevLatestBlock: Bytes32
     const subCtx = () => ({
       aliceWithdrawal,
       bobWithdrawal,
@@ -251,34 +253,16 @@ describe('testnet', () => {
         40000,
       )
     })
-    describe('coordinator creates the 3rd block including zk txs', () => {
-      it.todo('should contain 3 valid txs')
-      it.todo('should not include the invalid tx')
-      it.todo('should update the utxo tree')
-      it.todo('should update the nullifier tree')
-    })
-    describe('users subscribe Proposal() event and try to decrypt memos', () => {
-      it.todo('bob should receive ERC721')
-      it.todo('alice should receive ERC20')
-    })
-  })
-  describe('7: Withdrawal', () => {
-    describe('users send zk txs to the coordinator', () => {
-      it.todo('alice sends an ERC20 withdrawal tx to the coordinator')
-      it.todo('bob sends an ERC721 withdrawal tx to the coordinator')
-      it.todo('carl sends Ether withdrawal tx to the coordinator')
-    })
-    describe('coordinator creates the 4rd block including zk txs', () => {
-      it.todo('should contain 3 valid txs')
-      it.todo('should update the withdrawal tree root')
-      it.todo('should update the utxo tree')
-      it.todo('should update the nullifier tree')
-      it.todo('should update the withdrawal tree')
-    })
   })
   describe('8: Instant withdrawal', () => {
-    describe('alice sends an instant withdrawal tx', () => {
-      it.todo('should pay extra fee to the coordinator')
+    describe('alice, bob, and carl has unfinalized withdrawable notes', () => {
+      it(
+        'alice has 1 unfinalized withdrawable note',
+        testGetWithdrawablesOfAlice(ctx),
+      )
+    })
+    describe.skip('coordinator prepays ETH for Bob', () => {
+      // it('should transfer 1 ETH to Bob', payForEthWithdrawalInAdvanctxctx))
     })
     describe('coordinator provides upfront payment', () => {
       it.todo("should be paid from the coordinator's own account")

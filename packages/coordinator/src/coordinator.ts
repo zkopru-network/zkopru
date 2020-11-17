@@ -87,11 +87,11 @@ export class Coordinator extends EventEmitter {
   }
 
   layer1(): L1Contract {
-    return this.context.node.context.layer1
+    return this.context.node.layer1
   }
 
   layer2(): L2Chain {
-    return this.context.node.context.layer2
+    return this.context.node.layer2
   }
 
   node(): FullNode {

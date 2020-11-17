@@ -144,23 +144,22 @@ export const testRound2SendZkTxsToCoordinator = (
 
 export const testRound2NewBlockProposal = (
   ctx: CtxProvider,
-  subCtx: () => { prevLatestBlock: string },
+  subCtx: () => { prevLatestBlock: Bytes32 },
 ) => async () => {
   const { wallets, coordinator } = ctx()
   const { prevLatestBlock } = subCtx()
   let updated = false
-  let newBlockHash!: string
+  let newBlockHash!: Bytes32
   do {
     const aliceLatestBlock = await wallets.alice.node.latestBlock()
     const bobLatestBlock = await wallets.bob.node.latestBlock()
     const carlLatestBlock = await wallets.carl.node.latestBlock()
     const coordinatorLatestBlock = await coordinator.node().latestBlock()
     if (
-      aliceLatestBlock === bobLatestBlock &&
-      aliceLatestBlock === carlLatestBlock &&
-      aliceLatestBlock === coordinatorLatestBlock &&
-      aliceLatestBlock !== prevLatestBlock &&
-      aliceLatestBlock !== null
+      aliceLatestBlock.eq(bobLatestBlock) &&
+      aliceLatestBlock.eq(carlLatestBlock) &&
+      aliceLatestBlock.eq(coordinatorLatestBlock) &&
+      !aliceLatestBlock.eq(prevLatestBlock)
     ) {
       updated = true
       newBlockHash = aliceLatestBlock
@@ -168,9 +167,7 @@ export const testRound2NewBlockProposal = (
     }
     await sleep(1000)
   } while (!updated)
-  const newBlock = await wallets.alice.node.context.layer2.getBlock(
-    Bytes32.from(newBlockHash),
-  )
+  const newBlock = await wallets.alice.node.layer2.getBlock(newBlockHash)
   expect(newBlock?.body.txs).toHaveLength(3)
 }
 

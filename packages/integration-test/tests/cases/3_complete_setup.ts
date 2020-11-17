@@ -66,29 +66,15 @@ export const updateVerifyingKeys = (ctx: CtxProvider) => async () => {
   for (let nI = 1; nI <= NUM_OF_INPUTS; nI += 1) {
     for (let nO = 1; nO <= NUM_OF_OUTPUTS; nO += 1) {
       const sig = verifyingKeyIdentifier(nI, nO)
-      wallets.alice.node.context.layer2.snarkVerifier.addVerifyingKey(
+      wallets.alice.node.layer2.snarkVerifier.addVerifyingKey(nI, nO, vks[sig])
+      wallets.bob.node.layer2.snarkVerifier.addVerifyingKey(nI, nO, vks[sig])
+      wallets.carl.node.layer2.snarkVerifier.addVerifyingKey(nI, nO, vks[sig])
+      wallets.coordinator.node.layer2.snarkVerifier.addVerifyingKey(
         nI,
         nO,
         vks[sig],
       )
-      wallets.bob.node.context.layer2.snarkVerifier.addVerifyingKey(
-        nI,
-        nO,
-        vks[sig],
-      )
-      wallets.carl.node.context.layer2.snarkVerifier.addVerifyingKey(
-        nI,
-        nO,
-        vks[sig],
-      )
-      wallets.coordinator.node.context.layer2.snarkVerifier.addVerifyingKey(
-        nI,
-        nO,
-        vks[sig],
-      )
-      coordinator
-        .node()
-        .context.layer2.snarkVerifier.addVerifyingKey(nI, nO, vks[sig])
+      coordinator.node().layer2.snarkVerifier.addVerifyingKey(nI, nO, vks[sig])
     }
   }
 }
@@ -110,7 +96,7 @@ export const testRegisterTokens = (ctx: CtxProvider) => async () => {
     tx: registerERC721Tx,
   })
   const isSynced = async (wallet: ZkWallet) => {
-    const tokenRegistry = await wallet.node.context.layer2.getTokenRegistry()
+    const tokenRegistry = await wallet.node.layer2.getTokenRegistry()
     const erc20Sync = !!tokenRegistry.erc20s.find(addr =>
       addr.eq(Address.from(tokens.erc20.address)),
     )
