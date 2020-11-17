@@ -130,9 +130,10 @@ contract UserInteractable is Storage {
         );
         require(msg.value == eth, 'not enough ether');
         // prepay tokens
-        if(amount!=0) {
+
+        if (Storage.chain.registeredERC20s[token]) {
             IERC20(token).transferFrom(prepayer, currentOwner, amount);
-        } else {
+        } else if (Storage.chain.registeredERC721s[token]){
             revert("Does not support NFT prepay");
         }
         // prepay ether

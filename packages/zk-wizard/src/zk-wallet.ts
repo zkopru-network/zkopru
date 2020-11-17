@@ -16,7 +16,7 @@ import { ZkopruNode } from '@zkopru/core'
 import { DB, Withdrawal as WithdrawalSql } from '@zkopru/prisma'
 import { logger } from '@zkopru/utils'
 import { soliditySha3 } from 'web3-utils'
-import { Bytes32, Address, Uint256 } from 'soltypes'
+import { Address, Uint256 } from 'soltypes'
 import fetch, { Response } from 'node-fetch'
 import assert from 'assert'
 import { TransactionReceipt, Account } from 'web3-core'
@@ -445,7 +445,9 @@ export class ZkWallet {
     if (!withdrawal.index) throw Error('No leaf index')
     const message = soliditySha3(
       prePayer.toString(),
-      Bytes32.from(withdrawal.hash).toString(),
+      Uint256.from(withdrawal.withdrawalHash)
+        .toBytes()
+        .toString(),
     )
     assert(message)
     const siblings: string[] = JSON.parse(withdrawal.siblings)
@@ -460,13 +462,20 @@ export class ZkWallet {
       body: JSON.stringify(data),
     })
     if (response.ok) {
-      await this.db.write(prisma =>
-        prisma.withdrawal.update({
-          where: { hash: withdrawal.hash },
-          data: { status: WithdrawalStatus.TRANSFERRED },
-        }),
+      const signedTx = await response.text()
+      const receipt = await this.node.layer1.web3.eth.sendSignedTransaction(
+        signedTx,
       )
-      return true
+      if (receipt.status) {
+        // mark withdrawal as transferred
+        await this.db.write(prisma =>
+          prisma.withdrawal.update({
+            where: { hash: withdrawal.hash },
+            data: { status: WithdrawalStatus.TRANSFERRED },
+          }),
+        )
+        return true
+      }
     }
     return false
   }

@@ -6,6 +6,7 @@ import { soliditySha3Raw } from 'web3-utils'
 import { Bytes32 } from 'soltypes'
 import { Field } from '@zkopru/babyjubjub'
 import { BootstrapData } from '@zkopru/core'
+import { TxUtil } from '@zkopru/contracts'
 import { CoordinatorContext } from './context'
 
 export class CoordinatorApi {
@@ -88,7 +89,6 @@ export class CoordinatorApi {
     } = withdrawal
     // TODO verify request
     // TODO check fee
-    const siblings: string[] = JSON.parse(withdrawal.siblings)
     const tx = layer1.user.methods.payInAdvance(
       hash,
       to,
@@ -108,39 +108,39 @@ export class CoordinatorApi {
       nft,
       fee,
     )
-    const receipt = await layer1.sendTx(tx, this.context.account, {
-      value: eth,
-    })
-    if (receipt) {
-      // save withdrawal
-      logger.info('pay in advance')
-      const data = {
-        hash,
-        withdrawalHash,
-        to,
-        eth,
-        tokenAddr,
-        erc20Amount,
-        nft,
-        fee,
-        includedIn,
-        index,
-        siblings: JSON.stringify(siblings),
-        status: WithdrawalStatus.UNFINALIZED,
-      }
-      await layer2.db.write(prisma =>
-        prisma.withdrawal.upsert({
-          where: { hash },
-          create: data,
-          update: data,
-        }),
-      )
-      res.send(receipt)
-    } else {
-      // set prepayed
-      logger.info('Failed to run pay-in-advance')
-      res.status(500).send('Failed to run pay-in-advance')
+    const signedTx = await TxUtil.getSignedTransaction(
+      tx,
+      layer1.address,
+      layer1.web3,
+      this.context.account,
+      {
+        value: eth,
+      },
+    )
+    // save withdrawal
+    logger.info('pay in advance')
+    const data = {
+      hash,
+      withdrawalHash,
+      to,
+      eth,
+      tokenAddr,
+      erc20Amount,
+      nft,
+      fee,
+      includedIn,
+      index,
+      siblings: JSON.stringify(withdrawal.siblings),
+      status: WithdrawalStatus.UNFINALIZED,
     }
+    await layer2.db.write(prisma =>
+      prisma.withdrawal.upsert({
+        where: { hash },
+        create: data,
+        update: data,
+      }),
+    )
+    res.send(signedTx)
   }
 
   private bootstrapHandler: RequestHandler = async (req, res) => {

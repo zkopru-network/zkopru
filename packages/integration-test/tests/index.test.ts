@@ -53,7 +53,12 @@ import {
   testRound2NewSpendableUtxos,
   testRound2SendZkTxsToCoordinator,
 } from './cases/7_zk_tx_round_2'
-import { testGetWithdrawablesOfAlice } from './cases/8_instant_withdrawals'
+import {
+  testGetWithdrawablesOfAlice,
+  testGetWithdrawablesOfBob,
+  testGetWithdrawablesOfCarl,
+  payForEthWithdrawalInAdvance,
+} from './cases/8_instant_withdrawals'
 
 jestExtendToCompareBigNumber(expect)
 
@@ -260,9 +265,17 @@ describe('testnet', () => {
         'alice has 1 unfinalized withdrawable note',
         testGetWithdrawablesOfAlice(ctx),
       )
+      it(
+        'bob has 1 unfinalized withdrawable note',
+        testGetWithdrawablesOfBob(ctx),
+      )
+      it(
+        'carl has 1 unfinalized withdrawable note',
+        testGetWithdrawablesOfCarl(ctx),
+      )
     })
-    describe.skip('coordinator prepays ETH for Bob', () => {
-      // it('should transfer 1 ETH to Bob', payForEthWithdrawalInAdvanctxctx))
+    describe('coordinator prepays ETH for Bob', () => {
+      it('should transfer 1 ETH to Bob', payForEthWithdrawalInAdvance(ctx))
     })
     describe('coordinator provides upfront payment', () => {
       it.todo("should be paid from the coordinator's own account")
