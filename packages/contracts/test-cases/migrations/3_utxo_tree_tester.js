@@ -3,5 +3,5 @@ const UtxoTreeTester = artifacts.require('UtxoTreeTester')
 
 module.exports = function migration(deployer, _, accounts) {
   deployer.link(Poseidon2, UtxoTreeTester)
-  deployer.deploy(UtxoTreeTester)
+  // deployer.deploy(UtxoTreeTester)
 }

@@ -55,7 +55,7 @@ contract('Utxo tree update tests', async accounts => {
     const { tree, db } = await UtxoTree.sample(depth)
     tsTree = tree
     mockup = db
-    solTree = await UtxoTreeTester.deployed()
+    solTree = await UtxoTreeTester.new()
   })
   after(async () => {
     await mockup.terminate()
