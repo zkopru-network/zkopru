@@ -2,7 +2,7 @@
 pragma solidity = 0.6.12;
 
 interface IBurnAuction {
-  function transfer(address recipient) external;
+  function transfer(address payable recipient) external;
 
-  function register() external payable; 
+  function register() external payable;
 }
