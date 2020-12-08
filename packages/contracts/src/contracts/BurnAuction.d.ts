@@ -19,11 +19,27 @@ export class BurnAuction extends Contract {
   clone(): BurnAuction
 
   methods: {
+    bid(slotIndex: number | string): TransactionObject<void>
+
+    ownerForSlot(slotIndex: number | string): TransactionObject<string>
+
+    activeForger(): TransactionObject<string>
+
+    calcSlotStart(slotIndex: number | string): TransactionObject<string>
+
+    currentSlot(): TransactionObject<string>
+
+    refund(): TransactionObject<void>
+
+    isStaked(owner: string): TransactionObject<boolean>
+
     transfer(recipient: string): TransactionObject<void>
 
     register(): TransactionObject<void>
 
     isProposable(proposer: string): TransactionObject<boolean>
+
+    max(a: number | string, b: number | string): TransactionObject<string>
   }
 
   events: {
