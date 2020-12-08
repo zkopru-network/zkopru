@@ -146,6 +146,10 @@ export const testRound1NewBlockProposal = (
   const { prevLatestBlock } = subCtx()
   let updated = false
   let newBlockHash!: Bytes32
+  coordinator.middlewares.proposer.setPreProcessor(block => {
+    console.log('Block 2', block.serializeBlock().toString('hex'))
+    return block
+  })
   do {
     const aliceLatestBlock = await wallets.alice.node.latestBlock()
     const bobLatestBlock = await wallets.bob.node.latestBlock()
@@ -164,6 +168,7 @@ export const testRound1NewBlockProposal = (
     await sleep(1000)
   } while (!updated)
   const newBlock = await wallets.alice.node.layer2.getBlock(newBlockHash)
+  coordinator.middlewares.proposer.removePreProcessor()
   expect(newBlock?.body.txs).toHaveLength(3)
 }
 

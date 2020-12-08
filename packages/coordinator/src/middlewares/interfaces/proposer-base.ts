@@ -5,9 +5,29 @@ import { CoordinatorContext } from '../../context'
 export abstract class ProposerBase {
   context: CoordinatorContext
 
+  private preProcessor?: ((block: Block) => Promise<Block> | Block) | null
+
   constructor(context: CoordinatorContext) {
     this.context = context
   }
 
-  abstract async propose(block: Block): Promise<TransactionReceipt | undefined>
+  setPreProcessor(processor: (block: Block) => Promise<Block> | Block) {
+    this.preProcessor = processor
+  }
+
+  removePreProcessor() {
+    this.preProcessor = null
+  }
+
+  async propose(block: Block): Promise<TransactionReceipt | undefined> {
+    const preprocessed = this.preProcessor
+      ? await this.preProcessor(block)
+      : block
+    const result = await this.handleProcessedBlock(preprocessed)
+    return result
+  }
+
+  protected abstract async handleProcessedBlock(
+    block: Block,
+  ): Promise<TransactionReceipt | undefined>
 }
