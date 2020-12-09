@@ -105,4 +105,8 @@ contract Reader is Storage {
             ic[i] = [vk.ic[i].X, vk.ic[i].Y];
         }
     }
+
+    function latestProposalBlock(address coordinator) public view returns (uint) {
+        return Storage.chain.proposers[coordinator].exitAllowance - CHALLENGE_PERIOD;
+    }
 }

@@ -59,10 +59,6 @@ contract Coordinatable is Storage {
         delete Storage.chain.proposers[proposerAddr];
     }
 
-    function coordinatorExitBlock(address coordinator) public view returns (uint) {
-      return Storage.chain.proposers[coordinator].exitAllowance;
-    }
-
     /**
      * @dev Coordinator proposes a new block using this function. propose() will freeze
      *      the current mass deposit for the next block proposer, and will go through

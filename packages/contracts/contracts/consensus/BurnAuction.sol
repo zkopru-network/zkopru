@@ -151,8 +151,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         }
         // If more than midway through the round determine if a block has
         // been proposed. If not, open the round for anyone to propose blocks
-        uint latestProposalBlock =
-          ICoordinatable(address(zkopru)).coordinatorExitBlock(activeCoordinator()) - zkopru.CHALLENGE_PERIOD();
+        uint latestProposalBlock = zkopru.latestProposalBlock(activeCoordinator());
         // approx block start
         uint roundStartBlock = block.number - ((block.timestamp - currentRoundStart) / 15);
         return latestProposalBlock < roundStartBlock;
