@@ -17,13 +17,15 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         uint amount;
     }
 
-    uint immutable startDate;
-    // Round length in seconds
-    uint constant roundLength = 10 minutes;
-    // The start time of an auction, in seconds before the round
-    uint constant auctionStartTime = 30 days;
-    // Auction end time, in seconds before the round
-    uint constant auctionEndTime = roundLength * 2;
+    uint immutable startBlock;
+    // Just to make math more clear
+    uint8 constant blockTime = 15;
+    // Round length in blocks
+    uint constant roundLength = (10 minutes / blockTime);
+    // The start time of an auction, in blocks before the round
+    uint constant auctionStart = (30 days / blockTime);
+    // Auction end time, in blocks before the round
+    uint constant auctionEnd = roundLength * 2;
     // Min bid is 10000 gwei
     uint constant minBid = 10000 gwei;
 
@@ -47,15 +49,15 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
 
     constructor(address payable networkAddress) public {
         zkopru = Zkopru(networkAddress);
-        startDate = block.timestamp;
+        startBlock = block.number;
     }
 
     function bid(uint roundIndex) public payable {
         require(lockedRoundIndex == 0 || roundIndex < lockedRoundIndex, "BurnAuction: Contract is locked");
         uint roundStart = calcRoundStart(roundIndex);
-        require(roundStart > block.timestamp, "BurnAuction: Round is in past");
-        require(roundStart - block.timestamp > auctionEndTime, "BurnAuction: Bid is too close to round start");
-        require(roundStart - block.timestamp < auctionStartTime, "BurnAuction: Bid is too far from round start");
+        require(roundStart > block.number, "BurnAuction: Round is in past");
+        require(roundStart - block.number > auctionEnd, "BurnAuction: Bid is too close to round start");
+        require(roundStart - block.number < auctionStart, "BurnAuction: Bid is too far from round start");
         // bid timing is valid
         require(msg.value >= minNextBid(roundIndex), "BurnAuction: Bid not high enough");
         // bid amount is valid
@@ -85,14 +87,14 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         return coordinatorForRound(currentRound());
     }
 
-    // Return the start time of a given round index
+    // Return the start block of a given round index
     function calcRoundStart(uint roundIndex) public view returns (uint) {
-        return startDate + (roundIndex * roundLength);
+        return startBlock + (roundIndex * roundLength);
     }
 
     // Returnt the current round number
     function currentRound() public view returns (uint) {
-        return (block.timestamp - startDate) / roundLength;
+        return (block.number - startBlock) / roundLength;
     }
 
     // Refund non-winning bids
@@ -146,15 +148,13 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     // Determines if the current round should be opened for anyone to propose blocks
     function shouldOpenRound() public view returns (bool) {
         uint currentRoundStart = calcRoundStart(currentRound());
-        if (block.timestamp <= currentRoundStart + roundLength / 2) {
+        if (block.number < currentRoundStart + roundLength / 2) {
           return false;
         }
         // If more than midway through the round determine if a block has
         // been proposed. If not, open the round for anyone to propose blocks
         uint latestProposalBlock = zkopru.latestProposalBlock(activeCoordinator());
-        // approx block start
-        uint roundStartBlock = block.number - ((block.timestamp - currentRoundStart) / 15);
-        return latestProposalBlock < roundStartBlock;
+        return latestProposalBlock < currentRoundStart;
     }
 
     /**
@@ -174,7 +174,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         require(lockedRoundIndex == 0, "BurnAuction: Contract already locked");
         require(msg.sender == address(zkopru), "BurnAuction: Not authorized to initiate lock");
         uint roundStart = calcRoundStart(roundIndex);
-        require(block.timestamp < roundStart - auctionStartTime, "BurnAuction: Round index is not far enough in the future");
+        require(block.number < roundStart - auctionStart, "BurnAuction: Round index is not far enough in the future");
         lockedRoundIndex = roundIndex;
     }
 
