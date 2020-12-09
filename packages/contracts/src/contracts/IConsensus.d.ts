@@ -13,15 +13,21 @@ interface EventOptions {
   topics?: string[]
 }
 
-export class BurnAuction extends Contract {
+export class IConsensus extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
 
-  clone(): BurnAuction
+  clone(): IConsensus
 
   methods: {
-    balance(): TransactionObject<string>
+    register(): TransactionObject<void>
 
-    lockedRoundIndex(): TransactionObject<string>
+    deregister(): TransactionObject<void>
+
+    stake(coordinator: string): TransactionObject<void>
+
+    isProposable(proposerAddr: string): TransactionObject<boolean>
+
+    transfer(recipient: string): TransactionObject<void>
 
     bid(roundIndex: number | string): TransactionObject<void>
 
@@ -31,29 +37,11 @@ export class BurnAuction extends Contract {
 
     activeCoordinator(): TransactionObject<string>
 
-    calcRoundStart(roundIndex: number | string): TransactionObject<string>
-
     currentRound(): TransactionObject<string>
 
     refund(): TransactionObject<void>
 
     refundAddress(owner: string): TransactionObject<void>
-
-    transfer(recipient: string): TransactionObject<void>
-
-    updateBalance(): TransactionObject<void>
-
-    register(): TransactionObject<void>
-
-    openRoundIfNeeded(): TransactionObject<void>
-
-    shouldOpenRound(): TransactionObject<boolean>
-
-    isProposable(proposer: string): TransactionObject<boolean>
-
-    lockForUpgrade(roundIndex: number | string): TransactionObject<void>
-
-    max(a: number | string, b: number | string): TransactionObject<string>
   }
 
   events: {

@@ -209,6 +209,13 @@ export const ZkopruABI = [
     type: 'function',
   },
   {
+    inputs: [{ internalType: 'address', name: 'coordinator', type: 'address' }],
+    name: 'latestProposalBlock',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
     inputs: [],
     name: 'massDepositId',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],

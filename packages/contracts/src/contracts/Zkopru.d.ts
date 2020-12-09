@@ -77,6 +77,8 @@ export class Zkopru extends Contract {
 
     latest(): TransactionObject<string>
 
+    latestProposalBlock(coordinator: string): TransactionObject<string>
+
     massDepositId(): TransactionObject<string>
 
     migrations(migrationHash: string | number[]): TransactionObject<boolean>

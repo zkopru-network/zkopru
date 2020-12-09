@@ -17,15 +17,15 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         uint amount;
     }
 
-    uint immutable startBlock;
+    uint immutable public startBlock;
     // Just to make math more clear
     uint8 constant blockTime = 15;
     // Round length in blocks
-    uint constant roundLength = (10 minutes / blockTime);
+    uint constant public roundLength = (10 minutes / blockTime);
     // The start time of an auction, in blocks before the round
-    uint constant auctionStart = (30 days / blockTime);
+    uint constant public auctionStart = (30 days / blockTime);
     // Auction end time, in blocks before the round
-    uint constant auctionEnd = roundLength * 2;
+    uint constant public auctionEnd = roundLength * 2;
     // Min bid is 10000 gwei
     uint constant minBid = 10000 gwei;
 
@@ -42,8 +42,8 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     uint latestOpenRound = 0;
 
     // Ether to be refunded from being outbid
-    mapping (address => uint) pendingBalances;
-    mapping (uint => Bid) highestBidPerRound;
+    mapping (address => uint) public pendingBalances;
+    mapping (uint => Bid) public highestBidPerRound;
 
     event NewHighBid(uint roundIndex, address bidder, uint amount);
 
@@ -55,9 +55,9 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     function bid(uint roundIndex) public payable {
         require(roundIndex < lockedRoundIndex, "BurnAuction: Contract is locked");
         uint roundStart = calcRoundStart(roundIndex);
-        require(roundStart > block.number, "BurnAuction: Round is in past");
-        require(roundStart - block.number > auctionEnd, "BurnAuction: Bid is too close to round start");
-        require(roundStart - block.number < auctionStart, "BurnAuction: Bid is too far from round start");
+        require(block.number < roundStart, "BurnAuction: Round is in past");
+        require(block.number < guardedSub(roundStart, auctionEnd), "BurnAuction: Bid is too close to round start");
+        require(block.number > guardedSub(roundStart, auctionStart), "BurnAuction: Bid is too far from round start");
         // bid timing is valid
         require(msg.value >= minNextBid(roundIndex), "BurnAuction: Bid not high enough");
         // bid amount is valid
@@ -92,9 +92,13 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         return startBlock + (roundIndex * roundLength);
     }
 
+    function roundForBlock(uint blockNumber) public view returns (uint) {
+        return (blockNumber - startBlock) / roundLength;
+    }
+
     // Returnt the current round number
     function currentRound() public view returns (uint) {
-        return (block.number - startBlock) / roundLength;
+        return roundForBlock(block.number);
     }
 
     // Refund non-winning bids
@@ -111,7 +115,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
 
     // Dumps the available balance to recipient
     // TODO: Split funds
-    function transfer(address payable recipient) public override {
+    function transferBalance(address payable recipient) public override {
         updateBalance();
         uint withdrawAmount = balance;
         balance = 0;
@@ -121,6 +125,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     // Update the contract available balance
     // I'm iffy on this gas management pattern
     function updateBalance() public {
+        if (lastBalanceIndex == currentRound()) return;
         uint newBalance = balance;
         uint x = lastBalanceIndex;
         for (; x <= currentRound(); ++x) {
@@ -139,7 +144,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     }
 
     function openRoundIfNeeded() public override {
-        if (latestOpenRound == currentRound()) return;
+        if (isRoundOpen()) return;
         if (shouldOpenRound()) {
             latestOpenRound = currentRound();
         }
@@ -149,12 +154,16 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     function shouldOpenRound() public view returns (bool) {
         uint currentRoundStart = calcRoundStart(currentRound());
         if (block.number < currentRoundStart + roundLength / 2) {
-          return false;
+            return false;
         }
         // If more than midway through the round determine if a block has
         // been proposed. If not, open the round for anyone to propose blocks
         uint latestProposalBlock = zkopru.latestProposalBlock(activeCoordinator());
         return latestProposalBlock < currentRoundStart;
+    }
+
+    function isRoundOpen() public view returns (bool) {
+        return latestOpenRound == currentRound();
     }
 
     /**
@@ -163,22 +172,27 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     function isProposable(address proposer) public view override returns (bool) {
         if (currentRound() >= lockedRoundIndex) return false;
         return
-          latestOpenRound == currentRound() ||
+          isRoundOpen() ||
           activeCoordinator() == address(0) ||
           activeCoordinator() == proposer ||
           shouldOpenRound(); // Call this in case a client makes a query to determine if they should attempt to propose a block
     }
 
     // Only zkopru may call
-    function lockForUpgrade(uint roundIndex) public {
+    function lockForUpgrade(uint roundIndex) public override {
         require(lockedRoundIndex == type(uint).max, "BurnAuction: Contract already locked");
         require(msg.sender == address(zkopru), "BurnAuction: Not authorized to initiate lock");
         uint roundStart = calcRoundStart(roundIndex);
-        require(block.number < roundStart - auctionStart, "BurnAuction: Round index is not far enough in the future");
+        require(block.number < guardedSub(roundStart, auctionStart), "BurnAuction: Round index is not far enough in the future");
         lockedRoundIndex = roundIndex;
     }
 
     function max(uint a, uint b) public pure returns (uint) {
         return a > b ? a : b;
+    }
+
+    function guardedSub(uint a, uint b) internal pure returns (uint) {
+        if (b > a) return 0;
+        return a - b;
     }
 }
