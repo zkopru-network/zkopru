@@ -77,6 +77,7 @@ contract Coordinatable is Storage {
         require(_block.header.proposer == msg.sender, "Coordinator account is different with the message sender");
         Proposer storage proposer = Storage.chain.proposers[msg.sender];
         // Check permission
+        IConsensusProvider(consensusProvider).openRoundIfNeeded();
         require(isProposable(msg.sender), "Not allowed to propose");
         // Duplicated proposal is not allowed
         bytes32 checksum = keccak256(data);
@@ -258,7 +259,7 @@ contract Coordinatable is Storage {
      * @dev You can override this function to implement your own consensus logic.
      * @param proposerAddr Coordinator address to check the allowance of block proposing.
      */
-    function isProposable(address proposerAddr) public returns (bool) {
+    function isProposable(address proposerAddr) public view returns (bool) {
         Proposer memory  proposer = Storage.chain.proposers[proposerAddr];
         // You can add more consensus logic here
         if (proposer.stake >= MINIMUM_STAKE) {
