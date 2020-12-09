@@ -59,6 +59,10 @@ contract Coordinatable is Storage {
         delete Storage.chain.proposers[proposerAddr];
     }
 
+    function coordinatorExitBlock(address coordinator) public view returns (uint) {
+      return Storage.chain.proposers[coordinator].exitAllowance;
+    }
+
     /**
      * @dev Coordinator proposes a new block using this function. propose() will freeze
      *      the current mass deposit for the next block proposer, and will go through
@@ -254,7 +258,7 @@ contract Coordinatable is Storage {
      * @dev You can override this function to implement your own consensus logic.
      * @param proposerAddr Coordinator address to check the allowance of block proposing.
      */
-    function isProposable(address proposerAddr) public view returns (bool) {
+    function isProposable(address proposerAddr) public returns (bool) {
         Proposer memory  proposer = Storage.chain.proposers[proposerAddr];
         // You can add more consensus logic here
         if (proposer.stake >= MINIMUM_STAKE) {

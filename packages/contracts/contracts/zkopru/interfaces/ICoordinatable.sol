@@ -12,6 +12,8 @@ interface ICoordinatable {
 
     function deregister() external;
 
+    function coordinatorExitBlock(address coordinator) external view returns (uint);
+
     function stake(address coordinator) external payable;
 
     function propose(bytes calldata blockData) external;
@@ -26,5 +28,5 @@ interface ICoordinatable {
 
     function registerERC721(address tokenAddr) external;
 
-    function isProposable(address proposerAddr) external view returns (bool);
+    function isProposable(address proposerAddr) external returns (bool);
 }

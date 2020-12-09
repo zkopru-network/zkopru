@@ -2,5 +2,5 @@
 pragma solidity = 0.6.12;
 
 interface IConsensusProvider {
-    function isProposable(address proposer) external view returns (bool);
+    function isProposable(address proposer) external returns (bool);
 }

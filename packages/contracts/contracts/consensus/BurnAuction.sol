@@ -19,9 +19,9 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
 
     uint immutable startDate;
     // Round length in seconds
-    uint constant roundLength = 10 * 60;
+    uint constant roundLength = 10 minutes;
     // The start time of an auction, in seconds before the round
-    uint constant auctionStartTime = 60 * 60 * 24 * 30;
+    uint constant auctionStartTime = 30 days;
     // Auction end time, in seconds before the round
     uint constant auctionEndTime = roundLength * 2;
     // Min bid is 10000 gwei
@@ -35,6 +35,9 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     uint lastBalanceIndex = 0;
 
     bool _locked = false;
+
+    // A round is considered open if a block has not been proposed in the first half of the round
+    uint latestOpenRound = 0;
 
     // Ether to be refunded from being outbid
     mapping (address => uint) pendingBalances;
@@ -136,8 +139,24 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     /**
      * @notice This function will be updated as the governance of Zkopru's been updated.
      */
-    function isProposable(address proposer) public override view returns (bool) {
-        return activeCoordinator() == address(0) || activeCoordinator() == proposer;
+    function isProposable(address proposer) public override returns (bool) {
+        if (activeCoordinator() == address(0) || activeCoordinator() == proposer) {
+            return true;
+        }
+        if (latestOpenRound == currentRound()) return true;
+        uint currentRoundStart = calcRoundStart(currentRound());
+        if (block.timestamp > currentRoundStart + roundLength / 2) {
+            // If more than midway through the round determine if a block has
+            // been proposed. If not, open the round for anyone to propose blocks
+            uint latestProposalBlock =
+              ICoordinatable(address(zkopru)).coordinatorExitBlock(activeCoordinator()) - zkopru.CHALLENGE_PERIOD();
+            // approx block start
+            uint roundStartBlock = block.number - ((block.timestamp - currentRoundStart) / 15);
+            if (latestProposalBlock < roundStartBlock) {
+                latestOpenRound = currentRound();
+                return true;
+            }
+        }
     }
 
     // Only zkopru may call
