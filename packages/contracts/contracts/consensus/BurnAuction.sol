@@ -36,7 +36,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     uint public balance = 0;
     uint lastBalanceIndex = 0;
 
-    uint public lockedRoundIndex = 0;
+    uint public lockedRoundIndex = type(uint).max;
 
     // A round is considered open if a block has not been proposed in the first half of the round
     uint latestOpenRound = 0;
@@ -53,7 +53,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     }
 
     function bid(uint roundIndex) public payable {
-        require(lockedRoundIndex == 0 || roundIndex < lockedRoundIndex, "BurnAuction: Contract is locked");
+        require(roundIndex < lockedRoundIndex, "BurnAuction: Contract is locked");
         uint roundStart = calcRoundStart(roundIndex);
         require(roundStart > block.number, "BurnAuction: Round is in past");
         require(roundStart - block.number > auctionEnd, "BurnAuction: Bid is too close to round start");
@@ -161,7 +161,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
      * @notice This function will be updated as the governance of Zkopru's been updated.
      */
     function isProposable(address proposer) public view override returns (bool) {
-        if (lockedRoundIndex != 0 && currentRound() >= lockedRoundIndex) return false;
+        if (currentRound() >= lockedRoundIndex) return false;
         return
           latestOpenRound == currentRound() ||
           activeCoordinator() == address(0) ||
@@ -171,7 +171,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
 
     // Only zkopru may call
     function lockForUpgrade(uint roundIndex) public {
-        require(lockedRoundIndex == 0, "BurnAuction: Contract already locked");
+        require(lockedRoundIndex == type(uint).max, "BurnAuction: Contract already locked");
         require(msg.sender == address(zkopru), "BurnAuction: Not authorized to initiate lock");
         uint roundStart = calcRoundStart(roundIndex);
         require(block.number < roundStart - auctionStart, "BurnAuction: Round index is not far enough in the future");
