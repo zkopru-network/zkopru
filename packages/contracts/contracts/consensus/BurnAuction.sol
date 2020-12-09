@@ -146,16 +146,16 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     // Determines if the current round should be opened for anyone to propose blocks
     function shouldOpenRound() public view returns (bool) {
         uint currentRoundStart = calcRoundStart(currentRound());
-        if (block.timestamp > currentRoundStart + roundLength / 2) {
-            // If more than midway through the round determine if a block has
-            // been proposed. If not, open the round for anyone to propose blocks
-            uint latestProposalBlock =
-              ICoordinatable(address(zkopru)).coordinatorExitBlock(activeCoordinator()) - zkopru.CHALLENGE_PERIOD();
-            // approx block start
-            uint roundStartBlock = block.number - ((block.timestamp - currentRoundStart) / 15);
-            return latestProposalBlock < roundStartBlock;
+        if (block.timestamp <= currentRoundStart + roundLength / 2) {
+          return false;
         }
-        return false;
+        // If more than midway through the round determine if a block has
+        // been proposed. If not, open the round for anyone to propose blocks
+        uint latestProposalBlock =
+          ICoordinatable(address(zkopru)).coordinatorExitBlock(activeCoordinator()) - zkopru.CHALLENGE_PERIOD();
+        // approx block start
+        uint roundStartBlock = block.number - ((block.timestamp - currentRoundStart) / 15);
+        return latestProposalBlock < roundStartBlock;
     }
 
     /**
