@@ -12,8 +12,6 @@ interface ICoordinatable {
 
     function deregister() external;
 
-    function coordinatorExitBlock(address coordinator) external view returns (uint);
-
     function stake(address coordinator) external payable;
 
     function propose(bytes calldata blockData) external;
