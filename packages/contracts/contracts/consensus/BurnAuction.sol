@@ -51,7 +51,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     }
 
     function bid(uint roundIndex) public payable {
-        require(roundIndex < lockedRoundIndex, "BurnAuction: Contract is locked");
+        require(lockedRoundIndex == 0 || roundIndex < lockedRoundIndex, "BurnAuction: Contract is locked");
         uint roundStart = calcRoundStart(roundIndex);
         require(roundStart > block.timestamp, "BurnAuction: Round is in past");
         require(roundStart - block.timestamp > auctionEndTime, "BurnAuction: Bid is too close to round start");
