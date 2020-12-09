@@ -135,6 +135,8 @@ export class Reader extends Contract {
       3: string[][]
       4: string[][]
     }>
+
+    latestProposalBlock(coordinator: string): TransactionObject<string>
   }
 
   events: {

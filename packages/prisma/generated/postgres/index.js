@@ -51,9 +51,9 @@ exports.raw = raw
 
 path.join(__dirname, 'query-engine-darwin');
 path.join(__dirname, 'query-engine-windows');
-path.join(__dirname, 'query-engine-debian-openssl-1.1.x');
 path.join(__dirname, 'query-engine-linux-musl');
 path.join(__dirname, 'query-engine-debian-openssl-1.0.x');
+path.join(__dirname, 'query-engine-debian-openssl-1.1.x');
 
 /**
  * Annotation for `node-file-trace`
@@ -272,7 +272,7 @@ const config = {
   "generator": {
     "name": "client",
     "provider": "prisma-client-js",
-    "output": "/home/wanseob/Projects/zkopru-network/zkopru/packages/prisma/generated/postgres",
+    "output": "/Users/chance/freelance/ef/zkopru/packages/prisma/generated/postgres",
     "binaryTargets": [
       "darwin",
       "windows",

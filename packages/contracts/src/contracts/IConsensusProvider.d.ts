@@ -19,6 +19,8 @@ export class IConsensusProvider extends Contract {
   clone(): IConsensusProvider
 
   methods: {
+    openRoundIfNeeded(): TransactionObject<void>
+
     isProposable(proposer: string): TransactionObject<boolean>
   }
 
