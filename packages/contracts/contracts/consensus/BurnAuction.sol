@@ -34,7 +34,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     uint public balance = 0;
     uint lastBalanceIndex = 0;
 
-    bool _locked = false;
+    uint public lockedRoundIndex = 0;
 
     // A round is considered open if a block has not been proposed in the first half of the round
     uint latestOpenRound = 0;
@@ -51,7 +51,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     }
 
     function bid(uint roundIndex) public payable {
-        require(!_locked, "BurnAuction: Contract is locked");
+        require(roundIndex < lockedRoundIndex, "BurnAuction: Contract is locked");
         uint roundStart = calcRoundStart(roundIndex);
         require(roundStart > block.timestamp, "BurnAuction: Round is in past");
         require(roundStart - block.timestamp > auctionEndTime, "BurnAuction: Bid is too close to round start");
@@ -161,6 +161,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
      * @notice This function will be updated as the governance of Zkopru's been updated.
      */
     function isProposable(address proposer) public view override returns (bool) {
+        if (lockedRoundIndex != 0 && currentRound() >= lockedRoundIndex) return false;
         return
           latestOpenRound == currentRound() ||
           activeCoordinator() == address(0) ||
@@ -170,10 +171,11 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
 
     // Only zkopru may call
     function lockForUpgrade(uint roundIndex) public {
+        require(lockedRoundIndex == 0, "BurnAuction: Contract already locked");
         require(msg.sender == address(zkopru), "BurnAuction: Not authorized to initiate lock");
         uint roundStart = calcRoundStart(roundIndex);
         require(block.timestamp < roundStart - auctionStartTime, "BurnAuction: Round index is not far enough in the future");
-        _locked = true;
+        lockedRoundIndex = roundIndex;
     }
 
     function max(uint a, uint b) public pure returns (uint) {
