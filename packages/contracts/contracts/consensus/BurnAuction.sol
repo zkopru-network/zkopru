@@ -136,14 +136,15 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         ICoordinatable(address(zkopru)).stake{ value: msg.value }(msg.sender);
     }
 
-    /**
-     * @notice This function will be updated as the governance of Zkopru's been updated.
-     */
-    function isProposable(address proposer) public override returns (bool) {
-        if (activeCoordinator() == address(0) || activeCoordinator() == proposer) {
-            return true;
+    function openRoundIfNeeded() public override {
+        if (latestOpenRound == currentRound()) return;
+        if (shouldOpenRound()) {
+            latestOpenRound = currentRound();
         }
-        if (latestOpenRound == currentRound()) return true;
+    }
+
+    // Determines if the current round should be opened for anyone to propose blocks
+    function shouldOpenRound() public view returns (bool) {
         uint currentRoundStart = calcRoundStart(currentRound());
         if (block.timestamp > currentRoundStart + roundLength / 2) {
             // If more than midway through the round determine if a block has
@@ -152,11 +153,20 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
               ICoordinatable(address(zkopru)).coordinatorExitBlock(activeCoordinator()) - zkopru.CHALLENGE_PERIOD();
             // approx block start
             uint roundStartBlock = block.number - ((block.timestamp - currentRoundStart) / 15);
-            if (latestProposalBlock < roundStartBlock) {
-                latestOpenRound = currentRound();
-                return true;
-            }
+            return latestProposalBlock < roundStartBlock;
         }
+        return false;
+    }
+
+    /**
+     * @notice This function will be updated as the governance of Zkopru's been updated.
+     */
+    function isProposable(address proposer) public view override returns (bool) {
+        return
+          latestOpenRound == currentRound() ||
+          activeCoordinator() == address(0) ||
+          activeCoordinator() == proposer ||
+          shouldOpenRound(); // Call this in case a client makes a query to determine if they should attempt to propose a block
     }
 
     // Only zkopru may call
