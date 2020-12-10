@@ -21,6 +21,8 @@ export class IConsensusProvider extends Contract {
   methods: {
     openRoundIfNeeded(): TransactionObject<void>
 
+    lockForUpgrade(roundIndex: number | string): TransactionObject<void>
+
     isProposable(proposer: string): TransactionObject<boolean>
   }
 

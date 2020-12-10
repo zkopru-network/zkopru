@@ -3,7 +3,7 @@ export const IBurnAuctionABI = [
     inputs: [
       { internalType: 'address payable', name: 'recipient', type: 'address' },
     ],
-    name: 'transfer',
+    name: 'transferBalance',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',

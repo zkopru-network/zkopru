@@ -19,7 +19,7 @@ export class IBurnAuction extends Contract {
   clone(): IBurnAuction
 
   methods: {
-    transfer(recipient: string): TransactionObject<void>
+    transferBalance(recipient: string): TransactionObject<void>
 
     register(): TransactionObject<void>
   }
