@@ -306,7 +306,7 @@ contract('BurnAuction tests', async accounts => {
     })
   })
 
-  describe('balance transfer tests', () => {
+  describe('balance tests', () => {
     it('should update balance', async () => {
       const currentRound = +(await burnAuction.currentRound()).toString()
       // calculate the expected balance here
@@ -322,6 +322,59 @@ contract('BurnAuction tests', async accounts => {
       })
       const contractBalance = await burnAuction.balance()
       chai.assert(contractBalance.eq(balance))
+    })
+
+    it('should update balance many times', async () => {
+      const currentRound = +(await burnAuction.currentRound()).toString()
+      const roundStartBlock = +(await burnAuction.calcRoundStart(currentRound)).toString()
+      const targetRound = +(await burnAuction.roundForBlock(roundStartBlock + roundLength + auctionEnd + 1)).toString()
+      const count = 5
+      const finalRound = targetRound + count
+      // Bid a bunch of rounds in the future
+      for (let x = 0; x < count + 10; x++) {
+        const bidAmount = await burnAuction.minNextBid(targetRound + x)
+        await burnAuction.bid(targetRound + x, {
+          from: accounts[0],
+          value: bidAmount,
+        })
+      }
+      const targetBlock = await burnAuction.calcRoundStart(finalRound)
+      while ((await web3.eth.getBlock('latest')).number < targetBlock) {
+        await timeMachine.advanceBlock()
+      }
+      const currentRound2 = +(await burnAuction.currentRound()).toString()
+      const lastBalanceUpdate = +(await burnAuction.lastBalanceIndex()).toString()
+      let balance = new BN('0')
+      // Calculate the balance change
+      for (let x = lastBalanceUpdate + 1; x <= currentRound2; x++) {
+        const highBid = await burnAuction.highestBidPerRound(x)
+        balance = balance.clone().add(highBid.amount)
+      }
+      const startBalance = await burnAuction.balance()
+      await burnAuction.updateBalance({
+        from: accounts[8],
+      })
+      const newBalance = await burnAuction.balance()
+      const expectedBalance = balance.add(startBalance)
+      chai.assert(newBalance.eq(expectedBalance), `Incorrect balance, expected ${expectedBalance.toString()} got ${newBalance.toString()}`)
+      // Jump further in the future
+      const targetBlock2 = await burnAuction.calcRoundStart(finalRound + 5)
+      while ((await web3.eth.getBlock('latest')).number < targetBlock2) {
+        await timeMachine.advanceBlock()
+      }
+      const currentRound3 = +(await burnAuction.currentRound()).toString()
+      const newLastBalanceUpdate = +(await burnAuction.lastBalanceIndex()).toString()
+      // calculate the balance change
+      for (let x = newLastBalanceUpdate + 1; x <= currentRound3; x++) {
+        const highBid = await burnAuction.highestBidPerRound(x)
+        balance = balance.clone().add(highBid.amount)
+      }
+      await burnAuction.updateBalance({
+        from: accounts[8],
+      })
+      const finalExpectedBalance = balance.add(startBalance)
+      const finalNewBalance = await burnAuction.balance()
+      chai.assert(finalNewBalance.eq(finalExpectedBalance), `Incorrect second balance`)
     })
 
     it('should transfer balance', async () => {
