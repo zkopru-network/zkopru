@@ -34,7 +34,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
 
     // The current balance from success auctions
     uint public balance = 0;
-    uint lastBalanceIndex = 0;
+    uint public lastBalanceIndex = 0;
 
     uint public lockedRoundIndex = type(uint).max;
 
@@ -136,7 +136,6 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     }
 
     // Update the contract available balance
-    // I'm iffy on this gas management pattern
     function updateBalance() public {
         if (lastBalanceIndex == currentRound()) return;
         uint newBalance = balance;
