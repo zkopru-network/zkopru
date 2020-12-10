@@ -19,9 +19,28 @@ export class BurnAuction extends Contract {
   clone(): BurnAuction
 
   methods: {
+    auctionEnd(): TransactionObject<string>
+
+    auctionStart(): TransactionObject<string>
+
     balance(): TransactionObject<string>
 
+    highestBidPerRound(
+      arg0: number | string,
+    ): TransactionObject<{
+      owner: string
+      amount: string
+      0: string
+      1: string
+    }>
+
     lockedRoundIndex(): TransactionObject<string>
+
+    pendingBalances(arg0: string): TransactionObject<string>
+
+    roundLength(): TransactionObject<string>
+
+    startBlock(): TransactionObject<string>
 
     bid(roundIndex: number | string): TransactionObject<void>
 
@@ -33,13 +52,15 @@ export class BurnAuction extends Contract {
 
     calcRoundStart(roundIndex: number | string): TransactionObject<string>
 
+    roundForBlock(blockNumber: number | string): TransactionObject<string>
+
     currentRound(): TransactionObject<string>
 
     refund(): TransactionObject<void>
 
     refundAddress(owner: string): TransactionObject<void>
 
-    transfer(recipient: string): TransactionObject<void>
+    transferBalance(recipient: string): TransactionObject<void>
 
     updateBalance(): TransactionObject<void>
 
@@ -48,6 +69,8 @@ export class BurnAuction extends Contract {
     openRoundIfNeeded(): TransactionObject<void>
 
     shouldOpenRound(): TransactionObject<boolean>
+
+    isRoundOpen(): TransactionObject<boolean>
 
     isProposable(proposer: string): TransactionObject<boolean>
 

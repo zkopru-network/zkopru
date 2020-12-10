@@ -127,8 +127,8 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     function updateBalance() public {
         if (lastBalanceIndex == currentRound()) return;
         uint newBalance = balance;
-        uint x = lastBalanceIndex;
-        for (; x <= currentRound(); ++x) {
+        uint x = lastBalanceIndex + 1;
+        for (; x <= currentRound(); x++) {
             if (highestBidPerRound[x].amount == 0) continue;
             newBalance += highestBidPerRound[x].amount;
             if (gasleft() < 3000) {
