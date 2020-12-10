@@ -24,6 +24,10 @@ contract('BurnAuction tests', async accounts => {
   describe('bidding test', () => {
     it('should fail to bid on 0th auction', async () => {
       const currentRound = +(await burnAuction.currentRound()).toString()
+      // Set the url so bids succeed
+      await burnAuction.setUrl('localhost:8080', {
+        from: accounts[0],
+      })
       try {
         await burnAuction.bid(currentRound, {
           from: accounts[0],
@@ -74,6 +78,22 @@ contract('BurnAuction tests', async accounts => {
         chai.assert(false, 'Past auction bid should fail')
       } catch (err) {
         chai.assert(err.reason === 'BurnAuction: Round is in past')
+      }
+    })
+
+    it('should fail to bid if no url', async () => {
+      const currentRound = +(await burnAuction.currentRound()).toString()
+      const roundStartBlock = +(await burnAuction.calcRoundStart(currentRound)).toString()
+      const targetRound = +(await burnAuction.roundForBlock(roundStartBlock + roundLength + auctionEnd + 1)).toString()
+      const bidAmount = await burnAuction.minNextBid(targetRound)
+      try {
+        await burnAuction.bid(targetRound, {
+          from: accounts[9],
+          value: bidAmount,
+        })
+        chai.assert(false, 'Bid should fail if no url')
+      } catch (err) {
+        chai.assert(err.reason === 'BurnAuction: Coordinator url not set')
       }
     })
 
@@ -133,18 +153,46 @@ contract('BurnAuction tests', async accounts => {
       const targetRound = +(await burnAuction.roundForBlock(roundStartBlock + roundLength + auctionStart/2)).toString()
       const bidAmount = (await burnAuction.minNextBid(targetRound))
       // Do first bid
-      const originalBalance = await burnAuction.pendingBalances(accounts[1])
-      await burnAuction.bid(targetRound, {
+      const originalBalance = await burnAuction.pendingBalances(accounts[0])
+      await burnAuction.setUrl('localhost', {
         from: accounts[1],
+      })
+      await burnAuction.bid(targetRound, {
+        from: accounts[0],
         value: bidAmount,
       })
       const nextBidAmount = await burnAuction.minNextBid(targetRound)
       await burnAuction.bid(targetRound, {
-        from: accounts[2],
+        from: accounts[1],
         value: nextBidAmount,
       })
-      const newBalance = await burnAuction.pendingBalances(accounts[1])
+      const newBalance = await burnAuction.pendingBalances(accounts[0])
       chai.assert(originalBalance.add(bidAmount).eq(newBalance))
+    })
+  })
+
+  describe('url test', () => {
+    it('should set url', async () => {
+      const url = 'localhost'
+      await burnAuction.setUrl(url, {
+        from: accounts[1],
+      })
+      const networkUrl = await burnAuction.coordinatorUrls(accounts[1])
+      chai.assert(networkUrl === url, `Network url incorrect, expected ${url} got ${networkUrl}`)
+    })
+
+    it('should clear url', async () => {
+      const url = 'localhost'
+      await burnAuction.setUrl(url, {
+        from: accounts[1],
+      })
+      const networkUrl = await burnAuction.coordinatorUrls(accounts[1])
+      chai.assert(networkUrl === url, `First network url incorrect, expected ${url} got ${networkUrl}`)
+      await burnAuction.clearUrl({
+        from: accounts[1],
+      })
+      const newNetworkUrl = await burnAuction.coordinatorUrls(accounts[1])
+      chai.assert(newNetworkUrl === '', `Second network url incorrect, expected nothing got ${newNetworkUrl}`)
     })
   })
 
@@ -165,6 +213,9 @@ contract('BurnAuction tests', async accounts => {
       const roundStartBlock = +(await burnAuction.calcRoundStart(currentRound)).toString()
       const targetRound = +(await burnAuction.roundForBlock(roundStartBlock + roundLength + auctionStart/2)).toString()
       const bidAmount = await burnAuction.minNextBid(targetRound)
+      await burnAuction.setUrl('localhost', {
+        from: accounts[3],
+      })
       await burnAuction.bid(targetRound, {
         from: accounts[3],
         value: bidAmount,
@@ -202,6 +253,9 @@ contract('BurnAuction tests', async accounts => {
       const targetRound = +(await burnAuction.roundForBlock(roundStartBlock + roundLength + auctionEnd)).toString()
       const targetRoundStart = +(await burnAuction.calcRoundStart(targetRound)).toString()
       const bidAmount = await burnAuction.minNextBid(targetRound)
+      await burnAuction.setUrl('localhost', {
+        from: accounts[5]
+      })
       await burnAuction.bid(targetRound, {
         from: accounts[5],
         value: bidAmount,
@@ -354,7 +408,7 @@ contract('BurnAuction tests', async accounts => {
       }
       try {
         await burnAuction.bid(lockedRound, {
-          from: accounts[9],
+          from: accounts[5],
         })
         chai.assert(false, 'Should fail to bid on locked round')
       } catch (err) {
