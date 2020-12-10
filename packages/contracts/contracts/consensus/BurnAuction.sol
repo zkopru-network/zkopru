@@ -44,7 +44,9 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     // Ether to be refunded from being outbid
     mapping (address => uint) public pendingBalances;
     mapping (uint => Bid) public highestBidPerRound;
+    mapping (address => string) public coordinatorUrls;
 
+    event UrlUpdate(address coordinator);
     event NewHighBid(uint roundIndex, address bidder, uint amount);
 
     constructor(address payable networkAddress) public {
@@ -54,6 +56,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
 
     function bid(uint roundIndex) public payable {
         require(roundIndex < lockedRoundIndex, "BurnAuction: Contract is locked");
+        require(bytes(coordinatorUrls[msg.sender]).length != 0, "BurnAuction: Coordinator url not set");
         uint roundStart = calcRoundStart(roundIndex);
         require(block.number < roundStart, "BurnAuction: Round is in past");
         require(block.number < guardedSub(roundStart, auctionEnd), "BurnAuction: Bid is too close to round start");
@@ -69,6 +72,16 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         }
         highestBidPerRound[roundIndex] = Bid(msg.sender, msg.value);
         emit NewHighBid(roundIndex, msg.sender, msg.value);
+    }
+
+    function setUrl(string memory url) public {
+        coordinatorUrls[msg.sender] = url;
+        emit UrlUpdate(msg.sender);
+    }
+
+    function clearUrl() public {
+        delete coordinatorUrls[msg.sender];
+        emit UrlUpdate(msg.sender);
     }
 
     // The minimum bid for a given round
