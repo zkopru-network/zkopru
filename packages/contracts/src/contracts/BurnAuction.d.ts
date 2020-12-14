@@ -25,6 +25,8 @@ export class BurnAuction extends Contract {
 
     balance(): TransactionObject<string>
 
+    coordinatorUrls(arg0: string): TransactionObject<string>
+
     highestBidPerRound(
       arg0: number | string,
     ): TransactionObject<{
@@ -33,6 +35,8 @@ export class BurnAuction extends Contract {
       0: string
       1: string
     }>
+
+    lastBalanceIndex(): TransactionObject<string>
 
     lockedRoundIndex(): TransactionObject<string>
 
@@ -43,6 +47,10 @@ export class BurnAuction extends Contract {
     startBlock(): TransactionObject<string>
 
     bid(roundIndex: number | string): TransactionObject<void>
+
+    setUrl(url: string): TransactionObject<void>
+
+    clearUrl(): TransactionObject<void>
 
     minNextBid(roundIndex: number | string): TransactionObject<string>
 
@@ -88,6 +96,7 @@ export class BurnAuction extends Contract {
       1: string
       2: string
     }>
+    UrlUpdate: ContractEvent<string>
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
 }
