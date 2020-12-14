@@ -14,7 +14,7 @@ import CommitDeposits from './prompts/setup/commit-deposits'
 import RegisterVk from './prompts/setup/register-vks'
 import StopAutoCoordination from './prompts/stop-auto-coordinate'
 
-export class CooridnatorDashboard extends Dashboard<Context, Coordinator> {
+export class CoordinatorDashboard extends Dashboard<Context, Coordinator> {
   constructor(coordinator: Coordinator, onCancel: () => Promise<void>) {
     super({}, coordinator)
     const option = {
