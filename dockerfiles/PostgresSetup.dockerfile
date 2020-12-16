@@ -1,5 +1,5 @@
 FROM node:14-alpine
-RUN npm install -g  @prisma/cli
+RUN npm install -g  @prisma/cli@2.7.1
 
 WORKDIR /proj
 
