@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events'
+import { logger } from '@zkopru/utils'
 
 export declare interface Worker<T> {
   on(event: 'data', listener: (result: T) => void): this
@@ -62,7 +63,14 @@ export class Worker<T> extends EventEmitter {
       if (task.timeout) {
         setTimeout(this.detectDanglingTask, task.timeout)
       }
-      await Promise.all([this.runTask(task.task), sleep(task.interval)])
+      try {
+        await Promise.all([this.runTask(task.task), sleep(task.interval)])
+      } catch (err) {
+        logger.error('Uncaught error in task')
+        logger.error(Object.keys(err))
+        logger.error(err)
+        logger.error(err.reason)
+      }
     }
   }
 

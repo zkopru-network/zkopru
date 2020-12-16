@@ -26,6 +26,7 @@ import { ProposerBase } from './middlewares/interfaces/proposer-base'
 import { BlockGenerator } from './middlewares/default/block-generator'
 import { BlockProposer } from './middlewares/default/block-proposer'
 import { CoordinatorApi } from './api'
+import BN from 'bn.js'
 
 export interface CoordinatorInterface {
   start: () => void
@@ -54,6 +55,7 @@ export class Coordinator extends EventEmitter {
     blockPropose: Worker<void>
     blockFinalize: Worker<void>
     massDepositCommit: Worker<TransactionReceipt | undefined>
+    auctionBid: Worker<void>
   }
 
   proposeLock: AsyncLock
@@ -79,6 +81,7 @@ export class Coordinator extends EventEmitter {
       blockPropose: new Worker(),
       blockFinalize: new Worker(),
       massDepositCommit: new Worker(),
+      auctionBid: new Worker(),
     }
     this.middlewares = {
       generator: middlewares?.generator || new BlockGenerator(this.context),
@@ -127,6 +130,12 @@ export class Coordinator extends EventEmitter {
                 interval: 10000,
               })
             }
+            if (!this.taskRunners.auctionBid.isRunning()) {
+              this.taskRunners.auctionBid.start({
+                task: this.bidAuctions.bind(this),
+                interval: 5000,
+              })
+            }
             break
           case NetworkStatus.ON_ERROR:
             logger.error(`on error, stop generating new blocks`)
@@ -149,6 +158,7 @@ export class Coordinator extends EventEmitter {
       this.taskRunners.blockPropose.close(),
       this.taskRunners.blockFinalize.close(),
       this.taskRunners.massDepositCommit.close(),
+      this.taskRunners.auctionBid.close(),
       this.context.node.stop(),
       this.api.stop(),
     ])
@@ -178,6 +188,48 @@ export class Coordinator extends EventEmitter {
   async completeSetup(): Promise<TransactionReceipt | undefined> {
     const tx = this.layer1().setup.methods.completeSetup()
     return this.layer1().sendTx(tx, this.context.account)
+  }
+
+  async bidAuctions(): Promise<any> {
+    logger.info('bidding on auctions')
+    // Max block in the future to bid (100 rounds in the future)
+    const consensus = await this.layer1()
+      .upstream.methods.consensusProvider()
+      .call()
+    const auction = Layer1.getIBurnAuction(
+      this.layer1().web3,
+      consensus,
+    )
+    const url = await auction.methods.coordinatorUrls(this.context.account.address).call()
+    logger.info(`current url: "${url}"`)
+    logger.info(`contract addr: ${consensus}`)
+    if (!url) {
+      // Set a url
+      logger.info('setting url')
+      const urlTx = auction.methods.setUrl('http://localhost')
+      await this.layer1().sendExternalTx(urlTx, this.context.account, consensus)
+      logger.info('sent url tx')
+    }
+    const futureRounds = 20
+    const maxPrice = new BN((100000 * 10**9).toString())
+    const startRound = +(await auction.methods.currentRound().call()) + 3
+    for (let x = startRound; x < startRound + futureRounds; x++) {
+      const currentWinner = await auction.methods.coordinatorForRound(x).call()
+      if (currentWinner.toString().toLowerCase() === this.context.account.address.toLowerCase()) {
+        // Already highest bidder for this round
+        continue
+      }
+      const nextBid = await auction.methods.minNextBid(x).call()
+      if (new BN(nextBid).gt(maxPrice)) {
+        // price too high
+        continue
+      }
+      logger.info(`Bidding on round ${x}`)
+      const tx = auction.methods.bid(x)
+      await this.layer1().sendExternalTx(tx, this.context.account, consensus, {
+        value: nextBid,
+      })
+    }
   }
 
   async registerAsCoordinator(): Promise<TransactionReceipt | undefined> {
@@ -211,6 +263,17 @@ export class Coordinator extends EventEmitter {
         logger.trace(
           `Skip gen block. Syncing layer 2 with the layer 1 - status: ${this.context.node.synchronizer.status}`,
         )
+        return
+      }
+      const consensus = await this.layer1()
+        .upstream.methods.consensusProvider()
+        .call()
+      const proposable = Layer1.getIConsensusProvider(
+        this.layer1().web3,
+        consensus,
+      ).methods.isProposable(this.context.account.address)
+      if (!proposable) {
+        logger.trace(`Not able to propose block`)
         return
       }
       let block: Block

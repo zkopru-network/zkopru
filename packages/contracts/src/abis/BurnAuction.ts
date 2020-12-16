@@ -36,6 +36,19 @@ export const BurnAuctionABI = [
     type: 'event',
   },
   {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'coordinator',
+        type: 'address',
+      },
+    ],
+    name: 'UrlUpdate',
+    type: 'event',
+  },
+  {
     inputs: [],
     name: 'auctionEnd',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
@@ -57,12 +70,26 @@ export const BurnAuctionABI = [
     type: 'function',
   },
   {
+    inputs: [{ internalType: 'address', name: '', type: 'address' }],
+    name: 'coordinatorUrls',
+    outputs: [{ internalType: 'string', name: '', type: 'string' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
     inputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     name: 'highestBidPerRound',
     outputs: [
       { internalType: 'address payable', name: 'owner', type: 'address' },
       { internalType: 'uint256', name: 'amount', type: 'uint256' },
     ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'lastBalanceIndex',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
   },
@@ -99,6 +126,20 @@ export const BurnAuctionABI = [
     name: 'bid',
     outputs: [],
     stateMutability: 'payable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'string', name: 'url', type: 'string' }],
+    name: 'setUrl',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'clearUrl',
+    outputs: [],
+    stateMutability: 'nonpayable',
     type: 'function',
   },
   {
@@ -215,16 +256,6 @@ export const BurnAuctionABI = [
     name: 'lockForUpgrade',
     outputs: [],
     stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { internalType: 'uint256', name: 'a', type: 'uint256' },
-      { internalType: 'uint256', name: 'b', type: 'uint256' },
-    ],
-    name: 'max',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'pure',
     type: 'function',
   },
 ]

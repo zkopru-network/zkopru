@@ -44,7 +44,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     // Ether to be refunded from being outbid
     mapping (address => uint) public pendingBalances;
     mapping (uint => Bid) public highestBidPerRound;
-    mapping (address => string) public coordinatorUrls;
+    mapping (address => string) public override coordinatorUrls;
 
     event UrlUpdate(address coordinator);
     event NewHighBid(uint roundIndex, address bidder, uint amount);
@@ -54,7 +54,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         startBlock = block.number;
     }
 
-    function bid(uint roundIndex) public payable {
+    function bid(uint roundIndex) public override payable {
         require(roundIndex < lockedRoundIndex, "BurnAuction: Contract is locked");
         require(bytes(coordinatorUrls[msg.sender]).length != 0, "BurnAuction: Coordinator url not set");
         uint roundStart = calcRoundStart(roundIndex);
@@ -74,29 +74,29 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         emit NewHighBid(roundIndex, msg.sender, msg.value);
     }
 
-    function setUrl(string memory url) public {
+    function setUrl(string memory url) public override {
         coordinatorUrls[msg.sender] = url;
         emit UrlUpdate(msg.sender);
     }
 
-    function clearUrl() public {
+    function clearUrl() public override {
         delete coordinatorUrls[msg.sender];
         emit UrlUpdate(msg.sender);
     }
 
     // The minimum bid for a given round
-    function minNextBid(uint roundIndex) public view returns (uint) {
+    function minNextBid(uint roundIndex) public view override returns (uint) {
         uint highestBid = max(highestBidPerRound[roundIndex].amount, minBid);
         return highestBid + (highestBid / minBidIncrease);
     }
 
     // The current owner for a round, this may change if the auction is open
-    function coordinatorForRound(uint roundIndex) public view returns (address) {
+    function coordinatorForRound(uint roundIndex) public view override returns (address) {
         return highestBidPerRound[roundIndex].owner;
     }
 
     // Return the winning bidder for the current round
-    function activeCoordinator() public view returns (address) {
+    function activeCoordinator() public view override returns (address) {
         return coordinatorForRound(currentRound());
     }
 
@@ -110,7 +110,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     }
 
     // Returnt the current round number
-    function currentRound() public view returns (uint) {
+    function currentRound() public view override returns (uint) {
         return roundForBlock(block.number);
     }
 
@@ -163,7 +163,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     }
 
     // Determines if the current round should be opened for anyone to propose blocks
-    function shouldOpenRound() public view returns (bool) {
+    function shouldOpenRound() public view override returns (bool) {
         uint currentRoundStart = calcRoundStart(currentRound());
         if (block.number < currentRoundStart + roundLength / 2) {
             return false;
@@ -174,7 +174,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         return latestProposalBlock < currentRoundStart;
     }
 
-    function isRoundOpen() public view returns (bool) {
+    function isRoundOpen() public view override returns (bool) {
         return latestOpenRound == currentRound();
     }
 
@@ -199,7 +199,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         lockedRoundIndex = roundIndex;
     }
 
-    function max(uint a, uint b) public pure returns (uint) {
+    function max(uint a, uint b) internal pure returns (uint) {
         return a > b ? a : b;
     }
 

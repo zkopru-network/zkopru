@@ -22,6 +22,26 @@ export class IBurnAuction extends Contract {
     transferBalance(recipient: string): TransactionObject<void>
 
     register(): TransactionObject<void>
+
+    setUrl(url: string): TransactionObject<void>
+
+    clearUrl(): TransactionObject<void>
+
+    coordinatorUrls(url: string): TransactionObject<string>
+
+    bid(roundIndex: number | string): TransactionObject<void>
+
+    minNextBid(roundIndex: number | string): TransactionObject<string>
+
+    coordinatorForRound(roundIndex: number | string): TransactionObject<string>
+
+    activeCoordinator(): TransactionObject<string>
+
+    currentRound(): TransactionObject<string>
+
+    shouldOpenRound(): TransactionObject<boolean>
+
+    isRoundOpen(): TransactionObject<boolean>
   }
 
   events: {
