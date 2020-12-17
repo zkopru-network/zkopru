@@ -31,6 +31,13 @@ export class IBurnAuction extends Contract {
 
     bid(roundIndex: number | string): TransactionObject<void>
 
+    multiBid(
+      _minBid: number | string,
+      maxBid: number | string,
+      startRound: number | string,
+      endRound: number | string,
+    ): TransactionObject<void>
+
     minNextBid(roundIndex: number | string): TransactionObject<string>
 
     calcRoundStart(roundIndex: number | string): TransactionObject<string>

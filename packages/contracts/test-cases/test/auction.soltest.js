@@ -20,14 +20,62 @@ contract('BurnAuction tests', async accounts => {
     roundLength = +(await burnAuction.roundLength()).toString()
     auctionStart = +(await burnAuction.auctionStart()).toString()
     auctionEnd = +(await burnAuction.auctionEnd()).toString()
+    // Set the url so bids succeed
+    await burnAuction.setUrl('localhost:8080', {
+      from: accounts[0],
+    })
+    await burnAuction.setUrl('localhost', {
+      from: accounts[1],
+    })
   })
+
+  describe('biddable rounds', () => {
+    it('should return nearest biddable round', async () => {
+      const round = await burnAuction.earliestBiddableRound()
+      await burnAuction.bid(round, {
+        from: accounts[0],
+        value: await burnAuction.minNextBid(round),
+      })
+      await burnAuction.bid(+round + 1, {
+        from: accounts[0],
+        value: await burnAuction.minNextBid(+round + 1),
+      })
+      try {
+        await burnAuction.bid(+round - 1, {
+          from: accounts[0],
+          value: await burnAuction.minNextBid(+round - 1),
+        })
+        chai.assert(false, 'Should fail to bid on earlier round')
+      } catch (err) {
+        chai.assert(err.reason === 'BurnAuction: Bid is too close to round start')
+      }
+    })
+
+    it('should return furthest biddable round', async () => {
+      const round = await burnAuction.latestBiddableRound()
+      await burnAuction.bid(round, {
+        from: accounts[0],
+        value: await burnAuction.minNextBid(round),
+      })
+      await burnAuction.bid(+round - 1, {
+        from: accounts[0],
+        value: await burnAuction.minNextBid(+round - 1),
+      })
+      try {
+        await burnAuction.bid(+round + 1, {
+          from: accounts[0],
+          value: await burnAuction.minNextBid(+round + 1),
+        })
+        chai.assert(false, 'Should fail to bid on later round')
+      } catch (err) {
+        chai.assert(err.reason === 'BurnAuction: Bid is too far from round start')
+      }
+    })
+  })
+
   describe('bidding test', () => {
     it('should fail to bid on 0th auction', async () => {
       const currentRound = +(await burnAuction.currentRound()).toString()
-      // Set the url so bids succeed
-      await burnAuction.setUrl('localhost:8080', {
-        from: accounts[0],
-      })
       try {
         await burnAuction.bid(currentRound, {
           from: accounts[0],
@@ -70,6 +118,40 @@ contract('BurnAuction tests', async accounts => {
       }
     })
 
+    it('should fail to bid without funds', async () => {
+      await burnAuction.refund({
+        from: accounts[0],
+      })
+      const targetRound = await burnAuction.earliestBiddableRound()
+      const bidAmount = new BN(web3.utils.toWei('1')) // 1 ether
+      try {
+        await burnAuction.methods['bid(uint256,uint256)'](targetRound, bidAmount, {
+          from: accounts[0],
+        })
+        chai.assert(false, 'Bid should fail')
+      } catch (err) {
+        chai.assert(err.reason === 'BurnAuction: Insufficient funds')
+      }
+    })
+
+    it('should fail to pay overloaded bid function', async () => {
+      await burnAuction.refund({
+        from: accounts[0],
+      })
+      const targetRound = await burnAuction.earliestBiddableRound()
+      const bidAmount = new BN(web3.utils.toWei('1')) // 1 ether
+      try {
+        await burnAuction.methods['bid(uint256,uint256)'](targetRound, bidAmount, {
+          from: accounts[0],
+          value: bidAmount,
+        })
+        chai.assert(false, 'Bid should fail')
+      } catch (err) {
+        chai.assert(err.reason === undefined)
+      }
+
+    })
+
     it('should fail to bid on past auction', async () => {
       try {
         await burnAuction.bid(0, {
@@ -98,11 +180,13 @@ contract('BurnAuction tests', async accounts => {
     })
 
     it('should bid on near auction', async () => {
-      const currentRound = +(await burnAuction.currentRound()).toString()
-      const roundStartBlock = +(await burnAuction.calcRoundStart(currentRound)).toString()
-      const targetRound = +(await burnAuction.roundForBlock(roundStartBlock + roundLength + auctionEnd + 1)).toString()
-      const bidAmount = await burnAuction.minNextBid(targetRound)
+      const targetRound = +(await burnAuction.earliestBiddableRound())
+      await burnAuction.bid(targetRound, {
+        from: accounts[1],
+        value: await burnAuction.minNextBid(targetRound),
+      })
       const originalBalance = await burnAuction.pendingBalances(accounts[0])
+      const bidAmount = await burnAuction.minNextBid(targetRound)
       await burnAuction.bid(targetRound, {
         from: accounts[0],
         value: bidAmount,
@@ -115,9 +199,11 @@ contract('BurnAuction tests', async accounts => {
     })
 
     it('should bid on far auction', async () => {
-      const currentRound = +(await burnAuction.currentRound()).toString()
-      const roundStartBlock = +(await burnAuction.calcRoundStart(currentRound)).toString()
-      const targetRound = +(await burnAuction.roundForBlock(roundStartBlock + roundLength + auctionStart - 1)).toString()
+      const targetRound = +(await burnAuction.latestBiddableRound())
+      await burnAuction.bid(targetRound, {
+        from: accounts[1],
+        value: await burnAuction.minNextBid(targetRound),
+      })
       const bidAmount = await burnAuction.minNextBid(targetRound)
       const originalBalance = await burnAuction.pendingBalances(accounts[0])
       await burnAuction.bid(targetRound, {
@@ -154,9 +240,6 @@ contract('BurnAuction tests', async accounts => {
       const bidAmount = (await burnAuction.minNextBid(targetRound))
       // Do first bid
       const originalBalance = await burnAuction.pendingBalances(accounts[0])
-      await burnAuction.setUrl('localhost', {
-        from: accounts[1],
-      })
       await burnAuction.bid(targetRound, {
         from: accounts[0],
         value: bidAmount,
@@ -168,6 +251,84 @@ contract('BurnAuction tests', async accounts => {
       })
       const newBalance = await burnAuction.pendingBalances(accounts[0])
       chai.assert(originalBalance.add(bidAmount).eq(newBalance))
+    })
+  })
+
+  describe('multibid test', () => {
+    it('should fail to bid on invalid auctions', async () => {
+      const startRound = +(await burnAuction.earliestBiddableRound()) - 1
+      const endRound = startRound + 10
+      const maxBid = web3.utils.toWei('1') // 1 ether
+      try {
+        await burnAuction.multiBid(0, maxBid, startRound, endRound, {
+          from: accounts[0],
+          value: web3.utils.toWei('1'),
+        })
+        chai.assert(false, 'Should fail to bid on too near round')
+      } catch (err) {
+        chai.assert(err.reason === 'BurnAuction: Bid is too close to round start')
+      }
+    })
+
+    it('should store leftover funds in balance', async () => {
+      const startRound = await burnAuction.earliestBiddableRound()
+      const endRound = +startRound + 10
+      const maxBid = new BN(web3.utils.toWei('1')) // 1 ether
+      await burnAuction.multiBid(0, maxBid, startRound, endRound, {
+        from: accounts[1],
+        value: maxBid,
+      })
+      const startBalance = await burnAuction.pendingBalances(accounts[0])
+      let expectedTotalBid = new BN('0')
+      for (let x = +startRound; x <= +endRound; x += 1) {
+        expectedTotalBid = expectedTotalBid
+          .clone()
+          .add(await burnAuction.minNextBid(x))
+      }
+      await burnAuction.multiBid(0, maxBid, startRound, endRound, {
+        from: accounts[0],
+        value: maxBid,
+      })
+      const finalBalance = await burnAuction.pendingBalances(accounts[0])
+      chai.assert(
+        finalBalance.eq(startBalance.add(maxBid).sub(expectedTotalBid)),
+        'Final balance is incorrect'
+      )
+    })
+
+    it('should bid until out of funds', async () => {
+      const startRound = await burnAuction.earliestBiddableRound()
+      const endRound = +startRound + 10
+      const maxBid = new BN(web3.utils.toWei('1')) // 1 ether
+      await burnAuction.multiBid(0, maxBid, startRound, endRound, {
+        from: accounts[1],
+        value: maxBid,
+      })
+      await burnAuction.refund({
+        from: accounts[0],
+      })
+      const minBid = new BN(web3.utils.toWei('0.1')) // 0.1 ether
+      const bidCount = 3
+      await burnAuction.multiBid(minBid, maxBid, startRound, endRound, {
+        from: accounts[0],
+        value: minBid.mul(new BN(bidCount.toString())), // Only bid on bidCount rounds
+      })
+      for (let x = +startRound; x < +startRound + bidCount; x += 1) {
+        const highBid = await burnAuction.highestBidPerRound(x)
+        chai.assert(
+          highBid.owner === accounts[0],
+          `Expected account 0 to be round owner for round ${x}`
+        )
+      }
+      for (let x = +startRound + bidCount; x <= +endRound; x += 1) {
+        const highBid = await burnAuction.highestBidPerRound(x)
+        chai.assert(
+          highBid.owner === accounts[1],
+          `Expected account 1 to be round owner for round ${x}`
+        )
+      }
+      const finalBalance = await burnAuction.pendingBalances(accounts[0])
+      chai.assert(finalBalance.eq(new BN('0')), 'Incorrect final balance')
     })
   })
 
@@ -197,52 +358,46 @@ contract('BurnAuction tests', async accounts => {
   })
 
   describe('refund test', () => {
-    it('should fail to refund empty balance', async () => {
-      try {
-        await burnAuction.refund({
-          from: accounts[9],
-        })
-        chai.assert(false, 'Should fail to do empty refund')
-      } catch (err) {
-        chai.assert(err.reason === 'BurnAuction: No balance to refund')
-      }
+    it('should refund empty balance', async () => {
+      const contractBalance = new BN(await web3.eth.getBalance(burnAuction.address, 'latest'))
+      await burnAuction.refund({
+        from: accounts[9],
+      })
+      const newContractBalance = new BN(await web3.eth.getBalance(burnAuction.address, 'latest'))
+      chai.assert(contractBalance.eq(newContractBalance), 'Contract balance should not change')
     })
 
     it('should refund balance once', async () => {
       const currentRound = +(await burnAuction.currentRound()).toString()
       const roundStartBlock = +(await burnAuction.calcRoundStart(currentRound)).toString()
       const targetRound = +(await burnAuction.roundForBlock(roundStartBlock + roundLength + auctionStart/2)).toString()
-      const bidAmount = await burnAuction.minNextBid(targetRound)
       await burnAuction.setUrl('localhost', {
         from: accounts[3],
       })
       await burnAuction.bid(targetRound, {
         from: accounts[3],
-        value: bidAmount,
+        value: await burnAuction.minNextBid(targetRound),
       })
       // outbid self to get a pending balance
-      const nextBidAmount = await burnAuction.minNextBid(targetRound)
       await burnAuction.bid(targetRound, {
         from: accounts[3],
-        value: nextBidAmount,
+        value: await burnAuction.minNextBid(targetRound),
       })
       const pendingBalance = await burnAuction.pendingBalances(accounts[3])
       const addressBalance = new BN(await web3.eth.getBalance(accounts[3], 'latest'))
-      await burnAuction.refundAddress(accounts[3], {
+      // Use alt account to avoid gas cost calculation
+      await burnAuction.methods['refund(address)'](accounts[3], {
         from: accounts[9],
       })
       const finalBalance = new BN(await web3.eth.getBalance(accounts[3], 'latest'))
       chai.assert(addressBalance.add(pendingBalance).eq(finalBalance))
       const newPendingBalance = await burnAuction.pendingBalances(accounts[3])
       chai.assert(newPendingBalance.eq(new BN('0')))
-      try {
-        await burnAuction.refund({
-          from: accounts[3],
-        })
-        chai.assert(false, 'Should fail to do empty refund')
-      } catch (err) {
-        chai.assert(err.reason === 'BurnAuction: No balance to refund')
-      }
+      await burnAuction.methods['refund(address)'](accounts[3], {
+        from: accounts[9],
+      })
+      const _finalBalance = new BN(await web3.eth.getBalance(accounts[3], 'latest'))
+      chai.assert(_finalBalance.eq(finalBalance))
     })
   })
 

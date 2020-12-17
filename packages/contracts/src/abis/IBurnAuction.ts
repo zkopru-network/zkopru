@@ -44,6 +44,28 @@ export const IBurnAuctionABI = [
     type: 'function',
   },
   {
+    inputs: [
+      { internalType: 'uint256', name: 'roundIndex', type: 'uint256' },
+      { internalType: 'uint256', name: 'amount', type: 'uint256' },
+    ],
+    name: 'bid',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'uint256', name: '_minBid', type: 'uint256' },
+      { internalType: 'uint256', name: 'maxBid', type: 'uint256' },
+      { internalType: 'uint256', name: 'startRound', type: 'uint256' },
+      { internalType: 'uint256', name: 'endRound', type: 'uint256' },
+    ],
+    name: 'multiBid',
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+  {
     inputs: [{ internalType: 'uint256', name: 'roundIndex', type: 'uint256' }],
     name: 'minNextBid',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],

@@ -272,7 +272,7 @@ const config = {
   "generator": {
     "name": "client",
     "provider": "prisma-client-js",
-    "output": "/Users/chance/freelance/ef/zkopru/packages/prisma/generated/sqlite",
+    "output": "/Users/chance/freelance/ef/zkopru_jchancehud/packages/prisma/generated/sqlite",
     "binaryTargets": [
       "darwin",
       "windows",

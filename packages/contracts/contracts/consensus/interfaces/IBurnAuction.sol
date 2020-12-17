@@ -8,6 +8,8 @@ interface IBurnAuction {
     function clearUrl() external;
     function coordinatorUrls(address url) external view returns (string memory);
     function bid(uint roundIndex) external payable;
+    function bid(uint roundIndex, uint amount) external;
+    function multiBid(uint _minBid, uint maxBid, uint startRound, uint endRound) external payable;
     function minNextBid(uint roundIndex) external view returns (uint);
     function calcRoundStart(uint roundIndex) external view returns (uint);
     function coordinatorForRound(uint roundIndex) external view returns (address);

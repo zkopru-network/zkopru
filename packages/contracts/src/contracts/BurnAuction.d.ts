@@ -48,9 +48,20 @@ export class BurnAuction extends Contract {
 
     bid(roundIndex: number | string): TransactionObject<void>
 
+    multiBid(
+      _minBid: number | string,
+      maxBid: number | string,
+      startRound: number | string,
+      endRound: number | string,
+    ): TransactionObject<void>
+
     setUrl(url: string): TransactionObject<void>
 
     clearUrl(): TransactionObject<void>
+
+    earliestBiddableRound(): TransactionObject<string>
+
+    latestBiddableRound(): TransactionObject<string>
 
     minNextBid(roundIndex: number | string): TransactionObject<string>
 
@@ -65,8 +76,6 @@ export class BurnAuction extends Contract {
     currentRound(): TransactionObject<string>
 
     refund(): TransactionObject<void>
-
-    refundAddress(owner: string): TransactionObject<void>
 
     transferBalance(recipient: string): TransactionObject<void>
 

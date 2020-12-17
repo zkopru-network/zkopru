@@ -14,23 +14,24 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
 
     struct Bid {
         address payable owner;
-        uint amount;
+        uint232 amount;
     }
 
-    uint immutable public startBlock;
-    // Just to make math more clear
-    uint8 constant blockTime = 15;
     // Round length in blocks
-    uint constant public roundLength = (10 minutes / blockTime);
+    uint8 constant blockTime = 15;
+    // As a percentage (denominator)
+    uint8 constant minBidIncrease = 10;
+
+    uint56 immutable public startBlock;
+    // Just to make math more clear
+    uint56 constant public roundLength = (10 minutes / blockTime);
     // The start time of an auction, in blocks before the round
-    uint constant public auctionStart = (30 days / blockTime);
+    uint56 constant public auctionStart = (30 days / blockTime);
     // Auction end time, in blocks before the round
-    uint constant public auctionEnd = roundLength * 2;
+    uint56 constant public auctionEnd = roundLength * 2;
     // Min bid is 10000 gwei
     uint constant minBid = 10000 gwei;
 
-    // As a percentage (denominator)
-    uint constant minBidIncrease = 10;
 
     // The current balance from success auctions
     uint public balance = 0;
@@ -51,10 +52,15 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
 
     constructor(address payable networkAddress) public {
         zkopru = Zkopru(networkAddress);
-        startBlock = block.number;
+        startBlock = uint56(block.number);
     }
 
     function bid(uint roundIndex) public override payable {
+        pendingBalances[msg.sender] += msg.value;
+        bid(roundIndex, msg.value);
+    }
+
+    function bid(uint roundIndex, uint amount) public override {
         require(roundIndex < lockedRoundIndex, "BurnAuction: Contract is locked");
         require(bytes(coordinatorUrls[msg.sender]).length != 0, "BurnAuction: Coordinator url not set");
         uint roundStart = calcRoundStart(roundIndex);
@@ -62,16 +68,32 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         require(block.number < guardedSub(roundStart, auctionEnd), "BurnAuction: Bid is too close to round start");
         require(block.number > guardedSub(roundStart, auctionStart), "BurnAuction: Bid is too far from round start");
         // bid timing is valid
-        require(msg.value >= minNextBid(roundIndex), "BurnAuction: Bid not high enough");
+        require(amount <= pendingBalances[msg.sender], "BurnAuction: Insufficient funds");
+        require(amount >= minNextBid(roundIndex), "BurnAuction: Bid not high enough");
         // bid amount is valid
 
+        // check for overflow
+        require(amount <= type(uint232).max, "BurnAuction: Bid amount too high");
         Bid memory prevHighBid = highestBidPerRound[roundIndex];
         if (prevHighBid.owner != address(0)) {
             // Refund the previous high bidder
             pendingBalances[prevHighBid.owner] += prevHighBid.amount;
         }
-        highestBidPerRound[roundIndex] = Bid(msg.sender, msg.value);
-        emit NewHighBid(roundIndex, msg.sender, msg.value);
+        highestBidPerRound[roundIndex] = Bid(msg.sender, uint232(amount));
+        pendingBalances[msg.sender] -= amount;
+        emit NewHighBid(roundIndex, msg.sender, amount);
+    }
+
+    function multiBid(uint _minBid, uint maxBid, uint startRound, uint endRound) public override payable {
+        pendingBalances[msg.sender] += msg.value;
+        for (uint x = startRound; x <= endRound; x++) {
+            uint nextBid = minNextBid(x);
+            if (nextBid > maxBid) continue;
+            if (highestBidPerRound[x].owner == msg.sender) continue; // don't bid over self
+            uint bidAmount = max(_minBid, nextBid);
+            if (bidAmount > pendingBalances[msg.sender]) break;
+            bid(x, bidAmount);
+        }
     }
 
     function setUrl(string memory url) public override {
@@ -82,6 +104,14 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     function clearUrl() public override {
         delete coordinatorUrls[msg.sender];
         emit UrlUpdate(msg.sender);
+    }
+
+    function earliestBiddableRound() public view returns (uint) {
+      return roundForBlock(calcRoundStart(currentRound()) + roundLength + auctionEnd);
+    }
+
+    function latestBiddableRound() public view returns (uint) {
+      return roundForBlock(calcRoundStart(currentRound()) + auctionStart);
     }
 
     // The minimum bid for a given round
@@ -116,12 +146,12 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
 
     // Refund non-winning bids
     function refund() public {
-        refundAddress(msg.sender);
+        refund(msg.sender);
     }
 
-    function refundAddress(address payable owner) public {
-        require(pendingBalances[owner] > 0, "BurnAuction: No balance to refund");
+    function refund(address payable owner) public {
         uint amountToRefund = pendingBalances[owner];
+        if (amountToRefund == 0) return;
         pendingBalances[owner] = 0;
         owner.transfer(amountToRefund);
     }
