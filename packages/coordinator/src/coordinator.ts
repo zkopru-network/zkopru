@@ -62,6 +62,10 @@ export class Coordinator extends EventEmitter {
 
   middlewares: Middlewares
 
+  currentProposer: string|undefined
+  nextProposer: string|undefined
+  currentRound: number|undefined
+
   constructor(
     node: FullNode,
     account: Account,
@@ -191,8 +195,6 @@ export class Coordinator extends EventEmitter {
   }
 
   async bidAuctions(): Promise<any> {
-    logger.info('bidding on auctions')
-    // Max block in the future to bid (100 rounds in the future)
     const consensus = await this.layer1()
       .upstream.methods.consensusProvider()
       .call()
@@ -200,19 +202,35 @@ export class Coordinator extends EventEmitter {
       this.layer1().web3,
       consensus,
     )
-    const url = await auction.methods.coordinatorUrls(this.context.account.address).call()
-    logger.info(`current url: "${url}"`)
-    logger.info(`contract addr: ${consensus}`)
+    const currentRound = await auction.methods.currentRound().call()
+    const [ currentProposer, nextProposer, url ] = await Promise.all([
+      auction.methods.coordinatorForRound(currentRound).call(),
+      auction.methods.coordinatorForRound(+currentRound + 1).call(),
+      auction.methods.coordinatorUrls(this.context.account.address).call()
+    ])
+    if (+currentRound !== this.currentRound) {
+      this.currentRound = +currentRound
+      logger.info(`Current auction round: ${currentRound}`)
+    }
+    if (currentProposer !== this.currentProposer) {
+      this.currentProposer = currentProposer
+      logger.info(`Current block proposer: ${currentProposer}`)
+    }
+    if (nextProposer !== this.nextProposer) {
+      this.nextProposer = nextProposer
+      logger.info(`Next block proposer: ${nextProposer}`)
+    }
+    // logger.info(`current url: "${url}"`)
     if (!url) {
       // Set a url
-      logger.info('setting url')
+      // TODO: determine apparent external ip/port
       const urlTx = auction.methods.setUrl('http://localhost')
       await this.layer1().sendExternalTx(urlTx, this.context.account, consensus)
-      logger.info('sent url tx')
     }
     const futureRounds = 20
     const maxPrice = new BN((100000 * 10**9).toString())
     const startRound = +(await auction.methods.currentRound().call()) + 3
+    const promises = [] as Promise<any>[]
     for (let x = startRound; x < startRound + futureRounds; x++) {
       const currentWinner = await auction.methods.coordinatorForRound(x).call()
       if (currentWinner.toString().toLowerCase() === this.context.account.address.toLowerCase()) {
@@ -226,10 +244,16 @@ export class Coordinator extends EventEmitter {
       }
       logger.info(`Bidding on round ${x}`)
       const tx = auction.methods.bid(x)
-      await this.layer1().sendExternalTx(tx, this.context.account, consensus, {
-        value: nextBid,
-      })
+      // await this.layer1().sendExternalTx(tx, this.context.account, consensus, {
+      //   value: nextBid,
+      // })
+      promises.push(
+        this.layer1().sendExternalTx(tx, this.context.account, consensus, {
+          value: nextBid,
+        })
+      )
     }
+    await Promise.all(promises)
   }
 
   async registerAsCoordinator(): Promise<TransactionReceipt | undefined> {
