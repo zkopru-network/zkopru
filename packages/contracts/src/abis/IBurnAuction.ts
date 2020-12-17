@@ -52,6 +52,13 @@ export const IBurnAuctionABI = [
   },
   {
     inputs: [{ internalType: 'uint256', name: 'roundIndex', type: 'uint256' }],
+    name: 'calcRoundStart',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'uint256', name: 'roundIndex', type: 'uint256' }],
     name: 'coordinatorForRound',
     outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',

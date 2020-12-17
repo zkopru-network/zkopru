@@ -33,6 +33,8 @@ export class IBurnAuction extends Contract {
 
     minNextBid(roundIndex: number | string): TransactionObject<string>
 
+    calcRoundStart(roundIndex: number | string): TransactionObject<string>
+
     coordinatorForRound(roundIndex: number | string): TransactionObject<string>
 
     activeCoordinator(): TransactionObject<string>

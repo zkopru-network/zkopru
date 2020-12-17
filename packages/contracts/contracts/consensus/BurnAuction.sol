@@ -101,7 +101,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     }
 
     // Return the start block of a given round index
-    function calcRoundStart(uint roundIndex) public view returns (uint) {
+    function calcRoundStart(uint roundIndex) public view override returns (uint) {
         return startBlock + (roundIndex * roundLength);
     }
 

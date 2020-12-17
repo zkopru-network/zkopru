@@ -5,6 +5,7 @@ import { Dashboard } from '../../../dashboard'
 export enum AppMenu {
   PRINT_STATUS,
   LAYER1_DETAIL,
+  AUCTION_INFO,
   COORDINATOR_INFO,
   AUTO_COORDINATE,
   STOP_AUTO_COORDINATION,
