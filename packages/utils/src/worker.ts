@@ -67,9 +67,7 @@ export class Worker<T> extends EventEmitter {
         await Promise.all([this.runTask(task.task), sleep(task.interval)])
       } catch (err) {
         logger.error('Uncaught error in task')
-        logger.error(Object.keys(err))
         logger.error(err)
-        logger.error(err.reason)
       }
     }
   }
