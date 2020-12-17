@@ -24,7 +24,7 @@ export class TxUtil {
       gasPrice,
       gas,
       to: address,
-      value: typeof option?.value === 'string' ? option.value : '0x0',
+      value: option?.value,
       data: tx.encodeABI(),
     }, account.privateKey)
     return rawTransaction as string
