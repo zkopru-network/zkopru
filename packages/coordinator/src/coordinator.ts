@@ -27,6 +27,7 @@ import { BlockGenerator } from './middlewares/default/block-generator'
 import { BlockProposer } from './middlewares/default/block-proposer'
 import { CoordinatorApi } from './api'
 import BN from 'bn.js'
+import { AuctionMonitor } from './auction-monitor'
 
 export interface CoordinatorInterface {
   start: () => void
@@ -55,15 +56,12 @@ export class Coordinator extends EventEmitter {
     blockPropose: Worker<void>
     blockFinalize: Worker<void>
     massDepositCommit: Worker<TransactionReceipt | undefined>
-    auctionBid: Worker<void>
   }
 
   proposeLock: AsyncLock
 
   middlewares: Middlewares
 
-  currentProposer: string|undefined
-  nextProposer: string|undefined
   currentRound: number|undefined
 
   constructor(
@@ -76,6 +74,7 @@ export class Coordinator extends EventEmitter {
     this.context = {
       account,
       node,
+      auctionMonitor: new AuctionMonitor(node, account, config),
       txPool: new TxMemPool(),
       config: { priceMultiplier: 32, ...config },
     }
@@ -85,7 +84,6 @@ export class Coordinator extends EventEmitter {
       blockPropose: new Worker(),
       blockFinalize: new Worker(),
       massDepositCommit: new Worker(),
-      auctionBid: new Worker(),
     }
     this.middlewares = {
       generator: middlewares?.generator || new BlockGenerator(this.context),
@@ -108,6 +106,7 @@ export class Coordinator extends EventEmitter {
   start() {
     logger.info('Coordinator started')
     this.context.node.start()
+    this.context.auctionMonitor.start()
     this.api.start()
     this.startSubscribeGasPrice()
     this.taskRunners.blockFinalize.start({
@@ -134,12 +133,6 @@ export class Coordinator extends EventEmitter {
                 interval: 10000,
               })
             }
-            if (!this.taskRunners.auctionBid.isRunning()) {
-              this.taskRunners.auctionBid.start({
-                task: this.bidAuctions.bind(this),
-                interval: 5000,
-              })
-            }
             break
           case NetworkStatus.ON_ERROR:
             logger.error(`on error, stop generating new blocks`)
@@ -162,8 +155,8 @@ export class Coordinator extends EventEmitter {
       this.taskRunners.blockPropose.close(),
       this.taskRunners.blockFinalize.close(),
       this.taskRunners.massDepositCommit.close(),
-      this.taskRunners.auctionBid.close(),
       this.context.node.stop(),
+      this.context.auctionMonitor.stop(),
       this.api.stop(),
     ])
     this.emit('stop')
@@ -202,25 +195,14 @@ export class Coordinator extends EventEmitter {
       this.layer1().web3,
       consensus,
     )
-    const currentRound = await auction.methods.currentRound().call()
-    const [ currentProposer, nextProposer, url ] = await Promise.all([
-      auction.methods.coordinatorForRound(currentRound).call(),
-      auction.methods.coordinatorForRound(+currentRound + 1).call(),
-      auction.methods.coordinatorUrls(this.context.account.address).call()
+    const [ currentRound, url ] = await Promise.all([
+      auction.methods.currentRound().call(),
+      auction.methods.coordinatorUrls(this.context.account.address).call(),
     ])
     if (+currentRound !== this.currentRound) {
       this.currentRound = +currentRound
       logger.info(`Current auction round: ${currentRound}`)
     }
-    if (currentProposer !== this.currentProposer) {
-      this.currentProposer = currentProposer
-      logger.info(`Current block proposer: ${currentProposer}`)
-    }
-    if (nextProposer !== this.nextProposer) {
-      this.nextProposer = nextProposer
-      logger.info(`Next block proposer: ${nextProposer}`)
-    }
-    // logger.info(`current url: "${url}"`)
     if (!url) {
       // Set a url
       // TODO: determine apparent external ip/port
@@ -231,6 +213,7 @@ export class Coordinator extends EventEmitter {
     const maxPrice = new BN((100000 * 10**9).toString())
     const startRound = +(await auction.methods.currentRound().call()) + 3
     const promises = [] as Promise<any>[]
+
     for (let x = startRound; x < startRound + futureRounds; x++) {
       const currentWinner = await auction.methods.coordinatorForRound(x).call()
       if (currentWinner.toString().toLowerCase() === this.context.account.address.toLowerCase()) {

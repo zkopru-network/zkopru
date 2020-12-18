@@ -1,5 +1,67 @@
 export const IBurnAuctionABI = [
   {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'roundIndex',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'bidder',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'amount',
+        type: 'uint256',
+      },
+    ],
+    name: 'NewHighBid',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'coordinator',
+        type: 'address',
+      },
+    ],
+    name: 'UrlUpdate',
+    type: 'event',
+  },
+  {
+    inputs: [],
+    name: 'startBlock',
+    outputs: [{ internalType: 'uint32', name: '', type: 'uint32' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'roundLength',
+    outputs: [{ internalType: 'uint32', name: '', type: 'uint32' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'uint256', name: 'roundIndex', type: 'uint256' }],
+    name: 'highestBidForRound',
+    outputs: [
+      { internalType: 'uint232', name: '', type: 'uint232' },
+      { internalType: 'address', name: '', type: 'address' },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
     inputs: [
       { internalType: 'address payable', name: 'recipient', type: 'address' },
     ],
@@ -27,6 +89,20 @@ export const IBurnAuctionABI = [
     name: 'clearUrl',
     outputs: [],
     stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'earliestBiddableRound',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'latestBiddableRound',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
     type: 'function',
   },
   {

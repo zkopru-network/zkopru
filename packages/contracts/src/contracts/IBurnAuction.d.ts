@@ -19,6 +19,17 @@ export class IBurnAuction extends Contract {
   clone(): IBurnAuction
 
   methods: {
+    startBlock(): TransactionObject<string>
+
+    roundLength(): TransactionObject<string>
+
+    highestBidForRound(
+      roundIndex: number | string,
+    ): TransactionObject<{
+      0: string
+      1: string
+    }>
+
     transferBalance(recipient: string): TransactionObject<void>
 
     register(): TransactionObject<void>
@@ -26,6 +37,10 @@ export class IBurnAuction extends Contract {
     setUrl(url: string): TransactionObject<void>
 
     clearUrl(): TransactionObject<void>
+
+    earliestBiddableRound(): TransactionObject<string>
+
+    latestBiddableRound(): TransactionObject<string>
 
     coordinatorUrls(url: string): TransactionObject<string>
 
@@ -54,6 +69,15 @@ export class IBurnAuction extends Contract {
   }
 
   events: {
+    NewHighBid: ContractEvent<{
+      roundIndex: string
+      bidder: string
+      amount: string
+      0: string
+      1: string
+      2: string
+    }>
+    UrlUpdate: ContractEvent<string>
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
 }

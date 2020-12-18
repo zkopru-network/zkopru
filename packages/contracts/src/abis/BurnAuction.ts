@@ -51,14 +51,14 @@ export const BurnAuctionABI = [
   {
     inputs: [],
     name: 'auctionEnd',
-    outputs: [{ internalType: 'uint56', name: '', type: 'uint56' }],
+    outputs: [{ internalType: 'uint32', name: '', type: 'uint32' }],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [],
     name: 'auctionStart',
-    outputs: [{ internalType: 'uint56', name: '', type: 'uint56' }],
+    outputs: [{ internalType: 'uint32', name: '', type: 'uint32' }],
     stateMutability: 'view',
     type: 'function',
   },
@@ -77,26 +77,16 @@ export const BurnAuctionABI = [
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    name: 'highestBidPerRound',
-    outputs: [
-      { internalType: 'address payable', name: 'owner', type: 'address' },
-      { internalType: 'uint232', name: 'amount', type: 'uint232' },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
     inputs: [],
     name: 'lastBalanceIndex',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    outputs: [{ internalType: 'uint64', name: '', type: 'uint64' }],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [],
     name: 'lockedRoundIndex',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    outputs: [{ internalType: 'uint64', name: '', type: 'uint64' }],
     stateMutability: 'view',
     type: 'function',
   },
@@ -110,14 +100,14 @@ export const BurnAuctionABI = [
   {
     inputs: [],
     name: 'roundLength',
-    outputs: [{ internalType: 'uint56', name: '', type: 'uint56' }],
+    outputs: [{ internalType: 'uint32', name: '', type: 'uint32' }],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [],
     name: 'startBlock',
-    outputs: [{ internalType: 'uint56', name: '', type: 'uint56' }],
+    outputs: [{ internalType: 'uint32', name: '', type: 'uint32' }],
     stateMutability: 'view',
     type: 'function',
   },
@@ -148,6 +138,16 @@ export const BurnAuctionABI = [
     name: 'multiBid',
     outputs: [],
     stateMutability: 'payable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'uint256', name: 'roundIndex', type: 'uint256' }],
+    name: 'highestBidForRound',
+    outputs: [
+      { internalType: 'uint232', name: '', type: 'uint232' },
+      { internalType: 'address', name: '', type: 'address' },
+    ],
+    stateMutability: 'view',
     type: 'function',
   },
   {
@@ -247,6 +247,15 @@ export const BurnAuctionABI = [
   },
   {
     inputs: [],
+    name: 'updateBalance',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'uint256', name: 'maxIterations', type: 'uint256' },
+    ],
     name: 'updateBalance',
     outputs: [],
     stateMutability: 'nonpayable',

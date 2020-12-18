@@ -22,16 +22,15 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     // As a percentage (denominator)
     uint8 constant minBidIncrease = 10;
 
-    uint32 immutable public startBlock;
+    uint32 override immutable public startBlock;
     // Just to make math more clear
-    uint32 constant public roundLength = (10 minutes / blockTime);
+    uint32 constant public override roundLength = (10 minutes / blockTime);
     // The start time of an auction, in blocks before the round
     uint32 constant public auctionStart = (30 days / blockTime);
     // Auction end time, in blocks before the round
     uint32 constant public auctionEnd = roundLength * 2;
     // Min bid is 10000 gwei
     uint112 constant minBid = 10000 gwei;
-
 
     // The current balance from success auctions
     uint public balance = 0;
@@ -45,8 +44,9 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
 
     // Ether to be refunded from being outbid
     mapping (address => uint) public pendingBalances;
-    mapping (uint => Bid) public highestBidPerRound;
+    mapping (uint => Bid) highestBidPerRound;
     mapping (address => string) public override coordinatorUrls;
+
 
     event UrlUpdate(address coordinator);
     event NewHighBid(uint roundIndex, address bidder, uint amount);
@@ -97,6 +97,13 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         }
     }
 
+    function highestBidForRound(uint roundIndex) public view override returns (uint232, address) {
+        return (
+          uint232(max(highestBidPerRound[roundIndex].amount, minBid)),
+          highestBidPerRound[roundIndex].owner
+        );
+    }
+
     function setUrl(string memory url) public override {
         coordinatorUrls[msg.sender] = url;
         emit UrlUpdate(msg.sender);
@@ -107,11 +114,11 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         emit UrlUpdate(msg.sender);
     }
 
-    function earliestBiddableRound() public view returns (uint) {
+    function earliestBiddableRound() public view override returns (uint) {
         return roundForBlock(calcRoundStart(currentRound()) + roundLength + auctionEnd);
     }
 
-    function latestBiddableRound() public view returns (uint) {
+    function latestBiddableRound() public view override returns (uint) {
         return roundForBlock(calcRoundStart(currentRound()) + auctionStart);
     }
 
