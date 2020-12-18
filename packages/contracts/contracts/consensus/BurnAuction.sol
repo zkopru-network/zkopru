@@ -22,25 +22,26 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     // As a percentage (denominator)
     uint8 constant minBidIncrease = 10;
 
-    uint56 immutable public startBlock;
+    uint32 immutable public startBlock;
     // Just to make math more clear
-    uint56 constant public roundLength = (10 minutes / blockTime);
+    uint32 constant public roundLength = (10 minutes / blockTime);
     // The start time of an auction, in blocks before the round
-    uint56 constant public auctionStart = (30 days / blockTime);
+    uint32 constant public auctionStart = (30 days / blockTime);
     // Auction end time, in blocks before the round
-    uint56 constant public auctionEnd = roundLength * 2;
+    uint32 constant public auctionEnd = roundLength * 2;
     // Min bid is 10000 gwei
-    uint constant minBid = 10000 gwei;
+    uint112 constant minBid = 10000 gwei;
 
 
     // The current balance from success auctions
     uint public balance = 0;
-    uint public lastBalanceIndex = 0;
+    // uint64 supports 350965450913242 years of operation with 10 minute rounds
+    uint64 public lastBalanceIndex = 0;
 
-    uint public lockedRoundIndex = type(uint).max;
+    uint64 public lockedRoundIndex = type(uint64).max;
 
     // A round is considered open if a block has not been proposed in the first half of the round
-    uint latestOpenRound = 0;
+    uint64 latestOpenRound = 0;
 
     // Ether to be refunded from being outbid
     mapping (address => uint) public pendingBalances;
@@ -52,7 +53,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
 
     constructor(address payable networkAddress) public {
         zkopru = Zkopru(networkAddress);
-        startBlock = uint56(block.number);
+        startBlock = uint32(block.number);
     }
 
     function bid(uint roundIndex) public override payable {
@@ -107,11 +108,11 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     }
 
     function earliestBiddableRound() public view returns (uint) {
-      return roundForBlock(calcRoundStart(currentRound()) + roundLength + auctionEnd);
+        return roundForBlock(calcRoundStart(currentRound()) + roundLength + auctionEnd);
     }
 
     function latestBiddableRound() public view returns (uint) {
-      return roundForBlock(calcRoundStart(currentRound()) + auctionStart);
+        return roundForBlock(calcRoundStart(currentRound()) + auctionStart);
     }
 
     // The minimum bid for a given round
@@ -180,7 +181,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
             newBalance += highestBidPerRound[x].amount;
         }
         balance = newBalance;
-        lastBalanceIndex = finalIndex;
+        lastBalanceIndex = uint64(finalIndex);
     }
 
     function register() public override payable {
@@ -190,7 +191,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     function openRoundIfNeeded() public override {
         if (isRoundOpen()) return;
         if (shouldOpenRound()) {
-            latestOpenRound = currentRound();
+            latestOpenRound = uint64(currentRound());
         }
     }
 
@@ -224,11 +225,12 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
 
     // Only zkopru may call
     function lockForUpgrade(uint roundIndex) public override {
-        require(lockedRoundIndex == type(uint).max, "BurnAuction: Contract already locked");
+        require(roundIndex < type(uint64).max, "BurnAuction: Invalid round index for locking");
+        require(lockedRoundIndex == type(uint64).max, "BurnAuction: Contract already locked");
         require(msg.sender == address(zkopru), "BurnAuction: Not authorized to initiate lock");
         uint roundStart = calcRoundStart(roundIndex);
         require(block.number < guardedSub(roundStart, auctionStart), "BurnAuction: Round index is not far enough in the future");
-        lockedRoundIndex = roundIndex;
+        lockedRoundIndex = uint64(roundIndex);
     }
 
     function min(uint a, uint b) internal pure returns (uint) {
