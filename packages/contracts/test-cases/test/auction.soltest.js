@@ -466,7 +466,7 @@ contract('BurnAuction tests', async accounts => {
       const currentRound = +(await burnAuction.currentRound()).toString()
       // calculate the expected balance here
       let balance = new BN('0')
-      for (let x = 0; x <= currentRound; x++) {
+      for (let x = 0; x <= currentRound; x += 1) {
         const highBid = await burnAuction.highestBidPerRound(x)
         balance = balance.clone().add(highBid.amount)
       }
@@ -480,13 +480,11 @@ contract('BurnAuction tests', async accounts => {
     })
 
     it('should update balance many times', async () => {
-      const currentRound = +(await burnAuction.currentRound()).toString()
-      const roundStartBlock = +(await burnAuction.calcRoundStart(currentRound)).toString()
-      const targetRound = +(await burnAuction.roundForBlock(roundStartBlock + roundLength + auctionEnd + 1)).toString()
+      const targetRound = +(await burnAuction.earliestBiddableRound())
       const count = 5
       const finalRound = targetRound + count
       // Bid a bunch of rounds in the future
-      for (let x = 0; x < count + 10; x++) {
+      for (let x = 0; x < count + 10; x += 1) {
         const bidAmount = await burnAuction.minNextBid(targetRound + x)
         await burnAuction.bid(targetRound + x, {
           from: accounts[0],
@@ -497,11 +495,11 @@ contract('BurnAuction tests', async accounts => {
       while ((await web3.eth.getBlock('latest')).number < targetBlock) {
         await timeMachine.advanceBlock()
       }
-      const currentRound2 = +(await burnAuction.currentRound()).toString()
-      const lastBalanceUpdate = +(await burnAuction.lastBalanceIndex()).toString()
+      const currentRound2 = +(await burnAuction.currentRound())
+      const lastBalanceUpdate = +(await burnAuction.lastBalanceIndex())
       let balance = new BN('0')
       // Calculate the balance change
-      for (let x = lastBalanceUpdate + 1; x <= currentRound2; x++) {
+      for (let x = lastBalanceUpdate + 1; x <= currentRound2; x += 1) {
         const highBid = await burnAuction.highestBidPerRound(x)
         balance = balance.clone().add(highBid.amount)
       }
@@ -511,16 +509,19 @@ contract('BurnAuction tests', async accounts => {
       })
       const newBalance = await burnAuction.balance()
       const expectedBalance = balance.add(startBalance)
-      chai.assert(newBalance.eq(expectedBalance), `Incorrect balance, expected ${expectedBalance.toString()} got ${newBalance.toString()}`)
+      chai.assert(
+        newBalance.eq(expectedBalance),
+        `Incorrect balance, expected ${expectedBalance.toString()} got ${newBalance.toString()}`
+      )
       // Jump further in the future
       const targetBlock2 = await burnAuction.calcRoundStart(finalRound + 5)
       while ((await web3.eth.getBlock('latest')).number < targetBlock2) {
         await timeMachine.advanceBlock()
       }
       const currentRound3 = +(await burnAuction.currentRound()).toString()
-      const newLastBalanceUpdate = +(await burnAuction.lastBalanceIndex()).toString()
+      const newLastBalanceUpdate = +(await burnAuction.lastBalanceIndex())
       // calculate the balance change
-      for (let x = newLastBalanceUpdate + 1; x <= currentRound3; x++) {
+      for (let x = newLastBalanceUpdate + 1; x <= currentRound3; x += 1) {
         const highBid = await burnAuction.highestBidPerRound(x)
         balance = balance.clone().add(highBid.amount)
       }
@@ -529,17 +530,103 @@ contract('BurnAuction tests', async accounts => {
       })
       const finalExpectedBalance = balance.add(startBalance)
       const finalNewBalance = await burnAuction.balance()
-      chai.assert(finalNewBalance.eq(finalExpectedBalance), `Incorrect second balance`)
+      chai.assert(
+        finalNewBalance.eq(finalExpectedBalance),
+        `Incorrect second balance`
+      )
+    })
+
+    it('should update balance with specific iterations', async () => {
+      const targetRound = +(await burnAuction.earliestBiddableRound())
+      const count = 15
+      const finalRound = targetRound + count
+      // Bid a bunch of rounds in the future
+      for (let x = 0; x < count; x += 1) {
+        await burnAuction.bid(targetRound + x, {
+          from: accounts[0],
+          value: await burnAuction.minNextBid(targetRound + x),
+        })
+      }
+      const startBlock = await burnAuction.calcRoundStart(targetRound - 1)
+      while ((await web3.eth.getBlock('latest')).number < startBlock) {
+        await timeMachine.advanceBlock()
+      }
+      // settle up to the targetRound
+      await burnAuction.updateBalance({
+        from: accounts[8],
+      })
+      const targetBlock = await burnAuction.calcRoundStart(finalRound)
+      while ((await web3.eth.getBlock('latest')).number < targetBlock) {
+        await timeMachine.advanceBlock()
+      }
+      let balance = await burnAuction.balance()
+      for (let x = 0; x < count; x += 1) {
+        const highBid = await burnAuction.highestBidPerRound(targetRound + x)
+        balance = balance.clone().add(highBid.amount)
+        await burnAuction.methods['updateBalance(uint256)'](0, {
+          from: accounts[8],
+        })
+        const finalAmount = await burnAuction.balance()
+        chai.assert(finalAmount.eq(balance), 'Unexpected balance update')
+      }
+    })
+
+    it('should safely accept large iteration value', async () => {
+      const targetRound = +(await burnAuction.earliestBiddableRound())
+      const count = 5
+      const finalRound = targetRound + count
+      // Bid a bunch of rounds in the future
+      for (let x = 0; x < count; x += 1) {
+        await burnAuction.bid(targetRound + x, {
+          from: accounts[0],
+          value: await burnAuction.minNextBid(targetRound + x),
+        })
+      }
+      const startBlock = await burnAuction.calcRoundStart(targetRound - 1)
+      while ((await web3.eth.getBlock('latest')).number < startBlock) {
+        await timeMachine.advanceBlock()
+      }
+      // settle up to the targetRound
+      await burnAuction.updateBalance({
+        from: accounts[8],
+      })
+      const targetBlock = await burnAuction.calcRoundStart(finalRound)
+      while ((await web3.eth.getBlock('latest')).number < targetBlock) {
+        await timeMachine.advanceBlock()
+      }
+      const balance = await burnAuction.balance()
+      let expectedProfit = new BN('0')
+      for (let x = 0; x < count; x += 1) {
+        const highBid = await burnAuction.highestBidPerRound(targetRound + x)
+        expectedProfit = expectedProfit.clone().add(highBid.amount)
+      }
+      // Update some large number of iterations
+      await burnAuction.methods['updateBalance(uint256)'](10000000000, {
+        from: accounts[8],
+      })
+      const lastBalanceIndex = await burnAuction.lastBalanceIndex()
+      chai.assert(
+        +lastBalanceIndex === finalRound,
+        'Not settled to current round'
+      )
+      const finalBalance = await burnAuction.balance()
+      chai.assert(
+        finalBalance.eq(balance.add(expectedProfit)),
+        'Unexpected balance'
+      )
     })
 
     it('should transfer balance', async () => {
       const receiver = accounts[7]
-      const startBalance = new BN(await web3.eth.getBalance(receiver))
+      const startBalance = new BN(await web3.eth.getBalance(receiver, 'latest'))
+      await burnAuction.updateBalance({
+        from: accounts[8],
+      })
       const contractBalance = await burnAuction.balance()
       await burnAuction.transferBalance(receiver, {
         from: accounts[8],
       })
-      const balance = new BN(await web3.eth.getBalance(receiver))
+      const balance = new BN(await web3.eth.getBalance(receiver, 'latest'))
       chai.assert(startBalance.add(contractBalance).eq(balance), 'Funds were not received')
       const newContractBalance = await burnAuction.balance()
       chai.assert(newContractBalance.eq(new BN('0')), 'Not all funds were moved')
@@ -569,7 +656,7 @@ contract('BurnAuction tests', async accounts => {
       const currentRound = +(await burnAuction.currentRound()).toString()
       let targetRound = 0
       // find a round that has no bids
-      for (let x = currentRound + 1; true; x++) {
+      for (let x = currentRound + 1; true; x += 1) {
         const highBid = await burnAuction.highestBidPerRound(x)
         if (highBid.amount.eq(new BN('0'))) {
           targetRound = x
@@ -611,7 +698,7 @@ contract('BurnAuction tests', async accounts => {
       })
       const lockedRound = +(await burnAuction.lockedRoundIndex()).toString()
       chai.assert(lockedRound === targetRound, 'Locked round incorrect')
-      for (let x = 0; x < roundLength; x++) {
+      for (let x = 0; x < roundLength; x += 1) {
         await timeMachine.advanceBlock()
       }
       try {

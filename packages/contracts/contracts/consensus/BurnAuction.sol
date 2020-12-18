@@ -167,18 +167,20 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
 
     // Update the contract available balance
     function updateBalance() public {
+        updateBalance(currentRound() - lastBalanceIndex);
+    }
+
+    function updateBalance(uint maxIterations) public {
         if (lastBalanceIndex == currentRound()) return;
         uint newBalance = balance;
         uint x = lastBalanceIndex + 1;
-        for (; x <= currentRound(); x++) {
+        uint finalIndex = min(x + maxIterations, currentRound());
+        for (; x <= finalIndex; x++) {
             if (highestBidPerRound[x].amount == 0) continue;
             newBalance += highestBidPerRound[x].amount;
-            if (gasleft() < 3000) {
-                break;
-            }
         }
         balance = newBalance;
-        lastBalanceIndex = x;
+        lastBalanceIndex = finalIndex;
     }
 
     function register() public override payable {
@@ -227,6 +229,10 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         uint roundStart = calcRoundStart(roundIndex);
         require(block.number < guardedSub(roundStart, auctionStart), "BurnAuction: Round index is not far enough in the future");
         lockedRoundIndex = roundIndex;
+    }
+
+    function min(uint a, uint b) internal pure returns (uint) {
+        return a > b ? b : a;
     }
 
     function max(uint a, uint b) internal pure returns (uint) {
