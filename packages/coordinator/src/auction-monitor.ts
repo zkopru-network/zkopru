@@ -4,7 +4,6 @@ import { FullNode } from '@zkopru/core'
 import BN from 'bn.js'
 import { Account } from 'web3-core'
 import { logger } from '@zkopru/utils'
-import { CoordinatorConfig } from './context'
 import AsyncLock from 'async-lock'
 
 interface Bid {
@@ -14,21 +13,31 @@ interface Bid {
 
 export class AuctionMonitor {
   node: FullNode
+
   blockSubscription?: Subscription<unknown>
+
   eventSubscription?: Subscription<unknown>
+
   currentProposer: string
+
   consensusAddress: string
-  startBlock: number = 0
-  roundLength: number = 0
-  currentRound: number = -1
+
+  startBlock = 0
+
+  roundLength = 0
+
+  currentRound = -1
+
   urlsByAddress: { [key: string]: string } = {}
+
   account: Account
-  config: CoordinatorConfig
+
+  port: number | string
 
   // Values higher than this crash ganache :(
   maxBidRounds = 100
 
-  maxBid = new BN((100000 * 10**9))
+  maxBid = new BN(100000 * 10 ** 9)
 
   // How close the round in question needs to be for us to bid
   roundBidThreshold = 3
@@ -39,35 +48,26 @@ export class AuctionMonitor {
 
   bidLock = new AsyncLock()
 
-  constructor(node: FullNode, account: Account, config: CoordinatorConfig) {
+  constructor(node: FullNode, account: Account, port: number | string) {
     this.node = node
     this.currentProposer = '0x0000000000000000000000000000000000000000'
     this.consensusAddress = '0x0000000000000000000000000000000000000000'
     this.account = account
-    this.config = config
+    this.port = port
   }
 
   auction() {
     const { layer1 } = this.node
-    return Layer1.getIBurnAuction(
-      layer1.web3,
-      this.consensusAddress,
-    )
+    return Layer1.getIBurnAuction(layer1.web3, this.consensusAddress)
   }
 
   async start() {
     const { layer1 } = this.node
-    this.consensusAddress = await layer1
-      .upstream
-      .methods
+    this.consensusAddress = await layer1.upstream.methods
       .consensusProvider()
       .call()
     const auction = this.auction()
-    const [
-      startBlock,
-      roundLength,
-      blockNumber
-    ] = await Promise.all([
+    const [startBlock, roundLength, blockNumber] = await Promise.all([
       auction.methods.startBlock().call(),
       auction.methods.roundLength().call(),
       layer1.web3.eth.getBlockNumber(),
@@ -76,10 +76,16 @@ export class AuctionMonitor {
     this.roundLength = +roundLength
     this.currentRound = this.roundForBlock(blockNumber)
 
-    const url = `http://localhost:${this.config.port}`
-    const myUrl = await auction.methods.coordinatorUrls(this.account.address).call()
+    const url = `http://localhost:${this.port}`
+    const myUrl = await auction.methods
+      .coordinatorUrls(this.account.address)
+      .call()
     if (myUrl !== url) {
-      await layer1.sendExternalTx(auction.methods.setUrl(url), this.account, this.consensusAddress)
+      await layer1.sendExternalTx(
+        auction.methods.setUrl(url),
+        this.account,
+        this.consensusAddress,
+      )
       this.urlsByAddress[this.account.address] = url
     }
 
@@ -93,13 +99,16 @@ export class AuctionMonitor {
     const { layer1 } = this.node
     this.blockSubscription = layer1.web3.eth.subscribe(
       'newBlockHeaders',
-      this.blockReceived.bind(this)
+      this.blockReceived.bind(this),
     )
   }
 
   startEventSubscription() {
     if (this.eventSubscription) return
-    this.eventSubscription = this.auction().events.allEvents({}, this.handleEvent.bind(this)) as any as Subscription<unknown>
+    this.eventSubscription = (this.auction().events.allEvents(
+      {},
+      this.handleEvent.bind(this),
+    ) as any) as Subscription<unknown>
   }
 
   stop() {
@@ -128,7 +137,9 @@ export class AuctionMonitor {
     }
     // Entered a new round, update the proposer
     this.currentRound = newRound
-    this.currentProposer = await this.auction().methods.coordinatorForRound(newRound).call()
+    this.currentProposer = await this.auction()
+      .methods.coordinatorForRound(newRound)
+      .call()
     if (!this.urlsByAddress[this.currentProposer]) {
       await this.loadUrl(this.currentProposer)
     }
@@ -137,7 +148,9 @@ export class AuctionMonitor {
   }
 
   async loadUrl(address: string) {
-    this.urlsByAddress[address] = await this.auction().methods.coordinatorUrls(address).call()
+    this.urlsByAddress[address] = await this.auction()
+      .methods.coordinatorUrls(address)
+      .call()
   }
 
   async handleEvent(err, data) {
@@ -163,11 +176,12 @@ export class AuctionMonitor {
       logger.info(`New high bid for round ${roundIndex}`)
     } else if (event === 'UrlUpdate') {
       const { coordinator } = data.returnValues
-      const newUrl = await this.auction().methods.coordinatorUrls(coordinator).call()
+      const newUrl = await this.auction()
+        .methods.coordinatorUrls(coordinator)
+        .call()
       this.urlsByAddress[coordinator] = newUrl
     }
   }
-
 
   async bidIfNeeded() {
     if (this.bidLock.isBusy('bidIfNeeded')) return
@@ -175,27 +189,33 @@ export class AuctionMonitor {
       logger.info('Examining auction state')
       const auction = this.auction()
       // TODO: calculate these locally
-      const [ earliestRound, latestRound ] = await Promise.all([
+      const [earliestRound, latestRound] = await Promise.all([
         auction.methods.earliestBiddableRound().call(),
         auction.methods.latestBiddableRound().call(),
       ])
       const roundsToBid = [] as number[]
-      for (let x = +earliestRound; x <= +latestRound; x++) {
+      for (let x = +earliestRound; x <= +latestRound; x += 1) {
         // Don't bid on too many at once
         if (roundsToBid.length > this.maxBidRounds) break
         let highBid = this.bidsPerRound[x]
         if (!highBid) {
           // possible race condition here with block header subscription?
-          const { 0: highBidAmount, 1: highBidOwner } = await auction.methods.highestBidForRound(x).call()
-          this.bidsPerRound[x] = highBid = {
+          const {
+            0: highBidAmount,
+            1: highBidOwner,
+          } = await auction.methods.highestBidForRound(x).call()
+          highBid = {
             amount: new BN(highBidAmount),
             owner: highBidOwner,
           }
+          this.bidsPerRound[x] = highBid
         }
-        if (highBid.owner.toLowerCase() === this.account.address.toLowerCase()) {
-          continue; // already own this round
-        }
-        if (highBid.amount.add(highBid.amount.div(new BN('10'))).lt(this.maxBid)) {
+        if (
+          highBid.amount
+            .add(highBid.amount.div(new BN('10')))
+            .lt(this.maxBid) &&
+          highBid.owner.toLowerCase() !== this.account.address.toLowerCase()
+        ) {
           roundsToBid.push(x)
         }
       }
@@ -215,21 +235,35 @@ export class AuctionMonitor {
       logger.info(`Bidding on ${roundsToBid.length} auctions`)
       // estimate the cost of bidding
       let weiCost = new BN('0')
-      for (let x = 0; x < roundsToBid.length; x++) {
+      for (let x = 0; x < roundsToBid.length; x += 1) {
         const roundIndex = roundsToBid[x]
         // added above
         const currentBidAmount = this.bidsPerRound[roundIndex].amount
-        const nextBidAmount = currentBidAmount.add(currentBidAmount.div(new BN('10')))
+        const nextBidAmount = currentBidAmount.add(
+          currentBidAmount.div(new BN('10')),
+        )
         weiCost = weiCost.clone().add(nextBidAmount)
       }
-      logger.info(`estimated cost: ${this.node.layer1.web3.utils.fromWei(weiCost)} eth`)
+      logger.info(
+        `estimated cost: ${this.node.layer1.web3.utils.fromWei(weiCost)} eth`,
+      )
       logger.info(`start round: ${earliestBidRound}`)
       logger.info(`end round: ${latestBidRound}`)
       try {
-        const tx = auction.methods.multiBid(0, this.maxBid.toString(), earliestBidRound, latestBidRound)
-        await this.node.layer1.sendExternalTx(tx, this.account, this.consensusAddress, {
-          value: weiCost.toString(),
-        })
+        const tx = auction.methods.multiBid(
+          0,
+          this.maxBid.toString(),
+          earliestBidRound,
+          latestBidRound,
+        )
+        await this.node.layer1.sendExternalTx(
+          tx,
+          this.account,
+          this.consensusAddress,
+          {
+            value: weiCost.toString(),
+          },
+        )
         logger.info(`Successfully bid on transactions`)
       } catch (err) {
         logger.error(err)

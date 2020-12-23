@@ -19,6 +19,7 @@ import { Uint256 } from 'soltypes'
 import assert from 'assert'
 import AsyncLock from 'async-lock'
 import { Layer1 } from '@zkopru/contracts'
+import BN from 'bn.js'
 import { TxMemPool } from './tx-pool'
 import { CoordinatorConfig, CoordinatorContext } from './context'
 import { GeneratorBase } from './middlewares/interfaces/generator-base'
@@ -26,7 +27,6 @@ import { ProposerBase } from './middlewares/interfaces/proposer-base'
 import { BlockGenerator } from './middlewares/default/block-generator'
 import { BlockProposer } from './middlewares/default/block-proposer'
 import { CoordinatorApi } from './api'
-import BN from 'bn.js'
 import { AuctionMonitor } from './auction-monitor'
 
 export interface CoordinatorInterface {
@@ -62,7 +62,7 @@ export class Coordinator extends EventEmitter {
 
   middlewares: Middlewares
 
-  currentRound: number|undefined
+  currentRound: number | undefined
 
   constructor(
     node: FullNode,
@@ -74,7 +74,7 @@ export class Coordinator extends EventEmitter {
     this.context = {
       account,
       node,
-      auctionMonitor: new AuctionMonitor(node, account, config),
+      auctionMonitor: new AuctionMonitor(node, account, config.port),
       txPool: new TxMemPool(),
       config: { priceMultiplier: 32, ...config },
     }
@@ -191,11 +191,8 @@ export class Coordinator extends EventEmitter {
     const consensus = await this.layer1()
       .upstream.methods.consensusProvider()
       .call()
-    const auction = Layer1.getIBurnAuction(
-      this.layer1().web3,
-      consensus,
-    )
-    const [ currentRound, url ] = await Promise.all([
+    const auction = Layer1.getIBurnAuction(this.layer1().web3, consensus)
+    const [currentRound, url] = await Promise.all([
       auction.methods.currentRound().call(),
       auction.methods.coordinatorUrls(this.context.account.address).call(),
     ])
@@ -210,30 +207,32 @@ export class Coordinator extends EventEmitter {
       await this.layer1().sendExternalTx(urlTx, this.context.account, consensus)
     }
     const futureRounds = 20
-    const maxPrice = new BN((100000 * 10**9).toString())
+    const maxPrice = new BN((100000 * 10 ** 9).toString())
     const startRound = +(await auction.methods.currentRound().call()) + 3
     const promises = [] as Promise<any>[]
 
-    for (let x = startRound; x < startRound + futureRounds; x++) {
+    for (let x = startRound; x < startRound + futureRounds; x += 1) {
       const currentWinner = await auction.methods.coordinatorForRound(x).call()
-      if (currentWinner.toString().toLowerCase() === this.context.account.address.toLowerCase()) {
+      if (
+        currentWinner.toString().toLowerCase() ===
+        this.context.account.address.toLowerCase()
+      ) {
         // Already highest bidder for this round
+        // eslint-disable-next-line no-continue
         continue
       }
       const nextBid = await auction.methods.minNextBid(x).call()
       if (new BN(nextBid).gt(maxPrice)) {
         // price too high
+        // eslint-disable-next-line no-continue
         continue
       }
       logger.info(`Bidding on round ${x}`)
       const tx = auction.methods.bid(x)
-      // await this.layer1().sendExternalTx(tx, this.context.account, consensus, {
-      //   value: nextBid,
-      // })
       promises.push(
         this.layer1().sendExternalTx(tx, this.context.account, consensus, {
           value: nextBid,
-        })
+        }),
       )
     }
     await Promise.all(promises)
