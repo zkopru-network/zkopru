@@ -163,7 +163,7 @@ export class AuctionMonitor {
       const { roundIndex, bidder, amount } = data.returnValues
       this.bidsPerRound[roundIndex] = {
         owner: bidder,
-        amount,
+        amount: new BN(amount),
       }
       if (
         bidder.toLowerCase() !== this.account.address.toLowerCase() &&

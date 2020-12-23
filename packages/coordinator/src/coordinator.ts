@@ -274,12 +274,14 @@ export class Coordinator extends EventEmitter {
       const consensus = await this.layer1()
         .upstream.methods.consensusProvider()
         .call()
-      const proposable = Layer1.getIConsensusProvider(
+      const proposable = await Layer1.getIConsensusProvider(
         this.layer1().web3,
         consensus,
-      ).methods.isProposable(this.context.account.address)
+      )
+        .methods.isProposable(this.context.account.address)
+        .call()
       if (!proposable) {
-        logger.trace(`Not able to propose block`)
+        logger.info(`Skipping block proposal: Not current round owner`)
         return
       }
       let block: Block
