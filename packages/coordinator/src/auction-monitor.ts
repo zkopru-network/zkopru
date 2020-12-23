@@ -28,6 +28,10 @@ export class AuctionMonitor {
 
   currentRound = -1
 
+  isProposable = false
+
+  isProposableLastUpdated = 0
+
   urlsByAddress: { [key: string]: string } = {}
 
   account: Account
@@ -61,6 +65,11 @@ export class AuctionMonitor {
     return Layer1.getIBurnAuction(layer1.web3, this.consensusAddress)
   }
 
+  consensus() {
+    const { layer1 } = this.node
+    return Layer1.getIConsensusProvider(layer1.web3, this.consensusAddress)
+  }
+
   async start() {
     const { layer1 } = this.node
     this.consensusAddress = await layer1.upstream.methods
@@ -71,6 +80,7 @@ export class AuctionMonitor {
       auction.methods.startBlock().call(),
       auction.methods.roundLength().call(),
       layer1.web3.eth.getBlockNumber(),
+      this.updateIsProposable(),
     ])
     this.startBlock = +startBlock
     this.roundLength = +roundLength
@@ -122,8 +132,31 @@ export class AuctionMonitor {
     }
   }
 
+  activeCoordinatorUrl() {
+    return this.urlsByAddress[this.currentProposer]
+  }
+
   roundForBlock(blockNumber: number) {
     return Math.floor((blockNumber - this.startBlock) / this.roundLength)
+  }
+
+  roundStartBlock(roundNumber: number) {
+    return this.startBlock + this.roundLength * roundNumber
+  }
+
+  roundEndBlock(roundNumber: number) {
+    return this.roundStartBlock(roundNumber) + this.roundLength - 1
+  }
+
+  async updateIsProposable() {
+    const [isProposable, blockNumber] = await Promise.all([
+      this.consensus()
+        .methods.isProposable(this.account.address)
+        .call(),
+      this.node.layer1.web3.eth.getBlockNumber(),
+    ])
+    this.isProposable = isProposable
+    this.isProposableLastUpdated = blockNumber
   }
 
   async blockReceived(err, block) {
@@ -132,14 +165,23 @@ export class AuctionMonitor {
       return
     }
     const newRound = this.roundForBlock(block.number)
+    const midBlock = this.roundStartBlock(newRound) + this.roundLength / 2
+    if (block.number >= midBlock && this.isProposableLastUpdated < midBlock) {
+      // check if proposable
+      await this.updateIsProposable()
+    }
     if (newRound === this.currentRound) {
       return
     }
+    const [activeProposer] = await Promise.all([
+      this.auction()
+        .methods.coordinatorForRound(newRound)
+        .call(),
+      this.updateIsProposable(),
+    ])
     // Entered a new round, update the proposer
     this.currentRound = newRound
-    this.currentProposer = await this.auction()
-      .methods.coordinatorForRound(newRound)
-      .call()
+    this.currentProposer = activeProposer
     if (!this.urlsByAddress[this.currentProposer]) {
       await this.loadUrl(this.currentProposer)
     }

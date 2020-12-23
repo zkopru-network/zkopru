@@ -55,6 +55,7 @@ export class CoordinatorApi {
 
   private txHandler: RequestHandler = async (req, res) => {
     const txData = req.body
+    // const { auctionMonitor } = this.context
     logger.info(`tx data is${txData}`)
     logger.info(txData)
     const zkTx = ZkTx.decode(Buffer.from(txData, 'hex'))
