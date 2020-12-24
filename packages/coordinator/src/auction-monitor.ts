@@ -5,6 +5,8 @@ import BN from 'bn.js'
 import { Account } from 'web3-core'
 import { logger } from '@zkopru/utils'
 import AsyncLock from 'async-lock'
+import axios from 'axios'
+import dns from 'dns'
 
 interface Bid {
   owner: string
@@ -70,33 +72,83 @@ export class AuctionMonitor {
     return Layer1.getIConsensusProvider(layer1.web3, this.consensusAddress)
   }
 
+  async updateUrl(newUrl: string) {
+    const auction = this.auction()
+    const { layer1 } = this.node
+    await layer1.sendExternalTx(
+      await auction.methods.setUrl(newUrl),
+      this.account,
+      this.consensusAddress,
+    )
+    this.urlsByAddress[this.account.address] = newUrl
+  }
+
   async start() {
     const { layer1 } = this.node
     this.consensusAddress = await layer1.upstream.methods
       .consensusProvider()
       .call()
     const auction = this.auction()
-    const [startBlock, roundLength, blockNumber] = await Promise.all([
+    const [
+      startBlock,
+      roundLength,
+      blockNumber,
+      {
+        data: { ip },
+      },
+    ] = await Promise.all([
       auction.methods.startBlock().call(),
       auction.methods.roundLength().call(),
       layer1.web3.eth.getBlockNumber(),
+      axios.get('https://external-ip.now.sh'),
       this.updateIsProposable(),
     ])
     this.startBlock = +startBlock
     this.roundLength = +roundLength
     this.currentRound = this.roundForBlock(blockNumber)
 
-    const url = `http://localhost:${this.port}`
+    const url = `${ip}:${this.port}`
     const myUrl = await auction.methods
       .coordinatorUrls(this.account.address)
       .call()
-    if (myUrl !== url) {
-      await layer1.sendExternalTx(
-        auction.methods.setUrl(url),
-        this.account,
-        this.consensusAddress,
-      )
-      this.urlsByAddress[this.account.address] = url
+    if (!myUrl) {
+      // for sure set it
+      await this.updateUrl(url)
+    } else if (myUrl.split(',').indexOf(url) === -1) {
+      // TODO: resolve domains to see if current ip is in list
+      const urls = myUrl.split(',')
+      let urlSet = false
+      for (const u of urls) {
+        const [host, port] = u.split(':')
+        const addresses = await new Promise<dns.LookupAddress[]>((rs, rj) =>
+          dns.lookup(
+            host,
+            {
+              all: true,
+            },
+            (err, a) => (err ? rj(err) : rs(a)),
+          ),
+        )
+        for (const { address } of addresses) {
+          if (address === ip && (port || 80) === this.port) {
+            // found the current ip/port via hostname lookup
+            urlSet = true
+          }
+        }
+        if (!urlSet) {
+          // add the current external ip to the list
+          // probably prompt the user
+        }
+      }
+      // look for current external ip in list
+      if (urls.indexOf(url) === -1) {
+        await layer1.sendExternalTx(
+          auction.methods.setUrl(url),
+          this.account,
+          this.consensusAddress,
+        )
+        this.urlsByAddress[this.account.address] = url
+      }
     }
 
     this.startBlockSubscription()
@@ -155,6 +207,7 @@ export class AuctionMonitor {
         .call(),
       this.node.layer1.web3.eth.getBlockNumber(),
     ])
+    logger.info(`Updated isProposable at block ${blockNumber}: ${isProposable}`)
     this.isProposable = isProposable
     this.isProposableLastUpdated = blockNumber
   }
@@ -166,7 +219,7 @@ export class AuctionMonitor {
     }
     const newRound = this.roundForBlock(block.number)
     const midBlock = this.roundStartBlock(newRound) + this.roundLength / 2
-    if (block.number >= midBlock && this.isProposableLastUpdated < midBlock) {
+    if (block.number > midBlock && this.isProposableLastUpdated <= midBlock) {
       // check if proposable
       await this.updateIsProposable()
     }

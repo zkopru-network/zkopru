@@ -77,6 +77,16 @@ export const BurnAuctionABI = [
     type: 'function',
   },
   {
+    inputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    name: 'highestBidPerRound',
+    outputs: [
+      { internalType: 'address payable', name: 'owner', type: 'address' },
+      { internalType: 'uint232', name: 'amount', type: 'uint232' },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
     inputs: [],
     name: 'lastBalanceIndex',
     outputs: [{ internalType: 'uint64', name: '', type: 'uint64' }],

@@ -7,6 +7,7 @@ import { Bytes32 } from 'soltypes'
 import { Field } from '@zkopru/babyjubjub'
 import { BootstrapData } from '@zkopru/core'
 import { TxUtil } from '@zkopru/contracts'
+import axios from 'axios'
 import { CoordinatorContext } from './context'
 
 export class CoordinatorApi {
@@ -55,7 +56,23 @@ export class CoordinatorApi {
 
   private txHandler: RequestHandler = async (req, res) => {
     const txData = req.body
-    // const { auctionMonitor } = this.context
+    const { auctionMonitor } = this.context
+    if (!auctionMonitor.isProposable) {
+      // forward the tx
+      const url = auctionMonitor.activeCoordinatorUrl()
+      logger.info(`forwarding tx data to "${url}"`)
+      try {
+        const { data } = await axios.post(
+          `http://${auctionMonitor.activeCoordinatorUrl()}/tx`,
+          txData,
+        )
+        res.send(data)
+      } catch (err) {
+        console.log(err)
+        res.status(500).send(err)
+      }
+      return
+    }
     logger.info(`tx data is${txData}`)
     logger.info(txData)
     const zkTx = ZkTx.decode(Buffer.from(txData, 'hex'))

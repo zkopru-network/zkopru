@@ -43,7 +43,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     uint64 latestOpenRound = 0;
 
     // Ether to be refunded from being outbid
-    mapping (address => uint) public pendingBalances;
+    mapping (address => uint) public override pendingBalances;
     mapping (uint => Bid) public highestBidPerRound;
     mapping (address => string) public override coordinatorUrls;
 
