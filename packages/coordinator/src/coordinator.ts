@@ -158,6 +158,7 @@ export class Coordinator extends EventEmitter {
       this.context.node.stop(),
       this.context.auctionMonitor.stop(),
       this.api.stop(),
+      this.stopGasPriceSubscription(),
     ])
     this.emit('stop')
   }
@@ -413,5 +414,15 @@ export class Coordinator extends EventEmitter {
         )
       },
     )
+  }
+
+  private async stopGasPriceSubscription() {
+    if (!this.gasPriceSubscriber) return
+    const result = await this.gasPriceSubscriber.unsubscribe()
+    if (result) {
+      this.gasPriceSubscriber = undefined
+    } else {
+      throw Error('Failed to remove gas subscription listener')
+    }
   }
 }
