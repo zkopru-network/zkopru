@@ -10,6 +10,16 @@ import { TxUtil } from '@zkopru/contracts'
 import axios from 'axios'
 import { CoordinatorContext } from './context'
 
+function catchError(fn: Function): RequestHandler {
+  return async (req, res, next) => {
+    try {
+      await fn(req, res, next)
+    } catch (err) {
+      res.status(500).send('Internal server error')
+    }
+  }
+}
+
 export class CoordinatorApi {
   context: CoordinatorContext
 
@@ -28,12 +38,12 @@ export class CoordinatorApi {
     if (!this.server) {
       const app = express()
       app.use(express.text())
-      app.post('/tx', this.txHandler)
-      app.post('/instant-withdraw', this.instantWithdrawHandler)
+      app.post('/tx', catchError(this.txHandler))
+      app.post('/instant-withdraw', catchError(this.instantWithdrawHandler))
       if (this.context.config.bootstrap) {
-        app.get('/bootstrap', this.bootstrapHandler)
+        app.get('/bootstrap', catchError(this.bootstrapHandler))
       }
-      app.get('/price', this.bytePriceHandler)
+      app.get('/price', catchError(this.bytePriceHandler))
       this.server = app.listen(this.context.config.port, () => {
         logger.info(
           `coordinator.js: API is running on serverPort ${this.context.config.port}`,
