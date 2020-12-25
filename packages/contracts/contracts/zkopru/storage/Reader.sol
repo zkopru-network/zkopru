@@ -107,6 +107,7 @@ contract Reader is Storage {
     }
 
     function latestProposalBlock(address coordinator) public view returns (uint) {
+        if (Storage.chain.proposers[coordinator].exitAllowance == 0) return 0;
         return Storage.chain.proposers[coordinator].exitAllowance - CHALLENGE_PERIOD;
     }
 }
