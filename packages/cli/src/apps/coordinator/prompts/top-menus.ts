@@ -35,6 +35,10 @@ export default class TopMenu extends App {
           value: AppMenu.STOP_AUTO_COORDINATION,
         },
         {
+          title: 'Auction menu',
+          value: AppMenu.AUCTION_MENU,
+        },
+        {
           title: 'Setup menu',
           value: AppMenu.SETUP_MENU,
         },

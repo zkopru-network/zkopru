@@ -76,7 +76,7 @@ export class AuctionMonitor {
     const auction = this.auction()
     const { layer1 } = this.node
     await layer1.sendExternalTx(
-      await auction.methods.setUrl(newUrl),
+      auction.methods.setUrl(newUrl),
       this.account,
       this.consensusAddress,
     )

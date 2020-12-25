@@ -14,6 +14,9 @@ import AuctionInfo from './prompts/auction-info'
 import CommitDeposits from './prompts/setup/commit-deposits'
 import RegisterVk from './prompts/setup/register-vks'
 import StopAutoCoordination from './prompts/stop-auto-coordinate'
+import AuctionMenu from './prompts/auction-menu'
+import UpdateUrl from './prompts/auction/update-url'
+import UpdateMaxBid from './prompts/auction/update-max-bid'
 
 export class CoordinatorDashboard extends Dashboard<Context, Coordinator> {
   constructor(coordinator: Coordinator, onCancel: () => Promise<void>) {
@@ -41,5 +44,8 @@ export class CoordinatorDashboard extends Dashboard<Context, Coordinator> {
     this.addPromptApp(Layer1Details.code, new Layer1Details(option))
     this.addPromptApp(CoordinatorInfo.code, new CoordinatorInfo(option))
     this.addPromptApp(AuctionInfo.code, new AuctionInfo(option))
+    this.addPromptApp(AuctionMenu.code, new AuctionMenu(option))
+    this.addPromptApp(UpdateUrl.code, new UpdateUrl(option))
+    this.addPromptApp(UpdateMaxBid.code, new UpdateMaxBid(option))
   }
 }
