@@ -219,7 +219,7 @@ export class AuctionMonitor {
     }
     const newRound = this.roundForBlock(block.number)
     const midBlock = this.roundStartBlock(newRound) + this.roundLength / 2
-    if (block.number > midBlock && this.isProposableLastUpdated <= midBlock) {
+    if (block.number >= midBlock && this.isProposableLastUpdated < midBlock) {
       // check if proposable
       await this.updateIsProposable()
     }
