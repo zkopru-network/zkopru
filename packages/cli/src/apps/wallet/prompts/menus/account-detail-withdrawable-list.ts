@@ -7,7 +7,7 @@ export default class WithdrawableList extends App {
 
   // eslint-disable-next-line class-methods-use-this
   async run(context: Context): Promise<{ context: Context; next: number }> {
-    if (!context.account) throw Error('Acocunt is not set')
+    if (!context.account) throw Error('Account is not set')
     const unfinalized = await this.base.getWithdrawables(
       context.account,
       WithdrawalStatus.UNFINALIZED,

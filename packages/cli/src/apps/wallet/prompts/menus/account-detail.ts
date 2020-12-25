@@ -9,7 +9,7 @@ export default class AccountDetail extends App {
   async run(context: Context): Promise<{ context: Context; next: number }> {
     const wallet = this.base
     const { account } = context
-    if (!account) throw Error('Acocunt is not set')
+    if (!account) throw Error('Account is not set')
     const balance: Balance = await wallet.fetchLayer1Assets(account)
     const spendables = await wallet.getSpendableAmount(account)
     const messages: string[] = []
