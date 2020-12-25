@@ -3,7 +3,7 @@ RUN apt update
 RUN apt install -y git make musl-dev golang-go sqlite g++ tmux
 RUN mkdir -p /usr/share/man/man1
 RUN mkdir -p /usr/share/man/man7
-RUN apt install -y postgresql-client
+RUN apt install -y postgresql-client netcat
 
 # Configure Go
 ENV GOROOT /usr/lib/go
@@ -66,7 +66,7 @@ COPY ./packages/cli/coordinator.*.json /proj/packages/cli/
 COPY ./packages/cli/wallet.*.json /proj/packages/cli/
 COPY ./packages/prisma/prisma /proj/packages/prisma/prisma
 
-COPY ./scripts/start.sh /start.sh
+COPY ./scripts/dev_start.sh /dev_start.sh
 EXPOSE 8888
-CMD ["/bin/sh", "/start.sh"]
+CMD ["/bin/sh", "/dev_start.sh"]
 # CMD ["node", "/proj/packages/cli/dist/apps/coordinator/cli.js", "--ws ws://localhost:5000", "--config /proj/packages/cli/coordinator.json"]

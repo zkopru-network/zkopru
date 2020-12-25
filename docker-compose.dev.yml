@@ -17,17 +17,6 @@ services:
     environment:
       POSTGRES_PASSWORD: helloworld
       POSTGRES_URL: postgresql://postgres:helloworld@localhost:5432/zkopru
-  # postgres-setup:
-  #   build:
-  #     context: ./
-  #     dockerfile: ./dockerfiles/PostgresSetup.dockerfile
-  #   depends_on:
-  #     - 'postgres'
-  #   links:
-  #     - 'postgres:postgres'
-  #   environment:
-  #     POSTGRES_URL: postgresql://postgres:helloworld@postgres:5432/zkopru
-  #   command: prisma migrate up --experimental --schema /proj/prisma/postgres-migrator.prisma --verbose
   coordinator:
     build:
       context: ./
@@ -35,14 +24,11 @@ services:
     ports:
       - "1234:1234"
       - "8888:8888"
-    links:
-      - 'testnet:testnet'
-      - 'postgres:postgres'
     depends_on:
       - 'testnet'
       - 'postgres'
-    # command: sh -c "sleep 5s && gotty -w --port 1234 node /proj/packages/cli/dist/apps/coordinator/cli.js --config /proj/packages/cli/coordinator.dev.json"
     environment:
+      PORT: 1234
       POSTGRES_URL: postgresql://postgres:helloworld@postgres:5432/zkopru
   wallet:
     build:
@@ -50,11 +36,10 @@ services:
       dockerfile: ./dockerfiles/Cli.dockerfile
     ports:
       - "4321:4321"
-    links:
-      - 'testnet:testnet'
-      - 'postgres:postgres'
-      - 'coordinator:coordinator'
     depends_on:
       - 'testnet'
       - 'postgres'
-    command: sh -c "sleep 5s && gotty -w --port 4321 node /proj/packages/cli/dist/apps/wallet/cli.js --config /proj/packages/cli/wallet.dev.json"
+    environment:
+      PORT: 4321
+      SKIP_MIGRATE: 1
+      POSTGRES_URL: postgresql://postgres:helloworld@postgres:5432/zkopru
