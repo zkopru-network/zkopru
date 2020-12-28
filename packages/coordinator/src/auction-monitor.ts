@@ -190,6 +190,7 @@ export class AuctionMonitor {
     if (this.functionalUrlsByAddress[address]) {
       return this.functionalUrlsByAddress[address]
     }
+    await this.loadUrl(address)
     const url = this.urlsByAddress[address]
     if (!url) return
     const urls = url.split(',')

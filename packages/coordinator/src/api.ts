@@ -7,15 +7,15 @@ import { Bytes32 } from 'soltypes'
 import { Field } from '@zkopru/babyjubjub'
 import { BootstrapData } from '@zkopru/core'
 import { TxUtil } from '@zkopru/contracts'
-import axios from 'axios'
 import { CoordinatorContext } from './context'
+import fetch from 'node-fetch'
 
 function catchError(fn: Function): RequestHandler {
   return async (req, res, next) => {
     try {
       await fn(req, res, next)
     } catch (err) {
-      res.status(500).send('Internal server error')
+      res.status(500).send(`Internal server error: ${err.toString()}`)
     }
   }
 }
@@ -66,6 +66,7 @@ export class CoordinatorApi {
 
   private txHandler: RequestHandler = async (req, res) => {
     const txData = req.body
+    logger.info(`tx data ${typeof txData} ${txData}`)
     const { auctionMonitor } = this.context
     if (!auctionMonitor.isProposable) {
       // forward the tx
@@ -79,15 +80,19 @@ export class CoordinatorApi {
       }
       logger.info(`forwarding tx data to "${url}"`)
       try {
-        const { data } = await axios.post(`${url}/tx`, txData)
-        res.send(data)
+        const r = await fetch(`${url}/tx`, {
+          method: 'post',
+          body: txData.toString(),
+        })
+        res.status(r.status).send(await r.text())
       } catch (err) {
-        console.log(err)
+        logger.error(err)
+        logger.error('Error calling active auction api')
         res.status(500).send(err)
       }
       return
     }
-    logger.info(`tx data is${txData}`)
+    logger.info(`tx data is ${txData}`)
     logger.info(txData)
     const zkTx = ZkTx.decode(Buffer.from(txData, 'hex'))
     // const zkTx = ZkTx.decode(txData)
