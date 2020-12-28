@@ -69,13 +69,17 @@ export class CoordinatorApi {
     const { auctionMonitor } = this.context
     if (!auctionMonitor.isProposable) {
       // forward the tx
-      const url = auctionMonitor.activeCoordinatorUrl()
+      const url = await auctionMonitor.functionalCoordinatorUrl(
+        auctionMonitor.currentProposer,
+      )
+      if (!url) {
+        logger.error(`No url to forward to!`)
+        res.status(500).send('No url to forward to')
+        return
+      }
       logger.info(`forwarding tx data to "${url}"`)
       try {
-        const { data } = await axios.post(
-          `http://${auctionMonitor.activeCoordinatorUrl()}/tx`,
-          txData,
-        )
+        const { data } = await axios.post(`${url}/tx`, txData)
         res.send(data)
       } catch (err) {
         console.log(err)

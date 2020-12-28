@@ -36,6 +36,8 @@ export class AuctionMonitor {
 
   urlsByAddress: { [key: string]: string } = {}
 
+  functionalUrlsByAddress: { [key: string]: string } = {}
+
   account: Account
 
   port: number | string
@@ -141,14 +143,14 @@ export class AuctionMonitor {
         }
       }
       // look for current external ip in list
-      if (urls.indexOf(url) === -1) {
-        await layer1.sendExternalTx(
-          auction.methods.setUrl(url),
-          this.account,
-          this.consensusAddress,
-        )
-        this.urlsByAddress[this.account.address] = url
-      }
+      // if (urls.indexOf(url) === -1) {
+      //   await layer1.sendExternalTx(
+      //     auction.methods.setUrl(url),
+      //     this.account,
+      //     this.consensusAddress,
+      //   )
+      //   this.urlsByAddress[this.account.address] = url
+      // }
     }
 
     this.startBlockSubscription()
@@ -181,6 +183,35 @@ export class AuctionMonitor {
     if (this.eventSubscription) {
       this.eventSubscription.unsubscribe()
       this.eventSubscription = undefined
+    }
+  }
+
+  async functionalCoordinatorUrl(address: string): Promise<string | void> {
+    if (this.functionalUrlsByAddress[address]) {
+      return this.functionalUrlsByAddress[address]
+    }
+    const url = this.urlsByAddress[address]
+    if (!url) return
+    const urls = url.split(',')
+    if (urls.length === 0) return
+    for (const u of urls) {
+      // ping to see if it's active
+      try {
+        const fullUrl = `https://${u}`
+        await axios.get(`${fullUrl}/price`)
+        this.functionalUrlsByAddress[address] = fullUrl
+        return fullUrl
+      } catch (e) {
+        // skip and test http
+      }
+      try {
+        const fullUrl = `http://${u}`
+        await axios.get(`${fullUrl}/price`)
+        this.functionalUrlsByAddress[address] = fullUrl
+        return fullUrl
+      } catch (e) {
+        // test next host/port combo
+      }
     }
   }
 
