@@ -1,0 +1,30 @@
+version: 2.1
+workflows:
+  test_app:
+    jobs:
+      - build
+jobs:
+  build:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - checkout
+      - run:
+          name: Install Yarn
+          command: curl -o- -L https://yarnpkg.com/install.sh | bash
+      - run:
+          name: Install
+          command: yarn
+      - run:
+          name: Build Prisma
+          command: yarn build:prisma
+      - run:
+          name: Lint
+          command: yarn lint .
+      - run:
+          name: Build Contract
+          command: yarn build:contract
+      - run:
+          name: Build TS
+          command: yarn build:ts:serial
+          no_output_timeout: 20m
