@@ -309,6 +309,13 @@ export class AuctionMonitor {
     }
   }
 
+  async setMaxBid(newMaxBid: BN | string) {
+    await this.bidLock.acquire('bidIfNeeded', async () => {
+      this.maxBid = new BN(newMaxBid)
+    })
+    await this.bidIfNeeded()
+  }
+
   async bidIfNeeded() {
     if (this.bidLock.isBusy('bidIfNeeded')) return
     await this.bidLock.acquire('bidIfNeeded', async () => {

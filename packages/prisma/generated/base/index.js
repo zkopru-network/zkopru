@@ -272,7 +272,7 @@ const config = {
   "generator": {
     "name": "client",
     "provider": "prisma-client-js",
-    "output": "/Users/chance/freelance/ef/zkopru_jchancehud/packages/prisma/generated/base",
+    "output": "/Users/chance/freelance/ef/zkopru/packages/prisma/generated/base",
     "binaryTargets": [
       "darwin",
       "windows",
