@@ -25,4 +25,6 @@ interface IBurnAuction {
     function shouldOpenRound() external view returns (bool);
     function isRoundOpen() external view returns (bool);
     function pendingBalances(address owner) external view returns (uint);
+    function refund() external;
+    function refund(address payable owner) external;
 }

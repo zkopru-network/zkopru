@@ -1,10 +1,10 @@
 import chalk from 'chalk'
-import App, { AppMenu, Context } from '..'
 import { parseStringToUnit } from '@zkopru/utils'
 import { toWei, fromWei } from 'web3-utils'
+import App, { AppMenu, Context } from '..'
 
 export default class UpdateMaxBid extends App {
-  static code = AppMenu.UPDATE_MAX_BID
+  static code = AppMenu.AUCTION_UPDATE_MAX_BID
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
     const { maxBid } = this.base.context.auctionMonitor

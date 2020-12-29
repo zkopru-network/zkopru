@@ -68,6 +68,8 @@ export class IBurnAuction extends Contract {
     isRoundOpen(): TransactionObject<boolean>
 
     pendingBalances(owner: string): TransactionObject<string>
+
+    refund(): TransactionObject<void>
   }
 
   events: {

@@ -17,6 +17,7 @@ import StopAutoCoordination from './prompts/stop-auto-coordinate'
 import AuctionMenu from './prompts/auction-menu'
 import UpdateUrl from './prompts/auction/update-url'
 import UpdateMaxBid from './prompts/auction/update-max-bid'
+import Refund from './prompts/auction/refund'
 
 export class CoordinatorDashboard extends Dashboard<Context, Coordinator> {
   constructor(coordinator: Coordinator, onCancel: () => Promise<void>) {
@@ -47,5 +48,6 @@ export class CoordinatorDashboard extends Dashboard<Context, Coordinator> {
     this.addPromptApp(AuctionMenu.code, new AuctionMenu(option))
     this.addPromptApp(UpdateUrl.code, new UpdateUrl(option))
     this.addPromptApp(UpdateMaxBid.code, new UpdateMaxBid(option))
+    this.addPromptApp(Refund.code, new Refund(option))
   }
 }

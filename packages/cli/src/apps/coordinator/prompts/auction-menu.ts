@@ -16,13 +16,17 @@ export default class AuctionMenu extends App {
         },
         {
           title: 'Update URL',
-          value: AppMenu.UPDATE_URL,
+          value: AppMenu.AUCTION_UPDATE_URL,
         },
         {
           title: 'Set max bid',
-          value: AppMenu.UPDATE_MAX_BID,
-        }
-      ]
+          value: AppMenu.AUCTION_UPDATE_MAX_BID,
+        },
+        {
+          title: 'Refund balance',
+          value: AppMenu.AUCTION_REFUND,
+        },
+      ],
     })
     switch (code) {
       default:
