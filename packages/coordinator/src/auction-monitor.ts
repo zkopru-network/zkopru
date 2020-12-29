@@ -77,12 +77,17 @@ export class AuctionMonitor {
   async updateUrl(newUrl: string) {
     const auction = this.auction()
     const { layer1 } = this.node
-    await layer1.sendExternalTx(
-      auction.methods.setUrl(newUrl),
-      this.account,
-      this.consensusAddress,
-    )
-    this.urlsByAddress[this.account.address] = newUrl
+    try {
+      await layer1.sendExternalTx(
+        auction.methods.setUrl(newUrl),
+        this.account,
+        this.consensusAddress,
+      )
+      this.urlsByAddress[this.account.address] = newUrl
+    } catch (err) {
+      logger.error(err.toString())
+      logger.error('Error updating url')
+    }
   }
 
   async start() {
