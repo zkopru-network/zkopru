@@ -319,7 +319,8 @@ export class AuctionMonitor {
     await this.bidLock.acquire('bidIfNeeded', async () => {
       this.maxBid = new BN(newMaxBid)
     })
-    await this.bidIfNeeded()
+    // Bid asynchronously
+    this.bidIfNeeded()
   }
 
   async bidIfNeeded() {
