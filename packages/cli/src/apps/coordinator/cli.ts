@@ -30,9 +30,11 @@ const main = async () => {
   await dashboard.run()
 }
 ;(async () => {
-  await main()
-  process.exit()
-})().catch(e => {
-  logger.error(e)
-  process.exit()
-})
+  try {
+    await main()
+    process.exit()
+  } catch (err) {
+    console.log(err)
+    process.exit(1)
+  }
+})()
