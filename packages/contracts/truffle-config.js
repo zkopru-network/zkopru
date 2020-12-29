@@ -62,14 +62,20 @@ module.exports = {
     kovan: {
       host: '127.0.0.1',
       port: 8549,
-      network_id: '*',
+      network_id: '42',
       gasPrice: '1000000000',
       provider: () => {
         return new HDWalletProvider(
           process.env.KOVAN_KEY,
-          'http://127.0.0.1:8549',
+          process.env.KOVAN_URL,
         )
       },
+    },
+    goerli_pkey: {
+      provider: () =>
+        new HDWalletProvider(process.env.GOERLI_KEY, process.env.GOERLI_URL),
+      network_id: '5',
+      gasPrice: '1000000000',
     },
     goerli: {
       provider: () => {
