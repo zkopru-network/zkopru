@@ -7,7 +7,7 @@ import BN from 'bn.js'
 export interface TxPoolInterface {
   pendingNum(): number
   addToTxPool(zkTx: ZkTx): Promise<void>
-  pickTxs(maxBytes: number, minPricePerByte: BN): Promise<ZkTx[] | null>
+  pickTxs(maxBytes: number, minPricePerByte: BN): Promise<ZkTx[]>
   markAsIncluded(txs: ZkTx[]): void
   pendingTxs(): ZkTx[]
 }
@@ -39,7 +39,7 @@ export class TxMemPool implements TxPoolInterface {
     this.txs[txHash.toString()] = zkTx
   }
 
-  async pickTxs(maxBytes: number, minPricePerByte: BN): Promise<ZkTx[] | null> {
+  async pickTxs(maxBytes: number, minPricePerByte: BN): Promise<ZkTx[]> {
     // TODO add atomic swap tx logic here
     let available = maxBytes
     const sorted = this.getSortedTxs()

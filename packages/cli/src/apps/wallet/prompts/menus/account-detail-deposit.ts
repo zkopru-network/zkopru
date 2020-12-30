@@ -7,7 +7,7 @@ export default class Deposit extends App {
 
   // eslint-disable-next-line class-methods-use-this
   async run(context: Context): Promise<{ context: Context; next: number }> {
-    if (!context.account) throw Error('Acocunt is not set')
+    if (!context.account) throw Error('Account is not set')
     const balance: Balance = await this.base.fetchLayer1Assets(context.account)
     const { choice } = await this.ask({
       type: 'select',
@@ -21,7 +21,7 @@ export default class Deposit extends App {
           value: { menu: AppMenu.DEPOSIT_ETHER },
         },
         ...Object.keys(balance.erc721).map(address => ({
-          title: `ERC20 to the zkopru netwokr ${address} : ${balance.erc721[address]}`,
+          title: `ERC20 to the zkopru network ${address} : ${balance.erc721[address]}`,
           value: { menu: AppMenu.DEPOSIT_ERC20, address },
         })),
         ...Object.keys(balance.erc721).map(address => ({

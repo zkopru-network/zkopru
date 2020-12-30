@@ -190,4 +190,27 @@ export const IBurnAuctionABI = [
     stateMutability: 'view',
     type: 'function',
   },
+  {
+    inputs: [{ internalType: 'address', name: 'owner', type: 'address' }],
+    name: 'pendingBalances',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'refund',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'address payable', name: 'owner', type: 'address' },
+    ],
+    name: 'refund',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
 ]

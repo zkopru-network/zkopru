@@ -8,6 +8,17 @@ import { Field } from '@zkopru/babyjubjub'
 import { BootstrapData } from '@zkopru/core'
 import { TxUtil } from '@zkopru/contracts'
 import { CoordinatorContext } from './context'
+import fetch from 'node-fetch'
+
+function catchError(fn: Function): RequestHandler {
+  return async (req, res, next) => {
+    try {
+      await fn(req, res, next)
+    } catch (err) {
+      res.status(500).send(`Internal server error: ${err.toString()}`)
+    }
+  }
+}
 
 export class CoordinatorApi {
   context: CoordinatorContext
@@ -27,12 +38,12 @@ export class CoordinatorApi {
     if (!this.server) {
       const app = express()
       app.use(express.text())
-      app.post('/tx', this.txHandler)
-      app.post('/instant-withdraw', this.instantWithdrawHandler)
+      app.post('/tx', catchError(this.txHandler))
+      app.post('/instant-withdraw', catchError(this.instantWithdrawHandler))
       if (this.context.config.bootstrap) {
-        app.get('/bootstrap', this.bootstrapHandler)
+        app.get('/bootstrap', catchError(this.bootstrapHandler))
       }
-      app.get('/price', this.bytePriceHandler)
+      app.get('/price', catchError(this.bytePriceHandler))
       this.server = app.listen(this.context.config.port, () => {
         logger.info(
           `coordinator.js: API is running on serverPort ${this.context.config.port}`,
@@ -55,7 +66,33 @@ export class CoordinatorApi {
 
   private txHandler: RequestHandler = async (req, res) => {
     const txData = req.body
-    logger.info(`tx data is${txData}`)
+    logger.info(`tx data ${typeof txData} ${txData}`)
+    const { auctionMonitor } = this.context
+    if (!auctionMonitor.isProposable) {
+      // forward the tx
+      const url = await auctionMonitor.functionalCoordinatorUrl(
+        auctionMonitor.currentProposer,
+      )
+      if (!url) {
+        logger.error(`No url to forward to!`)
+        res.status(500).send('No url to forward to')
+        return
+      }
+      logger.info(`forwarding tx data to "${url}"`)
+      try {
+        const r = await fetch(`${url}/tx`, {
+          method: 'post',
+          body: txData.toString(),
+        })
+        res.status(r.status).send(await r.text())
+      } catch (err) {
+        logger.error(err)
+        logger.error('Error calling active auction api')
+        res.status(500).send(err)
+      }
+      return
+    }
+    logger.info(`tx data is ${txData}`)
     logger.info(txData)
     const zkTx = ZkTx.decode(Buffer.from(txData, 'hex'))
     // const zkTx = ZkTx.decode(txData)

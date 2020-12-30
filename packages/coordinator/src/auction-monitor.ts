@@ -7,6 +7,8 @@ import { BlockHeader } from 'web3-eth'
 import { logger } from '@zkopru/utils'
 import AsyncLock from 'async-lock'
 import { EventEmitter } from 'events'
+import axios from 'axios'
+import dns from 'dns'
 
 interface Bid {
   owner: string
@@ -32,16 +34,22 @@ export class AuctionMonitor {
 
   currentRound = -1
 
+  isProposable = false
+
+  isProposableLastUpdated = 0
+
   urlsByAddress: { [key: string]: string } = {}
+
+  functionalUrlsByAddress: { [key: string]: string } = {}
 
   account: Account
 
   port: number | string
 
   // Values higher than this crash ganache :(
-  maxBidRounds = 100
+  maxBidRounds = 15
 
-  maxBid = new BN(100000 * 10 ** 9)
+  maxBid = new BN(20000 * 10 ** 9)
 
   // How close the round in question needs to be for us to bid
   roundBidThreshold = 3
@@ -65,32 +73,93 @@ export class AuctionMonitor {
     return Layer1.getIBurnAuction(layer1.web3, this.consensusAddress)
   }
 
+  consensus() {
+    const { layer1 } = this.node
+    return Layer1.getIConsensusProvider(layer1.web3, this.consensusAddress)
+  }
+
+  async updateUrl(newUrl: string) {
+    const auction = this.auction()
+    const { layer1 } = this.node
+    try {
+      await layer1.sendExternalTx(
+        auction.methods.setUrl(newUrl),
+        this.account,
+        this.consensusAddress,
+      )
+      this.urlsByAddress[this.account.address] = newUrl
+    } catch (err) {
+      logger.error(err.toString())
+      logger.error('Error updating url')
+    }
+  }
+
   async start() {
     const { layer1 } = this.node
     this.consensusAddress = await layer1.upstream.methods
       .consensusProvider()
       .call()
     const auction = this.auction()
-    const [startBlock, roundLength, blockNumber] = await Promise.all([
+    const [
+      startBlock,
+      roundLength,
+      blockNumber,
+      {
+        data: { ip },
+      },
+    ] = await Promise.all([
       auction.methods.startBlock().call(),
       auction.methods.roundLength().call(),
       layer1.web3.eth.getBlockNumber(),
+      axios.get('https://external-ip.now.sh'),
+      this.updateIsProposable(),
     ])
     this.startBlock = +startBlock
     this.roundLength = +roundLength
     this.currentRound = this.roundForBlock(blockNumber)
 
-    const url = `http://localhost:${this.port}`
+    const url = `${ip}:${this.port}`
     const myUrl = await auction.methods
       .coordinatorUrls(this.account.address)
       .call()
-    if (myUrl !== url) {
-      await layer1.sendExternalTx(
-        auction.methods.setUrl(url),
-        this.account,
-        this.consensusAddress,
-      )
-      this.urlsByAddress[this.account.address] = url
+    if (!myUrl) {
+      // for sure set it
+      await this.updateUrl(url)
+    } else if (myUrl.split(',').indexOf(url) === -1) {
+      // TODO: resolve domains to see if current ip is in list
+      const urls = myUrl.split(',')
+      let urlSet = false
+      for (const u of urls) {
+        const [host, port] = u.split(':')
+        const addresses = await new Promise<dns.LookupAddress[]>((rs, rj) =>
+          dns.lookup(
+            host,
+            {
+              all: true,
+            },
+            (err, a) => (err ? rj(err) : rs(a)),
+          ),
+        )
+        for (const { address } of addresses) {
+          if (address === ip && (port || 80) === this.port) {
+            // found the current ip/port via hostname lookup
+            urlSet = true
+          }
+        }
+        if (!urlSet) {
+          // add the current external ip to the list
+          // probably prompt the user
+        }
+      }
+      // look for current external ip in list
+      // if (urls.indexOf(url) === -1) {
+      //   await layer1.sendExternalTx(
+      //     auction.methods.setUrl(url),
+      //     this.account,
+      //     this.consensusAddress,
+      //   )
+      //   this.urlsByAddress[this.account.address] = url
+      // }
     }
 
     this.startBlockSubscription()
@@ -173,20 +242,83 @@ export class AuctionMonitor {
     }
   }
 
+  async functionalCoordinatorUrl(address: string): Promise<string | void> {
+    if (this.functionalUrlsByAddress[address]) {
+      return this.functionalUrlsByAddress[address]
+    }
+    await this.loadUrl(address)
+    const url = this.urlsByAddress[address]
+    if (!url) return
+    const urls = url.split(',')
+    if (urls.length === 0) return
+    for (const u of urls) {
+      // ping to see if it's active
+      try {
+        const fullUrl = `https://${u}`
+        await axios.get(`${fullUrl}/price`, { timeout: 5000 })
+        this.functionalUrlsByAddress[address] = fullUrl
+        return fullUrl
+      } catch (e) {
+        // skip and test http
+      }
+      try {
+        const fullUrl = `http://${u}`
+        await axios.get(`${fullUrl}/price`, { timeout: 5000 })
+        this.functionalUrlsByAddress[address] = fullUrl
+        return fullUrl
+      } catch (e) {
+        // test next host/port combo
+      }
+    }
+  }
+
+  activeCoordinatorUrl() {
+    return this.urlsByAddress[this.currentProposer]
+  }
+
   roundForBlock(blockNumber: number) {
     return Math.floor((blockNumber - this.startBlock) / this.roundLength)
   }
 
+  roundStartBlock(roundNumber: number) {
+    return this.startBlock + this.roundLength * roundNumber
+  }
+
+  roundEndBlock(roundNumber: number) {
+    return this.roundStartBlock(roundNumber) + this.roundLength - 1
+  }
+
+  async updateIsProposable() {
+    const [isProposable, blockNumber] = await Promise.all([
+      this.consensus()
+        .methods.isProposable(this.account.address)
+        .call(),
+      this.node.layer1.web3.eth.getBlockNumber(),
+    ])
+    logger.info(`Updated isProposable at block ${blockNumber}: ${isProposable}`)
+    this.isProposable = isProposable
+    this.isProposableLastUpdated = blockNumber
+  }
+
   async blockReceived(block: BlockHeader) {
     const newRound = this.roundForBlock(block.number)
+    const midBlock = this.roundStartBlock(newRound) + this.roundLength / 2
+    if (block.number >= midBlock && this.isProposableLastUpdated < midBlock) {
+      // check if proposable
+      await this.updateIsProposable()
+    }
     if (newRound === this.currentRound) {
       return
     }
+    const [activeProposer] = await Promise.all([
+      this.auction()
+        .methods.coordinatorForRound(newRound)
+        .call(),
+      this.updateIsProposable(),
+    ])
     // Entered a new round, update the proposer
     this.currentRound = newRound
-    this.currentProposer = await this.auction()
-      .methods.coordinatorForRound(newRound)
-      .call()
+    this.currentProposer = activeProposer
     if (!this.urlsByAddress[this.currentProposer]) {
       await this.loadUrl(this.currentProposer)
     }
@@ -198,6 +330,14 @@ export class AuctionMonitor {
     this.urlsByAddress[address] = await this.auction()
       .methods.coordinatorUrls(address)
       .call()
+  }
+
+  async setMaxBid(newMaxBid: BN | string) {
+    await this.bidLock.acquire('bidIfNeeded', async () => {
+      this.maxBid = new BN(newMaxBid)
+    })
+    // Bid asynchronously
+    this.bidIfNeeded()
   }
 
   async bidIfNeeded() {

@@ -7,7 +7,7 @@ export default class AtomicSwap extends App {
 
   // eslint-disable-next-line class-methods-use-this
   async run(context: Context): Promise<{ context: Context; next: number }> {
-    if (!context.account) throw Error('Acocunt is not set')
+    if (!context.account) throw Error('Account is not set')
     const spendables: Sum = await this.base.getSpendableAmount(context.account)
     const locked: Sum = await this.base.getLockedAmount(context.account)
     const { choice } = await this.ask({

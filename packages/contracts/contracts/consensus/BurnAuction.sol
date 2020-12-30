@@ -43,7 +43,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     uint64 latestOpenRound = 0;
 
     // Ether to be refunded from being outbid
-    mapping (address => uint) public pendingBalances;
+    mapping (address => uint) public override pendingBalances;
     mapping (uint => Bid) public highestBidPerRound;
     mapping (address => string) public override coordinatorUrls;
 
@@ -153,11 +153,11 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     }
 
     // Refund non-winning bids
-    function refund() public {
+    function refund() public override {
         refund(msg.sender);
     }
 
-    function refund(address payable owner) public {
+    function refund(address payable owner) public override {
         uint amountToRefund = pendingBalances[owner];
         if (amountToRefund == 0) return;
         pendingBalances[owner] = 0;
