@@ -43,9 +43,9 @@ export class AuctionMonitor {
   port: number | string
 
   // Values higher than this crash ganache :(
-  maxBidRounds = 100
+  maxBidRounds = 15
 
-  maxBid = new BN(100000 * 10 ** 9)
+  maxBid = new BN(20000 * 10 ** 9)
 
   // How close the round in question needs to be for us to bid
   roundBidThreshold = 3
