@@ -43,7 +43,6 @@ export class Worker<T> extends EventEmitter {
   async stop() {
     this.keepRunning = false
     if (this.job) {
-      await this.job
       this.job = null
     }
   }
