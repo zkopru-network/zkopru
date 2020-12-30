@@ -1,6 +1,6 @@
 import { WithdrawalStatus } from '@zkopru/transaction'
-import App, { AppMenu, Context } from '..'
 import { fromWei } from 'web3-utils'
+import App, { AppMenu, Context } from '..'
 
 export default class WithdrawableList extends App {
   static code = AppMenu.WITHDRAWABLE_LIST

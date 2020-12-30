@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
-import App, { AppMenu, Context } from '.'
 import { Layer1 } from '@zkopru/contracts'
+import App, { AppMenu, Context } from '.'
 
 export default class CoordinatorInfo extends App {
   static code = AppMenu.AUCTION_INFO
