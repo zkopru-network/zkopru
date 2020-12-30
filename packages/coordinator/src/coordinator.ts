@@ -271,8 +271,26 @@ export class Coordinator extends EventEmitter {
         )
         return
       }
-      if (!this.context.auctionMonitor.isProposable) {
+      const { auctionMonitor } = this.context
+      if (!auctionMonitor.isProposable) {
         logger.info(`Skipping block proposal: Not current round owner`)
+        // get pending tx and forward to active proposer
+        const pendingTx = await this.context.txPool.pickTxs(Infinity, new BN('1'))
+        if (!pendingTx.length) return
+        const url = await auctionMonitor.functionalCoordinatorUrl(
+          auctionMonitor.currentProposer,
+        )
+        if (!url) {
+          logger.warn('No functional url to forward pending tx!')
+          return
+        }
+        for (const tx of pendingTx) {
+          // forward
+          await fetch(`${url}/tx`, {
+            method: 'post',
+            body: tx.encode().toString('hex'),
+          })
+        }
         return
       }
       let block: Block
