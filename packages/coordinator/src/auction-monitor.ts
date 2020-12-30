@@ -3,8 +3,10 @@ import { Subscription } from 'web3-core-subscriptions'
 import { FullNode } from '@zkopru/core'
 import BN from 'bn.js'
 import { Account } from 'web3-core'
+import { BlockHeader } from 'web3-eth'
 import { logger } from '@zkopru/utils'
 import AsyncLock from 'async-lock'
+import { EventEmitter } from 'events'
 
 interface Bid {
   owner: string
@@ -14,9 +16,11 @@ interface Bid {
 export class AuctionMonitor {
   node: FullNode
 
-  blockSubscription?: Subscription<unknown>
+  blockSubscription?: Subscription<BlockHeader>
 
-  eventSubscription?: Subscription<unknown>
+  newHighBidSubscription?: EventEmitter
+
+  urlUpdateSubscription?: EventEmitter
 
   currentProposer: string
 
@@ -90,35 +94,82 @@ export class AuctionMonitor {
     }
 
     this.startBlockSubscription()
-    this.startEventSubscription()
+    this.startNewHighBidSubscription()
+    this.startUrlUpdateSubscription()
     await this.bidIfNeeded()
   }
 
   startBlockSubscription() {
     if (this.blockSubscription) return
     const { layer1 } = this.node
-    this.blockSubscription = layer1.web3.eth.subscribe(
-      'newBlockHeaders',
-      this.blockReceived.bind(this),
-    )
+    this.blockSubscription = layer1.web3.eth
+      .subscribe('newBlockHeaders')
+      .on('data', this.blockReceived.bind(this))
   }
 
-  startEventSubscription() {
-    if (this.eventSubscription) return
-    this.eventSubscription = (this.auction().events.allEvents(
-      {},
-      this.handleEvent.bind(this),
-    ) as any) as Subscription<unknown>
+  startNewHighBidSubscription() {
+    if (this.newHighBidSubscription) return
+    this.newHighBidSubscription = this.auction()
+      .events.NewHighBid()
+      .on('connected', subId => {
+        logger.info(
+          `auction-monitor.js: NewHighBid listner is connected. Id: ${subId}`,
+        )
+      })
+      .on('data', async data => {
+        const { roundIndex, bidder, amount } = data.returnValues
+        const currentRound = parseInt(roundIndex, 10)
+        this.bidsPerRound[currentRound] = {
+          owner: bidder,
+          amount: new BN(amount),
+        }
+        if (
+          bidder.toLowerCase() !== this.account.address.toLowerCase() &&
+          !new BN(amount).gt(this.maxBid) &&
+          currentRound - this.currentRound <= this.roundBidThreshold
+        ) {
+          // update our bid if we're close enough to trigger a bid
+          await this.bidIfNeeded()
+        }
+        logger.info(`New high bid for round ${currentRound}`)
+      })
   }
 
-  stop() {
+  startUrlUpdateSubscription() {
+    if (this.urlUpdateSubscription) return
+    this.urlUpdateSubscription = this.auction()
+      .events.UrlUpdate()
+      .on('connected', subId => {
+        logger.info(
+          `auction-monitor.js: UrlUpdate listner is connected. Id: ${subId}`,
+        )
+      })
+      .on('data', async data => {
+        const coordinator = data.returnValues
+        const newUrl = await this.auction()
+          .methods.coordinatorUrls(coordinator)
+          .call()
+        this.urlsByAddress[coordinator] = newUrl
+      })
+  }
+
+  async stop() {
     if (this.blockSubscription) {
-      this.blockSubscription.unsubscribe()
-      this.blockSubscription = undefined
+      try {
+        await this.blockSubscription.unsubscribe()
+      } catch (e) {
+        logger.error(e.toString())
+      } finally {
+        this.blockSubscription = undefined
+      }
     }
-    if (this.eventSubscription) {
-      this.eventSubscription.unsubscribe()
-      this.eventSubscription = undefined
+    if (this.newHighBidSubscription) {
+      this.newHighBidSubscription.removeAllListeners()
+      this.newHighBidSubscription = undefined
+    }
+    if (this.urlUpdateSubscription) {
+      this.urlUpdateSubscription.removeAllListeners()
+      this.urlUpdateSubscription = undefined
     }
   }
 
@@ -126,11 +177,7 @@ export class AuctionMonitor {
     return Math.floor((blockNumber - this.startBlock) / this.roundLength)
   }
 
-  async blockReceived(err, block) {
-    if (err) {
-      logger.error(err)
-      return
-    }
+  async blockReceived(block: BlockHeader) {
     const newRound = this.roundForBlock(block.number)
     if (newRound === this.currentRound) {
       return
@@ -151,36 +198,6 @@ export class AuctionMonitor {
     this.urlsByAddress[address] = await this.auction()
       .methods.coordinatorUrls(address)
       .call()
-  }
-
-  async handleEvent(err, data) {
-    const { event } = data
-    if (err) {
-      console.log(err)
-      return
-    }
-    if (event === 'NewHighBid') {
-      const { roundIndex, bidder, amount } = data.returnValues
-      this.bidsPerRound[roundIndex] = {
-        owner: bidder,
-        amount: new BN(amount),
-      }
-      if (
-        bidder.toLowerCase() !== this.account.address.toLowerCase() &&
-        !new BN(amount).gt(this.maxBid) &&
-        roundIndex - this.currentRound <= this.roundBidThreshold
-      ) {
-        // update our bid if we're close enough to trigger a bid
-        await this.bidIfNeeded()
-      }
-      logger.info(`New high bid for round ${roundIndex}`)
-    } else if (event === 'UrlUpdate') {
-      const { coordinator } = data.returnValues
-      const newUrl = await this.auction()
-        .methods.coordinatorUrls(coordinator)
-        .call()
-      this.urlsByAddress[coordinator] = newUrl
-    }
   }
 
   async bidIfNeeded() {

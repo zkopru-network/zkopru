@@ -21,7 +21,7 @@ const main = async () => {
   if (argv.n) {
     logger.info('Run non-interactive mode')
     if (!coordinator) throw Error('Failed to load coordinator')
-    coordinator.start()
+    await coordinator.start()
     return new Promise<void>(res => coordinator.on('stop', res))
   }
   logger.info('Run interactive mode')

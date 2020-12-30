@@ -208,13 +208,7 @@ export class L1Contract extends ZkopruContract {
     to: string,
     option?: Tx,
   ): Promise<TransactionReceipt | undefined> {
-    return await TxUtil.sendTx(
-      tx,
-      to,
-      this.web3,
-      account,
-      option
-    )
+    return await TxUtil.sendTx(tx, to, this.web3, account, option)
   }
 
   async sendTx<T>(

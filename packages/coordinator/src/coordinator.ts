@@ -20,6 +20,7 @@ import assert from 'assert'
 import AsyncLock from 'async-lock'
 import { Layer1 } from '@zkopru/contracts'
 import BN from 'bn.js'
+import { BlockHeader } from 'web3-eth'
 import { TxMemPool } from './tx-pool'
 import { CoordinatorConfig, CoordinatorContext } from './context'
 import { GeneratorBase } from './middlewares/interfaces/generator-base'
@@ -50,7 +51,7 @@ export class Coordinator extends EventEmitter {
 
   api: CoordinatorApi
 
-  gasPriceSubscriber?: Subscription<unknown>
+  gasPriceSubscriber?: Subscription<BlockHeader>
 
   taskRunners: {
     blockPropose: Worker<void>
@@ -103,12 +104,14 @@ export class Coordinator extends EventEmitter {
     return this.context.node
   }
 
-  start() {
+  async start() {
     logger.info('Coordinator started')
     this.context.node.start()
-    this.context.auctionMonitor.start()
+    await Promise.all([
+      this.context.auctionMonitor.start(),
+      this.startSubscribeGasPrice(),
+    ])
     this.api.start()
-    this.startSubscribeGasPrice()
     this.taskRunners.blockFinalize.start({
       task: this.finalizeTask.bind(this),
       interval: 10000,
@@ -150,7 +153,6 @@ export class Coordinator extends EventEmitter {
   }
 
   async stop() {
-    // TODO : stop api & gas price subscriber / remove listeners
     await Promise.all([
       this.taskRunners.blockPropose.close(),
       this.taskRunners.blockFinalize.close(),
@@ -158,6 +160,7 @@ export class Coordinator extends EventEmitter {
       this.context.node.stop(),
       this.context.auctionMonitor.stop(),
       this.api.stop(),
+      this.stopGasPriceSubscription(),
     ])
     this.emit('stop')
   }
@@ -405,13 +408,23 @@ export class Coordinator extends EventEmitter {
     this.context.gasPrice = Field.from(
       await this.layer1().web3.eth.getGasPrice(),
     )
-    this.gasPriceSubscriber = this.layer1().web3.eth.subscribe(
-      'newBlockHeaders',
-      async () => {
+    this.gasPriceSubscriber = this.layer1()
+      .web3.eth.subscribe('newBlockHeaders')
+      .on('data', async _ => {
         this.context.gasPrice = Field.from(
           await this.layer1().web3.eth.getGasPrice(),
         )
-      },
-    )
+      })
+  }
+
+  private async stopGasPriceSubscription() {
+    if (!this.gasPriceSubscriber) return
+    try {
+      await this.gasPriceSubscriber.unsubscribe()
+    } catch (e) {
+      logger.error(e.toString())
+    } finally {
+      this.gasPriceSubscriber = undefined
+    }
   }
 }

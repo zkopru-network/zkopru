@@ -324,7 +324,7 @@ export async function initContext(): Promise<Context> {
     zkopruAddress,
     accounts.coordinator.ethAccount,
   )
-  coordinator.start()
+  await coordinator.start()
   const { wallets, dbs } = await getWallets({
     accounts,
     config: {

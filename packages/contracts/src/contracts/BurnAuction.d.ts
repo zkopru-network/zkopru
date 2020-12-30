@@ -27,6 +27,15 @@ export class BurnAuction extends Contract {
 
     coordinatorUrls(arg0: string): TransactionObject<string>
 
+    highestBidPerRound(
+      arg0: number | string,
+    ): TransactionObject<{
+      owner: string
+      amount: string
+      0: string
+      1: string
+    }>
+
     lastBalanceIndex(): TransactionObject<string>
 
     lockedRoundIndex(): TransactionObject<string>
