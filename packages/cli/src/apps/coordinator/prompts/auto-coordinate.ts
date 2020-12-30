@@ -6,7 +6,7 @@ export default class AutoCoordinate extends App {
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
     this.print(chalk.blue('Start auto coordination'))
-    this.base.start()
+    await this.base.start()
     return { context, next: AppMenu.TOP_MENU }
   }
 }

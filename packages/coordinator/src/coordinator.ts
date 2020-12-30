@@ -103,12 +103,14 @@ export class Coordinator extends EventEmitter {
     return this.context.node
   }
 
-  start() {
+  async start() {
     logger.info('Coordinator started')
     this.context.node.start()
-    this.context.auctionMonitor.start()
+    await Promise.all([
+      this.context.auctionMonitor.start(),
+      this.startSubscribeGasPrice(),
+    ])
     this.api.start()
-    this.startSubscribeGasPrice()
     this.taskRunners.blockFinalize.start({
       task: this.finalizeTask.bind(this),
       interval: 10000,
@@ -150,7 +152,6 @@ export class Coordinator extends EventEmitter {
   }
 
   async stop() {
-    // TODO : stop api & gas price subscriber / remove listeners
     await Promise.all([
       this.taskRunners.blockPropose.close(),
       this.taskRunners.blockFinalize.close(),
@@ -406,20 +407,20 @@ export class Coordinator extends EventEmitter {
     this.context.gasPrice = Field.from(
       await this.layer1().web3.eth.getGasPrice(),
     )
-    this.gasPriceSubscriber = this.layer1().web3.eth.subscribe(
-      'newBlockHeaders',
-      async () => {
+    this.gasPriceSubscriber = this.layer1()
+      .web3.eth.subscribe('newBlockHeaders')
+      .on('data', async _ => {
         this.context.gasPrice = Field.from(
           await this.layer1().web3.eth.getGasPrice(),
         )
-      },
-    )
+      })
   }
 
   private async stopGasPriceSubscription() {
     if (!this.gasPriceSubscriber) return
     const result = await this.gasPriceSubscriber.unsubscribe()
     if (result) {
+      await this.gasPriceSubscriber.unsubscribe()
       this.gasPriceSubscriber = undefined
     } else {
       throw Error('Failed to remove gas subscription listener')

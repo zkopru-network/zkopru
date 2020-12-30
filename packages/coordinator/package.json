@@ -57,6 +57,7 @@
     "web3": "^1.2.6",
     "web3-core": "^1.2.6",
     "web3-core-subscriptions": "^1.2.6",
+    "web3-eth": "^1.2.6",
     "web3-utils": "^1.2.6",
     "yargs": "^15.3.1"
   },

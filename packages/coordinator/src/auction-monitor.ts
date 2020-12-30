@@ -3,8 +3,10 @@ import { Subscription } from 'web3-core-subscriptions'
 import { FullNode } from '@zkopru/core'
 import BN from 'bn.js'
 import { Account } from 'web3-core'
+import { BlockHeader } from 'web3-eth'
 import { logger } from '@zkopru/utils'
 import AsyncLock from 'async-lock'
+import { EventEmitter } from 'events'
 
 interface Bid {
   owner: string
@@ -16,7 +18,7 @@ export class AuctionMonitor {
 
   blockSubscription?: Subscription<unknown>
 
-  eventSubscription?: Subscription<unknown>
+  eventSubscription?: EventEmitter
 
   currentProposer: string
 
@@ -97,27 +99,26 @@ export class AuctionMonitor {
   startBlockSubscription() {
     if (this.blockSubscription) return
     const { layer1 } = this.node
-    this.blockSubscription = layer1.web3.eth.subscribe(
-      'newBlockHeaders',
-      this.blockReceived.bind(this),
-    )
+    this.blockSubscription = layer1.web3.eth
+      .subscribe('newBlockHeaders')
+      .on('data', this.blockReceived.bind(this))
   }
 
   startEventSubscription() {
     if (this.eventSubscription) return
-    this.eventSubscription = (this.auction().events.allEvents(
+    this.eventSubscription = this.auction().events.allEvents(
       {},
       this.handleEvent.bind(this),
-    ) as any) as Subscription<unknown>
+    )
   }
 
-  stop() {
+  async stop() {
     if (this.blockSubscription) {
-      this.blockSubscription.unsubscribe()
+      await this.blockSubscription.unsubscribe()
       this.blockSubscription = undefined
     }
     if (this.eventSubscription) {
-      this.eventSubscription.unsubscribe()
+      this.eventSubscription.removeAllListeners()
       this.eventSubscription = undefined
     }
   }
@@ -126,11 +127,7 @@ export class AuctionMonitor {
     return Math.floor((blockNumber - this.startBlock) / this.roundLength)
   }
 
-  async blockReceived(err, block) {
-    if (err) {
-      logger.error(err)
-      return
-    }
+  async blockReceived(block: BlockHeader) {
     const newRound = this.roundForBlock(block.number)
     if (newRound === this.currentRound) {
       return
