@@ -204,7 +204,7 @@ export class AuctionMonitor {
       // ping to see if it's active
       try {
         const fullUrl = `https://${u}`
-        await axios.get(`${fullUrl}/price`)
+        await axios.get(`${fullUrl}/price`, { timeout: 5000 })
         this.functionalUrlsByAddress[address] = fullUrl
         return fullUrl
       } catch (e) {
@@ -212,7 +212,7 @@ export class AuctionMonitor {
       }
       try {
         const fullUrl = `http://${u}`
-        await axios.get(`${fullUrl}/price`)
+        await axios.get(`${fullUrl}/price`, { timeout: 5000 })
         this.functionalUrlsByAddress[address] = fullUrl
         return fullUrl
       } catch (e) {
