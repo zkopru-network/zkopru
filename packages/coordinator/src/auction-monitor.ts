@@ -16,9 +16,11 @@ interface Bid {
 export class AuctionMonitor {
   node: FullNode
 
-  blockSubscription?: Subscription<unknown>
+  blockSubscription?: Subscription<BlockHeader>
 
-  eventSubscription?: EventEmitter
+  newHighBidSubscription?: EventEmitter
+
+  urlUpdateSubscription?: EventEmitter
 
   currentProposer: string
 
@@ -92,7 +94,8 @@ export class AuctionMonitor {
     }
 
     this.startBlockSubscription()
-    this.startEventSubscription()
+    this.startNewHighBidSubscription()
+    this.startUrlUpdateSubscription()
     await this.bidIfNeeded()
   }
 
@@ -104,22 +107,69 @@ export class AuctionMonitor {
       .on('data', this.blockReceived.bind(this))
   }
 
-  startEventSubscription() {
-    if (this.eventSubscription) return
-    this.eventSubscription = this.auction().events.allEvents(
-      {},
-      this.handleEvent.bind(this),
-    )
+  startNewHighBidSubscription() {
+    if (this.newHighBidSubscription) return
+    this.newHighBidSubscription = this.auction()
+      .events.NewHighBid()
+      .on('connected', subId => {
+        logger.info(
+          `auction-monitor.js: NewHighBid listner is connected. Id: ${subId}`,
+        )
+      })
+      .on('data', async data => {
+        const { roundIndex, bidder, amount } = data.returnValues
+        const currentRound = parseInt(roundIndex, 10)
+        this.bidsPerRound[currentRound] = {
+          owner: bidder,
+          amount: new BN(amount),
+        }
+        if (
+          bidder.toLowerCase() !== this.account.address.toLowerCase() &&
+          !new BN(amount).gt(this.maxBid) &&
+          currentRound - this.currentRound <= this.roundBidThreshold
+        ) {
+          // update our bid if we're close enough to trigger a bid
+          await this.bidIfNeeded()
+        }
+        logger.info(`New high bid for round ${currentRound}`)
+      })
+  }
+
+  startUrlUpdateSubscription() {
+    if (this.urlUpdateSubscription) return
+    this.urlUpdateSubscription = this.auction()
+      .events.UrlUpdate()
+      .on('connected', subId => {
+        logger.info(
+          `auction-monitor.js: UrlUpdate listner is connected. Id: ${subId}`,
+        )
+      })
+      .on('data', async data => {
+        const coordinator = data.returnValues
+        const newUrl = await this.auction()
+          .methods.coordinatorUrls(coordinator)
+          .call()
+        this.urlsByAddress[coordinator] = newUrl
+      })
   }
 
   async stop() {
     if (this.blockSubscription) {
-      await this.blockSubscription.unsubscribe()
-      this.blockSubscription = undefined
+      try {
+        await this.blockSubscription.unsubscribe()
+      } catch (e) {
+        logger.error(e.toString())
+      } finally {
+        this.blockSubscription = undefined
+      }
     }
-    if (this.eventSubscription) {
-      this.eventSubscription.removeAllListeners()
-      this.eventSubscription = undefined
+    if (this.newHighBidSubscription) {
+      this.newHighBidSubscription.removeAllListeners()
+      this.newHighBidSubscription = undefined
+    }
+    if (this.urlUpdateSubscription) {
+      this.urlUpdateSubscription.removeAllListeners()
+      this.urlUpdateSubscription = undefined
     }
   }
 
@@ -148,36 +198,6 @@ export class AuctionMonitor {
     this.urlsByAddress[address] = await this.auction()
       .methods.coordinatorUrls(address)
       .call()
-  }
-
-  async handleEvent(err, data) {
-    const { event } = data
-    if (err) {
-      console.log(err)
-      return
-    }
-    if (event === 'NewHighBid') {
-      const { roundIndex, bidder, amount } = data.returnValues
-      this.bidsPerRound[roundIndex] = {
-        owner: bidder,
-        amount: new BN(amount),
-      }
-      if (
-        bidder.toLowerCase() !== this.account.address.toLowerCase() &&
-        !new BN(amount).gt(this.maxBid) &&
-        roundIndex - this.currentRound <= this.roundBidThreshold
-      ) {
-        // update our bid if we're close enough to trigger a bid
-        await this.bidIfNeeded()
-      }
-      logger.info(`New high bid for round ${roundIndex}`)
-    } else if (event === 'UrlUpdate') {
-      const { coordinator } = data.returnValues
-      const newUrl = await this.auction()
-        .methods.coordinatorUrls(coordinator)
-        .call()
-      this.urlsByAddress[coordinator] = newUrl
-    }
   }
 
   async bidIfNeeded() {
