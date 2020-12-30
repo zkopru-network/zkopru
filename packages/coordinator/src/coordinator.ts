@@ -20,6 +20,7 @@ import assert from 'assert'
 import AsyncLock from 'async-lock'
 import { Layer1 } from '@zkopru/contracts'
 import BN from 'bn.js'
+import { BlockHeader } from 'web3-eth'
 import { TxMemPool } from './tx-pool'
 import { CoordinatorConfig, CoordinatorContext } from './context'
 import { GeneratorBase } from './middlewares/interfaces/generator-base'
@@ -50,7 +51,7 @@ export class Coordinator extends EventEmitter {
 
   api: CoordinatorApi
 
-  gasPriceSubscriber?: Subscription<unknown>
+  gasPriceSubscriber?: Subscription<BlockHeader>
 
   taskRunners: {
     blockPropose: Worker<void>
@@ -418,12 +419,12 @@ export class Coordinator extends EventEmitter {
 
   private async stopGasPriceSubscription() {
     if (!this.gasPriceSubscriber) return
-    const result = await this.gasPriceSubscriber.unsubscribe()
-    if (result) {
+    try {
       await this.gasPriceSubscriber.unsubscribe()
+    } catch (e) {
+      logger.error(e.toString())
+    } finally {
       this.gasPriceSubscriber = undefined
-    } else {
-      throw Error('Failed to remove gas subscription listener')
     }
   }
 }
