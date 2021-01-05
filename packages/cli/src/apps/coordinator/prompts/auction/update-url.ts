@@ -1,6 +1,6 @@
 import chalk from 'chalk'
-import App, { AppMenu, Context } from '..'
 import { Layer1 } from '@zkopru/contracts'
+import App, { AppMenu, Context } from '..'
 
 export default class UpdateUrl extends App {
   static code = AppMenu.AUCTION_UPDATE_URL

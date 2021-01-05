@@ -20,6 +20,7 @@ import assert from 'assert'
 import AsyncLock from 'async-lock'
 import { Layer1 } from '@zkopru/contracts'
 import BN from 'bn.js'
+import fetch from 'node-fetch'
 import { BlockHeader } from 'web3-eth'
 import { TxMemPool } from './tx-pool'
 import { CoordinatorConfig, CoordinatorContext } from './context'
@@ -278,8 +279,11 @@ export class Coordinator extends EventEmitter {
       if (!auctionMonitor.isProposable) {
         logger.info(`Skipping block proposal: Not current round owner`)
         // get pending tx and forward to active proposer
-        const pendingTx = await this.context.txPool.pickTxs(Infinity, new BN('1'))
-        if (!pendingTx.length) return
+        const pendingTx = await this.context.txPool.pickTxs(
+          Infinity,
+          new BN('1'),
+        )
+        if (!pendingTx?.length) return
         const url = await auctionMonitor.functionalCoordinatorUrl(
           auctionMonitor.currentProposer,
         )

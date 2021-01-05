@@ -7,8 +7,8 @@ import { Bytes32 } from 'soltypes'
 import { Field } from '@zkopru/babyjubjub'
 import { BootstrapData } from '@zkopru/core'
 import { TxUtil } from '@zkopru/contracts'
-import { CoordinatorContext } from './context'
 import fetch from 'node-fetch'
+import { CoordinatorContext } from './context'
 
 function catchError(fn: Function): RequestHandler {
   return async (req, res, next) => {

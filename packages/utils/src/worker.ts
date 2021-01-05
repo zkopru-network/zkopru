@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events'
-import { logger } from '@zkopru/utils'
+import { logger } from './logger'
 
 export declare interface Worker<T> {
   on(event: 'data', listener: (result: T) => void): this
