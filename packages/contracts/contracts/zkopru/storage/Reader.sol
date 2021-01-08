@@ -106,8 +106,8 @@ contract Reader is Storage {
         }
     }
 
-    function latestProposalBlock(address coordinator) public view returns (uint) {
-        if (Storage.chain.proposers[coordinator].exitAllowance == 0) return 0;
-        return Storage.chain.proposers[coordinator].exitAllowance - CHALLENGE_PERIOD;
+    function latestProposalBlock(address coordinator) public view returns (uint256) {
+        uint256 exitAllowance = chain.proposers[coordinator].exitAllowance;
+        return exitAllowance >= CHALLENGE_PERIOD ? exitAllowance - CHALLENGE_PERIOD : 0;
     }
 }
