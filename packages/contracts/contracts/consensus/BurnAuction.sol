@@ -10,7 +10,7 @@ import "./interfaces/IBurnAuction.sol";
  * @dev [WIP] Sample contract to implement burn auction for coordination consensus.
  */
 contract BurnAuction is IConsensusProvider, IBurnAuction {
-    Zkopru zkopru;
+    Zkopru public zkopru;
 
     struct Bid {
         address payable owner;
@@ -144,6 +144,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     }
 
     function roundForBlock(uint blockNumber) public view returns (uint) {
+        require(blockNumber >= startBlock, "Invalid block number");
         return (blockNumber - startBlock) / roundLength;
     }
 

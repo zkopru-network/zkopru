@@ -46,6 +46,8 @@ export class BurnAuction extends Contract {
 
     startBlock(): TransactionObject<string>
 
+    zkopru(): TransactionObject<string>
+
     bid(roundIndex: number | string): TransactionObject<void>
 
     multiBid(
