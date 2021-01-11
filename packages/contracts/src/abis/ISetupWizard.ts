@@ -107,6 +107,15 @@ export const ISetupWizardABI = [
     type: 'function',
   },
   {
+    inputs: [
+      { internalType: 'address payable', name: 'newZkopru', type: 'address' },
+    ],
+    name: 'migrateConsensusProvider',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
     inputs: [{ internalType: 'address', name: 'addr', type: 'address' }],
     name: 'makeMigratable',
     outputs: [],

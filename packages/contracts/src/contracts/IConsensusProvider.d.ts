@@ -24,6 +24,8 @@ export class IConsensusProvider extends Contract {
     lockForUpgrade(roundIndex: number | string): TransactionObject<void>
 
     isProposable(proposer: string): TransactionObject<boolean>
+
+    updateZkopru(newZkopru: string): TransactionObject<void>
   }
 
   events: {

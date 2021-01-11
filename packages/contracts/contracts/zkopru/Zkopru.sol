@@ -10,6 +10,7 @@ import { SNARK } from "./libraries/SNARK.sol";
 import { Blockchain, Header, Types } from "./libraries/Types.sol";
 import { Pairing, G1Point, G2Point } from "./libraries/Pairing.sol";
 import { Hash } from "./libraries/Hash.sol";
+import { IConsensusProvider } from "../consensus/interfaces/IConsensusProvider.sol";
 
 contract Zkopru is Proxy, Reader, ISetupWizard {
     using Types for Header;
@@ -110,6 +111,12 @@ contract Zkopru is Proxy, Reader, ISetupWizard {
      */
     function makeMigratable(address addr) public override onlyOwner {
         Proxy._connectMigratable(addr);
+    }
+
+    function migrateConsensusProvider(address payable newZkopru) public override onlyOwner {
+        require(address(consensusProvider) != address(0), "Consensus provider not set");
+        IConsensusProvider consensus = IConsensusProvider(consensusProvider);
+        consensus.updateZkopru(newZkopru);
     }
 
     /**

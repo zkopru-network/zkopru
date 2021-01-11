@@ -169,6 +169,8 @@ export class Zkopru extends Contract {
 
     makeMigratable(addr: string): TransactionObject<void>
 
+    migrateConsensusProvider(newZkopru: string): TransactionObject<void>
+
     allowMigrants(migrants: string[]): TransactionObject<void>
 
     completeSetup(): TransactionObject<void>

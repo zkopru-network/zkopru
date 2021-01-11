@@ -20,4 +20,13 @@ export const IConsensusProviderABI = [
     stateMutability: 'view',
     type: 'function',
   },
+  {
+    inputs: [
+      { internalType: 'address payable', name: 'newZkopru', type: 'address' },
+    ],
+    name: 'updateZkopru',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
 ]

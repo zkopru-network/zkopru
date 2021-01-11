@@ -73,6 +73,7 @@ module.exports = function migration(deployer, network, accounts) {
     await dest.makeConfigurable(instances.configurable.address)
     const configurable = await Configurable.at(dest.address)
     await configurable.setConsensusProvider(instances.burnAuction.address)
+    await source.migrateConsensusProvider(dest.address)
     // Setup zkSNARKs
     // Setup migrations
     const keyDir = path.join(__dirname, '../keys/vks')

@@ -6,9 +6,6 @@ import "../zkopru/interfaces/ICoordinatable.sol";
 import "./interfaces/IConsensusProvider.sol";
 import "./interfaces/IBurnAuction.sol";
 
-/**
- * @dev [WIP] Sample contract to implement burn auction for coordination consensus.
- */
 contract BurnAuction is IConsensusProvider, IBurnAuction {
     Zkopru public zkopru;
 
@@ -54,6 +51,11 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     constructor(address payable networkAddress) public {
         zkopru = Zkopru(networkAddress);
         startBlock = uint32(block.number);
+    }
+
+    function updateZkopru(address payable newZkopru) public override {
+        require(msg.sender == address(zkopru), "BurnAuction: Invalid caller");
+        zkopru = Zkopru(newZkopru);
     }
 
     function bid(uint roundIndex) public override payable {

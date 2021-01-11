@@ -129,6 +129,15 @@ export const BurnAuctionABI = [
     type: 'function',
   },
   {
+    inputs: [
+      { internalType: 'address payable', name: 'newZkopru', type: 'address' },
+    ],
+    name: 'updateZkopru',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
     inputs: [{ internalType: 'uint256', name: 'roundIndex', type: 'uint256' }],
     name: 'bid',
     outputs: [],

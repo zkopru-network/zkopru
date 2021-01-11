@@ -48,6 +48,8 @@ export class ISetupWizard extends Contract {
       txValidator: string,
     ): TransactionObject<void>
 
+    migrateConsensusProvider(newZkopru: string): TransactionObject<void>
+
     makeMigratable(addr: string): TransactionObject<void>
 
     allowMigrants(migrants: string[]): TransactionObject<void>

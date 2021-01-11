@@ -28,6 +28,8 @@ interface ISetupWizard {
         address txValidator
     ) external;
 
+    function migrateConsensusProvider(address payable newZkopru) external;
+
     function makeMigratable(address addr) external;
 
     function allowMigrants(address[] calldata migrants) external;

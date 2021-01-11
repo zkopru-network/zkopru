@@ -471,6 +471,15 @@ export const ZkopruABI = [
   },
   {
     inputs: [
+      { internalType: 'address payable', name: 'newZkopru', type: 'address' },
+    ],
+    name: 'migrateConsensusProvider',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
       { internalType: 'address[]', name: 'migrants', type: 'address[]' },
     ],
     name: 'allowMigrants',
