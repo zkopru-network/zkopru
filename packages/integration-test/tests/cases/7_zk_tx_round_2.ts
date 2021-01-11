@@ -151,7 +151,7 @@ export const testRound2NewBlockProposal = (
   let updated = false
   let newBlockHash!: Bytes32
   coordinator.middlewares.proposer.setPreProcessor(block => {
-    console.log('Block 3', block.serializeBlock().toString('hex'))
+    // console.log('Block 3', block.serializeBlock().toString('hex'))
     return block
   })
   do {

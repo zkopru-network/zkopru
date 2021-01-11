@@ -12,7 +12,7 @@ export const waitCoordinatorToProposeANewBlock = (
   const { contract, coordinator } = ctx()
   // set block proposing preprocessor
   coordinator.middlewares.proposer.setPreProcessor(block => {
-    console.log('Block 1', block.serializeBlock().toString('hex'))
+    // console.log('Block 1', block.serializeBlock().toString('hex'))
     return block
   })
   let msToWait = 18000
