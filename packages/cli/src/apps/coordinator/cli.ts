@@ -6,7 +6,7 @@ import { logStream, logger } from '@zkopru/utils'
 import { argv } from './parser'
 import { Config } from './configurator/configurator'
 import { getCoordinator } from './configurator'
-import { CooridnatorDashboard } from './app'
+import { CoordinatorDashboard } from './app'
 
 const main = async () => {
   const writeStream = fs.createWriteStream('./COORDINATOR_LOG')
@@ -21,18 +21,20 @@ const main = async () => {
   if (argv.n) {
     logger.info('Run non-interactive mode')
     if (!coordinator) throw Error('Failed to load coordinator')
-    coordinator.start()
+    await coordinator.start()
     return new Promise<void>(res => coordinator.on('stop', res))
   }
   logger.info('Run interactive mode')
-  const dashboard = new CooridnatorDashboard(coordinator, () => process.exit())
+  const dashboard = new CoordinatorDashboard(coordinator, () => process.exit())
   dashboard.render()
   await dashboard.run()
 }
 ;(async () => {
-  await main()
-  process.exit()
-})().catch(e => {
-  logger.error(e)
-  process.exit()
-})
+  try {
+    await main()
+    process.exit()
+  } catch (err) {
+    console.log(err)
+    process.exit(1)
+  }
+})()

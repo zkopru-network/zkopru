@@ -23,12 +23,20 @@ export default class TopMenu extends App {
           value: AppMenu.COORDINATOR_INFO,
         },
         {
+          title: 'Auction info',
+          value: AppMenu.AUCTION_INFO,
+        },
+        {
           title: 'Start auto coordination',
           value: AppMenu.AUTO_COORDINATE,
         },
         {
           title: 'Stop auto coordination',
           value: AppMenu.STOP_AUTO_COORDINATION,
+        },
+        {
+          title: 'Auction menu',
+          value: AppMenu.AUCTION_MENU,
         },
         {
           title: 'Setup menu',

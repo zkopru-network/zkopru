@@ -1,13 +1,13 @@
 import { WithdrawalStatus } from '@zkopru/transaction'
-import App, { AppMenu, Context } from '..'
 import { fromWei } from 'web3-utils'
+import App, { AppMenu, Context } from '..'
 
 export default class WithdrawableList extends App {
   static code = AppMenu.WITHDRAWABLE_LIST
 
   // eslint-disable-next-line class-methods-use-this
   async run(context: Context): Promise<{ context: Context; next: number }> {
-    if (!context.account) throw Error('Acocunt is not set')
+    if (!context.account) throw Error('Account is not set')
     const unfinalized = await this.base.getWithdrawables(
       context.account,
       WithdrawalStatus.UNFINALIZED,

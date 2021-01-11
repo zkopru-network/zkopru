@@ -39,6 +39,7 @@
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/utils": "file:../utils",
     "@zkopru/zk-wizard": "file:../zk-wizard",
+    "bn.js": "^5.1.1",
     "soltypes": "^1.3.3",
     "node-docker-api": "^1.1.22",
     "puppeteer": "^5.0.0",

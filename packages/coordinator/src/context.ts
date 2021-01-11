@@ -2,6 +2,7 @@ import { FullNode } from '@zkopru/core'
 import BN from 'bn.js'
 import { Account } from 'web3-core'
 import { TxPoolInterface } from './tx-pool'
+import { AuctionMonitor } from './auction-monitor'
 
 export interface CoordinatorConfig {
   maxBytes: number
@@ -11,6 +12,8 @@ export interface CoordinatorConfig {
 }
 
 export interface CoordinatorContext {
+  auctionMonitor: AuctionMonitor
+
   node: FullNode
 
   account: Account

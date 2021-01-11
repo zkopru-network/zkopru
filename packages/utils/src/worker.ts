@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events'
+import { logger } from './logger'
 
 export declare interface Worker<T> {
   on(event: 'data', listener: (result: T) => void): this
@@ -42,7 +43,6 @@ export class Worker<T> extends EventEmitter {
   async stop() {
     this.keepRunning = false
     if (this.job) {
-      await this.job
       this.job = null
     }
   }
@@ -62,7 +62,12 @@ export class Worker<T> extends EventEmitter {
       if (task.timeout) {
         setTimeout(this.detectDanglingTask, task.timeout)
       }
-      await Promise.all([this.runTask(task.task), sleep(task.interval)])
+      try {
+        await Promise.all([this.runTask(task.task), sleep(task.interval)])
+      } catch (err) {
+        logger.error('Uncaught error in task')
+        logger.error(err)
+      }
     }
   }
 

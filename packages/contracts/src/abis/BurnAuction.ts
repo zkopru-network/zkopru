@@ -51,14 +51,14 @@ export const BurnAuctionABI = [
   {
     inputs: [],
     name: 'auctionEnd',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    outputs: [{ internalType: 'uint32', name: '', type: 'uint32' }],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [],
     name: 'auctionStart',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    outputs: [{ internalType: 'uint32', name: '', type: 'uint32' }],
     stateMutability: 'view',
     type: 'function',
   },
@@ -81,7 +81,7 @@ export const BurnAuctionABI = [
     name: 'highestBidPerRound',
     outputs: [
       { internalType: 'address payable', name: 'owner', type: 'address' },
-      { internalType: 'uint256', name: 'amount', type: 'uint256' },
+      { internalType: 'uint232', name: 'amount', type: 'uint232' },
     ],
     stateMutability: 'view',
     type: 'function',
@@ -89,14 +89,14 @@ export const BurnAuctionABI = [
   {
     inputs: [],
     name: 'lastBalanceIndex',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    outputs: [{ internalType: 'uint64', name: '', type: 'uint64' }],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [],
     name: 'lockedRoundIndex',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    outputs: [{ internalType: 'uint64', name: '', type: 'uint64' }],
     stateMutability: 'view',
     type: 'function',
   },
@@ -110,14 +110,21 @@ export const BurnAuctionABI = [
   {
     inputs: [],
     name: 'roundLength',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    outputs: [{ internalType: 'uint32', name: '', type: 'uint32' }],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [],
     name: 'startBlock',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    outputs: [{ internalType: 'uint32', name: '', type: 'uint32' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'zkopru',
+    outputs: [{ internalType: 'contract Zkopru', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
   },
@@ -126,6 +133,38 @@ export const BurnAuctionABI = [
     name: 'bid',
     outputs: [],
     stateMutability: 'payable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'uint256', name: 'roundIndex', type: 'uint256' },
+      { internalType: 'uint256', name: 'amount', type: 'uint256' },
+    ],
+    name: 'bid',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'uint256', name: '_minBid', type: 'uint256' },
+      { internalType: 'uint256', name: 'maxBid', type: 'uint256' },
+      { internalType: 'uint256', name: 'startRound', type: 'uint256' },
+      { internalType: 'uint256', name: 'endRound', type: 'uint256' },
+    ],
+    name: 'multiBid',
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'uint256', name: 'roundIndex', type: 'uint256' }],
+    name: 'highestBidForRound',
+    outputs: [
+      { internalType: 'uint232', name: '', type: 'uint232' },
+      { internalType: 'address', name: '', type: 'address' },
+    ],
+    stateMutability: 'view',
     type: 'function',
   },
   {
@@ -140,6 +179,20 @@ export const BurnAuctionABI = [
     name: 'clearUrl',
     outputs: [],
     stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'earliestBiddableRound',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'latestBiddableRound',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
     type: 'function',
   },
   {
@@ -195,7 +248,7 @@ export const BurnAuctionABI = [
     inputs: [
       { internalType: 'address payable', name: 'owner', type: 'address' },
     ],
-    name: 'refundAddress',
+    name: 'refund',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',
@@ -211,6 +264,15 @@ export const BurnAuctionABI = [
   },
   {
     inputs: [],
+    name: 'updateBalance',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'uint256', name: 'maxIterations', type: 'uint256' },
+    ],
     name: 'updateBalance',
     outputs: [],
     stateMutability: 'nonpayable',
@@ -256,16 +318,6 @@ export const BurnAuctionABI = [
     name: 'lockForUpgrade',
     outputs: [],
     stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { internalType: 'uint256', name: 'a', type: 'uint256' },
-      { internalType: 'uint256', name: 'b', type: 'uint256' },
-    ],
-    name: 'max',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'pure',
     type: 'function',
   },
 ]

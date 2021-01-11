@@ -3,7 +3,7 @@ RUN apt update
 RUN apt install -y git make musl-dev golang-go sqlite g++ tmux
 RUN mkdir -p /usr/share/man/man1
 RUN mkdir -p /usr/share/man/man7
-RUN apt install -y postgresql-client
+RUN apt install -y postgresql-client netcat
 
 # Configure Go
 ENV GOROOT /usr/lib/go
@@ -21,6 +21,7 @@ RUN apt install -y python
 # Install Lerna & gyp
 RUN npm install -g node-gyp-build
 RUN npm install -g lerna
+RUN npm install -g @prisma/cli@2.7.1
 RUN ln -s "$(which nodejs)" /usr/bin/node
 WORKDIR /proj
 
@@ -46,7 +47,7 @@ COPY ./yarn.lock /proj/yarn.lock
 RUN yarn install
 
 # Copy dist
-COPY ./packages/account/dist /proj/packages/account/dist 
+COPY ./packages/account/dist /proj/packages/account/dist
 COPY ./packages/babyjubjub/dist /proj/packages/babyjubjub/dist
 COPY ./packages/contracts/dist /proj/packages/contracts/dist
 COPY ./packages/coordinator/dist /proj/packages/coordinator/dist
@@ -64,5 +65,8 @@ RUN lerna clean -y --loglevel silent && lerna bootstrap
 COPY ./packages/cli/coordinator.*.json /proj/packages/cli/
 COPY ./packages/cli/wallet.*.json /proj/packages/cli/
 COPY ./packages/prisma/prisma /proj/packages/prisma/prisma
+
+COPY ./scripts/dev_start.sh /dev_start.sh
 EXPOSE 8888
-CMD ["node", "/proj/packages/cli/dist/apps/coordinator/cli.js", "--ws ws://localhost:5000", "--config /proj/packages/cli/coordinator.json"]
+CMD ["/bin/sh", "/dev_start.sh"]
+# CMD ["node", "/proj/packages/cli/dist/apps/coordinator/cli.js", "--ws ws://localhost:5000", "--config /proj/packages/cli/coordinator.json"]

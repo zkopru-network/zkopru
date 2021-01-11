@@ -28,7 +28,7 @@ export class FullValidator extends Validator {
         return calls
       }),
     )
-    const logTime = true
+    const logTime = false
     if (logTime) console.time(`validate`)
     const validationResults = await Promise.all(
       validationCalls.map(async calls => {

@@ -19,6 +19,9 @@ import { Uint256 } from 'soltypes'
 import assert from 'assert'
 import AsyncLock from 'async-lock'
 import { Layer1 } from '@zkopru/contracts'
+import BN from 'bn.js'
+import fetch from 'node-fetch'
+import { BlockHeader } from 'web3-eth'
 import { TxMemPool } from './tx-pool'
 import { CoordinatorConfig, CoordinatorContext } from './context'
 import { GeneratorBase } from './middlewares/interfaces/generator-base'
@@ -26,6 +29,7 @@ import { ProposerBase } from './middlewares/interfaces/proposer-base'
 import { BlockGenerator } from './middlewares/default/block-generator'
 import { BlockProposer } from './middlewares/default/block-proposer'
 import { CoordinatorApi } from './api'
+import { AuctionMonitor } from './auction-monitor'
 
 export interface CoordinatorInterface {
   start: () => void
@@ -48,7 +52,7 @@ export class Coordinator extends EventEmitter {
 
   api: CoordinatorApi
 
-  gasPriceSubscriber?: Subscription<unknown>
+  gasPriceSubscriber?: Subscription<BlockHeader>
 
   taskRunners: {
     blockPropose: Worker<void>
@@ -60,6 +64,8 @@ export class Coordinator extends EventEmitter {
 
   middlewares: Middlewares
 
+  currentRound: number | undefined
+
   constructor(
     node: FullNode,
     account: Account,
@@ -70,6 +76,7 @@ export class Coordinator extends EventEmitter {
     this.context = {
       account,
       node,
+      auctionMonitor: new AuctionMonitor(node, account, config.port),
       txPool: new TxMemPool(),
       config: { priceMultiplier: 32, ...config },
     }
@@ -98,11 +105,14 @@ export class Coordinator extends EventEmitter {
     return this.context.node
   }
 
-  start() {
+  async start() {
     logger.info('Coordinator started')
     this.context.node.start()
+    await Promise.all([
+      this.context.auctionMonitor.start(),
+      this.startSubscribeGasPrice(),
+    ])
     this.api.start()
-    this.startSubscribeGasPrice()
     this.taskRunners.blockFinalize.start({
       task: this.finalizeTask.bind(this),
       interval: 10000,
@@ -144,13 +154,14 @@ export class Coordinator extends EventEmitter {
   }
 
   async stop() {
-    // TODO : stop api & gas price subscriber / remove listeners
     await Promise.all([
       this.taskRunners.blockPropose.close(),
       this.taskRunners.blockFinalize.close(),
       this.taskRunners.massDepositCommit.close(),
       this.context.node.stop(),
+      this.context.auctionMonitor.stop(),
       this.api.stop(),
+      this.stopGasPriceSubscription(),
     ])
     this.emit('stop')
   }
@@ -178,6 +189,57 @@ export class Coordinator extends EventEmitter {
   async completeSetup(): Promise<TransactionReceipt | undefined> {
     const tx = this.layer1().setup.methods.completeSetup()
     return this.layer1().sendTx(tx, this.context.account)
+  }
+
+  async bidAuctions(): Promise<any> {
+    const consensus = await this.layer1()
+      .upstream.methods.consensusProvider()
+      .call()
+    const auction = Layer1.getIBurnAuction(this.layer1().web3, consensus)
+    const [currentRound, url] = await Promise.all([
+      auction.methods.currentRound().call(),
+      auction.methods.coordinatorUrls(this.context.account.address).call(),
+    ])
+    if (+currentRound !== this.currentRound) {
+      this.currentRound = +currentRound
+      logger.info(`Current auction round: ${currentRound}`)
+    }
+    if (!url) {
+      // Set a url
+      // TODO: determine apparent external ip/port
+      const urlTx = auction.methods.setUrl('http://localhost')
+      await this.layer1().sendExternalTx(urlTx, this.context.account, consensus)
+    }
+    const futureRounds = 20
+    const maxPrice = new BN((100000 * 10 ** 9).toString())
+    const startRound = +(await auction.methods.currentRound().call()) + 3
+    const promises = [] as Promise<any>[]
+
+    for (let x = startRound; x < startRound + futureRounds; x += 1) {
+      const currentWinner = await auction.methods.coordinatorForRound(x).call()
+      if (
+        currentWinner.toString().toLowerCase() ===
+        this.context.account.address.toLowerCase()
+      ) {
+        // Already highest bidder for this round
+        // eslint-disable-next-line no-continue
+        continue
+      }
+      const nextBid = await auction.methods.minNextBid(x).call()
+      if (new BN(nextBid).gt(maxPrice)) {
+        // price too high
+        // eslint-disable-next-line no-continue
+        continue
+      }
+      logger.info(`Bidding on round ${x}`)
+      const tx = auction.methods.bid(x)
+      promises.push(
+        this.layer1().sendExternalTx(tx, this.context.account, consensus, {
+          value: nextBid,
+        }),
+      )
+    }
+    await Promise.all(promises)
   }
 
   async registerAsCoordinator(): Promise<TransactionReceipt | undefined> {
@@ -211,6 +273,31 @@ export class Coordinator extends EventEmitter {
         logger.trace(
           `Skip gen block. Syncing layer 2 with the layer 1 - status: ${this.context.node.synchronizer.status}`,
         )
+        return
+      }
+      const { auctionMonitor } = this.context
+      if (!auctionMonitor.isProposable) {
+        logger.info(`Skipping block proposal: Not current round owner`)
+        // get pending tx and forward to active proposer
+        const pendingTx = await this.context.txPool.pickTxs(
+          Infinity,
+          new BN('1'),
+        )
+        if (!pendingTx?.length) return
+        const url = await auctionMonitor.functionalCoordinatorUrl(
+          auctionMonitor.currentProposer,
+        )
+        if (!url) {
+          logger.warn('No functional url to forward pending tx!')
+          return
+        }
+        for (const tx of pendingTx) {
+          // forward
+          await fetch(`${url}/tx`, {
+            method: 'post',
+            body: tx.encode().toString('hex'),
+          })
+        }
         return
       }
       let block: Block
@@ -334,13 +421,23 @@ export class Coordinator extends EventEmitter {
     this.context.gasPrice = Field.from(
       await this.layer1().web3.eth.getGasPrice(),
     )
-    this.gasPriceSubscriber = this.layer1().web3.eth.subscribe(
-      'newBlockHeaders',
-      async () => {
+    this.gasPriceSubscriber = this.layer1()
+      .web3.eth.subscribe('newBlockHeaders')
+      .on('data', async _ => {
         this.context.gasPrice = Field.from(
           await this.layer1().web3.eth.getGasPrice(),
         )
-      },
-    )
+      })
+  }
+
+  private async stopGasPriceSubscription() {
+    if (!this.gasPriceSubscriber) return
+    try {
+      await this.gasPriceSubscriber.unsubscribe()
+    } catch (e) {
+      logger.error(e.toString())
+    } finally {
+      this.gasPriceSubscriber = undefined
+    }
   }
 }

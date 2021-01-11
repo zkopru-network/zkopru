@@ -19,12 +19,69 @@ export class IBurnAuction extends Contract {
   clone(): IBurnAuction
 
   methods: {
+    startBlock(): TransactionObject<string>
+
+    roundLength(): TransactionObject<string>
+
+    highestBidForRound(
+      roundIndex: number | string,
+    ): TransactionObject<{
+      0: string
+      1: string
+    }>
+
     transferBalance(recipient: string): TransactionObject<void>
 
     register(): TransactionObject<void>
+
+    setUrl(url: string): TransactionObject<void>
+
+    clearUrl(): TransactionObject<void>
+
+    earliestBiddableRound(): TransactionObject<string>
+
+    latestBiddableRound(): TransactionObject<string>
+
+    coordinatorUrls(url: string): TransactionObject<string>
+
+    bid(roundIndex: number | string): TransactionObject<void>
+
+    multiBid(
+      _minBid: number | string,
+      maxBid: number | string,
+      startRound: number | string,
+      endRound: number | string,
+    ): TransactionObject<void>
+
+    minNextBid(roundIndex: number | string): TransactionObject<string>
+
+    calcRoundStart(roundIndex: number | string): TransactionObject<string>
+
+    coordinatorForRound(roundIndex: number | string): TransactionObject<string>
+
+    activeCoordinator(): TransactionObject<string>
+
+    currentRound(): TransactionObject<string>
+
+    shouldOpenRound(): TransactionObject<boolean>
+
+    isRoundOpen(): TransactionObject<boolean>
+
+    pendingBalances(owner: string): TransactionObject<string>
+
+    refund(): TransactionObject<void>
   }
 
   events: {
+    NewHighBid: ContractEvent<{
+      roundIndex: string
+      bidder: string
+      amount: string
+      0: string
+      1: string
+      2: string
+    }>
+    UrlUpdate: ContractEvent<string>
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }
 }
