@@ -48,6 +48,7 @@ module.exports = function migration(deployer, network, accounts) {
     const source = await Zkopru.deployed()
     // migration destination
     const dest = await Zkopru.new()
+    const destAuction = await BurnAuction.new(dest.address)
 
     console.log(`Deployed ZKOPRU 2 at:\n${dest.address}`)
     // Save deployed addresses
@@ -72,7 +73,7 @@ module.exports = function migration(deployer, network, accounts) {
     await dest.makeMigratable(instances.migratable.address)
     await dest.makeConfigurable(instances.configurable.address)
     const configurable = await Configurable.at(dest.address)
-    await configurable.setConsensusProvider(instances.burnAuction.address)
+    await configurable.setConsensusProvider(destAuction.address)
     // Setup zkSNARKs
     // Setup migrations
     const keyDir = path.join(__dirname, '../keys/vks')
