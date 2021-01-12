@@ -66,6 +66,6 @@ export class BlockProposer extends ProposerBase {
     } else {
       logger.warn(`Failed to propose a new block: ${block.hash.toString()}`)
     }
-    return undefined
+    return receipt
   }
 }
