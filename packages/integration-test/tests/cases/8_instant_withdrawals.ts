@@ -7,6 +7,7 @@
 // import { WithdrawalStatus } from '@zkopru/transaction'
 import { WithdrawalStatus } from '@zkopru/transaction'
 import { Address } from 'soltypes'
+import { toBN } from 'web3-utils'
 import { CtxProvider } from './context'
 
 export const testGetWithdrawablesOfAlice = (ctx: CtxProvider) => async () => {
@@ -47,7 +48,10 @@ export const payForEthWithdrawalInAdvance = (ctx: CtxProvider) => async () => {
     ethWithdrawal,
   )
   const nextBalance = await wallets.bob.fetchLayer1Assets(accounts.bob)
-  console.log('instant withdrawal', result)
-  console.log('prev balance', prevBalance)
-  console.log('next balance', nextBalance)
+  expect(result).toBeTruthy()
+  expect(nextBalance.eth).toStrictEqual(
+    toBN(prevBalance.eth)
+      .add(toBN(ethWithdrawal.eth))
+      .toString(),
+  )
 }
