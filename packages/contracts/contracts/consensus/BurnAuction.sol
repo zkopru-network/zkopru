@@ -62,6 +62,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     }
 
     function bid(uint roundIndex, uint amount) public override {
+        require(zkopru.consensusProvider() == address(this), "BurnAuction: Not consensus provider");
         require(roundIndex < lockedRoundIndex, "BurnAuction: Contract is locked");
         require(bytes(coordinatorUrls[msg.sender]).length != 0, "BurnAuction: Coordinator url not set");
         uint roundStart = calcRoundStart(roundIndex);
@@ -193,6 +194,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     }
 
     function register() public override payable {
+        require(zkopru.consensusProvider() == address(this), "BurnAuction: Not consensus provider");
         ICoordinatable(address(zkopru)).stake{ value: msg.value }(msg.sender);
     }
 
