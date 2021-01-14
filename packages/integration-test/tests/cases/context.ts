@@ -239,6 +239,7 @@ export async function getWallet({
     address,
     provider,
     db: mockupDB.db,
+    slasher: account.ethAccount,
   })
   const web3 = new Web3(provider)
   const hdWallet = new HDWallet(web3, mockupDB.db)

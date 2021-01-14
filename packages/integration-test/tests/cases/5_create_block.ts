@@ -9,12 +9,7 @@ import { CtxProvider } from './context'
 export const waitCoordinatorToProposeANewBlock = (
   ctx: CtxProvider,
 ) => async () => {
-  const { contract, coordinator } = ctx()
-  // set block proposing preprocessor
-  coordinator.middlewares.proposer.setPreProcessor(block => {
-    // console.log('Block 1', block.serializeBlock().toString('hex'))
-    return block
-  })
+  const { contract } = ctx()
   let msToWait = 18000
   let proposedBlocks!: string
   while (msToWait > 0) {
@@ -23,7 +18,6 @@ export const waitCoordinatorToProposeANewBlock = (
     msToWait -= 1000
     await sleep(1000)
   }
-  coordinator.middlewares.proposer.removePreProcessor()
   expect(proposedBlocks).toStrictEqual('2')
 }
 

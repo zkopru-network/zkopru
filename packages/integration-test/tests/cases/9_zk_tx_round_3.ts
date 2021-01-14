@@ -4,11 +4,12 @@
 /* eslint-disable jest/no-export */
 /* eslint-disable jest/require-top-level-describe */
 
-import { toWei, toBN } from 'web3-utils'
+import { toWei } from 'web3-utils'
 import { TxBuilder, Utxo, ZkTx } from '@zkopru/transaction'
 import { Field } from '@zkopru/babyjubjub'
 import { sleep } from '@zkopru/utils'
-import { Bytes32 } from 'soltypes'
+import { Bytes32, Uint256 } from 'soltypes'
+import { Block } from '@zkopru/core'
 import { CtxProvider } from './context'
 
 export const buildZkTxAliceSendEthToBob = async (
@@ -38,30 +39,24 @@ export const buildZkTxAliceSendEthToBob = async (
   expect(aliceNewBalance.eth.add(aliceLockedAmount.eth)).toBe(
     alicePrevBalance.eth,
   )
-  // const aliceResponse = await aliceWallet.sendLayer2Tx(aliceZkTx)
-  // expect(aliceResponse.status).toStrictEqual(200)
   return aliceZkTx
 }
 
-export const buildZkTxBobSendERC20ToCarl = async (
+export const buildZkTxBobSendEthToCarl = async (
   ctx: CtxProvider,
 ): Promise<ZkTx> => {
-  const { wallets, accounts, tokens } = ctx()
+  const { wallets, accounts } = ctx()
   const bobWallet = wallets.bob
   const { bob } = accounts
   const { carl } = accounts
-  const tokenAddr = tokens.erc20.address
-  const bobPrevBalance = (await bobWallet.getSpendableAmount(bob)).getERC20(
-    tokenAddr,
-  )
+
+  const bobPrevBalance = await bobWallet.getSpendableAmount(bob)
   const bobSpendables: Utxo[] = await bobWallet.getSpendables(bob)
   const bobRawTx = TxBuilder.from(bob.zkAddress)
     .provide(...bobSpendables.map(note => Utxo.from(note)))
     .weiPerByte(toWei('100000', 'gwei'))
-    .sendERC20({
-      eth: Field.zero,
-      tokenAddr,
-      erc20Amount: Field.from(toWei('1', 'ether')),
+    .sendEther({
+      eth: Field.from(toWei('1', 'ether')),
       to: carl.zkAddress,
     })
     .build()
@@ -69,56 +64,41 @@ export const buildZkTxBobSendERC20ToCarl = async (
     tx: bobRawTx,
     encryptTo: carl.zkAddress,
   })
-  // const response = await bobWallet.sendTx(bobRawTx)
-  const bobNewBalance = (await bobWallet.getSpendableAmount(bob)).getERC20(
-    tokenAddr,
-  )
-  const bobLockedAmount = (await bobWallet.getLockedAmount(bob)).getERC20(
-    tokenAddr,
-  )
-  // expect(response.status).toStrictEqual(200)
-  expect(bobNewBalance.add(bobLockedAmount)).toBe(bobPrevBalance)
+  const bobNewBalance = await bobWallet.getSpendableAmount(bob)
+  const bobLockedAmount = await bobWallet.getLockedAmount(bob)
+  expect(bobNewBalance.eth.add(bobLockedAmount.eth)).toBe(bobPrevBalance.eth)
   return bobZkTx
 }
 
-export const buildZkTxCarlSendNftToAlice = async (
+export const buildZkTxCarlSendEthToAlice = async (
   ctx: CtxProvider,
 ): Promise<ZkTx> => {
-  const { wallets, accounts, tokens } = ctx()
+  const { wallets, accounts } = ctx()
   const carlWallet = wallets.carl
   const { carl } = accounts
   const { alice } = accounts
-  const tokenAddr = tokens.erc721.address
+
   const carlPrevBalance = await carlWallet.getSpendableAmount(carl)
-  const carlPrevNFTs = carlPrevBalance.getNFTs(tokenAddr)
   const carlSpendables: Utxo[] = await carlWallet.getSpendables(carl)
   const carlRawTx = TxBuilder.from(carl.zkAddress)
     .provide(...carlSpendables.map(note => Utxo.from(note)))
     .weiPerByte(toWei('100000', 'gwei'))
-    .sendNFT({
-      eth: Field.zero,
-      tokenAddr,
-      nft: carlPrevNFTs[0],
+    .sendEther({
+      eth: Field.from(toWei('1', 'ether')),
       to: alice.zkAddress,
     })
     .build()
-  const carlZkTxal = await carlWallet.shieldTx({
+  const carlZkTx = await carlWallet.shieldTx({
     tx: carlRawTx,
     encryptTo: alice.zkAddress,
   })
-  const carlNewNFTs = (await carlWallet.getSpendableAmount(carl)).getNFTs(
-    tokenAddr,
-  )
-  const carlLockedNFTs = (await carlWallet.getLockedAmount(carl)).getNFTs(
-    tokenAddr,
-  )
-  expect(
-    [...carlLockedNFTs, ...carlNewNFTs].map(f => f.toString()).sort(),
-  ).toStrictEqual(carlPrevNFTs.map(f => f.toString()).sort())
-  return carlZkTxal
+  const carlNewBalance = await carlWallet.getSpendableAmount(carl)
+  const carlLockedAmount = await carlWallet.getLockedAmount(carl)
+  expect(carlNewBalance.eth.add(carlLockedAmount.eth)).toBe(carlPrevBalance.eth)
+  return carlZkTx
 }
 
-export const testRound1SendZkTxsToCoordinator = (
+export const testRound3SendZkTxsToCoordinator = (
   ctx: CtxProvider,
   txs: () => {
     aliceTransfer: ZkTx
@@ -138,47 +118,43 @@ export const testRound1SendZkTxsToCoordinator = (
   expect(response3.status).toStrictEqual(200)
 }
 
-export const testRound1NewBlockProposal = (
+export const testRound3NewBlockProposalAndSlashing = (
   ctx: CtxProvider,
   subCtx: () => { prevLatestBlock: Bytes32 },
 ) => async () => {
   const { wallets, coordinator } = ctx()
   const { prevLatestBlock } = subCtx()
-  let updated = false
-  let newBlockHash!: Bytes32
+  let slashed = !(await coordinator.context.node.layer1.upstream.methods
+    .isProposable(coordinator.context.account.address)
+    .call())
+  coordinator.middlewares.proposer.setPreProcessor(block => {
+    const cloned = Block.from(block.serializeBlock())
+    cloned.header.utxoRoot = Uint256.from(
+      block.header.utxoRoot
+        .toBN()
+        .addn(1)
+        .toString(),
+    )
+    return cloned
+  })
+  let wait = 600000
   do {
-    const aliceLatestBlock = await wallets.alice.node.latestBlock()
-    const bobLatestBlock = await wallets.bob.node.latestBlock()
-    const carlLatestBlock = await wallets.carl.node.latestBlock()
-    const coordinatorLatestBlock = await coordinator.node().latestBlock()
-    if (
-      aliceLatestBlock.eq(bobLatestBlock) &&
-      aliceLatestBlock.eq(carlLatestBlock) &&
-      aliceLatestBlock.eq(coordinatorLatestBlock) &&
-      !aliceLatestBlock.eq(prevLatestBlock)
-    ) {
-      updated = true
-      newBlockHash = aliceLatestBlock
-      break
-    }
+    slashed = !(await coordinator.context.node.layer1.upstream.methods
+      .isProposable(coordinator.context.account.address)
+      .call())
     await sleep(1000)
-  } while (!updated)
-  const newBlock = await wallets.alice.node.layer2.getBlock(newBlockHash)
-  expect(newBlock?.body.txs).toHaveLength(3)
-}
-
-export const testRound1NewSpendableUtxos = (ctx: CtxProvider) => async () => {
-  const { wallets, tokens } = ctx()
-  const aliceBalance = await wallets.alice.getSpendableAmount()
-  const bobBalance = await wallets.bob.getSpendableAmount()
-  const carlBalance = await wallets.carl.getSpendableAmount()
-  expect(
-    aliceBalance.erc721[tokens.erc721.address].find(nft => nft.eqn(1)),
-  ).toBeDefined()
-  expect(
-    carlBalance.erc20[tokens.erc20.address].eq(toBN(toWei('1', 'ether'))),
-  ).toBeTruthy()
-  expect(
-    bobBalance.erc20[tokens.erc20.address].eq(toBN(toWei('9', 'ether'))),
-  ).toBeTruthy()
+    wait -= 1000
+  } while (!slashed && wait > 0)
+  // Should be slashed
+  expect(slashed).toBeTruthy()
+  const aliceLatestBlock = await wallets.alice.node.latestBlock()
+  const bobLatestBlock = await wallets.bob.node.latestBlock()
+  const carlLatestBlock = await wallets.carl.node.latestBlock()
+  const coordinatorLatestBlock = await coordinator.node().latestBlock()
+  // Nodes should throw away the slashed block
+  expect(aliceLatestBlock.eq(prevLatestBlock)).toBeTruthy()
+  expect(bobLatestBlock.eq(prevLatestBlock)).toBeTruthy()
+  expect(carlLatestBlock.eq(prevLatestBlock)).toBeTruthy()
+  expect(coordinatorLatestBlock.eq(prevLatestBlock)).toBeTruthy()
+  coordinator.middlewares.proposer.removePreProcessor()
 }

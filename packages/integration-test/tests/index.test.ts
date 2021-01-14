@@ -59,6 +59,13 @@ import {
   testGetWithdrawablesOfCarl,
   payForEthWithdrawalInAdvance,
 } from './cases/8_instant_withdrawals'
+import {
+  buildZkTxAliceSendEthToBob as round3Tx1,
+  buildZkTxBobSendEthToCarl as round3Tx2,
+  buildZkTxCarlSendEthToAlice as round3Tx3,
+  testRound3SendZkTxsToCoordinator,
+  testRound3NewBlockProposalAndSlashing,
+} from './cases/9_zk_tx_round_3'
 
 jestExtendToCompareBigNumber(expect)
 
@@ -277,43 +284,47 @@ describe('testnet', () => {
     describe('coordinator prepays ETH for Bob', () => {
       it('should transfer 1 ETH to Bob', payForEthWithdrawalInAdvance(ctx))
     })
-    describe('coordinator provides upfront payment', () => {
-      it.todo("should be paid from the coordinator's own account")
-    })
-    describe('alice gets ERC20s on the main network', () => {
-      it.todo('should top up an empty account of Alice')
-    })
   })
-  describe('9: Finalization', () => {
-    describe('coordinator calls finalize()', () => {
-      it.todo('should update the latest block')
-      it.todo('should give reward to the coordinator')
+  describe('9: Zk Transactions round 3', () => {
+    let aliceTransfer: ZkTx
+    let bobTransfer: ZkTx
+    let carlTransfer: ZkTx
+    let prevLatestBlock: Bytes32
+    const subCtx = () => ({
+      aliceTransfer,
+      bobTransfer,
+      carlTransfer,
+      prevLatestBlock,
     })
-    describe('users subscribe Finalization() and run withdraw()', () => {
-      it.todo('bob gets ERC 721 on the main network')
-      it.todo('carl gets ERC 721 on the main network')
-      it.todo('alice fails the double-withdrawal')
-      it.todo(
-        'should pay back the upfront payment for alice to the coordinator',
+    describe('users send zk txs to the coordinator', () => {
+      beforeAll(async () => {
+        do {
+          const latest = await context.coordinator.node().latestBlock()
+          if (latest !== null) {
+            prevLatestBlock = latest
+            break
+          }
+          await sleep(1000)
+        } while (!prevLatestBlock)
+      }, 30000)
+      it('create 3 transactions: alice transfer 1 Ether to Bob. Bob transfer 1 Ether to Carl, and Carl transfer 1 Ether to Alice', async () => {
+        aliceTransfer = await round3Tx1(ctx)
+        bobTransfer = await round3Tx2(ctx)
+        carlTransfer = await round3Tx3(ctx)
+      }, 300000)
+      it(
+        'they should send zk transactions to the coordinator & coordinator creates an invalid block',
+        testRound3SendZkTxsToCoordinator(ctx, subCtx),
+        60000,
+      )
+      it(
+        'coordinator proposes an invalid block and gets slashed',
+        testRound3NewBlockProposalAndSlashing(ctx, subCtx),
+        600000,
       )
     })
   })
-  describe('10: Challenge', () => {
-    describe('fraud', () => {
-      it.todo('coordinator creates an invalind utxo roll up')
-    })
-    describe('watchdog', () => {
-      it.todo('alice catches the fraud and submit a challenge')
-    })
-    describe('slash', () => {
-      it.todo('coordinator gets slashed and the block gets invalidated')
-      it.todo('alice gets the challenge reward')
-    })
-    describe('revert', () => {
-      it.todo('every clients should update the revert')
-    })
-  })
-  describe('11: Migration', () => {
+  describe('10: Migration', () => {
     it.todo('please add test scenarios here')
   })
 })
