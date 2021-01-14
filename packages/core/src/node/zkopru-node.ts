@@ -43,6 +43,7 @@ export class ZkopruNode {
     synchronizer,
     tracker,
     blockProcessor,
+    watchdog,
     bootstrapHelper,
   }: {
     db: DB
@@ -50,6 +51,7 @@ export class ZkopruNode {
     l2Chain: L2Chain
     synchronizer: Synchronizer
     tracker: Tracker
+    watchdog?: Watchdog
     blockProcessor: BlockProcessor
     bootstrapHelper?: BootstrapHelper
   }) {
@@ -64,6 +66,7 @@ export class ZkopruNode {
     this.synchronizer = synchronizer
     this.running = false
     this.blockProcessor = blockProcessor
+    this.watchdog = watchdog
     this.bootstrapHelper = bootstrapHelper
   }
 
@@ -77,9 +80,12 @@ export class ZkopruNode {
       logger.info('start sync')
       this.synchronizer.sync()
       this.blockProcessor.start()
-      this.blockProcessor.on('slash', slash => this.watchdog?.slash(slash))
-      this.blockProcessor.on('processed', proposalNum =>
-        this.synchronizer.setLatestProcessed(proposalNum),
+      this.blockProcessor.on('slash', async slash => {
+        const result = await this.watchdog?.slash(slash.tx)
+        logger.info(`slash result: ${result}`)
+      })
+      this.blockProcessor.on('processed', proposal =>
+        this.synchronizer.setLatestProcessed(proposal.proposalNum),
       )
     } else {
       logger.info('already on syncing')

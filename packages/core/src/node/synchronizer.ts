@@ -80,6 +80,7 @@ export class Synchronizer extends EventEmitter {
       this.listenGenesis()
       this.listenTokenRegistry()
       this.listenDeposits()
+      this.listenSlash()
       this.listenMassDepositCommit()
       this.listenNewProposals(proposalCB)
       this.listenFinalization(finalizationCB)
@@ -454,8 +455,8 @@ export class Synchronizer extends EventEmitter {
       .on('data', async event => {
         const { returnValues, blockNumber, transactionHash } = event
         const hash = Bytes32.from(returnValues.blockHash).toString()
-        const proposer = Bytes32.from(returnValues.proposer).toString()
-        const reason = Bytes32.from(returnValues.reason).toString()
+        const proposer = Address.from(returnValues.proposer).toString()
+        const { reason } = returnValues
 
         logger.debug(`slashed hash@!${hash}`)
         logger.debug(`${JSON.stringify(event.returnValues)}`)

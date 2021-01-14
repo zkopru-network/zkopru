@@ -400,12 +400,12 @@ export abstract class ValidatorBase {
     }
   }
 
-  abstract async validate(
+  abstract validate(
     parent: Header,
     block: Block,
   ): Promise<ChallengeTx | undefined>
 
-  protected abstract async executeValidateFnCalls(
+  protected abstract executeValidateFnCalls(
     calls: ValidateFnCalls,
   ): Promise<ChallengeTx | undefined>
 }

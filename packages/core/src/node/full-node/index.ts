@@ -1,5 +1,5 @@
 import { ZkAccount } from '@zkopru/account'
-import { WebsocketProvider, IpcProvider } from 'web3-core'
+import { WebsocketProvider, IpcProvider, Account } from 'web3-core'
 import { DB } from '@zkopru/prisma'
 import Web3 from 'web3'
 import { L1Contract } from '../../context/layer1'
@@ -9,6 +9,7 @@ import { ZkopruNode } from '../zkopru-node'
 import { Tracker } from '../tracker'
 import { FullValidator } from './fullnode-validator'
 import { BlockProcessor } from '../block-processor'
+import { Watchdog } from '../watchdog'
 
 type provider = WebsocketProvider | IpcProvider
 
@@ -19,6 +20,7 @@ export class FullNode extends ZkopruNode {
     l2Chain,
     synchronizer,
     tracker,
+    watchdog,
     blockProcessor,
   }: {
     db: DB
@@ -26,6 +28,7 @@ export class FullNode extends ZkopruNode {
     l2Chain: L2Chain
     synchronizer: Synchronizer
     tracker: Tracker
+    watchdog?: Watchdog
     blockProcessor: BlockProcessor
     accounts?: ZkAccount[]
   }) {
@@ -36,6 +39,7 @@ export class FullNode extends ZkopruNode {
       synchronizer,
       blockProcessor,
       tracker,
+      watchdog,
     })
   }
 
@@ -43,11 +47,13 @@ export class FullNode extends ZkopruNode {
     provider,
     address,
     db,
+    slasher,
     accounts,
   }: {
     provider: provider
     address: string
     db: DB
+    slasher?: Account
     accounts?: ZkAccount[]
   }): Promise<FullNode> {
     if (!provider.connected) throw Error('provider is not connected')
@@ -81,12 +87,14 @@ export class FullNode extends ZkopruNode {
     })
     // If the chain needs bootstraping, fetch bootstrap data and apply
     const synchronizer = new Synchronizer(db, l1Contract)
+    const watchdog = slasher ? new Watchdog(l1Contract, slasher) : undefined
     return new FullNode({
       db,
       l1Contract,
       l2Chain,
       synchronizer,
       tracker,
+      watchdog,
       blockProcessor,
       accounts,
     })

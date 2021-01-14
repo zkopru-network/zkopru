@@ -1,5 +1,5 @@
 import { ZkAccount } from '@zkopru/account'
-import { WebsocketProvider, IpcProvider } from 'web3-core'
+import { WebsocketProvider, IpcProvider, Account } from 'web3-core'
 import Web3 from 'web3'
 import { verifyProof } from '@zkopru/tree'
 import { DB } from '@zkopru/prisma'
@@ -14,6 +14,7 @@ import { ZkopruNode } from '../zkopru-node'
 import { BlockProcessor } from '../block-processor'
 import { Tracker } from '../tracker'
 import { LightValidator } from './lightnode-validator'
+import { Watchdog } from '../watchdog'
 
 type provider = WebsocketProvider | IpcProvider
 
@@ -24,6 +25,7 @@ export class LightNode extends ZkopruNode {
     l2Chain,
     synchronizer,
     tracker,
+    watchdog,
     blockProcessor,
     bootstrapHelper,
   }: {
@@ -33,6 +35,7 @@ export class LightNode extends ZkopruNode {
     bootstrapHelper: BootstrapHelper
     synchronizer: Synchronizer
     tracker: Tracker
+    watchdog?: Watchdog
     blockProcessor: BlockProcessor
     accounts?: ZkAccount[]
   }) {
@@ -43,6 +46,7 @@ export class LightNode extends ZkopruNode {
       synchronizer,
       blockProcessor,
       tracker,
+      watchdog,
       bootstrapHelper,
     })
   }
@@ -88,11 +92,13 @@ export class LightNode extends ZkopruNode {
     address,
     db,
     accounts,
+    slasher,
     bootstrapHelper,
   }: {
     provider: provider
     address: string
     db: DB
+    slasher?: Account
     accounts?: ZkAccount[]
     bootstrapHelper: BootstrapHelper
   }): Promise<LightNode> {
@@ -129,12 +135,14 @@ export class LightNode extends ZkopruNode {
     })
     // If the chain needs bootstraping, fetch bootstrap data and apply
     const synchronizer = new Synchronizer(db, l1Contract)
+    const watchdog = slasher ? new Watchdog(l1Contract, slasher) : undefined
     const node = new LightNode({
       db,
       l1Contract,
       l2Chain,
       synchronizer,
       tracker,
+      watchdog,
       bootstrapHelper,
       blockProcessor,
       accounts,

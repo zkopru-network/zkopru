@@ -20,8 +20,25 @@ import {
 import { Bytes32, Address, Uint256 } from 'soltypes'
 import { L2Chain, Patch } from '../context/layer2'
 import { Block, Header, massDepositHash } from '../block'
-import { ValidatorBase as Validator } from '../validator'
+import { ChallengeTx, ValidatorBase as Validator } from '../validator'
 import { Tracker } from './tracker'
+
+interface BlockProcessorEvents {
+  slash: (challenge: { tx: ChallengeTx; block: Block }) => void
+  processed: (proposal: { proposalNum: number; block?: Block }) => void
+}
+
+export declare interface BlockProcessor {
+  on<U extends keyof BlockProcessorEvents>(
+    event: U,
+    listener: BlockProcessorEvents[U],
+  ): this
+
+  emit<U extends keyof BlockProcessorEvents>(
+    event: U,
+    ...args: Parameters<BlockProcessorEvents[U]>
+  ): boolean
+}
 
 export class BlockProcessor extends EventEmitter {
   db: DB
@@ -93,12 +110,15 @@ export class BlockProcessor extends EventEmitter {
             }),
           )
           const latest = latestProcessed.pop()
-          this.emit('processed', latest?.proposalNum || 0)
+          this.emit('processed', { proposalNum: latest?.proposalNum || 0 })
           // this.synchronizer.setLatestProcessed(latest?.proposalNum || 0)
           break
         }
         const processedProposalNum = await this.processBlock(unprocessed)
-        this.emit('processed', processedProposalNum)
+        this.emit('processed', {
+          proposalNum: processedProposalNum,
+          block: unprocessed.block,
+        })
         // this.synchronizer.setLatestProcessed(processedProposalNum)
       } catch (err) {
         // TODO needs to provide roll back & resync option
@@ -167,7 +187,10 @@ export class BlockProcessor extends EventEmitter {
       )
       logger.warn('challenge')
       // TODO slasher option
-      this.emit('slash', challengeTx)
+      this.emit('slash', {
+        tx: challengeTx,
+        block,
+      })
       return proposal.proposalNum
     }
     const tokenRegistry = await this.layer2.getTokenRegistry()
