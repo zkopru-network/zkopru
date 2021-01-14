@@ -172,6 +172,13 @@ export const ZkopruABI = [
     type: 'function',
   },
   {
+    inputs: [{ internalType: 'bytes32', name: 'headerHash', type: 'bytes32' }],
+    name: 'finalized',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
     inputs: [{ internalType: 'bytes32', name: 'utxoRoot', type: 'bytes32' }],
     name: 'finalizedUTXORoots',
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
@@ -198,6 +205,25 @@ export const ZkopruABI = [
       { internalType: 'uint256[2][2]', name: 'delta2', type: 'uint256[2][2]' },
       { internalType: 'uint256[2][]', name: 'ic', type: 'uint256[2][]' },
     ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'address', name: 'proposerAddr', type: 'address' },
+    ],
+    name: 'isProposable',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'bytes32', name: 'l2BlockHash', type: 'bytes32' },
+      { internalType: 'uint256', name: 'ref', type: 'uint256' },
+    ],
+    name: 'isValidRef',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
   },
@@ -300,6 +326,13 @@ export const ZkopruABI = [
     name: 'renounceOwnership',
     outputs: [],
     stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'bytes32', name: 'headerHash', type: 'bytes32' }],
+    name: 'slashed',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
     type: 'function',
   },
   {

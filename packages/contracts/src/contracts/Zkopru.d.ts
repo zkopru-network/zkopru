@@ -55,6 +55,8 @@ export class Zkopru extends Contract {
 
     consensusProvider(): TransactionObject<string>
 
+    finalized(headerHash: string | number[]): TransactionObject<boolean>
+
     finalizedUTXORoots(utxoRoot: string | number[]): TransactionObject<boolean>
 
     genesis(): TransactionObject<string>
@@ -74,6 +76,13 @@ export class Zkopru extends Contract {
       3: string[][]
       4: string[][]
     }>
+
+    isProposable(proposerAddr: string): TransactionObject<boolean>
+
+    isValidRef(
+      l2BlockHash: string | number[],
+      ref: number | string,
+    ): TransactionObject<boolean>
 
     latest(): TransactionObject<string>
 
@@ -118,6 +127,8 @@ export class Zkopru extends Contract {
     registeredERC721s(tokenAddr: string): TransactionObject<boolean>
 
     renounceOwnership(): TransactionObject<void>
+
+    slashed(headerHash: string | number[]): TransactionObject<boolean>
 
     stagedDeposits(): TransactionObject<{
       merged: string

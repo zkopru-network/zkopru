@@ -61,7 +61,6 @@ contract Proxy is Storage {
         _connect(addr, ICoordinatable(0).finalize.selector);
         _connect(addr, ICoordinatable(0).commitMassDeposit.selector);
         _connect(addr, ICoordinatable(0).withdrawReward.selector);
-        _connect(addr, ICoordinatable(0).isProposable.selector);
         _connect(addr, ICoordinatable(0).registerERC20.selector);
         _connect(addr, ICoordinatable(0).registerERC721.selector);
     }
@@ -110,7 +109,6 @@ contract Proxy is Storage {
         _connect(challengeable, ITxValidator(0).validateAtomicSwap.selector);
         _connect(challengeable, ITxValidator(0).validateUsedNullifier.selector);
         _connect(challengeable, ITxValidator(0).validateDuplicatedNullifier.selector);
-        _connect(challengeable, ITxValidator(0).isValidRef.selector);
         _connect(challengeable, ITxValidator(0).validateSNARK.selector);
         _connectValidator(depositValidator, IDepositValidator(0).validateMassDeposit.selector);
         _connectValidator(headerValidator, IHeaderValidator(0).validateDepositRoot.selector);
@@ -136,7 +134,6 @@ contract Proxy is Storage {
         _connectValidator(txValidator, ITxValidator(0).validateAtomicSwap.selector);
         _connectValidator(txValidator, ITxValidator(0).validateUsedNullifier.selector);
         _connectValidator(txValidator, ITxValidator(0).validateDuplicatedNullifier.selector);
-        _connectValidator(txValidator, ITxValidator(0).isValidRef.selector);
         _connectValidator(txValidator, ITxValidator(0).validateSNARK.selector);
     }
 

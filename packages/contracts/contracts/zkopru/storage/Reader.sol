@@ -2,6 +2,7 @@
 pragma solidity = 0.6.12;
 
 import "../libraries/Types.sol";
+import { IConsensusProvider } from "../../consensus/interfaces/IConsensusProvider.sol";
 import { SNARK } from "../libraries/SNARK.sol";
 import { Storage } from "./Storage.sol";
 import { SMT254 } from "../libraries/SMT.sol";
@@ -47,6 +48,14 @@ contract Reader is Storage {
         header = proposal.headerHash;
         challengeDue = proposal.challengeDue;
         slashed = chain.slashed[proposal.headerHash];
+    }
+
+    function finalized(bytes32 headerHash) public view returns (bool) {
+        return chain.finalized[headerHash];
+    }
+
+    function slashed(bytes32 headerHash) public view returns (bool) {
+        return chain.slashed[headerHash];
     }
 
     function stagedDeposits() public view returns (bytes32 merged, uint256 fee) {
@@ -109,5 +118,39 @@ contract Reader is Storage {
     function latestProposalBlock(address coordinator) public view returns (uint256) {
         uint256 exitAllowance = chain.proposers[coordinator].exitAllowance;
         return exitAllowance >= CHALLENGE_PERIOD ? exitAllowance - CHALLENGE_PERIOD : 0;
+    }
+
+    /**
+     * @dev Copy of `isProposable()` in Coordinatable.sol 
+     */
+    function isProposable(address proposerAddr) public view returns (bool) {
+        Proposer memory  proposer = Storage.chain.proposers[proposerAddr];
+        // You can add more consensus logic here
+        if (proposer.stake >= MINIMUM_STAKE) {
+            return IConsensusProvider(consensusProvider).isProposable(proposerAddr);
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * @dev Copy of `isValidRef()` in TxValidator.sol 
+     */
+    function isValidRef(bytes32 l2BlockHash, uint256 ref)
+    public
+    view
+    returns (bool)
+    {
+        if (Storage.chain.finalizedUTXORoots[ref]) {
+            return true;
+        }
+        bytes32 parentBlock = l2BlockHash;
+        for (uint256 i = 0; i < REF_DEPTH; i++) {
+            parentBlock = Storage.chain.parentOf[parentBlock];
+            if (Storage.chain.utxoRootOf[parentBlock] == ref) {
+                return true;
+            }
+        }
+        return false;
     }
 }

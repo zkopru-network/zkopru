@@ -97,6 +97,10 @@ export class Reader extends Contract {
       2: boolean
     }>
 
+    finalized(headerHash: string | number[]): TransactionObject<boolean>
+
+    slashed(headerHash: string | number[]): TransactionObject<boolean>
+
     stagedDeposits(): TransactionObject<{
       merged: string
       fee: string
@@ -137,6 +141,13 @@ export class Reader extends Contract {
     }>
 
     latestProposalBlock(coordinator: string): TransactionObject<string>
+
+    isProposable(proposerAddr: string): TransactionObject<boolean>
+
+    isValidRef(
+      l2BlockHash: string | number[],
+      ref: number | string,
+    ): TransactionObject<boolean>
   }
 
   events: {

@@ -237,6 +237,20 @@ export const ReaderABI = [
     type: 'function',
   },
   {
+    inputs: [{ internalType: 'bytes32', name: 'headerHash', type: 'bytes32' }],
+    name: 'finalized',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'bytes32', name: 'headerHash', type: 'bytes32' }],
+    name: 'slashed',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
     inputs: [],
     name: 'stagedDeposits',
     outputs: [
@@ -319,6 +333,25 @@ export const ReaderABI = [
     inputs: [{ internalType: 'address', name: 'coordinator', type: 'address' }],
     name: 'latestProposalBlock',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'address', name: 'proposerAddr', type: 'address' },
+    ],
+    name: 'isProposable',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'bytes32', name: 'l2BlockHash', type: 'bytes32' },
+      { internalType: 'uint256', name: 'ref', type: 'uint256' },
+    ],
+    name: 'isValidRef',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
   },
