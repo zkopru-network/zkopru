@@ -65,7 +65,7 @@ export class Withdrawal extends Note {
 
   static withdrawalHash(note: Field, publicData: PublicData): Uint256 {
     const concatenated = Buffer.concat([
-      note.toBuffer(),
+      note.toBytes32().toBuffer(),
       publicData.to.toAddress().toBuffer(),
       publicData.eth.toBytes32().toBuffer(),
       publicData.tokenAddr.toAddress().toBuffer(),
