@@ -184,7 +184,7 @@ Currently, Zkopru is using prebuilt docker images for local testing to reduce th
 
 1. Go to `dockerfiles/docker-compose.yml`.
 2. Modify the tag of the service what you want to make some modifications. Tag name convention is the branch name with issue number just like `feat-6`, `refactor-913`.
-3. And then run `yarn build:images <service_name>` on the root directory. If you make changes on the 'circuit' image, this command will take about a day on common laptops.
+3. And then run `yarn images build <service_name>` on the root directory. If you make changes on the 'circuit' image, this command will take about a day on common laptops.
 4. After you built the image, run `yarn test` in the sub package directory or in the root directory.
 
 ### How to make changes of the circuit package
@@ -208,9 +208,9 @@ Currently, Zkopru is using prebuilt docker images for local testing to reduce th
 
     ```shell
     # root directory of the project
-    yarn build:images
+    yarn images build
     # Or you can build only the zkoprunet/circuits image with this command
-    yarn build:images circuits
+    yarn images build circuits
     ```
 
     This command will compile and setup circuits in the `impls` directory.
@@ -218,7 +218,7 @@ Currently, Zkopru is using prebuilt docker images for local testing to reduce th
 5. (maintainer only) Update dockerifles/docker-compose.yml to modify tag and run following:
 
     ```shell
-    yarn build:images
+    yarn images build
     docker-compose -f dockerfiles/docker-compose.yml push
     ```
 
