@@ -10,6 +10,8 @@ export interface TxPoolInterface {
   pickTxs(maxBytes: number, minPricePerByte: BN): Promise<ZkTx[]>
   markAsIncluded(txs: ZkTx[]): void
   pendingTxs(): ZkTx[]
+  drop(txRoot: string): void
+  revert(txRoot: string): void
 }
 
 export class TxMemPool implements TxPoolInterface {
@@ -129,7 +131,7 @@ export class TxMemPool implements TxPoolInterface {
   revert(txRoot: string) {
     const txs = this.queued[txRoot]
     if (txs) {
-      txs.forEach(this.addToTxPool)
+      txs.forEach(this.addToTxPool.bind(this))
     }
     delete this.queued[txRoot]
   }

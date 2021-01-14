@@ -27,7 +27,7 @@ export abstract class ProposerBase {
     return result
   }
 
-  protected abstract async handleProcessedBlock(
+  protected abstract handleProcessedBlock(
     block: Block,
   ): Promise<TransactionReceipt | undefined>
 }

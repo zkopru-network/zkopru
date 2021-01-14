@@ -78,7 +78,8 @@ export class Coordinator extends EventEmitter {
       node,
       auctionMonitor: new AuctionMonitor(node, account, config.port),
       txPool: new TxMemPool(),
-      config: { priceMultiplier: 32, ...config },
+      // eslint-disable-next-line prefer-object-spread
+      config: Object.assign({ priceMultiplier: 32 }, config),
     }
     this.api = new CoordinatorApi(this.context)
     this.proposeLock = new AsyncLock()
@@ -150,6 +151,14 @@ export class Coordinator extends EventEmitter {
     this.context.node.synchronizer.on('onFetched', (block: Block) => {
       this.context.txPool.markAsIncluded(block.body.txs)
     })
+    this.context.node.blockProcessor.on('slash', challenge =>
+      this.context.txPool.revert(challenge.block.header.txRoot.toString()),
+    )
+    this.context.node.blockProcessor.on('processed', proposal =>
+      proposal.block
+        ? this.context.txPool.drop(proposal.block.header.txRoot.toString())
+        : undefined,
+    )
     this.emit('start')
   }
 
@@ -170,7 +179,13 @@ export class Coordinator extends EventEmitter {
   async registerVk(
     nIn: number,
     nOut: number,
-    vk: any,
+    vk: {
+      vk_alpha_1: string[]
+      vk_beta_2: string[][]
+      vk_gamma_2: string[][]
+      vk_delta_2: string[][]
+      IC: string[][]
+    },
   ): Promise<TransactionReceipt | undefined> {
     const tx = this.layer1().setup.methods.registerVk(nIn, nOut, {
       // caution: snarkjs G2Point is reversed
@@ -178,7 +193,7 @@ export class Coordinator extends EventEmitter {
       beta2: { X: vk.vk_beta_2[0].reverse(), Y: vk.vk_beta_2[1].reverse() },
       gamma2: { X: vk.vk_gamma_2[0].reverse(), Y: vk.vk_gamma_2[1].reverse() },
       delta2: { X: vk.vk_delta_2[0].reverse(), Y: vk.vk_delta_2[1].reverse() },
-      ic: vk.IC.map((ic: string[][]) => ({
+      ic: vk.IC.map((ic: string[]) => ({
         X: ic[0],
         Y: ic[1],
       })),
@@ -191,7 +206,7 @@ export class Coordinator extends EventEmitter {
     return this.layer1().sendTx(tx, this.context.account)
   }
 
-  async bidAuctions(): Promise<any> {
+  async bidAuctions(): Promise<void> {
     const consensus = await this.layer1()
       .upstream.methods.consensusProvider()
       .call()
@@ -213,7 +228,7 @@ export class Coordinator extends EventEmitter {
     const futureRounds = 20
     const maxPrice = new BN((100000 * 10 ** 9).toString())
     const startRound = +(await auction.methods.currentRound().call()) + 3
-    const promises = [] as Promise<any>[]
+    const promises = [] as Promise<TransactionReceipt | undefined>[]
 
     for (let x = startRound; x < startRound + futureRounds; x += 1) {
       const currentWinner = await auction.methods.coordinatorForRound(x).call()
@@ -275,48 +290,56 @@ export class Coordinator extends EventEmitter {
         )
         return
       }
-      const { auctionMonitor } = this.context
-      if (!auctionMonitor.isProposable) {
-        logger.info(`Skipping block proposal: Not current round owner`)
-        // get pending tx and forward to active proposer
-        const pendingTx = await this.context.txPool.pickTxs(
-          Infinity,
-          new BN('1'),
-        )
-        if (!pendingTx?.length) return
-        const url = await auctionMonitor.functionalCoordinatorUrl(
-          auctionMonitor.currentProposer,
-        )
-        if (!url) {
-          logger.warn('No functional url to forward pending tx!')
-          return
-        }
-        for (const tx of pendingTx) {
-          // forward
-          await fetch(`${url}/tx`, {
-            method: 'post',
-            body: tx.encode().toString('hex'),
-          })
-        }
-        return
-      }
-      let block: Block
-      try {
-        block = await this.middlewares.generator.genBlock()
-      } catch (err) {
-        logger.warn(`Failed to gen block: ${err}`)
-        return
-      }
-      try {
-        const receipt = await this.middlewares.proposer.propose(block)
-        if (receipt?.status) {
-          await this.context.node.synchronizer.updateStatus()
-        }
-      } catch (err) {
-        logger.error(`Error occurred during block proposing.`)
-        logger.error(err)
+      const isProposable = await this.layer1()
+        .upstream.methods.isProposable(this.context.account.address)
+        .call()
+      if (isProposable) {
+        await this.proposeBlock()
+      } else {
+        await this.forwardTxs()
       }
     })
+  }
+
+  private async proposeBlock() {
+    let block: Block
+    try {
+      block = await this.middlewares.generator.genBlock()
+    } catch (err) {
+      logger.warn(`Failed to gen block: ${err}`)
+      return
+    }
+    try {
+      const receipt = await this.middlewares.proposer.propose(block)
+      if (receipt?.status) {
+        await this.context.node.synchronizer.updateStatus()
+      }
+    } catch (err) {
+      logger.error(`Error occurred during block proposing.`)
+      logger.error(err)
+    }
+  }
+
+  private async forwardTxs() {
+    const { auctionMonitor } = this.context
+    logger.info(`Skipping block proposal: Not current round owner`)
+    // get pending tx and forward to active proposer
+    const pendingTx = await this.context.txPool.pickTxs(Infinity, new BN('1'))
+    if (!pendingTx?.length) return
+    const url = await auctionMonitor.functionalCoordinatorUrl(
+      auctionMonitor.currentProposer,
+    )
+    if (!url) {
+      logger.warn('No functional url to forward pending tx!')
+      return
+    }
+    for (const tx of pendingTx) {
+      // forward
+      await fetch(`${url}/tx`, {
+        method: 'post',
+        body: tx.encode().toString('hex'),
+      })
+    }
   }
 
   async commitMassDepositTask(): Promise<TransactionReceipt | undefined> {
@@ -423,6 +446,7 @@ export class Coordinator extends EventEmitter {
     )
     this.gasPriceSubscriber = this.layer1()
       .web3.eth.subscribe('newBlockHeaders')
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       .on('data', async _ => {
         this.context.gasPrice = Field.from(
           await this.layer1().web3.eth.getGasPrice(),
