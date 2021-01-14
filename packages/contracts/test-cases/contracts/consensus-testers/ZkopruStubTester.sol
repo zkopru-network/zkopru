@@ -5,7 +5,7 @@ import { BurnAuction } from "../../../contracts/consensus/BurnAuction.sol";
 import { IConsensusProvider } from "../../../contracts/consensus/interfaces/IConsensusProvider.sol";
 
 contract ZkopruStubTester {
-  address consensusProvider;
+  address public consensusProvider;
 
   mapping (address => uint) proposalBlock;
 
