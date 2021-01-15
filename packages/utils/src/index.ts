@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable max-classes-per-file */
+import path from 'path'
 import { Unit, soliditySha3Raw } from 'web3-utils'
 import { Bytes32, Uint256, Address } from 'soltypes'
 import BN from 'bn.js'
@@ -287,4 +288,9 @@ export function jestExtendToCompareBigNumber(expect: jest.Expect) {
       }
     },
   })
+}
+
+export function makePathAbsolute(filepath: string) {
+  if (path.isAbsolute(filepath)) return filepath
+  return path.join(process.cwd(), filepath)
 }

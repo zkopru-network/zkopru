@@ -76,7 +76,7 @@ export class Coordinator extends EventEmitter {
     this.context = {
       account,
       node,
-      auctionMonitor: new AuctionMonitor(node, account, config.port),
+      auctionMonitor: new AuctionMonitor(node, account, config),
       txPool: new TxMemPool(),
       // eslint-disable-next-line prefer-object-spread
       config: Object.assign({ priceMultiplier: 32 }, config),

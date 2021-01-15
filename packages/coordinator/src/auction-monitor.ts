@@ -10,6 +10,12 @@ import { EventEmitter } from 'events'
 import axios from 'axios'
 import dns from 'dns'
 
+export interface AuctionMonitorConfig {
+  port: number
+  maxBid: number
+  publicUrls?: string // TODO: use this
+}
+
 interface Bid {
   owner: string
   amount: BN
@@ -49,7 +55,7 @@ export class AuctionMonitor {
   // Values higher than this crash ganache :(
   maxBidRounds = 15
 
-  maxBid = new BN(20000 * 10 ** 9)
+  maxBid: BN
 
   // How close the round in question needs to be for us to bid
   roundBidThreshold = 3
@@ -60,12 +66,13 @@ export class AuctionMonitor {
 
   bidLock = new AsyncLock()
 
-  constructor(node: FullNode, account: Account, port: number | string) {
+  constructor(node: FullNode, account: Account, config: AuctionMonitorConfig) {
     this.node = node
     this.currentProposer = '0x0000000000000000000000000000000000000000'
     this.consensusAddress = '0x0000000000000000000000000000000000000000'
     this.account = account
-    this.port = port
+    this.port = config.port
+    this.maxBid = new BN(config.maxBid.toString()).mul(new BN(`${10 ** 9}`))
   }
 
   auction() {

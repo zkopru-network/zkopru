@@ -24,7 +24,7 @@ COPY ./packages/dataset/keys /proj/zkopru/packages/cli/keys
 CMD  ganache-cli --db=/proj/data -i 20200406 -p 5000 --gasLimit 12000000 --deterministic --host 0.0.0.0 > /dev/null & \
         sleep 1;\
         node /proj/zkopru/packages/cli/dist/apps/coordinator/cli.js \
-        --nonInteractive --config /proj/zkopru/packages/cli/coordinator.playground.json > /dev/null & \
+        --daemon --config /proj/zkopru/packages/cli/coordinator.playground.json > /dev/null & \
         sleep 2;\
         node /proj/zkopru/packages/cli/dist/apps/wallet/cli.js \
         --config /proj/zkopru/packages/cli/wallet.playground.json

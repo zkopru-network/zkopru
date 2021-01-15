@@ -43,12 +43,31 @@ export const { argv } = yargs
       describe:
         'You can skip interactive booting up process with JSON configuration file',
     },
-    nonInteractive: {
+    daemon: {
       type: 'boolean',
-      alias: 'n',
+      alias: 'd',
+      describe: 'Start as a daemon',
     },
     password: {
       type: 'string',
+    },
+    passwordFile: {
+      type: 'string',
+      describe: 'Path to a plaintext file to be used as the keystore password',
+    },
+    keystoreFile: {
+      type: 'string',
+      describe: 'Path to an Ethereum keystore file',
+    },
+    maxBid: {
+      type: 'number',
+      describe: 'Maximum bid allowed in the burn auction (Gwei)',
+      default: DEFAULT.maxBid,
+    },
+    publicUrls: {
+      type: 'string',
+      describe:
+        'Comma separated list of host:port combinations this node is accessible at',
     },
   })
   .help()
