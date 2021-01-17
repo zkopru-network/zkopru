@@ -52,7 +52,6 @@ export class AuctionMonitor {
 
   port: number | string
 
-  // Values higher than this crash ganache :(
   maxBidRounds = 15
 
   maxBid: BN
