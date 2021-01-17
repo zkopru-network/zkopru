@@ -37,7 +37,8 @@ const main = async () => {
   }
   const coordinator = await getCoordinator(config)
   if (config.daemon) {
-    logger.info('Run non-interactive mode')
+    logStream.addStream(process.stdout)
+    logger.info('Running non-interactive mode')
     if (!coordinator) throw Error('Failed to load coordinator')
     await coordinator.start()
     return new Promise<void>(res => coordinator.on('stop', res))
