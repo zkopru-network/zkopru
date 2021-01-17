@@ -19,12 +19,11 @@ jobs:
           name: Build Prisma
           command: yarn build:prisma
       - run:
-          name: Lint
-          command: yarn lint .
-      - run:
           name: Build Contract
           command: yarn build:contract
       - run:
           name: Build TS
           command: yarn build:ts:serial
-          no_output_timeout: 20m
+      - run:
+          name: Lint
+          command: yarn lint .
