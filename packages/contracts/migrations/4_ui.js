@@ -3,7 +3,11 @@ const Poseidon4 = artifacts.require('Poseidon4')
 const UserInteractable = artifacts.require('UserInteractable')
 
 module.exports = function migration(deployer) {
-  deployer.link(Poseidon3, UserInteractable)
-  deployer.link(Poseidon4, UserInteractable)
-  deployer.deploy(UserInteractable)
+  return deployer.then(async () => {
+    await deployer.deploy(Poseidon3, { overwrite: false })
+    await deployer.deploy(Poseidon4, { overwrite: false })
+    await deployer.link(Poseidon3, UserInteractable)
+    await deployer.link(Poseidon4, UserInteractable)
+    await deployer.deploy(UserInteractable)
+  })
 }
