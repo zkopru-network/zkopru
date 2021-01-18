@@ -7,7 +7,7 @@ async function loadArtifacts() {
   // run `yarn pull:images` on the root directory
   const container = await utils.pullOrBuildAndGetContainer({
     compose: [__dirname, '../../../dockerfiles'],
-    service: 'circuits-phase-1',
+    service: 'circuits',
   })
   const ptauDir = path.join(path.dirname(__filename), '../build/ptau')
   const ptauPath = path.join(ptauDir, 'pot17_final.ptau')
