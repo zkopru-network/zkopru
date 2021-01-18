@@ -57,7 +57,7 @@ export class AuctionMonitor {
 
   maxBid: BN
 
-  nodeUrl: string = ''
+  nodeUrl = ''
 
   maxBidRounds = 15
 
@@ -136,7 +136,7 @@ export class AuctionMonitor {
       .call()
     if (!myUrl || myUrl !== newUrl) {
       for (const url of newUrl.split(',')) {
-        const [ host, port ] = url.split(':')
+        const [host, port] = url.split(':')
         if (!host || !port) {
           throw new Error('Missing host or port in public url')
         }
