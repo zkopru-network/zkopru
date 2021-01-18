@@ -34,16 +34,16 @@ zkopru-wallet
 
 ## Authors
 
-* Wanseob Lim(@wanseob)
-* Barry Whitehat(@barrywhitehat)
+* Wanseob Lim ([@wanseob](https://github.com/wanseob))
+* Barry Whitehat ([@barrywhitehat](https://github.com/barrywhitehat))
 
 ## Co-authors
-* Chance Hudson(@JChanceHud)
+* Chance Hudson ([@JChanceHud](https://github.com/jchancehud))
 
 ## Contributors
-* Koh Wei Jie(@weijiekoh, weijie.koh@ethereum.org)
-* Kobi Gurkan(@kobigurk, kobigurk@gmail.com)
-* Thore Hildebrandt(@ETHorHIL, hildebrandtthore@gmail.com)
+* Koh Wei Jie ([@weijiekoh](https://github.com/weijiekoh), weijie.koh@ethereum.org)
+* Kobi Gurkan ([@kobigurk](https://github.com/kobigurk), kobigurk@gmail.com)
+* Thore Hildebrandt ([@ETHorHIL](https://github.com/ETHorHIL), hildebrandtthore@gmail.com)
 ## License
 
 This project is under [GPL v3.0](https://github.com/zkopru-network/zkopru/blob/master/LICENSE)
