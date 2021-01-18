@@ -3,20 +3,17 @@ import Web3 from 'web3'
 import path from 'path'
 import { WebsocketProvider, Account } from 'web3-core'
 import { Address } from 'soltypes'
-// TODO: verify imports
-/* eslint-disable import/no-unresolved */
-import { MockupDB, DB } from '~/prisma'
-import { ZkAccount, HDWallet } from '~/account'
-import { sleep, readFromContainer, pullOrBuildAndGetContainer } from '~/utils'
-import { DEFAULT } from '~/cli/config'
-import { L1Contract, FullNode } from '~/core'
-import { Coordinator } from '~/coordinator'
-import { ZkWallet } from '~/zk-wizard'
-import { Layer1 } from '~/contracts'
-import { IERC20 } from '~/contracts/contracts/IERC20'
-import { IERC721 } from '~/contracts/contracts/IERC721'
-import { VerifyingKey } from '~/zk-wizard/snark'
-/* eslint-enable import/no-unresolved */
+import { MockupDB, DB } from '~prisma'
+import { ZkAccount, HDWallet } from '~account'
+import { sleep, readFromContainer, pullOrBuildAndGetContainer } from '~utils'
+import { DEFAULT } from '~cli/config'
+import { L1Contract, FullNode } from '~core'
+import { Coordinator } from '~coordinator'
+import { ZkWallet } from '~zk-wizard'
+import { Layer1 } from '~contracts'
+import { IERC20 } from '~contracts/contracts/IERC20'
+import { IERC721 } from '~contracts/contracts/IERC721'
+import { VerifyingKey } from '~zk-wizard/snark'
 
 type VKs = { [nIn: number]: { [nOut: number]: VerifyingKey } }
 
