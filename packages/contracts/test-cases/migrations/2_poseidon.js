@@ -23,44 +23,22 @@ const path = require('path')
 const poseidonGenContract = require('circomlib/src/poseidon_gencontract.js')
 const Artifactor = require('@truffle/artifactor')
 
-const SEED = 'poseidon'
-
 module.exports = function migration(deployer) {
   return deployer.then(async () => {
     const contractsDir = path.join(__dirname, '../../build/contracts')
     const artifactor = new Artifactor(contractsDir)
-    const poseidon2 = 'Poseidon2'
-    const poseidon3 = 'Poseidon3'
-    const poseidon4 = 'Poseidon4'
-    await artifactor
-      .save({
-        contractName: poseidon2,
+    // Deploy poseidon with a specific number of args
+    const deployX = async x => {
+      const poseidonX = args => `Poseidon${args}`
+      await artifactor.save({
+        contractName: poseidonX(x),
         abi: poseidonGenContract.abi,
-        unlinked_binary: poseidonGenContract.createCode(2),
+        unlinked_binary: poseidonGenContract.createCode(x),
       })
-      .then(async () => {
-        const Poseidon = artifacts.require(poseidon2)
-        await deployer.deploy(Poseidon)
-      })
-    await artifactor
-      .save({
-        contractName: poseidon3,
-        abi: poseidonGenContract.abi,
-        unlinked_binary: poseidonGenContract.createCode(3),
-      })
-      .then(async () => {
-        const Poseidon = artifacts.require(poseidon3)
-        await deployer.deploy(Poseidon)
-      })
-    await artifactor
-      .save({
-        contractName: poseidon4,
-        abi: poseidonGenContract.abi,
-        unlinked_binary: poseidonGenContract.createCode(4),
-      })
-      .then(async () => {
-        const Poseidon = artifacts.require(poseidon4)
-        await deployer.deploy(Poseidon)
-      })
+      await deployer.deploy(artifacts.require(poseidonX(x)))
+    }
+    await deployX(2)
+    await deployX(3)
+    await deployX(4)
   })
 }
