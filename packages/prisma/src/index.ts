@@ -140,20 +140,20 @@ export class DB {
     },
   }
 
-  static async mockup(name?: string): Promise<MockupDB> {
-    const dbName = name || `.mockup/${v4()}.db`
-    const dbPath = path.join(path.resolve('.'), dbName)
-    const dirPath = path.join(dbPath, '../')
+  static async mockup(dbPath?: string): Promise<MockupDB> {
+    const fullDbPath = dbPath || path.join(process.cwd(), `.mockup/${v4()}.db`)
+    // const dbPath = path.join(path.resolve('.'), dbName)
+    const dirPath = path.join(fullDbPath, '../')
     fs.mkdirSync(dirPath, { recursive: true })
-    const predefined = `${path.join(path.resolve(__dirname), '../mockup.db')}`
-    await fs.promises.copyFile(predefined, dbPath)
+    const predefined = path.join(path.resolve(__dirname), '../mockup.db')
+    await fs.promises.copyFile(predefined, fullDbPath)
     const db = new DB({
       datasources: {
-        sqlite: { url: `file://${dbPath}` },
+        sqlite: { url: `file:${fullDbPath}` },
       },
     })
     const terminate = async () => {
-      fs.unlinkSync(dbPath)
+      fs.unlinkSync(fullDbPath)
       await db.prisma.$disconnect()
     }
     return { db, terminate }
