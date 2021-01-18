@@ -110,13 +110,5 @@ module.exports = {
       //  evmVersion: "byzantium"
       // }
     },
-    external: {
-      command: 'node ../utils/poseidon-generator.js',
-      targets: [
-        {
-          path: '../build/generated/*.json',
-        },
-      ],
-    },
   },
 }
