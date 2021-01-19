@@ -1,5 +1,5 @@
 import yargs from 'yargs'
-import { DEFAULT } from '../../config'
+import { DEFAULT } from './config'
 
 export const { argv } = yargs
   .scriptName('zkopru-coordinator')
@@ -42,6 +42,10 @@ export const { argv } = yargs
       type: 'string',
       describe:
         'You can skip interactive booting up process with JSON configuration file',
+    },
+    generateConfig: {
+      type: 'string',
+      describe: 'Generate a sample config file',
     },
     daemon: {
       type: 'boolean',

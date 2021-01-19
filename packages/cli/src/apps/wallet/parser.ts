@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import yargs from 'yargs'
-import { DEFAULT } from '../../config'
+import { DEFAULT } from './config'
 
 export const { argv } = yargs
   .scriptName('zk-wizard')

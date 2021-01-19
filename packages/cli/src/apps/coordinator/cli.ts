@@ -7,11 +7,27 @@ import { argv } from './parser'
 import { Config } from './configurator/configurator'
 import { getCoordinator } from './configurator'
 import { CoordinatorDashboard } from './app'
+import { DEFAULT, externalIp } from './config'
 
 const main = async () => {
   const writeStream = fs.createWriteStream('./COORDINATOR_LOG')
   logStream.addStream(writeStream)
   const config: Config = {} as Config
+  if (typeof argv.generateConfig !== undefined) {
+    // write a sample config file
+    const shortPath = argv.generateConfig || './config.json'
+    const outputPath = makePathAbsolute(shortPath)
+    const sampleConfig = {
+      ...DEFAULT,
+      publicUrls: `${await externalIp()}:${DEFAULT.port},127.0.0.1:8888`,
+      sqlite: '/path/to/sqlite/database.sqlite',
+      passwordFile: '/path/to/password_file',
+      keystoreFile: '/path/to/wallet/keystore.json'
+    }
+    fs.writeFileSync(outputPath, JSON.stringify(sampleConfig, null, 2))
+    console.log(`Wrote example config to ${shortPath}!`)
+    return
+  }
   if (argv.config) {
     const configFile = JSON.parse(
       fs.readFileSync(makePathAbsolute(argv.config)).toString('utf8'),
