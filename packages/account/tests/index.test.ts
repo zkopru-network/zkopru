@@ -6,7 +6,7 @@ import { DB, MockupDB } from '~prisma'
 describe('unit test', () => {
   let mockup: MockupDB
   beforeAll(async () => {
-    mockup = await DB.mockup()
+    mockup = await DB.testMockup()
   })
   afterAll(async () => {
     await mockup.terminate()

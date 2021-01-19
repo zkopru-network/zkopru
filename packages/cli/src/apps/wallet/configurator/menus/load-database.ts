@@ -60,8 +60,7 @@ export default class LoadDatabase extends Configurator {
       const dbPath = this.base.sqlite
       if (!fs.existsSync(dbPath)) {
         // create new dataabase
-        const { db } = await DB.mockup(dbPath)
-        database = db
+        database = await DB.mockup(dbPath)
       } else {
         // database exists
         database = new DB({
@@ -148,8 +147,7 @@ export default class LoadDatabase extends Configurator {
           initial: 'zkopru-wallet.db',
         })
         if (!fs.existsSync(dbName)) {
-          const { db } = await DB.mockup(dbName)
-          database = db
+          database = await DB.mockup(dbName)
         } else {
           const { overwrite } = await this.ask({
             type: 'confirm',
@@ -160,8 +158,7 @@ export default class LoadDatabase extends Configurator {
             initial: false,
           })
           if (overwrite) {
-            const { db } = await DB.mockup(dbName)
-            database = db
+            database = await DB.mockup(dbName)
           } else {
             const dbPath = path.join(path.resolve('.'), dbName)
             database = new DB({

@@ -154,7 +154,7 @@ async function getAccounts(
   carl: ZkAccount
   coordinator: ZkAccount
 }> {
-  const mockup = await DB.mockup()
+  const mockup = await DB.testMockup()
   const hdWallet = new HDWallet(web3, mockup.db)
   const mnemonic =
     'myth like bonus scare over problem client lizard pioneer submit female collect'
@@ -203,7 +203,7 @@ async function getCoordinator(
   address: string,
   account: Account,
 ): Promise<{ coordinator: Coordinator; mockupDB: MockupDB }> {
-  const mockupDB = await DB.mockup()
+  const mockupDB = await DB.testMockup()
   const fullNode: FullNode = await FullNode.new({
     address,
     provider,
@@ -234,7 +234,7 @@ export async function getWallet({
   erc20s: string[]
   erc721s: string[]
 }): Promise<{ zkWallet: ZkWallet; mockupDB: MockupDB }> {
-  const mockupDB = await DB.mockup()
+  const mockupDB = await DB.testMockup()
   const node: FullNode = await FullNode.new({
     address,
     provider,

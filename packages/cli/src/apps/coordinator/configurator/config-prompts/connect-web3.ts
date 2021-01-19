@@ -13,7 +13,7 @@ export default class ConnectWeb3 extends Configurator {
     const web3 = new Web3(provider)
     async function waitConnection() {
       return new Promise<void>(res => {
-        if (provider.connected) res()
+        if (provider.connected) return res()
         provider.on('connect', res)
       })
     }

@@ -8,4 +8,5 @@ export const DEFAULT = {
   maxBytes: 131072,
   priceMultiplier: 48,
   port: 8888,
+  maxBid: 20000,
 }

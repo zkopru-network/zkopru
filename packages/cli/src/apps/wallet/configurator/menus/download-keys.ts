@@ -6,7 +6,7 @@ import { SingleBar } from 'cli-progress'
 import { https } from 'follow-redirects'
 import { Writable } from 'stream'
 import Configurator, { Context, Menu } from '../configurator'
-import { DEFAULT } from '../../../../config'
+import { DEFAULT } from '../../config'
 
 export const downloadKeys = async (
   url: string,

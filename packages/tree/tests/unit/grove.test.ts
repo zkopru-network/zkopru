@@ -14,7 +14,7 @@ describe('grove full sync grove()', () => {
   let lightSyncGrove: Grove
   let mockup: MockupDB
   beforeAll(async () => {
-    mockup = await DB.mockup()
+    mockup = await DB.testMockup()
     fullSyncGrvoe = new Grove(mockup.db, {
       utxoTreeDepth: 31,
       withdrawalTreeDepth: 31,
@@ -154,7 +154,7 @@ describe('grove full sync grove()', () => {
         },
       }
 
-      const mockup = await DB.mockup()
+      const mockup = await DB.testMockup()
       lightSyncGrove = new Grove(mockup.db, {
         utxoTreeDepth: 31,
         withdrawalTreeDepth: 31,
