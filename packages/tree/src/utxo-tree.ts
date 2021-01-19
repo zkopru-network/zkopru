@@ -105,7 +105,7 @@ export class UtxoTree extends LightRollUpTree<Field> {
       index: Field.zero,
       siblings: preHashes.slice(0, -1),
     }
-    const mockupDB: MockupDB = await DB.mockup()
+    const mockupDB: MockupDB = await DB.testMockup()
     const utxoTree = new UtxoTree({
       db: mockupDB.db,
       metadata: utxoTreeMetadata,

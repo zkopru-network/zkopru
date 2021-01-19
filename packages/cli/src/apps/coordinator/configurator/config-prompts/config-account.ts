@@ -1,5 +1,7 @@
 import chalk from 'chalk'
+import fs from 'fs'
 import { Account } from 'web3-core'
+import { makePathAbsolute } from '@zkopru/utils'
 import Configurator, { Context, Menu } from '../configurator'
 
 export default class ConfigureAccount extends Configurator {
@@ -9,15 +11,24 @@ export default class ConfigureAccount extends Configurator {
     console.log(chalk.blue('Setting up the coordinator account'))
     if (!context.web3) throw Error('Web3 is not loaded')
     if (this.base.keystore) {
-      if (!this.base.password) throw Error('Password is not configured')
+      let password: string
+      if (this.base.password) {
+        password = this.base.password
+      } else if (this.base.passwordFile) {
+        password = fs
+          .readFileSync(makePathAbsolute(this.base.passwordFile))
+          .toString()
+      } else {
+        throw Error('Password is not configured')
+      }
       const account = context.web3.eth.accounts.decrypt(
         this.base.keystore,
-        this.base.password,
+        password,
       )
       return { context: { ...context, account }, next: Menu.LOAD_DATABASE }
     }
     let choice: number
-    if (this.base.nonInteractive) {
+    if (this.base.daemon) {
       choice = 1
     } else {
       const result = await this.ask({

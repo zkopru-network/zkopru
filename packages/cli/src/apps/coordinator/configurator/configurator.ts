@@ -16,8 +16,12 @@ export interface Config {
   port: number
   config?: string
   keystore?: EncryptedKeystoreV3Json
+  keystoreFile?: string
   password?: string
-  nonInteractive?: boolean
+  passwordFile?: string
+  daemon?: boolean
+  maxBid: number
+  publicUrls?: string
 }
 
 export enum Menu {

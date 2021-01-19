@@ -9,6 +9,8 @@ export interface CoordinatorConfig {
   bootstrap: boolean
   port: number
   priceMultiplier: number // gas per byte is 16, our default value is 32
+  maxBid: number
+  publicUrls?: string
 }
 
 export interface CoordinatorContext {

@@ -76,7 +76,7 @@ export class Coordinator extends EventEmitter {
     this.context = {
       account,
       node,
-      auctionMonitor: new AuctionMonitor(node, account, config.port),
+      auctionMonitor: new AuctionMonitor(node, account, config),
       txPool: new TxMemPool(),
       // eslint-disable-next-line prefer-object-spread
       config: Object.assign({ priceMultiplier: 32 }, config),
@@ -107,21 +107,7 @@ export class Coordinator extends EventEmitter {
   }
 
   async start() {
-    logger.info('Coordinator started')
-    this.context.node.start()
-    await Promise.all([
-      this.context.auctionMonitor.start(),
-      this.startSubscribeGasPrice(),
-    ])
-    this.api.start()
-    this.taskRunners.blockFinalize.start({
-      task: this.finalizeTask.bind(this),
-      interval: 10000,
-    })
-    this.taskRunners.massDepositCommit.start({
-      task: this.commitMassDepositTask.bind(this),
-      interval: 10000,
-    })
+    logger.info('Starting coordinator')
     this.context.node.synchronizer.on(
       'status',
       async (status: NetworkStatus) => {
@@ -159,6 +145,20 @@ export class Coordinator extends EventEmitter {
         ? this.context.txPool.drop(proposal.block.header.txRoot.toString())
         : undefined,
     )
+    this.context.node.start()
+    await Promise.all([
+      this.context.auctionMonitor.start(),
+      this.startSubscribeGasPrice(),
+    ])
+    this.api.start()
+    this.taskRunners.blockFinalize.start({
+      task: this.finalizeTask.bind(this),
+      interval: 10000,
+    })
+    this.taskRunners.massDepositCommit.start({
+      task: this.commitMassDepositTask.bind(this),
+      interval: 10000,
+    })
     this.emit('start')
   }
 

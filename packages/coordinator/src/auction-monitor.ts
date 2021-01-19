@@ -8,7 +8,16 @@ import { logger } from '@zkopru/utils'
 import AsyncLock from 'async-lock'
 import { EventEmitter } from 'events'
 import axios from 'axios'
-import dns from 'dns'
+
+const HostRegex = /(?=^.{4,253}$)(^((?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+[a-zA-Z]{2,63}$)/
+const IP4Regex = /^((25[0-5]|(2[0-4]|1[0-9]|[1-9]|)[0-9])(\.(?!$)|$)){4}$/
+const PortRegex = /^[0-9]+$/
+
+export interface AuctionMonitorConfig {
+  port: number
+  maxBid: number
+  publicUrls?: string // TODO: use this
+}
 
 interface Bid {
   owner: string
@@ -46,10 +55,11 @@ export class AuctionMonitor {
 
   port: number | string
 
-  // Values higher than this crash ganache :(
-  maxBidRounds = 15
+  maxBid: BN
 
-  maxBid = new BN(20000 * 10 ** 9)
+  nodeUrl = ''
+
+  maxBidRounds = 15
 
   // How close the round in question needs to be for us to bid
   roundBidThreshold = 3
@@ -60,12 +70,14 @@ export class AuctionMonitor {
 
   bidLock = new AsyncLock()
 
-  constructor(node: FullNode, account: Account, port: number | string) {
+  constructor(node: FullNode, account: Account, config: AuctionMonitorConfig) {
     this.node = node
     this.currentProposer = '0x0000000000000000000000000000000000000000'
     this.consensusAddress = '0x0000000000000000000000000000000000000000'
     this.account = account
-    this.port = port
+    this.port = config.port
+    this.maxBid = new BN(config.maxBid.toString()).mul(new BN(`${10 ** 9}`))
+    this.nodeUrl = config.publicUrls || ''
   }
 
   auction() {
@@ -118,50 +130,26 @@ export class AuctionMonitor {
     this.roundLength = +roundLength
     this.currentRound = this.roundForBlock(blockNumber)
 
-    const url = `${ip}:${this.port}`
+    const newUrl = this.nodeUrl || `${ip}:${this.port}`
     const myUrl = await auction.methods
       .coordinatorUrls(this.account.address)
       .call()
-    if (!myUrl) {
-      // for sure set it
-      await this.updateUrl(url)
-    } else if (myUrl.split(',').indexOf(url) === -1) {
-      // TODO: resolve domains to see if current ip is in list
-      const urls = myUrl.split(',')
-      let urlSet = false
-      for (const u of urls) {
-        const [host, port] = u.split(':')
-        const addresses = await new Promise<dns.LookupAddress[]>((rs, rj) =>
-          dns.lookup(
-            host,
-            {
-              all: true,
-            },
-            (err, a) => (err ? rj(err) : rs(a)),
-          ),
-        )
-        for (const { address } of addresses) {
-          if (address === ip && (port || 80) === this.port) {
-            // found the current ip/port via hostname lookup
-            urlSet = true
-          }
+    if (!myUrl || myUrl !== newUrl) {
+      for (const url of newUrl.split(',')) {
+        const [host, port] = url.split(':')
+        if (!host || !port) {
+          throw new Error('Missing host or port in public url')
         }
-        if (!urlSet) {
-          // add the current external ip to the list
-          // probably prompt the user
+        if (!HostRegex.test(host) && !IP4Regex.test(host)) {
+          throw new Error(`Invalid public url host or ip supplied: ${url}`)
+        }
+        if (!PortRegex.test(port)) {
+          throw new Error(`Invalid public url port supplied: ${url}`)
         }
       }
-      // look for current external ip in list
-      // if (urls.indexOf(url) === -1) {
-      //   await layer1.sendExternalTx(
-      //     auction.methods.setUrl(url),
-      //     this.account,
-      //     this.consensusAddress,
-      //   )
-      //   this.urlsByAddress[this.account.address] = url
-      // }
+      logger.info(`Setting public urls: ${newUrl}`)
+      await this.updateUrl(newUrl)
     }
-
     this.startBlockSubscription()
     this.startNewHighBidSubscription()
     this.startUrlUpdateSubscription()

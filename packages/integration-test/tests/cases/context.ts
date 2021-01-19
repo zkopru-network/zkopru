@@ -6,7 +6,7 @@ import { Address } from 'soltypes'
 import { MockupDB, DB } from '~prisma'
 import { ZkAccount, HDWallet } from '~account'
 import { sleep, readFromContainer, pullOrBuildAndGetContainer } from '~utils'
-import { DEFAULT } from '~cli/config'
+import { DEFAULT } from '~cli/apps/coordinator/config'
 import { L1Contract, FullNode } from '~core'
 import { Coordinator } from '~coordinator'
 import { ZkWallet } from '~zk-wizard'
@@ -154,7 +154,7 @@ async function getAccounts(
   carl: ZkAccount
   coordinator: ZkAccount
 }> {
-  const mockup = await DB.mockup()
+  const mockup = await DB.testMockup()
   const hdWallet = new HDWallet(web3, mockup.db)
   const mnemonic =
     'myth like bonus scare over problem client lizard pioneer submit female collect'
@@ -203,7 +203,7 @@ async function getCoordinator(
   address: string,
   account: Account,
 ): Promise<{ coordinator: Coordinator; mockupDB: MockupDB }> {
-  const mockupDB = await DB.mockup()
+  const mockupDB = await DB.testMockup()
   const fullNode: FullNode = await FullNode.new({
     address,
     provider,
@@ -214,6 +214,7 @@ async function getCoordinator(
     maxBytes,
     priceMultiplier, // 32 gas is the current default price for 1 byte
     port,
+    maxBid: 20000,
     bootstrap: false,
   })
   return { coordinator, mockupDB }
@@ -234,7 +235,7 @@ export async function getWallet({
   erc20s: string[]
   erc721s: string[]
 }): Promise<{ zkWallet: ZkWallet; mockupDB: MockupDB }> {
-  const mockupDB = await DB.mockup()
+  const mockupDB = await DB.testMockup()
   const node: FullNode = await FullNode.new({
     address,
     provider,
