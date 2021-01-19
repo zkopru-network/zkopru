@@ -1,6 +1,6 @@
 ---
 name: Etc
-about: ''
+about: 'Etc'
 title: ''
 labels: ''
 assignees: ''
