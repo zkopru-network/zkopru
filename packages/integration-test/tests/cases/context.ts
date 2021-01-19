@@ -6,7 +6,7 @@ import { Address } from 'soltypes'
 import { MockupDB, DB } from '~prisma'
 import { ZkAccount, HDWallet } from '~account'
 import { sleep, readFromContainer, pullOrBuildAndGetContainer } from '~utils'
-import { DEFAULT } from '~cli/config'
+import { DEFAULT } from '~cli/apps/coordinator/config'
 import { L1Contract, FullNode } from '~core'
 import { Coordinator } from '~coordinator'
 import { ZkWallet } from '~zk-wizard'
@@ -214,6 +214,7 @@ async function getCoordinator(
     maxBytes,
     priceMultiplier, // 32 gas is the current default price for 1 byte
     port,
+    maxBid: 20000,
     bootstrap: false,
   })
   return { coordinator, mockupDB }
