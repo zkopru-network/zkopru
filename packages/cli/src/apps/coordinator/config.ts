@@ -11,7 +11,9 @@ export const DEFAULT = {
   daemon: false,
 }
 
-export const externalIp = async () => {
-  const { data: { ip } } = await axios.get('https://external-ip.now.sh')
+export async function externalIp() {
+  const {
+    data: { ip },
+  } = await axios.get('https://external-ip.now.sh')
   return ip
 }
