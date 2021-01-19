@@ -2,7 +2,12 @@
 
 ![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/zkopru-network/zkopru)
 
-Zkopru testnet, Arctic Roll, has launched! Please visit <https://zkopru.network> and try it now :)
+An audit for the Zkopru testnet v2 is on the process!
+
+| Branch | Status |
+| -------- | -------- |
+| `develop`     | [![zkopru-network](https://circleci.com/gh/zkopru-network/zkopru/tree/develop.svg?style=svg)](https://app.circleci.com/pipelines/github/zkopru-network/zkopru) |
+
 
 ![Banner](https://docs.google.com/drawings/d/e/2PACX-1vRwGTvmJAbNBZCK5syubcrWZgYc3wuK9cHZScbc5lgyLbBYsx42Xzo60unw4-oLlPg_-nwXxaE3t9c6/pub?w=1280)
 
@@ -29,9 +34,16 @@ zkopru-wallet
 
 ## Authors
 
-* Wanseob Lim
-* Barry Whitehat
+* Wanseob Lim ([@wanseob](https://github.com/wanseob))
+* Barry Whitehat ([@barrywhitehat](https://github.com/barrywhitehat))
 
+## Co-authors
+* Chance Hudson ([@JChanceHud](https://github.com/jchancehud))
+
+## Contributors
+* Koh Wei Jie ([@weijiekoh](https://github.com/weijiekoh), weijie.koh@ethereum.org)
+* Kobi Gurkan ([@kobigurk](https://github.com/kobigurk), kobigurk@gmail.com)
+* Thore Hildebrandt ([@ETHorHIL](https://github.com/ETHorHIL), hildebrandtthore@gmail.com)
 ## License
 
 This project is under [GPL v3.0](https://github.com/zkopru-network/zkopru/blob/master/LICENSE)

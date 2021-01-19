@@ -13,15 +13,17 @@ export class ZkViewer {
   constructor(pG: Point, n: Field) {
     this.pG = pG
     this.n = n
+    // Public viewing key, public nullifier seed
     const N = Point.fromPrivKey(this.n.toHex(32))
-    const P = Field.from(
+    // Public spending key
+    const S = Field.from(
       poseidon([
         this.pG.x.toBigInt(),
         this.pG.y.toBigInt(),
         this.n.toBigInt(),
       ]).toString(),
     )
-    this.zkAddress = ZkAddress.from(P, N)
+    this.zkAddress = ZkAddress.from(S, N)
   }
 
   getEdDSAPoint(): Point {

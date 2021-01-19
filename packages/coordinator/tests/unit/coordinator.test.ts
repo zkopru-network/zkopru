@@ -72,6 +72,7 @@ describe('coordinator test to run testnet', () => {
         maxBytes: 131072,
         bootstrap: true,
         priceMultiplier: 48, // 32 gas is the current default price for 1 byte
+        maxBid: 20000,
         port: 9999,
       })
       expect(coordinator).toBeDefined()
