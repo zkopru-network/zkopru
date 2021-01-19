@@ -47,7 +47,7 @@ describe('inclusion_proof.test.circom', () => {
   beforeAll(async () => {
     checkPhase1Setup()
     prepareArtifactsDirectory()
-    mockup = await DB.mockup()
+    mockup = await DB.testMockup()
     utxoTree = new UtxoTree({
       db: mockup.db,
       metadata: utxoTreeMetadata,

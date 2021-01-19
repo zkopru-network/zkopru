@@ -18,7 +18,7 @@ describe('integration test to run testnet', () => {
   let wsProvider: WebsocketProvider
   let mockup: MockupDB
   beforeAll(async () => {
-    mockup = await DB.mockup()
+    mockup = await DB.testMockup()
     // It may take about few minutes. If you want to skip building image,
     // run `yarn pull:images` on the root directory
     container = await pullOrBuildAndGetContainer({

@@ -38,7 +38,7 @@ describe('withdrawal tree unit test', () => {
   }
   let mockup: MockupDB
   beforeAll(async () => {
-    mockup = await DB.mockup()
+    mockup = await DB.testMockup()
     withdrawalTree = new WithdrawalTree({
       db: mockup.db,
       metadata: withdrawalTreeMetadata,

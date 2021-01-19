@@ -52,7 +52,7 @@ describe('zk_transaction_1_2.test.circom', () => {
     checkPhase1Setup()
     prepareArtifactsDirectory()
     // const db = nSQL()
-    mockup = await DB.mockup()
+    mockup = await DB.testMockup()
     utxoTree = new UtxoTree({
       db: mockup.db,
       metadata: utxoTreeMetadata,

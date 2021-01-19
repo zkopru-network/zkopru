@@ -12,7 +12,7 @@ describe('nullifier tree unit test', () => {
   const hasher = keccakHasher(depth)
   let mockup: MockupDB
   beforeAll(async () => {
-    mockup = await DB.mockup()
+    mockup = await DB.testMockup()
     nullifierTree = new NullifierTree({
       db: mockup.db,
       hasher,

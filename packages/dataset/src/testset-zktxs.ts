@@ -91,7 +91,7 @@ export async function saveUtxos(db: DB, utxos: Utxo[]): Promise<DB> {
 }
 
 export async function loadZkTxs(): Promise<ZkTx[]> {
-  const mockupDB = await DB.mockup()
+  const mockupDB = await DB.testMockup()
   const { grove } = await loadGrove(mockupDB.db)
   await saveUtxos(mockupDB.db, [
     utxos.utxo1_in_1,

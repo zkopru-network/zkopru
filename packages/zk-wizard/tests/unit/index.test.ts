@@ -91,7 +91,7 @@ async function loadZkWizard(): Promise<{
   zkWizard: ZkWizard
   mockupDB: MockupDB
 }> {
-  const mockupDB = await DB.mockup()
+  const mockupDB = await DB.testMockup()
   const { grove } = await loadGrove(mockupDB.db)
   await saveUtxos(mockupDB.db, [
     utxos.utxo1_in_1,

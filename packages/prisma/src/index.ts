@@ -140,7 +140,12 @@ export class DB {
     },
   }
 
-  static async mockup(dbPath?: string): Promise<MockupDB> {
+  static async mockup(dbPath?: string): Promise<DB> {
+    const { db } = await this.testMockup(dbPath)
+    return db
+  }
+
+  static async testMockup(dbPath?: string): Promise<MockupDB> {
     const fullDbPath = dbPath || path.join(process.cwd(), `.mockup/${v4()}.db`)
     // const dbPath = path.join(path.resolve('.'), dbName)
     const dirPath = path.join(fullDbPath, '../')
