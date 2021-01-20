@@ -4,12 +4,14 @@ import crypto from 'crypto'
 import fs from 'fs'
 import { PromptApp, makePathAbsolute } from '@zkopru/utils'
 import { Config } from '../../configurator/configurator'
-import { Menu } from '../menu'
+import { Menu, ExampleConfigContext } from '../menu'
 
-export default class Wallet extends PromptApp<Config, Config> {
+export default class Wallet extends PromptApp<ExampleConfigContext, Config> {
   static code = Menu.CREATE_WALLET
 
-  async run(context: Config): Promise<{ context: Config; next: number }> {
+  async run(
+    context: ExampleConfigContext,
+  ): Promise<{ context: ExampleConfigContext; next: number }> {
     console.log(chalk.blue(`Create a wallet?`))
     const { create } = await this.ask({
       type: 'confirm',
@@ -39,9 +41,12 @@ export default class Wallet extends PromptApp<Config, Config> {
     fs.writeFileSync(passwordFile, password)
     return {
       context: {
-        ...context,
-        keystore,
-        passwordFile,
+        config: {
+          ...context.config,
+          keystore,
+          passwordFile,
+        },
+        outputPath: context.outputPath,
       },
       next: Menu.SET_PUBLIC_URLS,
     }

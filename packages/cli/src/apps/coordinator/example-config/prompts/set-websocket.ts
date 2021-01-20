@@ -2,20 +2,22 @@ import chalk from 'chalk'
 import { PromptApp } from '@zkopru/utils'
 import Web3 from 'web3'
 import { Config } from '../../configurator/configurator'
-import { Menu } from '../menu'
+import { Menu, ExampleConfigContext } from '../menu'
 
 const addressesByNetworkId = {
   '1': undefined,
   '5': '0xF4A46BEA80d0D21a11306DDE6cb0fFA91fF95ADd',
 }
 
-export default class Wallet extends PromptApp<Config, Config> {
+export default class Wallet extends PromptApp<ExampleConfigContext, Config> {
   static code = Menu.SET_WEBSOCKET
 
-  async run(context: Config): Promise<{ context: Config; next: number }> {
+  async run(
+    context: ExampleConfigContext,
+  ): Promise<{ context: ExampleConfigContext; next: number }> {
     console.log(chalk.blue('Geth Websocket'))
     let websocket = ''
-    let { address } = context
+    let { address } = context.config
     do {
       const { websocketUrl } = await this.ask({
         type: 'text',
@@ -53,6 +55,16 @@ export default class Wallet extends PromptApp<Config, Config> {
         console.log(err)
       }
     } while (!websocket)
-    return { context: { ...context, address, websocket }, next: Menu.COMPLETE }
+    return {
+      context: {
+        config: {
+          ...context.config,
+          address,
+          websocket,
+        },
+        outputPath: context.outputPath,
+      },
+      next: Menu.COMPLETE,
+    }
   }
 }

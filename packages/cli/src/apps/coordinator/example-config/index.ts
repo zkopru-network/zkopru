@@ -29,17 +29,22 @@ export async function getExampleConfig(
     [Menu.SET_PUBLIC_URLS]: new SetPublicUrl(options),
     [Menu.SET_WEBSOCKET]: new SetWebsocket(options),
   }
+  const context = {
+    config: exampleConfig,
+    outputPath,
+  }
   let next = Menu.CREATE_WALLET
   while (next !== Menu.COMPLETE) {
     const app = apps[next]
     if (app) {
-      const { next: newNext, context } = await app.run(exampleConfig)
+      const {
+        next: newNext,
+        context: { config, outputPath: newOutputPath },
+      } = await app.run(context)
       next = newNext
-      Object.assign(exampleConfig, context)
+      Object.assign(context.config, config)
+      context.outputPath = newOutputPath
     } else break
   }
-  return {
-    config: exampleConfig,
-    outputPath,
-  }
+  return context
 }
