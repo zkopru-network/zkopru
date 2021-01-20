@@ -18,7 +18,7 @@ export default class Wallet extends PromptApp<Config, Config> {
       initial: false,
     })
     if (!update) return { context, next: Menu.SET_WEBSOCKET }
-    let publicUrls: string|undefined
+    let publicUrls: string | undefined
     do {
       const { urls } = await this.ask({
         type: 'text',

@@ -299,7 +299,8 @@ const HostRegex = /(?=^.{4,253}$)(^((?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+[a-zA-Z]{2,
 const IP4Regex = /^((25[0-5]|(2[0-4]|1[0-9]|[1-9]|)[0-9])(\.(?!$)|$)){4}$/
 const PortRegex = /^[0-9]+$/
 export function validatePublicUrls(publicUrls: string) {
-  if (!publicUrls) throw new Error('Public urls cannot be empty for a coordinator')
+  if (!publicUrls)
+    throw new Error('Public urls cannot be empty for a coordinator')
   for (const url of publicUrls.split(',')) {
     const [host, port] = url.split(':')
     if (!host || !port) {
