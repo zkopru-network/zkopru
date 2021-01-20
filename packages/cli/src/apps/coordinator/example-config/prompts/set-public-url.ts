@@ -1,15 +1,19 @@
 import chalk from 'chalk'
 import { PromptApp, validatePublicUrls } from '@zkopru/utils'
 import { Config } from '../../configurator/configurator'
-import { Menu } from '../menu'
+import { Menu, ExampleConfigContext } from '../menu'
 
-export default class Wallet extends PromptApp<Config, Config> {
+export default class Wallet extends PromptApp<ExampleConfigContext, Config> {
   static code = Menu.SET_PUBLIC_URLS
 
-  async run(context: Config): Promise<{ context: Config; next: number }> {
+  async run(
+    context: ExampleConfigContext,
+  ): Promise<{ context: ExampleConfigContext; next: number }> {
     console.log(chalk.blue('Public URLs'))
     console.log(
-      `Your detected public urls are: ${chalk.bold(context.publicUrls || '')}`,
+      `Your detected public urls are: ${chalk.bold(
+        context.config.publicUrls || '',
+      )}`,
     )
     const { update } = await this.ask({
       type: 'confirm',
@@ -23,7 +27,7 @@ export default class Wallet extends PromptApp<Config, Config> {
       const { urls } = await this.ask({
         type: 'text',
         name: 'urls',
-        initial: context.publicUrls,
+        initial: context.config.publicUrls,
         message: 'Enter new host:port entries separated by commas',
       })
       try {
@@ -33,6 +37,15 @@ export default class Wallet extends PromptApp<Config, Config> {
         console.log(chalk.red(err.message))
       }
     } while (!publicUrls)
-    return { context: { ...context, publicUrls }, next: Menu.SET_WEBSOCKET }
+    return {
+      context: {
+        config: {
+          ...context.config,
+          publicUrls,
+        },
+        outputPath: context.outputPath,
+      },
+      next: Menu.SET_WEBSOCKET,
+    }
   }
 }
