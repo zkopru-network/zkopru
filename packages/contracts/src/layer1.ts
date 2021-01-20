@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Web3 from 'web3'
-import { ContractOptions } from 'web3-eth-contract'
+import Contract, { ContractOptions } from 'web3-eth-contract'
 import { ERC20 } from './contracts/ERC20'
 import { ERC721 } from './contracts/ERC721'
 import { IBurnAuction } from './contracts/IBurnAuction'
@@ -46,7 +46,9 @@ export class Layer1 {
     option?: ContractOptions,
   ): IBurnAuction {
     const abi: any[] = [...IBurnAuctionABI]
-    return new web3.eth.Contract(abi, address, option) as IBurnAuction
+    const c = new (Contract as any)(abi, address, option)
+    c.setProvider(web3.currentProvider)
+    return c as IBurnAuction
   }
 
   static getIConsensusProvider(
@@ -55,7 +57,9 @@ export class Layer1 {
     option?: ContractOptions,
   ): IConsensusProvider {
     const abi: any[] = [...IConsensusProviderABI]
-    return new web3.eth.Contract(abi, address, option) as IConsensusProvider
+    const c = new (Contract as any)(abi, address, option)
+    c.setProvider(web3.currentProvider)
+    return c as IConsensusProvider
   }
 
   static getICoordinatable(
@@ -64,7 +68,9 @@ export class Layer1 {
     option?: ContractOptions,
   ): ICoordinatable {
     const abi: any[] = [...ICoordinatableABI]
-    return new web3.eth.Contract(abi, address, option) as ICoordinatable
+    const c = new (Contract as any)(abi, address, option)
+    c.setProvider(web3.currentProvider)
+    return c as ICoordinatable
   }
 
   static getIChallengeable(
@@ -73,7 +79,9 @@ export class Layer1 {
     option?: ContractOptions,
   ): IChallengeable {
     const abi: any[] = [...IChallengeableABI]
-    return new web3.eth.Contract(abi, address, option) as IChallengeable
+    const c = new (Contract as any)(abi, address, option)
+    c.setProvider(web3.currentProvider)
+    return c as IChallengeable
   }
 
   static getIDepositValidator(
@@ -82,7 +90,9 @@ export class Layer1 {
     option?: ContractOptions,
   ): IDepositValidator {
     const abi: any[] = [...IDepositValidatorABI]
-    return new web3.eth.Contract(abi, address, option) as IDepositValidator
+    const c = new (Contract as any)(abi, address, option)
+    c.setProvider(web3.currentProvider)
+    return c as IDepositValidator
   }
 
   static getIHeaderValidator(
@@ -91,7 +101,9 @@ export class Layer1 {
     option?: ContractOptions,
   ): IHeaderValidator {
     const abi: any[] = [...IHeaderValidatorABI]
-    return new web3.eth.Contract(abi, address, option) as IHeaderValidator
+    const c = new (Contract as any)(abi, address, option)
+    c.setProvider(web3.currentProvider)
+    return c as IHeaderValidator
   }
 
   static getIMigratable(
@@ -100,7 +112,9 @@ export class Layer1 {
     option?: ContractOptions,
   ): IMigratable {
     const abi: any[] = [...IMigratableABI]
-    return new web3.eth.Contract(abi, address, option) as IMigratable
+    const c = new (Contract as any)(abi, address, option)
+    c.setProvider(web3.currentProvider)
+    return c as IMigratable
   }
 
   static getIMigrationValidator(
@@ -109,7 +123,9 @@ export class Layer1 {
     option?: ContractOptions,
   ): IMigrationValidator {
     const abi: any[] = [...IMigrationValidatorABI]
-    return new web3.eth.Contract(abi, address, option) as IMigrationValidator
+    const c = new (Contract as any)(abi, address, option)
+    c.setProvider(web3.currentProvider)
+    return c as IMigrationValidator
   }
 
   static getIUtxoTreeValidator(
@@ -118,7 +134,9 @@ export class Layer1 {
     option?: ContractOptions,
   ): IUtxoTreeValidator {
     const abi: any[] = [...IUtxoTreeValidatorABI]
-    return new web3.eth.Contract(abi, address, option) as IUtxoTreeValidator
+    const c = new (Contract as any)(abi, address, option)
+    c.setProvider(web3.currentProvider)
+    return c as IUtxoTreeValidator
   }
 
   static getIWithdrawalTreeValidator(
@@ -127,11 +145,9 @@ export class Layer1 {
     option?: ContractOptions,
   ): IWithdrawalTreeValidator {
     const abi: any[] = [...IWithdrawalTreeValidatorABI]
-    return new web3.eth.Contract(
-      abi,
-      address,
-      option,
-    ) as IWithdrawalTreeValidator
+    const c = new (Contract as any)(abi, address, option)
+    c.setProvider(web3.currentProvider)
+    return c as IWithdrawalTreeValidator
   }
 
   static getINullifierTreeValidator(
@@ -140,11 +156,9 @@ export class Layer1 {
     option?: ContractOptions,
   ): INullifierTreeValidator {
     const abi: any[] = [...INullifierTreeValidatorABI]
-    return new web3.eth.Contract(
-      abi,
-      address,
-      option,
-    ) as INullifierTreeValidator
+    const c = new (Contract as any)(abi, address, option)
+    c.setProvider(web3.currentProvider)
+    return c as INullifierTreeValidator
   }
 
   static getISetupWizard(
@@ -153,7 +167,9 @@ export class Layer1 {
     option?: ContractOptions,
   ): ISetupWizard {
     const abi: any[] = [...ISetupWizardABI]
-    return new web3.eth.Contract(abi, address, option) as ISetupWizard
+    const c = new (Contract as any)(abi, address, option)
+    c.setProvider(web3.currentProvider)
+    return c as ISetupWizard
   }
 
   static getITxValidator(
@@ -162,7 +178,9 @@ export class Layer1 {
     option?: ContractOptions,
   ): ITxValidator {
     const abi: any[] = [...ITxValidatorABI]
-    return new web3.eth.Contract(abi, address, option) as ITxValidator
+    const c = new (Contract as any)(abi, address, option)
+    c.setProvider(web3.currentProvider)
+    return c as ITxValidator
   }
 
   static getIUserInteractable(
@@ -171,7 +189,9 @@ export class Layer1 {
     option?: ContractOptions,
   ): IUserInteractable {
     const abi: any[] = [...IUserInteractableABI]
-    return new web3.eth.Contract(abi, address, option) as IUserInteractable
+    const c = new (Contract as any)(abi, address, option)
+    c.setProvider(web3.currentProvider)
+    return c as IUserInteractable
   }
 
   static getERC20(
@@ -180,7 +200,9 @@ export class Layer1 {
     option?: ContractOptions,
   ): ERC20 {
     const abi: any[] = [...ERC20ABI]
-    return new web3.eth.Contract(abi, address, option) as ERC20
+    const c = new (Contract as any)(abi, address, option)
+    c.setProvider(web3.currentProvider)
+    return c as ERC20
   }
 
   static getERC721(
@@ -189,7 +211,9 @@ export class Layer1 {
     option?: ContractOptions,
   ): ERC721 {
     const abi: any[] = [...ERC721ABI]
-    return new web3.eth.Contract(abi, address, option) as ERC721
+    const c = new (Contract as any)(abi, address, option)
+    c.setProvider(web3.currentProvider)
+    return c as ERC721
   }
 
   static getIERC721Enumerable(
@@ -198,7 +222,9 @@ export class Layer1 {
     option?: ContractOptions,
   ): IERC721Enumerable {
     const abi: any[] = [...IERC721EnumerableABI]
-    return new web3.eth.Contract(abi, address, option) as IERC721Enumerable
+    const c = new (Contract as any)(abi, address, option)
+    c.setProvider(web3.currentProvider)
+    return c as IERC721Enumerable
   }
 
   static getZkopru(
@@ -207,6 +233,8 @@ export class Layer1 {
     option?: ContractOptions,
   ): Zkopru {
     const abi: any[] = [...ZkopruABI]
-    return new web3.eth.Contract(abi, address, option) as Zkopru
+    const c = new (Contract as any)(abi, address, option)
+    c.setProvider(web3.currentProvider)
+    return c as Zkopru
   }
 }
