@@ -3,10 +3,9 @@ import Web3 from 'web3'
 import crypto from 'crypto'
 import fs from 'fs'
 import { PromptApp, makePathAbsolute } from '@zkopru/utils'
-import { Config } from '../../configurator/configurator'
 import { Menu, ExampleConfigContext } from '../menu'
 
-export default class Wallet extends PromptApp<ExampleConfigContext, Config> {
+export default class Wallet extends PromptApp<ExampleConfigContext, void> {
   static code = Menu.CREATE_WALLET
 
   async run(

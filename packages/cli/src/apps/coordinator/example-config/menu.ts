@@ -4,6 +4,7 @@ export enum Menu {
   CREATE_WALLET,
   SET_PUBLIC_URLS,
   SET_WEBSOCKET,
+  OUTPUT_PATH,
   COMPLETE,
 }
 

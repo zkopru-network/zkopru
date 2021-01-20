@@ -3,6 +3,7 @@
 /* eslint-disable no-case-declarations */
 import fs from 'fs-extra'
 import { logStream, logger, makePathAbsolute } from '@zkopru/utils'
+import path from 'path'
 import { argv } from './parser'
 import { Config } from './configurator/configurator'
 import { getCoordinator } from './configurator'
@@ -24,7 +25,9 @@ const main = async () => {
       },
     )
     fs.writeFileSync(outputPath, JSON.stringify(sampleConfig, null, 2))
-    console.log(`Wrote example config to ${shortPath}!`)
+    console.log(
+      `Wrote example config to ${path.relative(process.cwd(), outputPath)}!`,
+    )
     return
   }
   if (argv.config) {
