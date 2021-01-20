@@ -15,7 +15,7 @@ export default class Wallet extends PromptApp<Config, Config> {
   async run(context: Config): Promise<{ context: Config; next: number }> {
     console.log(chalk.blue('Geth Websocket'))
     let websocket = ''
-    let address = context.address
+    let { address } = context
     do {
       const { websocketUrl } = await this.ask({
         type: 'text',
@@ -27,6 +27,7 @@ export default class Wallet extends PromptApp<Config, Config> {
         websocketUrl.indexOf('wss') !== 0
       ) {
         console.log(chalk.red('Websocket url must start with ws:// or wss://'))
+        // eslint-disable-next-line no-continue
         continue
       }
       try {
