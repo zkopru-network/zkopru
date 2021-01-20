@@ -1,7 +1,6 @@
 import chalk from 'chalk'
 import { PromptApp } from '@zkopru/utils'
 import Web3 from 'web3'
-import { Config } from '../../configurator/configurator'
 import { Menu, ExampleConfigContext } from '../menu'
 
 const addressesByNetworkId = {
@@ -9,7 +8,7 @@ const addressesByNetworkId = {
   '5': '0xF4A46BEA80d0D21a11306DDE6cb0fFA91fF95ADd',
 }
 
-export default class Wallet extends PromptApp<ExampleConfigContext, Config> {
+export default class Wallet extends PromptApp<ExampleConfigContext, void> {
   static code = Menu.SET_WEBSOCKET
 
   async run(
@@ -64,7 +63,7 @@ export default class Wallet extends PromptApp<ExampleConfigContext, Config> {
         },
         outputPath: context.outputPath,
       },
-      next: Menu.COMPLETE,
+      next: Menu.OUTPUT_PATH,
     }
   }
 }

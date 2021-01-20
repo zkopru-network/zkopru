@@ -2,6 +2,7 @@ import { DEFAULT, externalIp } from '../config'
 import CreateWallet from './prompts/create-wallet'
 import SetPublicUrl from './prompts/set-public-url'
 import SetWebsocket from './prompts/set-websocket'
+import OutputPath from './prompts/output-path'
 import { Config } from '../configurator/configurator'
 import { Menu } from './menu'
 
@@ -21,13 +22,14 @@ export async function getExampleConfig(
     }`,
   } as Config
   const options = {
-    base: exampleConfig,
+    base: undefined,
     onCancel,
   }
   const apps = {
     [Menu.CREATE_WALLET]: new CreateWallet(options),
     [Menu.SET_PUBLIC_URLS]: new SetPublicUrl(options),
     [Menu.SET_WEBSOCKET]: new SetWebsocket(options),
+    [Menu.OUTPUT_PATH]: new OutputPath(options),
   }
   const context = {
     config: exampleConfig,

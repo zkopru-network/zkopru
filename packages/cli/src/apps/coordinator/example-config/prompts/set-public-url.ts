@@ -1,9 +1,8 @@
 import chalk from 'chalk'
 import { PromptApp, validatePublicUrls } from '@zkopru/utils'
-import { Config } from '../../configurator/configurator'
 import { Menu, ExampleConfigContext } from '../menu'
 
-export default class Wallet extends PromptApp<ExampleConfigContext, Config> {
+export default class Wallet extends PromptApp<ExampleConfigContext, void> {
   static code = Menu.SET_PUBLIC_URLS
 
   async run(
