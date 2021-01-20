@@ -1,4 +1,5 @@
 import { PromptApp, makePathAbsolute } from '@zkopru/utils'
+import path from 'path'
 import { Menu, ExampleConfigContext } from '../menu'
 
 export default class OutputPath extends PromptApp<ExampleConfigContext, void> {
@@ -11,7 +12,10 @@ export default class OutputPath extends PromptApp<ExampleConfigContext, void> {
       type: 'text',
       name: 'outputPath',
       message: `Where should this config be written?`,
-      initial: context.outputPath,
+      initial: path.relative(
+        process.cwd(),
+        makePathAbsolute(context.outputPath),
+      ),
     })
     return {
       context: {

@@ -35,9 +35,9 @@ export default class Wallet extends PromptApp<ExampleConfigContext, void> {
       type: 'text',
       name: 'passwordFile',
       message: 'Enter a path where the password should be stored',
-      initial: `${makePathAbsolute('./password.secret')}`,
+      initial: './password.secret',
     })
-    fs.writeFileSync(passwordFile, password)
+    fs.writeFileSync(makePathAbsolute(passwordFile), password)
     return {
       context: {
         config: {
