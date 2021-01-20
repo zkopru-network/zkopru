@@ -1,6 +1,7 @@
 import { DEFAULT, externalIp } from '../config'
 import CreateWallet from './prompts/create-wallet'
 import SetPublicUrl from './prompts/set-public-url'
+import SetWebsocket from './prompts/set-websocket'
 import { Config } from '../configurator/configurator'
 import { Menu } from './menu'
 
@@ -26,6 +27,7 @@ export async function getExampleConfig(
   const apps = {
     [Menu.CREATE_WALLET]: new CreateWallet(options),
     [Menu.SET_PUBLIC_URLS]: new SetPublicUrl(options),
+    [Menu.SET_WEBSOCKET]: new SetWebsocket(options),
   }
   let next = Menu.CREATE_WALLET
   while (next !== Menu.COMPLETE) {
