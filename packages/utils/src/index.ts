@@ -294,3 +294,22 @@ export function makePathAbsolute(filepath: string) {
   if (path.isAbsolute(filepath)) return filepath
   return path.join(process.cwd(), filepath)
 }
+
+const HostRegex = /(?=^.{4,253}$)(^((?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+[a-zA-Z]{2,63}$)/
+const IP4Regex = /^((25[0-5]|(2[0-4]|1[0-9]|[1-9]|)[0-9])(\.(?!$)|$)){4}$/
+const PortRegex = /^[0-9]+$/
+export function validatePublicUrls(publicUrls: string) {
+  if (!publicUrls) throw new Error('Public urls cannot be empty for a coordinator')
+  for (const url of publicUrls.split(',')) {
+    const [host, port] = url.split(':')
+    if (!host || !port) {
+      throw new Error(`Missing host or port in public url: ${url}`)
+    }
+    if (!HostRegex.test(host) && !IP4Regex.test(host)) {
+      throw new Error(`Invalid public url host or ip supplied: ${url}`)
+    }
+    if (!PortRegex.test(port)) {
+      throw new Error(`Invalid public url port supplied: ${url}`)
+    }
+  }
+}
