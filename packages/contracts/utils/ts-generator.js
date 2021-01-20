@@ -94,7 +94,9 @@ const staticClasses = list =>
     option?: ContractOptions,
   ): ${name} {
     const abi: any[] = [...${name}ABI]
-    return new web3.eth.Contract(abi, address, option) as ${name}
+    const c = new (Contract as any)(abi, address, option)
+    c.setProvider(web3.currentProvider)
+    return c as ${name}
   }
 `
   }, '')}`
@@ -121,7 +123,7 @@ const list = [
 ]
 const layer1TS = `/* eslint-disable @typescript-eslint/no-explicit-any */
 import Web3 from 'web3'
-import { ContractOptions } from 'web3-eth-contract'
+import Contract, { ContractOptions } from 'web3-eth-contract'
 ${importContracts(list)}
 ${importABIs(list)}
 
