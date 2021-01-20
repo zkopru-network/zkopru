@@ -63,7 +63,7 @@ export default class Wallet extends PromptApp<ExampleConfigContext, void> {
         },
         outputPath: context.outputPath,
       },
-      next: Menu.OUTPUT_PATH,
+      next: Menu.SET_DB,
     }
   }
 }
