@@ -4,14 +4,10 @@ import { FullNode } from '@zkopru/core'
 import BN from 'bn.js'
 import { Account } from 'web3-core'
 import { BlockHeader } from 'web3-eth'
-import { logger } from '@zkopru/utils'
+import { logger, validatePublicUrls } from '@zkopru/utils'
 import AsyncLock from 'async-lock'
 import { EventEmitter } from 'events'
 import axios from 'axios'
-
-const HostRegex = /(?=^.{4,253}$)(^((?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+[a-zA-Z]{2,63}$)/
-const IP4Regex = /^((25[0-5]|(2[0-4]|1[0-9]|[1-9]|)[0-9])(\.(?!$)|$)){4}$/
-const PortRegex = /^[0-9]+$/
 
 export interface AuctionMonitorConfig {
   port: number
@@ -135,18 +131,8 @@ export class AuctionMonitor {
       .coordinatorUrls(this.account.address)
       .call()
     if (!myUrl || myUrl !== newUrl) {
-      for (const url of newUrl.split(',')) {
-        const [host, port] = url.split(':')
-        if (!host || !port) {
-          throw new Error('Missing host or port in public url')
-        }
-        if (!HostRegex.test(host) && !IP4Regex.test(host)) {
-          throw new Error(`Invalid public url host or ip supplied: ${url}`)
-        }
-        if (!PortRegex.test(port)) {
-          throw new Error(`Invalid public url port supplied: ${url}`)
-        }
-      }
+      // This will throw if invalid
+      validatePublicUrls(newUrl)
       logger.info(`Setting public urls: ${newUrl}`)
       await this.updateUrl(newUrl)
     }

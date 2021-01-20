@@ -1,5 +1,5 @@
 import chalk from 'chalk'
-import { PromptApp } from '@zkopru/utils'
+import { PromptApp, validatePublicUrls } from '@zkopru/utils'
 import { Config } from '../../configurator/configurator'
 import { Menu } from '../menu'
 
@@ -18,13 +18,21 @@ export default class Wallet extends PromptApp<Config, Config> {
       initial: false,
     })
     if (!update) return { context, next: Menu.COMPLETE }
-    const { urls } = await this.ask({
-      type: 'text',
-      name: 'urls',
-      initial: context.publicUrls,
-      message: 'Enter new host:port entries separated by commas',
-    })
-    // TODO: validate entry
-    return { context: { ...context, publicUrls: urls }, next: Menu.COMPLETE }
+    let publicUrls: string|undefined
+    do {
+      const { urls } = await this.ask({
+        type: 'text',
+        name: 'urls',
+        initial: context.publicUrls,
+        message: 'Enter new host:port entries separated by commas',
+      })
+      try {
+        validatePublicUrls(urls)
+        publicUrls = urls
+      } catch (err) {
+        console.log(chalk.red(err.message))
+      }
+    } while (!publicUrls)
+    return { context: { ...context, publicUrls }, next: Menu.COMPLETE }
   }
 }
