@@ -1,3 +1,4 @@
+import chalk from 'chalk'
 import { PromptApp, makePathAbsolute } from '@zkopru/utils'
 import { Menu, ExampleConfigContext } from '../menu'
 
@@ -7,6 +8,7 @@ export default class SetDB extends PromptApp<ExampleConfigContext, void> {
   async run(
     context: ExampleConfigContext,
   ): Promise<{ context: ExampleConfigContext; next: number }> {
+    console.log(chalk.blue(`Database`))
     const enum DBType {
       SQLITE,
       POSTGRES,
@@ -40,7 +42,7 @@ export default class SetDB extends PromptApp<ExampleConfigContext, void> {
       const { postgres } = await this.ask({
         type: 'text',
         name: 'postgres',
-        message: 'Enter your postgre url',
+        message: 'Enter your postgres url',
       })
       Object.assign(db, { postgres })
     }
