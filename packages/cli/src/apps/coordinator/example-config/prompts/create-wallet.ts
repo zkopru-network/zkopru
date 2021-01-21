@@ -27,7 +27,7 @@ export default class Wallet extends PromptApp<ExampleConfigContext, void> {
     const { password } = await this.ask({
       type: 'password',
       name: 'password',
-      message: `Enter a password to encrypt (leave blank to use secure password):`,
+      message: `Enter a password to encrypt (press enter to use secure password):`,
       initial: securePassword,
     })
     const keystore = account.encrypt(password)
