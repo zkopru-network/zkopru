@@ -38,6 +38,7 @@ export default class Wallet extends PromptApp<ExampleConfigContext, void> {
       initial: './password.secret',
     })
     fs.writeFileSync(makePathAbsolute(passwordFile), password)
+    fs.chmodSync(makePathAbsolute(passwordFile), 0o600)
     return {
       context: {
         config: {
