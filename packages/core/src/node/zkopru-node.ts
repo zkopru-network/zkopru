@@ -3,7 +3,6 @@ import { ZkAccount } from '@zkopru/account'
 import { DB } from '@zkopru/prisma'
 import { Grove, poseidonHasher, keccakHasher } from '@zkopru/tree'
 import { logger } from '@zkopru/utils'
-import { Bytes32 } from 'soltypes'
 import { L1Contract } from '../context/layer1'
 import { L2Chain } from '../context/layer2'
 import { BootstrapHelper } from './bootstrap'
@@ -101,23 +100,6 @@ export class ZkopruNode {
     } else {
       logger.info('already stopped')
     }
-  }
-
-  async latestBlock(): Promise<Bytes32> {
-    const lastVerifiedProposal = (
-      await this.db.read(prisma =>
-        prisma.proposal.findMany({
-          where: {
-            AND: [{ verified: true }, { isUncle: null }],
-          },
-          orderBy: { proposalNum: 'desc' },
-          include: { block: { include: { header: true } } },
-          take: 1,
-        }),
-      )
-    ).pop()
-    if (!lastVerifiedProposal) throw Error('no verified proposal')
-    return Bytes32.from(lastVerifiedProposal.hash)
   }
 
   static async initLayer2(

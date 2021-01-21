@@ -151,10 +151,10 @@ export const testRound2NewBlockProposal = (
   let updated = false
   let newBlockHash!: Bytes32
   do {
-    const aliceLatestBlock = await wallets.alice.node.latestBlock()
-    const bobLatestBlock = await wallets.bob.node.latestBlock()
-    const carlLatestBlock = await wallets.carl.node.latestBlock()
-    const coordinatorLatestBlock = await coordinator.node().latestBlock()
+    const aliceLatestBlock = await wallets.alice.node.layer2.latestBlock()
+    const bobLatestBlock = await wallets.bob.node.layer2.latestBlock()
+    const carlLatestBlock = await wallets.carl.node.layer2.latestBlock()
+    const coordinatorLatestBlock = await coordinator.node().layer2.latestBlock()
     if (
       aliceLatestBlock.eq(bobLatestBlock) &&
       aliceLatestBlock.eq(carlLatestBlock) &&

@@ -147,10 +147,10 @@ export const testRound3NewBlockProposalAndSlashing = (
   } while (!slashed && wait > 0)
   // Should be slashed
   expect(slashed).toBeTruthy()
-  const aliceLatestBlock = await wallets.alice.node.latestBlock()
-  const bobLatestBlock = await wallets.bob.node.latestBlock()
-  const carlLatestBlock = await wallets.carl.node.latestBlock()
-  const coordinatorLatestBlock = await coordinator.node().latestBlock()
+  const aliceLatestBlock = await wallets.alice.node.layer2.latestBlock()
+  const bobLatestBlock = await wallets.bob.node.layer2.latestBlock()
+  const carlLatestBlock = await wallets.carl.node.layer2.latestBlock()
+  const coordinatorLatestBlock = await coordinator.node().layer2.latestBlock()
   // Nodes should throw away the slashed block
   expect(aliceLatestBlock.eq(prevLatestBlock)).toBeTruthy()
   expect(bobLatestBlock.eq(prevLatestBlock)).toBeTruthy()
