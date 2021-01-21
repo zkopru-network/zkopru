@@ -32,7 +32,7 @@ export default class PrintStatus extends App {
     Deposits: ${result.merged} / Fee: ${result.fee} wei`)}${chalk.blueBright(
         'Layer2 status',
       )}${chalk.blue(`
-    Latest block: ${(await node.latestBlock())?.toString()}
+    Latest block: ${(await node.layer2.latestBlock())?.toString()}
     Pending txs: ${txPool.pendingNum()}`)}`,
     )
     return {

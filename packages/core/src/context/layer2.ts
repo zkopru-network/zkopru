@@ -58,6 +58,23 @@ export class L2Chain {
     this.lock = new AsyncLock()
   }
 
+  async latestBlock(): Promise<Bytes32> {
+    const lastVerifiedProposal = (
+      await this.db.read(prisma =>
+        prisma.proposal.findMany({
+          where: {
+            AND: [{ verified: true }, { isUncle: null }],
+          },
+          orderBy: { proposalNum: 'desc' },
+          include: { block: { include: { header: true } } },
+          take: 1,
+        }),
+      )
+    ).pop()
+    if (!lastVerifiedProposal) throw Error('no verified proposal')
+    return Bytes32.from(lastVerifiedProposal.hash)
+  }
+
   async getBlock(hash: Bytes32): Promise<Block | null> {
     const proposal = await this.db.read(prisma =>
       prisma.proposal.findOne({

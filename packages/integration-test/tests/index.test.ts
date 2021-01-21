@@ -192,7 +192,7 @@ describe('testnet', () => {
     describe('users send zk txs to the coordinator', () => {
       beforeAll(async () => {
         do {
-          const latest = await context.coordinator.node().latestBlock()
+          const latest = await context.coordinator.node().layer2.latestBlock()
           if (latest !== null) {
             prevLatestBlock = latest
             break
@@ -236,7 +236,7 @@ describe('testnet', () => {
     describe('users withdraw their assets from the layer 2', () => {
       beforeAll(async () => {
         do {
-          const latest = await context.coordinator.node().latestBlock()
+          const latest = await context.coordinator.node().layer2.latestBlock()
           if (latest !== null) {
             prevLatestBlock = latest
             break
@@ -299,7 +299,7 @@ describe('testnet', () => {
     describe('users send zk txs to the coordinator', () => {
       beforeAll(async () => {
         do {
-          const latest = await context.coordinator.node().latestBlock()
+          const latest = await context.coordinator.node().layer2.latestBlock()
           if (latest !== null) {
             prevLatestBlock = latest
             break

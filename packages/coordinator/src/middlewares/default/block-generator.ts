@@ -90,7 +90,7 @@ export class BlockGenerator extends GeneratorBase {
     if (!this.context.node.synchronizer.isSynced()) {
       throw Error('Layer 2 chain is not synced yet.')
     }
-    const latest = await this.context.node.latestBlock()
+    const latest = await this.context.node.layer2.latestBlock()
     logger.info(`Trying to create a child block of ${latest}`)
     // TODO acquire lock during gen block
     const massMigrations: MassMigration[] = getMassMigrations(txs)
