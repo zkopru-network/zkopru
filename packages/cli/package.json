@@ -29,6 +29,7 @@
     "test:ci": "jest --coverage --ci --reporters='jest-junit'",
     "coverage": "jest --coverage",
     "coverage:show": "live-server coverage",
+    "wallet": "ts-node src/apps/wallet/cli.ts",
     "coordinator": "ts-node src/apps/coordinator/cli.ts",
     "dev:coordinator": "ts-node src/apps/coordinator/cli.ts --config coordinator.json",
     "dev:wallet": "ts-node src/apps/wallet/cli.ts --config wallet.json"
