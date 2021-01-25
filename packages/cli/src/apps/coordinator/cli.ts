@@ -9,11 +9,13 @@ import { Config } from './configurator/configurator'
 import { getCoordinator } from './configurator'
 import { getExampleConfig } from './example-config'
 import { CoordinatorDashboard } from './app'
+import { DEFAULT } from './config'
 
 const main = async () => {
   const writeStream = fs.createWriteStream('./COORDINATOR_LOG')
   logStream.addStream(writeStream)
   const config: Config = {} as Config
+  Object.assign(config, DEFAULT)
   if (typeof argv.generateConfig !== 'undefined') {
     // write a sample config file
     const shortPath = argv.generateConfig || './config.json'
