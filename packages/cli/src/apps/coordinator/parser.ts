@@ -8,17 +8,17 @@ export const { argv } = yargs
     address: {
       type: 'string',
       alias: 'a',
-      default: DEFAULT.address,
+      describe: `[${DEFAULT.address}]`,
     },
     bootstrap: {
       type: 'boolean',
       alias: 'b',
-      default: true,
+      describe: `[${DEFAULT.bootstrap}]`,
     },
     websocket: {
       type: 'string',
       alias: 'ws',
-      default: DEFAULT.websocket,
+      describe: `[${DEFAULT.websocket}]`,
     },
     sqlite: {
       type: 'string',
@@ -28,15 +28,15 @@ export const { argv } = yargs
     },
     maxBytes: {
       type: 'number',
-      default: DEFAULT.maxBytes,
+      describe: `[${DEFAULT.maxBytes}]`,
     },
     priceMultiplier: {
       type: 'number',
-      default: DEFAULT.priceMultiplier,
+      describe: `[${DEFAULT.priceMultiplier}]`,
     },
     port: {
       type: 'number',
-      default: DEFAULT.port,
+      describe: `[${DEFAULT.port}]`,
     },
     config: {
       type: 'string',
@@ -65,8 +65,7 @@ export const { argv } = yargs
     },
     maxBid: {
       type: 'number',
-      describe: 'Maximum bid allowed in the burn auction (Gwei)',
-      default: DEFAULT.maxBid,
+      describe: `Maximum bid allowed in the burn auction (Gwei) [${DEFAULT.maxBid}]`,
     },
     publicUrls: {
       type: 'string',
