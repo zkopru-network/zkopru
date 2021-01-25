@@ -28,7 +28,7 @@ import {
 // Prisma does not support multi source yet.
 
 interface L1Contract {
-  async getConfig(): Promise<Config>;
+  getConfig(): Promise<Config>;
 }
 
 export type NoteSql = Utxo | Withdrawal | Migration
