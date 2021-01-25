@@ -1,5 +1,5 @@
 import { Field, F } from '@zkopru/babyjubjub'
-import { hexify } from '@zkopru/utils'
+import { hexify, makePathAbsolute } from '@zkopru/utils'
 import { v4 } from 'uuid'
 import BN from 'bn.js'
 import path from 'path'
@@ -160,7 +160,7 @@ export class DB {
     await fs.promises.copyFile(predefined, fullDbPath)
     const db = new DB({
       datasources: {
-        sqlite: { url: `file:${fullDbPath}` },
+        sqlite: { url: `file:/${makePathAbsolute(fullDbPath)}` },
       },
     })
     const terminate = async () => {
