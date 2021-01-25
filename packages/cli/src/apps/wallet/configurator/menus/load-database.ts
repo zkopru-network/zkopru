@@ -1,45 +1,9 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import chalk from 'chalk'
 import fs from 'fs-extra'
-import Web3 from 'web3'
-import { L1Contract } from '@zkopru/core'
 import { DB } from '@zkopru/prisma'
+import { L1Contract } from '@zkopru/core'
 import path from 'path'
 import Configurator, { Context, Menu } from '../configurator'
-
-// TODO refactoring - reused code with coordinator/src/configurator/menus/load-database.ts
-async function initDB({
-  db,
-  web3,
-  address,
-}: {
-  db: DB
-  web3: Web3
-  address: string
-}) {
-  const networkId = await web3.eth.net.getId()
-  const chainId = await web3.eth.getChainId()
-  const config = await db.write(prisma =>
-    prisma.config.findOne({
-      where: {
-        networkId_chainId_address: {
-          networkId,
-          address,
-          chainId,
-        },
-      },
-    }),
-  )
-  if (!config) {
-    const layer1: L1Contract = new L1Contract(web3, address)
-    const configFromContract = await layer1.getConfig()
-    await db.write(prisma =>
-      prisma.config.create({
-        data: configFromContract,
-      }),
-    )
-  }
-}
 
 export default class LoadDatabase extends Configurator {
   static code = Menu.LOAD_DATABASE
@@ -168,11 +132,11 @@ export default class LoadDatabase extends Configurator {
         }
       }
     }
-    await initDB({
-      db: database,
-      web3: context.web3,
-      address: this.base.address,
-    })
+    await database.initDB(
+      context.web3,
+      this.base.address,
+      new L1Contract(context.web3, this.base.address),
+    )
     return {
       context: {
         ...context,

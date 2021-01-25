@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 export const DEFAULT = {
-  address: '0x970e8f18ebfEa0B08810f33a5A40438b9530FBCF',
+  address: '0xCDD5C38A39fDC9C77fE3a72998d34c8Ce99d2d34',
   bootstrap: true,
   websocket: 'ws://goerli.zkopru.network:8546',
   maxBytes: 131072,

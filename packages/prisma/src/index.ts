@@ -5,12 +5,14 @@ import BN from 'bn.js'
 import path from 'path'
 import fs from 'fs'
 import AsyncLock from 'async-lock'
+import Web3 from 'web3'
 import {
   TreeNode,
   Utxo,
   Withdrawal,
   Migration,
   PrismaClient,
+  Config,
 } from '../generated/base'
 
 import {
@@ -24,6 +26,10 @@ import {
 } from '../generated/sqlite'
 
 // Prisma does not support multi source yet.
+
+interface L1Contract {
+  async getConfig(): Promise<Config>;
+}
 
 export type NoteSql = Utxo | Withdrawal | Migration
 
@@ -162,6 +168,33 @@ export class DB {
       await db.prisma.$disconnect()
     }
     return { db, terminate }
+  }
+
+  async initDB(web3: Web3, address: string, layer1: L1Contract) {
+    const [networkId, chainId] = await Promise.all([
+      web3.eth.net.getId(),
+      web3.eth.getChainId(),
+    ])
+    const config = await this.read(prisma =>
+      prisma.config.findOne({
+        where: {
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          networkId_chainId_address: {
+            networkId,
+            address,
+            chainId,
+          },
+        },
+      }),
+    )
+    if (!config) {
+      const configFromContract = await layer1.getConfig()
+      await this.write(prisma =>
+        prisma.config.create({
+          data: configFromContract,
+        }),
+      )
+    }
   }
 
   /**
