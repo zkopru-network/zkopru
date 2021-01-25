@@ -9,6 +9,7 @@ import { BootstrapData } from '@zkopru/core'
 import { TxUtil } from '@zkopru/contracts'
 import fetch from 'node-fetch'
 import { CoordinatorContext } from './context'
+import { ClientApi } from './client-api'
 
 function catchError(fn: Function): RequestHandler {
   return async (req, res, next) => {
@@ -29,9 +30,12 @@ export class CoordinatorApi {
     [hash: string]: BootstrapData
   }
 
+  clientApi: ClientApi
+
   constructor(context: CoordinatorContext) {
     this.context = context
     this.bootstrapCache = {}
+    this.clientApi = new ClientApi(context)
   }
 
   start() {
@@ -44,6 +48,7 @@ export class CoordinatorApi {
         app.get('/bootstrap', catchError(this.bootstrapHandler))
       }
       app.get('/price', catchError(this.bytePriceHandler))
+      app.post('/', express.json(), catchError(this.clientApiHandler))
       this.server = app.listen(this.context.config.port, () => {
         logger.info(
           `coordinator.js: API is running on serverPort ${this.context.config.port}`,
@@ -62,6 +67,35 @@ export class CoordinatorApi {
         res()
       }
     })
+  }
+
+  private clientApiHandler: RequestHandler = async (req, res) => {
+    const { method, params, jsonrpc, id } = req.body
+    if (jsonrpc !== '1.0') {
+      res.status(400).json({
+        id,
+        message: 'Invalid jsonrpc version',
+        jsonrpc: '1.0',
+      })
+      return
+    }
+    try {
+      const result = await this.clientApi.callMethod(method, params)
+      res.json({
+        id,
+        jsonrpc,
+        result,
+      })
+    } catch (err) {
+      console.log(err.message)
+      res.status(400).json({
+        id,
+        jsonrpc,
+        error: {
+          message: err.message,
+        },
+      })
+    }
   }
 
   private txHandler: RequestHandler = async (req, res) => {
