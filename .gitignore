@@ -207,3 +207,7 @@ typings/
 .history
 
 # End of https://www.gitignore.io/api/node,intellij+all,visualstudiocode
+
+*.sqlite
+*.secret
+config.json
