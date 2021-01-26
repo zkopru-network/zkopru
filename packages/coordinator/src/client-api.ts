@@ -10,9 +10,11 @@ export class ClientApi {
     this.context = context
     /* eslint-disable @typescript-eslint/camelcase */
     this.rpcMethods = {
+      l1_getVKs: this.getVKs.bind(this),
       l2_blockNumber: this.blockNumber.bind(this),
       l2_blockByNumber: this.getBlockByNumber.bind(this),
       l2_blockByHash: this.getBlockByHash.bind(this),
+      l2_proposalByHash: this.getProposalByHash.bind(this),
     }
     /* eslint-enable @typescript-eslint/camelcase */
   }
@@ -20,6 +22,26 @@ export class ClientApi {
   async callMethod(method: string, params: any[] = []) {
     if (!this.rpcMethods[method]) throw new Error(`Invalid method: "${method}"`)
     return this.rpcMethods[method](...params)
+  }
+
+  private async getVKs() {
+    const VKs = await this.context.node.layer1.getVKs()
+    return JSON.parse(
+      JSON.stringify(VKs, (_, value) => {
+        if (typeof value === 'bigint') {
+          return value.toString()
+        }
+        return value
+      }),
+    )
+  }
+
+  private async getProposalByHash(_hash: string | Bytes32) {
+    let hash = _hash
+    if (hash === 'latest') {
+      hash = await this.context.node.layer2.latestBlock()
+    }
+    return this.context.node.layer2.getProposal(new Bytes32(hash.toString()))
   }
 
   private async blockNumber(): Promise<number> {
