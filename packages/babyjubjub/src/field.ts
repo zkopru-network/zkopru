@@ -73,6 +73,10 @@ export class Field extends BN {
     return prefix.or(this)
   }
 
+  toJSON(): string {
+    return `0x${super.toJSON()}`
+  }
+
   toHex(byteLength?: number): string {
     if (byteLength) {
       return `0x${this.toBuffer('be', byteLength).toString('hex')}`
