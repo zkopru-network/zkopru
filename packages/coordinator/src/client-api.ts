@@ -1,4 +1,5 @@
 import { CoordinatorContext } from './context'
+import { Bytes32 } from 'soltypes'
 
 export class ClientApi {
   context: CoordinatorContext
@@ -11,6 +12,7 @@ export class ClientApi {
     this.rpcMethods = {
       l2_blockNumber: this.blockNumber.bind(this),
       l2_blockByNumber: this.getBlockByNumber.bind(this),
+      l2_blockByHash: this.getBlockByHash.bind(this),
     }
     /* eslint-enable @typescript-eslint/camelcase */
   }
@@ -20,7 +22,7 @@ export class ClientApi {
     return this.rpcMethods[method](...params)
   }
 
-  async blockNumber(): Promise<number> {
+  private async blockNumber(): Promise<number> {
     const latestBlockHash = await this.context.node.layer2.latestBlock()
     const latestBlock = await this.context.node.layer2.getProposal(
       latestBlockHash,
@@ -32,7 +34,7 @@ export class ClientApi {
     return latestBlock.proposalNum
   }
 
-  async getBlockByNumber(_blockNumber: number | string, fullTx = false) {
+  private async getBlockByNumber(_blockNumber: number | string, fullTx = false) {
     let blockNumber = +_blockNumber
     if (_blockNumber === 'latest') {
       blockNumber = await this.blockNumber()
@@ -44,7 +46,23 @@ export class ClientApi {
       console.log('full tx')
     }
     const block = await this.context.node.layer2.getBlockByNumber(blockNumber)
+    console.log(block)
     if (!block) throw new Error('Unable to find block')
     return block
   }
+
+  private async getBlockByHash(_hash: string | Bytes32, fullTx = false) {
+    let hash = _hash
+    if (hash === 'latest') {
+      hash = await this.context.node.layer2.latestBlock()
+    }
+    if (fullTx) {
+      console.log('full tx')
+    }
+    return this.context.node.layer2.getBlock(new Bytes32(hash.toString()))
+  }
+
+  // private async getEthBalance(address: string) {
+  //
+  // }
 }

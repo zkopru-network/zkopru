@@ -187,8 +187,8 @@ export class AuctionMonitor {
           `auction-monitor.js: UrlUpdate listner is connected. Id: ${subId}`,
         )
       })
-      .on('data', async data => {
-        const coordinator = data.returnValues
+      .on('data', async (data: any) => {
+        const { coordinator } = data.returnValues
         const newUrl = await this.auction()
           .methods.coordinatorUrls(coordinator)
           .call()
