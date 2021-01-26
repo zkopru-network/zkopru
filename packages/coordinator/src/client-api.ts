@@ -1,5 +1,5 @@
-import { CoordinatorContext } from './context'
 import { Bytes32 } from 'soltypes'
+import { CoordinatorContext } from './context'
 
 export class ClientApi {
   context: CoordinatorContext
@@ -34,7 +34,7 @@ export class ClientApi {
     return latestBlock.proposalNum
   }
 
-  private async getBlockByNumber(_blockNumber: number | string, fullTx = false) {
+  private async getBlockByNumber(_blockNumber: number | string) {
     let blockNumber = +_blockNumber
     if (_blockNumber === 'latest') {
       blockNumber = await this.blockNumber()
@@ -42,27 +42,16 @@ export class ClientApi {
     if (Number.isNaN(blockNumber)) {
       throw new Error('Supplied block number is not a number')
     }
-    if (fullTx) {
-      console.log('full tx')
-    }
     const block = await this.context.node.layer2.getBlockByNumber(blockNumber)
-    console.log(block)
     if (!block) throw new Error('Unable to find block')
     return block
   }
 
-  private async getBlockByHash(_hash: string | Bytes32, fullTx = false) {
+  private async getBlockByHash(_hash: string | Bytes32) {
     let hash = _hash
     if (hash === 'latest') {
       hash = await this.context.node.layer2.latestBlock()
     }
-    if (fullTx) {
-      console.log('full tx')
-    }
     return this.context.node.layer2.getBlock(new Bytes32(hash.toString()))
   }
-
-  // private async getEthBalance(address: string) {
-  //
-  // }
 }
