@@ -73,6 +73,19 @@ export class ZkTx {
     this.cache = {}
   }
 
+  toJSON() {
+    return {
+      hash: this.hash(),
+      size: this.size(),
+      inflow: this.inflow,
+      outflow: this.outflow,
+      fee: this.fee,
+      proof: this.proof,
+      swap: this.swap,
+      memo: this.memo?.toString('base64'),
+    }
+  }
+
   encode(): Buffer {
     if (!this.proof) throw Error('SNARK does not exist')
     return Buffer.concat([
@@ -174,8 +187,8 @@ export class ZkTx {
 
   signals(): bigint[] {
     /**
-     * 
-    signal input inclusion_references[n_i]; 
+     *
+    signal input inclusion_references[n_i];
     signal input nullifiers[n_i]; // prevents double-spending
 
     signal input new_note_hash[n_o];
