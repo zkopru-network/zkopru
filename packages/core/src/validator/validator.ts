@@ -396,6 +396,7 @@ export abstract class ValidatorBase {
         ...validateAtomicSwapCalls,
         ...validateUsedNullifierCalls,
         ...validateDuplicatedNullifierCalls,
+        ...validateSNARKCalls,
       ],
     }
   }
