@@ -96,4 +96,17 @@ describe('zk_transaction_1_2.test.circom', () => {
     const result: SNARKResult = await genSNARK(inputs, wasm, finalZkey, vk)
     expect(result).toBeDefined()
   }, 20000)
+  it('should fail to create a SNARK proof', async () => {
+    const tx = txs.tx_1_false
+    const signer = accounts.alice
+    const merkleProof = {
+      0: await utxoTree.merkleProof({
+        hash: utxos.utxo1_in_1.hash(),
+        index: Field.from(0),
+      }),
+    }
+    const inputs = ZkWizard.snarkInput({ tx, signer, merkleProof })
+    // eslint-disable-next-line jest/require-tothrow-message
+    await expect(genSNARK(inputs, wasm, finalZkey, vk)).rejects.toThrow()
+  }, 20000)
 })

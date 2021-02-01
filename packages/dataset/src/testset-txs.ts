@@ -9,6 +9,13 @@ const tx_1: RawTx = {
   fee: Field.from(1),
 }
 
+/** @dev prints DAI */
+const tx_1_false: RawTx = {
+  inflow: [utxos.utxo1_in_1],
+  outflow: [utxos.utxo1_out_1, utxos.utxo1_out_2_false],
+  fee: Field.from(1),
+}
+
 const tx_2_1: RawTx = {
   inflow: [utxos.utxo2_1_in_1],
   outflow: [utxos.utxo2_1_out_1, utxos.utxo2_1_out_2],
@@ -36,6 +43,7 @@ const tx_4: RawTx = {
 }
 export const txs = {
   tx_1,
+  tx_1_false,
   tx_2_1,
   tx_2_2,
   tx_3,
