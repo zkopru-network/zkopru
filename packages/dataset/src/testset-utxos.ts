@@ -18,6 +18,13 @@ const utxo1_out_2: Utxo = Utxo.newEtherNote({
   salt: 13,
   eth: 1111,
 })
+const utxo1_out_2_false: Utxo = Utxo.newERC20Note({
+  owner: accounts.alice.zkAddress,
+  salt: 13,
+  eth: 1111,
+  tokenAddr: TokenUtils.DAI,
+  erc20Amount: 8888,
+})
 const utxo2_1_in_1: Utxo = Utxo.newERC20Note({
   owner: accounts.alice.zkAddress,
   salt: 14,
@@ -133,6 +140,7 @@ export const utxos = {
   utxo1_in_1,
   utxo1_out_1,
   utxo1_out_2,
+  utxo1_out_2_false,
   utxo2_1_in_1,
   utxo2_1_out_1,
   utxo2_1_out_2,
