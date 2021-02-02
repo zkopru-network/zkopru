@@ -25,6 +25,7 @@
     "build-keys": "node dist/build-keys.js",
     "postbuild-keys": "copyfiles -f keys/vks/* ../contracts/keys/vks",
     "setup": "yarn phase1:pull && yarn phase2:pull",
+    "circuit": "./script/compile_circuits.sh", 
     "build:circuit": "yarn phase1:pull && yarn circuit && yarn phase2:build",
     "build": "tsc --build tsconfig.build.json",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
