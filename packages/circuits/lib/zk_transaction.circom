@@ -252,23 +252,41 @@ template ZkTransaction(tree_depth, n_i, n_o) {
     }
 
 
-    /// Zero sum proof of ERC20
-    component inflow_erc20[n_i];
-    component outflow_erc20[n_i];
+    /// Zero sum proof of ERC20: round 1 - check every token addresses in input notes
+    component inflow_erc20_1[n_i];
+    component outflow_erc20_1[n_i];
     for (var i = 0; i <n_i; i++) {
-        inflow_erc20[i] = ERC20Sum(n_i);
-        outflow_erc20[i] = ERC20Sum(n_o);
-        inflow_erc20[i].addr <== spending_note_token_addr[i];
-        outflow_erc20[i].addr <== spending_note_token_addr[i];
+        inflow_erc20_1[i] = ERC20Sum(n_i);
+        outflow_erc20_1[i] = ERC20Sum(n_o);
+        inflow_erc20_1[i].addr <== spending_note_token_addr[i];
+        outflow_erc20_1[i].addr <== spending_note_token_addr[i];
         for (var j = 0; j <n_i; j++) {
-            inflow_erc20[i].note_addr[j] <== spending_note_token_addr[j];
-            inflow_erc20[i].note_amount[j] <== spending_note_erc20[j];
+            inflow_erc20_1[i].note_addr[j] <== spending_note_token_addr[j];
+            inflow_erc20_1[i].note_amount[j] <== spending_note_erc20[j];
         }
         for (var j = 0; j <n_o; j++) {
-            outflow_erc20[i].note_addr[j] <== new_note_token_addr[j];
-            outflow_erc20[i].note_amount[j] <== new_note_erc20[j];
+            outflow_erc20_1[i].note_addr[j] <== new_note_token_addr[j];
+            outflow_erc20_1[i].note_amount[j] <== new_note_erc20[j];
         }
-        inflow_erc20[i].out === outflow_erc20[i].out;
+        inflow_erc20_1[i].out === outflow_erc20_1[i].out;
+    }
+    /// Zero sum proof of ERC20: round 2- check every token addresses in output notes
+    component inflow_erc20_2[n_o];
+    component outflow_erc20_2[n_o];
+    for (var i = 0; i <n_o; i++) {
+        inflow_erc20_2[i] = ERC20Sum(n_i);
+        outflow_erc20_2[i] = ERC20Sum(n_o);
+        inflow_erc20_2[i].addr <== new_note_token_addr[i];
+        outflow_erc20_2[i].addr <== new_note_token_addr[i];
+        for (var j = 0; j <n_i; j++) {
+            inflow_erc20_2[i].note_addr[j] <== spending_note_token_addr[j];
+            inflow_erc20_2[i].note_amount[j] <== spending_note_erc20[j];
+        }
+        for (var j = 0; j <n_o; j++) {
+            outflow_erc20_2[i].note_addr[j] <== new_note_token_addr[j];
+            outflow_erc20_2[i].note_amount[j] <== new_note_erc20[j];
+        }
+        inflow_erc20_2[i].out === outflow_erc20_2[i].out;
     }
 
     /// Non fungible proof of ERC721
