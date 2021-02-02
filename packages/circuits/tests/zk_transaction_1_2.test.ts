@@ -25,6 +25,7 @@ import { accounts } from '~dataset/testset-predefined'
 const fileName = 'zk_transaction_1_2.test.circom'
 const artifacts = getArtifactPaths(fileName)
 const { wasm, finalZkey, vk } = artifacts
+const overwrite = false // set it true not to skip circuit compilation & phase 2 setup
 
 describe('zk_transaction_1_2.test.circom', () => {
   let utxoTree: UtxoTree
@@ -78,10 +79,10 @@ describe('zk_transaction_1_2.test.circom', () => {
     await mockup.terminate()
   })
   it('should compile circuits', () => {
-    compileCircuit(fileName)
+    compileCircuit(fileName, { overwrite })
   })
   it('should setup phase 2 for the circuit', () => {
-    phase2Setup(fileName)
+    phase2Setup(fileName, { overwrite })
   }, 60000)
   it('should create SNARK proof', async () => {
     const tx = txs.tx_1
