@@ -294,10 +294,10 @@ export class BlockProcessor extends EventEmitter {
               outflowCount: tx.outflow.length,
               fee: tx.fee.toUint256().toString(),
               slashed: false,
-            }
-          })
-        )
-      )
+            },
+          }),
+        ),
+      ),
     )
   }
 

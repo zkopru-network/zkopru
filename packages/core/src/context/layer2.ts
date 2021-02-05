@@ -116,7 +116,7 @@ export class L2Chain {
     return this.db.read(prisma =>
       prisma.tx.findOne({
         where: { hash: hash.toString() },
-      })
+      }),
     )
   }
 

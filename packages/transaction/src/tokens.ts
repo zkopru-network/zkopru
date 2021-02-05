@@ -14,6 +14,13 @@ export class TokenRegistry {
   // Registered ERC721 token addresses
   erc721s: Address[] = []
 
+  toJSON() {
+    return {
+      erc20s: this.erc20s,
+      erc721s: this.erc721s,
+    }
+  }
+
   static getTokenId(addr: Field): number {
     const id = addr.modn(256)
     return id
