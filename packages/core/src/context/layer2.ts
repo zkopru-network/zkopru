@@ -112,6 +112,14 @@ export class L2Chain {
     return proposal
   }
 
+  async getTxByHash(hash: string | Bytes32) {
+    return this.db.read(prisma =>
+      prisma.tx.findOne({
+        where: { hash: hash.toString() },
+      })
+    )
+  }
+
   async getDeposits(...massDeposits: MassDeposit[]): Promise<DepositSql[]> {
     const totalDeposits: DepositSql[] = []
     for (const massDeposit of massDeposits) {
