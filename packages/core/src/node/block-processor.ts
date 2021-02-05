@@ -205,6 +205,7 @@ export class BlockProcessor extends EventEmitter {
       block.body.txs,
       this.tracker.withdrawalTrackers,
     )
+    await this.saveTransactions(block)
     // generate a patch
     const patch = await this.makePatch(parent, block)
     await this.applyPatch(patch)
@@ -278,6 +279,25 @@ export class BlockProcessor extends EventEmitter {
           }),
         ),
       ),
+    )
+  }
+
+  private async saveTransactions(block: Block) {
+    await this.db.write(prisma =>
+      prisma.$transaction(
+        block.body.txs.map(tx =>
+          prisma.tx.create({
+            data: {
+              hash: tx.hash().toString(),
+              blockHash: block.hash.toString(),
+              inflowCount: tx.inflow.length,
+              outflowCount: tx.outflow.length,
+              fee: tx.fee.toUint256().toString(),
+              slashed: false,
+            }
+          })
+        )
+      )
     )
   }
 

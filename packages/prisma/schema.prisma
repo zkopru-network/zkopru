@@ -98,6 +98,15 @@ model Bootstrap {
   block Block? @relation(fields: [blockHash], references: [hash])
 }
 
+model Tx {
+  hash String @id
+  blockHash String
+  inflowCount Int
+  outflowCount Int
+  fee String
+  slashed Boolean
+}
+
 model MassDeposit {
   index String @id
   merged String
