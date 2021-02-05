@@ -14,11 +14,11 @@ export class ClientApi {
       l1_address: this.getAddress.bind(this),
       l1_getVKs: this.getVKs.bind(this),
       l2_blockNumber: this.blockNumber.bind(this),
-      l2_blockByNumber: this.getBlockByNumber.bind(this),
-      l2_blockByHash: this.getBlockByHash.bind(this),
-      l2_proposalByHash: this.getProposalByHash.bind(this),
-      l2_transactionByHash: this.getTransactionByHash.bind(this),
-      l2_registeredTokens: this.getRegisteredTokens.bind(this),
+      l2_getBlockByNumber: this.getBlockByNumber.bind(this),
+      l2_getBlockByHash: this.getBlockByHash.bind(this),
+      l2_getProposalByHash: this.getProposalByHash.bind(this),
+      l2_getTransactionByHash: this.getTransactionByHash.bind(this),
+      l2_getRegisteredTokens: this.getRegisteredTokens.bind(this),
     }
     /* eslint-enable @typescript-eslint/camelcase */
   }
