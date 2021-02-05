@@ -479,6 +479,12 @@ export class Synchronizer extends EventEmitter {
             },
           }),
         )
+        await this.db.write(prisma =>
+          prisma.tx.updateMany({
+            where: { blockHash: hash },
+            data: { slashed: true },
+          }),
+        )
         if (cb) cb(hash)
       })
       .on('changed', event => {
