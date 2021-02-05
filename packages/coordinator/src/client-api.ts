@@ -16,6 +16,7 @@ export class ClientApi {
       l2_blockByNumber: this.getBlockByNumber.bind(this),
       l2_blockByHash: this.getBlockByHash.bind(this),
       l2_proposalByHash: this.getProposalByHash.bind(this),
+      l2_transactionByHash: this.getTransactionByHash.bind(this),
     }
     /* eslint-enable @typescript-eslint/camelcase */
   }
@@ -80,5 +81,9 @@ export class ClientApi {
       hash = await this.context.node.layer2.latestBlock()
     }
     return this.context.node.layer2.getBlock(new Bytes32(hash.toString()))
+  }
+
+  private async getTransactionByHash(hash: string) {
+    return this.context.node.layer2.getTxByHash(hash)
   }
 }
