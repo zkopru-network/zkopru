@@ -10,6 +10,7 @@ export class ClientApi {
     this.context = context
     /* eslint-disable @typescript-eslint/camelcase */
     this.rpcMethods = {
+      l1_address: this.getAddress.bind(this),
       l1_getVKs: this.getVKs.bind(this),
       l2_blockNumber: this.blockNumber.bind(this),
       l2_blockByNumber: this.getBlockByNumber.bind(this),
@@ -22,6 +23,10 @@ export class ClientApi {
   async callMethod(method: string, params: any[] = []) {
     if (!this.rpcMethods[method]) throw new Error(`Invalid method: "${method}"`)
     return this.rpcMethods[method](...params)
+  }
+
+  private async getAddress() {
+    return this.context.node.layer1.address
   }
 
   private async getVKs() {
