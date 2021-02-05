@@ -71,11 +71,11 @@ export class CoordinatorApi {
 
   private clientApiHandler: RequestHandler = async (req, res) => {
     const { method, params, jsonrpc, id } = req.body
-    if (jsonrpc !== '1.0') {
+    if (jsonrpc !== '2.0') {
       res.status(400).json({
         id,
         message: 'Invalid jsonrpc version',
-        jsonrpc: '1.0',
+        jsonrpc: '2.0',
       })
       return
     }
