@@ -80,7 +80,12 @@ export class CoordinatorApi {
       return
     }
     try {
-      const result = await this.clientApi.callMethod(method, params)
+      const result = await this.clientApi.callMethod(
+        method,
+        params,
+        id,
+        jsonrpc,
+      )
       res.json({
         id,
         jsonrpc,
