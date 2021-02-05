@@ -3,7 +3,6 @@
 import { logStream, logger, PromptApp } from '@zkopru/utils'
 import blessed, { Widgets } from 'blessed'
 import { Transform, Writable } from 'stream'
-import prettier from 'pino-pretty'
 import { AnsiTerminal } from 'node-ansiterminal'
 import AnsiParser from 'node-ansiparser'
 import { instruction } from './instruction'
@@ -32,11 +31,6 @@ export class Dashboard<T, B> {
   promptWriteStream: Writable
 
   printInfoStream: Writable
-
-  prettier = prettier({
-    translateTime: false,
-    colorize: true,
-  })
 
   apps: {
     [key: number]: PromptApp<T, unknown>
@@ -152,7 +146,7 @@ export class Dashboard<T, B> {
     this.logStream.addStream(
       new Writable({
         write: (chunk, _, cb) => {
-          this.logBox.log(this.prettier(JSON.parse(chunk.toString())).trim())
+          this.logBox.log(chunk.toString())
           cb()
         },
       }),
