@@ -17,6 +17,7 @@ export class ClientApi {
       l2_blockByHash: this.getBlockByHash.bind(this),
       l2_proposalByHash: this.getProposalByHash.bind(this),
       l2_transactionByHash: this.getTransactionByHash.bind(this),
+      l2_registeredTokens: this.getRegisteredTokens.bind(this),
     }
     /* eslint-enable @typescript-eslint/camelcase */
   }
@@ -85,5 +86,9 @@ export class ClientApi {
 
   private async getTransactionByHash(hash: string) {
     return this.context.node.layer2.getTxByHash(hash)
+  }
+
+  private async getRegisteredTokens() {
+    return this.context.node.layer2.getTokenRegistry()
   }
 }
