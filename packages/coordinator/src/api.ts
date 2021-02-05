@@ -86,11 +86,20 @@ export class CoordinatorApi {
         id,
         jsonrpc,
       )
-      res.json({
-        id,
-        jsonrpc,
-        result,
-      })
+      const payload = JSON.stringify(
+        {
+          id,
+          jsonrpc,
+          result,
+        },
+        (_, value: any) => {
+          if (typeof value === 'number') {
+            return `0x${value.toString(16)}`
+          }
+          return value
+        },
+      )
+      res.send(payload)
     } catch (err) {
       console.log(err.message)
       res.status(400).json({
