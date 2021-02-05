@@ -294,7 +294,7 @@ export class BlockProcessor extends EventEmitter {
               blockHash: block.hash.toString(),
               inflowCount: tx.inflow.length,
               outflowCount: tx.outflow.length,
-              fee: tx.fee.toUint256().toString(),
+              fee: tx.fee.toHex(),
               challenged,
               slashed: false,
             },
