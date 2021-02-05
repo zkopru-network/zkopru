@@ -185,6 +185,8 @@ export class BlockProcessor extends EventEmitter {
           data: { includedIn: null },
         }),
       )
+      // save transactions and mark them as challenged
+      await this.saveTransactions(block, true)
       logger.warn('challenge')
       // TODO slasher option
       this.emit('slash', {
@@ -282,7 +284,7 @@ export class BlockProcessor extends EventEmitter {
     )
   }
 
-  private async saveTransactions(block: Block) {
+  private async saveTransactions(block: Block, challenged = false) {
     await this.db.write(prisma =>
       prisma.$transaction(
         block.body.txs.map(tx =>
@@ -293,6 +295,7 @@ export class BlockProcessor extends EventEmitter {
               inflowCount: tx.inflow.length,
               outflowCount: tx.outflow.length,
               fee: tx.fee.toUint256().toString(),
+              challenged,
               slashed: false,
             },
           }),

@@ -118,6 +118,7 @@ model Tx {
   inflowCount Int
   outflowCount Int
   fee String
+  challenged Boolean
   slashed Boolean
 }
 
