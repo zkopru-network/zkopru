@@ -78,12 +78,14 @@ export class L2Chain {
   async getBlockByNumber(blockNum: number): Promise<Block | null> {
     const proposals = await this.db.read(prisma =>
       prisma.proposal.findMany({
-        where: { proposalNum: blockNum },
+        where: {
+          proposalNum: blockNum,
+          isUncle: null,
+        },
         include: { block: true },
       }),
     )
     if (proposals.length === 0) return null
-    if (proposals.length > 1) return null
     const [proposal] = proposals as [Proposal & { block: Block | null }]
     if (typeof proposal.proposalData !== 'string') return null
     const tx = JSON.parse(proposal.proposalData)
@@ -102,11 +104,23 @@ export class L2Chain {
     return Block.fromTx(tx, proposal.verified || false)
   }
 
-  async getProposal(hash: Bytes32) {
+  async getProposalByNumber(proposalNum: number, includeBlock = true) {
+    const proposals = await this.db.read(prisma =>
+      prisma.proposal.findMany({
+        where: { proposalNum, isUncle: null },
+        include: { block: includeBlock },
+      })
+    )
+    if (proposals.length === 0) return null
+    const [proposal] = proposals
+    return proposal
+  }
+
+  async getProposal(hash: Bytes32, includeBlock = true) {
     const proposal = await this.db.read(prisma =>
       prisma.proposal.findOne({
         where: { hash: hash.toString() },
-        include: { block: true },
+        include: { block: includeBlock },
       }),
     )
     return proposal
