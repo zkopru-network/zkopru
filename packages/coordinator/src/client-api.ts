@@ -1,7 +1,7 @@
 import { Bytes32 } from 'soltypes'
+import { Block } from '@zkopru/core'
 import { CoordinatorContext } from './context'
 import EthMethods from './eth-rpc-methods'
-import { Block } from '@zkopru/core'
 
 export class ClientApi {
   context: CoordinatorContext
@@ -92,9 +92,14 @@ export class ClientApi {
     if (Number.isNaN(blockNumber)) {
       throw new Error('Supplied block number is not a number')
     }
-    const proposal = await this.context.node.layer2.getProposalByNumber(blockNumber, false)
+    const proposal = await this.context.node.layer2.getProposalByNumber(
+      blockNumber,
+      false,
+    )
     if (!proposal) throw new Error('Unable to find block')
-    const block = proposal.proposalData ? Block.fromTx(JSON.parse(proposal.proposalData)) : {}
+    const block = proposal.proposalData
+      ? Block.fromTx(JSON.parse(proposal.proposalData))
+      : {}
     return {
       ...proposal,
       ...block,
@@ -107,9 +112,14 @@ export class ClientApi {
     if (hash === 'latest') {
       hash = await this.context.node.layer2.latestBlock()
     }
-    const proposal = await this.context.node.layer2.getProposal(new Bytes32(hash.toString()), false)
+    const proposal = await this.context.node.layer2.getProposal(
+      new Bytes32(hash.toString()),
+      false,
+    )
     if (!proposal) throw new Error('Unable to find block')
-    const block = proposal.proposalData ? Block.fromTx(JSON.parse(proposal.proposalData)) : {}
+    const block = proposal.proposalData
+      ? Block.fromTx(JSON.parse(proposal.proposalData))
+      : {}
     return {
       ...proposal,
       ...block,
@@ -118,7 +128,19 @@ export class ClientApi {
   }
 
   private async getTransactionByHash(hash: string) {
-    return this.context.node.layer2.getTxByHash(hash)
+    const { blockHash } =
+      (await this.context.node.layer2.getTxByHash(hash)) || {}
+    if (!blockHash) throw new Error('Unable to find transaction')
+    const block = await this.context.node.layer2.getBlock(
+      new Bytes32(blockHash),
+    )
+    if (!block) throw new Error('Unable to find block')
+    const tx = block.body.txs.find(t => t.hash().toString() === hash)
+    if (!tx) throw new Error('Unable to find tx in block')
+    return {
+      blockHash,
+      ...tx.toJSON(),
+    }
   }
 
   private async getRegisteredTokens() {

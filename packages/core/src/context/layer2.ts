@@ -109,7 +109,7 @@ export class L2Chain {
       prisma.proposal.findMany({
         where: { proposalNum, isUncle: null },
         include: { block: includeBlock },
-      })
+      }),
     )
     if (proposals.length === 0) return null
     const [proposal] = proposals
