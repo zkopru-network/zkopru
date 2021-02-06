@@ -93,7 +93,7 @@ export class CoordinatorApi {
           result,
         },
         (_, value: any) => {
-          if (typeof value === 'number') {
+          if (typeof value === 'number' || typeof value === 'bigint') {
             return `0x${value.toString(16)}`
           }
           return value
