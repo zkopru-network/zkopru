@@ -61,15 +61,7 @@ export class ClientApi {
   }
 
   private async getVKs() {
-    const VKs = await this.context.node.layer1.getVKs()
-    return JSON.parse(
-      JSON.stringify(VKs, (_, value) => {
-        if (typeof value === 'bigint') {
-          return value.toString()
-        }
-        return value
-      }),
-    )
+    return this.context.node.layer1.getVKs()
   }
 
   private async blockNumber(): Promise<number> {
