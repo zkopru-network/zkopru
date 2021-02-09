@@ -37,7 +37,7 @@
     "big-integer": "^1.6.48",
     "bn.js": "^5.1.1",
     "circomlib": "0.2.4",
-    "soltypes": "^1.3.3",
+    "soltypes": "^1.3.4",
     "uuid": "^8.1.0",
     "web3-utils": "^1.2.6"
   },
