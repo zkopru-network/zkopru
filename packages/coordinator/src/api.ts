@@ -42,6 +42,16 @@ export class CoordinatorApi {
     if (!this.server) {
       const app = express()
       app.use(express.text())
+      app.use((_, res, next) => {
+        res.set('Access-Control-Allow-Origin', '*')
+        res.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
+        res.set(
+          'Access-Control-Allow-Headers',
+          'Origin, Content-Type, Access-Control-Allow-Origin',
+        )
+        next()
+      })
+
       app.post('/tx', catchError(this.txHandler))
       app.post('/instant-withdraw', catchError(this.instantWithdrawHandler))
       if (this.context.config.bootstrap) {
