@@ -8,7 +8,14 @@ export default class ConnectWeb3 extends Configurator {
   async run(context: Context): Promise<{ context: Context; next: number }> {
     console.log(chalk.blue('Connecting to the Ethereum network'))
     const provider = new Web3.providers.WebsocketProvider(this.base.websocket, {
-      reconnect: { auto: true },
+      reconnect: {
+        delay: 2000,
+        auto: true,
+      },
+      clientConfig: {
+        keepalive: true,
+        keepaliveInterval: 30000,
+      },
     })
     const web3 = new Web3(provider)
     async function waitConnection() {
