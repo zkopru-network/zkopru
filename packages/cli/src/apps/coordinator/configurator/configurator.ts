@@ -22,6 +22,7 @@ export interface Config {
   daemon?: boolean
   maxBid: number
   publicUrls?: string
+  vhosts: string
 }
 
 export enum Menu {

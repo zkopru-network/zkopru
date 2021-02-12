@@ -11,6 +11,7 @@ export interface CoordinatorConfig {
   priceMultiplier: number // gas per byte is 16, our default value is 32
   maxBid: number
   publicUrls?: string
+  vhosts: string
 }
 
 export interface CoordinatorContext {
