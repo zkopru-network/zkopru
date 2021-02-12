@@ -10,6 +10,8 @@ import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
 import { readFromContainer, sleep, pullOrBuildAndGetContainer } from '~utils'
 import { MockupDB, DB } from '~prisma'
+import assert from 'assert'
+import fetch from 'node-fetch'
 
 describe('coordinator test to run testnet', () => {
   const accounts: ZkAccount[] = [
@@ -22,6 +24,7 @@ describe('coordinator test to run testnet', () => {
   let mockup: MockupDB
   let coordinator: Coordinator
   beforeAll(async () => {
+    // logStream.addStream(process.stdout)
     mockup = await DB.testMockup()
     // It may take about few minutes. If you want to skip building image,
     // run `yarn pull:images` on the root directory
@@ -43,11 +46,17 @@ describe('coordinator test to run testnet', () => {
     await sleep(3000)
     wsProvider = new Web3.providers.WebsocketProvider(
       `ws://${containerIP}:5000`,
-      { reconnect: { auto: true } },
+      {
+        reconnect: { auto: true },
+        clientConfig: {
+          keepalive: true,
+          keepaliveInterval: 10000,
+        },
+      },
     )
     async function waitConnection() {
       return new Promise<void>(res => {
-        if (wsProvider.connected) res()
+        if (wsProvider.connected) return res()
         wsProvider.on('connect', res)
       })
     }
@@ -60,8 +69,8 @@ describe('coordinator test to run testnet', () => {
     })
   }, 36000)
   afterAll(async () => {
-    wsProvider.disconnect(0, 'close connection')
     await coordinator.stop()
+    wsProvider.disconnect(0, 'close connection')
     await mockup.terminate()
     await container.stop()
     await container.delete()
@@ -74,8 +83,29 @@ describe('coordinator test to run testnet', () => {
         priceMultiplier: 48, // 32 gas is the current default price for 1 byte
         maxBid: 20000,
         port: 9999,
+      	vhosts: '*',
+      	publicUrls: '127.0.0.1:9999',
       })
       expect(coordinator).toBeDefined()
+      await coordinator.start()
+    }, 20000)
+  })
+
+  describe('api', () => {
+    it('should send block number', async () => {
+      const res = await fetch('http://localhost:9999', {
+      	headers: {
+          'Content-Type': 'application/json',
+      	},
+        body: JSON.stringify({
+          id: 'test',
+      	  method: 'l2_blockNumber',
+      	  jsonrpc: '2.0',
+        }),
+      	method: 'POST',
+      })
+      const data = await res.json()
+      assert.equal(isNaN(data.result), false)
     })
   })
 })
