@@ -118,6 +118,15 @@ export class AuctionMonitor {
     this.roundLength = +roundLength
     this.currentRound = this.roundForBlock(blockNumber)
 
+    this.startBlockSubscription()
+    this.startNewHighBidSubscription()
+    this.startUrlUpdateSubscription()
+
+    const balance = await layer1.web3.eth.getBalance(this.account.address)
+    if (new BN(balance).eq(new BN('0'))) {
+      logger.info('Empty wallet, skipping auction participation')
+      return
+    }
     const myUrl = await auction.methods
       .coordinatorUrls(this.account.address)
       .call()
@@ -128,9 +137,6 @@ export class AuctionMonitor {
       logger.info(`Setting public urls: ${newUrl}`)
       await this.updateUrl(newUrl)
     }
-    this.startBlockSubscription()
-    this.startNewHighBidSubscription()
-    this.startUrlUpdateSubscription()
     await this.bidIfNeeded()
   }
 
