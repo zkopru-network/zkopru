@@ -23,6 +23,7 @@ export interface Config {
   maxBid: number
   publicUrls?: string
   vhosts: string
+  corsdomain?: string
 }
 
 export enum Menu {

@@ -22,6 +22,7 @@ export default class LoadCoordinator extends Configurator {
       maxBid,
       publicUrls,
       vhosts,
+      corsdomain,
     } = this.base
     const { provider, db } = context
     const fullNode: FullNode = await FullNode.new({
@@ -37,6 +38,7 @@ export default class LoadCoordinator extends Configurator {
       maxBid,
       publicUrls,
       vhosts,
+      corsdomain,
     })
     return { context: { ...context, coordinator }, next: Menu.COMPLETE_SETUP }
   }

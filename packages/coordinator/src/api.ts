@@ -48,8 +48,14 @@ export class CoordinatorApi {
         app.get('/bootstrap', catchError(this.bootstrapHandler))
       }
       app.get('/price', catchError(this.bytePriceHandler))
-      // CORS enforced only for RPC API
-      const allowedHosts = this.context.config.vhosts.toLowerCase().split(',')
+      // CORS/vhosts enforced only for RPC API
+      const parseCommaList = (list = '') =>
+        list
+          .toLowerCase()
+          .split(',')
+          .filter(s => s.length > 0)
+      const allowedHosts = parseCommaList(this.context.config.vhosts)
+      const allowedDomains = parseCommaList(this.context.config.corsdomain)
       const corsMiddleware = (req, res, next) => {
         const host = (
           req.get('host') ||
@@ -65,8 +71,15 @@ export class CoordinatorApi {
             .json({ id, jsonrpc, message: `Host "${hostname}" disallowed` })
           return
         }
-        // This is only browser enforced, wildcard is probably fine by default
-        res.set('Access-Control-Allow-Origin', '*')
+        const origin = (req.get('origin') || '').toLowerCase()
+        const wildcardDomain = allowedDomains.indexOf('*') !== -1
+        if (wildcardDomain) {
+          res.set('Access-Control-Allow-Origin', '*')
+        } else if (allowedDomains.indexOf(origin) !== -1) {
+          res.set('Access-Control-Allow-Origin', origin)
+        } else {
+          res.set('Access-Control-Allow-Origin', '')
+        }
         res.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
         res.set(
           'Access-Control-Allow-Headers',
@@ -74,6 +87,7 @@ export class CoordinatorApi {
         )
         next()
       }
+      app.options('/', corsMiddleware)
       app.post(
         '/',
         express.json(),
