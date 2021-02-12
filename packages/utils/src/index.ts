@@ -317,6 +317,8 @@ export function validatePublicUrls(publicUrls: string) {
 }
 
 export async function externalIp() {
-  const { data: { ip } } = await axios.get('https://external-ip.now.sh')
+  const {
+    data: { ip },
+  } = await axios.get('https://external-ip.now.sh')
   return ip
 }

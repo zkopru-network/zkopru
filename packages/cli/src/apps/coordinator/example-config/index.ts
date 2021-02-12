@@ -1,5 +1,5 @@
-import { DEFAULT } from '../config'
 import { externalIp } from '@zkopru/utils'
+import { DEFAULT } from '../config'
 import CreateWallet from './prompts/create-wallet'
 import SetPublicUrl from './prompts/set-public-url'
 import SetWebsocket from './prompts/set-websocket'
