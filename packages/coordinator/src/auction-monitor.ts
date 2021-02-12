@@ -4,7 +4,7 @@ import { FullNode } from '@zkopru/core'
 import BN from 'bn.js'
 import { Account } from 'web3-core'
 import { BlockHeader } from 'web3-eth'
-import { logger, validatePublicUrls } from '@zkopru/utils'
+import { logger, validatePublicUrls, externalIp } from '@zkopru/utils'
 import AsyncLock from 'async-lock'
 import { EventEmitter } from 'events'
 import axios from 'axios'
@@ -112,27 +112,23 @@ export class AuctionMonitor {
       startBlock,
       roundLength,
       blockNumber,
-      {
-        data: { ip },
-      },
     ] = await Promise.all([
       auction.methods.startBlock().call(),
       auction.methods.roundLength().call(),
       layer1.web3.eth.getBlockNumber(),
-      axios.get('https://external-ip.now.sh'),
       this.updateIsProposable(),
     ])
     this.startBlock = +startBlock
     this.roundLength = +roundLength
     this.currentRound = this.roundForBlock(blockNumber)
 
-    const newUrl = this.nodeUrl || `${ip}:${this.port}`
+    const newUrl = this.nodeUrl
     const myUrl = await auction.methods
       .coordinatorUrls(this.account.address)
       .call()
     if (!myUrl || myUrl !== newUrl) {
       // This will throw if invalid
-      validatePublicUrls(newUrl)
+      validatePublicUrls(newUrl || `${await externalIp()}:${this.port}`)
       logger.info(`Setting public urls: ${newUrl}`)
       await this.updateUrl(newUrl)
     }
