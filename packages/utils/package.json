@@ -26,6 +26,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "axios": "^0.21.1",
     "bn.js": "^5.1.1",
     "circom_runtime": "0.1.5",
     "docker-compose": "^0.23.5",

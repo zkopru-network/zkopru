@@ -108,11 +108,7 @@ export class AuctionMonitor {
       .consensusProvider()
       .call()
     const auction = this.auction()
-    const [
-      startBlock,
-      roundLength,
-      blockNumber,
-    ] = await Promise.all([
+    const [startBlock, roundLength, blockNumber] = await Promise.all([
       auction.methods.startBlock().call(),
       auction.methods.roundLength().call(),
       layer1.web3.eth.getBlockNumber(),
@@ -122,13 +118,13 @@ export class AuctionMonitor {
     this.roundLength = +roundLength
     this.currentRound = this.roundForBlock(blockNumber)
 
-    const newUrl = this.nodeUrl
     const myUrl = await auction.methods
       .coordinatorUrls(this.account.address)
       .call()
-    if (!myUrl || myUrl !== newUrl) {
+    if (!myUrl || myUrl !== this.nodeUrl) {
+      const newUrl = this.nodeUrl || `${await externalIp()}:${this.port}`
       // This will throw if invalid
-      validatePublicUrls(newUrl || `${await externalIp()}:${this.port}`)
+      validatePublicUrls(newUrl)
       logger.info(`Setting public urls: ${newUrl}`)
       await this.updateUrl(newUrl)
     }
