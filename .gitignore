@@ -211,3 +211,4 @@ typings/
 *.sqlite
 *.secret
 config.json
+*.swp
