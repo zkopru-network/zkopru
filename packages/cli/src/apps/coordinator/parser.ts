@@ -72,5 +72,9 @@ export const { argv } = yargs
       describe:
         'Comma separated list of host:port combinations this node is accessible at',
     },
+    vhosts: {
+      type: 'string',
+      describe: `Origins from which to accept API requests (server enforced). Accepts '*' wildcard. [${DEFAULT.vhosts}]`,
+    },
   })
   .help()

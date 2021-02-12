@@ -42,7 +42,30 @@ export class CoordinatorApi {
     if (!this.server) {
       const app = express()
       app.use(express.text())
-      app.use((_, res, next) => {
+      app.post('/tx', catchError(this.txHandler))
+      app.post('/instant-withdraw', catchError(this.instantWithdrawHandler))
+      if (this.context.config.bootstrap) {
+        app.get('/bootstrap', catchError(this.bootstrapHandler))
+      }
+      app.get('/price', catchError(this.bytePriceHandler))
+      // CORS enforced only for RPC API
+      const allowedHosts = this.context.config.vhosts.toLowerCase().split(',')
+      const corsMiddleware = (req, res, next) => {
+        const host = (
+          req.get('host') ||
+          req.get('x-forwarded-host') ||
+          ''
+        ).toLowerCase()
+        const hostname = host.split(':').shift()
+        const wildcardHost = allowedHosts.indexOf('*') !== -1
+        if (!wildcardHost && allowedHosts.indexOf(hostname) === -1) {
+          const { jsonrpc, id } = req.body
+          res
+            .status(401)
+            .json({ id, jsonrpc, message: `Host "${hostname}" disallowed` })
+          return
+        }
+        // This is only browser enforced, wildcard is probably fine by default
         res.set('Access-Control-Allow-Origin', '*')
         res.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
         res.set(
@@ -50,15 +73,13 @@ export class CoordinatorApi {
           'Origin, Content-Type, Access-Control-Allow-Origin',
         )
         next()
-      })
-
-      app.post('/tx', catchError(this.txHandler))
-      app.post('/instant-withdraw', catchError(this.instantWithdrawHandler))
-      if (this.context.config.bootstrap) {
-        app.get('/bootstrap', catchError(this.bootstrapHandler))
       }
-      app.get('/price', catchError(this.bytePriceHandler))
-      app.post('/', express.json(), catchError(this.clientApiHandler))
+      app.post(
+        '/',
+        express.json(),
+        corsMiddleware,
+        catchError(this.clientApiHandler),
+      )
       this.server = app.listen(this.context.config.port, () => {
         logger.info(
           `coordinator.js: API is running on serverPort ${this.context.config.port}`,

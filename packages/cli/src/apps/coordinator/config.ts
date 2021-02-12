@@ -7,4 +7,5 @@ export const DEFAULT = {
   port: 8888,
   maxBid: 20000,
   daemon: false,
+  vhosts: 'localhost,127.0.0.1',
 }
