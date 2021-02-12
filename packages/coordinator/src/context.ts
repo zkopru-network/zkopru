@@ -12,6 +12,7 @@ export interface CoordinatorConfig {
   maxBid: number
   publicUrls?: string
   vhosts: string
+  corsdomain?: string
 }
 
 export interface CoordinatorContext {

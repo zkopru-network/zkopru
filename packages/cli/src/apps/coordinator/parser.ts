@@ -74,7 +74,11 @@ export const { argv } = yargs
     },
     vhosts: {
       type: 'string',
-      describe: `Origins from which to accept API requests (server enforced). Accepts '*' wildcard. [${DEFAULT.vhosts}]`,
+      describe: `Comma separated list of hostnames from which to accept API requests (server enforced). Accepts '*' wildcard. [${DEFAULT.vhosts}]`,
+    },
+    corsdomain: {
+      type: 'string',
+      describe: `Comma separated list of domains from which to accept cross origin API requests (browser enforced). Accepts '*' wildcard.`,
     },
   })
   .help()
