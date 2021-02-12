@@ -78,10 +78,7 @@ export class L2Chain {
   async getBlockByNumber(blockNum: number): Promise<Block | null> {
     const proposals = await this.db.read(prisma =>
       prisma.proposal.findMany({
-        where: {
-          proposalNum: blockNum,
-          isUncle: null,
-        },
+        where: { proposalNum: blockNum },
         include: { block: true },
       }),
     )
@@ -107,7 +104,7 @@ export class L2Chain {
   async getProposalByNumber(proposalNum: number, includeBlock = true) {
     const proposals = await this.db.read(prisma =>
       prisma.proposal.findMany({
-        where: { proposalNum, isUncle: null },
+        where: { proposalNum },
         include: { block: includeBlock },
       }),
     )
