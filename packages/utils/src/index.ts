@@ -4,6 +4,7 @@ import path from 'path'
 import { Unit, soliditySha3Raw } from 'web3-utils'
 import { Bytes32, Uint256, Address } from 'soltypes'
 import BN from 'bn.js'
+import axios from 'axios'
 
 export { logger, logStream } from './logger'
 
@@ -313,4 +314,9 @@ export function validatePublicUrls(publicUrls: string) {
       throw new Error(`Invalid public url port supplied: ${url}`)
     }
   }
+}
+
+export async function externalIp() {
+  const { data: { ip } } = await axios.get('https://external-ip.now.sh')
+  return ip
 }
