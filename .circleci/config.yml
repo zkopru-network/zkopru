@@ -39,10 +39,15 @@ jobs:
       - run:
           name: Install
           command: yarn
+      - persist_to_workspace:
+          root: ~/
+          paths: project
   build:
     machine:
       image: ubuntu-2004:202010-01
     steps:
+      - attach_workspace:
+          at: ~/
       - run:
           name: Build Prisma
           command: yarn build:prisma
@@ -56,6 +61,8 @@ jobs:
     machine:
       image: ubuntu-2004:202010-01
     steps:
+      - attach_workspace:
+          at: ~/
       - run:
           name: Lint
           command: yarn lint .
@@ -64,6 +71,8 @@ jobs:
     machine:
       image: ubuntu-2004:202010-01
     steps:
+      - attach_workspace:
+          at: ~/
       - run:
           name: Coordinator Tests
           command: |
@@ -73,6 +82,8 @@ jobs:
     machine:
       image: ubuntu-2004:202010-01
     steps:
+      - attach_workspace:
+          at: ~/
       - run:
           name: Contract Tests
           command: yarn test --scope=@zkopru/contracts
@@ -80,6 +91,8 @@ jobs:
     machine:
       image: ubuntu-2004:202010-01
     steps:
+      - attach_workspace:
+          at: ~/
       - run:
           name: Prisma Tests
           command: yarn test --scope=@zkopru/contracts
@@ -87,6 +100,8 @@ jobs:
     machine:
       image: ubuntu-2004:202010-01
     steps:
+      - attach_workspace:
+          at: ~/
       - run:
           name: Account Tests
           command: yarn test --scope=@zkopru/account
@@ -94,6 +109,8 @@ jobs:
     machine:
       image: ubuntu-2004:202010-01
     steps:
+      - attach_workspace:
+          at: ~/
       - run:
           name: Tree Tests
           command: yarn test --scope=@zkopru/tree
@@ -101,6 +118,8 @@ jobs:
     machine:
       image: ubuntu-2004:202010-01
     steps:
+      - attach_workspace:
+          at: ~/
       - run:
           name: BabyJubJub Tests
           command: yarn test --scope=@zkopru/babyjubjub
