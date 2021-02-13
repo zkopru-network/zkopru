@@ -14,18 +14,20 @@ import { readFromContainer, sleep, pullOrBuildAndGetContainer } from '~utils'
 import { MockupDB, DB } from '~prisma'
 
 async function callMethod(
-  _method: string | {
-    method: string,
-    jsonrpc?: string,
-    url?: string,
-    headers?: {},
-  },
+  _method:
+    | string
+    | {
+        method: string
+        jsonrpc?: string
+        url?: string
+        headers?: {}
+      },
   ...params: any[]
 ) {
   let jsonrpc = '2.0'
   let method = _method
   let url = 'http://localhost:9999'
-  let headers = {}
+  const headers = {}
   if (typeof _method === 'object') {
     method = _method.method
     jsonrpc = _method.jsonrpc || jsonrpc
@@ -185,8 +187,8 @@ describe('coordinator test to run testnet', () => {
           jsonrpc: '2.0',
           url: 'http://localhost:10001',
           headers: {
-            'Origin': 'http://someotherdomain.com',
-          }
+            Origin: 'http://someotherdomain.com',
+          },
         })
         const access = response.headers.get('access-control-allow-origin')
         assert.equal(access, '')
@@ -197,8 +199,8 @@ describe('coordinator test to run testnet', () => {
           jsonrpc: '2.0',
           url: 'http://localhost:10001',
           headers: {
-            'Origin': 'http://test2.domain'
-          }
+            Origin: 'http://test2.domain',
+          },
         })
         const access = response.headers.get('access-control-allow-origin')
         assert.equal(access, 'http://test2.domain')
