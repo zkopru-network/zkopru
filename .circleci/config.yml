@@ -9,12 +9,12 @@ workflows:
       - test_coordinator:
           requires:
             - build
-      - test_contracts:
-          requires:
-            - build
-      - test_prisma:
-          requires:
-            - build
+      # - test_contracts:
+      #     requires:
+      #       - build
+      # - test_prisma:
+      #     requires:
+      #       - build
       - test_accounts:
           requires:
             - build
