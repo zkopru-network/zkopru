@@ -57,7 +57,6 @@ jobs:
       - run:
           name: Lint
           command: yarn lint .
-          background: true
   test_coordinator:
     machine:
       image: ubuntu-2004:202010-01
@@ -69,24 +68,24 @@ jobs:
           command: |
             docker-compose -f dockerfiles/docker-compose.yml build contracts
             yarn test --scope=@zkopru/coordinator
-  test_contracts:
-    machine:
-      image: ubuntu-2004:202010-01
-    steps:
-      - attach_workspace:
-          at: ~/
-      - run:
-          name: Contract Tests
-          command: yarn test --scope=@zkopru/contracts
-  test_prisma:
-    machine:
-      image: ubuntu-2004:202010-01
-    steps:
-      - attach_workspace:
-          at: ~/
-      - run:
-          name: Prisma Tests
-          command: yarn test --scope=@zkopru/contracts
+  # test_contracts:
+  #   machine:
+  #     image: ubuntu-2004:202010-01
+  #   steps:
+  #     - attach_workspace:
+  #         at: ~/
+  #     - run:
+  #         name: Contract Tests
+  #         command: yarn test --scope=@zkopru/contracts
+  # test_prisma:
+  #   machine:
+  #     image: ubuntu-2004:202010-01
+  #   steps:
+  #     - attach_workspace:
+  #         at: ~/
+  #     - run:
+  #         name: Prisma Tests
+  #         command: yarn test --scope=@zkopru/contracts
   test_accounts:
     machine:
       image: ubuntu-2004:202010-01
