@@ -14,18 +14,30 @@ import { readFromContainer, sleep, pullOrBuildAndGetContainer } from '~utils'
 import { MockupDB, DB } from '~prisma'
 
 async function callMethod(
-  _method: string | { method: string; jsonrpc: string },
+  _method: string | {
+    method: string,
+    jsonrpc?: string,
+    url?: string,
+    headers?: {},
+  },
   ...params: any[]
 ) {
   let jsonrpc = '2.0'
   let method = _method
+  let url = 'http://localhost:9999'
+  let headers = {}
   if (typeof _method === 'object') {
     method = _method.method
-    jsonrpc = _method.jsonrpc
+    jsonrpc = _method.jsonrpc || jsonrpc
+    url = _method.url || url
+    Object.assign(headers, {
+      ...(_method.headers || {}),
+    })
   }
-  const res = await fetch('http://localhost:9999', {
+  const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
+      ...headers,
     },
     body: JSON.stringify({
       id: Math.floor(Math.random() * 10000).toString(),
@@ -51,6 +63,7 @@ describe('coordinator test to run testnet', () => {
   let wsProvider: WebsocketProvider
   let mockup: MockupDB
   let coordinator: Coordinator
+  const coordinators = [] as Coordinator[]
   beforeAll(async () => {
     // logStream.addStream(process.stdout)
     mockup = await DB.testMockup()
@@ -102,6 +115,9 @@ describe('coordinator test to run testnet', () => {
     await mockup.terminate()
     await container.stop()
     await container.delete()
+    for (const c of coordinators) {
+      await c.stop()
+    }
   }, 10000)
   describe('coordinator', () => {
     it('should be defined', async () => {
@@ -117,6 +133,77 @@ describe('coordinator test to run testnet', () => {
       expect(coordinator).toBeDefined()
       await coordinator.start()
     }, 20000)
+  })
+
+  describe('api host tests', () => {
+    it('should restrict using vhosts', async () => {
+      const coord = new Coordinator(fullNode, accounts[0].ethAccount, {
+        maxBytes: 131072,
+        bootstrap: true,
+        priceMultiplier: 48, // 32 gas is the current default price for 1 byte
+        maxBid: 20000,
+        port: 10000,
+        vhosts: 'localhost',
+        publicUrls: '127.0.0.1:10000',
+      })
+      coordinators.push(coord)
+      await coord.start()
+      {
+        const { response } = await callMethod({
+          method: 'l2_blockNumber',
+          jsonrpc: '2.0',
+          url: 'http://127.0.0.1:10000',
+        })
+        assert.equal(response.status, 401)
+      }
+      {
+        const { response } = await callMethod({
+          method: 'l2_blockNumber',
+          jsonrpc: '2.0',
+          url: 'http://localhost:10000',
+        })
+        assert.equal(response.status, 200)
+      }
+    })
+
+    it('should restrict using corsdomain', async () => {
+      const coord = new Coordinator(fullNode, accounts[0].ethAccount, {
+        maxBytes: 131072,
+        bootstrap: true,
+        priceMultiplier: 48, // 32 gas is the current default price for 1 byte
+        maxBid: 20000,
+        port: 10001,
+        vhosts: '*',
+        corsdomain: 'http://test.domain,http://test2.domain',
+        publicUrls: '127.0.0.1:10000',
+      })
+      coordinators.push(coord)
+      await coord.start()
+      {
+        const { response } = await callMethod({
+          method: 'l2_blockNumber',
+          jsonrpc: '2.0',
+          url: 'http://localhost:10001',
+          headers: {
+            'Origin': 'http://someotherdomain.com',
+          }
+        })
+        const access = response.headers.get('access-control-allow-origin')
+        assert.equal(access, '')
+      }
+      {
+        const { response } = await callMethod({
+          method: 'l2_blockNumber',
+          jsonrpc: '2.0',
+          url: 'http://localhost:10001',
+          headers: {
+            'Origin': 'http://test2.domain'
+          }
+        })
+        const access = response.headers.get('access-control-allow-origin')
+        assert.equal(access, 'http://test2.domain')
+      }
+    })
   })
 
   describe('api', () => {

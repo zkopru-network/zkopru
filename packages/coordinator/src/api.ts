@@ -105,9 +105,7 @@ export class CoordinatorApi {
   async stop(): Promise<void> {
     return new Promise(res => {
       if (this.server) {
-        this.server.close(async () => {
-          res()
-        })
+        this.server.close(() => res())
       } else {
         res()
       }
