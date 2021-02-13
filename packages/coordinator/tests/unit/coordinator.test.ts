@@ -147,6 +147,12 @@ describe('coordinator test to run testnet', () => {
       assert(Array.isArray(data.result.erc721s))
     })
 
+    it('should passthrough web3 request', async () => {
+      const { response, data } = await callMethod('eth_blockNumber')
+      assert.equal(response.status, 200)
+      assert(!isNaN(data.result))
+    })
+
     // TODO: get transaction by hash test
   })
 })
