@@ -146,13 +146,10 @@ export class CoordinatorApi {
       )
       res.send(payload)
     } catch (err) {
-      console.log(err.message)
       res.status(400).json({
         id,
         jsonrpc,
-        error: {
-          message: err.message,
-        },
+        message: err.message,
       })
     }
   }

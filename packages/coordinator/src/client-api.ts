@@ -48,6 +48,7 @@ export class ClientApi {
           },
           (err, data) => {
             if (err) return rj(err)
+            if (data.error) return rj(data.error)
             rs(data.result)
           },
         ),

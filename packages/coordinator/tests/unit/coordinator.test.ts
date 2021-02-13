@@ -183,6 +183,20 @@ describe('coordinator test to run testnet', () => {
       assert(!Number.isNaN(data.result))
     })
 
+    it('should passthrough web3 error', async () => {
+      // sending incorrect number of args
+      const { response, data } = await callMethod('eth_getBlockByNumber', 0xfff)
+      assert.equal(response.status, 400)
+      assert(data.message)
+    })
+
+    it('should fail to call unknown method', async () => {
+      const name = 'bad_method_call'
+      const { response, data } = await callMethod(name)
+      assert.equal(response.status, 400)
+      assert.equal(data.message, `Invalid method: "${name}"`)
+    })
+
     // TODO: get transaction by hash test
   })
 })
