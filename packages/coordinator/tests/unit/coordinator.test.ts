@@ -101,10 +101,53 @@ describe('coordinator test to run testnet', () => {
       assert.equal(data.message, 'Invalid jsonrpc version')
     })
 
-    it('should send block number', async () => {
+    it('should get l1 address', async () => {
+      const { response, data } = await callMethod('l1_address')
+      assert.equal(response.status, 200)
+      assert(/0x[a-fA-F0-9]/.test(data.result))
+    })
+
+    it('should get block number', async () => {
       const { data } = await callMethod('l2_blockNumber')
       assert.equal(isNaN(data.result), false)
     })
+
+    it('should get verifying keys', async () => {
+      const { response, data } = await callMethod('l1_getVKs')
+      assert.equal(response.status, 200)
+      assert.equal(typeof data.result, 'object')
+    })
+
+    it('should get genesis block', async () => {
+      const { data } = await callMethod('l2_getBlockByNumber', 0)
+      assert.equal(+data.result.proposalNum, 0)
+    })
+
+    it('should get block by hash', async () => {
+      const { data: { hash } } = await callMethod('l2_getBlockByNumber', 0)
+      const { data } = await callMethod('l2_getBlockByHash', hash)
+      assert.equal(data.hash, hash)
+    })
+
+    it('should accept latest string', async () => {
+      {
+        const { response } = await callMethod('l2_getBlockByNumber', 'latest')
+        assert.equal(response.status, 200)
+      }
+      {
+        const { response } = await callMethod('l2_getBlockByHash', 'latest')
+        assert.equal(response.status, 200)
+      }
+    })
+
+    it('should get registered tokens', async () => {
+      const { response, data } = await callMethod('l2_getRegisteredTokens')
+      assert.equal(response.status, 200)
+      assert(Array.isArray(data.result.erc20s))
+      assert(Array.isArray(data.result.erc721s))
+    })
+
+    // TODO: get transaction by hash test
   })
 })
 
