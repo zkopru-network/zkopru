@@ -33,3 +33,24 @@ jobs:
           command: |
             docker-compose -f dockerfiles/docker-compose.yml build contracts
             yarn test --scope=@zkopru/coordinator
+          background: true
+      - run:
+          name: Contract Tests
+          command: yarn test --scope=@zkopru/contracts
+          background: true
+      - run:
+          name: Prisma Tests
+          command: yarn test --scope=@zkopru/contracts
+          background: true
+      - run:
+          name: Account Tests
+          command: yarn test --scope=@zkopru/account
+          background: true
+      - run:
+          name: Tree Tests
+          command: yarn test --scope=@zkopru/tree
+          background: true
+      - run:
+          name: BabyJubJub Tests
+          command: yarn test --scope=@zkopru/babyjubjub
+          background: true
