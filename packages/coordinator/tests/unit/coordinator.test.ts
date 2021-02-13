@@ -92,20 +92,46 @@ describe('coordinator test to run testnet', () => {
   })
 
   describe('api', () => {
-    it('should send block number', async () => {
-      const res = await fetch('http://localhost:9999', {
-      	headers: {
-          'Content-Type': 'application/json',
-      	},
-        body: JSON.stringify({
-          id: 'test',
-      	  method: 'l2_blockNumber',
-      	  jsonrpc: '2.0',
-        }),
-      	method: 'POST',
+    it('should fail with invalid rpc version', async () => {
+      const { response, data } = await callMethod({
+        method: 'l2_blockNumber',
+        jsonrpc: '1.0',
       })
-      const data = await res.json()
+      assert.equal(response.status, 400)
+      assert.equal(data.message, 'Invalid jsonrpc version')
+    })
+
+    it('should send block number', async () => {
+      const { data } = await callMethod('l2_blockNumber')
       assert.equal(isNaN(data.result), false)
     })
   })
 })
+
+async function callMethod(
+  _method: string | { method: string, jsonrpc: string },
+  ...params: any[]
+) {
+  let jsonrpc = '2.0'
+  let method = _method
+  if (typeof _method === 'object') {
+    method = _method.method
+    jsonrpc = _method.jsonrpc
+  }
+  const res = await fetch('http://localhost:9999', {
+  	headers: {
+      'Content-Type': 'application/json',
+  	},
+    body: JSON.stringify({
+      id: Math.floor(Math.random() * 10000).toString(),
+  	  jsonrpc,
+  	  method,
+      params,
+    }),
+  	method: 'POST',
+  })
+  return {
+    data: await res.json(),
+    response: res,
+  }
+}
