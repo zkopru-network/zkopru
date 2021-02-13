@@ -6,12 +6,40 @@ import Web3 from 'web3'
 import { WebsocketProvider } from 'web3-core'
 import { Container } from 'node-docker-api/lib/container'
 import { FullNode } from '@zkopru/core'
+import assert from 'assert'
+import fetch from 'node-fetch'
 import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
 import { readFromContainer, sleep, pullOrBuildAndGetContainer } from '~utils'
 import { MockupDB, DB } from '~prisma'
-import assert from 'assert'
-import fetch from 'node-fetch'
+
+async function callMethod(
+  _method: string | { method: string; jsonrpc: string },
+  ...params: any[]
+) {
+  let jsonrpc = '2.0'
+  let method = _method
+  if (typeof _method === 'object') {
+    method = _method.method
+    jsonrpc = _method.jsonrpc
+  }
+  const res = await fetch('http://localhost:9999', {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      id: Math.floor(Math.random() * 10000).toString(),
+      jsonrpc,
+      method,
+      params,
+    }),
+    method: 'POST',
+  })
+  return {
+    data: await res.json(),
+    response: res,
+  }
+}
 
 describe('coordinator test to run testnet', () => {
   const accounts: ZkAccount[] = [
@@ -83,8 +111,8 @@ describe('coordinator test to run testnet', () => {
         priceMultiplier: 48, // 32 gas is the current default price for 1 byte
         maxBid: 20000,
         port: 9999,
-      	vhosts: '*',
-      	publicUrls: '127.0.0.1:9999',
+        vhosts: '*',
+        publicUrls: '127.0.0.1:9999',
       })
       expect(coordinator).toBeDefined()
       await coordinator.start()
@@ -109,7 +137,7 @@ describe('coordinator test to run testnet', () => {
 
     it('should get block number', async () => {
       const { data } = await callMethod('l2_blockNumber')
-      assert.equal(isNaN(data.result), false)
+      assert.equal(Number.isNaN(data.result), false)
     })
 
     it('should get verifying keys', async () => {
@@ -124,7 +152,9 @@ describe('coordinator test to run testnet', () => {
     })
 
     it('should get block by hash', async () => {
-      const { data: { hash } } = await callMethod('l2_getBlockByNumber', 0)
+      const {
+        data: { hash },
+      } = await callMethod('l2_getBlockByNumber', 0)
       const { data } = await callMethod('l2_getBlockByHash', hash)
       assert.equal(data.hash, hash)
     })
@@ -150,37 +180,9 @@ describe('coordinator test to run testnet', () => {
     it('should passthrough web3 request', async () => {
       const { response, data } = await callMethod('eth_blockNumber')
       assert.equal(response.status, 200)
-      assert(!isNaN(data.result))
+      assert(!Number.isNaN(data.result))
     })
 
     // TODO: get transaction by hash test
   })
 })
-
-async function callMethod(
-  _method: string | { method: string, jsonrpc: string },
-  ...params: any[]
-) {
-  let jsonrpc = '2.0'
-  let method = _method
-  if (typeof _method === 'object') {
-    method = _method.method
-    jsonrpc = _method.jsonrpc
-  }
-  const res = await fetch('http://localhost:9999', {
-  	headers: {
-      'Content-Type': 'application/json',
-  	},
-    body: JSON.stringify({
-      id: Math.floor(Math.random() * 10000).toString(),
-  	  jsonrpc,
-  	  method,
-      params,
-    }),
-  	method: 'POST',
-  })
-  return {
-    data: await res.json(),
-    response: res,
-  }
-}
