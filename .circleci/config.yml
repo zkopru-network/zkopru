@@ -2,9 +2,17 @@ version: 2.1
 workflows:
   test_app:
     jobs:
-      - eval
+      - install
+      - build
+      - lint
+      - test_coordinator
+      - test_contracts
+      - test_prisma
+      - test_accounts
+      - test_tree
+      - test_babyjubjub
 jobs:
-  eval:
+  install:
     machine:
       image: ubuntu-2004:202010-01
     steps:
@@ -15,6 +23,12 @@ jobs:
       - run:
           name: Install
           command: yarn
+  build:
+    machine:
+      image: ubuntu-2004:202010-01
+    requires:
+      - install
+    steps:
       - run:
           name: Build Prisma
           command: yarn build:prisma
@@ -24,33 +38,69 @@ jobs:
       - run:
           name: Build TS
           command: yarn build:ts:serial
+  lint:
+    machine:
+      image: ubuntu-2004:202010-01
+    requires:
+      - build
+    steps:
       - run:
           name: Lint
           command: yarn lint .
           background: true
+  test_coordinator:
+    machine:
+      image: ubuntu-2004:202010-01
+    requires:
+      - build
+    steps:
       - run:
           name: Coordinator Tests
           command: |
             docker-compose -f dockerfiles/docker-compose.yml build contracts
             yarn test --scope=@zkopru/coordinator
-          background: true
+  test_contracts:
+    machine:
+      image: ubuntu-2004:202010-01
+    requires:
+      - build
+    steps:
       - run:
           name: Contract Tests
           command: yarn test --scope=@zkopru/contracts
-          background: true
+  test_prisma:
+    machine:
+      image: ubuntu-2004:202010-01
+    requires:
+      - build
+    steps:
       - run:
           name: Prisma Tests
           command: yarn test --scope=@zkopru/contracts
-          background: true
+  test_accounts:
+    machine:
+      image: ubuntu-2004:202010-01
+    requires:
+      - build
+    steps:
       - run:
           name: Account Tests
           command: yarn test --scope=@zkopru/account
-          background: true
+  test_tree:
+    machine:
+      image: ubuntu-2004:202010-01
+    requires:
+      - build
+    steps:
       - run:
           name: Tree Tests
           command: yarn test --scope=@zkopru/tree
-          background: true
+  test_babyjubjub:
+    machine:
+      image: ubuntu-2004:202010-01
+    requires:
+      - build
+    steps:
       - run:
           name: BabyJubJub Tests
           command: yarn test --scope=@zkopru/babyjubjub
-          background: true
