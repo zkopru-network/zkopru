@@ -2,10 +2,7 @@ version: 2.1
 workflows:
   test_app:
     jobs:
-      - install
-      - build:
-          requires:
-            - install
+      - build
       - lint:
           requires:
             - build
@@ -28,7 +25,7 @@ workflows:
           requires:
             - build
 jobs:
-  install:
+  build:
     machine:
       image: ubuntu-2004:202010-01
     steps:
@@ -39,15 +36,6 @@ jobs:
       - run:
           name: Install
           command: yarn
-      - persist_to_workspace:
-          root: ~/
-          paths: project
-  build:
-    machine:
-      image: ubuntu-2004:202010-01
-    steps:
-      - attach_workspace:
-          at: ~/
       - run:
           name: Build Prisma
           command: yarn build:prisma
@@ -57,6 +45,9 @@ jobs:
       - run:
           name: Build TS
           command: yarn build:ts:serial
+      - persist_to_workspace:
+          root: ~/
+          paths: project
   lint:
     machine:
       image: ubuntu-2004:202010-01
