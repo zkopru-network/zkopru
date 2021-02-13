@@ -27,3 +27,9 @@ jobs:
       - run:
           name: Lint
           command: yarn lint .
+      - run:
+          name: Build Contracts Image
+          command: docker-compose -f dockerfiles/docker-compose.yml build contracts
+      - run:
+          name: Coordinator Tests
+          command: yarn test --scope=@zkopru/coordinator
