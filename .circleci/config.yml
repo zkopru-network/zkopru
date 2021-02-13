@@ -2,9 +2,9 @@ version: 2.1
 workflows:
   test_app:
     jobs:
-      - build
+      - eval
 jobs:
-  build:
+  eval:
     machine:
       image: ubuntu-2004:202010-01
     steps:
@@ -27,9 +27,9 @@ jobs:
       - run:
           name: Lint
           command: yarn lint .
-      - run:
-          name: Build Contracts Image
-          command: docker-compose -f dockerfiles/docker-compose.yml build contracts
+          background: true
       - run:
           name: Coordinator Tests
-          command: yarn test --scope=@zkopru/coordinator
+          command: |
+            docker-compose -f dockerfiles/docker-compose.yml build contracts
+            yarn test --scope=@zkopru/coordinator
