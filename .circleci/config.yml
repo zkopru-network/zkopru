@@ -86,6 +86,8 @@ jobs:
             yarn setup
             yarn build-keys
             yarn postbuild-keys
+            cd ../dataset
+            yarn load-keys
       - run:
           name: Contract Tests
           command: yarn test --scope=@zkopru/contracts
