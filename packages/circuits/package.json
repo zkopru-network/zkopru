@@ -23,7 +23,7 @@
     "phase2:pull": "node dist/pull-keys.js",
     "phase2:build": "node dist/build-keys.js",
     "build-keys": "node dist/build-keys.js",
-    "postbuild-keys": "copyfiles -f keys/vks/* ../contracts/keys/vks",
+    "postbuild-keys": "copyfiles -E keys/**/* ../contracts/test-cases",
     "setup": "yarn phase1:pull && yarn phase2:pull",
     "circuit": "./script/compile_circuits.sh", 
     "build:circuit": "yarn phase1:pull && yarn circuit && yarn phase2:build",
