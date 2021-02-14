@@ -12,9 +12,9 @@ workflows:
       - test_contracts:
           requires:
             - build
-      # - test_prisma:
-      #     requires:
-      #       - build
+      - test_prisma:
+          requires:
+            - build
       - test_accounts:
           requires:
             - build
@@ -86,15 +86,15 @@ jobs:
       - run:
           name: Contract Tests
           command: yarn test --scope=@zkopru/contracts
-  # test_prisma:
-  #   machine:
-  #     image: ubuntu-2004:202010-01
-  #   steps:
-  #     - attach_workspace:
-  #         at: ~/
-  #     - run:
-  #         name: Prisma Tests
-  #         command: yarn test --scope=@zkopru/contracts
+  test_prisma:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Prisma Tests
+          command: yarn test --scope=@zkopru/prisma
   test_accounts:
     machine:
       image: ubuntu-2004:202010-01
