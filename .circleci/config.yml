@@ -9,9 +9,9 @@ workflows:
       - test_coordinator:
           requires:
             - build
-      # - test_contracts:
-      #     requires:
-      #       - build
+      - test_contracts:
+          requires:
+            - build
       # - test_prisma:
       #     requires:
       #       - build
@@ -68,15 +68,24 @@ jobs:
           command: |
             docker-compose -f dockerfiles/docker-compose.yml build contracts
             yarn test --scope=@zkopru/coordinator
-  # test_contracts:
-  #   machine:
-  #     image: ubuntu-2004:202010-01
-  #   steps:
-  #     - attach_workspace:
-  #         at: ~/
-  #     - run:
-  #         name: Contract Tests
-  #         command: yarn test --scope=@zkopru/contracts
+  test_contracts:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Setup
+          command: |
+            docker pull jchancehud/zkopru:circuits
+            docker tag jchancehud/zkopru:circuits zkoprunet/circuits:dev
+            cd packages/circuits
+            yarn setup
+            yarn build-keys
+            yarn postbuild-keys
+      - run:
+          name: Contract Tests
+          command: yarn test --scope=@zkopru/contracts
   # test_prisma:
   #   machine:
   #     image: ubuntu-2004:202010-01
@@ -95,6 +104,23 @@ jobs:
       - run:
           name: Account Tests
           command: yarn test --scope=@zkopru/account
+  # test_circuits:
+  #   machine:
+  #     image: ubuntu-2004:202010-01
+  #   steps:
+  #     - attach_workspace:
+  #       at: ~/
+  #     - run:
+  #         name: Setup
+  #         command: |
+  #           docker pull jchancehud/zkopru:circuits
+  #           docker tag jchancehud/zkopru:circuits zkoprunet/circuits:dev
+  #           cd packages/circuits
+  #           yarn setup
+  #           yarn build-keys
+  #     - run:
+  #         name: Circuit Tests
+  #         command: yarn test --scope=@zkopru/circuits
   test_tree:
     machine:
       image: ubuntu-2004:202010-01
