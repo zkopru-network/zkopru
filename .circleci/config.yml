@@ -24,6 +24,9 @@ workflows:
       - test_babyjubjub:
           requires:
             - build
+      - test_dataset:
+          requires:
+            - build
 jobs:
   build:
     machine:
@@ -86,6 +89,22 @@ jobs:
       - run:
           name: Contract Tests
           command: yarn test --scope=@zkopru/contracts
+  test_dataset:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Setup
+          command: |
+            docker pull jchancehud/zkopru:circuits
+            docker tag jchancehud/zkopru:circuits zkoprunet/circuits:dev
+            cd packages/dataset
+            yarn load-keys
+      - run:
+          name: Dataset Tests
+          command: yarn test --scope=@zkopru/dataset
   test_prisma:
     machine:
       image: ubuntu-2004:202010-01
