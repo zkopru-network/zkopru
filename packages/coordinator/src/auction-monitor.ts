@@ -154,7 +154,7 @@ export class AuctionMonitor {
       .events.NewHighBid()
       .on('connected', subId => {
         logger.info(
-          `auction-monitor.js: NewHighBid listner is connected. Id: ${subId}`,
+          `auction-monitor.js: NewHighBid listener is connected. Id: ${subId}`,
         )
       })
       .on('data', async data => {
@@ -182,7 +182,7 @@ export class AuctionMonitor {
       .events.UrlUpdate()
       .on('connected', subId => {
         logger.info(
-          `auction-monitor.js: UrlUpdate listner is connected. Id: ${subId}`,
+          `auction-monitor.js: UrlUpdate listener is connected. Id: ${subId}`,
         )
       })
       .on('data', async (data: any) => {

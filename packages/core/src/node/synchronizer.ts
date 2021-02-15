@@ -303,7 +303,7 @@ export class Synchronizer extends EventEmitter {
       .Deposit({ fromBlock })
       .on('connected', subId => {
         logger.info(
-          `synchronizer.js: Deposit listner is connected. Id: ${subId}`,
+          `synchronizer.js: Deposit listener is connected. Id: ${subId}`,
         )
       })
       .on('data', async event => {
@@ -349,7 +349,7 @@ export class Synchronizer extends EventEmitter {
       .MassDepositCommit({ fromBlock })
       .on('connected', subId => {
         logger.info(
-          `synchronizer.js: MassDepositCommit listner is connected. Id: ${subId}`,
+          `synchronizer.js: MassDepositCommit listener is connected. Id: ${subId}`,
         )
       })
       .on('data', async event => {
@@ -404,7 +404,7 @@ export class Synchronizer extends EventEmitter {
       .NewProposal({ fromBlock })
       .on('connected', subId => {
         logger.info(
-          `synchronizer.js: NewProposal listner is connected. Id: ${subId}`,
+          `synchronizer.js: NewProposal listener is connected. Id: ${subId}`,
         )
       })
       .on('data', async event => {
@@ -450,7 +450,7 @@ export class Synchronizer extends EventEmitter {
     this.slashSubscriber = this.l1Contract.challenger.events
       .Slash({ fromBlock })
       .on('connected', subId => {
-        logger.info(`synchronizer.js: Slash listner is connected. Id: ${subId}`)
+        logger.info(`synchronizer.js: Slash listener is connected. Id: ${subId}`)
       })
       .on('data', async event => {
         const { returnValues, blockNumber, transactionHash } = event
@@ -510,7 +510,7 @@ export class Synchronizer extends EventEmitter {
       .Finalized({ fromBlock })
       .on('connected', subId => {
         logger.info(
-          `synchronizer.js: Finalization listner is connected. Id: ${subId}`,
+          `synchronizer.js: Finalization listener is connected. Id: ${subId}`,
         )
       })
       .on('data', async event => {
