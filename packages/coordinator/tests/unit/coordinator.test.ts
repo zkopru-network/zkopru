@@ -286,6 +286,6 @@ describe('coordinator test to run testnet', () => {
       assert.equal(data.message, `Invalid method: "${name}"`)
     })
 
-    // TODO: get transaction by hash test
+    it.todo('should return a transaction by hash')
   })
 })
