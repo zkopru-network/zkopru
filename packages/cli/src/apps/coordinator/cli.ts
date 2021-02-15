@@ -10,6 +10,8 @@ import { getCoordinator } from './configurator'
 import { getExampleConfig } from './example-config'
 import { CoordinatorDashboard } from './app'
 import { DEFAULT } from './config'
+import prettier from 'pino-pretty'
+import { Transform } from 'stream'
 
 const main = async () => {
   const writeStream = fs.createWriteStream('./COORDINATOR_LOG')
@@ -57,7 +59,17 @@ const main = async () => {
   }
   const coordinator = await getCoordinator(config)
   if (config.daemon) {
-    logStream.addStream(process.stdout)
+    const pretty = prettier({
+      translateTime: false,
+      colorize: true,
+    })
+    const prettyStream = new Transform({
+      transform: (chunk, _, cb) => {
+        cb(null, pretty(JSON.parse(chunk.toString())))
+      },
+    })
+    prettyStream.pipe(process.stdout)
+    logStream.addStream(prettyStream)
     logger.info('Running non-interactive mode')
     if (!coordinator) throw Error('Failed to load coordinator')
     await coordinator.start()
