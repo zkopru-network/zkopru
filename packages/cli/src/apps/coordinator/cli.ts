@@ -4,14 +4,14 @@
 import fs from 'fs-extra'
 import { logStream, logger, makePathAbsolute } from '@zkopru/utils'
 import path from 'path'
+import prettier from 'pino-pretty'
+import { Transform } from 'stream'
 import { argv } from './parser'
 import { Config } from './configurator/configurator'
 import { getCoordinator } from './configurator'
 import { getExampleConfig } from './example-config'
 import { CoordinatorDashboard } from './app'
 import { DEFAULT } from './config'
-import prettier from 'pino-pretty'
-import { Transform } from 'stream'
 
 const main = async () => {
   const writeStream = fs.createWriteStream('./COORDINATOR_LOG')

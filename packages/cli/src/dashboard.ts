@@ -152,8 +152,7 @@ export class Dashboard<T, B> {
     this.logStream.addStream(
       new Writable({
         write: (chunk, _, cb) => {
-          this.logBox.log(
-            this.prettier(JSON.parse(chunk.toString())).trim())
+          this.logBox.log(this.prettier(JSON.parse(chunk.toString())).trim())
           cb()
         },
       }),
