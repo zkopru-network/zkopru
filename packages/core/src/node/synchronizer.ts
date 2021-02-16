@@ -450,7 +450,9 @@ export class Synchronizer extends EventEmitter {
     this.slashSubscriber = this.l1Contract.challenger.events
       .Slash({ fromBlock })
       .on('connected', subId => {
-        logger.info(`synchronizer.js: Slash listener is connected. Id: ${subId}`)
+        logger.info(
+          `synchronizer.js: Slash listener is connected. Id: ${subId}`,
+        )
       })
       .on('data', async event => {
         const { returnValues, blockNumber, transactionHash } = event
