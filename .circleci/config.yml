@@ -27,6 +27,9 @@ workflows:
       - test_dataset:
           requires:
             - build
+      - test_client:
+          requires:
+            - build
 jobs:
   build:
     machine:
@@ -151,6 +154,15 @@ jobs:
       - run:
           name: Tree Tests
           command: yarn test --scope=@zkopru/tree
+  test_client:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Client Tests
+          command: yarn test --scope=@zkopru/client
   test_babyjubjub:
     machine:
       image: ubuntu-2004:202010-01
