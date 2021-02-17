@@ -1,3 +1,4 @@
+// https://github.com/typescript-eslint/typescript-eslint/issues/1436
 // eslint-disable-next-line prettier/prettier
 import type { RequestInfo, RequestInit, Response } from 'node-fetch'
 
