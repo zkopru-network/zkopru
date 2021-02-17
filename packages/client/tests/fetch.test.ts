@@ -1,14 +1,20 @@
+/* eslint-disable jest/no-hooks */
 import assert from 'assert'
 import Zkopru from '../src'
 
-beforeAll(() => {
-  global.fetch = jest.fn(async () => ({
-    ok: true,
-    json: async () => ({ result: 'mocked' }),
-  }) as any)
-})
+describe('mocked fetch', () => {
+  beforeAll(() => {
+    // eslint-disable-next-line jest/prefer-spy-on
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: async () => ({ result: 'mocked' }),
+      } as any),
+    )
+  })
 
-test('should use mocked fetch implementation', async () => {
-  const zkopru = new Zkopru('http://localhost')
-  assert.equal(await zkopru.rpc.getAddress(), 'mocked')
+  it('should use mocked fetch implementation', async () => {
+    const zkopru = new Zkopru('http://localhost')
+    assert.equal(await zkopru.rpc.getAddress(), 'mocked')
+  })
 })

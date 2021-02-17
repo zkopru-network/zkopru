@@ -3,8 +3,9 @@
 import type { RequestInfo, RequestInit, Response } from 'node-fetch'
 
 export default ((...args) => {
-  // eslint-disable-next-line global-require
   return typeof fetch === 'undefined' ?
+    // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires
     require('node-fetch')(...args) :
+    // eslint-disable-next-line no-undef
     (fetch as any)(...args)
 }) as (url: RequestInfo, init?: RequestInit) => Promise<Response>
