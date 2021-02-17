@@ -1,5 +1,5 @@
-import fetch from 'node-fetch'
 import { RpcType, RpcConfig, Block, Tx, Registry } from './types'
+import fetch from './fetch'
 
 export default class RpcClient {
   config: RpcConfig
@@ -42,6 +42,9 @@ export default class RpcClient {
     if (this.config.type === RpcType.http) {
       const response = await fetch(this.config.url, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           jsonrpc: '2.0',
           id: `${Math.floor(Math.random() * 10000)}`,
@@ -50,6 +53,9 @@ export default class RpcClient {
         }),
       })
       const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.message || 'RPC http error')
+      }
       return data
     }
     throw new Error(`Unsupported rpc type`)
