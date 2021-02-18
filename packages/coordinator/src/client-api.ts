@@ -14,7 +14,9 @@ export class ClientApi {
     this.rpcMethods = {
       l1_address: this.getAddress.bind(this),
       l1_getVKs: this.getVKs.bind(this),
+      l2_blockCount: this.blockCount.bind(this),
       l2_blockNumber: this.blockNumber.bind(this),
+      l2_getBlockByIndex: this.getBlockByIndex.bind(this),
       l2_getBlockByNumber: this.getBlockByNumber.bind(this),
       l2_getBlockByHash: this.getBlockByHash.bind(this),
       l2_getTransactionByHash: this.getTransactionByHash.bind(this),
@@ -65,7 +67,7 @@ export class ClientApi {
     return this.context.node.layer1.getVKs()
   }
 
-  private async blockNumber(): Promise<number> {
+  private async blockCount(): Promise<number> {
     const latestBlockHash = await this.context.node.layer2.latestBlock()
     const latestBlock = await this.context.node.layer2.getProposal(
       latestBlockHash,
@@ -77,7 +79,25 @@ export class ClientApi {
     return latestBlock.proposalNum
   }
 
-  private async getBlockByNumber(_blockNumber: number | string) {
+  private async blockNumber(): Promise<number> {
+    if (!this.context.node.synchronizer.isSynced()) {
+      throw new Error(`Node is not synced`)
+    }
+    const latestBlockHash = await this.context.node.layer2.latestBlock()
+    const latestBlock = await this.context.node.layer2.getProposal(
+      latestBlockHash,
+    )
+    if (!latestBlock) throw new Error(`Unable to find hash: ${latestBlockHash}`)
+    if (typeof latestBlock.canonicalNum !== 'number') {
+      throw new Error('Latest block does not include canonical number')
+    }
+    return latestBlock.canonicalNum
+  }
+
+  private async getBlockByNumber(
+    _blockNumber: number | string,
+    includeUncles = false,
+  ) {
     let blockNumber = +_blockNumber
     if (_blockNumber === 'latest') {
       blockNumber = await this.blockNumber()
@@ -85,8 +105,51 @@ export class ClientApi {
     if (Number.isNaN(blockNumber)) {
       throw new Error('Supplied block number is not a number')
     }
+    const [proposal, uncleCount, uncles] = await Promise.all([
+      this.context.node.layer2.getProposalByCanonicalNumber(blockNumber, false),
+      includeUncles
+        ? Promise.resolve(0)
+        : this.context.node.db.read(prisma =>
+            prisma.proposal.count({
+              where: { canonicalNum: blockNumber, isUncle: true },
+            }),
+          ),
+      !includeUncles
+        ? Promise.resolve([])
+        : this.context.node.db.read(prisma =>
+            prisma.proposal.findMany({
+              where: { canonicalNum: blockNumber, isUncle: true },
+            }),
+          ),
+    ])
+    if (!proposal) throw new Error('Unable to find block')
+    const blockFromProposal = p => ({
+      ...p,
+      ...(p.proposalData ? Block.fromTx(JSON.parse(p.proposalData)) : {}),
+      proposalData: undefined,
+    })
+    return {
+      ...blockFromProposal(proposal),
+      ...(includeUncles
+        ? {
+            uncles: (uncles || []).map(p => blockFromProposal(p)),
+          }
+        : {
+            uncleCount,
+          }),
+    }
+  }
+
+  private async getBlockByIndex(_blockIndex: number | string) {
+    let blockIndex = +_blockIndex
+    if (_blockIndex === 'latest') {
+      blockIndex = await this.blockCount()
+    }
+    if (Number.isNaN(blockIndex)) {
+      throw new Error('Supplied block index is not a number')
+    }
     const proposal = await this.context.node.layer2.getProposalByNumber(
-      blockNumber,
+      blockIndex,
       false,
     )
     if (!proposal) throw new Error('Unable to find block')
