@@ -6,7 +6,7 @@ import { logger } from '@zkopru/utils'
 import { L1Contract } from '../context/layer1'
 import { L2Chain } from '../context/layer2'
 import { BootstrapHelper } from './bootstrap'
-import { Synchronizer } from './synchronizer'
+import { Synchronizer, NetworkStatus } from './synchronizer'
 import { Tracker } from './tracker'
 import { BlockProcessor } from './block-processor'
 import { Watchdog } from './watchdog'
@@ -83,9 +83,17 @@ export class ZkopruNode {
         const result = await this.watchdog?.slash(slash.tx)
         logger.info(`slash result: ${result}`)
       })
-      this.blockProcessor.on('processed', proposal =>
-        this.synchronizer.setLatestProcessed(proposal.proposalNum),
-      )
+      this.blockProcessor.on('processed', async proposal => {
+        this.synchronizer.setLatestProcessed(proposal.proposalNum)
+        if (this.synchronizer.status === NetworkStatus.FULLY_SYNCED) {
+          await this.calcCanonicalBlockHeights()
+        }
+      })
+      this.synchronizer.on('status', async status => {
+        if (status === NetworkStatus.FULLY_SYNCED) {
+          await this.calcCanonicalBlockHeights()
+        }
+      })
     } else {
       logger.info('already on syncing')
     }
@@ -149,5 +157,75 @@ export class ZkopruNode {
     })
     await grove.init()
     return new L2Chain(db, grove, config, vks)
+  }
+
+  // idempotently calculate canonical numbers
+  private async calcCanonicalBlockHeights() {
+    // find earliest block with no canonical num
+    const startBlock = await this.db.read(prisma =>
+      prisma.proposal.findMany({
+        where: { canonicalNum: null },
+        orderBy: { proposalNum: 'asc' },
+        take: 1,
+      }),
+    )
+    if (startBlock.length === 0) {
+      // have canonical numbers for all blocks
+      return
+    }
+    // The proposal to start at
+    const [{ proposalNum }] = startBlock
+    if (proposalNum === null) {
+      throw new Error('Proposal number is null')
+    }
+    const blockHeight = await this.db.read(prisma => prisma.proposal.count({}))
+    for (let x = proposalNum; x < blockHeight; x += 1) {
+      const proposals = await this.db.read(prisma =>
+        prisma.proposal.findMany({
+          where: { proposalNum: x },
+        }),
+      )
+      if (proposals.length !== 1) {
+        throw new Error(`Did not find one proposal for number: ${x}`)
+      }
+      const [proposal] = proposals
+      const { hash } = proposal
+      if (x === 0) {
+        await this.db.write(prisma =>
+          prisma.proposal.update({
+            where: { hash },
+            data: { canonicalNum: 0 },
+          }),
+        )
+        // eslint-disable-next-line no-continue
+        continue
+      }
+      const header = await this.db.read(prisma =>
+        prisma.header.findOne({
+          where: { hash },
+        }),
+      )
+      if (!header) {
+        throw new Error(`Unable to find header for proposal ${proposal.hash}`)
+      }
+      const parent = await this.db.read(prisma =>
+        prisma.proposal.findOne({
+          where: { hash: header.parentBlock.toString() },
+        }),
+      )
+      if (!parent) {
+        throw new Error(`Unable to find parent proposal`)
+      }
+      if (parent.canonicalNum === null) {
+        throw new Error(`Expected canonicalNum to exist!`)
+      }
+      // console.log(`canonical num: ${parent.canonicalNum+1}`)
+      await this.db.write(prisma =>
+        prisma.proposal.update({
+          where: { hash },
+          data: { canonicalNum: (parent.canonicalNum as number) + 1 },
+        }),
+      )
+    }
   }
 }
