@@ -113,6 +113,21 @@ export class L2Chain {
     return proposal
   }
 
+  async getProposalByCanonicalNumber(
+    canonicalNum: number,
+    includeBlock = true,
+  ) {
+    const proposals = await this.db.read(prisma =>
+      prisma.proposal.findMany({
+        where: { canonicalNum },
+        include: { block: includeBlock },
+      }),
+    )
+    if (proposals.length === 0) return null
+    const [proposal] = proposals
+    return proposal
+  }
+
   async getProposal(hash: Bytes32, includeBlock = true) {
     const proposal = await this.db.read(prisma =>
       prisma.proposal.findOne({
