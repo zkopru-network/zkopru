@@ -2,7 +2,7 @@
 
 CHANGED=$(git diff schema.prisma)
 
-if [[ "$CHANGED" ]]; then
+if [[ "$CHANGED" || ! -f mockup.db ]]; then
     mkdir -p tmp
     cp -f prisma/base.prisma tmp/ && rm -f mockup.db
     prisma migrate save -c -n \"mockup\" --experimental --schema tmp/base.prisma && prisma migrate up --experimental --schema tmp/base.prisma
