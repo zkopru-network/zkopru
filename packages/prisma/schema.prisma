@@ -46,6 +46,7 @@ model Tracker {
 model Proposal {
   hash String @id
   proposalNum Int?
+  canonicalNum Int?
   proposedAt Int?
   proposalTx String? // tx hash
   proposalData String? // stringified json
