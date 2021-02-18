@@ -258,7 +258,7 @@ describe('coordinator test to run testnet', () => {
     it('should get block by index', async () => {
       const { response, data } = await callMethod('l2_getBlockByIndex', 0)
       assert.equal(response.status, 200)
-      assert.equal(data.proposalNum, 0)
+      assert.equal(data.result.proposalNum, 0)
     })
 
     it('should get block by canonical number', async () => {
@@ -269,8 +269,8 @@ describe('coordinator test to run testnet', () => {
           false,
         )
         assert.equal(response.status, 200)
-        assert.equal(data.proposalNum, 0)
-        assert.equal(data.uncleCount, '0x0')
+        assert.equal(data.result.proposalNum, 0)
+        assert.equal(data.result.uncleCount, '0x0')
       }
       {
         const { response, data } = await callMethod(
@@ -279,8 +279,8 @@ describe('coordinator test to run testnet', () => {
           true,
         )
         assert.equal(response.status, 200)
-        assert.equal(data.proposalNum, 0)
-        assert(Array.isArray(data.uncles))
+        assert.equal(data.result.proposalNum, 0)
+        assert(Array.isArray(data.result.uncles))
       }
     })
 
