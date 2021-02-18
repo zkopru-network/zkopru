@@ -224,8 +224,13 @@ describe('coordinator test to run testnet', () => {
       assert(/0x[a-fA-F0-9]/.test(data.result))
     })
 
-    it('should get block number', async () => {
+    it('should get canonical block number', async () => {
       const { data } = await callMethod('l2_blockNumber')
+      assert.equal(Number.isNaN(data.result), false)
+    })
+
+    it('should get block count', async () => {
+      const { data } = await callMethod('l2_blockCount')
       assert.equal(Number.isNaN(data.result), false)
     })
 
@@ -233,7 +238,7 @@ describe('coordinator test to run testnet', () => {
       const { response, data } = await callMethod('l1_getVKs')
       assert.equal(response.status, 200)
       assert.equal(typeof data.result, 'object')
-    })
+    }, 15000)
 
     it('should get genesis block', async () => {
       const { data } = await callMethod('l2_getBlockByNumber', 0)
@@ -241,11 +246,42 @@ describe('coordinator test to run testnet', () => {
     })
 
     it('should get block by hash', async () => {
+      // first get a hash
       const {
         data: { hash },
       } = await callMethod('l2_getBlockByNumber', 0)
+      // then retrieve the block with that hash
       const { data } = await callMethod('l2_getBlockByHash', hash)
       assert.equal(data.hash, hash)
+    })
+
+    it('should get block by index', async () => {
+      const { response, data } = await callMethod('l2_getBlockByIndex', 0)
+      assert.equal(response.status, 200)
+      assert.equal(data.proposalNum, 0)
+    })
+
+    it('should get block by canonical number', async () => {
+      {
+        const { response, data } = await callMethod(
+          'l2_getBlockByNumber',
+          0,
+          false,
+        )
+        assert.equal(response.status, 200)
+        assert.equal(data.proposalNum, 0)
+        assert.equal(data.uncleCount, '0x0')
+      }
+      {
+        const { response, data } = await callMethod(
+          'l2_getBlockByNumber',
+          0,
+          true,
+        )
+        assert.equal(response.status, 200)
+        assert.equal(data.proposalNum, 0)
+        assert(Array.isArray(data.uncles))
+      }
     })
 
     it('should accept latest string', async () => {
@@ -255,6 +291,10 @@ describe('coordinator test to run testnet', () => {
       }
       {
         const { response } = await callMethod('l2_getBlockByHash', 'latest')
+        assert.equal(response.status, 200)
+      }
+      {
+        const { response } = await callMethod('l2_getBlockByIndex', 'latest')
         assert.equal(response.status, 200)
       }
     })
