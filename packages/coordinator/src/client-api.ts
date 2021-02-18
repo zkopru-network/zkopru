@@ -14,6 +14,7 @@ export class ClientApi {
     this.rpcMethods = {
       l1_address: this.getAddress.bind(this),
       l1_getVKs: this.getVKs.bind(this),
+      l2_syncing: this.syncing.bind(this),
       l2_blockCount: this.blockCount.bind(this),
       l2_blockNumber: this.blockNumber.bind(this),
       l2_getBlockByIndex: this.getBlockByIndex.bind(this),
@@ -57,6 +58,10 @@ export class ClientApi {
       )
     }
     throw new Error(`Invalid method: "${method}"`)
+  }
+
+  private async syncing() {
+    return !this.context.node.synchronizer.isSynced()
   }
 
   private async getAddress() {

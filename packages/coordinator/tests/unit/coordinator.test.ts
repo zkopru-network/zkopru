@@ -224,6 +224,12 @@ describe('coordinator test to run testnet', () => {
       assert(/0x[a-fA-F0-9]/.test(data.result))
     })
 
+    it('should determine if syncing', async () => {
+      const { response, data } = await callMethod('l2_syncing')
+      assert.equal(response.status, 200)
+      assert.equal(typeof data.result, 'boolean')
+    })
+
     it('should get canonical block number', async () => {
       const { data } = await callMethod('l2_blockNumber')
       assert.equal(Number.isNaN(data.result), false)
