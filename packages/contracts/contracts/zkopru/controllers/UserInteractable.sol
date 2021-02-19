@@ -47,7 +47,7 @@ contract UserInteractable is Storage {
      * @param token Token address of ERC20 or ERC721. It can be undefined.
      * @param amount Amount of ERC20 when the token param is defined and it is an ERC20
      * @param nft NFT id when the token param is defined and it is an ERC721
-     * @param fee Amount of fee to give to the caller. This can be used when the withdrawer account has no ETH.
+     * @param callerFee Amount of fee to give to the caller. This can be used when the withdrawer account has no ETH.
      * @param blockHash Finalized block hash to find the finalized withdrawal root
      * @param leafIndex The index of your withdrawal note's leaf in the given tree.
      * @param siblings Inclusion proof data
@@ -59,7 +59,7 @@ contract UserInteractable is Storage {
         address token,
         uint256 amount,
         uint256 nft,
-        uint256 fee,
+        uint256 callerFee,
         bytes32 blockHash,
         uint256 leafIndex,
         uint256[] memory siblings
@@ -71,7 +71,7 @@ contract UserInteractable is Storage {
             token,
             amount,
             nft,
-            fee,
+            callerFee,
             blockHash,
             leafIndex,
             siblings
@@ -86,7 +86,7 @@ contract UserInteractable is Storage {
      * @param token Token address of ERC20 or ERC721. It can be undefined.
      * @param amount Amount of ERC20 when the token param is defined and it is an ERC20
      * @param nft NFT id when the token param is defined and it is an ERC721
-     * @param fee Amount of fee to give to the caller. This can be used when the withdrawer account has no ETH.
+     * @param callerFee Amount of fee to give to the caller. This can be used when the withdrawer account has no ETH.
      * @param signature ECDSA signature
      */
     function payInAdvance(
@@ -96,7 +96,7 @@ contract UserInteractable is Storage {
         address token,
         uint256 amount,
         uint256 nft,
-        uint256 fee,
+        uint256 callerFee,
         bytes memory signature
     ) public payable {
         bytes32 withdrawalHash = _withdrawalHash(
@@ -106,7 +106,7 @@ contract UserInteractable is Storage {
             token,
             amount,
             nft,
-            fee
+            callerFee
         );
         require(!Storage.chain.withdrawn[withdrawalHash], "Already withdrawn");
 
@@ -203,7 +203,7 @@ contract UserInteractable is Storage {
         address token,
         uint256 amount,
         uint256 nft,
-        uint256 fee,
+        uint256 callerFee,
         bytes32 blockHash,
         uint256 leafIndex,
         uint256[] memory siblings
@@ -211,7 +211,7 @@ contract UserInteractable is Storage {
         // range check
         require(amount < RANGE_LIMIT, "Too big value can cause the overflow inside the SNARK");
         require(eth < RANGE_LIMIT, "Too big value can cause the overflow inside the SNARK");
-        require(fee < RANGE_LIMIT, "Too big value can cause the overflow inside the SNARK");
+        require(callerFee < RANGE_LIMIT, "Too big value can cause the overflow inside the SNARK");
         require(nft < SNARK_FIELD, "Does not support too big nubmer of nft id");
         // check note fields
         require(_checkNoteFields(eth, token, amount, nft));
@@ -225,7 +225,7 @@ contract UserInteractable is Storage {
             token,
             amount,
             nft,
-            fee
+            callerFee
         );
         // Should not allow double-withdrawing
         require(!Storage.chain.withdrawn[withdrawalHash], "Already withdrawn");
@@ -244,10 +244,10 @@ contract UserInteractable is Storage {
         require(inclusion, "The given withdrawal note does not exist");
         // Withdraw ETH & get fee
         if(to == msg.sender) {
-            _sendEth(to, eth.add(fee));
+            _sendEth(to, eth.add(callerFee));
         } else {
             _sendEth(to, eth);
-            _sendEth(msg.sender, fee);
+            _sendEth(msg.sender, callerFee);
         }
         // Withdraw tokens if exists
         if (Storage.chain.registeredERC20s[token]) {
@@ -267,7 +267,7 @@ contract UserInteractable is Storage {
         address token,
         uint256 amount,
         uint256 nft,
-        uint256 fee
+        uint256 callerFee
     ) internal pure returns (bytes32) {
         return keccak256(
             abi.encodePacked(
@@ -277,7 +277,7 @@ contract UserInteractable is Storage {
                 token,
                 amount,
                 nft,
-                fee
+                callerFee
             )
         );
     }
