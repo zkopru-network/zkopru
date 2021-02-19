@@ -47,7 +47,7 @@ contract UserInteractable is Storage {
      * @param token Token address of ERC20 or ERC721. It can be undefined.
      * @param amount Amount of ERC20 when the token param is defined and it is an ERC20
      * @param nft NFT id when the token param is defined and it is an ERC721
-     * @param fee Amount of fee to give to the coordinator
+     * @param fee Amount of fee to give to the caller. This can be used when the withdrawer account has no ETH.
      * @param blockHash Finalized block hash to find the finalized withdrawal root
      * @param leafIndex The index of your withdrawal note's leaf in the given tree.
      * @param siblings Inclusion proof data
@@ -86,7 +86,7 @@ contract UserInteractable is Storage {
      * @param token Token address of ERC20 or ERC721. It can be undefined.
      * @param amount Amount of ERC20 when the token param is defined and it is an ERC20
      * @param nft NFT id when the token param is defined and it is an ERC721
-     * @param fee Amount of fee to give to the coordinator
+     * @param fee Amount of fee to give to the caller. This can be used when the withdrawer account has no ETH.
      * @param signature ECDSA signature
      */
     function payInAdvance(
@@ -243,20 +243,11 @@ contract UserInteractable is Storage {
         );
         require(inclusion, "The given withdrawal note does not exist");
         // Withdraw ETH & get fee
-        if(eth != 0) {
-            if(to == msg.sender) {
-                (bool success, ) = to.call{ value: eth.add(fee) }("");
-                require(success, "Failed to send ETH & fee");
-            } else {
-                {
-                    (bool success, ) = to.call{ value: eth }("");
-                    require(success, "Failed to send ETH");
-                }
-                {
-                    (bool success, ) = msg.sender.call{ value: fee }("");
-                    require(success, "Failed to send fee");
-                }
-            }
+        if(to == msg.sender) {
+            _sendEth(to, eth.add(fee));
+        } else {
+            _sendEth(to, eth);
+            _sendEth(msg.sender, fee);
         }
         // Withdraw tokens if exists
         if (Storage.chain.registeredERC20s[token]) {
@@ -334,5 +325,12 @@ contract UserInteractable is Storage {
             }
         }
         return true;
+    }
+
+    function _sendEth(address to, uint val) internal {
+        if (val > 0) {
+            (bool success, ) = to.call{ value: val }("");
+            require(success, "Failed to send ETH");
+        }
     }
 }
