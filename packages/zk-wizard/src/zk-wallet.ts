@@ -434,6 +434,8 @@ export class ZkWallet {
 
   async instantWithdrawal(
     prePayer: Address,
+    prepayFeeInEth: Uint256,
+    prepayFeeInToken: Uint256,
     withdrawal: WithdrawalSql,
   ): Promise<boolean> {
     if (!this.account) {
@@ -448,6 +450,8 @@ export class ZkWallet {
       Uint256.from(withdrawal.withdrawalHash)
         .toBytes()
         .toString(),
+      prepayFeeInEth.toBytes().toString(),
+      prepayFeeInToken.toBytes().toString(),
     )
     assert(message)
     const siblings: string[] = JSON.parse(withdrawal.siblings)
@@ -455,6 +459,8 @@ export class ZkWallet {
     const data = {
       ...withdrawal,
       siblings,
+      prepayFeeInEth: prepayFeeInEth.toString(),
+      prepayFeeInToken: prepayFeeInToken.toString(),
       sign,
     }
     const response = await fetch(`${this.coordinator}/instant-withdraw`, {

@@ -120,6 +120,8 @@ export class CoordinatorApi {
       erc20Amount,
       nft,
       fee,
+      prepayFeeInEth,
+      prepayFeeInToken,
       includedIn,
       index,
       sign,
@@ -134,6 +136,8 @@ export class CoordinatorApi {
       erc20Amount,
       nft,
       fee,
+      prepayFeeInEth,
+      prepayFeeInToken,
       sign.signature,
     )
     const withdrawalHash = soliditySha3Raw(

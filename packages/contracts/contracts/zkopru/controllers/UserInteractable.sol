@@ -97,6 +97,8 @@ contract UserInteractable is Storage {
         uint256 amount,
         uint256 nft,
         uint256 callerFee,
+        uint256 prepayFeeInEth,
+        uint256 prepayFeeInToken,
         bytes memory signature
     ) public payable {
         bytes32 withdrawalHash = _withdrawalHash(
@@ -116,7 +118,9 @@ contract UserInteractable is Storage {
         bytes32 payInAdvanceMsg = keccak256(
             abi.encodePacked(
                 prepayer,
-                withdrawalHash
+                withdrawalHash,
+                prepayFeeInEth,
+                prepayFeeInToken
             )
         );
         // verify original owner's signature
@@ -128,17 +132,17 @@ contract UserInteractable is Storage {
             ),
             "Invalid owner signature"
         );
+        uint ethToWithdraw = eth.sub(prepayFeeInEth);
+        uint tokenToWithdraw = amount.sub(prepayFeeInToken);
         require(msg.value == eth, 'not enough ether');
         // prepay tokens
-
         if (Storage.chain.registeredERC20s[token]) {
-            IERC20(token).transferFrom(prepayer, currentOwner, amount);
+            IERC20(token).transferFrom(prepayer, currentOwner, tokenToWithdraw);
         } else if (Storage.chain.registeredERC721s[token]){
             revert("Does not support NFT prepay");
         }
         // prepay ether
-        (bool success, ) = currentOwner.call{ value: eth }("");
-        require(success, "Failed to send ETH to the withdrawer");
+        _sendEth(currentOwner, ethToWithdraw);
         // transfer ownership
         Storage.chain.newWithdrawalOwner[withdrawalHash] = prepayer;
     }
