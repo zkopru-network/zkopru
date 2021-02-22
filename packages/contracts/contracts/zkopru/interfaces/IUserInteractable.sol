@@ -21,7 +21,7 @@ interface IUserInteractable {
         address token,
         uint256 amount,
         uint256 nft,
-        uint256 fee,
+        uint256 callerFee,
         bytes32 blockHash,
         uint256 leafIndex,
         uint256[] calldata siblings
@@ -34,7 +34,9 @@ interface IUserInteractable {
         address token,
         uint256 amount,
         uint256 nft,
-        uint256 fee,
+        uint256 callerFee,
+        uint256 prepayFeeInEth,
+        uint256 prepayFeeInToken,
         bytes calldata signature
     ) external;
 }

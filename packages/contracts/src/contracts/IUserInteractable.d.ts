@@ -36,7 +36,7 @@ export class IUserInteractable extends Contract {
       token: string,
       amount: number | string,
       nft: number | string,
-      fee: number | string,
+      callerFee: number | string,
       blockHash: string | number[],
       leafIndex: number | string,
       siblings: (number | string)[],
@@ -49,7 +49,9 @@ export class IUserInteractable extends Contract {
       token: string,
       amount: number | string,
       nft: number | string,
-      fee: number | string,
+      callerFee: number | string,
+      prepayFeeInEth: number | string,
+      prepayFeeInToken: number | string,
       signature: string | number[],
     ): TransactionObject<void>
   }
