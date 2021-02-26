@@ -36,7 +36,7 @@ export interface TableData {
 }
 
 export interface DBConnector {
-  create: (collection: string, doc: Object) => Promise<Object>
+  create: (collection: string, doc: Object) => Promise<void>
   findOne: (collection: string, where: WhereClause) => Promise<Object>
   // retrieve many documents matching a where clause
   findMany: (collection: string, where: WhereClause, options: FindManyOptions) => Promise<Object[]>
@@ -65,4 +65,22 @@ export function normalizeRowDef(row: RowDef | ShortRowDef): RowDef {
     }
   }
   return row
+}
+
+export type Schema = {
+  [tableKey: string]: {
+    [rowKey: string]: RowDef | undefined
+  } | undefined
+}
+
+export function constructSchema(tables: TableData[]): Schema {
+  const schema = {}
+  for (const table of tables) {
+    schema[table.name] = {}
+    for (const row of table.rows) {
+      const fullRow = normalizeRowDef(row)
+      schema[table.name][fullRow.name] = fullRow
+    }
+  }
+  return schema
 }

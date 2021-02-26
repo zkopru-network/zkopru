@@ -22,7 +22,8 @@
   },
   "dependencies": {
     "async-lock": "^1.2.8",
-    "better-sqlite3": "^7.1.2",
+    "sqlite": "^4.0.19",
+    "sqlite3": "^5.0.2",
     "uuid": "^8.3.2"
   },
   "publishConfig": {

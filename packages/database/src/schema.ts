@@ -60,7 +60,7 @@ export default [
       {
         name: 'id',
         type: 'Int',
-        default: 'autoincrement',
+        // Int primary keys default to auto-incrementing
       },
       {
         name: 'viewer',
