@@ -120,12 +120,15 @@ export default class SQLiteConnector implements DBConnector {
     where: WhereClause,
     options: FindManyOptions = {},
   ) {
-    // if (options.orderBy) {} // todo
+    const orderBy = options.orderBy ? ` ORDER BY ${Object.keys(options.orderBy).map((key) => {
+      const val = (options.orderBy || {})[key]
+      return `"${key}" ${val.toUpperCase()}`
+    }).join(', ')}` : ''
     const limit = options.take ? ` LIMIT ${options.take} ` : ''
     const sql = `SELECT * FROM "${collection}" ${this.whereToSql(
       collection,
       where,
-    )} ${limit};`
+    )} ${orderBy} ${limit};`
     return this.db.all(sql)
   }
 
