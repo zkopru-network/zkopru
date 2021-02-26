@@ -20,7 +20,7 @@ export default [
       ['r', 'Int'],
       ['p', 'Int'],
       ['salt', 'String'],
-    ]
+    ],
   },
   {
     name: 'Keystore',
@@ -29,7 +29,7 @@ export default [
       ['address', 'String'],
       ['zkAddress', 'String'],
       ['encrypted', 'String'],
-    ]
+    ],
   },
   {
     name: 'Config',
@@ -51,7 +51,7 @@ export default [
       ['utxoSubTreeSize', 'Int'],
       ['withdrawalSubTreeDepth', 'Int'],
       ['withdrawalSubTreeSize', 'Int'],
-    ]
+    ],
   },
   {
     name: 'Tracker',
@@ -73,8 +73,8 @@ export default [
         type: 'String',
         unique: true,
         optional: true,
-      }
-    ]
+      },
+    ],
   },
   {
     name: 'Header',
@@ -92,7 +92,7 @@ export default [
       ['txRoot', 'String'],
       ['depositRoot', 'String'],
       ['migrationRoot', 'String'],
-    ]
+    ],
   },
   {
     name: 'Block',
@@ -106,27 +106,27 @@ export default [
           localField: 'hash',
           foreignField: 'hash',
           foreignTable: 'Header',
-        }
+        },
       },
       ['proposal', 'Object'],
       ['bootstrap', 'Object', { optional: true }],
       ['slash', 'Object', { optional: true }],
-    ]
+    ],
   },
   {
     name: 'Proposal',
     primaryKey: 'hash',
     rows: [
       ['hash', 'String'],
-      ['proposalNum', 'Int', { optional: true, }],
-      ['canonicalNum', 'Int', { optional: true, }],
-      ['proposedAt', 'Int', { optional: true, }],
-      ['proposalTx', 'String', { optional: true, }],
-      ['proposalData', 'String', { optional: true, }],
-      ['fetched', 'String', { optional: true, }],
-      ['finalized', 'Bool', { optional: true, }],
-      ['verified', 'Bool', { optional: true, }],
-      ['isUncle', 'Bool', { optional: true, }],
+      ['proposalNum', 'Int', { optional: true }],
+      ['canonicalNum', 'Int', { optional: true }],
+      ['proposedAt', 'Int', { optional: true }],
+      ['proposalTx', 'String', { optional: true }],
+      ['proposalData', 'String', { optional: true }],
+      ['fetched', 'String', { optional: true }],
+      ['finalized', 'Bool', { optional: true }],
+      ['verified', 'Bool', { optional: true }],
+      ['isUncle', 'Bool', { optional: true }],
       {
         name: 'block',
         type: 'Object',
@@ -135,9 +135,9 @@ export default [
           localField: 'fetched',
           foreignField: 'hash',
           foreignTable: 'Block',
-        }
+        },
       },
-    ]
+    ],
   },
   {
     name: 'Slash',
@@ -154,9 +154,9 @@ export default [
           localField: 'hash',
           foreignField: 'hash',
           foreignTable: 'Block',
-        }
-      }
-    ]
+        },
+      },
+    ],
   },
   {
     name: 'Bootstrap',
@@ -182,9 +182,9 @@ export default [
           localField: 'blockHash',
           foreignField: 'hash',
           foreignTable: 'Block',
-        }
-      }
-    ]
+        },
+      },
+    ],
   },
   {
     name: 'Tx',
@@ -197,7 +197,7 @@ export default [
       ['fee', 'String'],
       ['challenged', 'Bool'],
       ['slashed', 'Bool'],
-    ]
+    ],
   },
   {
     name: 'MassDeposit',
@@ -212,7 +212,7 @@ export default [
         type: 'String',
         optional: true,
       },
-    ]
+    ],
   },
   {
     name: 'Deposit',
@@ -224,7 +224,7 @@ export default [
       ['logIndex', 'Int'],
       ['blockNumber', 'Int'],
       ['queuedAt', 'String'],
-    ]
+    ],
   },
   {
     name: 'Utxo',
@@ -286,7 +286,7 @@ export default [
         type: 'String',
         optional: true,
       },
-    ]
+    ],
   },
   {
     name: 'Withdrawal',
@@ -308,7 +308,7 @@ export default [
       ['includedIn', 'String', { optional: true }],
       ['prepayer', 'String', { optional: true }],
       ['siblings', 'String', { optional: true }],
-    ]
+    ],
   },
   {
     name: 'Migration',
@@ -327,7 +327,7 @@ export default [
       ['treeId', 'String', { optional: true }],
       ['index', 'String', { optional: true }],
       ['usedFor', 'String', { optional: true }],
-    ]
+    ],
   },
   {
     name: 'TreeNode',
@@ -336,7 +336,7 @@ export default [
       ['treeId', 'String'],
       ['nodeIndex', 'String'],
       ['value', 'String'],
-    ]
+    ],
   },
   {
     name: 'LightTree',
@@ -353,7 +353,7 @@ export default [
       ['root', 'String'],
       ['index', 'String'],
       ['siblings', 'String'],
-    ]
+    ],
   },
   {
     name: 'TokenRegistry',
@@ -364,6 +364,6 @@ export default [
       ['isERC721', 'Bool'],
       ['identifier', 'Int'],
       ['blockNumber', 'Int'],
-    ]
-  }
+    ],
+  },
 ]
