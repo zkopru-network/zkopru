@@ -1,10 +1,32 @@
 export type WhereClause = { [key: string]: any }
 
 export type FindManyOptions = {
+  where: WhereClause,
   orderBy?: {
     [key: string]: 'asc' | 'desc'
   }
-  take?: number
+  include?: {
+    [key: string]: boolean,
+  }
+  limit?: number
+}
+
+export type FindOneOptions = {
+  where: WhereClause
+  orderBy?: {
+    [key: string]: 'asc' | 'desc'
+  }
+}
+
+export type UpdateOptions = {
+  where: WhereClause,
+  update: Record<string, any>,
+}
+
+export type UpsertOptions = {
+  where: WhereClause,
+  update: Record<string, any>,
+  create: Record<string, any>
 }
 
 type DataType = 'Int' | 'Bool' | 'String' | 'Object'
@@ -39,12 +61,11 @@ export interface DBConnector {
   create: (collection: string, doc: Record<string, any>) => Promise<void>
   findOne: (
     collection: string,
-    where: WhereClause,
+    options: FindOneOptions,
   ) => Promise<Record<string, any>>
   // retrieve many documents matching a where clause
   findMany: (
     collection: string,
-    where: WhereClause,
     options: FindManyOptions,
   ) => Promise<Record<string, any>[]>
   // count document matching a where clause
@@ -52,17 +73,12 @@ export interface DBConnector {
   // update some documents returning the number updated
   update: (
     collection: string,
-    where: WhereClause,
-    changes: Record<string, any>,
+    options: UpdateOptions,
   ) => Promise<number>
   // update or create some documents
   upsert: (
     collection: string,
-    where: WhereClause,
-    options: {
-      update: Record<string, any>
-      create: Record<string, any>
-    },
+    options: UpsertOptions,
   ) => Promise<{ created: number; updated: number }>
   // request that an index be created between some keys, if supported
   ensureIndex: (collection: string, name: string, keys: string[]) => void
@@ -85,7 +101,8 @@ export function normalizeRowDef(row: RowDef | ShortRowDef): RowDef {
 export type Schema = {
   [tableKey: string]:
     | {
-        [rowKey: string]: RowDef | undefined
+        rows: { [rowKey: string]: RowDef | undefined },
+        relations: { [relation: string]: Object },
       }
     | undefined
 }
@@ -93,10 +110,16 @@ export type Schema = {
 export function constructSchema(tables: TableData[]): Schema {
   const schema = {}
   for (const table of tables) {
-    schema[table.name] = {}
+    schema[table.name] = {
+      rows: {},
+      relations: {},
+    }
     for (const row of table.rows) {
       const fullRow = normalizeRowDef(row)
-      schema[table.name][fullRow.name] = fullRow
+      schema[table.name].rows[fullRow.name] = fullRow
+      if (fullRow.relation) {
+        schema[table.name].relations[fullRow.relation.localField] = fullRow.relation
+      }
     }
   }
   return schema

@@ -4,6 +4,9 @@ import {
   DBConnector,
   WhereClause,
   FindManyOptions,
+  FindOneOptions,
+  UpdateOptions,
+  UpsertOptions,
   TableData,
   normalizeRowDef,
   constructSchema,
@@ -45,9 +48,11 @@ export default class SQLiteConnector implements DBConnector {
 
   whereToSql(collection: string, doc: Record<string, any>, joinWith = '=') {
     if (Object.keys(doc).length === 0) return ''
+    const table = this.schema[collection]
+    if (!table) throw new Error(`Unable to find table ${collection} in schema`)
     const sql = Object.keys(doc)
       .map(key => {
-        const rowDef = (this.schema[collection] || {})[key]
+        const rowDef = table.rows[key]
         if (!rowDef)
           throw new Error(`Unable to find row definition for key: "${key}"`)
         const val = doc[key]
@@ -73,9 +78,11 @@ export default class SQLiteConnector implements DBConnector {
     const keys = Object.keys(doc)
       .map(k => `"${k}"`)
       .join(',')
+    const table = this.schema[collection]
+    if (!table) throw new Error(`Unable to find table ${collection} in schema`)
     const values = Object.keys(doc)
       .map(k => {
-        const rowDef = (this.schema[collection] || {})[k]
+        const rowDef = table.rows[k]
         if (!rowDef)
           throw new Error(`Unable to find row definition for key: "${k}"`)
         let val = doc[k]
@@ -107,24 +114,44 @@ export default class SQLiteConnector implements DBConnector {
     await this.db.exec(sql)
   }
 
-  async findOne(collection: string, where: WhereClause) {
-    const sql = `SELECT * FROM "${collection}" ${this.whereToSql(
-      collection,
-      where,
-    )} LIMIT 1;`
-    return this.db.get(sql)
+  async findOne(collection: string, options: FindOneOptions) {
+    // const sql = `SELECT * FROM "${collection}" ${this.whereToSql(
+    //   collection,
+    //   where,
+    // )} LIMIT 1;`
+    // return this.db.get(sql)
+    const [obj] = await this.findMany(collection, {
+      ...options,
+      limit: 1,
+    })
+    return obj
   }
+  //
+  // async loadIncluded(collection: string, include: Object) {
+  //   const table = this.schema[collection]
+  //   if (!table) throw new Error(`Unable to find table ${collection} in schema`)
+  //   let currentCollection = collection
+  //   // Return an object to be spread on
+  //   const related = {}
+  //   for (const key of Object.keys(include)) {
+  //     const relation = table.relations[key]
+  //     if (!relation) throw new Error(`Unable to find relation ${key} in ${collection}`)
+  //     if (typeof relation !== 'boolean') {
+  //
+  //     }
+  //   }
+  // }
 
   async findMany(
     collection: string,
-    where: WhereClause,
-    options: FindManyOptions = {},
+    options: FindManyOptions
   ) {
+    const { where } = options
     const orderBy = options.orderBy ? ` ORDER BY ${Object.keys(options.orderBy).map((key) => {
       const val = (options.orderBy || {})[key]
       return `"${key}" ${val.toUpperCase()}`
     }).join(', ')}` : ''
-    const limit = options.take ? ` LIMIT ${options.take} ` : ''
+    const limit = options.limit ? ` LIMIT ${options.limit} ` : ''
     const sql = `SELECT * FROM "${collection}" ${this.whereToSql(
       collection,
       where,
@@ -143,15 +170,17 @@ export default class SQLiteConnector implements DBConnector {
 
   async update(
     collection: string,
-    where: WhereClause,
-    changes: Record<string, any>,
+    options: UpdateOptions,
   ) {
-    const setSql = Object.keys(changes)
+    const { where, update } = options
+    const table = this.schema[collection]
+    if (!table) throw new Error(`Unable to find table ${collection} in schema`)
+    const setSql = Object.keys(update)
       .map(key => {
-        const rowDef = (this.schema[collection] || {})[key]
+        const rowDef = table.rows[key]
         if (!rowDef)
           throw new Error(`Unable to find row definition for key: "${key}"`)
-        const val = changes[key]
+        const val = update[key]
         if (rowDef.type === 'String') {
           return `"${key}" = "${escapeQuotes(val)}"`
         }
@@ -177,20 +206,20 @@ export default class SQLiteConnector implements DBConnector {
 
   async upsert(
     collection: string,
-    where: WhereClause,
-    options: {
-      update: Record<string, any>
-      create: Record<string, any>
-    },
+    options: UpsertOptions
   ) {
-    const updated = await this.update(collection, where, options.update)
+    const { where, update, create } = options
+    const updated = await this.update(collection, {
+      where,
+      update,
+    })
     if (updated > 0) {
       return {
         updated,
         created: 0,
       }
     }
-    await this.create(collection, options.create)
+    await this.create(collection, create)
     return {
       created: 1,
       updated: 0,
