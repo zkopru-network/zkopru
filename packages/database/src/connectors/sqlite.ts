@@ -16,7 +16,7 @@ import {
 
 const escapeQuotes = (str: string) => str.replace(/"/gm, '""')
 
-export default class SQLiteConnector implements DBConnector {
+export class SQLiteConnector implements DBConnector {
   db: Database<sqlite3.Database, sqlite3.Statement>
 
   config: {
@@ -85,26 +85,28 @@ export default class SQLiteConnector implements DBConnector {
   }
 
   async create(collection: string, doc: Record<string, any>) {
+    const table = this.schema[collection]
+    if (!table) throw new Error(`Unable to find table ${collection} in schema`)
+    // create defaults where needed
+    for (const [, row] of Object.entries(table.rows)) {
+      if (
+        !row?.default ||
+        (doc[row.name] !== undefined && doc[row.name] !== null)
+      ) continue
+      // otherwise generate default field
+      Object.assign(doc, {
+        [row.name]: typeof row.default === 'function' ? row.default() : row.default,
+      })
+    }
     const keys = Object.keys(doc)
       .map(k => `"${k}"`)
       .join(',')
-    const table = this.schema[collection]
-    if (!table) throw new Error(`Unable to find table ${collection} in schema`)
     const values = Object.keys(doc)
       .map(k => {
         const rowDef = table.rows[k]
         if (!rowDef)
           throw new Error(`Unable to find row definition for key: "${k}"`)
         let val = doc[k]
-        if (
-          (val === undefined || val === null) &&
-          typeof rowDef.default !== 'undefined'
-        ) {
-          val =
-            typeof rowDef.default === 'function'
-              ? rowDef.default()
-              : rowDef.default
-        }
         if (rowDef.type === 'Bool' && typeof val === 'boolean') {
           return val ? 'true' : 'false'
         }
@@ -142,7 +144,6 @@ export default class SQLiteConnector implements DBConnector {
     collection: string,
     options: { models: Record<string, any>[]; include?: Record<string, any> },
   ) {
-    console.log('loading included', collection)
     const { models, include } = options
     if (!include) return
     const table = this.schema[collection]

@@ -7,7 +7,9 @@
   "files": [
     "dist"
   ],
-  "_moduleAliases": {},
+  "_moduleAliases": {
+    "~database": "./src"
+  },
   "keywords": [
     "cli"
   ],
