@@ -8,13 +8,13 @@ export default [
       {
         name: 'id',
         type: 'String',
-        default: () => Math.random().toString()
+        default: () => Math.random().toString(),
       },
-      ['uniqueField', 'String', { unique: true, }],
+      ['uniqueField', 'String', { unique: true }],
       ['uniqueAndOptionalField', 'String', { unique: true, optional: true }],
       ['optionalField', 'String', { optional: true }],
-      ['regularField', 'String']
-    ]
+      ['regularField', 'String'],
+    ],
   },
   {
     name: 'TableTwo',
@@ -24,9 +24,9 @@ export default [
         name: 'id',
         type: 'String',
         // so this can be meaningfully lexographically sorted
-        default: () => `${+new Date()}${Math.random()}`
+        default: () => `${+new Date()}${Math.random()}`,
       },
-      ['counterField', 'Int', { unique: true }]
-    ]
-  }
+      ['counterField', 'Int', { unique: true }],
+    ],
+  },
 ] as TableData[]

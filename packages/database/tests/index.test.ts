@@ -29,19 +29,25 @@ describe('database tests', () => {
     }
     const docs = await db.findMany(table, {
       where: {},
-      orderBy: { id: 'asc' }
+      orderBy: { id: 'asc' },
     })
     assert.equal(docs.length, 10)
     for (let x = 0; x < docs.length - 1; x++) {
-      assert(docs[x].counterField < docs[x+1].counterField, 'Documents incorrectly ordered')
+      assert(
+        docs[x].counterField < docs[x + 1].counterField,
+        'Documents incorrectly ordered',
+      )
     }
     const docs2 = await db.findMany(table, {
       where: {},
-      orderBy: { id: 'desc' }
+      orderBy: { id: 'desc' },
     })
     assert.equal(docs2.length, 10)
     for (let x = 0; x < docs2.length - 1; x++) {
-      assert(docs2[x].counterField > docs2[x+1].counterField, 'Documents incorrectly ordered')
+      assert(
+        docs2[x].counterField > docs2[x + 1].counterField,
+        'Documents incorrectly ordered',
+      )
     }
   })
 })

@@ -92,10 +92,13 @@ export class SQLiteConnector implements DBConnector {
       if (
         !row?.default ||
         (doc[row.name] !== undefined && doc[row.name] !== null)
-      ) continue
+      )
+        // eslint-disable-next-line no-continue
+        continue
       // otherwise generate default field
       Object.assign(doc, {
-        [row.name]: typeof row.default === 'function' ? row.default() : row.default,
+        [row.name]:
+          typeof row.default === 'function' ? row.default() : row.default,
       })
     }
     const keys = Object.keys(doc)
@@ -106,7 +109,7 @@ export class SQLiteConnector implements DBConnector {
         const rowDef = table.rows[k]
         if (!rowDef)
           throw new Error(`Unable to find row definition for key: "${k}"`)
-        let val = doc[k]
+        const val = doc[k]
         if (rowDef.type === 'Bool' && typeof val === 'boolean') {
           return val ? 'true' : 'false'
         }
@@ -127,11 +130,6 @@ export class SQLiteConnector implements DBConnector {
   }
 
   async findOne(collection: string, options: FindOneOptions) {
-    // const sql = `SELECT * FROM "${collection}" ${this.whereToSql(
-    //   collection,
-    //   where,
-    // )} LIMIT 1;`
-    // return this.db.get(sql)
     const [obj] = await this.findMany(collection, {
       ...options,
       limit: 1,
