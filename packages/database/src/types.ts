@@ -18,6 +18,14 @@ export type FindOneOptions = {
   }
 }
 
+export type DeleteManyOptions = {
+  where: WhereClause
+  orderBy?: {
+    [key: string]: 'asc' | 'desc'
+  }
+  limit?: number
+}
+
 export type UpdateOptions = {
   where: WhereClause
   update: Record<string, any>
@@ -83,6 +91,12 @@ export interface DBConnector {
   ensureIndex: (collection: string, name: string, keys: string[]) => void
   // provide a schema to connectors that need schema info
   createTables: (tableData: TableData[]) => Promise<void>
+  // delete a single document, return the number of documents deleted
+  deleteOne: (collection: string, options: FindOneOptions) => Promise<number>
+  // delete many documents, return the number of documents deleted
+  deleteMany: (collection: string, options: FindManyOptions) => Promise<number>
+  // close the db and cleanup
+  close: () => Promise<void>
 }
 
 export function normalizeRowDef(row: RowDef | ShortRowDef): RowDef {

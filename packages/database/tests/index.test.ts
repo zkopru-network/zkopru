@@ -1,3 +1,4 @@
+/* eslint-disable no-plusplus */
 import assert from 'assert'
 import testSchema from './test-schema'
 import { SQLiteConnector } from '~database'
@@ -15,6 +16,7 @@ describe('database tests', () => {
       where: { uniqueField: 'testvalue' },
     })
     assert(doc, 'Inserted document does not exist')
+    await db.close()
   })
 
   it('should find sorted documents', async () => {
@@ -49,5 +51,6 @@ describe('database tests', () => {
         'Documents incorrectly ordered',
       )
     }
+    await db.close()
   })
 })

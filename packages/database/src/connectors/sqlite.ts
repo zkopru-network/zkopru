@@ -3,6 +3,7 @@ import { open, Database, ISqlite } from 'sqlite'
 import {
   DBConnector,
   WhereClause,
+  DeleteManyOptions,
   FindManyOptions,
   FindOneOptions,
   UpdateOptions,
@@ -291,6 +292,23 @@ export class SQLiteConnector implements DBConnector {
       created: 1,
       updated: 0,
     }
+  }
+
+  async deleteOne(collection: string, options: FindOneOptions) {
+    return this.deleteMany(collection, {
+      ...options,
+      limit: 1,
+    })
+  }
+
+  async deleteMany(collection: string, options: DeleteManyOptions) {
+    console.log(collection, options)
+    // TODO
+    return 0
+  }
+
+  async close() {
+    await this.db.close()
   }
 
   // TODO
