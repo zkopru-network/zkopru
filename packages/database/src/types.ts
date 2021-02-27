@@ -6,7 +6,7 @@ export type FindManyOptions = {
     [key: string]: 'asc' | 'desc'
   }
   include?: {
-    [key: string]: boolean,
+    [key: string]: boolean | Object,
   }
   limit?: number
 }
@@ -29,7 +29,13 @@ export type UpsertOptions = {
   create: Record<string, any>
 }
 
-type DataType = 'Int' | 'Bool' | 'String' | 'Object'
+export type DataType = 'Int' | 'Bool' | 'String' | 'Object'
+
+export type Relation = {
+  localField: string
+  foreignField: string
+  foreignTable: string
+}
 
 export type RowDef = {
   name: string
@@ -37,11 +43,7 @@ export type RowDef = {
   optional?: boolean
   type: DataType
   // relational fields should be virtual
-  relation?: {
-    localField: string
-    foreignField: string
-    foreignTable: string
-  }
+  relation?: Relation
   default?: any | 'autoincrement'
 }
 
@@ -102,7 +104,7 @@ export type Schema = {
   [tableKey: string]:
     | {
         rows: { [rowKey: string]: RowDef | undefined },
-        relations: { [relation: string]: Object },
+        relations: { [relation: string]: (Relation & { name: string })| undefined },
       }
     | undefined
 }
@@ -118,7 +120,10 @@ export function constructSchema(tables: TableData[]): Schema {
       const fullRow = normalizeRowDef(row)
       schema[table.name].rows[fullRow.name] = fullRow
       if (fullRow.relation) {
-        schema[table.name].relations[fullRow.relation.localField] = fullRow.relation
+        schema[table.name].relations[fullRow.name] = {
+          name: fullRow.name,
+          ...fullRow.relation,
+        }
       }
     }
   }

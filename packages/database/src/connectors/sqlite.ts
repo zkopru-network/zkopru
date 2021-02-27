@@ -11,6 +11,7 @@ import {
   normalizeRowDef,
   constructSchema,
   Schema,
+  Relation,
 } from '../types'
 
 const escapeQuotes = (str: string) => str.replace(/"/gm, '""')
@@ -50,25 +51,32 @@ export default class SQLiteConnector implements DBConnector {
     if (Object.keys(doc).length === 0) return ''
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection} in schema`)
+    const parseType = (type: string, value: any) => {
+      if (value === null) return 'NULL'
+      if (type === 'String') {
+        return `"${escapeQuotes(value)}"`
+      } else if (type === 'Int') {
+        return value
+      } else if (type === 'Bool') {
+        return value ? 'true' : 'false'
+      } else if (type === 'Object') {
+        return `"${escapeQuotes(JSON.stringify(value))}"`
+      }
+      throw new Error(`Unrecognized type ${type}`)
+    }
     const sql = Object.keys(doc)
       .map(key => {
         const rowDef = table.rows[key]
         if (!rowDef)
           throw new Error(`Unable to find row definition for key: "${key}"`)
         const val = doc[key]
-        if (rowDef.type === 'String') {
-          return `"${key}" ${joinWith} "${escapeQuotes(val)}"`
+        if (Array.isArray(val)) {
+          // need to generate an IN query
+          const values = val.map((v) => parseType(rowDef.type, v))
+          return `"${key}" IN (${values.join(',')})`
+        } else {
+          return `"${key}" ${joinWith} ${parseType(rowDef.type, val)}`
         }
-        if (rowDef.type === 'Int') {
-          return `"${key}" ${joinWith} ${val}`
-        }
-        if (rowDef.type === 'Bool') {
-          return `"${key}" ${joinWith} ${val ? 'true' : 'false'}`
-        }
-        if (rowDef.type === 'Object') {
-          return `"${key}" ${joinWith} ${escapeQuotes(JSON.stringify(val))}`
-        }
-        throw new Error('Unknown row type')
       })
       .join(' AND ')
     return ` WHERE ${sql} `
@@ -126,27 +134,62 @@ export default class SQLiteConnector implements DBConnector {
     })
     return obj
   }
-  //
-  // async loadIncluded(collection: string, include: Object) {
-  //   const table = this.schema[collection]
-  //   if (!table) throw new Error(`Unable to find table ${collection} in schema`)
-  //   let currentCollection = collection
-  //   // Return an object to be spread on
-  //   const related = {}
-  //   for (const key of Object.keys(include)) {
-  //     const relation = table.relations[key]
-  //     if (!relation) throw new Error(`Unable to find relation ${key} in ${collection}`)
-  //     if (typeof relation !== 'boolean') {
-  //
-  //     }
-  //   }
-  // }
+
+  // load related models
+  async loadIncluded(collection: string, options: { models: Object[], include?: Object}) {
+    console.log('loading included', collection)
+    const { models, include } = options
+    if (!include) return
+    const table = this.schema[collection]
+    if (!table) throw new Error(`Unable to find table ${collection} in schema`)
+    for (const key of Object.keys(include)) {
+      // for each relation to include
+      const relation = table.relations[key]
+      if (!relation) throw new Error(`Unable to find relation ${key} in ${collection}`)
+      if (include[key]) {
+        await this.loadIncludedModels(
+          models,
+          relation,
+          typeof include[key] === 'object' ? include[key] : undefined
+        )
+      }
+    }
+  }
+
+  // load and assign submodels, mutates the models array supplied
+  private async loadIncludedModels(
+    models: Object[],
+    relation: (Relation & { name: string }),
+    include?: Object
+  ) {
+    const values = models.map((model) => model[relation.localField])
+    // load relevant submodels
+    const submodels = await this.findMany(relation.foreignTable, {
+      where: {
+        [relation.foreignField]: values,
+      },
+      include: include as any, // load subrelations if needed
+    })
+    // key the submodels by their relation field
+    const keyedSubmodels = {}
+    for (const submodel of submodels) {
+      // assign to the models
+      keyedSubmodels[submodel[relation.foreignField]] = submodel
+    }
+    // Assign submodel onto model
+    for (const model of models) {
+      const submodel = keyedSubmodels[model[relation.localField]]
+      Object.assign(model, {
+        [relation.name]: submodel,
+      })
+    }
+  }
 
   async findMany(
     collection: string,
     options: FindManyOptions
   ) {
-    const { where } = options
+    const { where, include } = options
     const orderBy = options.orderBy ? ` ORDER BY ${Object.keys(options.orderBy).map((key) => {
       const val = (options.orderBy || {})[key]
       return `"${key}" ${val.toUpperCase()}`
@@ -156,7 +199,13 @@ export default class SQLiteConnector implements DBConnector {
       collection,
       where,
     )} ${orderBy} ${limit};`
-    return this.db.all(sql)
+    const models = await this.db.all(sql)
+    // TODO: expand Object types using JSON.parse
+    await this.loadIncluded(collection, {
+      models,
+      include,
+    })
+    return models
   }
 
   async count(collection: string, where: WhereClause) {
@@ -244,10 +293,13 @@ export default class SQLiteConnector implements DBConnector {
       }
       const rowCommands = rows.map(row => {
         const fullRow = normalizeRowDef(row)
+        // relations are virtual and assigned at load time
+        if (fullRow.relation) return
         return `"${fullRow.name}" ${typeMap[fullRow.type]} ${
           fullRow.optional ? '' : 'NOT NULL'
         } ${fullRow.unique ? 'UNIQUE' : ''}`
-      })
+      }).filter((i) => !!i)
+      // Do i even need this if i'm loading manually????
       const relationCommands = rows
         .map(row => {
           const fullRow = normalizeRowDef(row)
