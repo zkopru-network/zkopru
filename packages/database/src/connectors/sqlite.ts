@@ -55,11 +55,14 @@ export default class SQLiteConnector implements DBConnector {
       if (value === null) return 'NULL'
       if (type === 'String') {
         return `"${escapeQuotes(value)}"`
-      } else if (type === 'Int') {
+      }
+      if (type === 'Int') {
         return value
-      } else if (type === 'Bool') {
+      }
+      if (type === 'Bool') {
         return value ? 'true' : 'false'
-      } else if (type === 'Object') {
+      }
+      if (type === 'Object') {
         return `"${escapeQuotes(JSON.stringify(value))}"`
       }
       throw new Error(`Unrecognized type ${type}`)
@@ -72,11 +75,10 @@ export default class SQLiteConnector implements DBConnector {
         const val = doc[key]
         if (Array.isArray(val)) {
           // need to generate an IN query
-          const values = val.map((v) => parseType(rowDef.type, v))
+          const values = val.map(v => parseType(rowDef.type, v))
           return `"${key}" IN (${values.join(',')})`
-        } else {
-          return `"${key}" ${joinWith} ${parseType(rowDef.type, val)}`
         }
+        return `"${key}" ${joinWith} ${parseType(rowDef.type, val)}`
       })
       .join(' AND ')
     return ` WHERE ${sql} `
@@ -136,7 +138,10 @@ export default class SQLiteConnector implements DBConnector {
   }
 
   // load related models
-  async loadIncluded(collection: string, options: { models: Object[], include?: Object}) {
+  async loadIncluded(
+    collection: string,
+    options: { models: Record<string, any>[]; include?: Record<string, any> },
+  ) {
     console.log('loading included', collection)
     const { models, include } = options
     if (!include) return
@@ -145,12 +150,13 @@ export default class SQLiteConnector implements DBConnector {
     for (const key of Object.keys(include)) {
       // for each relation to include
       const relation = table.relations[key]
-      if (!relation) throw new Error(`Unable to find relation ${key} in ${collection}`)
+      if (!relation)
+        throw new Error(`Unable to find relation ${key} in ${collection}`)
       if (include[key]) {
         await this.loadIncludedModels(
           models,
           relation,
-          typeof include[key] === 'object' ? include[key] : undefined
+          typeof include[key] === 'object' ? include[key] : undefined,
         )
       }
     }
@@ -158,11 +164,11 @@ export default class SQLiteConnector implements DBConnector {
 
   // load and assign submodels, mutates the models array supplied
   private async loadIncludedModels(
-    models: Object[],
-    relation: (Relation & { name: string }),
-    include?: Object
+    models: Record<string, any>[],
+    relation: Relation & { name: string },
+    include?: Record<string, any>,
   ) {
-    const values = models.map((model) => model[relation.localField])
+    const values = models.map(model => model[relation.localField])
     // load relevant submodels
     const submodels = await this.findMany(relation.foreignTable, {
       where: {
@@ -185,22 +191,41 @@ export default class SQLiteConnector implements DBConnector {
     }
   }
 
-  async findMany(
-    collection: string,
-    options: FindManyOptions
-  ) {
+  async findMany(collection: string, options: FindManyOptions) {
     const { where, include } = options
-    const orderBy = options.orderBy ? ` ORDER BY ${Object.keys(options.orderBy).map((key) => {
-      const val = (options.orderBy || {})[key]
-      return `"${key}" ${val.toUpperCase()}`
-    }).join(', ')}` : ''
+    const orderBy = options.orderBy
+      ? ` ORDER BY ${Object.keys(options.orderBy)
+          .map(key => {
+            const val = (options.orderBy || {})[key]
+            return `"${key}" ${val.toUpperCase()}`
+          })
+          .join(', ')}`
+      : ''
     const limit = options.limit ? ` LIMIT ${options.limit} ` : ''
     const sql = `SELECT * FROM "${collection}" ${this.whereToSql(
       collection,
       where,
     )} ${orderBy} ${limit};`
     const models = await this.db.all(sql)
-    // TODO: expand Object types using JSON.parse
+    const table = this.schema[collection]
+    if (!table) throw new Error(`Unable to find table ${collection}`)
+    const objectKeys = Object.keys(table.rows).filter(key => {
+      return table.rows[key]?.type === 'Object'
+    })
+    if (objectKeys.length > 0) {
+      // need to expand json objects
+      // nested yuck!
+      // TODO handle json parse errors
+      for (const model of models) {
+        for (const key of objectKeys) {
+          // eslint-disable-next-line no-continue
+          if (typeof model[key] !== 'string') continue
+          Object.assign(model, {
+            [key]: JSON.parse(model[key]),
+          })
+        }
+      }
+    }
     await this.loadIncluded(collection, {
       models,
       include,
@@ -217,10 +242,7 @@ export default class SQLiteConnector implements DBConnector {
     return result['COUNT(*)']
   }
 
-  async update(
-    collection: string,
-    options: UpdateOptions,
-  ) {
+  async update(collection: string, options: UpdateOptions) {
     const { where, update } = options
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection} in schema`)
@@ -253,10 +275,7 @@ export default class SQLiteConnector implements DBConnector {
     return result.changes || 0
   }
 
-  async upsert(
-    collection: string,
-    options: UpsertOptions
-  ) {
+  async upsert(collection: string, options: UpsertOptions) {
     const { where, update, create } = options
     const updated = await this.update(collection, {
       where,
@@ -291,14 +310,16 @@ export default class SQLiteConnector implements DBConnector {
         Bool: 'BOOLEAN',
         Object: 'TEXT', // serialize via json in connector
       }
-      const rowCommands = rows.map(row => {
-        const fullRow = normalizeRowDef(row)
-        // relations are virtual and assigned at load time
-        if (fullRow.relation) return
-        return `"${fullRow.name}" ${typeMap[fullRow.type]} ${
-          fullRow.optional ? '' : 'NOT NULL'
-        } ${fullRow.unique ? 'UNIQUE' : ''}`
-      }).filter((i) => !!i)
+      const rowCommands = rows
+        .map(row => {
+          const fullRow = normalizeRowDef(row)
+          // relations are virtual and assigned at load time
+          if (fullRow.relation) return
+          return `"${fullRow.name}" ${typeMap[fullRow.type]} ${
+            fullRow.optional ? '' : 'NOT NULL'
+          } ${fullRow.unique ? 'UNIQUE' : ''}`
+        })
+        .filter(i => !!i)
       // Do i even need this if i'm loading manually????
       const relationCommands = rows
         .map(row => {

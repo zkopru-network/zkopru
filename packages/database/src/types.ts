@@ -1,12 +1,12 @@
 export type WhereClause = { [key: string]: any }
 
 export type FindManyOptions = {
-  where: WhereClause,
+  where: WhereClause
   orderBy?: {
     [key: string]: 'asc' | 'desc'
   }
   include?: {
-    [key: string]: boolean | Object,
+    [key: string]: boolean | Record<string, any>
   }
   limit?: number
 }
@@ -19,13 +19,13 @@ export type FindOneOptions = {
 }
 
 export type UpdateOptions = {
-  where: WhereClause,
-  update: Record<string, any>,
+  where: WhereClause
+  update: Record<string, any>
 }
 
 export type UpsertOptions = {
-  where: WhereClause,
-  update: Record<string, any>,
+  where: WhereClause
+  update: Record<string, any>
   create: Record<string, any>
 }
 
@@ -73,10 +73,7 @@ export interface DBConnector {
   // count document matching a where clause
   count: (collection: string, where: WhereClause) => Promise<number>
   // update some documents returning the number updated
-  update: (
-    collection: string,
-    options: UpdateOptions,
-  ) => Promise<number>
+  update: (collection: string, options: UpdateOptions) => Promise<number>
   // update or create some documents
   upsert: (
     collection: string,
@@ -103,8 +100,10 @@ export function normalizeRowDef(row: RowDef | ShortRowDef): RowDef {
 export type Schema = {
   [tableKey: string]:
     | {
-        rows: { [rowKey: string]: RowDef | undefined },
-        relations: { [relation: string]: (Relation & { name: string })| undefined },
+        rows: { [rowKey: string]: RowDef | undefined }
+        relations: {
+          [relation: string]: (Relation & { name: string }) | undefined
+        }
       }
     | undefined
 }
