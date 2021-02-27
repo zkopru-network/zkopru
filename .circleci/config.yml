@@ -30,6 +30,9 @@ workflows:
       - test_client:
           requires:
             - build
+      - test_database:
+          requires:
+            - build
 jobs:
   build:
     machine:
@@ -163,6 +166,15 @@ jobs:
       - run:
           name: Client Tests
           command: yarn test --scope=@zkopru/client
+  test_database:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Database Tests
+          command: yarn test --scope=@zkopru/database
   test_babyjubjub:
     machine:
       image: ubuntu-2004:202010-01
