@@ -94,7 +94,7 @@ export interface DBConnector {
   // delete a single document, return the number of documents deleted
   deleteOne: (collection: string, options: FindOneOptions) => Promise<number>
   // delete many documents, return the number of documents deleted
-  deleteMany: (collection: string, options: FindManyOptions) => Promise<number>
+  deleteMany: (collection: string, options: DeleteManyOptions) => Promise<number>
   // close the db and cleanup
   close: () => Promise<void>
 }
@@ -113,12 +113,12 @@ export function normalizeRowDef(row: RowDef | ShortRowDef): RowDef {
 
 export type Schema = {
   [tableKey: string]:
-    | {
+    | ({
         rows: { [rowKey: string]: RowDef | undefined }
         relations: {
           [relation: string]: (Relation & { name: string }) | undefined
         }
-      }
+      } & TableData)
     | undefined
 }
 
@@ -128,6 +128,7 @@ export function constructSchema(tables: TableData[]): Schema {
     schema[table.name] = {
       rows: {},
       relations: {},
+      ...table,
     }
     for (const row of table.rows) {
       const fullRow = normalizeRowDef(row)

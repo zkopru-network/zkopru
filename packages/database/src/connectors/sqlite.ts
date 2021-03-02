@@ -48,7 +48,7 @@ export class SQLiteConnector implements DBConnector {
     return connector
   }
 
-  whereToSql(collection: string, doc: Record<string, any>, joinWith = '=') {
+  whereToSql(collection: string, doc: Record<string, any> = {}, joinWith = '=') {
     if (Object.keys(doc).length === 0) return ''
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection} in schema`)
@@ -193,7 +193,7 @@ export class SQLiteConnector implements DBConnector {
 
   async findMany(collection: string, options: FindManyOptions) {
     const { where, include } = options
-    const orderBy = options.orderBy
+    const orderBy = (options.orderBy && Object.keys(options.orderBy).length > 0)
       ? ` ORDER BY ${Object.keys(options.orderBy)
           .map(key => {
             const val = (options.orderBy || {})[key]
@@ -302,9 +302,24 @@ export class SQLiteConnector implements DBConnector {
   }
 
   async deleteMany(collection: string, options: DeleteManyOptions) {
-    console.log(collection, options)
-    // TODO
-    return 0
+    const table = this.schema[collection]
+    if (!table) throw new Error(`Unable to find table "${collection}"`)
+    const orderBySql = (options.orderBy && Object.keys(options.orderBy).length > 0)
+      ? ` ORDER BY ${Object.keys(options.orderBy)
+          .map(key => {
+            const val = (options.orderBy || {})[key]
+            return `"${key}" ${val.toUpperCase()}`
+          })
+          .join(', ')}`
+      : ''
+    const limitSql = options.limit === undefined ? '' : ` LIMIT ${options.limit} `
+    const sql = `DELETE FROM "${collection}" WHERE "${table.primaryKey}" =
+    (SELECT "${table.primaryKey}" FROM "${collection}" ${this.whereToSql(collection, options.where)} ${orderBySql} ${limitSql});`
+    const { changes } = await this.db.run(sql)
+    if (changes === undefined) {
+      throw new Error(`Invalid change value returned by node-sqlite3`)
+    }
+    return changes
   }
 
   async close() {
