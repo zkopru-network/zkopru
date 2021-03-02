@@ -16,6 +16,9 @@ export type FindOneOptions = {
   orderBy?: {
     [key: string]: 'asc' | 'desc'
   }
+  include?: {
+    [key: string]: boolean | Record<string, any>
+  }
 }
 
 export type DeleteManyOptions = {
@@ -68,7 +71,10 @@ export interface TableData {
 }
 
 export interface DBConnector {
-  create: (collection: string, doc: Record<string, any>) => Promise<void>
+  create: (
+    collection: string,
+    doc: Record<string, any> | Record<string, any>[],
+  ) => Promise<number>
   findOne: (
     collection: string,
     options: FindOneOptions,
@@ -94,7 +100,10 @@ export interface DBConnector {
   // delete a single document, return the number of documents deleted
   deleteOne: (collection: string, options: FindOneOptions) => Promise<number>
   // delete many documents, return the number of documents deleted
-  deleteMany: (collection: string, options: DeleteManyOptions) => Promise<number>
+  deleteMany: (
+    collection: string,
+    options: DeleteManyOptions,
+  ) => Promise<number>
   // close the db and cleanup
   close: () => Promise<void>
 }

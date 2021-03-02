@@ -48,7 +48,11 @@ export class SQLiteConnector implements DBConnector {
     return connector
   }
 
-  whereToSql(collection: string, doc: Record<string, any> = {}, joinWith = '=') {
+  whereToSql(
+    collection: string,
+    doc: Record<string, any> = {},
+    joinWith = '=',
+  ) {
     if (Object.keys(doc).length === 0) return ''
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection} in schema`)
@@ -79,55 +83,78 @@ export class SQLiteConnector implements DBConnector {
           const values = val.map(v => parseType(rowDef.type, v))
           return `"${key}" IN (${values.join(',')})`
         }
-        return `"${key}" ${joinWith} ${parseType(rowDef.type, val)}`
+        const parsed = parseType(rowDef.type, val)
+        return `"${key}" ${parsed === 'NULL' ? 'IS' : joinWith} ${parsed}`
       })
       .join(' AND ')
     return ` WHERE ${sql} `
   }
 
-  async create(collection: string, doc: Record<string, any>) {
+  async create(
+    collection: string,
+    _doc: Record<string, any> | Record<string, any>,
+  ): Promise<number> {
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection} in schema`)
     // create defaults where needed
+    const docs = [_doc].flat()
     for (const [, row] of Object.entries(table.rows)) {
-      if (
-        !row?.default ||
-        (doc[row.name] !== undefined && doc[row.name] !== null)
-      )
-        // eslint-disable-next-line no-continue
-        continue
-      // otherwise generate default field
-      Object.assign(doc, {
-        [row.name]:
-          typeof row.default === 'function' ? row.default() : row.default,
-      })
+      for (const doc of docs) {
+        if (
+          !row?.default ||
+          (doc[row.name] !== undefined && doc[row.name] !== null)
+        )
+          // eslint-disable-next-line no-continue
+          continue
+        // otherwise generate default field
+        Object.assign(doc, {
+          [row.name]:
+            typeof row.default === 'function' ? row.default() : row.default,
+        })
+      }
     }
-    const keys = Object.keys(doc)
-      .map(k => `"${k}"`)
-      .join(',')
-    const values = Object.keys(doc)
-      .map(k => {
-        const rowDef = table.rows[k]
-        if (!rowDef)
-          throw new Error(`Unable to find row definition for key: "${k}"`)
-        const val = doc[k]
-        if (rowDef.type === 'Bool' && typeof val === 'boolean') {
-          return val ? 'true' : 'false'
-        }
-        if (rowDef.type === 'String' && typeof val === 'string') {
-          return `"${escapeQuotes(val)}"`
-        }
-        if (rowDef.type === 'Int' && typeof val === 'number') {
-          return val
-        }
-        if (rowDef.type === 'Object' && typeof val === 'object') {
-          return `"${escapeQuotes(JSON.stringify(val))}"`
-        }
-        return null
-      })
-      .join(',')
-    const sql = `INSERT INTO "${collection}" (${keys}) VALUES (${values});`
-    await this.db.exec(sql)
+    // generate keys using first document
+    const allKeys = [] as string[]
+    for (const doc of docs) {
+      allKeys.push(...Object.keys(doc))
+    }
+    const keys = [] as string[]
+    for (const key of allKeys) {
+      // eslint-disable-next-line no-continue
+      if (keys.indexOf(key) !== -1) continue
+      keys.push(key)
+    }
+    const keyString = keys.map(k => `"${k}"`).join(',')
+    const allValues = [] as string[]
+    for (const doc of docs) {
+      const values = keys
+        .map(k => {
+          const rowDef = table.rows[k]
+          if (!rowDef)
+            throw new Error(`Unable to find row definition for key: "${k}"`)
+          const val = doc[k]
+          if (rowDef.type === 'Bool' && typeof val === 'boolean') {
+            return val ? 'true' : 'false'
+          }
+          if (rowDef.type === 'String' && typeof val === 'string') {
+            return `"${escapeQuotes(val)}"`
+          }
+          if (rowDef.type === 'Int' && typeof val === 'number') {
+            return val
+          }
+          if (rowDef.type === 'Object' && typeof val === 'object') {
+            return `"${escapeQuotes(JSON.stringify(val))}"`
+          }
+          return 'NULL'
+        })
+        .join(',')
+      allValues.push(`(${values})`)
+    }
+    const sql = `INSERT INTO "${collection}" (${keyString}) VALUES ${allValues.join(
+      ', ',
+    )};`
+    const { changes } = await this.db.run(sql)
+    return changes || 0
   }
 
   async findOne(collection: string, options: FindOneOptions) {
@@ -193,14 +220,15 @@ export class SQLiteConnector implements DBConnector {
 
   async findMany(collection: string, options: FindManyOptions) {
     const { where, include } = options
-    const orderBy = (options.orderBy && Object.keys(options.orderBy).length > 0)
-      ? ` ORDER BY ${Object.keys(options.orderBy)
-          .map(key => {
-            const val = (options.orderBy || {})[key]
-            return `"${key}" ${val.toUpperCase()}`
-          })
-          .join(', ')}`
-      : ''
+    const orderBy =
+      options.orderBy && Object.keys(options.orderBy).length > 0
+        ? ` ORDER BY ${Object.keys(options.orderBy)
+            .map(key => {
+              const val = (options.orderBy || {})[key]
+              return `"${key}" ${val.toUpperCase()}`
+            })
+            .join(', ')}`
+        : ''
     const limit = options.limit ? ` LIMIT ${options.limit} ` : ''
     const sql = `SELECT * FROM "${collection}" ${this.whereToSql(
       collection,
@@ -244,6 +272,7 @@ export class SQLiteConnector implements DBConnector {
 
   async update(collection: string, options: UpdateOptions) {
     const { where, update } = options
+    if (Object.keys(update).length === 0) return 0
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection} in schema`)
     const setSql = Object.keys(update)
@@ -262,7 +291,7 @@ export class SQLiteConnector implements DBConnector {
           return `"${key}" = ${val ? 'true' : 'false'}`
         }
         if (rowDef.type === 'Object') {
-          return `"${key}" = ${escapeQuotes(JSON.stringify(val))}`
+          return `"${key}" = "${escapeQuotes(JSON.stringify(val))}"`
         }
         throw new Error('Unknown row type')
       })
@@ -304,22 +333,24 @@ export class SQLiteConnector implements DBConnector {
   async deleteMany(collection: string, options: DeleteManyOptions) {
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table "${collection}"`)
-    const orderBySql = (options.orderBy && Object.keys(options.orderBy).length > 0)
-      ? ` ORDER BY ${Object.keys(options.orderBy)
-          .map(key => {
-            const val = (options.orderBy || {})[key]
-            return `"${key}" ${val.toUpperCase()}`
-          })
-          .join(', ')}`
-      : ''
-    const limitSql = options.limit === undefined ? '' : ` LIMIT ${options.limit} `
+    const orderBySql =
+      options.orderBy && Object.keys(options.orderBy).length > 0
+        ? ` ORDER BY ${Object.keys(options.orderBy)
+            .map(key => {
+              const val = (options.orderBy || {})[key]
+              return `"${key}" ${val.toUpperCase()}`
+            })
+            .join(', ')}`
+        : ''
+    const limitSql =
+      options.limit === undefined ? '' : ` LIMIT ${options.limit} `
     const sql = `DELETE FROM "${collection}" WHERE "${table.primaryKey}" =
-    (SELECT "${table.primaryKey}" FROM "${collection}" ${this.whereToSql(collection, options.where)} ${orderBySql} ${limitSql});`
+    (SELECT "${table.primaryKey}" FROM "${collection}" ${this.whereToSql(
+      collection,
+      options.where,
+    )} ${orderBySql} ${limitSql});`
     const { changes } = await this.db.run(sql)
-    if (changes === undefined) {
-      throw new Error(`Invalid change value returned by node-sqlite3`)
-    }
-    return changes
+    return changes || 0
   }
 
   async close() {
