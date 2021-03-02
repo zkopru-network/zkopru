@@ -1,7 +1,7 @@
 import sqlite3 from 'sqlite3'
 import { open, Database, ISqlite } from 'sqlite'
 import {
-  DBConnector,
+  DB,
   WhereClause,
   DeleteManyOptions,
   FindManyOptions,
@@ -17,7 +17,7 @@ import {
 
 const escapeQuotes = (str: string) => str.replace(/"/gm, '""')
 
-export class SQLiteConnector implements DBConnector {
+export class SQLiteConnector implements DB {
   db: Database<sqlite3.Database, sqlite3.Statement>
 
   config: {
@@ -50,7 +50,7 @@ export class SQLiteConnector implements DBConnector {
 
   whereToSql(
     collection: string,
-    doc: Record<string, any> = {},
+    doc: any = {},
     joinWith = '=',
   ) {
     if (Object.keys(doc).length === 0) return ''
@@ -92,7 +92,7 @@ export class SQLiteConnector implements DBConnector {
 
   async create(
     collection: string,
-    _doc: Record<string, any> | Record<string, any>,
+    _doc: any | any,
   ): Promise<number> {
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection} in schema`)
@@ -168,7 +168,7 @@ export class SQLiteConnector implements DBConnector {
   // load related models
   async loadIncluded(
     collection: string,
-    options: { models: Record<string, any>[]; include?: Record<string, any> },
+    options: { models: any[]; include?: any },
   ) {
     const { models, include } = options
     if (!include) return
@@ -191,9 +191,9 @@ export class SQLiteConnector implements DBConnector {
 
   // load and assign submodels, mutates the models array supplied
   private async loadIncludedModels(
-    models: Record<string, any>[],
+    models: any[],
     relation: Relation & { name: string },
-    include?: Record<string, any>,
+    include?: any,
   ) {
     const values = models.map(model => model[relation.localField])
     // load relevant submodels

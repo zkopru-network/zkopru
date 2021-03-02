@@ -16,6 +16,7 @@
   "preferGlobal": true,
   "scripts": {
     "prebuild": "shx mkdir -p dist",
+    "generateTypes": "ts-node scripts/generateTypes.ts",
     "build": "tsc --build tsconfig.build.json",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "link-modules": "link-module-alias",

@@ -6,7 +6,7 @@ export type FindManyOptions = {
     [key: string]: 'asc' | 'desc'
   }
   include?: {
-    [key: string]: boolean | Record<string, any>
+    [key: string]: boolean | any
   }
   limit?: number
 }
@@ -17,7 +17,7 @@ export type FindOneOptions = {
     [key: string]: 'asc' | 'desc'
   }
   include?: {
-    [key: string]: boolean | Record<string, any>
+    [key: string]: boolean | any
   }
 }
 
@@ -31,13 +31,13 @@ export type DeleteManyOptions = {
 
 export type UpdateOptions = {
   where: WhereClause
-  update: Record<string, any>
+  update: any
 }
 
 export type UpsertOptions = {
   where: WhereClause
-  update: Record<string, any>
-  create: Record<string, any>
+  update: any
+  create: any
 }
 
 export type DataType = 'Int' | 'Bool' | 'String' | 'Object'
@@ -70,20 +70,20 @@ export interface TableData {
   rows: (RowDef | ShortRowDef)[]
 }
 
-export interface DBConnector {
+export interface DB {
   create: (
     collection: string,
-    doc: Record<string, any> | Record<string, any>[],
+    doc: any | any[],
   ) => Promise<number>
   findOne: (
     collection: string,
     options: FindOneOptions,
-  ) => Promise<Record<string, any>>
+  ) => Promise<any>
   // retrieve many documents matching a where clause
   findMany: (
     collection: string,
     options: FindManyOptions,
-  ) => Promise<Record<string, any>[]>
+  ) => Promise<any[]>
   // count document matching a where clause
   count: (collection: string, where: WhereClause) => Promise<number>
   // update some documents returning the number updated
