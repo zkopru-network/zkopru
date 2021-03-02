@@ -10,6 +10,7 @@
       "@zkopru/*": ["*/src"],
       "~account/*": ["account/src/*"],
       "~babyjubjub/*": ["babyjubjub/src/*"],
+      "~database/*": ["database/src/*"],
       "~circuits/*": ["circuits/src/*"],
       "~wallet/*": ["wallet/src/*"],
       "~contracts/*": ["contracts/src/*"],

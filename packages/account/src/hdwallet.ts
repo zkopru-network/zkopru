@@ -10,7 +10,7 @@ import HDNode from 'hdkey'
 import Web3 from 'web3'
 import { Fp } from '@zkopru/babyjubjub'
 import { hexify } from '@zkopru/utils'
-import { DB, EncryptedWallet, Keystore } from '@zkopru/prisma'
+import { DB, EncryptedWallet, Keystore } from '@zkopru/database'
 import { ZkAccount } from './account'
 
 export const PATH = (index: number) => `m/44'/60'/0'/0/${index}`
@@ -55,10 +55,7 @@ export class HDWallet {
   }
 
   async list(): Promise<EncryptedWallet[]> {
-    const wallets = await this.db.read(prisma =>
-      prisma.encryptedWallet.findMany(),
-    )
-    return wallets
+    return this.db.findMany('EncryptedWallet', { where: {} })
   }
 
   async load(wallet: EncryptedWallet, password: string) {
@@ -97,9 +94,7 @@ export class HDWallet {
 
   async retrieveAccounts(): Promise<ZkAccount[]> {
     if (!this.seed) throw Error('Not initialized')
-    const keys: Keystore[] = await this.db.read(prisma =>
-      prisma.keystore.findMany(),
-    )
+    const keys: Keystore[] = await this.db.findMany('Keystore', { where: {} })
     const accounts: ZkAccount[] = []
     for (let i = 0; i < keys.length; i += 1) {
       const ethAccount = this.web3.eth.accounts.decrypt(
@@ -124,11 +119,7 @@ export class HDWallet {
       hexify(derivedKey.privateKey, 32),
     )
     const account = ZkAccount.fromEthAccount(ethAccount)
-    await this.db.write(prisma =>
-      prisma.keystore.create({
-        data: account.toKeystoreSqlObj(this.password),
-      }),
-    )
+    await this.db.create('Keystore', account.toKeystoreSqlObj(this.password))
     return account
   }
 
@@ -165,19 +156,16 @@ export class HDWallet {
 
   async save(password: string): Promise<{ id: string }> {
     const hdwallet = this.export(password)
-    let result: EncryptedWallet
     if (!this.id) {
-      result = await this.db.write(prisma =>
-        prisma.encryptedWallet.create({ data: hdwallet }),
-      )
+      await this.db.create('EncryptedWallet', hdwallet)
     } else {
-      result = await this.db.write(prisma =>
-        prisma.encryptedWallet.update({
-          where: { id: this.id },
-          data: hdwallet,
-        }),
-      )
+      await this.db.update('EncryptedWallet', {
+        where: {
+          id: this.id,
+        },
+        update: hdwallet,
+      })
     }
-    return { id: result.id }
+    return { id: hdwallet.id }
   }
 }
