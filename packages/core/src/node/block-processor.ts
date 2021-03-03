@@ -270,17 +270,13 @@ export class BlockProcessor extends EventEmitter {
       }
     })
     // TODO use a mutex lock here
-    const promises = [] as Promise<any>[]
     for (const input of inputs) {
-      promises.push(
-        this.db.upsert('Utxo', {
-          where: { hash: input.hash },
-          create: input,
-          update: input,
-        }),
-      )
+      await this.db.upsert('Utxo', {
+        where: { hash: input.hash },
+        create: input,
+        update: input,
+      })
     }
-    await Promise.all(promises)
     // await this.db.write(prisma =>
     //   prisma.$transaction(
     //     inputs.map(input =>

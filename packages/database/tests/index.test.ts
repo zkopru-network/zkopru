@@ -310,6 +310,35 @@ describe('database tests', () => {
     }
   })
 
+  it('should not upsert if empty update', async () => {
+    await db.createTables(testSchema)
+    const table = 'Table6'
+    {
+      const doc = await db.upsert(table, {
+        where: { id: 0, },
+        create: {
+          id: 0,
+          boolField: true,
+          stringField: 'test',
+          objectField: { test: 'obj', }
+        },
+        update: {},
+      })
+      assert.equal(doc.id, 0)
+    }
+    {
+      const doc = await db.upsert(table, {
+        where: { id: 0, },
+        create: {
+          id: 0,
+          boolField: false,
+        },
+        update: {},
+      })
+      assert.equal(doc.boolField, true)
+    }
+  })
+
   it('should use operators', async () => {
     const table = 'TableTwo'
     await db.createTables(testSchema)

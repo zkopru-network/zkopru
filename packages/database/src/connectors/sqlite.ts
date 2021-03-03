@@ -355,7 +355,7 @@ export class SQLiteConnector implements DB {
 
   private async _update(collection: string, options: UpdateOptions) {
     const { where, update } = options
-    if (Object.keys(update).length === 0) return 0
+    if (Object.keys(update).length === 0) return this._count(collection, where)
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection} in schema`)
     const setSql = Object.keys(update)
@@ -402,7 +402,10 @@ export class SQLiteConnector implements DB {
     })
     if (updated > 0) {
       const docs = await this._findMany(collection, {
-        where,
+        where: {
+          ...where,
+          ...update,
+        },
       })
       if (docs.length === 1) {
         return docs[0]
