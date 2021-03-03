@@ -80,6 +80,17 @@ describe('database tests', () => {
     }
   })
 
+  it('should return null if not found', async () => {
+    await db.createTables(testSchema)
+    const table = 'TableThree'
+    const r = await db.findOne(table, {
+      where: {
+        optionalField: 'nonexistent',
+      }
+    })
+    assert.strictEqual(r, null)
+  })
+
   it('should find many', async () => {
     const table = 'TableTwo'
     await db.createTables(testSchema)

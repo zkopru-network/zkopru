@@ -158,10 +158,12 @@ export class SQLiteConnector implements DB {
     }
     // query for retrieving the created documents, uses IN operator for all
     // primary keys
-    const query = [table.primaryKey].flat().reduce((acc, key) => {
+    const uniqueKeys = keys.filter((k) => table.rows[k]?.unique)
+    const query = [table.primaryKey, uniqueKeys].flat().reduce((acc, key) => {
+      if (key === undefined) return acc
       return {
         ...acc,
-        [`${key}`]: [],
+        [key]: [],
       }
     }, {})
     const keyString = keys.map(k => `"${k}"`).join(',')
@@ -182,21 +184,25 @@ export class SQLiteConnector implements DB {
           if (rowDef.type === 'String' && typeof val === 'string') {
             return `"${escapeQuotes(val)}"`
           }
-          if (rowDef.type === 'Int' && typeof val === 'number') {
-            return val
+          if (rowDef.type === 'Int' && typeof val !== 'undefined' && val !== null) {
+            return `${val}`
           }
           if (rowDef.type === 'Object' && typeof val === 'object') {
             return `"${escapeQuotes(JSON.stringify(val))}"`
           }
           return 'NULL'
         })
+        .filter(i => !!i)
         .join(',')
       allValues.push(`(${values})`)
     }
     const sql = `INSERT INTO "${collection}" (${keyString}) VALUES ${allValues.join(
       ', ',
     )};`
-    await this.db.run(sql)
+    const { changes } = await this.db.run(sql)
+    if (changes !== docs.length) {
+      throw new Error('Failed to create document')
+    }
     if (Array.isArray(_doc)) {
       return this.findMany(collection, {
         where: query,
@@ -213,7 +219,7 @@ export class SQLiteConnector implements DB {
       ...options,
       limit: 1,
     })
-    return obj
+    return obj === undefined ? null : obj
   }
 
   // load related models
@@ -346,6 +352,7 @@ export class SQLiteConnector implements DB {
         }
         throw new Error('Unknown row type')
       })
+      .filter(i => !!i)
       .join(', ')
     const sql = `UPDATE "${collection}" SET ${setSql} ${this.whereToSql(
       collection,
