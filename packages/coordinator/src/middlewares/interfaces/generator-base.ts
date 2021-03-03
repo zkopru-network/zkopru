@@ -8,5 +8,5 @@ export abstract class GeneratorBase {
     this.context = context
   }
 
-  abstract async genBlock(): Promise<Block>
+  abstract genBlock(): Promise<Block>
 }

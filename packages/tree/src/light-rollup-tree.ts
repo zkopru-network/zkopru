@@ -549,5 +549,5 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     return false
   }
 
-  abstract async indexesOfTrackingLeaves(): Promise<T[]>
+  abstract indexesOfTrackingLeaves(): Promise<T[]>
 }

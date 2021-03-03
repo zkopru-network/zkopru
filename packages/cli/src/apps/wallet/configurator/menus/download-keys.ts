@@ -35,7 +35,7 @@ export const downloadKeys = async (
       })
       res.on('end', () => {
         bar.stop()
-        resolve()
+        resolve(null)
       })
       res.on('error', err => {
         bar.stop()
