@@ -3,7 +3,7 @@
 /* eslint-disable jest/no-hooks */
 import { toBN } from 'web3-utils'
 import BN from 'bn.js'
-import { DB, SQLiteConnector } from '~database'
+import { DB, SQLiteConnector, schema } from '~database'
 import { NullifierTree, keccakHasher, genesisRoot } from '../../src'
 
 describe('nullifier tree unit test', () => {
@@ -13,6 +13,7 @@ describe('nullifier tree unit test', () => {
   let mockup: DB
   beforeAll(async () => {
     mockup = await SQLiteConnector.create(':memory:')
+    await mockup.createTables(schema as any)
     nullifierTree = new NullifierTree({
       db: mockup,
       hasher,

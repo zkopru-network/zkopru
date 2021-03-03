@@ -2,7 +2,7 @@
 
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
-import { DB, SQLiteConnector } from '~database'
+import { DB, SQLiteConnector, schema } from '~database'
 import { Fp } from '~babyjubjub'
 import { Grove, poseidonHasher, keccakHasher, Leaf } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
@@ -15,6 +15,7 @@ describe('grove full sync grove()', () => {
   let mockup: DB
   beforeAll(async () => {
     mockup = await SQLiteConnector.create(':memory:')
+    await mockup.createTables(schema as any)
     fullSyncGrvoe = new Grove(mockup, {
       utxoTreeDepth: 31,
       withdrawalTreeDepth: 31,
@@ -155,6 +156,7 @@ describe('grove full sync grove()', () => {
       }
 
       const mockup = await SQLiteConnector.create(':memory:')
+      await mockup.createTables(schema as any)
       lightSyncGrove = new Grove(mockup, {
         utxoTreeDepth: 31,
         withdrawalTreeDepth: 31,

@@ -24,6 +24,7 @@ export default class LoadDatabase extends Configurator {
     } else if (this.base.sqlite) {
       const dbPath = this.base.sqlite
       database = await SQLiteConnector.create(dbPath)
+      await database.createTables(schema as any)
     } else {
       // no configuration. try to create new one
       const enum DBType {

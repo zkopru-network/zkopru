@@ -1,5 +1,5 @@
 import { Fp } from '@zkopru/babyjubjub'
-import { DB, LightTree, TreeSpecies, SQLiteConnector } from '@zkopru/database'
+import { DB, LightTree, TreeSpecies, SQLiteConnector, schema } from '@zkopru/database'
 import { ZkAddress } from '@zkopru/transaction'
 import { v4 } from 'uuid'
 import { genesisRoot, poseidonHasher } from './hasher'
@@ -105,6 +105,7 @@ export class UtxoTree extends LightRollUpTree<Fp> {
       siblings: preHashes.slice(0, -1),
     }
     const mockupDB = await SQLiteConnector.create(':memory:')
+    await mockupDB.createTables(schema as any)
     const utxoTree = new UtxoTree({
       db: mockupDB,
       metadata: utxoTreeMetadata,

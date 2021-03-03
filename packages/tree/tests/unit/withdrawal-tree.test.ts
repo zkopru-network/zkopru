@@ -3,7 +3,7 @@
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { Fp } from '~babyjubjub'
-import { DB, TreeSpecies, SQLiteConnector } from '~database'
+import { DB, TreeSpecies, SQLiteConnector, schema } from '~database'
 import {
   WithdrawalTree,
   TreeConfig,
@@ -39,6 +39,7 @@ describe('withdrawal tree unit test', () => {
   let mockup: DB
   beforeAll(async () => {
     mockup = await SQLiteConnector.create(':memory:')
+    await mockup.createTables(schema as any)
     withdrawalTree = new WithdrawalTree({
       db: mockup,
       metadata: withdrawalTreeMetadata,

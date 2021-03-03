@@ -4,7 +4,7 @@ import { Fp } from '~babyjubjub'
 import { UtxoTree, poseidonHasher, Leaf, verifyProof } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
 import { accounts } from '~dataset/testset-predefined'
-import { SQLiteConnector, DB } from '~database'
+import { DB } from '~database'
 
 describe('utxo tree unit test', () => {
   let utxoTree: UtxoTree
