@@ -1,5 +1,11 @@
 import { Fp } from '@zkopru/babyjubjub'
-import { DB, LightTree, TreeSpecies, SQLiteConnector, schema } from '@zkopru/database'
+import {
+  DB,
+  LightTree,
+  TreeSpecies,
+  SQLiteConnector,
+  schema,
+} from '@zkopru/database'
 import { ZkAddress } from '@zkopru/transaction'
 import { v4 } from 'uuid'
 import { genesisRoot, poseidonHasher } from './hasher'
@@ -37,7 +43,7 @@ export class UtxoTree extends LightRollUpTree<Fp> {
       where: {
         treeId: this.metadata.id,
         owner: keys,
-      }
+      },
     })
     return trackingLeaves
       .filter(leaf => leaf.index !== null)
@@ -83,9 +89,7 @@ export class UtxoTree extends LightRollUpTree<Fp> {
     })
   }
 
-  static async sample(
-    depth: number,
-  ): Promise<{ tree: UtxoTree; db: DB }> {
+  static async sample(depth: number): Promise<{ tree: UtxoTree; db: DB }> {
     const utxoTreeMetadata = {
       id: v4(),
       index: 1,

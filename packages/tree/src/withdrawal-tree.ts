@@ -32,11 +32,8 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
     const trackingLeaves = await this.db.findMany('Withdrawal', {
       where: {
         treeId: this.metadata.id,
-        OR: [
-          { to: keys, },
-          { prepayer: keys, },
-        ]
-      }
+        OR: [{ to: keys }, { prepayer: keys }],
+      },
     })
     return trackingLeaves
       .filter(leaf => leaf.index !== null)

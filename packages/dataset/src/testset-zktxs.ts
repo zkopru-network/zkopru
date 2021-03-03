@@ -53,7 +53,7 @@ export async function saveUtxos(db: DB, utxos: Utxo[]): Promise<DB> {
   const utxoTree = await db.findOne('LightTree', {
     where: {
       species: TreeSpecies.UTXO,
-    }
+    },
   })
   if (!utxoTree) throw Error('Failed to get utxo gree from grove')
   for (let i = 0; i < utxos.length; i += 1) {

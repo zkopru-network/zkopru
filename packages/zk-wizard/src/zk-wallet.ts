@@ -164,7 +164,7 @@ export class ZkWallet {
       where: {
         to: targetAccount.ethAddress,
         status,
-      }
+      },
     })
     return withdrawals
   }
@@ -178,7 +178,7 @@ export class ZkWallet {
         owner: [targetAccount.zkAddress.toString()],
         status,
         usedAt: null,
-      }
+      },
     })
     const notes: Utxo[] = []
     noteSqls.forEach(obj => {
@@ -512,15 +512,15 @@ export class ZkWallet {
 
   async lockUtxos(utxos: Utxo[]): Promise<void> {
     await this.db.update('Utxo', {
-        where: {
-          hash: utxos.map(utxo =>
-            utxo
-              .hash()
-              .toUint256()
-              .toString(),
-            ),
-        },
-        update: { status: UtxoStatus.SPENDING },
+      where: {
+        hash: utxos.map(utxo =>
+          utxo
+            .hash()
+            .toUint256()
+            .toString(),
+        ),
+      },
+      update: { status: UtxoStatus.SPENDING },
     })
   }
 

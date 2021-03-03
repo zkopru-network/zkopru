@@ -17,7 +17,7 @@ export class Tracker {
 
   async refresh() {
     const trackers = await this.db.findMany('Tracker', {
-      where: {}
+      where: {},
     })
     const l2Accounts: ZkViewer[] = []
     const l1Accounts: Address[] = []

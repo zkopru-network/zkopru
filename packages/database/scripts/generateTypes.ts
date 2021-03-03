@@ -4,10 +4,10 @@ import schema from '../src/schema'
 import { normalizeRowDef } from '../src/types'
 
 const typeMap = {
-  'String': 'string',
-  'Bool': 'boolean',
-  'Int': 'number',
-  'Object': 'Object',
+  String: 'string',
+  Bool: 'boolean',
+  Int: 'number',
+  Object: 'Object',
 }
 
 const types = [] as string[]
@@ -18,7 +18,9 @@ for (const table of schema) {
     const rowDef = normalizeRowDef(row as any)
     const optional = rowDef.optional || typeof rowDef.relation !== 'undefined'
     rowTypes.push(
-      `${rowDef.name}${optional ? '?' : ''}: ${typeMap[rowDef.type]}${optional ? ' | null' : ''};`
+      `${rowDef.name}${optional ? '?' : ''}: ${typeMap[rowDef.type]}${
+        optional ? ' | null' : ''
+      };`,
     )
   }
   types.push(`export type ${table.name} = {
@@ -26,7 +28,6 @@ for (const table of schema) {
 }`)
 }
 const typeString = types.join('\n\n')
-
 ;(async () => {
   await fs.writeFile(path.join(__dirname, '../src/schema.types.ts'), typeString)
 })()

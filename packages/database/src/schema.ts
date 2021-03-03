@@ -114,8 +114,8 @@ export default [
         relation: {
           localField: 'hash',
           foreignField: 'hash',
-          foreignTable: 'Proposal'
-        }
+          foreignTable: 'Proposal',
+        },
       },
       ['bootstrap', 'Object', { optional: true }],
       ['slash', 'Object', { optional: true }],

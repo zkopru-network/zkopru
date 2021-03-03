@@ -86,7 +86,7 @@ describe('database tests', () => {
     const r = await db.findOne(table, {
       where: {
         optionalField: 'nonexistent',
-      }
+      },
     })
     assert.strictEqual(r, null)
   })
@@ -322,7 +322,7 @@ describe('database tests', () => {
     {
       const docs = await db.findMany(table, {
         where: {
-          counterField: { lt: 3 }
+          counterField: { lt: 3 },
         },
       })
       assert.equal(docs.length, 3)
@@ -330,7 +330,7 @@ describe('database tests', () => {
     {
       const docs = await db.findMany(table, {
         where: {
-          counterField: { lte: 3 }
+          counterField: { lte: 3 },
         },
       })
       assert.equal(docs.length, 4)
@@ -338,7 +338,7 @@ describe('database tests', () => {
     {
       const docs = await db.findMany(table, {
         where: {
-          counterField: { gt: 3 }
+          counterField: { gt: 3 },
         },
       })
       assert.equal(docs.length, 6)
@@ -346,7 +346,7 @@ describe('database tests', () => {
     {
       const docs = await db.findMany(table, {
         where: {
-          counterField: { gte: 3 }
+          counterField: { gte: 3 },
         },
       })
       assert.equal(docs.length, 7)
@@ -354,7 +354,7 @@ describe('database tests', () => {
     {
       const docs = await db.findMany(table, {
         where: {
-          counterField: { ne: 3 }
+          counterField: { ne: 3 },
         },
       })
       assert.equal(docs.length, 9)
@@ -373,7 +373,7 @@ describe('database tests', () => {
     {
       const docs = await db.findMany(table, {
         where: {
-          OR: [{ counterField: 0 }, { counterField: 1 }]
+          OR: [{ counterField: 0 }, { counterField: 1 }],
         },
       })
       assert.equal(docs.length, 2)
@@ -382,7 +382,7 @@ describe('database tests', () => {
       const docs = await db.findMany(table, {
         where: {
           OR: [{ counterField: 0 }, { counterField: 1 }],
-          counterField: { gt: 5 }
+          counterField: { gt: 5 },
         },
       })
       assert.equal(docs.length, 0)

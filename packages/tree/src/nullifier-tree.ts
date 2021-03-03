@@ -4,7 +4,12 @@ import AsyncLock from 'async-lock'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { hexify, logger } from '@zkopru/utils'
-import { DB, TreeNode, NULLIFIER_TREE_ID, getCachedSiblings } from '@zkopru/database'
+import {
+  DB,
+  TreeNode,
+  NULLIFIER_TREE_ID,
+  getCachedSiblings,
+} from '@zkopru/database'
 import { Hasher, genesisRoot } from './hasher'
 import { verifyProof, MerkleProof } from './merkle-proof'
 
@@ -234,7 +239,7 @@ export class NullifierTree implements SMT<BN> {
       where: {
         treeId: NULLIFIER_TREE_ID,
         nodeIndex: [...nodeIndices],
-      }
+      },
     })
     // const mutatedNodes: TreeNode[] = await this.db.read(prisma =>
     //   prisma.treeNode.findMany({

@@ -400,7 +400,7 @@ export class Coordinator extends EventEmitter {
     const blocks = await this.layer2().db.findMany('Header', {
       where: {
         parentBlock: latest,
-      }
+      },
     })
     const blockHashes = blocks.map(({ hash }) => hash)
     const unfinalizedProposals = await this.layer2().db.findMany('Proposal', {
@@ -412,7 +412,7 @@ export class Coordinator extends EventEmitter {
         proposalData: { ne: null },
         proposedAt: {
           lt: currentBlockNumber - l1Config.challengePeriod,
-        }
+        },
       },
       limit: 1,
     })

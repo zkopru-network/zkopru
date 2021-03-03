@@ -1,19 +1,25 @@
+import Web3 from 'web3'
+import schema from './schema'
+
+import { DB } from './types'
+import { Config } from './schema.types'
+
 export { SQLiteConnector } from './connectors/sqlite'
 export { DB, TableData } from './types'
 export * from './schema.types'
 export * from './preset'
-import schema from './schema'
 export { schema }
-
-import { DB } from './types'
-import { Config } from './schema.types'
-import Web3 from 'web3'
 
 interface L1Contract {
   getConfig(): Promise<Config>
 }
 
-export async function initDB(db: DB, web3: Web3, address: string, layer1: L1Contract) {
+export async function initDB(
+  db: DB,
+  web3: Web3,
+  address: string,
+  layer1: L1Contract,
+) {
   const [networkId, chainId] = await Promise.all([
     web3.eth.net.getId(),
     web3.eth.getChainId(),
@@ -23,7 +29,7 @@ export async function initDB(db: DB, web3: Web3, address: string, layer1: L1Cont
       networkId,
       address,
       chainId,
-    }
+    },
   })
   if (!config) {
     const configFromContract = await layer1.getConfig()

@@ -169,14 +169,14 @@ export class OffchainTxValidator extends OffchainValidatorContext
     const headers = await this.layer2.db.findMany('Header', {
       where: {
         utxoRoot: inclusionRef.toString(),
-      }
+      },
     })
     // If any of the found header is finalized, it returns true
     const finalized = await this.layer2.db.findMany('Proposal', {
       where: {
         finalized: true,
         hash: headers.map(h => h.hash),
-      }
+      },
     })
     if (finalized.length > 0) return true
     // Or check the recent precedent blocks has that utxo tree root

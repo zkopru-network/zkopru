@@ -101,7 +101,7 @@ export class BlockProcessor extends EventEmitter {
         if (!unprocessed) {
           const latestProcessed = await this.db.findMany('Proposal', {
             where: {
-              OR: [{ verified: { ne: null }}, { isUncle: { ne: null }}],
+              OR: [{ verified: { ne: null } }, { isUncle: { ne: null } }],
             },
             orderBy: { proposalNum: 'desc' },
             limit: 1,
@@ -272,11 +272,13 @@ export class BlockProcessor extends EventEmitter {
     // TODO use a mutex lock here
     const promises = [] as Promise<any>[]
     for (const input of inputs) {
-      promises.push(this.db.upsert('Utxo', {
-        where: { hash: input.hash },
-        create: input,
-        update: input,
-      }))
+      promises.push(
+        this.db.upsert('Utxo', {
+          where: { hash: input.hash },
+          create: input,
+          update: input,
+        }),
+      )
     }
     await Promise.all(promises)
     // await this.db.write(prisma =>
@@ -440,7 +442,7 @@ export class BlockProcessor extends EventEmitter {
     const nonIncluded = await this.db.findMany('MassDeposit', {
       where: {
         includedIn: null,
-      }
+      },
     })
     const candidates: { [index: string]: MassDepositSql } = {}
     nonIncluded.forEach(md => {
@@ -541,12 +543,11 @@ export class BlockProcessor extends EventEmitter {
     const myStoredWithdrawals = await this.db.findMany('Withdrawal', {
       where: {
         hash: patch.treePatch.withdrawals.map(leaf => {
-          if (!leaf.noteHash)
-            throw Error('Patch should provide noteHash field')
+          if (!leaf.noteHash) throw Error('Patch should provide noteHash field')
           return leaf.noteHash?.toString()
         }),
         to: accounts.map(account => account.toString()),
-      }
+      },
     })
     // const myStoredWithdrawals = await this.db.read(prisma =>
     //   prisma.withdrawal.findMany({

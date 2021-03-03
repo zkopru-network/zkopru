@@ -1,5 +1,7 @@
+/* eslint-disable no-underscore-dangle */
 import sqlite3 from 'sqlite3'
-import { open, } from 'sqlite'
+import { open } from 'sqlite'
+import AsyncLock from 'async-lock'
 import {
   DB,
   WhereClause,
@@ -14,12 +16,11 @@ import {
   Schema,
   Relation,
 } from '../types'
-import AsyncLock from 'async-lock'
 
 const escapeQuotes = (str: string) => str.replace(/"/gm, '""')
 
 export class SQLiteConnector implements DB {
-  db: any //Database<sqlite3.Database, sqlite3.Statement>
+  db: any // Database<sqlite3.Database, sqlite3.Statement>
 
   config: {
     filename: string
@@ -29,7 +30,7 @@ export class SQLiteConnector implements DB {
 
   lock = new AsyncLock()
 
-  constructor(config: any /*ISqlite.Config*/) {
+  constructor(config: any /* ISqlite.Config */) {
     this.config = config
     this.db = {} as any
   }
@@ -38,7 +39,7 @@ export class SQLiteConnector implements DB {
     this.db = await open(this.config)
   }
 
-  static async create(_config: any /*ISqlite.Config*/ | string) {
+  static async create(_config: any /* ISqlite.Config */ | string) {
     const config =
       typeof _config === 'string'
         ? {
@@ -51,11 +52,7 @@ export class SQLiteConnector implements DB {
     return connector
   }
 
-  whereToSql(
-    collection: string,
-    doc: any = {},
-    sqlOnly = false,
-  ) {
+  whereToSql(collection: string, doc: any = {}, sqlOnly = false) {
     if (Object.keys(doc).length === 0) return ''
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection} in schema`)
@@ -86,7 +83,8 @@ export class SQLiteConnector implements DB {
           // need to generate an IN query
           const values = val.map(v => parseType(rowDef.type, v))
           return `"${key}" IN (${values.join(',')})`
-        } else if (typeof val === 'object' && val !== null) {
+        }
+        if (typeof val === 'object' && val !== null) {
           // parse lt, gt, lte, gte, ne operators
           const operatorMap = {
             lt: '<',
@@ -100,13 +98,13 @@ export class SQLiteConnector implements DB {
             ne: 'IS NOT',
             eq: 'IS',
           }
-          return Object.keys(val)
-            .map((k) => {
-              const operator = val[k] === null ? nullOperatorMap[k] : operatorMap[k]
-              if (!operator) throw new Error(`Invalid operator ${k}`)
-              const parsed = parseType(rowDef.type, val[k])
-              return `"${key}" ${operator} ${parsed}`
-            })
+          return Object.keys(val).map(k => {
+            const operator =
+              val[k] === null ? nullOperatorMap[k] : operatorMap[k]
+            if (!operator) throw new Error(`Invalid operator ${k}`)
+            const parsed = parseType(rowDef.type, val[k])
+            return `"${key}" ${operator} ${parsed}`
+          })
         }
         const parsed = parseType(rowDef.type, val)
         return `"${key}" ${parsed === 'NULL' ? 'IS' : '='} ${parsed}`
@@ -115,27 +113,20 @@ export class SQLiteConnector implements DB {
       .filter(i => !!i)
       .join(' AND ')
     if (Array.isArray(doc.OR)) {
-      const orConditions = doc.OR
-        .map((w) => this.whereToSql(collection, w, true))
-        .join(' OR ')
+      const orConditions = doc.OR.map(w =>
+        this.whereToSql(collection, w, true),
+      ).join(' OR ')
       return ` ${sqlOnly ? '' : 'WHERE'}
       (${sql || 1}) AND (${orConditions})`
-    } else {
-      return ` ${sqlOnly ? '' : 'WHERE'} ${sql} `
     }
+    return ` ${sqlOnly ? '' : 'WHERE'} ${sql} `
   }
 
-  async create(
-    collection: string,
-    _doc: any | any,
-  ): Promise<any> {
-    return this.lock.acquire('db', async () => await this._create(collection, _doc))
+  async create(collection: string, _doc: any | any): Promise<any> {
+    return this.lock.acquire('db', async () => this._create(collection, _doc))
   }
 
-  private async _create(
-    collection: string,
-    _doc: any | any,
-  ): Promise<any> {
+  private async _create(collection: string, _doc: any | any): Promise<any> {
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection} in schema`)
     // create defaults where needed
@@ -168,7 +159,7 @@ export class SQLiteConnector implements DB {
     }
     // query for retrieving the created documents, uses IN operator for all
     // primary keys
-    const uniqueKeys = keys.filter((k) => table.rows[k]?.unique)
+    const uniqueKeys = keys.filter(k => table.rows[k]?.unique)
     const query = [table.primaryKey, uniqueKeys].flat().reduce((acc, key) => {
       if (key === undefined) return acc
       return {
@@ -194,7 +185,11 @@ export class SQLiteConnector implements DB {
           if (rowDef.type === 'String' && typeof val === 'string') {
             return `"${escapeQuotes(val)}"`
           }
-          if (rowDef.type === 'Int' && typeof val !== 'undefined' && val !== null) {
+          if (
+            rowDef.type === 'Int' &&
+            typeof val !== 'undefined' &&
+            val !== null
+          ) {
             return `${val}`
           }
           if (rowDef.type === 'Object' && typeof val === 'object') {
@@ -217,15 +212,16 @@ export class SQLiteConnector implements DB {
       return this._findMany(collection, {
         where: query,
       })
-    } else {
-      return this._findOne(collection, {
-        where: query,
-      })
     }
+    return this._findOne(collection, {
+      where: query,
+    })
   }
 
   async findOne(collection: string, options: FindOneOptions) {
-    return this.lock.acquire('db', async () => await this._findOne(collection, options))
+    return this.lock.acquire('db', async () =>
+      this._findOne(collection, options),
+    )
   }
 
   async _findOne(collection: string, options: FindOneOptions) {
@@ -290,7 +286,9 @@ export class SQLiteConnector implements DB {
   }
 
   async findMany(collection: string, options: FindManyOptions) {
-    return this.lock.acquire('db', async () => await this._findMany(collection, options))
+    return this.lock.acquire('db', async () =>
+      this._findMany(collection, options),
+    )
   }
 
   async _findMany(collection: string, options: FindManyOptions) {
@@ -337,7 +335,7 @@ export class SQLiteConnector implements DB {
   }
 
   async count(collection: string, where: WhereClause) {
-    return this.lock.acquire('db', async () => await this._count(collection, where))
+    return this.lock.acquire('db', async () => this._count(collection, where))
   }
 
   async _count(collection: string, where: WhereClause) {
@@ -350,7 +348,9 @@ export class SQLiteConnector implements DB {
   }
 
   async update(collection: string, options: UpdateOptions) {
-    return this.lock.acquire('db', async () => await this._update(collection, options))
+    return this.lock.acquire('db', async () =>
+      this._update(collection, options),
+    )
   }
 
   private async _update(collection: string, options: UpdateOptions) {
@@ -389,7 +389,9 @@ export class SQLiteConnector implements DB {
   }
 
   async upsert(collection: string, options: UpsertOptions) {
-    return this.lock.acquire('db', async () => await this._upsert(collection, options))
+    return this.lock.acquire('db', async () =>
+      this._upsert(collection, options),
+    )
   }
 
   async _upsert(collection: string, options: UpsertOptions) {
@@ -404,9 +406,8 @@ export class SQLiteConnector implements DB {
       })
       if (docs.length === 1) {
         return docs[0]
-      } else {
-        return docs
       }
+      return docs
     }
     return this._create(collection, create)
   }
@@ -419,7 +420,9 @@ export class SQLiteConnector implements DB {
   }
 
   async deleteMany(collection: string, options: DeleteManyOptions) {
-    return this.lock.acquire('db', async () => await this._deleteMany(collection, options))
+    return this.lock.acquire('db', async () =>
+      this._deleteMany(collection, options),
+    )
   }
 
   private async _deleteMany(collection: string, options: DeleteManyOptions) {

@@ -5,7 +5,13 @@ import AsyncLock from 'async-lock'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import assert from 'assert'
-import { DB, TreeSpecies, LightTree, TreeNode, getCachedSiblings } from '@zkopru/database'
+import {
+  DB,
+  TreeSpecies,
+  LightTree,
+  TreeNode,
+  getCachedSiblings,
+} from '@zkopru/database'
 import { ZkAddress } from '@zkopru/transaction'
 import { Hasher, genesisRoot } from './hasher'
 import { MerkleProof, verifyProof, startingLeafProof } from './merkle-proof'
@@ -88,7 +94,7 @@ export class Grove {
       let utxoTreeData = await this.db.findOne('LightTree', {
         where: {
           species: TreeSpecies.UTXO,
-        }
+        },
       })
 
       if (utxoTreeData === null) {

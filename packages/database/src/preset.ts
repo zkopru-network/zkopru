@@ -4,7 +4,7 @@ import { hexify } from '@zkopru/utils'
 import { TreeNode } from './schema.types'
 import { DB } from './types'
 
-export async function getCachedSiblings (
+export async function getCachedSiblings(
   db: DB,
   depth: number,
   treeId: string,

@@ -28,9 +28,11 @@
     "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/utils": "file:../utils",
     "async-lock": "^1.2.8",
+    "bn.js": "^4.12.0",
     "sqlite": "^4.0.19",
     "sqlite3": "^5.0.2",
-    "uuid": "^8.3.2"
+    "uuid": "^8.3.2",
+    "web3": "^1.3.4"
   },
   "publishConfig": {
     "access": "public"

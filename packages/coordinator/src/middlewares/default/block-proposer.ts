@@ -15,7 +15,7 @@ export class BlockProposer extends ProposerBase {
     const blocks = await layer2.db.findMany('Header', {
       where: {
         parentBlock: block.header.parentBlock.toString(),
-      }
+      },
     })
     const blockHashes = blocks.map(({ hash }) => hash)
     const siblingProposals = await layer2.db.findMany('Proposal', {

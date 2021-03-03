@@ -65,7 +65,7 @@ export class L2Chain {
         isUncle: null,
       },
       orderBy: { proposalNum: 'desc' },
-      include: { block: { header: true }},
+      include: { block: { header: true } },
     })
     if (!lastVerifiedProposal) throw Error('no verified proposal')
     return Bytes32.from(lastVerifiedProposal.hash)
@@ -275,13 +275,12 @@ export class L2Chain {
         parentBlock: parentBlock.toString(),
       },
     })
-    const blockHashes = headers
-      .map(({ hash }) => hash)
+    const blockHashes = headers.map(({ hash }) => hash)
     const canonical = await this.db.findMany('Proposal', {
       where: {
         verified: true,
         hash: blockHashes,
-        proposalNum: { lt: proposalNum, }
+        proposalNum: { lt: proposalNum },
       },
       orderBy: { proposalNum: 'asc' },
     })
@@ -398,7 +397,7 @@ export class L2Chain {
     const newRegistrations = await this.db.findMany('TokenRegistry', {
       where: {
         blockNumber: { gte: this.tokenRegistry.blockNumber },
-      }
+      },
     })
     newRegistrations.forEach(registration => {
       const tokenAddress = Address.from(registration.address)

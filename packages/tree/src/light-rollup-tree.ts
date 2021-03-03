@@ -298,7 +298,6 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
   private async _getCachedSiblings(
     leafIndex: T,
   ): Promise<{ [index: string]: string }> {
-
     const cachedSiblings = await getCachedSiblings(
       this.db,
       this.depth,

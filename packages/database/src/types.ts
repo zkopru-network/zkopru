@@ -71,28 +71,16 @@ export interface TableData {
 }
 
 export interface DB {
-  create: (
-    collection: string,
-    doc: any | any[],
-  ) => Promise<any>
-  findOne: (
-    collection: string,
-    options: FindOneOptions,
-  ) => Promise<any>
+  create: (collection: string, doc: any | any[]) => Promise<any>
+  findOne: (collection: string, options: FindOneOptions) => Promise<any>
   // retrieve many documents matching a where clause
-  findMany: (
-    collection: string,
-    options: FindManyOptions,
-  ) => Promise<any[]>
+  findMany: (collection: string, options: FindManyOptions) => Promise<any[]>
   // count document matching a where clause
   count: (collection: string, where: WhereClause) => Promise<number>
   // update some documents returning the number updated
   update: (collection: string, options: UpdateOptions) => Promise<number>
   // update or create some documents
-  upsert: (
-    collection: string,
-    options: UpsertOptions,
-  ) => Promise<any>
+  upsert: (collection: string, options: UpsertOptions) => Promise<any>
   // request that an index be created between some keys, if supported
   ensureIndex: (collection: string, name: string, keys: string[]) => void
   // provide a schema to connectors that need schema info
