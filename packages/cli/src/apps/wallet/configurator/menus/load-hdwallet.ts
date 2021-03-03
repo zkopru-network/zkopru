@@ -1,7 +1,8 @@
 import chalk from 'chalk'
 import { HDWallet, ZkAccount } from '@zkopru/account'
 import { validateMnemonic, wordlists } from 'bip39'
-import { EncryptedWallet } from '@zkopru/prisma'
+// import { EncryptedWallet } from '@zkopru/prisma'
+import { EncryptedWallet } from '@zkopru/database'
 import Configurator, { Context, Menu } from '../configurator'
 
 export default class LoadHDWallet extends Configurator {

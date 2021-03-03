@@ -2,7 +2,7 @@
 
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
-import { DB, MockupDB } from '~prisma'
+import { DB, SQLiteConnector } from '~database'
 import { Fp } from '~babyjubjub'
 import { Grove, poseidonHasher, keccakHasher, Leaf } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
@@ -12,10 +12,10 @@ import { accounts, address } from '~dataset/testset-predefined'
 describe('grove full sync grove()', () => {
   let fullSyncGrvoe: Grove
   let lightSyncGrove: Grove
-  let mockup: MockupDB
+  let mockup: DB
   beforeAll(async () => {
-    mockup = await DB.testMockup()
-    fullSyncGrvoe = new Grove(mockup.db, {
+    mockup = await SQLiteConnector.create(':memory:')
+    fullSyncGrvoe = new Grove(mockup, {
       utxoTreeDepth: 31,
       withdrawalTreeDepth: 31,
       utxoSubTreeSize: 32,
@@ -32,7 +32,7 @@ describe('grove full sync grove()', () => {
     await fullSyncGrvoe.init()
   })
   afterAll(async () => {
-    await mockup.terminate()
+    await mockup.close()
   })
   it('should have nullifier tree when it has full sync option', async () => {
     expect(fullSyncGrvoe.nullifierTree).toBeDefined()
@@ -154,8 +154,8 @@ describe('grove full sync grove()', () => {
         },
       }
 
-      const mockup = await DB.testMockup()
-      lightSyncGrove = new Grove(mockup.db, {
+      const mockup = await SQLiteConnector.create(':memory:')
+      lightSyncGrove = new Grove(mockup, {
         utxoTreeDepth: 31,
         withdrawalTreeDepth: 31,
         utxoSubTreeSize: 32,
@@ -189,7 +189,7 @@ describe('grove full sync grove()', () => {
           .latestLeafIndex()
           .eq(fullSyncGrvoe.withdrawalTree.latestLeafIndex()),
       ).toBe(true)
-      await mockup.terminate()
+      await mockup.close()
     })
   })
 })

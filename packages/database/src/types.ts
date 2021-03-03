@@ -135,7 +135,6 @@ export function constructSchema(tables: TableData[]): Schema {
   const schema = {}
   for (const table of tables) {
     schema[table.name] = {
-      rows: {},
       relations: {},
       ...table,
     }

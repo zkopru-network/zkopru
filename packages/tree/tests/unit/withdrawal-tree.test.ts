@@ -3,7 +3,7 @@
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { Fp } from '~babyjubjub'
-import { DB, TreeSpecies, MockupDB } from '~prisma'
+import { DB, TreeSpecies, SQLiteConnector } from '~database'
 import {
   WithdrawalTree,
   TreeConfig,
@@ -36,11 +36,11 @@ describe('withdrawal tree unit test', () => {
     index: Fp.zero,
     siblings: preHashes.slice(0, -1),
   }
-  let mockup: MockupDB
+  let mockup: DB
   beforeAll(async () => {
-    mockup = await DB.testMockup()
+    mockup = await SQLiteConnector.create(':memory:')
     withdrawalTree = new WithdrawalTree({
-      db: mockup.db,
+      db: mockup,
       metadata: withdrawalTreeMetadata,
       data: withdrawalTreeInitialData,
       config: withdrawalTreeConfig,
@@ -48,7 +48,7 @@ describe('withdrawal tree unit test', () => {
     await withdrawalTree.init()
   })
   afterAll(async () => {
-    await mockup.terminate()
+    await mockup.close()
   })
   describe('root()', () => {
     it('should return the genesis root value for its initial root', () => {

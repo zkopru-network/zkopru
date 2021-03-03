@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { ZkAccount } from '@zkopru/account'
-import { DB } from '@zkopru/prisma'
+import { DB } from '@zkopru/database'
 import { Grove, poseidonHasher, keccakHasher } from '@zkopru/tree'
 import { logger } from '@zkopru/utils'
 import { L1Contract } from '../context/layer1'
@@ -126,17 +126,13 @@ export class ZkopruNode {
       ? accounts.map(account => account.ethAddress)
       : []
 
-    const savedConfig = await db.read(prisma =>
-      prisma.config.findOne({
-        where: {
-          networkId_chainId_address: {
-            networkId,
-            chainId,
-            address,
-          },
-        },
-      }),
-    )
+    const savedConfig = await db.findOne('Config', {
+      where: {
+        networkId,
+        chainId,
+        address,
+      },
+    })
     const config = savedConfig || (await l1Contract.getConfig())
     const vks = await l1Contract.getVKs()
     // l1Contract.upstream.
@@ -162,13 +158,13 @@ export class ZkopruNode {
   // idempotently calculate canonical numbers
   private async calcCanonicalBlockHeights() {
     // find earliest block with no canonical num
-    const startBlock = await this.db.read(prisma =>
-      prisma.proposal.findMany({
-        where: { canonicalNum: null },
-        orderBy: { proposalNum: 'asc' },
-        take: 1,
-      }),
-    )
+    const startBlock = await this.db.findMany('Proposal', {
+      where: {
+        canonicalNum: null,
+      },
+      orderBy: { proposalNum: 'asc' },
+      limit: 1,
+    })
     if (startBlock.length === 0) {
       // have canonical numbers for all blocks
       return
@@ -178,7 +174,7 @@ export class ZkopruNode {
     if (proposalNum === null) {
       throw new Error('Proposal number is null')
     }
-    const blockHeight = await this.db.read(prisma => prisma.proposal.count({}))
+    const blockHeight = await this.db.count('Proposal', {})
     const latestProcessed = this.synchronizer.latestProcessed || 0
     for (
       let x = proposalNum;
@@ -190,31 +186,25 @@ export class ZkopruNode {
   }
 
   private async calcCanonicalBlockHeight(proposalNum: number) {
-    const proposals = await this.db.read(prisma =>
-      prisma.proposal.findMany({
-        where: { proposalNum },
-      }),
-    )
+    const proposals = await this.db.findMany('Proposal', {
+      where: { proposalNum },
+    })
     if (proposals.length !== 1) {
       throw new Error(`Did not find one proposal for number: ${proposalNum}`)
     }
     const [proposal] = proposals
     const { hash } = proposal
     if (proposalNum === 0) {
-      await this.db.write(prisma =>
-        prisma.proposal.update({
-          where: { hash },
-          data: { canonicalNum: 0 },
-        }),
-      )
+      await this.db.update('Proposal', {
+        where: { hash },
+        update: { canonicalNum: 0 },
+      })
       // eslint-disable-next-line no-continue
       return
     }
-    const header = await this.db.read(prisma =>
-      prisma.header.findOne({
-        where: { hash },
-      }),
-    )
+    const header = await this.db.findOne('Header', {
+      where: { hash },
+    })
     if (!header) {
       throw new Error(`Unable to find header for proposal ${proposal.hash}`)
     }

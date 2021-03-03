@@ -12,24 +12,44 @@ export class BlockProposer extends ProposerBase {
       throw Error('coordinator.js: Gas price is not synced')
     }
     const { layer1, layer2 } = this.context.node
-    const siblingProposals = await layer2.db.read(prisma =>
-      prisma.proposal.findMany({
-        where: {
-          OR: [
-            {
-              block: {
-                header: { parentBlock: block.header.parentBlock.toString() },
-              },
-              verified: true,
-              isUncle: null,
-            },
-            {
-              hash: block.hash.toString(),
-            },
-          ],
-        },
-      }),
-    )
+    const blocks = await layer2.db.findMany('Header', {
+      where: {
+        parentBlock: block.header.parentBlock.toString(),
+      }
+    })
+    const blockHashes = blocks.map(({ hash }) => hash)
+    const siblingProposals = await layer2.db.findMany('Proposal', {
+      where: {
+        OR: [
+          {
+            hash: blockHashes,
+            verified: true,
+            isUncle: null,
+          },
+          {
+            hash: block.hash.toString(),
+          },
+        ],
+      },
+    })
+    // const siblingProposals = await layer2.db.read(prisma =>
+    //   prisma.proposal.findMany({
+    //     where: {
+    //       OR: [
+    //         {
+    //           block: {
+    //             header: { parentBlock: block.header.parentBlock.toString() },
+    //           },
+    //           verified: true,
+    //           isUncle: null,
+    //         },
+    //         {
+    //           hash: block.hash.toString(),
+    //         },
+    //       ],
+    //     },
+    //   }),
+    // )
     if (siblingProposals.length > 0) {
       logger.info(`Already proposed for the given parent block`)
       return undefined

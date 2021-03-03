@@ -11,7 +11,7 @@ import fetch from 'node-fetch'
 import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
 import { readFromContainer, sleep, pullOrBuildAndGetContainer } from '~utils'
-import { MockupDB, DB } from '~prisma'
+import { DB, SQLiteConnector, schema } from '~database'
 
 async function callMethod(
   _method:
@@ -63,12 +63,13 @@ describe('coordinator test to run testnet', () => {
   let container: Container
   let fullNode: FullNode
   let wsProvider: WebsocketProvider
-  let mockup: MockupDB
+  let mockup: DB
   let coordinator: Coordinator
   const coordinators = [] as Coordinator[]
   beforeAll(async () => {
     // logStream.addStream(process.stdout)
-    mockup = await DB.testMockup()
+    mockup = await SQLiteConnector.create(':memory:')
+    await mockup.createTables(schema as any)
     // It may take about few minutes. If you want to skip building image,
     // run `yarn pull:images` on the root directory
     container = await pullOrBuildAndGetContainer({
@@ -107,14 +108,14 @@ describe('coordinator test to run testnet', () => {
     fullNode = await FullNode.new({
       provider: wsProvider,
       address,
-      db: mockup.db,
+      db: mockup,
       accounts,
     })
   }, 36000)
   afterAll(async () => {
     await coordinator.stop()
     wsProvider.disconnect(0, 'close connection')
-    await mockup.terminate()
+    await mockup.close()
     await container.stop()
     await container.delete()
     for (const c of coordinators) {

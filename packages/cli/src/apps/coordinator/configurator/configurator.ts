@@ -1,7 +1,8 @@
 import Web3 from 'web3'
 import { Coordinator } from '@zkopru/coordinator'
 import { NetworkStatus } from '@zkopru/core'
-import { DB } from '@zkopru/prisma'
+// import { DB } from '@zkopru/prisma'
+import { DB } from '@zkopru/database'
 import { PromptApp } from '@zkopru/utils'
 import { Account, WebsocketProvider, EncryptedKeystoreV3Json } from 'web3-core'
 

@@ -1,8 +1,9 @@
 import chalk from 'chalk'
 import fs from 'fs-extra'
-import { DB } from '@zkopru/prisma'
+// import { DB } from '@zkopru/prisma'
+import { DB, SQLiteConnector, initDB } from '@zkopru/database'
 import { L1Contract } from '@zkopru/core'
-import path from 'path'
+// import path from 'path'
 import Configurator, { Context, Menu } from '../configurator'
 
 export default class LoadDatabase extends Configurator {
@@ -15,22 +16,15 @@ export default class LoadDatabase extends Configurator {
     }
     let database: DB
     if (this.base.postgres) {
-      database = new DB({
-        datasources: {
-          postgres: { url: this.base.postgres },
-        },
-      })
+      throw new Error('Postgres not supported')
+      // database = new DB({
+      //   datasources: {
+      //     postgres: { url: this.base.postgres },
+      //   },
+      // })
     } else if (this.base.sqlite) {
       const dbPath = this.base.sqlite
-      if (!fs.existsSync(dbPath)) {
-        // create new dataabase
-        database = await DB.mockup(dbPath)
-      } else {
-        // database exists
-        database = new DB({
-          datasources: { sqlite: { url: `sqlite://${dbPath}` } },
-        })
-      }
+      database = await SQLiteConnector.create(dbPath)
     } else {
       // no configuration. try to create new one
       const enum DBType {
@@ -42,10 +36,10 @@ export default class LoadDatabase extends Configurator {
         name: 'dbType',
         message: 'You should configure database',
         choices: [
-          {
-            title: 'Postgres(work in progress)',
-            value: DBType.POSTGRES,
-          },
+          // {
+          //   title: 'Postgres(work in progress)',
+          //   value: DBType.POSTGRES,
+          // },
           {
             title: 'Sqlite',
             value: DBType.SQLITE,
@@ -55,48 +49,49 @@ export default class LoadDatabase extends Configurator {
       })
 
       if (dbType === DBType.POSTGRES) {
-        this.print(`${chalk.blue('Creating a postgresql connection')}
-        ${chalk.yellow('Fetch schema files')}
-        ${chalk.yellow('1. Install postgres.')}
-        ${chalk.yellow('2. Run postgres daemon.')}
-        ${chalk.yellow('3. set up database')}
-        ${chalk.yellow('4. provide db connection info')}`)
-        // TODO provide migrate option later
-        // TODO provide detail database setup guide
-        const { host } = await this.ask({
-          type: 'text',
-          name: 'host',
-          message: 'Host? ex: localhost',
-        })
-        const { port } = await this.ask({
-          type: 'number',
-          name: 'port',
-          message: 'Port number?',
-          initial: 5432,
-        })
-        const { user } = await this.ask({
-          type: 'text',
-          name: 'user',
-          message: 'Username',
-        })
-        const { password } = await this.ask({
-          type: 'password',
-          name: 'password',
-          message: 'Password',
-        })
-        const { dbName } = await this.ask({
-          type: 'text',
-          name: 'dbName',
-          message: 'DB Name',
-          initial: 'zkopru-wallet',
-        })
-        database = new DB({
-          datasources: {
-            postgres: {
-              url: `postgresql://${user}:${password}@${host}:${port}/${dbName}`,
-            },
-          },
-        })
+        throw new Error('Postgres not supported')
+        // this.print(`${chalk.blue('Creating a postgresql connection')}
+        // ${chalk.yellow('Fetch schema files')}
+        // ${chalk.yellow('1. Install postgres.')}
+        // ${chalk.yellow('2. Run postgres daemon.')}
+        // ${chalk.yellow('3. set up database')}
+        // ${chalk.yellow('4. provide db connection info')}`)
+        // // TODO provide migrate option later
+        // // TODO provide detail database setup guide
+        // const { host } = await this.ask({
+        //   type: 'text',
+        //   name: 'host',
+        //   message: 'Host? ex: localhost',
+        // })
+        // const { port } = await this.ask({
+        //   type: 'number',
+        //   name: 'port',
+        //   message: 'Port number?',
+        //   initial: 5432,
+        // })
+        // const { user } = await this.ask({
+        //   type: 'text',
+        //   name: 'user',
+        //   message: 'Username',
+        // })
+        // const { password } = await this.ask({
+        //   type: 'password',
+        //   name: 'password',
+        //   message: 'Password',
+        // })
+        // const { dbName } = await this.ask({
+        //   type: 'text',
+        //   name: 'dbName',
+        //   message: 'DB Name',
+        //   initial: 'zkopru-wallet',
+        // })
+        // database = new DB({
+        //   datasources: {
+        //     postgres: {
+        //       url: `postgresql://${user}:${password}@${host}:${port}/${dbName}`,
+        //     },
+        //   },
+        // })
       } else {
         this.print(`${chalk.blue('Creating a sqlite3 connection')}`)
         this.print(
@@ -110,9 +105,7 @@ export default class LoadDatabase extends Configurator {
           message: 'Provide sqlite db here',
           initial: 'zkopru-wallet.db',
         })
-        if (!fs.existsSync(dbName)) {
-          database = await DB.mockup(dbName)
-        } else {
+        if (fs.existsSync(dbName)) {
           const { overwrite } = await this.ask({
             type: 'confirm',
             name: 'overwrite',
@@ -122,17 +115,14 @@ export default class LoadDatabase extends Configurator {
             initial: false,
           })
           if (overwrite) {
-            database = await DB.mockup(dbName)
-          } else {
-            const dbPath = path.join(path.resolve('.'), dbName)
-            database = new DB({
-              datasources: { sqlite: { url: `sqlite://${dbPath}` } },
-            })
+            fs.unlinkSync(dbName)
           }
         }
+        database = await SQLiteConnector.create(dbName)
       }
     }
-    await database.initDB(
+    await initDB(
+      database,
       context.web3,
       this.base.address,
       new L1Contract(context.web3, this.base.address),

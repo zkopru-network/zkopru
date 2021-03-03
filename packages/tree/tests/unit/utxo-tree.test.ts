@@ -4,11 +4,11 @@ import { Fp } from '~babyjubjub'
 import { UtxoTree, poseidonHasher, Leaf, verifyProof } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
 import { accounts } from '~dataset/testset-predefined'
-import { MockupDB } from '~prisma'
+import { SQLiteConnector, DB } from '~database'
 
 describe('utxo tree unit test', () => {
   let utxoTree: UtxoTree
-  let mockup: MockupDB
+  let mockup: DB
   const depth = 48
   beforeAll(async () => {
     // const db = nSQL()
@@ -17,7 +17,7 @@ describe('utxo tree unit test', () => {
     mockup = db
   })
   afterAll(async () => {
-    await mockup.terminate()
+    await mockup.close()
   })
   describe('dryAppend', () => {
     let prevRoot: Fp

@@ -2,8 +2,8 @@
 import {
   Block as BlockSql,
   Header as HeaderSql,
-  BootstrapCreateInput,
-} from '@zkopru/prisma'
+  // BootstrapCreateInput,
+} from '@zkopru/database'
 import * as Utils from '@zkopru/utils'
 import { soliditySha3Raw } from 'web3-utils'
 import { Bytes32, Uint256 } from 'soltypes'
@@ -80,6 +80,7 @@ export class Block {
   toSqlObj(): BlockSql {
     return {
       hash: this.hash.toString(),
+      proposal: {},
     }
   }
 
@@ -103,7 +104,7 @@ export class Block {
   getSqlObjs(): {
     block: BlockSql
     header: HeaderSql
-    bootstrap: BootstrapCreateInput | undefined
+    bootstrap: any | undefined
   } {
     const hash = this.hash.toString()
     const block = this.toSqlObj()

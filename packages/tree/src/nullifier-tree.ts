@@ -4,7 +4,7 @@ import AsyncLock from 'async-lock'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { hexify, logger } from '@zkopru/utils'
-import { DB, TreeNode, NULLIFIER_TREE_ID } from '@zkopru/prisma'
+import { DB, TreeNode, NULLIFIER_TREE_ID, getCachedSiblings } from '@zkopru/database'
 import { Hasher, genesisRoot } from './hasher'
 import { verifyProof, MerkleProof } from './merkle-proof'
 
@@ -69,19 +69,28 @@ export class NullifierTree implements SMT<BN> {
   }
 
   async findUsedNullifier(...nullifiers: BN[]): Promise<BN[]> {
-    const usedNullifierNodeIndices = await this.db.read(prisma =>
-      prisma.treeNode.findMany({
-        select: { nodeIndex: true },
-        where: {
-          nodeIndex: {
-            in: nullifiers
-              .map(index => new BN(1).shln(this.depth).or(index))
-              .map(nullifier => hexify(nullifier)),
-          },
-          value: hexify(SMTLeaf.FILLED),
-        },
-      }),
-    )
+    const usedNullifierNodeIndices = await this.db.findMany('TreeNode', {
+      // select: { nodeIndex: true },
+      where: {
+        nodeIndex: nullifiers
+          .map(index => new BN(1).shln(this.depth).or(index))
+          .map(nullifier => hexify(nullifier)),
+        value: hexify(SMTLeaf.FILLED),
+      },
+    })
+    // const usedNullifierNodeIndices = await this.db.read(prisma =>
+    //   prisma.treeNode.findMany({
+    //     select: { nodeIndex: true },
+    //     where: {
+    //       nodeIndex: {
+    //         in: nullifiers
+    //           .map(index => new BN(1).shln(this.depth).or(index))
+    //           .map(nullifier => hexify(nullifier)),
+    //       },
+    //       value: hexify(SMTLeaf.FILLED),
+    //     },
+    //   }),
+    // )
     const usedNullifiers = usedNullifierNodeIndices.map(nullifier =>
       toBN(nullifier.nodeIndex).sub(new BN(1).shln(this.depth)),
     )
@@ -91,17 +100,13 @@ export class NullifierTree implements SMT<BN> {
   private async getRootNode(): Promise<BN> {
     if (this.rootNode) return new BN(this.rootNode)
     logger.trace('try to get root node from database')
-    const rootNode = await this.db.read(prisma =>
-      prisma.treeNode.findOne({
-        select: { value: true },
-        where: {
-          treeId_nodeIndex: {
-            treeId: NULLIFIER_TREE_ID,
-            nodeIndex: hexify(new BN(1)),
-          },
-        },
-      }),
-    )
+    const rootNode = await this.db.findOne('TreeNode', {
+      // select: { value: true },
+      where: {
+        treeId: NULLIFIER_TREE_ID,
+        nodeIndex: hexify(new BN(1)),
+      },
+    })
     if (rootNode) {
       this.rootNode = toBN(rootNode.value)
     } else {
@@ -190,7 +195,8 @@ export class NullifierTree implements SMT<BN> {
 
   private async getSiblings(index: BN): Promise<BN[]> {
     const { depth } = this
-    const cachedSiblings = await this.db.preset.getCachedSiblings(
+    const cachedSiblings = await getCachedSiblings(
+      this.db,
       depth,
       NULLIFIER_TREE_ID,
       index,
@@ -224,16 +230,22 @@ export class NullifierTree implements SMT<BN> {
       }
     }
     // const mutatedNodes: { [nodeIndex: string]: BN } = {}
-    const mutatedNodes: TreeNode[] = await this.db.read(prisma =>
-      prisma.treeNode.findMany({
-        where: {
-          AND: [
-            { treeId: NULLIFIER_TREE_ID },
-            { nodeIndex: { in: [...nodeIndices] } },
-          ],
-        },
-      }),
-    )
+    const mutatedNodes: TreeNode[] = await this.db.findMany('TreeNode', {
+      where: {
+        treeId: NULLIFIER_TREE_ID,
+        nodeIndex: [...nodeIndices],
+      }
+    })
+    // const mutatedNodes: TreeNode[] = await this.db.read(prisma =>
+    //   prisma.treeNode.findMany({
+    //     where: {
+    //       AND: [
+    //         { treeId: NULLIFIER_TREE_ID },
+    //         { nodeIndex: { in: [...nodeIndices] } },
+    //       ],
+    //     },
+    //   }),
+    // )
     const siblingNodes: NodeMap = {}
     for (const node of mutatedNodes) {
       // key is a hexified node index
@@ -251,26 +263,20 @@ export class NullifierTree implements SMT<BN> {
   ): Promise<BN> {
     const { updatedNodes } = await this.dryRun(leaves, option)
     // need batch query here..
-    await this.db.write(prisma =>
-      prisma.$transaction(
-        Object.keys(updatedNodes).map(nodeIndex =>
-          prisma.treeNode.upsert({
-            where: {
-              treeId_nodeIndex: {
-                treeId: NULLIFIER_TREE_ID,
-                nodeIndex,
-              },
-            },
-            update: { value: hexify(updatedNodes[nodeIndex]) },
-            create: {
-              treeId: NULLIFIER_TREE_ID,
-              nodeIndex,
-              value: hexify(updatedNodes[nodeIndex]),
-            },
-          }),
-        ),
-      ),
-    )
+    for (const nodeIndex of Object.keys(updatedNodes)) {
+      await this.db.upsert('TreeNode', {
+        where: {
+          treeId: NULLIFIER_TREE_ID,
+          nodeIndex,
+        },
+        update: { value: hexify(updatedNodes[nodeIndex]) },
+        create: {
+          treeId: NULLIFIER_TREE_ID,
+          nodeIndex,
+          value: hexify(updatedNodes[nodeIndex]),
+        },
+      })
+    }
     const newRoot = updatedNodes[hexify(new BN(1))]
     logger.trace(`setting new root - ${newRoot}`)
     this.rootNode = newRoot

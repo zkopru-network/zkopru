@@ -18,12 +18,15 @@
     "prebuild": "shx mkdir -p dist",
     "generateTypes": "ts-node scripts/generateTypes.ts",
     "build": "tsc --build tsconfig.build.json",
+    "strip-vendor": "cat ./dist/connectors/sqlite.d.ts | tail -n +2 | tee ./dist/connectors/sqlite.d.ts > /dev/null",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "link-modules": "link-module-alias",
     "test": "jest",
     "coverage": "jest --coverage"
   },
   "dependencies": {
+    "@zkopru/babyjubjub": "file:../babyjubjub",
+    "@zkopru/utils": "file:../utils",
     "async-lock": "^1.2.8",
     "sqlite": "^4.0.19",
     "sqlite3": "^5.0.2",

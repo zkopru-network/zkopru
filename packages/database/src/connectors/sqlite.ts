@@ -1,5 +1,5 @@
 import sqlite3 from 'sqlite3'
-import { open, Database, ISqlite } from 'sqlite'
+import { open, } from 'sqlite'
 import {
   DB,
   WhereClause,
@@ -18,7 +18,7 @@ import {
 const escapeQuotes = (str: string) => str.replace(/"/gm, '""')
 
 export class SQLiteConnector implements DB {
-  db: Database<sqlite3.Database, sqlite3.Statement>
+  db: any //Database<sqlite3.Database, sqlite3.Statement>
 
   config: {
     filename: string
@@ -26,7 +26,7 @@ export class SQLiteConnector implements DB {
 
   schema: Schema = {}
 
-  constructor(config: ISqlite.Config) {
+  constructor(config: any /*ISqlite.Config*/) {
     this.config = config
     this.db = {} as any
   }
@@ -35,7 +35,7 @@ export class SQLiteConnector implements DB {
     this.db = await open(this.config)
   }
 
-  static async create(_config: ISqlite.Config | string) {
+  static async create(_config: any /*ISqlite.Config*/ | string) {
     const config =
       typeof _config === 'string'
         ? {
@@ -161,7 +161,7 @@ export class SQLiteConnector implements DB {
     const query = [table.primaryKey].flat().reduce((acc, key) => {
       return {
         ...acc,
-        [key]: [],
+        [`${key}`]: [],
       }
     }, {})
     const keyString = keys.map(k => `"${k}"`).join(',')

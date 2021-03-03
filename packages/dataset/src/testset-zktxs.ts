@@ -5,7 +5,7 @@ import { Fp } from '@zkopru/babyjubjub'
 import { ZkTx, Utxo, UtxoStatus } from '@zkopru/transaction'
 import { ZkWizard } from '@zkopru/zk-wizard'
 import { keccakHasher, poseidonHasher, Grove } from '@zkopru/tree'
-import { DB, TreeSpecies } from '@zkopru/prisma'
+import { DB, SQLiteConnector, TreeSpecies } from '@zkopru/database'
 import { accounts, address } from './testset-predefined'
 import { utxos } from './testset-utxos'
 import { txs } from './testset-txs'
@@ -50,50 +50,48 @@ export async function loadGrove(db: DB): Promise<{ grove: Grove }> {
 }
 
 export async function saveUtxos(db: DB, utxos: Utxo[]): Promise<DB> {
-  const utxoTree = await db.read(prisma =>
-    prisma.lightTree.findOne({ where: { species: TreeSpecies.UTXO } }),
-  )
+  const utxoTree = await db.findOne('LightTree', {
+    where: {
+      species: TreeSpecies.UTXO,
+    }
+  })
   if (!utxoTree) throw Error('Failed to get utxo gree from grove')
   for (let i = 0; i < utxos.length; i += 1) {
     const utxo = utxos[i]
-    await db.write(prisma =>
-      prisma.utxo.create({
-        data: {
-          hash: utxo
-            .hash()
-            .toUint256()
-            .toString(),
-          owner: utxo.owner.toString(),
-          salt: utxo.salt.toUint256().toString(),
-          eth: utxo
-            .eth()
-            .toUint256()
-            .toString(),
-          tokenAddr: utxo
-            .tokenAddr()
-            .toAddress()
-            .toString(),
-          erc20Amount: utxo
-            .erc20Amount()
-            .toUint256()
-            .toString(),
-          nft: utxo
-            .nft()
-            .toUint256()
-            .toString(),
-          status: UtxoStatus.NON_INCLUDED,
-          index: i.toString(),
-        },
-      }),
-    )
+    await db.create('Utxo', {
+      hash: utxo
+        .hash()
+        .toUint256()
+        .toString(),
+      owner: utxo.owner.toString(),
+      salt: utxo.salt.toUint256().toString(),
+      eth: utxo
+        .eth()
+        .toUint256()
+        .toString(),
+      tokenAddr: utxo
+        .tokenAddr()
+        .toAddress()
+        .toString(),
+      erc20Amount: utxo
+        .erc20Amount()
+        .toUint256()
+        .toString(),
+      nft: utxo
+        .nft()
+        .toUint256()
+        .toString(),
+      status: UtxoStatus.NON_INCLUDED,
+      index: i.toString(),
+    })
   }
   return db
 }
 
 export async function loadZkTxs(): Promise<ZkTx[]> {
-  const mockupDB = await DB.testMockup()
-  const { grove } = await loadGrove(mockupDB.db)
-  await saveUtxos(mockupDB.db, [
+  const mockupDB = await SQLiteConnector.create(':memory:')
+  const { grove } = await loadGrove(mockupDB)
+  await saveUtxos(mockupDB, [
     utxos.utxo1_in_1,
     utxos.utxo2_1_in_1,
     utxos.utxo2_2_in_1,
@@ -167,6 +165,6 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
     zk_tx_4 = await zkWizard.shield({ tx: txs.tx_4, from: accounts.alice })
     fs.writeFileSync(tx4Path, zk_tx_4.encode())
   }
-  await mockupDB.terminate()
+  await mockupDB.close()
   return [zk_tx_1, zk_tx_2_1, zk_tx_2_2, zk_tx_3, zk_tx_4]
 }

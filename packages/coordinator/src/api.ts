@@ -250,18 +250,16 @@ export class CoordinatorApi {
       siblings: JSON.stringify(withdrawal.siblings),
       status: WithdrawalStatus.UNFINALIZED,
     }
-    const header = await layer2.db.read(prisma =>
-      prisma.header.findOne({
-        where: { hash: includedIn },
-      }),
-    )
-    const proposal = await layer2.db.read(prisma =>
-      prisma.proposal.findOne({
-        where: {
-          hash: includedIn,
-        },
-      }),
-    )
+    const header = await layer2.db.findOne('Header', {
+      where: {
+        hash: includedIn,
+      }
+    })
+    const proposal = await layer2.db.findOne('Proposal', {
+      where: {
+        hash: includedIn,
+      }
+    })
     if (!!header && proposal?.verified) {
       const proof = {
         root: toBN(header.withdrawalRoot),
@@ -277,13 +275,11 @@ export class CoordinatorApi {
         res.status(400).send('API accepts only a single string')
         return
       }
-      await layer2.db.write(prisma =>
-        prisma.withdrawal.upsert({
-          where: { hash },
-          create: data,
-          update: data,
-        }),
-      )
+      await layer2.db.upsert('Withdrawal', {
+        where: { hash },
+        create: data,
+        update: data,
+      })
       const signedTx = await TxUtil.getSignedTransaction(
         tx,
         layer1.address,

@@ -66,11 +66,9 @@ export class OffchainTxValidator extends OffchainValidatorContext
       } else if (outflow.data?.tokenAddr && !outflow.data?.tokenAddr.eqn(0)) {
         // (ETH + token) withdrawal or migration
         const tokenAddr = outflow.data?.tokenAddr
-        const registeredInfo = await this.layer2.db.read(prisma =>
-          prisma.tokenRegistry.findOne({
-            where: { address: Address.from(tokenAddr.toHex()).toString() },
-          }),
-        )
+        const registeredInfo = await this.layer2.db.findOne('TokenRegistry', {
+          where: { address: Address.from(tokenAddr.toHex()).toString() },
+        })
         if (!registeredInfo) {
           return { slashable: true, reason: CODE.T4 }
         }
@@ -168,35 +166,27 @@ export class OffchainTxValidator extends OffchainValidatorContext
     inclusionRef: Uint256,
   ): Promise<boolean> {
     // Find the header of the referenced utxo root
-    const headers = await this.layer2.db.read(prisma =>
-      prisma.header.findMany({
-        where: {
-          utxoRoot: inclusionRef.toString(),
-        },
-      }),
-    )
+    const headers = await this.layer2.db.findMany('Header', {
+      where: {
+        utxoRoot: inclusionRef.toString(),
+      }
+    })
     // If any of the found header is finalized, it returns true
-    const finalized = await this.layer2.db.read(prisma =>
-      prisma.proposal.findMany({
-        where: {
-          finalized: true,
-          hash: {
-            in: headers.map(h => h.hash),
-          },
-        },
-      }),
-    )
+    const finalized = await this.layer2.db.findMany('Proposal', {
+      where: {
+        finalized: true,
+        hash: headers.map(h => h.hash),
+      }
+    })
     if (finalized.length > 0) return true
     // Or check the recent precedent blocks has that utxo tree root
     let parentBlockHash: string = blockHash.toString()
     for (let i = 0; i < this.layer2.config.referenceDepth; i += 1) {
       const hash = parentBlockHash
-      const parentBlock = await this.layer2.db.read(prisma =>
-        prisma.block.findOne({
-          where: { hash },
-          include: { header: true, slash: true },
-        }),
-      )
+      const parentBlock = await this.layer2.db.findOne('Block', {
+        where: { hash },
+        include: { header: true, slash: true },
+      })
       if (parentBlock === null || parentBlock.slash !== null) {
         return false
       }

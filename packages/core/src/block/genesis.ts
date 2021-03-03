@@ -2,7 +2,7 @@ import { genesisRoot, poseidonHasher, keccakHasher } from '@zkopru/tree'
 import { bnToBytes32, bnToUint256 } from '@zkopru/utils'
 import { Address, Bytes32 } from 'soltypes'
 import BN from 'bn.js'
-import { Config } from '@zkopru/prisma'
+import { Config } from '@zkopru/database'
 import { Header } from './types'
 
 export const genesis = ({

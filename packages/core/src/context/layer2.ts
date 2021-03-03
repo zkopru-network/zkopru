@@ -4,7 +4,7 @@ import {
   Config,
   Proposal,
   MassDeposit as MassDepositSql,
-} from '@zkopru/prisma'
+} from '@zkopru/database'
 import { Grove, GrovePatch, Leaf } from '@zkopru/tree'
 import BN from 'bn.js'
 import AsyncLock from 'async-lock'
@@ -59,29 +59,25 @@ export class L2Chain {
   }
 
   async latestBlock(): Promise<Bytes32> {
-    const lastVerifiedProposal = (
-      await this.db.read(prisma =>
-        prisma.proposal.findMany({
-          where: {
-            AND: [{ verified: true }, { isUncle: null }],
-          },
-          orderBy: { proposalNum: 'desc' },
-          include: { block: { include: { header: true } } },
-          take: 1,
-        }),
-      )
-    ).pop()
+    const lastVerifiedProposal = await this.db.findOne('Proposal', {
+      where: {
+        verified: true,
+        isUncle: null,
+      },
+      orderBy: { proposalNum: 'desc' },
+      include: { block: { header: true }},
+    })
     if (!lastVerifiedProposal) throw Error('no verified proposal')
     return Bytes32.from(lastVerifiedProposal.hash)
   }
 
   async getBlockByNumber(blockNum: number): Promise<Block | null> {
-    const proposals = await this.db.read(prisma =>
-      prisma.proposal.findMany({
-        where: { proposalNum: blockNum },
-        include: { block: true },
-      }),
-    )
+    const proposals = await this.db.findMany('Proposal', {
+      where: {
+        proposalNum: blockNum,
+      },
+      include: { block: true },
+    })
     if (proposals.length === 0) return null
     const [proposal] = proposals as [Proposal & { block: Block | null }]
     if (typeof proposal.proposalData !== 'string') return null
@@ -90,24 +86,22 @@ export class L2Chain {
   }
 
   async getBlock(hash: Bytes32): Promise<Block | null> {
-    const proposal = await this.db.read(prisma =>
-      prisma.proposal.findOne({
-        where: { hash: hash.toString() },
-        include: { block: true },
-      }),
-    )
+    const proposal = await this.db.findOne('Proposal', {
+      where: {
+        hash: hash.toString(),
+      },
+      include: { block: true },
+    })
     if (!proposal || !proposal.proposalData) return null
     const tx = JSON.parse(proposal.proposalData)
     return Block.fromTx(tx, proposal.verified || false)
   }
 
   async getProposalByNumber(proposalNum: number, includeBlock = true) {
-    const proposals = await this.db.read(prisma =>
-      prisma.proposal.findMany({
-        where: { proposalNum },
-        include: { block: includeBlock },
-      }),
-    )
+    const proposals = await this.db.findMany('Proposal', {
+      where: { proposalNum },
+      include: { block: includeBlock },
+    })
     if (proposals.length === 0) return null
     const [proposal] = proposals
     return proposal
@@ -117,52 +111,42 @@ export class L2Chain {
     canonicalNum: number,
     includeBlock = true,
   ) {
-    const proposals = await this.db.read(prisma =>
-      prisma.proposal.findMany({
-        where: { canonicalNum },
-        include: { block: includeBlock },
-      }),
-    )
+    const proposals = await this.db.findMany('Proposal', {
+      where: { canonicalNum },
+      include: { block: includeBlock },
+    })
     if (proposals.length === 0) return null
     const [proposal] = proposals
     return proposal
   }
 
   async getProposal(hash: Bytes32, includeBlock = true) {
-    const proposal = await this.db.read(prisma =>
-      prisma.proposal.findOne({
-        where: { hash: hash.toString() },
-        include: { block: includeBlock },
-      }),
-    )
+    const proposal = await this.db.findOne('Proposal', {
+      where: { hash: hash.toString() },
+      include: { block: includeBlock },
+    })
     return proposal
   }
 
   async getTxByHash(hash: string | Bytes32) {
-    return this.db.read(prisma =>
-      prisma.tx.findOne({
-        where: { hash: hash.toString() },
-      }),
-    )
+    return this.db.findOne('Tx', {
+      where: { hash: hash.toString() },
+    })
   }
 
   async getDeposits(...massDeposits: MassDeposit[]): Promise<DepositSql[]> {
     const totalDeposits: DepositSql[] = []
     for (const massDeposit of massDeposits) {
-      const commits = await this.db.read(prisma =>
-        prisma.massDeposit.findMany({
-          where: {
-            AND: [
-              { merged: massDeposit.merged.toString() },
-              { fee: massDeposit.fee.toString() },
-            ],
-          },
-          orderBy: {
-            blockNumber: 'asc',
-          },
-          take: 1,
-        }),
-      )
+      const commits = await this.db.findMany('MassDeposit', {
+        where: {
+          merged: massDeposit.merged.toString(),
+          fee: massDeposit.fee.toString(),
+        },
+        orderBy: {
+          blockNumber: 'asc',
+        },
+        limit: 1,
+      })
       // logger.info()
       const nonIncludedMassDepositCommit = commits.pop()
       if (!nonIncludedMassDepositCommit) {
@@ -171,11 +155,9 @@ export class L2Chain {
         throw Error('Failed to find the mass deposit')
       }
 
-      const deposits = await this.db.read(prisma =>
-        prisma.deposit.findMany({
-          where: { queuedAt: nonIncludedMassDepositCommit.index },
-        }),
-      )
+      const deposits = await this.db.findMany('Deposit', {
+        where: { queuedAt: nonIncludedMassDepositCommit.index },
+      })
       deposits.sort((a, b) => {
         if (a.blockNumber !== b.blockNumber) {
           return a.blockNumber - b.blockNumber
@@ -195,17 +177,13 @@ export class L2Chain {
     let consumedBytes = 0
     let aggregatedFee: Fp = Fp.zero
     // 1. pick mass deposits
-    const commits: MassDepositSql[] = await this.db.read(prisma =>
-      prisma.massDeposit.findMany({
-        where: { includedIn: null },
-      }),
-    )
+    const commits: MassDepositSql[] = await this.db.findMany('MassDeposit', {
+      where: { includedIn: null },
+    })
     commits.sort((a, b) => parseInt(a.index, 10) - parseInt(b.index, 10))
-    const pendingDeposits = await this.db.read(prisma =>
-      prisma.deposit.findMany({
-        where: { queuedAt: { in: commits.map(commit => commit.index) } },
-      }),
-    )
+    const pendingDeposits = await this.db.findMany('Deposit', {
+      where: { queuedAt: commits.map(commit => commit.index) },
+    })
     pendingDeposits.sort((a, b) => {
       if (a.blockNumber !== b.blockNumber) {
         return a.blockNumber - b.blockNumber
@@ -240,16 +218,15 @@ export class L2Chain {
         proposal: Proposal
       }
   > {
-    const unprocessedProposals = await this.db.read(prisma =>
-      prisma.proposal.findMany({
-        where: {
-          AND: [{ verified: null }, { isUncle: null }],
-        },
-        orderBy: { proposalNum: 'asc' },
-        take: 1,
-        include: { block: { include: { header: true } } },
-      }),
-    )
+    const unprocessedProposals = await this.db.findMany('Proposal', {
+      where: {
+        verified: null,
+        isUncle: null,
+      },
+      orderBy: { proposalNum: 'asc' },
+      limit: 1,
+      include: { block: { header: true } },
+    })
     const unprocessedProposal = unprocessedProposals.pop()
     if (
       !unprocessedProposal ||
@@ -262,11 +239,9 @@ export class L2Chain {
     const parentHash = unprocessedProposal.block?.header.parentBlock
     if (!parentHash) throw Error('Its parent block is not processed yet')
 
-    const parentHeader = await this.db.read(prisma =>
-      prisma.header.findOne({
-        where: { hash: parentHash },
-      }),
-    )
+    const parentHeader = await this.db.findOne('Header', {
+      where: { hash: parentHash },
+    })
     logger.trace(`last verified header: ${parentHeader?.hash}`)
     if (!parentHeader) throw Error('Parent header does not exist.')
 
@@ -295,47 +270,53 @@ export class L2Chain {
     parentBlock: Bytes32,
     proposalNum: number,
   ): Promise<boolean> {
-    const canonical = await this.db.read(prisma =>
-      prisma.proposal.findMany({
-        where: {
-          AND: [
-            { proposalNum: { lt: proposalNum } },
-            {
-              block: {
-                header: { parentBlock: { equals: parentBlock.toString() } },
-              },
-            },
-            { verified: true },
-          ],
-        },
-        orderBy: { proposalNum: 'asc' },
-        take: 1,
-      }),
-    )
-    return canonical.length === 1
+    const headers = await this.db.findMany('Header', {
+      where: {
+        parentBlock: parentBlock.toString(),
+      },
+    })
+    const blockHashes = headers
+      .map(({ hash }) => hash)
+    const canonical = await this.db.findMany('Proposal', {
+      where: {
+        verified: true,
+        hash: blockHashes,
+        proposalNum: { lt: proposalNum, }
+      },
+      orderBy: { proposalNum: 'asc' },
+    })
+    return canonical.length > 0
+    // const canonical = await this.db.read(prisma =>
+    //   prisma.proposal.findMany({
+    //     where: {
+    //       AND: [
+    //         { proposalNum: { lt: proposalNum } },
+    //         {
+    //           block: {
+    //             header: { parentBlock: { equals: parentBlock.toString() } },
+    //           },
+    //         },
+    //         { verified: true },
+    //       ],
+    //     },
+    //     orderBy: { proposalNum: 'asc' },
+    //     take: 1,
+    //   }),
+    // )
+    // return canonical.length === 1
   }
 
   async applyBootstrap(block: Block, bootstrapData: BootstrapData) {
     this.grove.applyBootstrap(bootstrapData)
     const blockSql = { ...block.toSqlObj() }
     const headerSql = block.getHeaderSql()
-    this.db.write(prisma =>
-      prisma.block.upsert({
-        where: {
-          hash: block.hash.toString(),
-        },
-        update: {},
-        create: {
-          ...blockSql,
-          proposal: {
-            create: bootstrapData.proposal,
-          },
-          header: {
-            create: headerSql,
-          },
-        },
-      }),
-    )
+    const count = await this.db.count('Block', {
+      hash: block.hash.toString(),
+    })
+    if (count > 0) return
+    await this.db.create('Block', blockSql)
+    await this.db.create('Proposal', bootstrapData.proposal)
+    await this.db.create('Header', headerSql)
   }
 
   async getGrovePatch(block: Block): Promise<GrovePatch> {
@@ -366,22 +347,18 @@ export class L2Chain {
         }
       }
     }
-    const myUtxoList = await this.db.read(prisma =>
-      prisma.utxo.findMany({
-        where: {
-          hash: { in: utxoHashes.map(output => output.toString(10)) },
-          treeId: null,
-        },
-      }),
-    )
-    const myWithdrawalList = await this.db.read(prisma =>
-      prisma.withdrawal.findMany({
-        where: {
-          hash: { in: withdrawalHashes.map(h => h.noteHash.toString(10)) },
-          treeId: null,
-        },
-      }),
-    )
+    const myUtxoList = await this.db.findMany('Utxo', {
+      where: {
+        hash: utxoHashes.map(output => output.toString(10)),
+        treeId: null,
+      },
+    })
+    const myWithdrawalList = await this.db.findMany('Withdrawal', {
+      where: {
+        hash: withdrawalHashes.map(h => h.noteHash.toString(10)),
+        treeId: null,
+      },
+    })
     const shouldTrack: { [key: string]: boolean } = {}
     for (const myNote of myUtxoList) {
       shouldTrack[myNote.hash] = true
@@ -418,13 +395,11 @@ export class L2Chain {
   }
 
   async getTokenRegistry(): Promise<TokenRegistry> {
-    const newRegistrations = await this.db.read(prisma =>
-      prisma.tokenRegistry.findMany({
-        where: {
-          blockNumber: { gte: this.tokenRegistry.blockNumber },
-        },
-      }),
-    )
+    const newRegistrations = await this.db.findMany('TokenRegistry', {
+      where: {
+        blockNumber: { gte: this.tokenRegistry.blockNumber },
+      }
+    })
     newRegistrations.forEach(registration => {
       const tokenAddress = Address.from(registration.address)
       if (

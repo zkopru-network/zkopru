@@ -13,6 +13,7 @@
   "_moduleAliases": {
     "~account": "../account/dist",
     "~coordinator": "dist",
+    "~database": "../database/dist",
     "~prisma": "../prisma/dist",
     "~utils": "../utils/dist"
   },
@@ -35,6 +36,7 @@
     "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/contracts": "file:../contracts",
     "@zkopru/core": "file:../core",
+    "@zkopru/database": "file:../database",
     "@zkopru/prisma": "file:../prisma",
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/tree": "file:../tree",

@@ -7,7 +7,7 @@ import {
   SNARK,
   OutflowType,
 } from '@zkopru/transaction'
-import { Header as HeaderSql } from '@zkopru/prisma'
+import { Header as HeaderSql } from '@zkopru/database'
 import * as Utils from '@zkopru/utils'
 import { Fp } from '@zkopru/babyjubjub'
 import { soliditySha3Raw } from 'web3-utils'
