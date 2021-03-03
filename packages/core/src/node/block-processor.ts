@@ -467,7 +467,7 @@ export class BlockProcessor extends EventEmitter {
       }
     }
     await this.db.update('MassDeposit', {
-      where: { index: { in: indexes } },
+      where: { index: indexes },
       update: { includedIn: block.toString() },
     })
   }
