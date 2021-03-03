@@ -297,4 +297,55 @@ describe('database tests', () => {
       assert.equal(updated, 1)
     }
   })
+
+  it('should use operators', async () => {
+    const table = 'TableTwo'
+    await db.createTables(testSchema)
+    for (let x = 0; x < 10; x++) {
+      await db.create(table, {
+        counterField: x,
+      })
+      await new Promise(r => setTimeout(r, 10))
+    }
+    {
+      const docs = await db.findMany(table, {
+        where: {
+          counterField: { lt: 3 }
+        },
+      })
+      assert.equal(docs.length, 3)
+    }
+    {
+      const docs = await db.findMany(table, {
+        where: {
+          counterField: { lte: 3 }
+        },
+      })
+      assert.equal(docs.length, 4)
+    }
+    {
+      const docs = await db.findMany(table, {
+        where: {
+          counterField: { gt: 3 }
+        },
+      })
+      assert.equal(docs.length, 6)
+    }
+    {
+      const docs = await db.findMany(table, {
+        where: {
+          counterField: { gte: 3 }
+        },
+      })
+      assert.equal(docs.length, 7)
+    }
+    {
+      const docs = await db.findMany(table, {
+        where: {
+          counterField: { ne: 3 }
+        },
+      })
+      assert.equal(docs.length, 9)
+    }
+  })
 })

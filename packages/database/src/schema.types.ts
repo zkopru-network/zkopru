@@ -59,7 +59,7 @@ export type Header = {
 
 export type Block = {
   hash: string;
-  header: Object;
+  header?: Object;
   proposal: Object;
   bootstrap?: Object;
   slash?: Object;
@@ -85,7 +85,7 @@ export type Slash = {
   reason: string;
   executionTx: string;
   slashedAt: number;
-  block: undefined;
+  block?: undefined;
 }
 
 export type Bootstrap = {
@@ -93,7 +93,7 @@ export type Bootstrap = {
   blockHash?: string;
   utxoBootstrap: string;
   withdrawalBootstrap: string;
-  block: Object;
+  block?: Object;
 }
 
 export type Tx = {

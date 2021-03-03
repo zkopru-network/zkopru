@@ -51,7 +51,6 @@ export class SQLiteConnector implements DB {
   whereToSql(
     collection: string,
     doc: any = {},
-    joinWith = '=',
   ) {
     if (Object.keys(doc).length === 0) return ''
     const table = this.schema[collection]
@@ -82,10 +81,32 @@ export class SQLiteConnector implements DB {
           // need to generate an IN query
           const values = val.map(v => parseType(rowDef.type, v))
           return `"${key}" IN (${values.join(',')})`
+        } else if (typeof val === 'object' && val !== null) {
+          // parse lt, gt, lte, gte, ne operators
+          const operatorMap = {
+            lt: '<',
+            gt: '>',
+            lte: '<=',
+            gte: '>=',
+            ne: '!=',
+            eq: '=',
+          }
+          const nullOperatorMap = {
+            ne: 'IS NOT',
+            eq: 'IS',
+          }
+          return Object.keys(val)
+            .map((k) => {
+              const operator = val[k] === null ? nullOperatorMap[k] : operatorMap[k]
+              if (!operator) throw new Error(`Invalid operator ${k}`)
+              const parsed = parseType(rowDef.type, val[k])
+              return `"${key}" ${operator} ${parsed}`
+            })
         }
         const parsed = parseType(rowDef.type, val)
-        return `"${key}" ${parsed === 'NULL' ? 'IS' : joinWith} ${parsed}`
+        return `"${key}" ${parsed === 'NULL' ? 'IS' : '='} ${parsed}`
       })
+      .flat()
       .join(' AND ')
     return ` WHERE ${sql} `
   }
