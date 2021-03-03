@@ -17,7 +17,10 @@ import {
   Relation,
 } from '../types'
 
-const escapeQuotes = (str: string) => str.replace(/"/gm, '""')
+const escapeQuotes = (str: string) => {
+  if (str === null) console.log(new Error().stack)
+  return str.replace(/"/gm, '""')
+}
 
 export class SQLiteConnector implements DB {
   db: any // Database<sqlite3.Database, sqlite3.Statement>
@@ -364,6 +367,9 @@ export class SQLiteConnector implements DB {
         if (!rowDef)
           throw new Error(`Unable to find row definition for key: "${key}"`)
         const val = update[key]
+        if (val === null) {
+          return `"${key}" = NULL`
+        }
         if (rowDef.type === 'String') {
           return `"${key}" = "${escapeQuotes(val)}"`
         }

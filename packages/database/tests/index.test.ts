@@ -315,12 +315,12 @@ describe('database tests', () => {
     const table = 'Table6'
     {
       const doc = await db.upsert(table, {
-        where: { id: 0, },
+        where: { id: 0 },
         create: {
           id: 0,
           boolField: true,
           stringField: 'test',
-          objectField: { test: 'obj', }
+          objectField: { test: 'obj' },
         },
         update: {},
       })
@@ -328,7 +328,7 @@ describe('database tests', () => {
     }
     {
       const doc = await db.upsert(table, {
-        where: { id: 0, },
+        where: { id: 0 },
         create: {
           id: 0,
           boolField: false,
