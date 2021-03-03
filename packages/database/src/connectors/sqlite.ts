@@ -51,6 +51,7 @@ export class SQLiteConnector implements DB {
   whereToSql(
     collection: string,
     doc: any = {},
+    sqlOnly = false,
   ) {
     if (Object.keys(doc).length === 0) return ''
     const table = this.schema[collection]
@@ -73,6 +74,7 @@ export class SQLiteConnector implements DB {
     }
     const sql = Object.keys(doc)
       .map(key => {
+        if (key === 'OR') return
         const rowDef = table.rows[key]
         if (!rowDef)
           throw new Error(`Unable to find row definition for key: "${key}"`)
@@ -107,14 +109,23 @@ export class SQLiteConnector implements DB {
         return `"${key}" ${parsed === 'NULL' ? 'IS' : '='} ${parsed}`
       })
       .flat()
+      .filter(i => !!i)
       .join(' AND ')
-    return ` WHERE ${sql} `
+    if (Array.isArray(doc.OR)) {
+      const orConditions = doc.OR
+        .map((w) => this.whereToSql(collection, w, true))
+        .join(' OR ')
+      return ` ${sqlOnly ? '' : 'WHERE'}
+      (${sql || 1}) AND (${orConditions})`
+    } else {
+      return ` ${sqlOnly ? '' : 'WHERE'} ${sql} `
+    }
   }
 
   async create(
     collection: string,
     _doc: any | any,
-  ): Promise<number> {
+  ): Promise<any> {
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection} in schema`)
     // create defaults where needed
@@ -145,6 +156,14 @@ export class SQLiteConnector implements DB {
       if (keys.indexOf(key) !== -1) continue
       keys.push(key)
     }
+    // query for retrieving the created documents, uses IN operator for all
+    // primary keys
+    const query = [table.primaryKey].flat().reduce((acc, key) => {
+      return {
+        ...acc,
+        [key]: [],
+      }
+    }, {})
     const keyString = keys.map(k => `"${k}"`).join(',')
     const allValues = [] as string[]
     for (const doc of docs) {
@@ -153,6 +172,9 @@ export class SQLiteConnector implements DB {
           const rowDef = table.rows[k]
           if (!rowDef)
             throw new Error(`Unable to find row definition for key: "${k}"`)
+          if (query[k]) {
+            query[k].push(doc[k])
+          }
           const val = doc[k]
           if (rowDef.type === 'Bool' && typeof val === 'boolean') {
             return val ? 'true' : 'false'
@@ -174,8 +196,16 @@ export class SQLiteConnector implements DB {
     const sql = `INSERT INTO "${collection}" (${keyString}) VALUES ${allValues.join(
       ', ',
     )};`
-    const { changes } = await this.db.run(sql)
-    return changes || 0
+    await this.db.run(sql)
+    if (Array.isArray(_doc)) {
+      return this.findMany(collection, {
+        where: query,
+      })
+    } else {
+      return this.findOne(collection, {
+        where: query,
+      })
+    }
   }
 
   async findOne(collection: string, options: FindOneOptions) {
@@ -332,16 +362,16 @@ export class SQLiteConnector implements DB {
       update,
     })
     if (updated > 0) {
-      return {
-        updated,
-        created: 0,
+      const docs = await this.findMany(collection, {
+        where,
+      })
+      if (docs.length === 1) {
+        return docs[0]
+      } else {
+        return docs
       }
     }
-    await this.create(collection, create)
-    return {
-      created: 1,
-      updated: 0,
-    }
+    return this.create(collection, create)
   }
 
   async deleteOne(collection: string, options: FindOneOptions) {

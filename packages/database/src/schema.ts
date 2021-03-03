@@ -108,7 +108,15 @@ export default [
           foreignTable: 'Header',
         },
       },
-      ['proposal', 'Object'],
+      {
+        name: 'proposal',
+        type: 'Object',
+        relation: {
+          localField: 'hash',
+          foreignField: 'hash',
+          foreignTable: 'Proposal'
+        }
+      },
       ['bootstrap', 'Object', { optional: true }],
       ['slash', 'Object', { optional: true }],
     ],

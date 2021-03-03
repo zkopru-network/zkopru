@@ -17,7 +17,9 @@ for (const table of schema) {
   for (const row of table.rows) {
     const rowDef = normalizeRowDef(row as any)
     const optional = rowDef.optional || typeof rowDef.relation !== 'undefined'
-    rowTypes.push(`${rowDef.name}${optional ? '?' : ''}: ${typeMap[rowDef.type]};`)
+    rowTypes.push(
+      `${rowDef.name}${optional ? '?' : ''}: ${typeMap[rowDef.type]}${optional ? ' | null' : ''};`
+    )
   }
   types.push(`export type ${table.name} = {
   ${rowTypes.join('\n  ')}

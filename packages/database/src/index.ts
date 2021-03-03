@@ -1,6 +1,7 @@
 export { SQLiteConnector } from './connectors/sqlite'
 export { DB, TableData } from './types'
 export * from './schema.types'
+export * from './preset'
 import schema from './schema'
 export { schema }
 
@@ -29,3 +30,10 @@ export async function initDB(db: DB, web3: Web3, address: string, layer1: L1Cont
     await db.create('Config', configFromContract)
   }
 }
+
+export enum TreeSpecies {
+  UTXO = 0,
+  WITHDRAWAL = 1,
+}
+
+export const NULLIFIER_TREE_ID = 'nullifier-tree'

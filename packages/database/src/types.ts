@@ -74,7 +74,7 @@ export interface DB {
   create: (
     collection: string,
     doc: any | any[],
-  ) => Promise<number>
+  ) => Promise<any>
   findOne: (
     collection: string,
     options: FindOneOptions,
@@ -92,7 +92,7 @@ export interface DB {
   upsert: (
     collection: string,
     options: UpsertOptions,
-  ) => Promise<{ created: number; updated: number }>
+  ) => Promise<any>
   // request that an index be created between some keys, if supported
   ensureIndex: (collection: string, name: string, keys: string[]) => void
   // provide a schema to connectors that need schema info

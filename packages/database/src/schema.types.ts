@@ -1,198 +1,198 @@
 export type EncryptedWallet = {
-  id: string;
-  ciphertext: string;
-  iv: string;
-  algorithm: string;
-  keylen: number;
-  kdf: string;
-  N: number;
-  r: number;
-  p: number;
-  salt: string;
+  id: string ;
+  ciphertext: string ;
+  iv: string ;
+  algorithm: string ;
+  keylen: number ;
+  kdf: string ;
+  N: number ;
+  r: number ;
+  p: number ;
+  salt: string ;
 }
 
 export type Keystore = {
-  address: string;
-  zkAddress: string;
-  encrypted: string;
+  address: string ;
+  zkAddress: string ;
+  encrypted: string ;
 }
 
 export type Config = {
-  id: string;
-  networkId: number;
-  chainId: number;
-  address: string;
-  utxoTreeDepth: number;
-  withdrawalTreeDepth: number;
-  nullifierTreeDepth: number;
-  challengePeriod: number;
-  minimumStake: string;
-  referenceDepth: number;
-  maxUtxo: string;
-  maxWithdrawal: string;
-  utxoSubTreeDepth: number;
-  utxoSubTreeSize: number;
-  withdrawalSubTreeDepth: number;
-  withdrawalSubTreeSize: number;
+  id: string ;
+  networkId: number ;
+  chainId: number ;
+  address: string ;
+  utxoTreeDepth: number ;
+  withdrawalTreeDepth: number ;
+  nullifierTreeDepth: number ;
+  challengePeriod: number ;
+  minimumStake: string ;
+  referenceDepth: number ;
+  maxUtxo: string ;
+  maxWithdrawal: string ;
+  utxoSubTreeDepth: number ;
+  utxoSubTreeSize: number ;
+  withdrawalSubTreeDepth: number ;
+  withdrawalSubTreeSize: number ;
 }
 
 export type Tracker = {
-  id: number;
-  viewer?: string;
-  address?: string;
+  id: number ;
+  viewer?: string | null;
+  address?: string | null;
 }
 
 export type Header = {
-  hash: string;
-  proposer: string;
-  parentBlock: string;
-  fee: string;
-  utxoRoot: string;
-  utxoIndex: string;
-  nullifierRoot: string;
-  withdrawalRoot: string;
-  withdrawalIndex: string;
-  txRoot: string;
-  depositRoot: string;
-  migrationRoot: string;
+  hash: string ;
+  proposer: string ;
+  parentBlock: string ;
+  fee: string ;
+  utxoRoot: string ;
+  utxoIndex: string ;
+  nullifierRoot: string ;
+  withdrawalRoot: string ;
+  withdrawalIndex: string ;
+  txRoot: string ;
+  depositRoot: string ;
+  migrationRoot: string ;
 }
 
 export type Block = {
-  hash: string;
-  header?: Object;
-  proposal: Object;
-  bootstrap?: Object;
-  slash?: Object;
+  hash: string ;
+  header?: Object | null;
+  proposal: Object ;
+  bootstrap?: Object | null;
+  slash?: Object | null;
 }
 
 export type Proposal = {
-  hash: string;
-  proposalNum?: number;
-  canonicalNum?: number;
-  proposedAt?: number;
-  proposalTx?: string;
-  proposalData?: string;
-  fetched?: string;
-  finalized?: boolean;
-  verified?: boolean;
-  isUncle?: boolean;
-  block?: Object;
+  hash: string ;
+  proposalNum?: number | null;
+  canonicalNum?: number | null;
+  proposedAt?: number | null;
+  proposalTx?: string | null;
+  proposalData?: string | null;
+  fetched?: string | null;
+  finalized?: boolean | null;
+  verified?: boolean | null;
+  isUncle?: boolean | null;
+  block?: Object | null;
 }
 
 export type Slash = {
-  hash: string;
-  proposer: string;
-  reason: string;
-  executionTx: string;
-  slashedAt: number;
-  block?: undefined;
+  hash: string ;
+  proposer: string ;
+  reason: string ;
+  executionTx: string ;
+  slashedAt: number ;
+  block?: undefined | null;
 }
 
 export type Bootstrap = {
-  id: string;
-  blockHash?: string;
-  utxoBootstrap: string;
-  withdrawalBootstrap: string;
-  block?: Object;
+  id: string ;
+  blockHash?: string | null;
+  utxoBootstrap: string ;
+  withdrawalBootstrap: string ;
+  block?: Object | null;
 }
 
 export type Tx = {
-  hash: string;
-  blockHash: string;
-  inflowCount: number;
-  outflowCount: number;
-  fee: string;
-  challenged: boolean;
-  slashed: boolean;
+  hash: string ;
+  blockHash: string ;
+  inflowCount: number ;
+  outflowCount: number ;
+  fee: string ;
+  challenged: boolean ;
+  slashed: boolean ;
 }
 
 export type MassDeposit = {
-  index: string;
-  merged: string;
-  fee: string;
-  blockNumber: number;
-  includedIn?: string;
+  index: string ;
+  merged: string ;
+  fee: string ;
+  blockNumber: number ;
+  includedIn?: string | null;
 }
 
 export type Deposit = {
-  note: string;
-  fee: string;
-  transactionIndex: number;
-  logIndex: number;
-  blockNumber: number;
-  queuedAt: string;
+  note: string ;
+  fee: string ;
+  transactionIndex: number ;
+  logIndex: number ;
+  blockNumber: number ;
+  queuedAt: string ;
 }
 
 export type Utxo = {
-  hash: string;
-  eth?: string;
-  owner?: string;
-  salt?: string;
-  tokenAddr?: string;
-  erc20Amount?: string;
-  nft?: string;
-  status?: number;
-  treeId?: string;
-  index?: string;
-  nullifier?: string;
-  usedAt?: string;
+  hash: string ;
+  eth?: string | null;
+  owner?: string | null;
+  salt?: string | null;
+  tokenAddr?: string | null;
+  erc20Amount?: string | null;
+  nft?: string | null;
+  status?: number | null;
+  treeId?: string | null;
+  index?: string | null;
+  nullifier?: string | null;
+  usedAt?: string | null;
 }
 
 export type Withdrawal = {
-  hash: string;
-  withdrawalHash: string;
-  eth: string;
-  owner?: string;
-  salt?: string;
-  tokenAddr: string;
-  erc20Amount: string;
-  nft: string;
-  to: string;
-  fee: string;
-  status?: number;
-  treeId?: string;
-  index?: string;
-  includedIn?: string;
-  prepayer?: string;
-  siblings?: string;
+  hash: string ;
+  withdrawalHash: string ;
+  eth: string ;
+  owner?: string | null;
+  salt?: string | null;
+  tokenAddr: string ;
+  erc20Amount: string ;
+  nft: string ;
+  to: string ;
+  fee: string ;
+  status?: number | null;
+  treeId?: string | null;
+  index?: string | null;
+  includedIn?: string | null;
+  prepayer?: string | null;
+  siblings?: string | null;
 }
 
 export type Migration = {
-  hash: string;
-  eth?: string;
-  owner?: string;
-  salt?: string;
-  tokenAddr?: string;
-  erc20Amount?: string;
-  nft?: string;
-  to?: string;
-  fee?: string;
-  status?: number;
-  treeId?: string;
-  index?: string;
-  usedFor?: string;
+  hash: string ;
+  eth?: string | null;
+  owner?: string | null;
+  salt?: string | null;
+  tokenAddr?: string | null;
+  erc20Amount?: string | null;
+  nft?: string | null;
+  to?: string | null;
+  fee?: string | null;
+  status?: number | null;
+  treeId?: string | null;
+  index?: string | null;
+  usedFor?: string | null;
 }
 
 export type TreeNode = {
-  treeId: string;
-  nodeIndex: string;
-  value: string;
+  treeId: string ;
+  nodeIndex: string ;
+  value: string ;
 }
 
 export type LightTree = {
-  id: string;
-  species: number;
-  start: string;
-  end: string;
-  root: string;
-  index: string;
-  siblings: string;
+  id: string ;
+  species: number ;
+  start: string ;
+  end: string ;
+  root: string ;
+  index: string ;
+  siblings: string ;
 }
 
 export type TokenRegistry = {
-  address: string;
-  isERC20: boolean;
-  isERC721: boolean;
-  identifier: number;
-  blockNumber: number;
+  address: string ;
+  isERC20: boolean ;
+  isERC721: boolean ;
+  identifier: number ;
+  blockNumber: number ;
 }
