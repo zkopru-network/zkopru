@@ -14,6 +14,7 @@ import {
   Schema,
   Relation,
 } from '../types'
+import AsyncLock from 'async-lock'
 
 const escapeQuotes = (str: string) => str.replace(/"/gm, '""')
 
@@ -25,6 +26,8 @@ export class SQLiteConnector implements DB {
   } & any
 
   schema: Schema = {}
+
+  lock = new AsyncLock()
 
   constructor(config: any /*ISqlite.Config*/) {
     this.config = config
@@ -126,6 +129,13 @@ export class SQLiteConnector implements DB {
     collection: string,
     _doc: any | any,
   ): Promise<any> {
+    return this.lock.acquire('db', async () => await this._create(collection, _doc))
+  }
+
+  private async _create(
+    collection: string,
+    _doc: any | any,
+  ): Promise<any> {
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection} in schema`)
     // create defaults where needed
@@ -204,18 +214,22 @@ export class SQLiteConnector implements DB {
       throw new Error('Failed to create document')
     }
     if (Array.isArray(_doc)) {
-      return this.findMany(collection, {
+      return this._findMany(collection, {
         where: query,
       })
     } else {
-      return this.findOne(collection, {
+      return this._findOne(collection, {
         where: query,
       })
     }
   }
 
   async findOne(collection: string, options: FindOneOptions) {
-    const [obj] = await this.findMany(collection, {
+    return this.lock.acquire('db', async () => await this._findOne(collection, options))
+  }
+
+  async _findOne(collection: string, options: FindOneOptions) {
+    const [obj] = await this._findMany(collection, {
       ...options,
       limit: 1,
     })
@@ -254,7 +268,7 @@ export class SQLiteConnector implements DB {
   ) {
     const values = models.map(model => model[relation.localField])
     // load relevant submodels
-    const submodels = await this.findMany(relation.foreignTable, {
+    const submodels = await this._findMany(relation.foreignTable, {
       where: {
         [relation.foreignField]: values,
       },
@@ -276,6 +290,10 @@ export class SQLiteConnector implements DB {
   }
 
   async findMany(collection: string, options: FindManyOptions) {
+    return this.lock.acquire('db', async () => await this._findMany(collection, options))
+  }
+
+  async _findMany(collection: string, options: FindManyOptions) {
     const { where, include } = options
     const orderBy =
       options.orderBy && Object.keys(options.orderBy).length > 0
@@ -319,6 +337,10 @@ export class SQLiteConnector implements DB {
   }
 
   async count(collection: string, where: WhereClause) {
+    return this.lock.acquire('db', async () => await this._count(collection, where))
+  }
+
+  async _count(collection: string, where: WhereClause) {
     const sql = `SELECT COUNT(*) FROM "${collection}" ${this.whereToSql(
       collection,
       where,
@@ -328,6 +350,10 @@ export class SQLiteConnector implements DB {
   }
 
   async update(collection: string, options: UpdateOptions) {
+    return this.lock.acquire('db', async () => await this._update(collection, options))
+  }
+
+  private async _update(collection: string, options: UpdateOptions) {
     const { where, update } = options
     if (Object.keys(update).length === 0) return 0
     const table = this.schema[collection]
@@ -363,13 +389,17 @@ export class SQLiteConnector implements DB {
   }
 
   async upsert(collection: string, options: UpsertOptions) {
+    return this.lock.acquire('db', async () => await this._upsert(collection, options))
+  }
+
+  async _upsert(collection: string, options: UpsertOptions) {
     const { where, update, create } = options
-    const updated = await this.update(collection, {
+    const updated = await this._update(collection, {
       where,
       update,
     })
     if (updated > 0) {
-      const docs = await this.findMany(collection, {
+      const docs = await this._findMany(collection, {
         where,
       })
       if (docs.length === 1) {
@@ -378,7 +408,7 @@ export class SQLiteConnector implements DB {
         return docs
       }
     }
-    return this.create(collection, create)
+    return this._create(collection, create)
   }
 
   async deleteOne(collection: string, options: FindOneOptions) {
@@ -389,6 +419,10 @@ export class SQLiteConnector implements DB {
   }
 
   async deleteMany(collection: string, options: DeleteManyOptions) {
+    return this.lock.acquire('db', async () => await this._deleteMany(collection, options))
+  }
+
+  private async _deleteMany(collection: string, options: DeleteManyOptions) {
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table "${collection}"`)
     const orderBySql =

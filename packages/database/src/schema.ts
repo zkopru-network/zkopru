@@ -140,7 +140,7 @@ export default [
         type: 'Object',
         optional: true,
         relation: {
-          localField: 'fetched',
+          localField: 'hash',
           foreignField: 'hash',
           foreignTable: 'Block',
         },
