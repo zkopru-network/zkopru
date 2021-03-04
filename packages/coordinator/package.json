@@ -14,7 +14,6 @@
     "~account": "../account/dist",
     "~coordinator": "dist",
     "~database": "../database/dist",
-    "~prisma": "../prisma/dist",
     "~utils": "../utils/dist"
   },
   "scripts": {
@@ -37,7 +36,6 @@
     "@zkopru/contracts": "file:../contracts",
     "@zkopru/core": "file:../core",
     "@zkopru/database": "file:../database",
-    "@zkopru/prisma": "file:../prisma",
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/tree": "file:../tree",
     "@zkopru/utils": "file:../utils",

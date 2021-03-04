@@ -8,7 +8,7 @@ import {
   signEdDSA,
   verifyEdDSA,
 } from '@zkopru/babyjubjub'
-import { Keystore } from '@zkopru/prisma'
+import { Keystore } from '@zkopru/database'
 import { hexify } from '@zkopru/utils'
 import createKeccak from 'keccak'
 import assert from 'assert'

@@ -1,7 +1,6 @@
 import Web3 from 'web3'
 import { ZkopruNode, NetworkStatus } from '@zkopru/core'
 import { ZkAccount, HDWallet } from '@zkopru/account'
-// import { DB, EncryptedWallet } from '@zkopru/prisma'
 import { DB, EncryptedWallet } from '@zkopru/database'
 import { PromptApp } from '@zkopru/utils'
 import { WebsocketProvider } from 'web3-core'

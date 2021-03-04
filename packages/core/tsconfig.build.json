@@ -12,7 +12,7 @@
     { "path": "../account/tsconfig.build.json", "prepend": false },
     { "path": "../babyjubjub/tsconfig.build.json", "prepend": false },
     { "path": "../contracts/tsconfig.build.json", "prepend": false },
-    { "path": "../prisma/tsconfig.build.json", "prepend": false },
+    { "path": "../database/tsconfig.build.json", "prepend": false },
     { "path": "../transaction/tsconfig.build.json", "prepend": false },
     { "path": "../tree/tsconfig.build.json", "prepend": false },
     { "path": "../utils/tsconfig.build.json", "prepend": false }

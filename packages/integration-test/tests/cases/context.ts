@@ -3,7 +3,7 @@ import Web3 from 'web3'
 import path from 'path'
 import { WebsocketProvider, Account } from 'web3-core'
 import { Address } from 'soltypes'
-import { MockupDB, DB } from '~prisma'
+import { DB, SQLiteConnector, schema } from '~database'
 import { ZkAccount, HDWallet } from '~account'
 import { sleep, readFromContainer, buildAndGetContainer } from '~utils'
 import { DEFAULT } from '~cli/apps/coordinator/config'
@@ -37,7 +37,7 @@ export interface Context {
   web3: Web3
   provider: WebsocketProvider
   zkopruAddress: string
-  dbs: MockupDB[]
+  dbs: DB[]
   contract: L1Contract
   tokens: {
     erc20: {
@@ -70,7 +70,7 @@ export async function terminate(ctx: CtxProvider) {
     wallets.carl.node.stop(),
     wallets.coordinator.node.stop(),
   ])
-  await Promise.all([dbs.map(db => db.terminate())])
+  await Promise.all([dbs.map(db => db.close())])
   await Promise.all([
     await layer1Container.stop(),
     await circuitArtifactContainer.stop(),
@@ -154,8 +154,9 @@ async function getAccounts(
   carl: ZkAccount
   coordinator: ZkAccount
 }> {
-  const mockup = await DB.testMockup()
-  const hdWallet = new HDWallet(web3, mockup.db)
+  const mockup = await SQLiteConnector.create(':memory:')
+  await mockup.createTables(schema as any)
+  const hdWallet = new HDWallet(web3, mockup)
   const mnemonic =
     'myth like bonus scare over problem client lizard pioneer submit female collect'
   await hdWallet.init(mnemonic, 'samplepassword')
@@ -164,7 +165,7 @@ async function getAccounts(
   const bob = await hdWallet.createAccount(2)
   const carl = await hdWallet.createAccount(3)
   const accounts = { coordinator, alice, bob, carl }
-  await mockup.terminate()
+  await mockup.close()
   return accounts
 }
 
@@ -202,12 +203,13 @@ async function getCoordinator(
   provider: WebsocketProvider,
   address: string,
   account: Account,
-): Promise<{ coordinator: Coordinator; mockupDB: MockupDB }> {
-  const mockupDB = await DB.testMockup()
+): Promise<{ coordinator: Coordinator; mockupDB: DB }> {
+  const mockupDB = await SQLiteConnector.create(':memory:')
+  await mockupDB.createTables(schema as any)
   const fullNode: FullNode = await FullNode.new({
     address,
     provider,
-    db: mockupDB.db,
+    db: mockupDB,
   })
   const { maxBytes, priceMultiplier, port } = DEFAULT
   const coordinator = new Coordinator(fullNode, account, {
@@ -217,6 +219,7 @@ async function getCoordinator(
     port,
     maxBid: 20000,
     bootstrap: false,
+    vhosts: '*',
   })
   return { coordinator, mockupDB }
 }
@@ -235,18 +238,19 @@ export async function getWallet({
   address: string
   erc20s: string[]
   erc721s: string[]
-}): Promise<{ zkWallet: ZkWallet; mockupDB: MockupDB }> {
-  const mockupDB = await DB.testMockup()
+}): Promise<{ zkWallet: ZkWallet; mockupDB: DB }> {
+  const mockupDB = await SQLiteConnector.create(':memory:')
+  await mockupDB.createTables(schema as any)
   const node: FullNode = await FullNode.new({
     address,
     provider,
-    db: mockupDB.db,
+    db: mockupDB,
     slasher: account.ethAccount,
   })
   const web3 = new Web3(provider)
-  const hdWallet = new HDWallet(web3, mockupDB.db)
+  const hdWallet = new HDWallet(web3, mockupDB)
   const zkWallet = new ZkWallet({
-    db: mockupDB.db,
+    db: mockupDB,
     wallet: hdWallet,
     node,
     accounts: [account],
@@ -283,7 +287,7 @@ async function getWallets({
     carl: ZkWallet
     coordinator: ZkWallet
   }
-  dbs: MockupDB[]
+  dbs: DB[]
 }> {
   const { zkWallet: alice, mockupDB: aliceDB } = await getWallet({
     account: accounts.alice,

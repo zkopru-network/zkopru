@@ -1,6 +1,5 @@
 import chalk from 'chalk'
 import fs from 'fs-extra'
-// import { DB } from '@zkopru/prisma'
 import { DB, SQLiteConnector, initDB } from '@zkopru/database'
 import { L1Contract } from '@zkopru/core'
 // import path from 'path'

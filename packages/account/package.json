@@ -10,7 +10,6 @@
   "_moduleAliases": {
     "~account": "dist",
     "~utils": "../utils/dist",
-    "~prisma": "../prisma/dist",
     "~database": "../database/dist"
   },
   "scripts": {
@@ -31,7 +30,6 @@
   "dependencies": {
     "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/database": "file:../database",
-    "@zkopru/prisma": "file:../prisma",
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/utils": "file:../utils",
     "bip39": "^3.0.2",

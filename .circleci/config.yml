@@ -12,9 +12,6 @@ workflows:
       - test_contracts:
           requires:
             - build
-      - test_prisma:
-          requires:
-            - build
       - test_accounts:
           requires:
             - build
@@ -45,9 +42,6 @@ jobs:
       - run:
           name: Install
           command: yarn
-      - run:
-          name: Build Prisma
-          command: yarn build:prisma
       - run:
           name: Build Contract
           command: yarn build:contract
@@ -113,15 +107,6 @@ jobs:
       - run:
           name: Dataset Tests
           command: yarn test --scope=@zkopru/dataset
-  test_prisma:
-    machine:
-      image: ubuntu-2004:202010-01
-    steps:
-      - attach_workspace:
-          at: ~/
-      - run:
-          name: Prisma Tests
-          command: yarn test --scope=@zkopru/prisma
   test_accounts:
     machine:
       image: ubuntu-2004:202010-01

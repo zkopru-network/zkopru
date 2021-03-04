@@ -32,7 +32,6 @@
     "@zkopru/contracts": "file:../contracts",
     "@zkopru/core": "file:../core",
     "@zkopru/database": "file:../database",
-    "@zkopru/prisma": "file:../prisma",
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/tree": "file:../tree",
     "@zkopru/utils": "file:../utils",

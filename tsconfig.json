@@ -17,7 +17,6 @@
       "~coordinator/*": ["coordinator/src/*"],
       "~core/*": ["core/src/*"],
       "~dataset/*": ["dataset/src/*"],
-      "~prisma/*": ["prisma/src/*"],
       "~transaction/*": ["transaction/src/*"],
       "~tree/*": ["tree/src/*"],
       "~utils/*": ["utils/src/*"],

@@ -39,7 +39,6 @@
     "@zkopru/coordinator": "file:../coordinator",
     "@zkopru/core": "file:../core",
     "@zkopru/database": "file:../database",
-    "@zkopru/prisma": "file:../prisma",
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/utils": "file:../utils",
     "@zkopru/zk-wizard": "file:../zk-wizard",
