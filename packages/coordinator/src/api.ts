@@ -2,12 +2,13 @@ import express, { RequestHandler } from 'express'
 import { WithdrawalStatus, ZkTx } from '@zkopru/transaction'
 import { logger } from '@zkopru/utils'
 import { Server } from 'http'
-import { soliditySha3Raw } from 'web3-utils'
+import { soliditySha3Raw, toBN } from 'web3-utils'
 import { Bytes32 } from 'soltypes'
 import { Field } from '@zkopru/babyjubjub'
 import { BootstrapData } from '@zkopru/core'
 import { TxUtil } from '@zkopru/contracts'
 import fetch from 'node-fetch'
+import { verifyProof } from '@zkopru/tree'
 import { CoordinatorContext } from './context'
 import { ClientApi } from './client-api'
 
@@ -214,8 +215,6 @@ export class CoordinatorApi {
       index,
       sign,
     } = withdrawal
-    // TODO verify request
-    // TODO check fee
     const tx = layer1.user.methods.payInAdvance(
       hash,
       to,
@@ -237,17 +236,6 @@ export class CoordinatorApi {
       nft,
       fee,
     )
-    const signedTx = await TxUtil.getSignedTransaction(
-      tx,
-      layer1.address,
-      layer1.web3,
-      this.context.account,
-      {
-        value: eth,
-      },
-    )
-    // save withdrawal
-    logger.info('pay in advance')
     const data = {
       hash,
       withdrawalHash,
@@ -262,14 +250,55 @@ export class CoordinatorApi {
       siblings: JSON.stringify(withdrawal.siblings),
       status: WithdrawalStatus.UNFINALIZED,
     }
-    await layer2.db.write(prisma =>
-      prisma.withdrawal.upsert({
+    const header = await layer2.db.read(prisma =>
+      prisma.header.findOne({
         where: { hash },
-        create: data,
-        update: data,
       }),
     )
-    res.send(signedTx)
+    const proposal = await layer2.db.read(prisma =>
+      prisma.proposal.findOne({
+        where: {
+          hash,
+        },
+      }),
+    )
+    if (!!header && proposal?.verified) {
+      const proof = {
+        root: toBN(header.withdrawalRoot),
+        index: toBN(index),
+        leaf: toBN(withdrawalHash),
+        siblings: withdrawal.siblings.map(sib => toBN(sib)),
+      }
+      const isValidRequest = verifyProof(
+        this.context.node.layer2.grove.config.withdrawalHasher,
+        proof,
+      )
+      if (!isValidRequest) {
+        res.status(400).send('API accepts only a single string')
+        return
+      }
+      await layer2.db.write(prisma =>
+        prisma.withdrawal.upsert({
+          where: { hash },
+          create: data,
+          update: data,
+        }),
+      )
+      const signedTx = await TxUtil.getSignedTransaction(
+        tx,
+        layer1.address,
+        layer1.web3,
+        this.context.account,
+        {
+          value: eth,
+        },
+      )
+      // save withdrawal
+      logger.info('pay in advance')
+      res.send(signedTx)
+    } else {
+      res.status(400).send('The withdrawal is not verified.')
+    }
   }
 
   private bootstrapHandler: RequestHandler = async (req, res) => {
