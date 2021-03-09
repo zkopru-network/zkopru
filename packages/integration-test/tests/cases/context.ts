@@ -213,6 +213,7 @@ async function getCoordinator(
   const coordinator = new Coordinator(fullNode, account, {
     maxBytes,
     priceMultiplier, // 32 gas is the current default price for 1 byte
+    vhosts: '*',
     port,
     maxBid: 20000,
     bootstrap: false,
