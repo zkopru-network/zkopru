@@ -180,8 +180,8 @@ contract Coordinatable is Storage {
         address payable proposerAddr = msg.sender;
         Proposer storage proposer = Storage.chain.proposers[proposerAddr];
         require(proposer.reward >= amount, "You can't withdraw more than you have");
-        payable(proposerAddr).transfer(amount);
         proposer.reward -= amount;
+        payable(proposerAddr).transfer(amount);
     }
 
 
