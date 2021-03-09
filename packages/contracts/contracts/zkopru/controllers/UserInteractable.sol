@@ -233,6 +233,8 @@ contract UserInteractable is Storage {
         );
         // Should not allow double-withdrawing
         require(!Storage.chain.withdrawn[withdrawalHash], "Already withdrawn");
+        // Mark as withdrawn
+        Storage.chain.withdrawn[withdrawalHash] = true;
         // Check whether new owner exists
         address to = Storage.chain.newWithdrawalOwner[withdrawalHash] != address(0)
             ? Storage.chain.newWithdrawalOwner[withdrawalHash]
@@ -260,8 +262,6 @@ contract UserInteractable is Storage {
             require(nft != 0, "Circuit cannot accept NFT id 0. Please deposit other NFT.");
             IERC721(token).transferFrom(address(this), to, nft);
         }
-        // Mark as withdrawn
-        Storage.chain.withdrawn[withdrawalHash] = true;
     }
 
     function _withdrawalHash(
