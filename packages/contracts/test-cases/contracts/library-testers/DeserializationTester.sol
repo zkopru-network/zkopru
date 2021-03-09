@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity = 0.6.12;
+pragma solidity = 0.7.4;
 
 import { Deserializer } from "../../../contracts/zkopru/libraries/Deserializer.sol";
 import {

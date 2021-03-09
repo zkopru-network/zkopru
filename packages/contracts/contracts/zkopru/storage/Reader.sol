@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity = 0.6.12;
+pragma solidity = 0.7.4;
 
 import "../libraries/Types.sol";
 import { IConsensusProvider } from "../../consensus/interfaces/IConsensusProvider.sol";
@@ -43,11 +43,11 @@ contract Reader is Storage {
         exitAllowance = proposer.exitAllowance;
     }
 
-    function proposals(bytes32 proposalId) public view returns (bytes32 header, uint256 challengeDue, bool slashed) {
+    function proposals(bytes32 proposalId) public view returns (bytes32 header, uint256 challengeDue, bool isSlashed) {
         Proposal memory proposal = chain.proposals[proposalId];
         header = proposal.headerHash;
         challengeDue = proposal.challengeDue;
-        slashed = chain.slashed[proposal.headerHash];
+        isSlashed = chain.slashed[proposal.headerHash];
     }
 
     function finalized(bytes32 headerHash) public view returns (bool) {

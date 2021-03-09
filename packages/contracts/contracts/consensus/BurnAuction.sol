@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity = 0.6.12;
+pragma solidity = 0.7.4;
 
 import "../zkopru/Zkopru.sol";
 import "../zkopru/interfaces/ICoordinatable.sol";
@@ -48,10 +48,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     mapping (address => string) public override coordinatorUrls;
 
 
-    event UrlUpdate(address coordinator);
-    event NewHighBid(uint roundIndex, address bidder, uint amount);
-
-    constructor(address payable networkAddress) public {
+    constructor(address payable networkAddress) {
         zkopru = Zkopru(networkAddress);
         startBlock = uint32(block.number);
     }

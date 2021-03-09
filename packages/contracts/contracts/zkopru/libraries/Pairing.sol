@@ -17,7 +17,7 @@
 
 // 2019 OKIMS
 
-pragma solidity = 0.6.12;
+pragma solidity = 0.7.4;
 
 // Moved G1Point, G2Point struct to the top level - by ws
 struct G1Point {

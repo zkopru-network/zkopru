@@ -101,7 +101,7 @@ export class Zkopru extends Contract {
     ): TransactionObject<{
       header: string
       challengeDue: string
-      slashed: boolean
+      isSlashed: boolean
       0: string
       1: string
       2: boolean
