@@ -153,7 +153,15 @@ jobs:
           at: ~/
       - run:
           name: ZK Wizard Tests
-          command: yarn test --scope=@zkopru/zk-wizard
+          command: |
+            docker pull jchancehud/zkopru:circuits
+            docker tag jchancehud/zkopru:circuits zkoprunet/circuits:dev
+            cd packages/circuits
+            yarn setup
+            yarn build-keys
+            yarn postbuild-keys
+            cd ../..
+            yarn test --scope=@zkopru/zk-wizard
   test_client:
     machine:
       image: ubuntu-2004:202010-01
