@@ -1,4 +1,12 @@
-import { TableData, normalizeRowDef } from '../types'
+import {
+  TableData,
+  normalizeRowDef,
+  FindManyOptions,
+  SchemaTable,
+  WhereClause,
+  UpdateOptions,
+  DeleteManyOptions,
+} from '../types'
 
 export const escapeQuotes = (str: string) => {
   if (str === null) console.log(new Error().stack)
@@ -122,4 +130,127 @@ export function tableCreationSql(tableData: TableData[]) {
     );`)
   }
   return commands.join(' ')
+}
+
+export function createSql(table: SchemaTable, _doc: any | any): { sql: string, query: object } {
+  // create defaults where needed
+  const docs = [_doc].flat()
+  for (const [, row] of Object.entries(table.rows)) {
+    for (const doc of docs) {
+      if (
+        !row?.default ||
+        (doc[row.name] !== undefined && doc[row.name] !== null)
+      )
+        // eslint-disable-next-line no-continue
+        continue
+      // otherwise generate default field
+      Object.assign(doc, {
+        [row.name]:
+          typeof row.default === 'function' ? row.default() : row.default,
+      })
+    }
+  }
+  // generate keys using first document
+  const allKeys = [] as string[]
+  for (const doc of docs) {
+    allKeys.push(...Object.keys(doc))
+  }
+  const keys = [] as string[]
+  for (const key of allKeys) {
+    // eslint-disable-next-line no-continue
+    if (keys.indexOf(key) !== -1) continue
+    keys.push(key)
+  }
+  // query for retrieving the created documents, uses IN operator for all
+  // primary keys
+  const uniqueKeys = keys.filter(k => table.rows[k]?.unique)
+  const query = [table.primaryKey, uniqueKeys].flat().reduce((acc, key) => {
+    if (key === undefined) return acc
+    return {
+      ...acc,
+      [key]: [],
+    }
+  }, {})
+  const keyString = keys.map(k => `"${k}"`).join(',')
+  const allValues = [] as string[]
+  for (const doc of docs) {
+    const values = keys
+      .map(k => {
+        const rowDef = table.rows[k]
+        if (!rowDef)
+          throw new Error(`Unable to find row definition for key: "${k}"`)
+        if (query[k]) {
+          query[k].push(doc[k])
+        }
+        return parseType(rowDef.type, doc[k])
+      })
+      .join(',')
+    allValues.push(`(${values})`)
+  }
+  return {
+    sql: `INSERT INTO "${table.name}" (${keyString}) VALUES ${allValues.join(
+      ', ',
+    )};`,
+    query,
+  }
+}
+
+export function findManySql(table: SchemaTable, options: FindManyOptions): string {
+  const { where } = options
+  const orderBy =
+    options.orderBy && Object.keys(options.orderBy).length > 0
+      ? ` ORDER BY ${Object.keys(options.orderBy)
+          .map(key => {
+            const val = (options.orderBy || {})[key]
+            return `"${key}" ${val.toUpperCase()}`
+          })
+          .join(', ')}`
+      : ''
+  const limit = options.limit ? ` LIMIT ${options.limit} ` : ''
+  return `SELECT * FROM "${table.name}" ${whereToSql(
+    table,
+    where,
+  )} ${orderBy} ${limit};`
+}
+
+export function countSql(table: SchemaTable, where: WhereClause): string {
+  return `SELECT COUNT(*) FROM "${table.name}" ${whereToSql(
+    table,
+    where,
+  )};`
+}
+
+export function updateSql(table: SchemaTable, options: UpdateOptions): string {
+  const { where, update } = options
+  const setSql = Object.keys(update)
+    .map(key => {
+      const rowDef = table.rows[key]
+      if (!rowDef)
+        throw new Error(`Unable to find row definition for key: "${key}"`)
+      return `"${key}" = ${parseType(rowDef.type, update[key])}`
+    })
+    .join(', ')
+  return `UPDATE "${table.name}" SET ${setSql} ${whereToSql(
+    table,
+    where,
+  )}`
+}
+
+export function deleteManySql(table: SchemaTable, options: DeleteManyOptions): string {
+  const orderBySql =
+    options.orderBy && Object.keys(options.orderBy).length > 0
+      ? ` ORDER BY ${Object.keys(options.orderBy)
+          .map(key => {
+            const val = (options.orderBy || {})[key]
+            return `"${key}" ${val.toUpperCase()}`
+          })
+          .join(', ')}`
+      : ''
+  const limitSql =
+    options.limit === undefined ? '' : ` LIMIT ${options.limit} `
+  return `DELETE FROM "${table.name}" WHERE "${table.primaryKey}" =
+  (SELECT "${table.primaryKey}" FROM "${table.name}" ${whereToSql(
+    table,
+    options.where,
+  )} ${orderBySql} ${limitSql});`
 }

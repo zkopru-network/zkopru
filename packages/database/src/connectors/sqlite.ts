@@ -17,10 +17,12 @@ import {
   Relation,
 } from '../types'
 import {
-  // escapeQuotes,
-  whereToSql,
   tableCreationSql,
-  parseType,
+  createSql,
+  findManySql,
+  countSql,
+  updateSql,
+  deleteManySql,
 } from '../helpers/sql'
 
 export class SQLiteConnector implements DB {
@@ -63,63 +65,8 @@ export class SQLiteConnector implements DB {
   private async _create(collection: string, _doc: any | any): Promise<any> {
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection} in schema`)
-    // create defaults where needed
     const docs = [_doc].flat()
-    for (const [, row] of Object.entries(table.rows)) {
-      for (const doc of docs) {
-        if (
-          !row?.default ||
-          (doc[row.name] !== undefined && doc[row.name] !== null)
-        )
-          // eslint-disable-next-line no-continue
-          continue
-        // otherwise generate default field
-        Object.assign(doc, {
-          [row.name]:
-            typeof row.default === 'function' ? row.default() : row.default,
-        })
-      }
-    }
-    // generate keys using first document
-    const allKeys = [] as string[]
-    for (const doc of docs) {
-      allKeys.push(...Object.keys(doc))
-    }
-    const keys = [] as string[]
-    for (const key of allKeys) {
-      // eslint-disable-next-line no-continue
-      if (keys.indexOf(key) !== -1) continue
-      keys.push(key)
-    }
-    // query for retrieving the created documents, uses IN operator for all
-    // primary keys
-    const uniqueKeys = keys.filter(k => table.rows[k]?.unique)
-    const query = [table.primaryKey, uniqueKeys].flat().reduce((acc, key) => {
-      if (key === undefined) return acc
-      return {
-        ...acc,
-        [key]: [],
-      }
-    }, {})
-    const keyString = keys.map(k => `"${k}"`).join(',')
-    const allValues = [] as string[]
-    for (const doc of docs) {
-      const values = keys
-        .map(k => {
-          const rowDef = table.rows[k]
-          if (!rowDef)
-            throw new Error(`Unable to find row definition for key: "${k}"`)
-          if (query[k]) {
-            query[k].push(doc[k])
-          }
-          return parseType(rowDef.type, doc[k])
-        })
-        .join(',')
-      allValues.push(`(${values})`)
-    }
-    const sql = `INSERT INTO "${collection}" (${keyString}) VALUES ${allValues.join(
-      ', ',
-    )};`
+    const { sql, query } = createSql(table, docs)
     const { changes } = await this.db.run(sql)
     if (changes !== docs.length) {
       throw new Error('Failed to create document')
@@ -208,23 +155,9 @@ export class SQLiteConnector implements DB {
   }
 
   async _findMany(collection: string, options: FindManyOptions) {
-    const { where, include } = options
-    const orderBy =
-      options.orderBy && Object.keys(options.orderBy).length > 0
-        ? ` ORDER BY ${Object.keys(options.orderBy)
-            .map(key => {
-              const val = (options.orderBy || {})[key]
-              return `"${key}" ${val.toUpperCase()}`
-            })
-            .join(', ')}`
-        : ''
-    const limit = options.limit ? ` LIMIT ${options.limit} ` : ''
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection}`)
-    const sql = `SELECT * FROM "${collection}" ${whereToSql(
-      table,
-      where,
-    )} ${orderBy} ${limit};`
+    const sql = findManySql(table, options)
     const models = await this.db.all(sql)
     const objectKeys = Object.keys(table.rows).filter(key => {
       return table.rows[key]?.type === 'Object'
@@ -243,6 +176,7 @@ export class SQLiteConnector implements DB {
         }
       }
     }
+    const { include } = options
     await this.loadIncluded(collection, {
       models,
       include,
@@ -257,10 +191,7 @@ export class SQLiteConnector implements DB {
   async _count(collection: string, where: WhereClause) {
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection}`)
-    const sql = `SELECT COUNT(*) FROM "${collection}" ${whereToSql(
-      table,
-      where,
-    )};`
+    const sql = countSql(table, where)
     const result = await this.db.get(sql)
     return result['COUNT(*)']
   }
@@ -276,18 +207,7 @@ export class SQLiteConnector implements DB {
     if (Object.keys(update).length === 0) return this._count(collection, where)
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection} in schema`)
-    const setSql = Object.keys(update)
-      .map(key => {
-        const rowDef = table.rows[key]
-        if (!rowDef)
-          throw new Error(`Unable to find row definition for key: "${key}"`)
-        return `"${key}" = ${parseType(rowDef.type, update[key])}`
-      })
-      .join(', ')
-    const sql = `UPDATE "${collection}" SET ${setSql} ${whereToSql(
-      table,
-      where,
-    )}`
+    const sql = updateSql(table, options)
     const result = await this.db.run(sql)
     return result.changes || 0
   }
@@ -335,22 +255,7 @@ export class SQLiteConnector implements DB {
   private async _deleteMany(collection: string, options: DeleteManyOptions) {
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table "${collection}"`)
-    const orderBySql =
-      options.orderBy && Object.keys(options.orderBy).length > 0
-        ? ` ORDER BY ${Object.keys(options.orderBy)
-            .map(key => {
-              const val = (options.orderBy || {})[key]
-              return `"${key}" ${val.toUpperCase()}`
-            })
-            .join(', ')}`
-        : ''
-    const limitSql =
-      options.limit === undefined ? '' : ` LIMIT ${options.limit} `
-    const sql = `DELETE FROM "${collection}" WHERE "${table.primaryKey}" =
-    (SELECT "${table.primaryKey}" FROM "${collection}" ${whereToSql(
-      table,
-      options.where,
-    )} ${orderBySql} ${limitSql});`
+    const sql = deleteManySql(table, options)
     const { changes } = await this.db.run(sql)
     return changes || 0
   }
