@@ -92,7 +92,7 @@ export function tableCreationSql(tableData: TableData[]) {
   // run sql queries creating the tables as necessary
   const commands = [] as string[]
   for (const table of tableData) {
-    const { name, /* primaryKey, */ rows } = table
+    const { name, primaryKey, rows } = table
     const typeMap = {
       String: 'TEXT',
       Int: 'INTEGER',
@@ -120,14 +120,14 @@ export function tableCreationSql(tableData: TableData[]) {
     //       ON UPDATE NO ACTION`
     //   })
     //   .filter(i => !!i)
-    const relationCommands = []
-    // if (primaryKey) {
-    //   const primaryKeys = [primaryKey]
-    //     .flat()
-    //     .map((name: string) => `"${name}"`)
-    //     .join(',')
-    //   relationCommands.push(`PRIMARY KEY (${primaryKeys})`)
-    // }
+    const relationCommands = [] as string[]
+    if (primaryKey) {
+      const primaryKeys = [primaryKey]
+        .flat()
+        .map((name: string) => `"${name}"`)
+        .join(',')
+      relationCommands.push(`PRIMARY KEY (${primaryKeys})`)
+    }
     // assume there's always at least 1 entry in rowCommands and relationCommands
     commands.push(`CREATE TABLE IF NOT EXISTS "${name}" (
       ${[rowCommands.join(','), relationCommands.join(',')]
