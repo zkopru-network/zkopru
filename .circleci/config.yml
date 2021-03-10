@@ -30,6 +30,9 @@ workflows:
       - test_database:
           requires:
             - build
+      - test_zkwizard:
+          requires:
+            - build
 jobs:
   build:
     machine:
@@ -142,6 +145,15 @@ jobs:
       - run:
           name: Tree Tests
           command: yarn test --scope=@zkopru/tree
+  test_zkwizard:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: ZK Wizard Tests
+          command: yarn test --scope=@zkopru/zk-wizard
   test_client:
     machine:
       image: ubuntu-2004:202010-01
