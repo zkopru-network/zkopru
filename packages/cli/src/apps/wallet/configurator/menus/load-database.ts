@@ -35,10 +35,10 @@ export default class LoadDatabase extends Configurator {
         name: 'dbType',
         message: 'You should configure database',
         choices: [
-          // {
-          //   title: 'Postgres(work in progress)',
-          //   value: DBType.POSTGRES,
-          // },
+          {
+            title: 'Postgres(work in progress)',
+            value: DBType.POSTGRES,
+          },
           {
             title: 'Sqlite',
             value: DBType.SQLITE,
