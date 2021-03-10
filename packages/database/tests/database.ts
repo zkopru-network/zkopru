@@ -1,42 +1,30 @@
-/* eslint-disable no-plusplus, jest/no-hooks */
+/* eslint-disable jest/require-top-level-describe, no-plusplus, jest/no-export */
 import assert from 'assert'
-import testSchema from './test-schema'
-import { SQLiteConnector } from '~database'
+import { DB } from '~database'
 
-describe('database tests', () => {
-  let db: SQLiteConnector
-  beforeEach(async () => {
-    db = await SQLiteConnector.create(':memory:')
-  })
-
-  afterEach(async () => {
-    db.close()
-  })
-
-  it('should create tables', async () => {
-    await db.createTables(testSchema)
+export default function(this: { db: DB }) {
+  test('should create tables', async () => {
     const table = 'TableOne'
-    await db.create(table, {
+    await this.db.create(table, {
       uniqueField: 'testvalue',
       regularField: 'value',
     })
-    const doc = await db.findOne(table, {
+    const doc = await this.db.findOne(table, {
       where: { uniqueField: 'testvalue' },
     })
     assert(doc, 'Inserted document does not exist')
   })
 
-  it('should create documents', async () => {
-    await db.createTables(testSchema)
+  test('should create documents', async () => {
     const table = 'TableThree'
     {
-      const created = await db.create(table, {
+      const created = await this.db.create(table, {
         id: 'test',
       })
       assert.equal(created.id, 'test')
     }
     {
-      const docs = await db.create(table, [
+      const docs = await this.db.create(table, [
         {
           id: 'test1',
         },
@@ -55,24 +43,23 @@ describe('database tests', () => {
     }
   })
 
-  it('should find one', async () => {
-    await db.createTables(testSchema)
+  test('should find one', async () => {
     const table = 'TableThree'
     for (let x = 0; x < 10; x++) {
-      await db.create(table, {
+      await this.db.create(table, {
         id: `test${x}`,
         optionalField: 'test',
       })
     }
     {
-      const row = await db.findOne(table, {
+      const row = await this.db.findOne(table, {
         where: { optionalField: 'test' },
         orderBy: { id: 'asc' },
       })
       assert.equal(row.id, 'test0')
     }
     {
-      const row = await db.findOne(table, {
+      const row = await this.db.findOne(table, {
         where: { optionalField: 'test' },
         orderBy: { id: 'desc' },
       })
@@ -80,10 +67,9 @@ describe('database tests', () => {
     }
   })
 
-  it('should return null if not found', async () => {
-    await db.createTables(testSchema)
+  test('should return null if not found', async () => {
     const table = 'TableThree'
-    const r = await db.findOne(table, {
+    const r = await this.db.findOne(table, {
       where: {
         optionalField: 'nonexistent',
       },
@@ -91,16 +77,15 @@ describe('database tests', () => {
     assert.strictEqual(r, null)
   })
 
-  it('should find many', async () => {
+  test('should find many', async () => {
     const table = 'TableTwo'
-    await db.createTables(testSchema)
     for (let x = 0; x < 10; x++) {
-      await db.create(table, {
+      await this.db.create(table, {
         counterField: x,
       })
       await new Promise(r => setTimeout(r, 10))
     }
-    const docs = await db.findMany(table, {
+    const docs = await this.db.findMany(table, {
       where: {},
       orderBy: { id: 'asc' },
     })
@@ -111,7 +96,7 @@ describe('database tests', () => {
         'Documents incorrectly ordered',
       )
     }
-    const docs2 = await db.findMany(table, {
+    const docs2 = await this.db.findMany(table, {
       where: {},
       orderBy: { id: 'desc' },
     })
@@ -124,16 +109,15 @@ describe('database tests', () => {
     }
   })
 
-  it('should find using in operator', async () => {
-    await db.createTables(testSchema)
+  test('should find using in operator', async () => {
     const table = 'TableThree'
     for (let x = 0; x < 10; x++) {
-      await db.create(table, {
+      await this.db.create(table, {
         id: `test${x}`,
         optionalField: 'test',
       })
     }
-    const rows = await db.findMany(table, {
+    const rows = await this.db.findMany(table, {
       where: {
         id: ['test0', 'test2', 'test4'],
       },
@@ -144,9 +128,8 @@ describe('database tests', () => {
     assert.equal(rows[2].id, 'test4')
   })
 
-  it('should load nested relations', async () => {
-    await db.createTables(testSchema)
-    await db.create('TableFour', [
+  test('should load nested relations', async () => {
+    await this.db.create('TableFour', [
       {
         id: 'test0',
         relation1Id: 'test0',
@@ -156,7 +139,7 @@ describe('database tests', () => {
         relation1Id: 'test1',
       },
     ])
-    await db.create('Relation1', [
+    await this.db.create('Relation1', [
       {
         id: 'test0',
         relation2Id: 'test0',
@@ -170,7 +153,7 @@ describe('database tests', () => {
         relation2Id: 'test2',
       },
     ])
-    await db.create('Relation2', [
+    await this.db.create('Relation2', [
       {
         id: 'test0',
       },
@@ -182,7 +165,7 @@ describe('database tests', () => {
       },
     ])
     {
-      const row = await db.findOne('TableFour', {
+      const row = await this.db.findOne('TableFour', {
         where: { id: 'test0' },
         include: { relation1: { relation2: true } },
       })
@@ -190,7 +173,7 @@ describe('database tests', () => {
       assert.equal(row.relation1.relation2.id, 'test0')
     }
     {
-      const row = await db.findOne('TableFour', {
+      const row = await this.db.findOne('TableFour', {
         where: { id: 'test0' },
         include: { relation1: true },
       })
@@ -199,27 +182,25 @@ describe('database tests', () => {
     }
   })
 
-  it('should count documents', async () => {
-    await db.createTables(testSchema)
+  test('should count documents', async () => {
     const table = 'Table5'
-    await db.create(table, [
+    await this.db.create(table, [
       { id: 0 },
       { id: 1, optionalField: true },
       { id: 2, optionalField: true },
       { id: 3, optionalField: true },
     ])
-    assert.equal(await db.count(table, {}), 4)
-    assert.equal(await db.count(table, { id: 1 }), 1)
-    assert.equal(await db.count(table, { id: [0, 2] }), 2)
-    assert.equal(await db.count(table, { optionalField: true }), 3)
-    assert.equal(await db.count(table, { optionalField: false }), 0)
-    assert.equal(await db.count(table, { optionalField: null }), 1)
+    assert.equal(await this.db.count(table, {}), 4)
+    assert.equal(await this.db.count(table, { id: 1 }), 1)
+    assert.equal(await this.db.count(table, { id: [0, 2] }), 2)
+    assert.equal(await this.db.count(table, { optionalField: true }), 3)
+    assert.equal(await this.db.count(table, { optionalField: false }), 0)
+    assert.equal(await this.db.count(table, { optionalField: null }), 1)
   })
 
-  it('should handle object type', async () => {
-    await db.createTables(testSchema)
+  test('should handle object type', async () => {
     const table = 'Table6'
-    await db.create(table, [
+    await this.db.create(table, [
       {
         id: 0,
         boolField: true,
@@ -227,15 +208,14 @@ describe('database tests', () => {
         objectField: { test: 'obj' },
       },
     ])
-    const row = await db.findOne(table, { where: { id: 0 } })
+    const row = await this.db.findOne(table, { where: { id: 0 } })
     assert.equal(typeof row.objectField, 'object')
     assert.equal(row.objectField.test, 'obj')
   })
 
-  it('should perform update', async () => {
-    await db.createTables(testSchema)
+  test('should perform update', async () => {
     const table = 'Table6'
-    await db.create(table, [
+    await this.db.create(table, [
       {
         id: 0,
         boolField: true,
@@ -250,13 +230,13 @@ describe('database tests', () => {
       },
     ])
     {
-      const row = await db.findOne(table, { where: { id: 0 } })
+      const row = await this.db.findOne(table, { where: { id: 0 } })
       assert.equal(typeof row.objectField, 'object')
       assert.equal(row.objectField.test, 'obj')
       assert.equal(row.boolField, true)
       assert.equal(row.stringField, 'test')
     }
-    const changes = await db.update(table, {
+    const changes = await this.db.update(table, {
       where: { id: [0, 1] },
       update: {
         objectField: {
@@ -268,7 +248,7 @@ describe('database tests', () => {
     })
     assert.equal(changes, 2)
     {
-      const row = await db.findOne(table, { where: { id: 0 } })
+      const row = await this.db.findOne(table, { where: { id: 0 } })
       assert.equal(typeof row.objectField, 'object')
       assert.equal(row.objectField.newProp, 'exists')
       assert.equal(row.boolField, false)
@@ -276,11 +256,10 @@ describe('database tests', () => {
     }
   })
 
-  it('should perform upsert', async () => {
-    await db.createTables(testSchema)
+  test('should perform upsert', async () => {
     const table = 'Table6'
     {
-      const doc = await db.upsert(table, {
+      const doc = await this.db.upsert(table, {
         where: { id: 0 },
         create: {
           id: 0,
@@ -294,7 +273,7 @@ describe('database tests', () => {
       assert.equal(doc.objectField.test, 'obj')
     }
     {
-      const doc = await db.upsert(table, {
+      const doc = await this.db.upsert(table, {
         where: { id: 0 },
         create: {
           id: 0,
@@ -310,11 +289,10 @@ describe('database tests', () => {
     }
   })
 
-  it('should not upsert if empty update', async () => {
-    await db.createTables(testSchema)
+  test('should not upsert if empty update', async () => {
     const table = 'Table6'
     {
-      const doc = await db.upsert(table, {
+      const doc = await this.db.upsert(table, {
         where: { id: 0 },
         create: {
           id: 0,
@@ -327,7 +305,7 @@ describe('database tests', () => {
       assert.equal(doc.id, 0)
     }
     {
-      const doc = await db.upsert(table, {
+      const doc = await this.db.upsert(table, {
         where: { id: 0 },
         create: {
           id: 0,
@@ -339,17 +317,16 @@ describe('database tests', () => {
     }
   })
 
-  it('should use operators', async () => {
+  test('should use operators', async () => {
     const table = 'TableTwo'
-    await db.createTables(testSchema)
     for (let x = 0; x < 10; x++) {
-      await db.create(table, {
+      await this.db.create(table, {
         counterField: x,
       })
       await new Promise(r => setTimeout(r, 10))
     }
     {
-      const docs = await db.findMany(table, {
+      const docs = await this.db.findMany(table, {
         where: {
           counterField: { lt: 3 },
         },
@@ -357,7 +334,7 @@ describe('database tests', () => {
       assert.equal(docs.length, 3)
     }
     {
-      const docs = await db.findMany(table, {
+      const docs = await this.db.findMany(table, {
         where: {
           counterField: { lte: 3 },
         },
@@ -365,7 +342,7 @@ describe('database tests', () => {
       assert.equal(docs.length, 4)
     }
     {
-      const docs = await db.findMany(table, {
+      const docs = await this.db.findMany(table, {
         where: {
           counterField: { gt: 3 },
         },
@@ -373,7 +350,7 @@ describe('database tests', () => {
       assert.equal(docs.length, 6)
     }
     {
-      const docs = await db.findMany(table, {
+      const docs = await this.db.findMany(table, {
         where: {
           counterField: { gte: 3 },
         },
@@ -381,7 +358,7 @@ describe('database tests', () => {
       assert.equal(docs.length, 7)
     }
     {
-      const docs = await db.findMany(table, {
+      const docs = await this.db.findMany(table, {
         where: {
           counterField: { ne: 3 },
         },
@@ -390,17 +367,16 @@ describe('database tests', () => {
     }
   })
 
-  it('should use OR logic', async () => {
+  test('should use OR logic', async () => {
     const table = 'TableTwo'
-    await db.createTables(testSchema)
     for (let x = 0; x < 10; x++) {
-      await db.create(table, {
+      await this.db.create(table, {
         counterField: x,
       })
       await new Promise(r => setTimeout(r, 10))
     }
     {
-      const docs = await db.findMany(table, {
+      const docs = await this.db.findMany(table, {
         where: {
           OR: [{ counterField: 0 }, { counterField: 1 }],
         },
@@ -408,7 +384,7 @@ describe('database tests', () => {
       assert.equal(docs.length, 2)
     }
     {
-      const docs = await db.findMany(table, {
+      const docs = await this.db.findMany(table, {
         where: {
           OR: [{ counterField: 0 }, { counterField: 1 }],
           counterField: { gt: 5 },
@@ -417,7 +393,7 @@ describe('database tests', () => {
       assert.equal(docs.length, 0)
     }
     {
-      const docs = await db.findMany(table, {
+      const docs = await this.db.findMany(table, {
         where: {
           OR: [{ counterField: { gt: 5 } }, { counterField: 1 }],
         },
@@ -425,4 +401,4 @@ describe('database tests', () => {
       assert.equal(docs.length, 5)
     }
   })
-})
+}

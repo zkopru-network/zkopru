@@ -8,7 +8,7 @@ export default [
       {
         name: 'id',
         type: 'String',
-        default: () => Math.random().toString(),
+        default: () => Math.floor(Math.random() * 1000000).toString(),
       },
       ['uniqueField', 'String', { unique: true }],
       ['uniqueAndOptionalField', 'String', { unique: true, optional: true }],

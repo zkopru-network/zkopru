@@ -5,6 +5,7 @@ import { DB } from './types'
 import { Config } from './schema.types'
 
 export { SQLiteConnector } from './connectors/sqlite'
+export { PostgresConnector } from './connectors/postgres'
 export { DB, TableData } from './types'
 export * from './schema.types'
 export * from './preset'

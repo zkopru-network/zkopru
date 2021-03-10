@@ -108,12 +108,12 @@ export function normalizeRowDef(row: RowDef | ShortRowDef): RowDef {
   return row
 }
 
-export type SchemaTable = ({
+export type SchemaTable = {
   rows: { [rowKey: string]: RowDef | undefined }
   relations: {
     [relation: string]: (Relation & { name: string }) | undefined
   }
-} & TableData)
+} & TableData
 
 export type Schema = {
   [tableKey: string]: SchemaTable | undefined

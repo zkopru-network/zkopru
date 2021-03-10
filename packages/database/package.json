@@ -21,7 +21,7 @@
     "strip-vendor": "cat ./dist/connectors/sqlite.d.ts | tail -n +2 | tee ./dist/connectors/sqlite.d.ts > /dev/null",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "link-modules": "link-module-alias",
-    "test": "jest",
+    "test": "sh scripts/test.sh",
     "coverage": "jest --coverage"
   },
   "dependencies": {
@@ -29,6 +29,7 @@
     "@zkopru/utils": "file:../utils",
     "async-lock": "^1.2.8",
     "bn.js": "^4.12.0",
+    "pg": "^8.5.1",
     "sqlite": "^4.0.19",
     "sqlite3": "^5.0.2",
     "uuid": "^8.3.2",

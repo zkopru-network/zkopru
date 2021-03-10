@@ -13,10 +13,12 @@ export const escapeQuotes = (str: string) => {
   return str.replace(/"/gm, '""')
 }
 
+export const escapeSingleQuotes = (str: string) => str.replace(/'/gm, `''`)
+
 export function parseType(type: string, value: any) {
   if (value === null || value === undefined) return 'NULL'
   if (type === 'String' && typeof value === 'string') {
-    return `"${escapeQuotes(value)}"`
+    return `'${escapeSingleQuotes(value)}'`
   }
   if (type === 'Int' && typeof value === 'number') {
     return `${value}`
@@ -25,7 +27,7 @@ export function parseType(type: string, value: any) {
     return value ? 'true' : 'false'
   }
   if (type === 'Object' && typeof value === 'object') {
-    return `"${escapeQuotes(JSON.stringify(value))}"`
+    return `'${escapeSingleQuotes(JSON.stringify(value))}'`
   }
   throw new Error(`Unrecognized value "${value}" for type ${type}`)
 }
@@ -59,8 +61,7 @@ export function whereToSql(table: TableData, doc: any = {}, sqlOnly = false) {
           eq: 'IS',
         }
         return Object.keys(val).map(k => {
-          const operator =
-            val[k] === null ? nullOperatorMap[k] : operatorMap[k]
+          const operator = val[k] === null ? nullOperatorMap[k] : operatorMap[k]
           if (!operator) throw new Error(`Invalid operator ${k}`)
           const parsed = parseType(rowDef.type, val[k])
           return `"${key}" ${operator} ${parsed}`
@@ -77,7 +78,7 @@ export function whereToSql(table: TableData, doc: any = {}, sqlOnly = false) {
       whereToSql(table, w, true),
     ).join(' OR ')
     return ` ${sqlOnly ? '' : 'WHERE'}
-    (${sql || 1}) AND (${orConditions})`
+    (${sql || 'true'}) AND (${orConditions})`
   }
   return ` ${sqlOnly ? '' : 'WHERE'} ${sql} `
 }
@@ -87,7 +88,7 @@ export function tableCreationSql(tableData: TableData[]) {
   // run sql queries creating the tables as necessary
   const commands = [] as string[]
   for (const table of tableData) {
-    const { name, primaryKey, rows } = table
+    const { name, /* primaryKey, */ rows } = table
     const typeMap = {
       String: 'TEXT',
       Int: 'INTEGER',
@@ -105,25 +106,26 @@ export function tableCreationSql(tableData: TableData[]) {
       })
       .filter(i => !!i)
     // Do i even need this if i'm loading manually????
-    const relationCommands = rows
-      .map(row => {
-        const fullRow = normalizeRowDef(row)
-        if (!fullRow.relation) return
-        return `FOREIGN KEY ("${fullRow.relation.localField}")
-        REFERENCES "${fullRow.relation.foreignTable}" ("${fullRow.relation.foreignField}")
-          ON DELETE SET NULL
-          ON UPDATE NO ACTION`
-      })
-      .filter(i => !!i)
-    if (primaryKey) {
-      const primaryKeys = [primaryKey]
-        .flat()
-        .map((name: string) => `"${name}"`)
-        .join(',')
-      relationCommands.push(`PRIMARY KEY (${primaryKeys})`)
-    }
+    // const relationCommands = rows
+    //   .map(row => {
+    //     const fullRow = normalizeRowDef(row)
+    //     if (!fullRow.relation) return
+    //     return `FOREIGN KEY ("${fullRow.relation.localField}")
+    //     REFERENCES "${fullRow.relation.foreignTable}" ("${fullRow.relation.foreignField}")
+    //       ON DELETE SET NULL
+    //       ON UPDATE NO ACTION`
+    //   })
+    //   .filter(i => !!i)
+    const relationCommands = []
+    // if (primaryKey) {
+    //   const primaryKeys = [primaryKey]
+    //     .flat()
+    //     .map((name: string) => `"${name}"`)
+    //     .join(',')
+    //   relationCommands.push(`PRIMARY KEY (${primaryKeys})`)
+    // }
     // assume there's always at least 1 entry in rowCommands and relationCommands
-    commands.push(`CREATE TABLE IF NOT EXISTS ${name} (
+    commands.push(`CREATE TABLE IF NOT EXISTS "${name}" (
       ${[rowCommands.join(','), relationCommands.join(',')]
         .filter(i => !!i)
         .join(',')}
@@ -132,7 +134,10 @@ export function tableCreationSql(tableData: TableData[]) {
   return commands.join(' ')
 }
 
-export function createSql(table: SchemaTable, _doc: any | any): { sql: string, query: object } {
+export function createSql(
+  table: SchemaTable,
+  _doc: any | any,
+): { sql: string; query: object } {
   // create defaults where needed
   const docs = [_doc].flat()
   for (const [, row] of Object.entries(table.rows)) {
@@ -195,7 +200,10 @@ export function createSql(table: SchemaTable, _doc: any | any): { sql: string, q
   }
 }
 
-export function findManySql(table: SchemaTable, options: FindManyOptions): string {
+export function findManySql(
+  table: SchemaTable,
+  options: FindManyOptions,
+): string {
   const { where } = options
   const orderBy =
     options.orderBy && Object.keys(options.orderBy).length > 0
@@ -214,10 +222,7 @@ export function findManySql(table: SchemaTable, options: FindManyOptions): strin
 }
 
 export function countSql(table: SchemaTable, where: WhereClause): string {
-  return `SELECT COUNT(*) FROM "${table.name}" ${whereToSql(
-    table,
-    where,
-  )};`
+  return `SELECT COUNT(*) FROM "${table.name}" ${whereToSql(table, where)};`
 }
 
 export function updateSql(table: SchemaTable, options: UpdateOptions): string {
@@ -230,13 +235,15 @@ export function updateSql(table: SchemaTable, options: UpdateOptions): string {
       return `"${key}" = ${parseType(rowDef.type, update[key])}`
     })
     .join(', ')
-  return `UPDATE "${table.name}" SET ${setSql} ${whereToSql(
-    table,
-    where,
-  )}`
+  return `UPDATE "${table.name}" SET ${setSql} ${whereToSql(table, where)}`
 }
 
-export function deleteManySql(table: SchemaTable, options: DeleteManyOptions): string {
+export function deleteManySql(
+  table: SchemaTable,
+  options: DeleteManyOptions,
+): string {
+  if (Object.keys(options.where).length === 0)
+    return `DELETE FROM "${table.name}"`
   const orderBySql =
     options.orderBy && Object.keys(options.orderBy).length > 0
       ? ` ORDER BY ${Object.keys(options.orderBy)
@@ -246,8 +253,7 @@ export function deleteManySql(table: SchemaTable, options: DeleteManyOptions): s
           })
           .join(', ')}`
       : ''
-  const limitSql =
-    options.limit === undefined ? '' : ` LIMIT ${options.limit} `
+  const limitSql = options.limit === undefined ? '' : ` LIMIT ${options.limit} `
   return `DELETE FROM "${table.name}" WHERE "${table.primaryKey}" =
   (SELECT "${table.primaryKey}" FROM "${table.name}" ${whereToSql(
     table,
