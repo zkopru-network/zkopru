@@ -1,3 +1,4 @@
+/* eslint-disable no-underscore-dangle */
 import { Client } from 'pg'
 import AsyncLock from 'async-lock'
 import {
@@ -54,23 +55,33 @@ export class PostgresConnector implements DB {
   }
 
   async create(collection: string, _doc: any) {
+    return this.lock.acquire('db', async () => this._create(collection, _doc))
+  }
+
+  private async _create(collection: string, _doc: any) {
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection} in schema`)
     const docs = [_doc].flat()
     const { sql, query } = createSql(table, docs)
     await this.db.query(sql)
     if (Array.isArray(_doc)) {
-      return this.findMany(collection, {
+      return this._findMany(collection, {
         where: query,
       })
     }
-    return this.findOne(collection, {
+    return this._findOne(collection, {
       where: query,
     })
   }
 
   async findOne(collection: string, options: FindOneOptions) {
-    const [obj] = await this.findMany(collection, {
+    return this.lock.acquire('db', async () =>
+      this._findOne(collection, options),
+    )
+  }
+
+  private async _findOne(collection: string, options: FindOneOptions) {
+    const [obj] = await this._findMany(collection, {
       ...options,
       limit: 1,
     })
@@ -109,7 +120,7 @@ export class PostgresConnector implements DB {
   ) {
     const values = models.map(model => model[relation.localField])
     // load relevant submodels
-    const submodels = await this.findMany(relation.foreignTable, {
+    const submodels = await this._findMany(relation.foreignTable, {
       where: {
         [relation.foreignField]: values,
       },
@@ -131,6 +142,12 @@ export class PostgresConnector implements DB {
   }
 
   async findMany(collection: string, options: FindManyOptions) {
+    return this.lock.acquire('db', async () =>
+      this._findMany(collection, options),
+    )
+  }
+
+  private async _findMany(collection: string, options: FindManyOptions) {
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection}`)
     const sql = findManySql(table, options)
@@ -161,6 +178,10 @@ export class PostgresConnector implements DB {
   }
 
   async count(collection: string, where: WhereClause) {
+    return this.lock.acquire('db', async () => this._count(collection, where))
+  }
+
+  private async _count(collection: string, where: WhereClause) {
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection}`)
     const sql = countSql(table, where)
@@ -169,8 +190,14 @@ export class PostgresConnector implements DB {
   }
 
   async update(collection: string, options: UpdateOptions) {
+    return this.lock.acquire('db', async () =>
+      this._update(collection, options),
+    )
+  }
+
+  private async _update(collection: string, options: UpdateOptions) {
     const { where, update } = options
-    if (Object.keys(update).length === 0) return this.count(collection, where)
+    if (Object.keys(update).length === 0) return this._count(collection, where)
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection} in schema`)
     const sql = updateSql(table, options)
@@ -179,13 +206,19 @@ export class PostgresConnector implements DB {
   }
 
   async upsert(collection: string, options: UpsertOptions) {
+    return this.lock.acquire('db', async () =>
+      this._upsert(collection, options),
+    )
+  }
+
+  private async _upsert(collection: string, options: UpsertOptions) {
     const { where, update, create } = options
-    const updated = await this.update(collection, {
+    const updated = await this._update(collection, {
       where,
       update,
     })
     if (updated > 0) {
-      const docs = await this.findMany(collection, {
+      const docs = await this._findMany(collection, {
         where: {
           ...where,
           ...update,
@@ -196,7 +229,7 @@ export class PostgresConnector implements DB {
       }
       return docs
     }
-    return this.create(collection, create)
+    return this._create(collection, create)
   }
 
   async deleteOne(collection: string, options: FindOneOptions) {
@@ -207,6 +240,12 @@ export class PostgresConnector implements DB {
   }
 
   async deleteMany(collection: string, options: DeleteManyOptions) {
+    return this.lock.acquire('db', async () =>
+      this._deleteMany(collection, options),
+    )
+  }
+
+  private async _deleteMany(collection: string, options: DeleteManyOptions) {
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table "${collection}"`)
     const sql = deleteManySql(table, options)
