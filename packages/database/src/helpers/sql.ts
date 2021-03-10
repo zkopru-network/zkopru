@@ -41,6 +41,10 @@ export function whereToSql(table: TableData, doc: any = {}, sqlOnly = false) {
       if (!rowDef)
         throw new Error(`Unable to find row definition for key: "${key}"`)
       const val = doc[key]
+      if (Array.isArray(val) && val.length === 0) {
+        // An empty IN operator should match nothing
+        return '(false)'
+      }
       if (Array.isArray(val)) {
         // need to generate an IN query
         const values = val.map(v => parseType(rowDef.type, v))

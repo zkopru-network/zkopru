@@ -165,7 +165,7 @@ export class PostgresConnector implements DB {
     if (!table) throw new Error(`Unable to find table ${collection}`)
     const sql = countSql(table, where)
     const { rows } = await this.db.query(sql)
-    return rows[0].count
+    return +rows[0].count
   }
 
   async update(collection: string, options: UpdateOptions) {

@@ -191,8 +191,10 @@ export default function(this: { db: DB }) {
       { id: 3, optionalField: true },
     ])
     assert.equal(await this.db.count(table, {}), 4)
+    assert.equal(typeof (await this.db.count(table, {})), 'number')
     assert.equal(await this.db.count(table, { id: 1 }), 1)
     assert.equal(await this.db.count(table, { id: [0, 2] }), 2)
+    assert.equal(await this.db.count(table, { id: [] }), 0)
     assert.equal(await this.db.count(table, { optionalField: true }), 3)
     assert.equal(await this.db.count(table, { optionalField: false }), 0)
     assert.equal(await this.db.count(table, { optionalField: null }), 1)
@@ -247,6 +249,7 @@ export default function(this: { db: DB }) {
       },
     })
     assert.equal(changes, 2)
+    assert.equal(typeof changes, 'number')
     {
       const row = await this.db.findOne(table, { where: { id: 0 } })
       assert.equal(typeof row.objectField, 'object')
