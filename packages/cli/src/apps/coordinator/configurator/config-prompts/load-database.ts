@@ -112,7 +112,7 @@ export default class LoadDatabase extends Configurator {
         database = await SQLiteConnector.create(dbName)
       }
     }
-    await database.createTables(schema as any)
+    await database.createTables(schema)
     await initDB(
       database,
       context.web3,

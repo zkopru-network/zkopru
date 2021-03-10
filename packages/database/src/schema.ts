@@ -1,4 +1,5 @@
 import * as uuid from 'uuid'
+import { TableData } from './types'
 
 export default [
   {
@@ -374,4 +375,4 @@ export default [
       ['blockNumber', 'Int'],
     ],
   },
-]
+] as TableData[]

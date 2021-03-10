@@ -90,7 +90,7 @@ export async function saveUtxos(db: DB, utxos: Utxo[]): Promise<DB> {
 
 export async function loadZkTxs(): Promise<ZkTx[]> {
   const mockupDB = await SQLiteConnector.create(':memory:')
-  await mockupDB.createTables(schema as any)
+  await mockupDB.createTables(schema)
   const { grove } = await loadGrove(mockupDB)
   await saveUtxos(mockupDB, [
     utxos.utxo1_in_1,

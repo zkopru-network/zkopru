@@ -88,7 +88,7 @@ async function loadZkWizard(): Promise<{
   mockupDB: DB
 }> {
   const mockupDB = await SQLiteConnector.create(':memory:')
-  await mockupDB.createTables(schema as any)
+  await mockupDB.createTables(schema)
   const { grove } = await loadGrove(mockupDB)
   await saveUtxos(mockupDB, [
     utxos.utxo1_in_1,

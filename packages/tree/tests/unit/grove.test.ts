@@ -15,7 +15,7 @@ describe('grove full sync grove()', () => {
   let mockup: DB
   beforeAll(async () => {
     mockup = await SQLiteConnector.create(':memory:')
-    await mockup.createTables(schema as any)
+    await mockup.createTables(schema)
     fullSyncGrvoe = new Grove(mockup, {
       utxoTreeDepth: 31,
       withdrawalTreeDepth: 31,
@@ -156,7 +156,7 @@ describe('grove full sync grove()', () => {
       }
 
       const mockup = await SQLiteConnector.create(':memory:')
-      await mockup.createTables(schema as any)
+      await mockup.createTables(schema)
       lightSyncGrove = new Grove(mockup, {
         utxoTreeDepth: 31,
         withdrawalTreeDepth: 31,

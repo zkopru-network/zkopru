@@ -7,7 +7,7 @@ describe('unit test', () => {
   let mockup: DB
   beforeAll(async () => {
     mockup = await SQLiteConnector.create(':memory:')
-    await mockup.createTables(schema as any)
+    await mockup.createTables(schema)
   })
   afterAll(async () => {
     await mockup.close()

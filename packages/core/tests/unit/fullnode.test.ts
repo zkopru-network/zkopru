@@ -19,7 +19,7 @@ describe('integration test to run testnet', () => {
   let mockup: DB
   beforeAll(async () => {
     mockup = await SQLiteConnector.create(':memory:')
-    await mockup.createTables(schema as any)
+    await mockup.createTables(schema)
     // It may take about few minutes. If you want to skip building image,
     // run `yarn pull:images` on the root directory
     container = await pullOrBuildAndGetContainer({

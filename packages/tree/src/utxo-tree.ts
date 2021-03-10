@@ -109,7 +109,7 @@ export class UtxoTree extends LightRollUpTree<Fp> {
       siblings: preHashes.slice(0, -1),
     }
     const mockupDB = await SQLiteConnector.create(':memory:')
-    await mockupDB.createTables(schema as any)
+    await mockupDB.createTables(schema)
     const utxoTree = new UtxoTree({
       db: mockupDB,
       metadata: utxoTreeMetadata,
