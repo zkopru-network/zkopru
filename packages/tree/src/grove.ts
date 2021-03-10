@@ -237,19 +237,6 @@ export class Grove {
         update: {},
         create: { hash: header },
       })
-
-      // await this.db.write(prisma =>
-      //   prisma.bootstrap.upsert({
-      //     where: { blockHash: header },
-      //     update: bootstrapData,
-      //     create: {
-      //       ...bootstrapData,
-      //       block: {
-      //         connect: { hash: header },
-      //       },
-      //     },
-      //   }),
-      // )
     } else {
       await this.db.create('Bootstrap', bootstrapData)
     }

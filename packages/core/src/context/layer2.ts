@@ -285,24 +285,6 @@ export class L2Chain {
       orderBy: { proposalNum: 'asc' },
     })
     return canonical.length > 0
-    // const canonical = await this.db.read(prisma =>
-    //   prisma.proposal.findMany({
-    //     where: {
-    //       AND: [
-    //         { proposalNum: { lt: proposalNum } },
-    //         {
-    //           block: {
-    //             header: { parentBlock: { equals: parentBlock.toString() } },
-    //           },
-    //         },
-    //         { verified: true },
-    //       ],
-    //     },
-    //     orderBy: { proposalNum: 'asc' },
-    //     take: 1,
-    //   }),
-    // )
-    // return canonical.length === 1
   }
 
   async applyBootstrap(block: Block, bootstrapData: BootstrapData) {

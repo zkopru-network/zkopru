@@ -32,24 +32,6 @@ export class BlockProposer extends ProposerBase {
         ],
       },
     })
-    // const siblingProposals = await layer2.db.read(prisma =>
-    //   prisma.proposal.findMany({
-    //     where: {
-    //       OR: [
-    //         {
-    //           block: {
-    //             header: { parentBlock: block.header.parentBlock.toString() },
-    //           },
-    //           verified: true,
-    //           isUncle: null,
-    //         },
-    //         {
-    //           hash: block.hash.toString(),
-    //         },
-    //       ],
-    //     },
-    //   }),
-    // )
     if (siblingProposals.length > 0) {
       logger.info(`Already proposed for the given parent block`)
       return undefined

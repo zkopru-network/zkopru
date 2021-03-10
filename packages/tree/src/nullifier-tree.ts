@@ -83,19 +83,6 @@ export class NullifierTree implements SMT<BN> {
         value: hexify(SMTLeaf.FILLED),
       },
     })
-    // const usedNullifierNodeIndices = await this.db.read(prisma =>
-    //   prisma.treeNode.findMany({
-    //     select: { nodeIndex: true },
-    //     where: {
-    //       nodeIndex: {
-    //         in: nullifiers
-    //           .map(index => new BN(1).shln(this.depth).or(index))
-    //           .map(nullifier => hexify(nullifier)),
-    //       },
-    //       value: hexify(SMTLeaf.FILLED),
-    //     },
-    //   }),
-    // )
     const usedNullifiers = usedNullifierNodeIndices.map(nullifier =>
       toBN(nullifier.nodeIndex).sub(new BN(1).shln(this.depth)),
     )
@@ -241,16 +228,6 @@ export class NullifierTree implements SMT<BN> {
         nodeIndex: [...nodeIndices],
       },
     })
-    // const mutatedNodes: TreeNode[] = await this.db.read(prisma =>
-    //   prisma.treeNode.findMany({
-    //     where: {
-    //       AND: [
-    //         { treeId: NULLIFIER_TREE_ID },
-    //         { nodeIndex: { in: [...nodeIndices] } },
-    //       ],
-    //     },
-    //   }),
-    // )
     const siblingNodes: NodeMap = {}
     for (const node of mutatedNodes) {
       // key is a hexified node index

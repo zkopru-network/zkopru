@@ -7,7 +7,6 @@ import {
   schema,
   initDB,
 } from '@zkopru/database'
-// import path from 'path'
 import { L1Contract } from '@zkopru/core'
 import Configurator, { Context, Menu } from '../configurator'
 

@@ -107,16 +107,6 @@ export class BlockProcessor extends EventEmitter {
             limit: 1,
             include: { block: true },
           })
-          // const latestProcessed = await this.db.read(prisma =>
-          //   prisma.proposal.findMany({
-          //     where: {
-          //       OR: [{ verified: { not: null } }, { isUncle: { not: null } }],
-          //     },
-          //     orderBy: { proposalNum: 'desc' },
-          //     take: 1,
-          //     include: { block: true },
-          //   }),
-          // )
           const latest = latestProcessed.pop()
           this.emit('processed', { proposalNum: latest?.proposalNum || 0 })
           // this.synchronizer.setLatestProcessed(latest?.proposalNum || 0)
@@ -545,20 +535,6 @@ export class BlockProcessor extends EventEmitter {
         to: accounts.map(account => account.toString()),
       },
     })
-    // const myStoredWithdrawals = await this.db.read(prisma =>
-    //   prisma.withdrawal.findMany({
-    //     where: {
-    //       hash: {
-    //         in: patch.treePatch.withdrawals.map(leaf => {
-    //           if (!leaf.noteHash)
-    //             throw Error('Patch should provide noteHash field')
-    //           return leaf.noteHash?.toString()
-    //         }),
-    //       },
-    //       to: { in: accounts.map(account => account.toString()) },
-    //     },
-    //   }),
-    // )
     const startingWithdrawalIndex = patch.prevHeader.withdrawalIndex.toBN()
     const withdrawalsToUpdate: {
       hash: string

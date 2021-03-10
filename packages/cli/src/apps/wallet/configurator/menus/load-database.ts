@@ -1,8 +1,13 @@
 import chalk from 'chalk'
 import fs from 'fs-extra'
-import { DB, SQLiteConnector, initDB } from '@zkopru/database'
+import {
+  DB,
+  SQLiteConnector,
+  PostgresConnector,
+  schema,
+  initDB,
+} from '@zkopru/database'
 import { L1Contract } from '@zkopru/core'
-// import path from 'path'
 import Configurator, { Context, Menu } from '../configurator'
 
 export default class LoadDatabase extends Configurator {
@@ -15,12 +20,7 @@ export default class LoadDatabase extends Configurator {
     }
     let database: DB
     if (this.base.postgres) {
-      throw new Error('Postgres not supported')
-      // database = new DB({
-      //   datasources: {
-      //     postgres: { url: this.base.postgres },
-      //   },
-      // })
+      database = await PostgresConnector.create(this.base.postgres)
     } else if (this.base.sqlite) {
       const dbPath = this.base.sqlite
       database = await SQLiteConnector.create(dbPath)
@@ -48,49 +48,44 @@ export default class LoadDatabase extends Configurator {
       })
 
       if (dbType === DBType.POSTGRES) {
-        throw new Error('Postgres not supported')
-        // this.print(`${chalk.blue('Creating a postgresql connection')}
-        // ${chalk.yellow('Fetch schema files')}
-        // ${chalk.yellow('1. Install postgres.')}
-        // ${chalk.yellow('2. Run postgres daemon.')}
-        // ${chalk.yellow('3. set up database')}
-        // ${chalk.yellow('4. provide db connection info')}`)
-        // // TODO provide migrate option later
-        // // TODO provide detail database setup guide
-        // const { host } = await this.ask({
-        //   type: 'text',
-        //   name: 'host',
-        //   message: 'Host? ex: localhost',
-        // })
-        // const { port } = await this.ask({
-        //   type: 'number',
-        //   name: 'port',
-        //   message: 'Port number?',
-        //   initial: 5432,
-        // })
-        // const { user } = await this.ask({
-        //   type: 'text',
-        //   name: 'user',
-        //   message: 'Username',
-        // })
-        // const { password } = await this.ask({
-        //   type: 'password',
-        //   name: 'password',
-        //   message: 'Password',
-        // })
-        // const { dbName } = await this.ask({
-        //   type: 'text',
-        //   name: 'dbName',
-        //   message: 'DB Name',
-        //   initial: 'zkopru-wallet',
-        // })
-        // database = new DB({
-        //   datasources: {
-        //     postgres: {
-        //       url: `postgresql://${user}:${password}@${host}:${port}/${dbName}`,
-        //     },
-        //   },
-        // })
+        this.print(`${chalk.blue('Creating a postgresql connection')}
+        ${chalk.yellow('Fetch schema files')}
+        ${chalk.yellow('1. Install postgres.')}
+        ${chalk.yellow('2. Run postgres daemon.')}
+        ${chalk.yellow('3. set up database')}
+        ${chalk.yellow('4. provide db connection info')}`)
+        // TODO provide migrate option later
+        // TODO provide detail database setup guide
+        const { host } = await this.ask({
+          type: 'text',
+          name: 'host',
+          message: 'Host? ex: localhost',
+        })
+        const { port } = await this.ask({
+          type: 'number',
+          name: 'port',
+          message: 'Port number?',
+          initial: 5432,
+        })
+        const { user } = await this.ask({
+          type: 'text',
+          name: 'user',
+          message: 'Username',
+        })
+        const { password } = await this.ask({
+          type: 'password',
+          name: 'password',
+          message: 'Password',
+        })
+        const { dbName } = await this.ask({
+          type: 'text',
+          name: 'dbName',
+          message: 'DB Name',
+          initial: 'zkopru-wallet',
+        })
+        database = await PostgresConnector.create(
+          `postgresql://${user}:${password}@${host}:${port}/${dbName}`,
+        )
       } else {
         this.print(`${chalk.blue('Creating a sqlite3 connection')}`)
         this.print(
@@ -120,6 +115,7 @@ export default class LoadDatabase extends Configurator {
         database = await SQLiteConnector.create(dbName)
       }
     }
+    await database.createTables(schema as any)
     await initDB(
       database,
       context.web3,

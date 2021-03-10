@@ -531,17 +531,6 @@ export class Synchronizer extends EventEmitter {
       },
       limit: availableFetchJob,
     })
-    // const candidates = await this.db.read(prisma =>
-    //   prisma.proposal.findMany({
-    //     where: {
-    //       AND: [{ proposalData: null }, { proposalTx: { not: null } }],
-    //     },
-    //     orderBy: {
-    //       proposalNum: 'asc',
-    //     },
-    //     take: availableFetchJob,
-    //   }),
-    // )
 
     candidates.forEach(candidate => {
       assert(candidate.proposalTx)
