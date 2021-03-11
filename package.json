@@ -27,7 +27,7 @@
     "clean:db": "shx rm -rf **/*/.mockup",
     "test": "yarn test:parallel",
     "test:parallel": "yarn test:serial --parallel",
-    "test:serial": "lerna run test",
+    "test:serial": "lerna run test --stream",
     "posttest:all": "yarn clean:db",
     "pretest:integrate": "docker-compose up -d --build",
     "test:integrate": "lerna run test:integrate --parallel || true",
