@@ -259,14 +259,6 @@ export class BlockProcessor extends EventEmitter {
         usedAt: null,
       }
     })
-    // TODO use a mutex lock here
-    // for (const input of inputs) {
-    //   await this.db.upsert('Utxo', {
-    //     where: { hash: input.hash },
-    //     create: input,
-    //     update: input,
-    //   })
-    // }
     await this.db.transaction(db => {
       inputs.map(input =>
         db.upsert('Utxo', {
@@ -279,17 +271,6 @@ export class BlockProcessor extends EventEmitter {
   }
 
   private async saveTransactions(block: Block, challenged = false) {
-    // for (const tx of block.body.txs) {
-    //   await this.db.create('Tx', {
-    //     hash: tx.hash().toString(),
-    //     blockHash: block.hash.toString(),
-    //     inflowCount: tx.inflow.length,
-    //     outflowCount: tx.outflow.length,
-    //     fee: tx.fee.toHex(),
-    //     challenged,
-    //     slashed: false,
-    //   })
-    // }
     await this.db.transaction(db => {
       block.body.txs.map(tx =>
         db.create('Tx', {
@@ -495,15 +476,6 @@ export class BlockProcessor extends EventEmitter {
         nullifier: nullifier.toString(),
       })
     }
-    // for (const utxo of utxosToUpdate) {
-    //   await this.db.update('Utxo', {
-    //     where: { hash: utxo.hash },
-    //     update: {
-    //       index: utxo.index,
-    //       nullifier: utxo.nullifier,
-    //     },
-    //   })
-    // }
     await this.db.transaction(db => {
       utxosToUpdate.map(utxo =>
         db.update('Utxo', {
@@ -555,16 +527,6 @@ export class BlockProcessor extends EventEmitter {
         ),
       })
     }
-    // for (const withdrawal of withdrawalsToUpdate) {
-    //   await this.db.update('Withdrawal', {
-    //     where: { hash: withdrawal.hash },
-    //     update: {
-    //       index: withdrawal.index,
-    //       includedIn: withdrawal.includedIn,
-    //       siblings: withdrawal.siblings,
-    //     },
-    //   })
-    // }
     await this.db.transaction(db => {
       withdrawalsToUpdate.map(withdrawal =>
         db.update('Withdrawal', {
