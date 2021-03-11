@@ -43,6 +43,142 @@ export default function(this: { db: DB }) {
     }
   })
 
+  test('should catch creation type errors', async () => {
+    const table = 'Table7'
+    try {
+      await this.db.create(table, {
+        id: 0,
+        boolField: '0',
+        stringField: 'test',
+        objectField: {},
+      })
+      assert(false)
+    } catch (err) {
+      assert(/Unrecognized value .* for type Bool/.test(err.toString()))
+    }
+    try {
+      await this.db.create(table, {
+        id: 0,
+        boolField: 0,
+        stringField: 'test',
+        objectField: {},
+      })
+      assert(false)
+    } catch (err) {
+      assert(/Unrecognized value .* for type Bool/.test(err.toString()))
+    }
+    try {
+      await this.db.create(table, {
+        id: 0,
+        boolField: {},
+        stringField: 'test',
+        objectField: {},
+      })
+      assert(false)
+    } catch (err) {
+      assert(/Unrecognized value .* for type Bool/.test(err.toString()))
+    }
+    try {
+      await this.db.create(table, {
+        id: true,
+        boolField: true,
+        stringField: 'test',
+        objectField: {},
+      })
+      assert(false)
+    } catch (err) {
+      assert(/Unrecognized value .* for type Int/.test(err.toString()))
+    }
+    try {
+      await this.db.create(table, {
+        id: {},
+        boolField: true,
+        stringField: 'test',
+        objectField: {},
+      })
+      assert(false)
+    } catch (err) {
+      assert(/Unrecognized value .* for type Int/.test(err.toString()))
+    }
+    try {
+      await this.db.create(table, {
+        id: 'test',
+        boolField: true,
+        stringField: 'test',
+        objectField: {},
+      })
+      assert(false)
+    } catch (err) {
+      assert(/Unrecognized value .* for type Int/.test(err.toString()))
+    }
+    try {
+      await this.db.create(table, {
+        id: 0,
+        boolField: true,
+        stringField: 0,
+        objectField: {},
+      })
+      assert(false)
+    } catch (err) {
+      assert(/Unrecognized value .* for type String/.test(err.toString()))
+    }
+    try {
+      await this.db.create(table, {
+        id: 0,
+        boolField: true,
+        stringField: {},
+        objectField: {},
+      })
+      assert(false)
+    } catch (err) {
+      assert(/Unrecognized value .* for type String/.test(err.toString()))
+    }
+    try {
+      await this.db.create(table, {
+        id: 0,
+        boolField: true,
+        stringField: true,
+        objectField: {},
+      })
+      assert(false)
+    } catch (err) {
+      assert(/Unrecognized value .* for type String/.test(err.toString()))
+    }
+    try {
+      await this.db.create(table, {
+        id: 0,
+        boolField: true,
+        stringField: 'test',
+        objectField: 'test',
+      })
+      assert(false)
+    } catch (err) {
+      assert(/Unrecognized value .* for type Object/.test(err.toString()))
+    }
+    try {
+      await this.db.create(table, {
+        id: 0,
+        boolField: true,
+        stringField: 'test',
+        objectField: true,
+      })
+      assert(false)
+    } catch (err) {
+      assert(/Unrecognized value .* for type Object/.test(err.toString()))
+    }
+    try {
+      await this.db.create(table, {
+        id: 0,
+        boolField: true,
+        stringField: 'test',
+        objectField: 0,
+      })
+      assert(false)
+    } catch (err) {
+      assert(/Unrecognized value .* for type Object/.test(err.toString()))
+    }
+  })
+
   test('should find one', async () => {
     const table = 'TableThree'
     for (let x = 0; x < 10; x++) {
@@ -418,6 +554,86 @@ export default function(this: { db: DB }) {
         },
       })
       assert.equal(docs.length, 5)
+    }
+  })
+
+  test('should delete one', async () => {
+    const table = 'Table7'
+    await this.db.create(table, {
+      id: 0,
+      boolField: true,
+      stringField: 'test',
+      objectField: {},
+    })
+    await this.db.create(table, {
+      id: 1,
+      boolField: true,
+      stringField: 'test',
+      objectField: {},
+    })
+    const deleted = await this.db.deleteOne(table, {
+      where: {
+        boolField: true,
+      },
+    })
+    assert.equal(deleted, 1)
+    const count = await this.db.count(table, {})
+    assert.equal(count, 1)
+  })
+
+  test('should delete many', async () => {
+    const table = 'Table7'
+    await this.db.create(table, {
+      id: 0,
+      boolField: true,
+      stringField: 'test',
+      objectField: {},
+    })
+    await this.db.create(table, {
+      id: 1,
+      boolField: true,
+      stringField: 'test',
+      objectField: {},
+    })
+    {
+      const deleted = await this.db.deleteMany(table, {
+        where: {
+          boolField: false,
+        },
+      })
+      assert.equal(deleted, 0)
+      const count = await this.db.count(table, {})
+      assert.equal(count, 2)
+    }
+    {
+      const deleted = await this.db.deleteMany(table, {
+        where: {
+          boolField: true,
+        },
+      })
+      assert.equal(deleted, 2)
+      const count = await this.db.count(table, {})
+      assert.equal(count, 0)
+    }
+    await this.db.create(table, {
+      id: 0,
+      boolField: true,
+      stringField: 'test',
+      objectField: {},
+    })
+    await this.db.create(table, {
+      id: 1,
+      boolField: true,
+      stringField: 'test',
+      objectField: {},
+    })
+    {
+      const deleted = await this.db.deleteMany(table, {
+        where: {},
+      })
+      assert.equal(deleted, 2)
+      const count = await this.db.count(table, {})
+      assert.equal(count, 0)
     }
   })
 }

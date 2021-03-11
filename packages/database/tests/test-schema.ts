@@ -101,4 +101,14 @@ export default [
       ['objectField', 'Object'],
     ],
   },
+  {
+    name: 'Table7',
+    rows: [
+      ['id', 'Int', { unique: true }],
+      ['boolField', 'Bool'],
+      ['stringField', 'String'],
+      ['objectField', 'Object'],
+      ['optionalField', 'String', { optional: true }],
+    ],
+  },
 ] as TableData[]

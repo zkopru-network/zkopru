@@ -247,8 +247,10 @@ export function deleteManySql(
   table: SchemaTable,
   options: DeleteManyOptions,
 ): string {
-  if (Object.keys(options.where).length === 0)
-    return `DELETE FROM "${table.name}"`
+  const constraintKey =
+    typeof table.primaryKey === 'string'
+      ? table.primaryKey
+      : table.rows.map(normalizeRowDef).find(row => row.unique)?.name
   const orderBySql =
     options.orderBy && Object.keys(options.orderBy).length > 0
       ? ` ORDER BY ${Object.keys(options.orderBy)
@@ -259,8 +261,10 @@ export function deleteManySql(
           .join(', ')}`
       : ''
   const limitSql = options.limit === undefined ? '' : ` LIMIT ${options.limit} `
-  return `DELETE FROM "${table.name}" WHERE "${table.primaryKey}" =
-  (SELECT "${table.primaryKey}" FROM "${table.name}" ${whereToSql(
+  if (Object.keys(options.where).length === 0)
+    return `DELETE FROM "${table.name}" ${orderBySql} ${limitSql};`
+  return `DELETE FROM "${table.name}" WHERE "${constraintKey}" IN
+  (SELECT "${constraintKey}" FROM "${table.name}" ${whereToSql(
     table,
     options.where,
   )} ${orderBySql} ${limitSql});`
