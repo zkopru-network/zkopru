@@ -6,6 +6,7 @@ import {
   WhereClause,
   UpdateOptions,
   DeleteManyOptions,
+  UpsertOptions,
 } from '../types'
 
 export const escapeQuotes = (str: string) => {
@@ -239,7 +240,7 @@ export function updateSql(table: SchemaTable, options: UpdateOptions): string {
       return `"${key}" = ${parseType(rowDef.type, update[key])}`
     })
     .join(', ')
-  return `UPDATE "${table.name}" SET ${setSql} ${whereToSql(table, where)}`
+  return `UPDATE "${table.name}" SET ${setSql} ${whereToSql(table, where)};`
 }
 
 export function deleteManySql(
@@ -263,4 +264,31 @@ export function deleteManySql(
     table,
     options.where,
   )} ${orderBySql} ${limitSql});`
+}
+
+export function upsertSql(table: SchemaTable, options: UpsertOptions): string {
+  const { sql } = createSql(table, options.create)
+  // remove the semicolon in the creation sql command
+  const creationSql = sql.replace(';', '')
+  const uniqueFields = [table.primaryKey].flat() as string[]
+  for (const rawRow of table.rows) {
+    const row = normalizeRowDef(rawRow)
+    if ([table.primaryKey].flat().indexOf(row.name) === -1 && row.unique)
+      uniqueFields.push(row.name)
+  }
+  const updateSqlCommand = Object.keys(options.update)
+    .map(key => {
+      const rowDef = table.rows[key]
+      if (!rowDef)
+        throw new Error(`Unable to find row definition for key: "${key}"`)
+      return `"${key}" = ${parseType(rowDef.type, options.update[key])}`
+    })
+    .join(', ')
+  const conflictClause =
+    Object.keys(options.update).length === 0
+      ? 'DO NOTHING;'
+      : `DO UPDATE SET ${updateSqlCommand};`
+  return `${creationSql}
+  ON CONFLICT(${uniqueFields.map(name => `"${name}"`).join(',')})
+  ${conflictClause}`
 }

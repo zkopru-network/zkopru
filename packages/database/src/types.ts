@@ -80,7 +80,7 @@ export interface DB {
   // update some documents returning the number updated
   update: (collection: string, options: UpdateOptions) => Promise<number>
   // update or create some documents
-  upsert: (collection: string, options: UpsertOptions) => Promise<any>
+  upsert: (collection: string, options: UpsertOptions) => Promise<number>
   // request that an index be created between some keys, if supported
   ensureIndex: (collection: string, name: string, keys: string[]) => void
   // provide a schema to connectors that need schema info
@@ -92,8 +92,18 @@ export interface DB {
     collection: string,
     options: DeleteManyOptions,
   ) => Promise<number>
+  transaction?: (operation: (db: TransactionDB) => void) => Promise<void>
   // close the db and cleanup
   close: () => Promise<void>
+}
+
+// The object available in a transaction context
+export interface TransactionDB {
+  create: (collection: string, doc: any | any[]) => void
+  update: (collection: string, options: UpdateOptions) => void
+  upsert: (collection: string, options: UpsertOptions) => void
+  deleteOne: (collection: string, options: FindOneOptions) => void
+  deleteMany: (collection: string, options: DeleteManyOptions) => void
 }
 
 export function normalizeRowDef(row: RowDef | ShortRowDef): RowDef {

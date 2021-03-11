@@ -501,11 +501,16 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
         ),
       ),
     }
-    const newTree = await db.upsert('LightTree', {
+    await db.upsert('LightTree', {
       where: { species },
       update: tree,
       create: {
         ...tree,
+      },
+    })
+    const newTree = await db.findOne('LightTree', {
+      where: {
+        species,
       },
     })
     const { start, end } = newTree

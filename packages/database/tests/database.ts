@@ -262,7 +262,7 @@ export default function(this: { db: DB }) {
   test('should perform upsert', async () => {
     const table = 'Table6'
     {
-      const doc = await this.db.upsert(table, {
+      const changes = await this.db.upsert(table, {
         where: { id: 0 },
         create: {
           id: 0,
@@ -272,11 +272,13 @@ export default function(this: { db: DB }) {
         },
         update: {},
       })
+      assert.equal(changes, 1)
+      const doc = await this.db.findOne(table, { where: { id: 0 } })
       assert.equal(doc.stringField, 'test')
       assert.equal(doc.objectField.test, 'obj')
     }
     {
-      const doc = await this.db.upsert(table, {
+      const changes = await this.db.upsert(table, {
         where: { id: 0 },
         create: {
           id: 0,
@@ -288,6 +290,10 @@ export default function(this: { db: DB }) {
           boolField: false,
         },
       })
+      assert.equal(changes, 1)
+      const doc = await this.db.findOne(table, {
+        where: { id: 0 },
+      })
       assert.equal(doc.boolField, false)
     }
   })
@@ -295,7 +301,7 @@ export default function(this: { db: DB }) {
   test('should not upsert if empty update', async () => {
     const table = 'Table6'
     {
-      const doc = await this.db.upsert(table, {
+      const changes = await this.db.upsert(table, {
         where: { id: 0 },
         create: {
           id: 0,
@@ -305,16 +311,26 @@ export default function(this: { db: DB }) {
         },
         update: {},
       })
+      assert.equal(changes, 1)
+      const doc = await this.db.findOne(table, {
+        where: { id: 0 },
+      })
       assert.equal(doc.id, 0)
     }
     {
-      const doc = await this.db.upsert(table, {
+      const changes = await this.db.upsert(table, {
         where: { id: 0 },
         create: {
           id: 0,
+          stringField: 'test2',
           boolField: false,
+          objectField: { test: 'obj2' },
         },
         update: {},
+      })
+      assert.equal(changes, 0)
+      const doc = await this.db.findOne(table, {
+        where: { id: 0 },
       })
       assert.equal(doc.boolField, true)
     }

@@ -410,10 +410,15 @@ export class Grove {
       start: index.toString(10),
       end: index.toString(10),
     }
-    const treeSql = await this.db.upsert('LightTree', {
+    await this.db.upsert('LightTree', {
       where: { species: TreeSpecies.UTXO },
       update: { ...data },
       create: { species: TreeSpecies.UTXO, ...data },
+    })
+    const treeSql = await this.db.findOne('LightTree', {
+      where: {
+        species: TreeSpecies.UTXO,
+      },
     })
     const tree = UtxoTree.from(this.db, treeSql, {
       hasher: this.config.utxoHasher,
@@ -451,10 +456,15 @@ export class Grove {
       start: index.toString(10),
       end: index.toString(10),
     }
-    const treeSql = await this.db.upsert('LightTree', {
+    await this.db.upsert('LightTree', {
       where: { species: TreeSpecies.WITHDRAWAL },
       update: { ...data },
       create: { species: TreeSpecies.WITHDRAWAL, ...data },
+    })
+    const treeSql = await this.db.findOne('LightTree', {
+      where: {
+        species: TreeSpecies.WITHDRAWAL,
+      },
     })
     const tree = WithdrawalTree.from(this.db, treeSql, {
       hasher: this.config.withdrawalHasher,

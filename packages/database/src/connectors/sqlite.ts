@@ -15,6 +15,7 @@ import {
   constructSchema,
   Schema,
   Relation,
+  TransactionDB,
 } from '../types'
 import {
   tableCreationSql,
@@ -23,6 +24,7 @@ import {
   countSql,
   updateSql,
   deleteManySql,
+  upsertSql,
 } from '../helpers/sql'
 
 export class SQLiteConnector implements DB {
@@ -219,24 +221,11 @@ export class SQLiteConnector implements DB {
   }
 
   async _upsert(collection: string, options: UpsertOptions) {
-    const { where, update, create } = options
-    const updated = await this._update(collection, {
-      where,
-      update,
-    })
-    if (updated > 0) {
-      const docs = await this._findMany(collection, {
-        where: {
-          ...where,
-          ...update,
-        },
-      })
-      if (docs.length === 1) {
-        return docs[0]
-      }
-      return docs
-    }
-    return this._create(collection, create)
+    const table = this.schema[collection]
+    if (!table) throw new Error(`Unable to find table ${collection} in schema`)
+    const sql = upsertSql(table, options)
+    const { changes } = await this.db.run(sql)
+    return changes
   }
 
   async deleteOne(collection: string, options: FindOneOptions) {
@@ -258,6 +247,62 @@ export class SQLiteConnector implements DB {
     const sql = deleteManySql(table, options)
     const { changes } = await this.db.run(sql)
     return changes || 0
+  }
+
+  // Allow only updates, upserts, deletes, and creates
+  async transaction(operation: (db: TransactionDB) => void) {
+    if (typeof operation !== 'function') throw new Error('Invalid operation')
+    const sqlOperations = [] as string[]
+    const transactionDB = {
+      create: (collection: string, _doc: any) => {
+        const table = this.schema[collection]
+        if (!table)
+          throw new Error(`Unable to find table ${collection} in schema`)
+        const docs = [_doc].flat()
+        const { sql } = createSql(table, docs)
+        sqlOperations.push(sql)
+      },
+      update: (collection: string, options: UpdateOptions) => {
+        const table = this.schema[collection]
+        if (!table)
+          throw new Error(`Unable to find table ${collection} in schema`)
+        sqlOperations.push(updateSql(table, options))
+      },
+      deleteOne: (collection: string, options: FindOneOptions) => {
+        const table = this.schema[collection]
+        if (!table) throw new Error(`Unable to find table "${collection}"`)
+        const sql = deleteManySql(table, {
+          ...options,
+          limit: 1,
+        })
+        sqlOperations.push(sql)
+      },
+      deleteMany: (collection: string, options: DeleteManyOptions) => {
+        const table = this.schema[collection]
+        if (!table) throw new Error(`Unable to find table "${collection}"`)
+        const sql = deleteManySql(table, options)
+        sqlOperations.push(sql)
+      },
+      upsert: (collection: string, options: UpsertOptions) => {
+        const table = this.schema[collection]
+        if (!table) throw new Error(`Unable to find table "${collection}"`)
+        const sql = upsertSql(table, options)
+        sqlOperations.push(sql)
+      },
+    }
+    try {
+      await Promise.resolve(operation(transactionDB))
+    } catch (err) {
+      console.log('Error in transaction operation')
+      console.log(err)
+    }
+    // now apply the transaction
+    const transactionSql = `BEGIN TRANSACTION;
+    ${sqlOperations.join('\n')}
+    COMMIT;`
+    await this.lock.acquire('db', async () => {
+      await this.db.run(transactionSql)
+    })
   }
 
   async close() {

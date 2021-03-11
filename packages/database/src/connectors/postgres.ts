@@ -21,6 +21,7 @@ import {
   deleteManySql,
   updateSql,
   countSql,
+  upsertSql,
 } from '../helpers/sql'
 
 export class PostgresConnector implements DB {
@@ -212,24 +213,11 @@ export class PostgresConnector implements DB {
   }
 
   private async _upsert(collection: string, options: UpsertOptions) {
-    const { where, update, create } = options
-    const updated = await this._update(collection, {
-      where,
-      update,
-    })
-    if (updated > 0) {
-      const docs = await this._findMany(collection, {
-        where: {
-          ...where,
-          ...update,
-        },
-      })
-      if (docs.length === 1) {
-        return docs[0]
-      }
-      return docs
-    }
-    return this._create(collection, create)
+    const table = this.schema[collection]
+    if (!table) throw new Error(`Unable to find table ${collection} in schema`)
+    const sql = upsertSql(table, options)
+    const { rowCount } = await this.db.query(sql)
+    return rowCount
   }
 
   async deleteOne(collection: string, options: FindOneOptions) {
