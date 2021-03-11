@@ -13,6 +13,7 @@ import {
   DeleteManyOptions,
   TableData,
   Relation,
+  TransactionDB,
 } from '../types'
 import {
   tableCreationSql,
@@ -249,6 +250,58 @@ export class PostgresConnector implements DB {
     this.schema = constructSchema(tableData)
     const createTablesCommand = tableCreationSql(tableData)
     await this.db.query(createTablesCommand)
+  }
+
+  async transaction(operation: (db: TransactionDB) => void) {
+    return this.lock.acquire('db', async () => this._transaction(operation))
+  }
+
+  private async _transaction(operation: (db: TransactionDB) => void) {
+    if (typeof operation !== 'function') throw new Error('Invalid operation')
+    const sqlOperations = [] as string[]
+    const transactionDB = {
+      create: (collection: string, _doc: any) => {
+        const table = this.schema[collection]
+        if (!table)
+          throw new Error(`Unable to find table ${collection} in schema`)
+        const docs = [_doc].flat()
+        const { sql } = createSql(table, docs)
+        sqlOperations.push(sql)
+      },
+      update: (collection: string, options: UpdateOptions) => {
+        const table = this.schema[collection]
+        if (!table)
+          throw new Error(`Unable to find table ${collection} in schema`)
+        sqlOperations.push(updateSql(table, options))
+      },
+      deleteOne: (collection: string, options: FindOneOptions) => {
+        const table = this.schema[collection]
+        if (!table) throw new Error(`Unable to find table "${collection}"`)
+        const sql = deleteManySql(table, {
+          ...options,
+          limit: 1,
+        })
+        sqlOperations.push(sql)
+      },
+      deleteMany: (collection: string, options: DeleteManyOptions) => {
+        const table = this.schema[collection]
+        if (!table) throw new Error(`Unable to find table "${collection}"`)
+        const sql = deleteManySql(table, options)
+        sqlOperations.push(sql)
+      },
+      upsert: (collection: string, options: UpsertOptions) => {
+        const table = this.schema[collection]
+        if (!table) throw new Error(`Unable to find table "${collection}"`)
+        const sql = upsertSql(table, options)
+        sqlOperations.push(sql)
+      },
+    }
+    await Promise.resolve(operation(transactionDB))
+    // now apply the transaction
+    const transactionSql = `BEGIN TRANSACTION;
+    ${sqlOperations.join('\n')}
+    COMMIT;`
+    await this.db.query(transactionSql)
   }
 
   async close() {

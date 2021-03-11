@@ -270,12 +270,20 @@ export function upsertSql(table: SchemaTable, options: UpsertOptions): string {
   const { sql } = createSql(table, options.create)
   // remove the semicolon in the creation sql command
   const creationSql = sql.replace(';', '')
-  const uniqueFields = [table.primaryKey].flat() as string[]
+  const uniqueFields = [] as string[]
   for (const rawRow of table.rows) {
     const row = normalizeRowDef(rawRow)
-    if ([table.primaryKey].flat().indexOf(row.name) === -1 && row.unique)
+    if ([table.primaryKey].flat().indexOf(row.name) === -1 && !row.unique)
+      // eslint-disable-next-line no-continue
+      continue
+    // otherwise check if the key is present in the where clause
+    if (typeof options.where[row.name] !== 'undefined')
       uniqueFields.push(row.name)
   }
+  const conflictConstraint = [options.constraintKey || uniqueFields]
+    .flat()
+    .map(name => `"${name}"`)
+    .join(',')
   const updateSqlCommand = Object.keys(options.update)
     .map(key => {
       const rowDef = table.rows[key]
@@ -289,6 +297,6 @@ export function upsertSql(table: SchemaTable, options: UpsertOptions): string {
       ? 'DO NOTHING;'
       : `DO UPDATE SET ${updateSqlCommand};`
   return `${creationSql}
-  ON CONFLICT(${uniqueFields.map(name => `"${name}"`).join(',')})
+  ON CONFLICT(${conflictConstraint})
   ${conflictClause}`
 }

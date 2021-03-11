@@ -224,8 +224,13 @@ export class SQLiteConnector implements DB {
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection} in schema`)
     const sql = upsertSql(table, options)
-    const { changes } = await this.db.run(sql)
-    return changes
+    try {
+      const { changes } = await this.db.run(sql)
+      return changes
+    } catch (err) {
+      console.log(sql)
+      throw err
+    }
   }
 
   async deleteOne(collection: string, options: FindOneOptions) {
@@ -249,8 +254,12 @@ export class SQLiteConnector implements DB {
     return changes || 0
   }
 
-  // Allow only updates, upserts, deletes, and creates
   async transaction(operation: (db: TransactionDB) => void) {
+    return this.lock.acquire('db', async () => this._transaction(operation))
+  }
+
+  // Allow only updates, upserts, deletes, and creates
+  private async _transaction(operation: (db: TransactionDB) => void) {
     if (typeof operation !== 'function') throw new Error('Invalid operation')
     const sqlOperations = [] as string[]
     const transactionDB = {
@@ -290,19 +299,12 @@ export class SQLiteConnector implements DB {
         sqlOperations.push(sql)
       },
     }
-    try {
-      await Promise.resolve(operation(transactionDB))
-    } catch (err) {
-      console.log('Error in transaction operation')
-      console.log(err)
-    }
+    await Promise.resolve(operation(transactionDB))
     // now apply the transaction
     const transactionSql = `BEGIN TRANSACTION;
     ${sqlOperations.join('\n')}
     COMMIT;`
-    await this.lock.acquire('db', async () => {
-      await this.db.run(transactionSql)
-    })
+    await this.db.exec(transactionSql)
   }
 
   async close() {

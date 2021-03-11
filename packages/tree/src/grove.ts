@@ -414,6 +414,7 @@ export class Grove {
       where: { species: TreeSpecies.UTXO },
       update: { ...data },
       create: { species: TreeSpecies.UTXO, ...data },
+      constraintKey: 'species',
     })
     const treeSql = await this.db.findOne('LightTree', {
       where: {
@@ -460,6 +461,7 @@ export class Grove {
       where: { species: TreeSpecies.WITHDRAWAL },
       update: { ...data },
       create: { species: TreeSpecies.WITHDRAWAL, ...data },
+      constraintKey: 'species',
     })
     const treeSql = await this.db.findOne('LightTree', {
       where: {

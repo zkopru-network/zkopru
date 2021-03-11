@@ -425,6 +425,7 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
         ...rollUpSnapshot,
         species: this.species,
       },
+      constraintKey: 'species',
     })
     // update cached nodes
     for (const nodeIndex of Object.keys(cached)) {
@@ -507,6 +508,7 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
       create: {
         ...tree,
       },
+      constraintKey: 'species',
     })
     const newTree = await db.findOne('LightTree', {
       where: {

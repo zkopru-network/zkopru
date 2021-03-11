@@ -38,6 +38,7 @@ export type UpsertOptions = {
   where: WhereClause
   update: any
   create: any
+  constraintKey?: string
 }
 
 export type DataType = 'Int' | 'Bool' | 'String' | 'Object'
@@ -92,7 +93,7 @@ export interface DB {
     collection: string,
     options: DeleteManyOptions,
   ) => Promise<number>
-  transaction?: (operation: (db: TransactionDB) => void) => Promise<void>
+  transaction: (operation: (db: TransactionDB) => void) => Promise<void>
   // close the db and cleanup
   close: () => Promise<void>
 }

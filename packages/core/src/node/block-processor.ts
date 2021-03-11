@@ -260,55 +260,49 @@ export class BlockProcessor extends EventEmitter {
       }
     })
     // TODO use a mutex lock here
-    for (const input of inputs) {
-      await this.db.upsert('Utxo', {
-        where: { hash: input.hash },
-        create: input,
-        update: input,
-      })
-    }
-    // await this.db.write(prisma =>
-    //   prisma.$transaction(
-    //     inputs.map(input =>
-    //       prisma.utxo.upsert({
-    //         where: { hash: input.hash },
-    //         create: input,
-    //         update: input,
-    //       }),
-    //     ),
-    //   ),
-    // )
+    // for (const input of inputs) {
+    //   await this.db.upsert('Utxo', {
+    //     where: { hash: input.hash },
+    //     create: input,
+    //     update: input,
+    //   })
+    // }
+    await this.db.transaction(db => {
+      inputs.map(input =>
+        db.upsert('Utxo', {
+          where: { hash: input.hash },
+          create: input,
+          update: input,
+        }),
+      )
+    })
   }
 
   private async saveTransactions(block: Block, challenged = false) {
-    for (const tx of block.body.txs) {
-      await this.db.create('Tx', {
-        hash: tx.hash().toString(),
-        blockHash: block.hash.toString(),
-        inflowCount: tx.inflow.length,
-        outflowCount: tx.outflow.length,
-        fee: tx.fee.toHex(),
-        challenged,
-        slashed: false,
-      })
-    }
-    // await this.db.write(prisma =>
-    //   prisma.$transaction(
-    //     block.body.txs.map(tx =>
-    //       prisma.tx.create({
-    //         data: {
-    //           hash: tx.hash().toString(),
-    //           blockHash: block.hash.toString(),
-    //           inflowCount: tx.inflow.length,
-    //           outflowCount: tx.outflow.length,
-    //           fee: tx.fee.toHex(),
-    //           challenged,
-    //           slashed: false,
-    //         },
-    //       }),
-    //     ),
-    //   ),
-    // )
+    // for (const tx of block.body.txs) {
+    //   await this.db.create('Tx', {
+    //     hash: tx.hash().toString(),
+    //     blockHash: block.hash.toString(),
+    //     inflowCount: tx.inflow.length,
+    //     outflowCount: tx.outflow.length,
+    //     fee: tx.fee.toHex(),
+    //     challenged,
+    //     slashed: false,
+    //   })
+    // }
+    await this.db.transaction(db => {
+      block.body.txs.map(tx =>
+        db.create('Tx', {
+          hash: tx.hash().toString(),
+          blockHash: block.hash.toString(),
+          inflowCount: tx.inflow.length,
+          outflowCount: tx.outflow.length,
+          fee: tx.fee.toHex(),
+          challenged,
+          slashed: false,
+        }),
+      )
+    })
   }
 
   private async saveMyWithdrawals(txs: ZkTx[], accounts: Address[]) {
@@ -501,28 +495,26 @@ export class BlockProcessor extends EventEmitter {
         nullifier: nullifier.toString(),
       })
     }
-    for (const utxo of utxosToUpdate) {
-      await this.db.update('Utxo', {
-        where: { hash: utxo.hash },
-        update: {
-          index: utxo.index,
-          nullifier: utxo.nullifier,
-        },
-      })
-    }
-    // await this.db.write(prisma =>
-    //   prisma.$transaction(
-    //     utxosToUpdate.map(utxo =>
-    //       prisma.utxo.update({
-    //         where: { hash: utxo.hash },
-    //         data: {
-    //           index: utxo.index,
-    //           nullifier: utxo.nullifier,
-    //         },
-    //       }),
-    //     ),
-    //   ),
-    // )
+    // for (const utxo of utxosToUpdate) {
+    //   await this.db.update('Utxo', {
+    //     where: { hash: utxo.hash },
+    //     update: {
+    //       index: utxo.index,
+    //       nullifier: utxo.nullifier,
+    //     },
+    //   })
+    // }
+    await this.db.transaction(db => {
+      utxosToUpdate.map(utxo =>
+        db.update('Utxo', {
+          where: { hash: utxo.hash },
+          update: {
+            index: utxo.index,
+            nullifier: utxo.nullifier,
+          },
+        }),
+      )
+    })
   }
 
   private async updateMyWithdrawals(accounts: Address[], patch: Patch) {
@@ -563,29 +555,27 @@ export class BlockProcessor extends EventEmitter {
         ),
       })
     }
-    for (const withdrawal of withdrawalsToUpdate) {
-      await this.db.update('Withdrawal', {
-        where: { hash: withdrawal.hash },
-        update: {
-          index: withdrawal.index,
-          includedIn: withdrawal.includedIn,
-          siblings: withdrawal.siblings,
-        },
-      })
-    }
-    // await this.db.write(prisma =>
-    //   prisma.$transaction(
-    //     withdrawalsToUpdate.map(withdrawal =>
-    //       prisma.withdrawal.update({
-    //         where: { hash: withdrawal.hash },
-    //         data: {
-    //           index: withdrawal.index,
-    //           includedIn: withdrawal.includedIn,
-    //           siblings: withdrawal.siblings,
-    //         },
-    //       }),
-    //     ),
-    //   ),
-    // )
+    // for (const withdrawal of withdrawalsToUpdate) {
+    //   await this.db.update('Withdrawal', {
+    //     where: { hash: withdrawal.hash },
+    //     update: {
+    //       index: withdrawal.index,
+    //       includedIn: withdrawal.includedIn,
+    //       siblings: withdrawal.siblings,
+    //     },
+    //   })
+    // }
+    await this.db.transaction(db => {
+      withdrawalsToUpdate.map(withdrawal =>
+        db.update('Withdrawal', {
+          where: { hash: withdrawal.hash },
+          update: {
+            index: withdrawal.index,
+            includedIn: withdrawal.includedIn,
+            siblings: withdrawal.siblings,
+          },
+        }),
+      )
+    })
   }
 }
