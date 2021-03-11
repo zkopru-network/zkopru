@@ -6,6 +6,7 @@
 
 // import { WithdrawalStatus } from '@zkopru/transaction'
 import { WithdrawalStatus } from '@zkopru/transaction'
+import { sleep } from '@zkopru/utils'
 import { Address, Uint256 } from 'soltypes'
 import { toBN, toWei } from 'web3-utils'
 import { CtxProvider } from './context'
@@ -35,12 +36,22 @@ export const testGetWithdrawablesOfCarl = (ctx: CtxProvider) => async () => {
 }
 
 export const payForEthWithdrawalInAdvance = (ctx: CtxProvider) => async () => {
-  const { wallets, accounts } = ctx()
+  const { wallets, accounts, coordinator } = ctx()
   const withdrawals = await wallets.bob.getWithdrawables(
     accounts.bob,
     WithdrawalStatus.UNFINALIZED,
   )
   expect(withdrawals).toHaveLength(1)
+  let updated = false
+  do {
+    const bobLatestBlock = await wallets.bob.node.layer2.latestBlock()
+    const coordinatorLatestBlock = await coordinator.node().layer2.latestBlock()
+    if (bobLatestBlock.eq(coordinatorLatestBlock)) {
+      updated = true
+      break
+    }
+    await sleep(1000)
+  } while (!updated)
   const prevBalance = await wallets.bob.fetchLayer1Assets(accounts.bob)
   const ethWithdrawal = withdrawals[0]
   const prepayFeeInEth = Uint256.from(toWei('100', 'gwei'))
@@ -52,7 +63,6 @@ export const payForEthWithdrawalInAdvance = (ctx: CtxProvider) => async () => {
     ethWithdrawal,
   )
   const nextBalance = await wallets.bob.fetchLayer1Assets(accounts.bob)
-  console.log('prepay', result)
   expect(result).toBeTruthy()
   expect(nextBalance.eth).toStrictEqual(
     toBN(prevBalance.eth)

@@ -50,7 +50,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "yarn precommit && yarn test",
+      "pre-commit": "yarn precommit && yarn test:serial",
       "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
     }
   },
