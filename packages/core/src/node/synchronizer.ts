@@ -218,6 +218,7 @@ export class Synchronizer extends EventEmitter {
                 hash: blockHash,
                 block: { create: { header: { create: header } } },
                 proposalNum: 0,
+                canonicalNum: 0,
                 proposedAt: blockNumber,
                 proposalTx: transactionHash,
                 finalized: true,
