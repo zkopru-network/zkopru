@@ -252,13 +252,13 @@ export class CoordinatorApi {
     }
     const header = await layer2.db.read(prisma =>
       prisma.header.findOne({
-        where: { hash },
+        where: { hash: includedIn },
       }),
     )
     const proposal = await layer2.db.read(prisma =>
       prisma.proposal.findOne({
         where: {
-          hash,
+          hash: includedIn,
         },
       }),
     )
