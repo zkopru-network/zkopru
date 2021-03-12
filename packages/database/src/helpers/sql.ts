@@ -247,27 +247,31 @@ export function deleteManySql(
   table: SchemaTable,
   options: DeleteManyOptions,
 ): string {
-  const constraintKey =
-    typeof table.primaryKey === 'string'
-      ? table.primaryKey
-      : table.rows.map(normalizeRowDef).find(row => row.unique)?.name
-  const orderBySql =
-    options.orderBy && Object.keys(options.orderBy).length > 0
-      ? ` ORDER BY ${Object.keys(options.orderBy)
-          .map(key => {
-            const val = (options.orderBy || {})[key]
-            return `"${key}" ${val.toUpperCase()}`
-          })
-          .join(', ')}`
-      : ''
-  const limitSql = options.limit === undefined ? '' : ` LIMIT ${options.limit} `
+  // const constraintKey =
+  //   typeof table.primaryKey === 'string'
+  //     ? table.primaryKey
+  //     : table.rows.map(normalizeRowDef).find(row => row.unique)?.name
+  // const orderBySql =
+  //   options.orderBy && Object.keys(options.orderBy).length > 0
+  //     ? ` ORDER BY ${Object.keys(options.orderBy)
+  //         .map(key => {
+  //           const val = (options.orderBy || {})[key]
+  //           return `"${key}" ${val.toUpperCase()}`
+  //         })
+  //         .join(', ')}`
+  //     : ''
+  // const limitSql = options.limit === undefined ? '' : ` LIMIT ${options.limit} `
   if (Object.keys(options.where).length === 0)
-    return `DELETE FROM "${table.name}" ${orderBySql} ${limitSql};`
-  return `DELETE FROM "${table.name}" WHERE "${constraintKey}" IN
-  (SELECT "${constraintKey}" FROM "${table.name}" ${whereToSql(
+    return `DELETE FROM "${table.name}";`
+  return `DELETE FROM "${table.name}" ${whereToSql(
     table,
     options.where,
-  )} ${orderBySql} ${limitSql});`
+  )};`
+  // return `DELETE FROM "${table.name}" WHERE "${constraintKey}" IN
+  // (SELECT "${constraintKey}" FROM "${table.name}" ${whereToSql(
+  //   table,
+  //   options.where,
+  // )} ${orderBySql} ${limitSql});`
 }
 
 export function upsertSql(table: SchemaTable, options: UpsertOptions): string {

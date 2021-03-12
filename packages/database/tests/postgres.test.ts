@@ -11,7 +11,7 @@ describe('postgres tests', function(this: any) {
     )
     await this.db.createTables(testSchema)
     for (const { name } of testSchema) {
-      await this.db.deleteMany(name, {
+      await this.db.delete(name, {
         where: {},
       })
     }

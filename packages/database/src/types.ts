@@ -23,10 +23,6 @@ export type FindOneOptions = {
 
 export type DeleteManyOptions = {
   where: WhereClause
-  orderBy?: {
-    [key: string]: 'asc' | 'desc'
-  }
-  limit?: number
 }
 
 export type UpdateOptions = {
@@ -87,9 +83,9 @@ export interface DB {
   // provide a schema to connectors that need schema info
   createTables: (tableData: TableData[]) => Promise<void>
   // delete a single document, return the number of documents deleted
-  deleteOne: (collection: string, options: FindOneOptions) => Promise<number>
+  // deleteOne: (collection: string, options: FindOneOptions) => Promise<number>
   // delete many documents, return the number of documents deleted
-  deleteMany: (
+  delete: (
     collection: string,
     options: DeleteManyOptions,
   ) => Promise<number>
@@ -103,8 +99,8 @@ export interface TransactionDB {
   create: (collection: string, doc: any | any[]) => void
   update: (collection: string, options: UpdateOptions) => void
   upsert: (collection: string, options: UpsertOptions) => void
-  deleteOne: (collection: string, options: FindOneOptions) => void
-  deleteMany: (collection: string, options: DeleteManyOptions) => void
+  // deleteOne: (collection: string, options: FindOneOptions) => void
+  delete: (collection: string, options: DeleteManyOptions) => void
 }
 
 export function normalizeRowDef(row: RowDef | ShortRowDef): RowDef {

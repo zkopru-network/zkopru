@@ -8,7 +8,7 @@ describe('sqlite tests', function(this: { db: DB }) {
     this.db = await SQLiteConnector.create(':memory:')
     await this.db.createTables(testSchema)
     for (const { name } of testSchema) {
-      await this.db.deleteMany(name, {
+      await this.db.delete(name, {
         where: {},
       })
     }

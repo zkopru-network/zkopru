@@ -571,8 +571,9 @@ export default function(this: { db: DB }) {
       stringField: 'test',
       objectField: {},
     })
-    const deleted = await this.db.deleteOne(table, {
+    const deleted = await this.db.delete(table, {
       where: {
+        id: 0,
         boolField: true,
       },
     })
@@ -596,7 +597,7 @@ export default function(this: { db: DB }) {
       objectField: {},
     })
     {
-      const deleted = await this.db.deleteMany(table, {
+      const deleted = await this.db.delete(table, {
         where: {
           boolField: false,
         },
@@ -606,7 +607,7 @@ export default function(this: { db: DB }) {
       assert.equal(count, 2)
     }
     {
-      const deleted = await this.db.deleteMany(table, {
+      const deleted = await this.db.delete(table, {
         where: {
           boolField: true,
         },
@@ -628,7 +629,7 @@ export default function(this: { db: DB }) {
       objectField: {},
     })
     {
-      const deleted = await this.db.deleteMany(table, {
+      const deleted = await this.db.delete(table, {
         where: {},
       })
       assert.equal(deleted, 2)

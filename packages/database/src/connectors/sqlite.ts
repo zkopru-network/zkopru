@@ -233,14 +233,7 @@ export class SQLiteConnector implements DB {
     }
   }
 
-  async deleteOne(collection: string, options: FindOneOptions) {
-    return this.deleteMany(collection, {
-      ...options,
-      limit: 1,
-    })
-  }
-
-  async deleteMany(collection: string, options: DeleteManyOptions) {
+  async delete(collection: string, options: DeleteManyOptions) {
     return this.lock.acquire('db', async () =>
       this._deleteMany(collection, options),
     )
@@ -277,16 +270,7 @@ export class SQLiteConnector implements DB {
           throw new Error(`Unable to find table ${collection} in schema`)
         sqlOperations.push(updateSql(table, options))
       },
-      deleteOne: (collection: string, options: FindOneOptions) => {
-        const table = this.schema[collection]
-        if (!table) throw new Error(`Unable to find table "${collection}"`)
-        const sql = deleteManySql(table, {
-          ...options,
-          limit: 1,
-        })
-        sqlOperations.push(sql)
-      },
-      deleteMany: (collection: string, options: DeleteManyOptions) => {
+      delete: (collection: string, options: DeleteManyOptions) => {
         const table = this.schema[collection]
         if (!table) throw new Error(`Unable to find table "${collection}"`)
         const sql = deleteManySql(table, options)
