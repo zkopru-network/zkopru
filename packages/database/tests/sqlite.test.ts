@@ -1,7 +1,10 @@
 /* eslint-disable jest/no-hooks, jest/valid-describe */
 import testSchema from './test-schema'
 import { DB, SQLiteConnector } from '~database'
-import DBTests from './database'
+import FindTests from './database/find'
+import CreateTests from './database/create'
+import UpdateTests from './database/update'
+import DeleteTests from './database/delete'
 
 describe('sqlite tests', function(this: { db: DB }) {
   beforeEach(async () => {
@@ -18,5 +21,8 @@ describe('sqlite tests', function(this: { db: DB }) {
     await this.db.close()
   })
 
-  DBTests.bind(this)()
+  FindTests.bind(this)()
+  CreateTests.bind(this)()
+  UpdateTests.bind(this)()
+  DeleteTests.bind(this)()
 })
