@@ -85,10 +85,7 @@ export interface DB {
   // delete a single document, return the number of documents deleted
   // deleteOne: (collection: string, options: FindOneOptions) => Promise<number>
   // delete many documents, return the number of documents deleted
-  delete: (
-    collection: string,
-    options: DeleteManyOptions,
-  ) => Promise<number>
+  delete: (collection: string, options: DeleteManyOptions) => Promise<number>
   transaction: (operation: (db: TransactionDB) => void) => Promise<void>
   // close the db and cleanup
   close: () => Promise<void>

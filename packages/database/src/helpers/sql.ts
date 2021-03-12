@@ -263,10 +263,7 @@ export function deleteManySql(
   // const limitSql = options.limit === undefined ? '' : ` LIMIT ${options.limit} `
   if (Object.keys(options.where).length === 0)
     return `DELETE FROM "${table.name}";`
-  return `DELETE FROM "${table.name}" ${whereToSql(
-    table,
-    options.where,
-  )};`
+  return `DELETE FROM "${table.name}" ${whereToSql(table, options.where)};`
   // return `DELETE FROM "${table.name}" WHERE "${constraintKey}" IN
   // (SELECT "${constraintKey}" FROM "${table.name}" ${whereToSql(
   //   table,

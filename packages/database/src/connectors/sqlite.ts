@@ -288,7 +288,12 @@ export class SQLiteConnector implements DB {
     const transactionSql = `BEGIN TRANSACTION;
     ${sqlOperations.join('\n')}
     COMMIT;`
-    await this.db.exec(transactionSql)
+    try {
+      await this.db.exec(transactionSql)
+    } catch (err) {
+      await this.db.exec('ROLLBACK;')
+      throw err
+    }
   }
 
   async close() {

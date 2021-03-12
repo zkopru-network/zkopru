@@ -285,7 +285,12 @@ export class PostgresConnector implements DB {
     const transactionSql = `BEGIN TRANSACTION;
     ${sqlOperations.join('\n')}
     COMMIT;`
-    await this.db.query(transactionSql)
+    try {
+      await this.db.query(transactionSql)
+    } catch (err) {
+      await this.db.query('ROLLBACK;')
+      throw err
+    }
   }
 
   async close() {

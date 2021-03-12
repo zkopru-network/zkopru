@@ -259,5 +259,4 @@ export default function(this: { db: DB }) {
       assert.equal(docs.length, 5)
     }
   })
-
 }
