@@ -300,11 +300,6 @@ export class SQLiteConnector implements DB {
     await this.db.close()
   }
 
-  // TODO
-  async ensureIndex(collection: string, name: string, keys: string[]) {
-    console.log(this, collection, name, keys)
-  }
-
   async createTables(tableData: TableData[]) {
     this.schema = constructSchema(tableData)
     const createTablesCommand = tableCreationSql(tableData)

@@ -78,12 +78,8 @@ export interface DB {
   update: (collection: string, options: UpdateOptions) => Promise<number>
   // update or create some documents
   upsert: (collection: string, options: UpsertOptions) => Promise<number>
-  // request that an index be created between some keys, if supported
-  ensureIndex: (collection: string, name: string, keys: string[]) => void
   // provide a schema to connectors that need schema info
   createTables: (tableData: TableData[]) => Promise<void>
-  // delete a single document, return the number of documents deleted
-  // deleteOne: (collection: string, options: FindOneOptions) => Promise<number>
   // delete many documents, return the number of documents deleted
   delete: (collection: string, options: DeleteManyOptions) => Promise<number>
   transaction: (operation: (db: TransactionDB) => void) => Promise<void>

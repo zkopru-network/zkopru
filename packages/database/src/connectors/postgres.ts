@@ -235,10 +235,6 @@ export class PostgresConnector implements DB {
     return result.rowCount || 0
   }
 
-  async ensureIndex(collection: string, name: string, keys: string[]) {
-    console.log(this, collection, name, keys)
-  }
-
   async createTables(tableData: TableData[]) {
     this.schema = constructSchema(tableData)
     const createTablesCommand = tableCreationSql(tableData)
