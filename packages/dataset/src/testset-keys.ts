@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import fs from 'fs-extra'
 import path from 'path'
-import * as utils from '@zkopru/utils'
+import * as utils from '@zkopru/utils-docker'
 import tar from 'tar'
 
 export async function loadCircuits() {

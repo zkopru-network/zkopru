@@ -7,7 +7,8 @@ import { WebsocketProvider } from 'web3-core'
 import { Container } from 'node-docker-api/lib/container'
 import { DB, SQLiteConnector, schema } from '@zkopru/database'
 import { ZkAccount } from '~account'
-import { sleep, readFromContainer, pullOrBuildAndGetContainer } from '~utils'
+import { sleep } from '~utils'
+import { readFromContainer, pullOrBuildAndGetContainer } from '~utils-docker'
 import { LightNode, HttpBootstrapHelper } from '~core'
 
 describe('integration test to run testnet', () => {

@@ -10,7 +10,8 @@ import assert from 'assert'
 import fetch from 'node-fetch'
 import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
-import { readFromContainer, sleep, pullOrBuildAndGetContainer } from '~utils'
+import { sleep } from '~utils'
+import { readFromContainer, pullOrBuildAndGetContainer } from '~utils-docker'
 import { DB, SQLiteConnector, schema } from '~database'
 
 async function callMethod(

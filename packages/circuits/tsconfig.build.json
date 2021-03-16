@@ -7,6 +7,6 @@
   },
   "include": ["src"],
   "references": [
-    { "path": "../utils/tsconfig.build.json", "prepend": false },
+    { "path": "../utils-docker/tsconfig.build.json", "prepend": false },
   ]
 }

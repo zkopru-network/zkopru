@@ -12,7 +12,8 @@
     "~account": "../account/dist",
     "~babyjubjub": "../babyjubjub/dist",
     "~dataset": "../dataset/dist",
-    "~utils": "../utils/dist"
+    "~utils": "../utils/dist",
+    "~utils-docker": "../utils-docker/dist"
   },
   "scripts": {
     "prebuild": "shx mkdir -p dist",

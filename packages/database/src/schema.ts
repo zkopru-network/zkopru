@@ -136,9 +136,9 @@ export default [
     primaryKey: 'hash',
     rows: [
       ['hash', 'String'],
-      ['proposalNum', 'Int', { optional: true }],
+      ['proposalNum', 'Int', { index: true, optional: true }],
       ['canonicalNum', 'Int', { optional: true }],
-      ['proposedAt', 'Int', { optional: true }],
+      ['proposedAt', 'Int', { index: true, optional: true }],
       ['proposalTx', 'String', { optional: true }],
       ['proposalData', 'String', { optional: true }],
       ['fetched', 'String', { optional: true }],
@@ -165,7 +165,7 @@ export default [
       ['proposer', 'String'],
       ['reason', 'String'],
       ['executionTx', 'String'],
-      ['slashedAt', 'Int'],
+      ['slashedAt', 'Int', { index: true, }],
       {
         name: 'block',
         relation: {
@@ -224,7 +224,7 @@ export default [
       ['index', 'String'],
       ['merged', 'String'],
       ['fee', 'String'],
-      ['blockNumber', 'Int'],
+      ['blockNumber', 'Int', { index: true }],
       {
         name: 'includedIn',
         type: 'String',
@@ -240,7 +240,7 @@ export default [
       ['fee', 'String'],
       ['transactionIndex', 'Int'],
       ['logIndex', 'Int'],
-      ['blockNumber', 'Int'],
+      ['blockNumber', 'Int', { index: true, }],
       ['queuedAt', 'String'],
     ],
   },
@@ -358,12 +358,13 @@ export default [
   },
   {
     name: 'LightTree',
+    primaryKey: 'id',
     rows: [
       {
         name: 'id',
         type: 'String',
         default: () => uuid.v4(),
-        unique: true,
+        // unique: true,
       },
       ['species', 'Int', { unique: true }],
       ['start', 'String'],
@@ -381,7 +382,7 @@ export default [
       ['isERC20', 'Bool'],
       ['isERC721', 'Bool'],
       ['identifier', 'Int'],
-      ['blockNumber', 'Int'],
+      ['blockNumber', 'Int', { index: true }],
     ],
   },
 ] as TableData[]

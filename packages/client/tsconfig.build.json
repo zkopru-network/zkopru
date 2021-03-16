@@ -10,5 +10,7 @@
   "include": ["src"],
   "references": [
     { "path": "../coordinator/tsconfig.build.json", "prepend": false },
+    { "path": "../core/tsconfig.build.json", "prepend": false },
+    { "path": "../database/tsconfig.build.json", "prepend": false },
   ]
 }

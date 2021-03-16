@@ -14,7 +14,8 @@
     "~account": "../account/dist",
     "~coordinator": "dist",
     "~database": "../database/dist",
-    "~utils": "../utils/dist"
+    "~utils": "../utils/dist",
+    "~utils-docker": "../utils-docker/dist"
   },
   "scripts": {
     "prebuild": "shx mkdir -p dist",

@@ -12,15 +12,6 @@ export { PromptApp } from './prompt'
 
 export { Worker } from './worker'
 
-export {
-  readFromContainer,
-  copyFromContainer,
-  getContainer,
-  buildAndGetContainer,
-  pullAndGetContainer,
-  pullOrBuildAndGetContainer,
-} from './docker'
-
 const units: Unit[] = [
   'noether',
   'wei',

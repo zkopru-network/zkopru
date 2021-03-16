@@ -12,6 +12,7 @@ temp
 reports
 junit.xml
 dist
+browser
 .build-cache
 keys.tgz
 keys/

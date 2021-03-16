@@ -49,6 +49,7 @@ export type RowDef = {
   name: string
   unique?: boolean
   optional?: boolean
+  index?: boolean
   type: DataType
   // relational fields should be virtual
   relation?: Relation
@@ -58,7 +59,7 @@ export type RowDef = {
 export type ShortRowDef = [
   string,
   DataType,
-  { optional?: boolean; unique?: boolean } | undefined,
+  { index?: boolean, optional?: boolean; unique?: boolean } | undefined,
 ]
 
 export interface TableData {
