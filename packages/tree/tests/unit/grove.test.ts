@@ -3,7 +3,7 @@
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { DB, MockupDB } from '~prisma'
-import { Field } from '~babyjubjub'
+import { Fp } from '~babyjubjub'
 import { Grove, poseidonHasher, keccakHasher, Leaf } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
 import { accounts, address } from '~dataset/testset-predefined'
@@ -56,7 +56,7 @@ describe('grove full sync grove()', () => {
         withdrawalIndex: fullSyncGrvoe.withdrawalTree.latestLeafIndex(),
         nullifierRoot: await fullSyncGrvoe.nullifierTree?.root(),
       }
-      const utxosToAppend: Leaf<Field>[] = [
+      const utxosToAppend: Leaf<Fp>[] = [
         utxos.utxo1_out_1,
         utxos.utxo2_1_in_1,
       ].map(note => ({
@@ -75,7 +75,7 @@ describe('grove full sync grove()', () => {
         header: 'sampleheader',
         utxos: utxosToAppend,
         withdrawals: withdrawalsToAppend,
-        nullifiers: [Field.from(12), Field.from(23)],
+        nullifiers: [Fp.from(12), Fp.from(23)],
       }
       await fullSyncGrvoe.dryPatch(patch)
       const postResult = {
@@ -100,7 +100,7 @@ describe('grove full sync grove()', () => {
   })
   describe('applyPatch()', () => {
     it('should update the grove and have same result with the dry patch result', async () => {
-      const utxosToAppend: Leaf<Field>[] = [
+      const utxosToAppend: Leaf<Fp>[] = [
         utxos.utxo1_out_1,
         utxos.utxo2_1_in_1,
       ].map(note => ({
@@ -117,7 +117,7 @@ describe('grove full sync grove()', () => {
       const patch = {
         utxos: utxosToAppend,
         withdrawals: withdrawalsToAppend,
-        nullifiers: [Field.from(12), Field.from(23)],
+        nullifiers: [Fp.from(12), Fp.from(23)],
       }
       const expected = await fullSyncGrvoe.dryPatch(patch)
       await fullSyncGrvoe.applyGrovePatch(patch)
@@ -146,7 +146,7 @@ describe('grove full sync grove()', () => {
       const bootstrapData = {
         utxoStartingLeafProof: {
           ...utxoTree.getStartingLeafProof(),
-          leaf: Field.zero,
+          leaf: Fp.zero,
         },
         withdrawalStartingLeafProof: {
           ...withdrawalTree.getStartingLeafProof(),

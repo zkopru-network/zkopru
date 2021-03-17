@@ -2,7 +2,7 @@
 /* eslint-disable jest/no-hooks */
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
-import { Field } from '~babyjubjub'
+import { Fp } from '~babyjubjub'
 import { DB, TreeSpecies, MockupDB } from '~prisma'
 import {
   WithdrawalTree,
@@ -21,8 +21,8 @@ describe('withdrawal tree unit test', () => {
     id: '2',
     index: 1,
     species: TreeSpecies.WITHDRAWAL,
-    start: Field.from(0),
-    end: Field.from(0),
+    start: Fp.from(0),
+    end: Fp.from(0),
   }
   const depth = 31
   const withdrawalTreeConfig: TreeConfig<BN> = {
@@ -33,7 +33,7 @@ describe('withdrawal tree unit test', () => {
   const preHashes = keccakHasher(depth).preHash
   const withdrawalTreeInitialData = {
     root: genesisRoot(keccakHasher(depth)),
-    index: Field.zero,
+    index: Fp.zero,
     siblings: preHashes.slice(0, -1),
   }
   let mockup: MockupDB

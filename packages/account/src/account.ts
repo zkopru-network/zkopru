@@ -1,6 +1,6 @@
 import Web3 from 'web3'
 import { Account, EncryptedKeystoreV3Json, AddAccount } from 'web3-core'
-import { Field, Point, EdDSA, signEdDSA, verifyEdDSA } from '@zkopru/babyjubjub'
+import { Fp, Point, EdDSA, signEdDSA, verifyEdDSA } from '@zkopru/babyjubjub'
 import { Keystore } from '@zkopru/prisma'
 import { hexify } from '@zkopru/utils'
 import createKeccak from 'keccak'
@@ -8,48 +8,36 @@ import assert from 'assert'
 import { ZkViewer } from './viewer'
 
 export class ZkAccount extends ZkViewer {
-  private p: Field // spending key
-
-  private ethPK: string
+  private privateKey: Buffer | string // ECDSA private key
 
   ethAddress: string
 
   ethAccount: Account
 
-  constructor(pk: Buffer | string | Account) {
-    let ethPK: string
-    let p: Field
-    let ethAccount: Account
-    if (pk instanceof Buffer || typeof pk === 'string') {
-      if (pk instanceof Buffer) {
-        ethPK = hexify(pk, 32)
-        p = Field.fromBuffer(pk)
-      } else {
-        ethPK = hexify(pk, 32)
-        p = Field.from(pk)
-      }
-      const web3 = new Web3()
-      ethAccount = web3.eth.accounts.privateKeyToAccount(ethPK)
-    } else {
-      ethPK = hexify(pk.privateKey, 32)
-      p = Field.from(pk.privateKey)
-      ethAccount = pk
-    }
-    const pG = Point.fromPrivKey(p.toHex(32))
+  constructor(privateKey: Buffer | string) {
+    const web3 = new Web3()
+    const ethAccount = web3.eth.accounts.privateKeyToAccount(
+      hexify(privateKey, 32),
+    )
+
+    const A = Point.fromPrivKey(privateKey)
     // https://github.com/zkopru-network/zkopru/issues/34#issuecomment-666988505
     // Note: viewing key can be derived using another method. This is just for the convenience
     // to make it easy to restore spending key & viewing key together from a mnemonic source in
     // a deterministic way
-    const n = Field.from(
+    const n = Fp.from(
       createKeccak('keccak256')
-        .update(p.toBytes32().toBuffer())
+        .update(privateKey)
         .digest(),
     )
-    super(pG, n)
-    this.p = p
-    this.ethPK = ethPK
+    super(A, n)
+    this.privateKey = privateKey
     this.ethAddress = ethAccount.address
     this.ethAccount = ethAccount
+  }
+
+  static fromEthAccount(account: Account): ZkAccount {
+    return new ZkAccount(account.privateKey)
   }
 
   toKeystoreSqlObj(password: string): Keystore {
@@ -60,16 +48,16 @@ export class ZkAccount extends ZkViewer {
     }
   }
 
-  signEdDSA(msg: Field): EdDSA {
-    const signature = signEdDSA({ msg, privKey: this.p.toHex(32) })
-    assert(verifyEdDSA(msg, signature, this.getEdDSAPoint()))
+  signEdDSA(msg: Fp): EdDSA {
+    const signature = signEdDSA({ msg, privKey: this.privateKey })
+    assert(verifyEdDSA(msg, signature, this.getEdDSAPubKey()))
     return signature
   }
 
   toAddAccount(): AddAccount {
     return {
       address: this.ethAddress,
-      privateKey: this.ethPK,
+      privateKey: hexify(this.privateKey, 32),
     }
   }
 

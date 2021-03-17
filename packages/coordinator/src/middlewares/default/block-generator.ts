@@ -1,4 +1,4 @@
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import {
   Block,
   Header,
@@ -24,7 +24,7 @@ export class BlockGenerator extends GeneratorBase {
 
     // Calculate consumed bytes and aggregated fee
     let consumedBytes = 32 // bytes length
-    let aggregatedFee: Field = Field.zero
+    let aggregatedFee: Fp = Fp.zero
 
     const { layer2 } = this.context.node
     // 1. pick mass deposits
@@ -39,7 +39,7 @@ export class BlockGenerator extends GeneratorBase {
     )
     const txs = pendingTxs || []
     aggregatedFee = aggregatedFee.add(
-      txs.map(tx => tx.fee).reduce((prev, fee) => prev.add(fee), Field.zero),
+      txs.map(tx => tx.fee).reduce((prev, fee) => prev.add(fee), Fp.zero),
     )
     // TODO 3 make sure every nullifier is unique and not used before
     // * if there exists invalid transactions, remove them from the tx pool and try genBlock recursively
@@ -52,7 +52,7 @@ export class BlockGenerator extends GeneratorBase {
             .map(outflow => outflow.note),
         ]
       }, pendingMassDeposits.leaves)
-      .map(hash => ({ hash })) as Leaf<Field>[]
+      .map(hash => ({ hash })) as Leaf<Fp>[]
 
     const withdrawals: Leaf<BN>[] = txs.reduce((arr, tx) => {
       return [
@@ -85,7 +85,7 @@ export class BlockGenerator extends GeneratorBase {
     }
     const nullifiers = txs.reduce((arr, tx) => {
       return [...arr, ...tx.inflow.map(inflow => inflow.nullifier)]
-    }, [] as Field[])
+    }, [] as Fp[])
 
     if (!this.context.node.synchronizer.isSynced()) {
       throw Error('Layer 2 chain is not synced yet.')

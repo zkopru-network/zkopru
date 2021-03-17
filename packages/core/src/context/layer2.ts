@@ -10,7 +10,7 @@ import BN from 'bn.js'
 import AsyncLock from 'async-lock'
 import { Bytes32, Address, Uint256 } from 'soltypes'
 import { logger } from '@zkopru/utils'
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { OutflowType, Withdrawal, TokenRegistry } from '@zkopru/transaction'
 import { Block, Header, MassDeposit } from '../block'
 import { BootstrapData } from '../node/bootstrap'
@@ -26,8 +26,8 @@ export interface Patch {
 }
 export interface PendingMassDeposits {
   massDeposits: MassDeposit[]
-  leaves: Field[]
-  totalFee: Field
+  leaves: Fp[]
+  totalFee: Fp
   calldataSize: number
 }
 
@@ -191,9 +191,9 @@ export class L2Chain {
   }
 
   async getPendingMassDeposits(): Promise<PendingMassDeposits> {
-    const leaves: Field[] = []
+    const leaves: Fp[] = []
     let consumedBytes = 0
-    let aggregatedFee: Field = Field.zero
+    let aggregatedFee: Fp = Fp.zero
     // 1. pick mass deposits
     const commits: MassDepositSql[] = await this.db.read(prisma =>
       prisma.massDeposit.findMany({
@@ -216,10 +216,10 @@ export class L2Chain {
       // TODO HERE!!
       return a.logIndex - b.logIndex
     })
-    leaves.push(...pendingDeposits.map(deposit => Field.from(deposit.note)))
+    leaves.push(...pendingDeposits.map(deposit => Fp.from(deposit.note)))
     consumedBytes += commits.length
     aggregatedFee = aggregatedFee.add(
-      pendingDeposits.reduce((prev, item) => prev.add(item.fee), Field.zero),
+      pendingDeposits.reduce((prev, item) => prev.add(item.fee), Fp.zero),
     )
     return {
       massDeposits: commits.map(commit => ({
@@ -341,15 +341,15 @@ export class L2Chain {
   async getGrovePatch(block: Block): Promise<GrovePatch> {
     logger.info(`get grove patch for block ${block.hash.toString()}`)
     const header = block.hash.toString()
-    const utxos: Leaf<Field>[] = []
+    const utxos: Leaf<Fp>[] = []
     const withdrawals: Leaf<BN>[] = []
-    const nullifiers: Field[] = []
+    const nullifiers: Fp[] = []
 
     const deposits = await this.getDeposits(...block.body.massDeposits)
-    const utxoHashes: Field[] = []
-    utxoHashes.push(...deposits.map(deposit => Field.from(deposit.note)))
+    const utxoHashes: Fp[] = []
+    utxoHashes.push(...deposits.map(deposit => Fp.from(deposit.note)))
 
-    const withdrawalHashes: { noteHash: Field; withdrawalHash: Uint256 }[] = []
+    const withdrawalHashes: { noteHash: Fp; withdrawalHash: Uint256 }[] = []
     for (const tx of block.body.txs) {
       for (const outflow of tx.outflow) {
         if (outflow.outflowType.eqn(OutflowType.UTXO)) {

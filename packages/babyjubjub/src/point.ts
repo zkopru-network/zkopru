@@ -3,14 +3,15 @@ import { hexToBuffer, hexify } from '@zkopru/utils'
 import * as ffjs from 'ffjavascript'
 import * as circomlib from 'circomlib'
 import createBlakeHash from 'blake-hash'
-import { Field, F } from './field'
+import { F } from './finite-field'
+import { Fp } from './fp'
 
 export class Point {
-  x: Field
+  x: Fp
 
-  y: Field
+  y: Fp
 
-  constructor(x: Field, y: Field) {
+  constructor(x: Fp, y: Fp) {
     this.x = x
     this.y = y
     if (!circomlib.babyJub.inCurve([this.x.toBigInt(), this.y.toBigInt()])) {
@@ -21,7 +22,7 @@ export class Point {
   static zero = Point.from(0, 1)
 
   static from(x: F, y: F) {
-    return new Point(Field.from(x), Field.from(y))
+    return new Point(Fp.from(x), Fp.from(y))
   }
 
   static fromHex(hex: string) {
@@ -35,7 +36,7 @@ export class Point {
   }
 
   static generate(n: F): Point {
-    return Point.BASE8.mul(Field.from(n))
+    return Point.BASE8.mul(Fp.from(n))
   }
 
   /**
@@ -47,7 +48,7 @@ export class Point {
     return Point.from(result[0].toString(), result[1].toString())
   }
 
-  static getMultiplier(key: string | Buffer): Field {
+  static getMultiplier(key: string | Buffer): Fp {
     const buff: Buffer = typeof key === 'string' ? hexToBuffer(key) : key
     const sBuff = Buffer.from(
       createBlakeHash('blake512')
@@ -60,13 +61,13 @@ export class Point {
     sBuff[31] |= 0x40
     const s = ffjs.utils.leBuff2int(sBuff)
     const multiplier = ffjs.Scalar.shr(s, 3)
-    return Field.from(multiplier)
+    return Fp.from(multiplier)
   }
 
   static isOnJubjub(x: F, y: F): boolean {
     return circomlib.babyJub.inCurve([
-      Field.from(x).toBigInt(),
-      Field.from(y).toBigInt(),
+      Fp.from(x).toBigInt(),
+      Fp.from(y).toBigInt(),
     ])
   }
 
@@ -93,7 +94,7 @@ export class Point {
   mul(n: F): Point {
     const result = circomlib.babyJub.mulPointEscalar(
       [this.x.toBigInt(), this.y.toBigInt()],
-      Field.from(n).toBigInt(),
+      Fp.from(n).toBigInt(),
     )
     return Point.from(result[0].toString(), result[1].toString())
   }
@@ -121,37 +122,4 @@ export class Point {
   static A = circomlib.babyJub
 
   static D = circomlib.babyJub
-}
-
-export interface EdDSA {
-  R8: Point
-  S: Field
-}
-
-export function verifyEdDSA(msg: F, sig: EdDSA, pubKey: Point): boolean {
-  const result = circomlib.eddsa.verifyPoseidon(
-    Field.from(msg).toBigInt(),
-    {
-      R8: [sig.R8.x.toBigInt(), sig.R8.y.toBigInt()],
-      S: sig.S.toBigInt(),
-    },
-    [pubKey.x.toBigInt(), pubKey.y.toBigInt()],
-  )
-  return result
-}
-
-export function signEdDSA({
-  msg,
-  privKey,
-}: {
-  msg: F
-  privKey: Buffer | string
-}): EdDSA {
-  const buff: Buffer =
-    typeof privKey === 'string' ? hexToBuffer(privKey) : privKey
-  const result = circomlib.eddsa.signPoseidon(buff, Field.from(msg).toBigInt())
-  return {
-    R8: Point.from(result.R8[0].toString(), result.R8[1].toString()),
-    S: Field.from(result.S.toString()),
-  }
 }

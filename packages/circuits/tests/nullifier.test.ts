@@ -15,7 +15,7 @@ import {
 } from './helper'
 import { utxos } from '~dataset/testset-utxos'
 import { accounts } from '~dataset/testset-predefined'
-import { Field } from '~babyjubjub/field'
+import { Fp } from '~babyjubjub'
 
 const fileName = 'nullifier.test.circom'
 const artifacts = getArtifactPaths(fileName)
@@ -37,11 +37,11 @@ describe('nullifier.test.circom', () => {
     const account = accounts.bob
     const inputs = {
       nullifier_seed: account.getNullifierSeed().toBigInt(),
-      leaf_index: Field.from(32).toBigInt(),
+      leaf_index: Fp.from(32).toBigInt(),
     }
     const result: SNARKResult = await genSNARK(inputs, wasm, finalZkey, vk)
     expect(result.publicSignals[0]).toStrictEqual(
-      utxo.nullifier(account.getNullifierSeed(), Field.from(32)).toString(),
+      utxo.nullifier(account.getNullifierSeed(), Fp.from(32)).toString(),
     )
   })
 })

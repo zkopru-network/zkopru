@@ -1,5 +1,5 @@
 /* eslint-disable class-methods-use-this */
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { ZkTx } from '@zkopru/transaction'
 import { Hasher, keccakHasher, SMT } from '@zkopru/tree'
 import BN from 'bn.js'
@@ -227,7 +227,7 @@ export class OffchainTxValidator extends OffchainValidatorContext
     return slash
   }
 
-  private includeSwapNote(tx: ZkTx, expected: Field) {
+  private includeSwapNote(tx: ZkTx, expected: Fp) {
     if (!tx.swap || tx.swap.eqn(0)) return false
     for (let i = 0; i < tx.outflow.length; i += 1) {
       if (tx.outflow[i].note.eq(expected)) return true

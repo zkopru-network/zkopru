@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { TokenUtils, Utxo, Withdrawal } from '@zkopru/transaction'
 import { accounts, address, nfts } from './testset-predefined'
 
@@ -86,7 +86,7 @@ const withdrawal3_out_1: Withdrawal = Utxo.newEtherNote({
   eth: 666666666666664,
   owner: accounts.alice.zkAddress,
   salt: 24,
-}).toWithdrawal({ to: Field.from(address.USER_A), fee: Field.from(1) })
+}).toWithdrawal({ to: Fp.from(address.USER_A), fee: Fp.from(1) })
 
 const utxo4_in_1: Utxo = Utxo.newEtherNote({
   owner: accounts.alice.zkAddress,
@@ -112,8 +112,8 @@ const migration_4_1 = Utxo.newEtherNote({
   salt: 28,
   eth: 8888888888884,
 }).toMigration({
-  to: Field.from(address.CONTRACT_B),
-  fee: Field.from(1), // fee for tx & fee for withdrawal for each utxos
+  to: Fp.from(address.CONTRACT_B),
+  fee: Fp.from(1), // fee for tx & fee for withdrawal for each utxos
 })
 const migration_4_2 = Utxo.newERC20Note({
   owner: accounts.alice.zkAddress,
@@ -122,8 +122,8 @@ const migration_4_2 = Utxo.newERC20Note({
   tokenAddr: TokenUtils.DAI,
   erc20Amount: 5555,
 }).toMigration({
-  to: Field.from(address.CONTRACT_B),
-  fee: Field.from(1),
+  to: Fp.from(address.CONTRACT_B),
+  fee: Fp.from(1),
 })
 const migration_4_3 = Utxo.newNFTNote({
   owner: accounts.alice.zkAddress,
@@ -132,8 +132,8 @@ const migration_4_3 = Utxo.newNFTNote({
   tokenAddr: TokenUtils.CRYPTO_KITTIES,
   nft: nfts.KITTY_2,
 }).toMigration({
-  to: Field.from(address.CONTRACT_B),
-  fee: Field.from(1),
+  to: Fp.from(address.CONTRACT_B),
+  fee: Fp.from(1),
 })
 
 export const utxos = {

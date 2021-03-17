@@ -1,6 +1,6 @@
 import fetch from 'node-fetch'
 import { MerkleProof } from '@zkopru/tree'
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import BN from 'bn.js'
 import { Proposal } from '@zkopru/prisma'
 import { logger } from '@zkopru/utils'
@@ -8,7 +8,7 @@ import { logger } from '@zkopru/utils'
 export interface BootstrapData {
   proposal: Proposal
   blockHash: string
-  utxoStartingLeafProof: MerkleProof<Field>
+  utxoStartingLeafProof: MerkleProof<Fp>
   withdrawalStartingLeafProof: MerkleProof<BN>
 }
 
@@ -33,16 +33,16 @@ export class HttpBootstrapHelper implements BootstrapHelper {
         proposal: body.proposal,
         blockHash: body.blockHash,
         utxoStartingLeafProof: {
-          root: Field.from(body.utxoBootstrap.root),
-          index: Field.from(body.utxoBootstrap.index),
-          leaf: Field.from(body.utxoBootstrap.leaf),
-          siblings: body.utxoBootstrap.siblings.map(Field.from),
+          root: Fp.from(body.utxoBootstrap.root),
+          index: Fp.from(body.utxoBootstrap.index),
+          leaf: Fp.from(body.utxoBootstrap.leaf),
+          siblings: body.utxoBootstrap.siblings.map(Fp.from),
         },
         withdrawalStartingLeafProof: {
-          root: Field.from(body.withdrawalBootstrap.root),
-          index: Field.from(body.withdrawalBootstrap.index),
-          leaf: Field.from(body.withdrawalBootstrap.leaf),
-          siblings: body.withdrawalBootstrap.siblings.map(Field.from),
+          root: Fp.from(body.withdrawalBootstrap.root),
+          index: Fp.from(body.withdrawalBootstrap.index),
+          leaf: Fp.from(body.withdrawalBootstrap.leaf),
+          siblings: body.withdrawalBootstrap.siblings.map(Fp.from),
         },
       }
     }

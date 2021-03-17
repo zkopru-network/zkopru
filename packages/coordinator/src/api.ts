@@ -4,7 +4,7 @@ import { logger } from '@zkopru/utils'
 import { Server } from 'http'
 import { soliditySha3Raw, toBN } from 'web3-utils'
 import { Bytes32 } from 'soltypes'
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { BootstrapData } from '@zkopru/core'
 import { TxUtil } from '@zkopru/contracts'
 import fetch from 'node-fetch'
@@ -347,14 +347,14 @@ export class CoordinatorApi {
       utxoStartingLeafProof: {
         root: block.header.utxoRoot.toString(),
         index: block.header.utxoIndex.toString(),
-        leaf: Field.zero.toHex(),
+        leaf: Fp.zero.toHex(),
         siblings: block.bootstrap.utxoBootstrap.map(s => s.toString()),
       },
       withdrawalTreeIndex: block.bootstrap.withdrawalTreeIndex,
       withdrawalStartingLeafProof: {
         root: block.header.withdrawalRoot.toString(),
         index: block.header.withdrawalIndex.toString(),
-        leaf: Field.zero,
+        leaf: Fp.zero,
         siblings: block.bootstrap.withdrawalBootstrap.map(s => s.toString()),
       },
     })

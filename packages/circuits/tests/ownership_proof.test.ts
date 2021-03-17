@@ -37,8 +37,8 @@ describe('ownership_proof.test.circom', () => {
     const eddsa = account.signEdDSA(utxo.hash())
     const inputs = {
       note: utxo.hash().toBigInt(),
-      pG_x: account.getEdDSAPoint().x.toBigInt(),
-      pG_y: account.getEdDSAPoint().y.toBigInt(),
+      pG_x: account.getEdDSAPubKey().x.toBigInt(),
+      pG_y: account.getEdDSAPubKey().y.toBigInt(),
       sig_r8x: eddsa.R8.x.toBigInt(),
       sig_r8y: eddsa.R8.y.toBigInt(),
       sig_s: eddsa.S.toBigInt(),

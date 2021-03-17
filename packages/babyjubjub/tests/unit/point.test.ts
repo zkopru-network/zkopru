@@ -1,5 +1,5 @@
 /* eslint-disable jest/no-hooks */
-import { Point, signEdDSA, verifyEdDSA, Field } from '~babyjubjub'
+import { Point, signEdDSA, verifyEdDSA, Fp } from '~babyjubjub'
 
 describe('baby jubjub point', () => {
   it('should return generator', () => {
@@ -32,14 +32,14 @@ describe('baby jubjub point', () => {
       expect(Point.isOnJubjub(point.x, point.y)).toBe(true)
     })
     it('should return true for decoded points', () => {
-      const snarkPk = Field.from(
+      const snarkPk = Fp.from(
         '0x6cbed15c793ce57650b9877cf6fa156fbef513c4e6134f022a85b1ffdd59b2a1',
       )
       const pubKey = Point.fromPrivKey(snarkPk.toHex())
       expect(Point.isOnJubjub(pubKey.x, pubKey.y)).toBe(true)
     })
     it('should return true for points from pub key', () => {
-      const snarkPk = Field.from(
+      const snarkPk = Fp.from(
         '0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d',
       )
       const pubKey = Point.fromPrivKey(snarkPk.toHex())

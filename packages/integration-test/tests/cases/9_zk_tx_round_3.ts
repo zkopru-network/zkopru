@@ -6,7 +6,7 @@
 
 import { toWei } from 'web3-utils'
 import { TxBuilder, Utxo, ZkTx } from '@zkopru/transaction'
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { sleep } from '@zkopru/utils'
 import { Bytes32, Uint256 } from 'soltypes'
 import { Block } from '@zkopru/core'
@@ -26,7 +26,7 @@ export const buildZkTxAliceSendEthToBob = async (
     .provide(...aliceSpendables.map(note => Utxo.from(note)))
     .weiPerByte(toWei('100000', 'gwei'))
     .sendEther({
-      eth: Field.from(toWei('1', 'ether')),
+      eth: Fp.from(toWei('1', 'ether')),
       to: bob.zkAddress,
     })
     .build()
@@ -56,7 +56,7 @@ export const buildZkTxBobSendEthToCarl = async (
     .provide(...bobSpendables.map(note => Utxo.from(note)))
     .weiPerByte(toWei('100000', 'gwei'))
     .sendEther({
-      eth: Field.from(toWei('1', 'ether')),
+      eth: Fp.from(toWei('1', 'ether')),
       to: carl.zkAddress,
     })
     .build()
@@ -84,7 +84,7 @@ export const buildZkTxCarlSendEthToAlice = async (
     .provide(...carlSpendables.map(note => Utxo.from(note)))
     .weiPerByte(toWei('100000', 'gwei'))
     .sendEther({
-      eth: Field.from(toWei('1', 'ether')),
+      eth: Fp.from(toWei('1', 'ether')),
       to: alice.zkAddress,
     })
     .build()

@@ -6,7 +6,7 @@
 
 import { toWei, toBN } from 'web3-utils'
 import { TxBuilder, Utxo, ZkAddress, ZkTx } from '@zkopru/transaction'
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { sleep } from '@zkopru/utils'
 import { Bytes32 } from 'soltypes'
 import { CtxProvider } from './context'
@@ -26,13 +26,13 @@ export const buildZkTxAliceWithrawNFT = async (
     .provide(...aliceSpendables.map(note => Utxo.from(note)))
     .weiPerByte(toWei('100000', 'gwei'))
     .sendNFT({
-      eth: Field.zero,
+      eth: Fp.zero,
       tokenAddr,
       nft: alicePrevNFTs[0],
       to: ZkAddress.null,
       withdrawal: {
-        to: Field.from(alice.ethAddress),
-        fee: Field.zero, // NFT is not allowed for instant withdrawal
+        to: Fp.from(alice.ethAddress),
+        fee: Fp.zero, // NFT is not allowed for instant withdrawal
       },
     })
     .build()
@@ -63,11 +63,11 @@ export const buildZkTxBobWithdrawEth = async (
     .provide(...bobSpendables.map(note => Utxo.from(note)))
     .weiPerByte(toWei('100000', 'gwei'))
     .sendEther({
-      eth: Field.from(toWei('1', 'ether')),
+      eth: Fp.from(toWei('1', 'ether')),
       to: ZkAddress.null,
       withdrawal: {
-        to: Field.from(bob.ethAddress),
-        fee: Field.from(toWei('100000', 'gwei')), // instant withdrawal fee
+        to: Fp.from(bob.ethAddress),
+        fee: Fp.from(toWei('100000', 'gwei')), // instant withdrawal fee
       },
     })
     .build()
@@ -97,13 +97,13 @@ export const buildZkTxCarlWithdrawErc20 = async (
     .provide(...carlSpendables.map(note => Utxo.from(note)))
     .weiPerByte(toWei('100000', 'gwei'))
     .sendERC20({
-      eth: Field.zero,
+      eth: Fp.zero,
       tokenAddr,
-      erc20Amount: Field.from(toWei('1', 'ether')),
+      erc20Amount: Fp.from(toWei('1', 'ether')),
       to: ZkAddress.null,
       withdrawal: {
-        to: Field.from(carl.ethAddress),
-        fee: Field.from(toWei('100000', 'gwei')), // instant withdrawal fee
+        to: Fp.from(carl.ethAddress),
+        fee: Fp.from(toWei('100000', 'gwei')), // instant withdrawal fee
       },
     })
     .build()

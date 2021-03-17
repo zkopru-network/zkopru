@@ -1,10 +1,10 @@
-import { Field, Point } from '@zkopru/babyjubjub'
+import { Fp, Point } from '@zkopru/babyjubjub'
 import base58 from 'bs58'
 import createKeccak from 'keccak'
 import assert from 'assert'
 
 export class ZkAddress {
-  private P: Field
+  private P: Fp
 
   private N: Point
 
@@ -20,12 +20,12 @@ export class ZkAddress {
       .slice(0, 4)
     if (!checksum.equals(decoded.slice(64)))
       throw Error('Checksum does not match')
-    this.P = Field.fromBuffer(decoded.slice(0, 32))
+    this.P = Fp.fromBuffer(decoded.slice(0, 32))
     this.N = Point.decode(decoded.slice(32, 64))
     this.address = addr
   }
 
-  spendingPubKey(): Field {
+  spendingPubKey(): Fp {
     return this.P
   }
 
@@ -41,7 +41,7 @@ export class ZkAddress {
     return this.toString() === addr.toString()
   }
 
-  static from(P: Field, N: Point): ZkAddress {
+  static from(P: Fp, N: Point): ZkAddress {
     const to32BytesBuffer = (data: Buffer): Buffer => {
       const buff = Buffer.alloc(32)
       data.copy(buff, buff.length - data.length)
@@ -60,5 +60,5 @@ export class ZkAddress {
     return new ZkAddress(address)
   }
 
-  static null = ZkAddress.from(Field.zero, Point.zero)
+  static null = ZkAddress.from(Fp.zero, Point.zero)
 }

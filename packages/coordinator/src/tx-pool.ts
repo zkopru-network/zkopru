@@ -1,4 +1,4 @@
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { ZkTx } from '@zkopru/transaction'
 import { root, logger } from '@zkopru/utils'
 import assert from 'assert'
@@ -58,7 +58,7 @@ export class TxMemPool implements TxPoolInterface {
       const alicesTxHash = Object.keys(swapTxs)[0]
       const alices = swapTxs[alicesTxHash]
       assert(alices.swap, 'Filtering has some problem.')
-      const noteForAlice: Field = alices.swap
+      const noteForAlice: Fp = alices.swap
       // Remove Alice's from the pending list
       delete swapTxs[alicesTxHash]
       // Find Bob's tx from the remaining transactions which pairs with the Alice's
@@ -83,7 +83,7 @@ export class TxMemPool implements TxPoolInterface {
       })
 
     const picked: ZkTx[] = []
-    let fee = Field.zero
+    let fee = Fp.zero
     while (available > 0 && pending.length > 0) {
       const tx = pending.pop()
       if (!tx) break

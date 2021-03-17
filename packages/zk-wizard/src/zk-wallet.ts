@@ -9,7 +9,7 @@ import {
   ZkAddress,
   ZkTx,
 } from '@zkopru/transaction'
-import { Field, F } from '@zkopru/babyjubjub'
+import { Fp, F } from '@zkopru/babyjubjub'
 import { Layer1, TransactionObject, Tx, TxUtil } from '@zkopru/contracts'
 import { HDWallet, ZkAccount } from '@zkopru/account'
 import { ZkopruNode } from '@zkopru/core'
@@ -200,7 +200,7 @@ export class ZkWallet {
           owner: targetAccount.zkAddress,
           salt: obj.salt,
         })
-      } else if (obj.erc20Amount && Field.from(obj.erc20Amount || 0).gtn(0)) {
+      } else if (obj.erc20Amount && Fp.from(obj.erc20Amount || 0).gtn(0)) {
         note = Utxo.newERC20Note({
           eth: obj.eth,
           owner: targetAccount.zkAddress,
@@ -307,8 +307,8 @@ export class ZkWallet {
       return false
     }
     if (
-      Field.strictFrom(this.cached.layer1.balance.eth).lt(
-        Field.strictFrom(eth).add(Field.strictFrom(fee)),
+      Fp.strictFrom(this.cached.layer1.balance.eth).lt(
+        Fp.strictFrom(eth).add(Fp.strictFrom(fee)),
       )
     ) {
       logger.error('Not enough Ether')
@@ -318,7 +318,7 @@ export class ZkWallet {
       eth,
       owner: to || this.account.zkAddress,
     })
-    const result = await this.deposit(note, Field.strictFrom(fee))
+    const result = await this.deposit(note, Fp.strictFrom(fee))
     return result
   }
 
@@ -339,16 +339,16 @@ export class ZkWallet {
       return false
     }
     if (
-      Field.strictFrom(this.cached.layer1.balance.eth).lt(
-        Field.strictFrom(eth).add(Field.strictFrom(fee)),
+      Fp.strictFrom(this.cached.layer1.balance.eth).lt(
+        Fp.strictFrom(eth).add(Fp.strictFrom(fee)),
       )
     ) {
       logger.error('Not enough Ether')
       return false
     }
     if (
-      Field.strictFrom(this.cached.layer1.balance.erc20[addr]).lt(
-        Field.strictFrom(amount),
+      Fp.strictFrom(this.cached.layer1.balance.erc20[addr]).lt(
+        Fp.strictFrom(amount),
       )
     ) {
       logger.error('Not enough ERC20 balance')
@@ -360,7 +360,7 @@ export class ZkWallet {
       tokenAddr: addr,
       erc20Amount: amount,
     })
-    const result = await this.deposit(note, Field.strictFrom(fee))
+    const result = await this.deposit(note, Fp.strictFrom(fee))
     return result
   }
 
@@ -381,8 +381,8 @@ export class ZkWallet {
       return false
     }
     if (
-      Field.strictFrom(this.cached.layer1.balance.eth).lt(
-        Field.strictFrom(eth).add(Field.strictFrom(fee)),
+      Fp.strictFrom(this.cached.layer1.balance.eth).lt(
+        Fp.strictFrom(eth).add(Fp.strictFrom(fee)),
       )
     ) {
       logger.error('Not enough Ether')
@@ -394,7 +394,7 @@ export class ZkWallet {
       tokenAddr: addr,
       nft,
     })
-    const result = await this.deposit(note, Field.strictFrom(fee))
+    const result = await this.deposit(note, Fp.strictFrom(fee))
     return result
   }
 
@@ -616,7 +616,7 @@ export class ZkWallet {
     }
   }
 
-  private async deposit(note: Utxo, fee: Field): Promise<boolean> {
+  private async deposit(note: Utxo, fee: Fp): Promise<boolean> {
     if (!this.account) {
       logger.error('Account is not set')
       return false

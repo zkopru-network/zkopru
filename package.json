@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "bootstrap": "yarn && yarn images pull && yarn build && lerna run pull && lerna run gendata",
+    "bootstrap": "yarn && yarn images pull && yarn build && lerna run gendata",
     "postinstall": "lerna bootstrap && yarn clean && shx rm -rf packages/*/node_modules",
     "images": "docker-compose -f dockerfiles/docker-compose.yml",
     "images:pull": "docker-compose -f dockerfiles/docker-compose.yml pull",
@@ -19,6 +19,7 @@
     "build": "lerna run build:contract && lerna run build:prisma && yarn build:ts",
     "build:ts": "lerna run --parallel build && yarn link-modules",
     "build:ts:serial": "lerna run build && yarn link-modules",
+    "build:circuit": "lerna run build:circuit",
     "build:prisma": "lerna run build:prisma",
     "build:contract": "lerna run --parallel build:contract",
     "build:keys": "lerna run build-keys --scope=@zkopru/dataset",

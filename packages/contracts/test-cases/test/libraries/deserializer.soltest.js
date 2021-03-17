@@ -5,16 +5,14 @@
 const chai = require('chai')
 const { getDummyBlock } = require('~dataset/testset-block')
 const { serializeHeader, serializeBody } = require('~core')
-const { Field } = require('~babyjubjub')
+const { Fp } = require('~babyjubjub')
 
 const { expect } = chai
 
 const DeserializationTester = artifacts.require('DeserializationTester')
 
 const compare = (a, b) => {
-  expect(Field.from(a.toString()).toHex()).equal(
-    Field.from(b.toString()).toHex(),
-  )
+  expect(Fp.from(a.toString()).toHex()).equal(Fp.from(b.toString()).toHex())
 }
 
 contract('Block serialize-deserialize tests', async accounts => {
@@ -118,12 +116,12 @@ contract('Block serialize-deserialize tests', async accounts => {
           )
           compare(txOutflow.note, body.txs[txIndex].outflow[outflowIndex].note)
           const { data } = body.txs[txIndex].outflow[outflowIndex]
-          compare(txOutflow.to, data ? data.to : Field.zero)
-          compare(txOutflow.eth, data ? data.eth : Field.zero)
-          compare(txOutflow.token, data ? data.tokenAddr : Field.zero)
-          compare(txOutflow.amount, data ? data.erc20Amount : Field.zero)
-          compare(txOutflow.nft, data ? data.nft : Field.zero)
-          compare(txOutflow.fee, data ? data.fee : Field.zero)
+          compare(txOutflow.to, data ? data.to : Fp.zero)
+          compare(txOutflow.eth, data ? data.eth : Fp.zero)
+          compare(txOutflow.token, data ? data.tokenAddr : Fp.zero)
+          compare(txOutflow.amount, data ? data.erc20Amount : Fp.zero)
+          compare(txOutflow.nft, data ? data.nft : Fp.zero)
+          compare(txOutflow.fee, data ? data.fee : Fp.zero)
         }
       }
     })

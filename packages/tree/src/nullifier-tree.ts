@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import AsyncLock from 'async-lock'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
@@ -8,7 +8,7 @@ import { DB, TreeNode, NULLIFIER_TREE_ID } from '@zkopru/prisma'
 import { Hasher, genesisRoot } from './hasher'
 import { verifyProof, MerkleProof } from './merkle-proof'
 
-export interface SMT<T extends Field | BN> {
+export interface SMT<T extends Fp | BN> {
   depth: number
   hasher: Hasher<T>
   root(): Promise<T>
@@ -216,7 +216,7 @@ export class NullifierTree implements SMT<BN> {
     // get indexes to retrieve
     const nodeIndices: string[] = []
     for (const leafIndex of leafIndices) {
-      const leafPath = new BN(1).shln(this.depth).or(Field.toBN(leafIndex))
+      const leafPath = new BN(1).shln(this.depth).or(Fp.toBN(leafIndex))
       for (let level = 0; level < this.depth; level += 1) {
         const pathIndex = leafPath.shrn(level)
         const siblingIndex = new BN(1).xor(pathIndex)

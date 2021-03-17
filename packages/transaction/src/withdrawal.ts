@@ -1,4 +1,4 @@
-import { Field, F } from '@zkopru/babyjubjub'
+import { Fp, F } from '@zkopru/babyjubjub'
 import { Uint256, Bytes32 } from 'soltypes'
 import { soliditySha3 } from 'web3-utils'
 import { ZkAddress } from './zk-address'
@@ -17,17 +17,17 @@ export class Withdrawal extends Note {
   status: WithdrawalStatus
 
   publicData: {
-    to: Field
-    fee: Field
+    to: Fp
+    fee: Fp
   }
 
   constructor(
     owner: ZkAddress,
-    salt: Field,
+    salt: Fp,
     asset: Asset,
     publicData: {
-      to: Field
-      fee: Field
+      to: Fp
+      fee: Fp
     },
   ) {
     super(owner, salt, asset)
@@ -39,7 +39,7 @@ export class Withdrawal extends Note {
   toZkOutflow(): ZkOutflow {
     const outflow = {
       note: this.hash(),
-      outflowType: Field.from(OutflowType.WITHDRAWAL),
+      outflowType: Fp.from(OutflowType.WITHDRAWAL),
       data: {
         to: this.publicData.to,
         eth: this.asset.eth,
@@ -63,7 +63,7 @@ export class Withdrawal extends Note {
     })
   }
 
-  static withdrawalHash(note: Field, publicData: PublicData): Uint256 {
+  static withdrawalHash(note: Fp, publicData: PublicData): Uint256 {
     const concatenated = Buffer.concat([
       note.toBytes32().toBuffer(),
       publicData.to.toAddress().toBuffer(),
@@ -81,8 +81,8 @@ export class Withdrawal extends Note {
 
   static from(note: Note, to: F, fee: F): Withdrawal {
     return new Withdrawal(note.owner, note.salt, note.asset, {
-      to: Field.from(to),
-      fee: Field.from(fee),
+      to: Fp.from(to),
+      fee: Fp.from(fee),
     })
   }
 }

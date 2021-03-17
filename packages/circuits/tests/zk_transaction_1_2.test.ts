@@ -6,7 +6,7 @@
 /* eslint-disable jest/no-hooks */
 
 import { v4 } from 'uuid'
-import { Field } from '~babyjubjub'
+import { Fp } from '~babyjubjub'
 import { DB, TreeSpecies, MockupDB } from '~prisma'
 import { genSNARK, SNARKResult } from '~zk-wizard/snark'
 import { ZkWizard } from '~zk-wizard'
@@ -33,11 +33,11 @@ describe('zk_transaction_1_2.test.circom', () => {
     id: v4(),
     index: 1,
     species: TreeSpecies.UTXO,
-    start: Field.from(0),
-    end: Field.from(0),
+    start: Fp.from(0),
+    end: Fp.from(0),
   }
   const depth = 48
-  const utxoTreeConfig: TreeConfig<Field> = {
+  const utxoTreeConfig: TreeConfig<Fp> = {
     hasher: poseidonHasher(depth),
     forceUpdate: true,
     fullSync: true,
@@ -45,7 +45,7 @@ describe('zk_transaction_1_2.test.circom', () => {
   const preHashes = poseidonHasher(depth).preHash
   const utxoTreeInitialData = {
     root: genesisRoot(poseidonHasher(depth)),
-    index: Field.zero,
+    index: Fp.zero,
     siblings: preHashes.slice(0, -1),
   }
   let mockup: MockupDB
@@ -90,7 +90,7 @@ describe('zk_transaction_1_2.test.circom', () => {
     const merkleProof = {
       0: await utxoTree.merkleProof({
         hash: utxos.utxo1_in_1.hash(),
-        index: Field.from(0),
+        index: Fp.from(0),
       }),
     }
     const inputs = ZkWizard.snarkInput({ tx, signer, merkleProof })
@@ -103,7 +103,7 @@ describe('zk_transaction_1_2.test.circom', () => {
     const merkleProof = {
       0: await utxoTree.merkleProof({
         hash: utxos.utxo1_in_1.hash(),
-        index: Field.from(0),
+        index: Fp.from(0),
       }),
     }
     const inputs = ZkWizard.snarkInput({ tx, signer, merkleProof })

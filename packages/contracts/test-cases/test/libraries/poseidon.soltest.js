@@ -4,7 +4,7 @@
 /* eslint-disable jest/require-top-level-describe */
 /* eslint-disable jest/consistent-test-it */
 const chai = require('chai')
-const { Field } = require('~babyjubjub')
+const { Fp } = require('~babyjubjub')
 
 const { expect } = chai
 const { toBN } = web3.utils
@@ -12,9 +12,7 @@ const { toBN } = web3.utils
 const Poseidon2 = artifacts.require('Poseidon2')
 
 const compare = (a, b) => {
-  expect(Field.from(a.toString()).toHex()).equal(
-    Field.from(b.toString()).toHex(),
-  )
+  expect(Fp.from(a.toString()).toHex()).equal(Fp.from(b.toString()).toHex())
 }
 
 contract('Poseidon', async accounts => {

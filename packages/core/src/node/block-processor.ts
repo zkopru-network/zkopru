@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { ZkViewer } from '@zkopru/account'
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { DB, Proposal, MassDeposit as MassDepositSql } from '@zkopru/prisma'
 import { logger, Worker } from '@zkopru/utils'
 import { Leaf } from '@zkopru/tree'
@@ -395,7 +395,7 @@ export class BlockProcessor extends EventEmitter {
     logger.trace('update my withdrawals')
   }
 
-  private async markUtxosAsUnspent(utxos: Leaf<Field>[]) {
+  private async markUtxosAsUnspent(utxos: Leaf<Fp>[]) {
     await this.db.write(prisma =>
       prisma.utxo.updateMany({
         where: {
@@ -495,10 +495,10 @@ export class BlockProcessor extends EventEmitter {
     }[] = []
     for (const utxoData of myStoredUtxos) {
       const orderInArr = patch.treePatch.utxos.findIndex(utxo =>
-        utxo.hash.eq(Field.from(utxoData.hash)),
+        utxo.hash.eq(Fp.from(utxoData.hash)),
       )
       assert(orderInArr >= 0)
-      const index = Field.from(startingUtxoIndex.addn(orderInArr).toString())
+      const index = Fp.from(startingUtxoIndex.addn(orderInArr).toString())
       const viewer = accounts.find(
         account => account.zkAddress.toString() === utxoData.owner,
       )

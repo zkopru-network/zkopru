@@ -9,7 +9,7 @@ import {
 } from '@zkopru/transaction'
 import { Header as HeaderSql } from '@zkopru/prisma'
 import * as Utils from '@zkopru/utils'
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { soliditySha3Raw } from 'web3-utils'
 import { Bytes32, Uint256, Address } from 'soltypes'
 import {
@@ -216,24 +216,24 @@ export function deserializeTxsFrom(
     const inflow: ZkInflow[] = []
     while (inflow.length < numOfInflow) {
       inflow.push({
-        root: Field.from(queue.dequeue(32)),
-        nullifier: Field.from(queue.dequeue(32)),
+        root: Fp.from(queue.dequeue(32)),
+        nullifier: Fp.from(queue.dequeue(32)),
       })
     }
     const numOfOutflow: number = queue.dequeueToNumber(1)
     const outflow: ZkOutflow[] = []
     while (outflow.length < numOfOutflow) {
-      const note = Field.from(queue.dequeue(32))
-      const outflowType = Field.from(queue.dequeue(1))
+      const note = Fp.from(queue.dequeue(32))
+      const outflowType = Fp.from(queue.dequeue(1))
       let data: PublicData | undefined
       if (!outflowType.isZero()) {
         data = {
-          to: Field.from(queue.dequeue(20)),
-          eth: Field.from(queue.dequeue(32)),
-          tokenAddr: Field.from(queue.dequeue(20)),
-          erc20Amount: Field.from(queue.dequeue(32)),
-          nft: Field.from(queue.dequeue(32)),
-          fee: Field.from(queue.dequeue(32)),
+          to: Fp.from(queue.dequeue(20)),
+          eth: Fp.from(queue.dequeue(32)),
+          tokenAddr: Fp.from(queue.dequeue(20)),
+          erc20Amount: Fp.from(queue.dequeue(32)),
+          nft: Fp.from(queue.dequeue(32)),
+          fee: Fp.from(queue.dequeue(32)),
         }
       }
       outflow.push({
@@ -242,26 +242,20 @@ export function deserializeTxsFrom(
         data,
       })
     }
-    const fee = Field.from(queue.dequeue(32))
+    const fee = Fp.from(queue.dequeue(32))
     const proof: SNARK = {
-      pi_a: [Field.from(queue.dequeue(32)), Field.from(queue.dequeue(32))],
+      pi_a: [Fp.from(queue.dequeue(32)), Fp.from(queue.dequeue(32))],
       pi_b: [
-        [
-          Field.from(queue.dequeue(32)),
-          Field.from(queue.dequeue(32)),
-        ].reverse(),
-        [
-          Field.from(queue.dequeue(32)),
-          Field.from(queue.dequeue(32)),
-        ].reverse(),
+        [Fp.from(queue.dequeue(32)), Fp.from(queue.dequeue(32))].reverse(),
+        [Fp.from(queue.dequeue(32)), Fp.from(queue.dequeue(32))].reverse(),
       ],
-      pi_c: [Field.from(queue.dequeue(32)), Field.from(queue.dequeue(32))],
+      pi_c: [Fp.from(queue.dequeue(32)), Fp.from(queue.dequeue(32))],
     }
     const indicator = queue.dequeueToNumber(1)
-    let swap: Field | undefined
+    let swap: Fp | undefined
     if ((indicator & 1) !== 0) {
       // swap exist
-      swap = Field.from(queue.dequeue(32))
+      swap = Fp.from(queue.dequeue(32))
     }
     let memo: Buffer | undefined
     if ((indicator & 2) !== 0) {
@@ -400,12 +394,12 @@ export function getErc20Migrations(notes: ZkOutflow[]): ERC20Migration[] {
   for (const addr of erc20Addresses) {
     if (!addr) break
     const targetNotes = erc20Notes.filter(note =>
-      note.data?.tokenAddr.eq(Field.from(addr)),
+      note.data?.tokenAddr.eq(Fp.from(addr)),
     )
     const amount: Uint256 = targetNotes
       .reduce(
-        (acc, note) => acc.add(note.data?.erc20Amount || Field.zero),
-        Field.zero,
+        (acc, note) => acc.add(note.data?.erc20Amount || Fp.zero),
+        Fp.zero,
       )
       .toUint256()
     erc20Migrations.push({
@@ -425,10 +419,10 @@ export function getErc721Migrations(notes: ZkOutflow[]): ERC721Migration[] {
   for (const addr of erc721Addresses) {
     if (!addr) break
     const targetNotes = erc721Notes.filter(note =>
-      note.data?.tokenAddr.eq(Field.from(addr)),
+      note.data?.tokenAddr.eq(Fp.from(addr)),
     )
     const nfts: Uint256[] = targetNotes
-      .map(note => note.data?.nft || Field.zero)
+      .map(note => note.data?.nft || Fp.zero)
       .map(nft => nft.toUint256())
     erc721Migrations.push({
       addr: Address.from(addr),
@@ -442,11 +436,9 @@ export function getMassMigrationToAddress(
   dest: string,
   migratingNotes: ZkOutflow[],
 ): MassMigration {
-  const notes = migratingNotes.filter(note =>
-    note.data?.to.eq(Field.from(dest)),
-  )
+  const notes = migratingNotes.filter(note => note.data?.to.eq(Fp.from(dest)))
   const totalETH = notes
-    .reduce((acc, note) => acc.add(note.data?.eth || Field.zero), Field.zero)
+    .reduce((acc, note) => acc.add(note.data?.eth || Fp.zero), Fp.zero)
     .toUint256()
   const migratingLeaves: MassDeposit = Utils.mergeDeposits(
     notes.map(note => ({

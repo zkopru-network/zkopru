@@ -1,4 +1,4 @@
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { Address } from 'soltypes'
 
 export const DAI = '0x6b175474e89094c44da98b954eedeac495271d0f'
@@ -21,7 +21,7 @@ export class TokenRegistry {
     }
   }
 
-  static getTokenId(addr: Field): number {
+  static getTokenId(addr: Fp): number {
     const id = addr.modn(256)
     return id
   }
@@ -38,19 +38,19 @@ export class TokenRegistry {
     )
   }
 
-  getErc20Addresses(id: number): Field[] {
+  getErc20Addresses(id: number): Fp[] {
     if (id >= 256) throw Error('Token identifier should have 8 bit value')
     const candidates = this.erc20s
       .filter(addr => addr.toBN().modn(256) === id)
-      .map(addr => new Field(addr.toString()))
+      .map(addr => new Fp(addr.toString()))
     return candidates
   }
 
-  getErc721Addresses(id: number): Field[] {
+  getErc721Addresses(id: number): Fp[] {
     if (id >= 256) throw Error('Token identifier should have 8 bit value')
     const candidates = this.erc721s
       .filter(addr => addr.toBN().modn(256) === id)
-      .map(addr => new Field(addr.toString()))
+      .map(addr => new Fp(addr.toString()))
     return candidates
   }
 }

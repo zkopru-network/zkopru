@@ -1,4 +1,4 @@
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { Hasher, poseidonHasher, SubTreeLib } from '@zkopru/tree'
 import assert from 'assert'
 import { Bytes32, Uint256 } from 'soltypes'
@@ -14,7 +14,7 @@ import { CODE } from '../code'
 
 export class OffchainUtxoTreeValidator extends OffchainValidatorContext
   implements UtxoTreeValidator {
-  hasher: Hasher<Field>
+  hasher: Hasher<Fp>
 
   MAX_UTXO: BN
 
@@ -107,7 +107,7 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
       block.header.parentBlock.eq(headerHash(parentHeader)),
       'Invalid prev header',
     )
-    const newUtxos: Field[] = block.body.txs.reduce(
+    const newUtxos: Fp[] = block.body.txs.reduce(
       (arr, tx) => {
         return [
           ...arr,
@@ -116,15 +116,15 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
             .map(outflow => outflow.note),
         ]
       },
-      deposits.map(deposit => Field.from(deposit.toString())),
+      deposits.map(deposit => Fp.from(deposit.toString())),
     )
     const computedRoot = SubTreeLib.appendAsSubTrees(
       this.hasher,
-      Field.from(parentHeader.utxoRoot.toString()),
-      Field.from(parentHeader.utxoIndex.toString()),
+      Fp.from(parentHeader.utxoRoot.toString()),
+      Fp.from(parentHeader.utxoIndex.toString()),
       this.SUB_TREE_DEPTH,
       newUtxos,
-      subTreeSiblings.map(sib => Field.from(sib.toString())),
+      subTreeSiblings.map(sib => Fp.from(sib.toString())),
     )
     return {
       slashable: !computedRoot.eq(block.header.utxoRoot.toBN()),
