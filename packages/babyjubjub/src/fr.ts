@@ -16,7 +16,7 @@ export class Fr extends FiniteField {
 
   static from(x: F): Fr {
     if (x === undefined) return new Fr(0)
-    if (x instanceof FiniteField && x.order.eq(r)) {
+    if (x instanceof Fr && x.order.eq(r)) {
       return x
     }
     return new Fr(x)
@@ -55,4 +55,11 @@ export class Fr extends FiniteField {
   static one = Fr.from(1)
 
   static MAX = r
+
+  // static Red = BN.red(r)
+
+  // toRed(): RedBN {
+  //   const r = new BN(this.toString()).toRed(Fr.Red)
+  //   return r
+  // }
 }

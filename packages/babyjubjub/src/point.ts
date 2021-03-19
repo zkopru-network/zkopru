@@ -5,6 +5,8 @@ import * as circomlib from 'circomlib'
 import createBlakeHash from 'blake-hash'
 import { F } from './finite-field'
 import { Fp } from './fp'
+import { Fr } from './fr'
+import BN from 'bn.js'
 
 export class Point {
   x: Fp
@@ -25,18 +27,36 @@ export class Point {
     return new Point(Fp.from(x), Fp.from(y))
   }
 
+  static fromY(y: F, neg: boolean): Point {
+    const redY = Fp.from(y).toRed()
+    const y2 = redY.redSqr()
+    const D = Point.D.toRed()
+    const numerator = Fp.one.toRed().redSub(y2)
+    const denominator = Point.A.toRed()
+      .redSub(D.redMul(y2))
+      .redInvm()
+    const x = numerator.redMul(denominator).redSqrt().fromRed()
+    if (x.gt(Fp.half) === neg) {
+      return Point.from(x.neg(), y)
+    } else {
+      return Point.from(x, y)
+    }
+  }
+
   static fromHex(hex: string) {
     const buffer = hexToBuffer(hex)
     return Point.decode(buffer)
   }
 
   static decode(packed: Buffer): Point {
-    const point = circomlib.babyJub.unpackPoint(packed)
-    return Point.from(point[0].toString(), point[1].toString())
+    const n = new BN(packed)
+    const y = n.and(new BN(1).shln(255).subn(1))
+    const positive = n.eq(y)
+    return Point.fromY(y, !positive)
   }
 
   static generate(n: F): Point {
-    return Point.BASE8.mul(Fp.from(n))
+    return Point.BASE8.mul(Fr.from(n))
   }
 
   /**
@@ -48,7 +68,7 @@ export class Point {
     return Point.from(result[0].toString(), result[1].toString())
   }
 
-  static getMultiplier(key: string | Buffer): Fp {
+  static getMultiplier(key: string | Buffer): Fr {
     const buff: Buffer = typeof key === 'string' ? hexToBuffer(key) : key
     const sBuff = Buffer.from(
       createBlakeHash('blake512')
@@ -61,7 +81,7 @@ export class Point {
     sBuff[31] |= 0x40
     const s = ffjs.utils.leBuff2int(sBuff)
     const multiplier = ffjs.Scalar.shr(s, 3)
-    return Fp.from(multiplier)
+    return Fr.from(multiplier)
   }
 
   static isOnJubjub(x: F, y: F): boolean {
@@ -72,7 +92,9 @@ export class Point {
   }
 
   encode(): Buffer {
-    return circomlib.babyJub.packPoint([this.x.toBigInt(), this.y.toBigInt()])
+    const neg = this.x.gt(Fp.half)
+    const packed: BN = neg ? this.y : new BN(1).shln(255).or(this.y)
+    return packed.toBuffer('be', 32)
   }
 
   toHex(): string {
@@ -94,7 +116,7 @@ export class Point {
   mul(n: F): Point {
     const result = circomlib.babyJub.mulPointEscalar(
       [this.x.toBigInt(), this.y.toBigInt()],
-      Fp.from(n).toBigInt(),
+      Fr.from(n).toBigInt(),
     )
     return Point.from(result[0].toString(), result[1].toString())
   }
@@ -119,7 +141,7 @@ export class Point {
 
   static PRIME: bigint = circomlib.babyJub.p
 
-  static A = circomlib.babyJub
+  static A = Fp.from(circomlib.babyJub.A)
 
-  static D = circomlib.babyJub
+  static D = Fp.from(circomlib.babyJub.D)
 }

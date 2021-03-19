@@ -1,6 +1,7 @@
 /* global BigInt */
 import BN from 'bn.js'
 import { FiniteField } from './finite-field'
+import RedBN from './types/redbn'
 
 export type F = number | string | number[] | Uint8Array | Buffer | BN
 
@@ -16,7 +17,7 @@ export class Fp extends FiniteField {
 
   static from(x: F): Fp {
     if (x === undefined) return new Fp(0)
-    if (x instanceof FiniteField && x.order.eq(p)) {
+    if (x instanceof Fp && x.order.eq(p)) {
       return x
     }
     return new Fp(x)
@@ -54,5 +55,14 @@ export class Fp extends FiniteField {
 
   static one = Fp.from(1)
 
+  static half = p.shrn(1)
+
   static MAX = p
+
+  static Red = BN.red(p)
+
+  toRed(): RedBN {
+    const r = (new BN(this.toString())).toRed(Fp.Red)
+    return r
+  }
 }

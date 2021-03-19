@@ -5,7 +5,7 @@ import { Bytes32, Uint256, Address } from 'soltypes'
 export type F = number | string | number[] | Uint8Array | Buffer | BN
 
 export class FiniteField extends BN {
-  order: BN
+  readonly order: BN
 
   constructor(
     number: F,
@@ -23,7 +23,7 @@ export class FiniteField extends BN {
     this.order = order
     if (super.gte(order)) {
       // console.warn('Exceeds babyjubjub field range')
-      return FiniteField.from(super.sub(order), order)
+      return FiniteField.from(super.mod(order), order)
     }
     if (super.isNeg()) {
       return FiniteField.from(super.add(order), order)
@@ -387,4 +387,9 @@ export class FiniteField extends BN {
       this.order,
     )
   }
+
+  // toRed(): RedBN {
+  //   const r = new BN(this.toString()).toRed(BN.red(this.order))
+  //   return r
+  // }
 }
