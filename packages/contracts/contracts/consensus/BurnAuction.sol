@@ -28,7 +28,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     // Auction end time, in blocks before the round
     uint32 constant public auctionEnd = roundLength * 2;
     // Min bid is 10000 gwei
-    uint112 constant minBid = 10000 gwei;
+    uint112 constant public override minBid = 10000 gwei;
 
     // The current balance from success auctions
     uint public balance = 0;

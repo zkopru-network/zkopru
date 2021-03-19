@@ -5,7 +5,8 @@ interface IBurnAuction {
     event UrlUpdate(address coordinator);
     event NewHighBid(uint roundIndex, address bidder, uint amount);
     function startBlock() external view returns (uint32);
-    function roundLength() external view returns (uint32);
+    function roundLength() external pure returns (uint32);
+    function minBid() external pure returns (uint112);
     function highestBidForRound(uint roundIndex) external view returns (uint232, address);
     function transferBalance(address payable recipient) external;
     function register() external payable;

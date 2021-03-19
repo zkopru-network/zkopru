@@ -270,6 +270,36 @@ contract('BurnAuction tests', async accounts => {
       }
     })
 
+    it('should have valid minimum bid', async () => {
+      const currentRound = +(await burnAuction.currentRound()).toString()
+      const roundStartBlock = +(
+        await burnAuction.calcRoundStart(currentRound)
+      ).toString()
+      // find a round without a bid
+      const targetRound = +(
+        await burnAuction.roundForBlock(
+          roundStartBlock + roundLength + auctionStart / 2 + 10000,
+        )
+      ).toString()
+      const bid = await burnAuction.highestBidPerRound(targetRound)
+      chai.assert(bid.amount.eq(new BN('0')))
+      const minBid = await burnAuction.minBid()
+      {
+        const minNextBid = await burnAuction.minNextBid(targetRound)
+        chai.assert(minNextBid.gt(minBid))
+      }
+      const bidAmount = minBid.mul(new BN('2'))
+      // Do the bid, then test again
+      await burnAuction.bid(targetRound, {
+        from: accounts[0],
+        value: bidAmount,
+      })
+      {
+        const minNextBid = await burnAuction.minNextBid(targetRound)
+        chai.assert(minNextBid.gt(bidAmount))
+      }
+    })
+
     it('should refund bid when outbid', async () => {
       const currentRound = +(await burnAuction.currentRound()).toString()
       const roundStartBlock = +(

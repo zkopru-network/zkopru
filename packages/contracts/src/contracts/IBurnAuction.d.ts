@@ -23,6 +23,8 @@ export class IBurnAuction extends Contract {
 
     roundLength(): TransactionObject<string>
 
+    minBid(): TransactionObject<string>
+
     highestBidForRound(
       roundIndex: number | string,
     ): TransactionObject<{
