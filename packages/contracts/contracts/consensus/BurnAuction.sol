@@ -19,8 +19,6 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
 
     // Round length in blocks
     uint8 constant blockTime = 15;
-    // As a percentage (denominator)
-    uint8 constant minBidIncrease = 10;
 
     uint32 override immutable public startBlock;
     // Just to make math more clear
@@ -160,8 +158,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
      * @dev The minimum bid for a given round.
      **/
     function minNextBid(uint roundIndex) public view override returns (uint) {
-        uint highestBid = max(highestBidPerRound[roundIndex].amount, minBid);
-        return highestBid + (highestBid / minBidIncrease);
+        return max(highestBidPerRound[roundIndex].amount, minBid) + 1;
     }
 
     /**
