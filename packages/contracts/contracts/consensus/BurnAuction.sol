@@ -7,7 +7,7 @@ import "./interfaces/IConsensusProvider.sol";
 import "./interfaces/IBurnAuction.sol";
 
 /**
- * @dev [WIP] Sample contract to implement burn auction for coordination consensus.
+ * @dev Burn auction for coordination consensus.
  */
 contract BurnAuction is IConsensusProvider, IBurnAuction {
     Zkopru public zkopru;
@@ -19,8 +19,6 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
 
     // Round length in blocks
     uint8 constant blockTime = 15;
-    // As a percentage (denominator)
-    uint8 constant minBidIncrease = 10;
 
     uint32 override immutable public startBlock;
     // Just to make math more clear
@@ -30,7 +28,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     // Auction end time, in blocks before the round
     uint32 constant public auctionEnd = roundLength * 2;
     // Min bid is 10000 gwei
-    uint112 constant minBid = 10000 gwei;
+    uint112 constant public override minBid = 10000 gwei;
 
     // The current balance from success auctions
     uint public balance = 0;
@@ -53,11 +51,20 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         startBlock = uint32(block.number);
     }
 
+    /**
+     * @dev Shortcut for msg.sender to bid on an auction using msg.value amount.
+     * @param roundIndex The round to bid on.
+     **/
     function bid(uint roundIndex) public override payable {
         pendingBalances[msg.sender] += msg.value;
         bid(roundIndex, msg.value);
     }
 
+    /**
+     * @dev Bid on an auction.
+     * @param roundIndex The auction round to bid on.
+     * @param amount The amount of wei to bid on the round.
+     **/
     function bid(uint roundIndex, uint amount) public override {
         require(zkopru.consensusProvider() == address(this), "BurnAuction: Not consensus provider");
         require(roundIndex < lockedRoundIndex, "BurnAuction: Contract is locked");
@@ -83,6 +90,13 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         emit NewHighBid(roundIndex, msg.sender, amount);
     }
 
+    /**
+     * @dev Bid on many rounds at once.
+     * @param _minBid The minimum bid amount per round.
+     * @param maxBid The maximum bid amount per round.
+     * @param startRound The round to start bidding.
+     * @param endRound The first round to bid on.
+     **/
     function multiBid(uint _minBid, uint maxBid, uint startRound, uint endRound) public override payable {
         pendingBalances[msg.sender] += msg.value;
         for (uint x = startRound; x <= endRound; x++) {
@@ -95,6 +109,10 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         }
     }
 
+    /**
+     * @dev Return the highest bid for a given round.
+     * @param roundIndex The round to query.
+     **/
     function highestBidForRound(uint roundIndex) public view override returns (uint232, address) {
         return (
           uint232(max(highestBidPerRound[roundIndex].amount, minBid)),
@@ -102,60 +120,94 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         );
     }
 
+    /**
+     * @dev Set the public url for a coordinator node.
+     * @param url The IP or DNS based url with port, without protocol. ex: 127.0.0.1:8888
+     **/
     function setUrl(string memory url) public override {
         coordinatorUrls[msg.sender] = url;
         emit UrlUpdate(msg.sender);
     }
 
+    /**
+     * @dev Remove a url for a coordinator.
+     **/
     function clearUrl() public override {
         delete coordinatorUrls[msg.sender];
         emit UrlUpdate(msg.sender);
     }
 
+    /**
+     * @dev Return the closest round that can be bid on.
+     **/
     function earliestBiddableRound() public view override returns (uint) {
         return roundForBlock(calcRoundStart(currentRound()) + roundLength + auctionEnd);
     }
 
+    /**
+     * @dev Return the furthest round that can be bid on.
+     **/
     function latestBiddableRound() public view override returns (uint) {
         return roundForBlock(calcRoundStart(currentRound()) + auctionStart);
     }
 
-    // The minimum bid for a given round
+    /**
+     * @dev The minimum bid for a given round.
+     **/
     function minNextBid(uint roundIndex) public view override returns (uint) {
-        uint highestBid = max(highestBidPerRound[roundIndex].amount, minBid);
-        return highestBid + (highestBid / minBidIncrease);
+        return max(highestBidPerRound[roundIndex].amount, minBid) + 1;
     }
 
-    // The current owner for a round, this may change if the auction is open
+    /**
+     * @dev Return the address of the current high bidder for a given round. Returns 0x0 for rounds without an owner.
+     * @param roundIndex The round index to query.
+     **/
     function coordinatorForRound(uint roundIndex) public view override returns (address) {
         return highestBidPerRound[roundIndex].owner;
     }
 
-    // Return the winning bidder for the current round
+    /**
+     * @dev Return the current round owner.
+     **/
     function activeCoordinator() public view override returns (address) {
         return coordinatorForRound(currentRound());
     }
 
-    // Return the start block of a given round index
+    /**
+     * @dev Return the start block of a given round.
+     * @param roundIndex The round index to query.
+     **/
     function calcRoundStart(uint roundIndex) public view override returns (uint) {
         return startBlock + (roundIndex * roundLength);
     }
 
+    /**
+     * @dev Return the round index that a given block belongs to.
+     * @param blockNumber The block to to query.
+     **/
     function roundForBlock(uint blockNumber) public view returns (uint) {
         require(blockNumber >= startBlock, "Invalid block number");
         return (blockNumber - startBlock) / roundLength;
     }
 
-    // Returnt the current round number
+    /**
+     * @dev Return the current round number.
+     **/
     function currentRound() public view override returns (uint) {
         return roundForBlock(block.number);
     }
 
-    // Refund non-winning bids
+    /**
+     * @dev Refund shortcut for msg.sender.
+     **/
     function refund() public override {
         refund(msg.sender);
     }
 
+    /**
+     * @dev Refund outstanding balances from non-winning bids. This is called the pending balance above.
+     * @param owner The address to refund.
+     **/
     function refund(address payable owner) public override {
         uint amountToRefund = pendingBalances[owner];
         if (amountToRefund == 0) return;
@@ -163,8 +215,10 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         owner.transfer(amountToRefund);
     }
 
-    // Dumps the available balance to recipient
-    // TODO: Split funds
+    /**
+     * @dev Send the available contract balance to a recipient.
+     * @param recipient The receiving address for the funds.
+     **/
     function transferBalance(address payable recipient) public override {
         updateBalance();
         uint withdrawAmount = balance;
@@ -172,11 +226,17 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         recipient.transfer(withdrawAmount);
     }
 
-    // Update the contract available balance
+    /**
+     * @dev Update the contract available balance based on the current round.
+     **/
     function updateBalance() public {
         updateBalance(currentRound() - lastBalanceIndex);
     }
 
+    /**
+     * @dev Update the contract available balance based on winning bids.
+     * @param maxIterations The maximum number of rounds to consider (to prevent out of gas issues).
+     **/
     function updateBalance(uint maxIterations) public {
         if (lastBalanceIndex == currentRound()) return;
         uint newBalance = balance;
@@ -190,11 +250,17 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         lastBalanceIndex = uint64(finalIndex);
     }
 
+    /**
+     * @dev Register as a coordinator.
+     **/
     function register() public override payable {
         require(zkopru.consensusProvider() == address(this), "BurnAuction: Not consensus provider");
         ICoordinatable(address(zkopru)).stake{ value: msg.value }(msg.sender);
     }
 
+    /**
+     * @dev Open a round for anyone to propose blocks if needed.
+     **/
     function openRoundIfNeeded() public override {
         if (isRoundOpen()) return;
         if (shouldOpenRound()) {
@@ -202,7 +268,9 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
         }
     }
 
-    // Determines if the current round should be opened for anyone to propose blocks
+    /**
+     * @dev Determine if a certain round should be opened to anyone. This happens if there is no bidder, or if no blocks are proposed in the first half of the round.
+     **/
     function shouldOpenRound() public view override returns (bool) {
         uint currentRoundStart = calcRoundStart(currentRound());
         if (block.number < currentRoundStart + roundLength / 2) {
@@ -230,7 +298,9 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
           shouldOpenRound(); // Call this in case a client makes a query to determine if they should attempt to propose a block
     }
 
-    // Only zkopru may call
+    /**
+     * @dev Lock the contract to prevent future bids.
+     **/
     function lockForUpgrade(uint roundIndex) public override {
         require(roundIndex < type(uint64).max, "BurnAuction: Invalid round index for locking");
         require(lockedRoundIndex == type(uint64).max, "BurnAuction: Contract already locked");
