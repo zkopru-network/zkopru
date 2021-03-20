@@ -1,6 +1,6 @@
 import { hexToBuffer } from '@zkopru/utils'
 import * as circomlib from 'circomlib'
-import { F } from './finite-field'
+import { F } from './types/ff'
 import { Fp } from './fp'
 import { Point } from './point'
 

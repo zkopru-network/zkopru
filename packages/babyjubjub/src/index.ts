@@ -1,4 +1,4 @@
-export { F } from './finite-field'
+export { F } from './types/ff'
 export { Fp } from './fp'
 export { Fr } from './fr'
 export { Point } from './point'

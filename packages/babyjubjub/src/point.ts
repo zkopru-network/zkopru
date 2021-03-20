@@ -3,10 +3,10 @@ import { hexToBuffer, hexify } from '@zkopru/utils'
 import * as ffjs from 'ffjavascript'
 import * as circomlib from 'circomlib'
 import createBlakeHash from 'blake-hash'
-import { F } from './finite-field'
 import { Fp } from './fp'
 import { Fr } from './fr'
 import BN from 'bn.js'
+import { F } from './types/ff'
 
 export class Point {
   x: Fp
