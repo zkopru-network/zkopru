@@ -3,9 +3,9 @@ import { hexToBuffer, hexify } from '@zkopru/utils'
 import * as ffjs from 'ffjavascript'
 import * as circomlib from 'circomlib'
 import createBlakeHash from 'blake-hash'
+import BN from 'bn.js'
 import { Fp } from './fp'
 import { Fr } from './fr'
-import BN from 'bn.js'
 import { F } from './types/ff'
 
 export class Point {
@@ -27,7 +27,7 @@ export class Point {
     return new Point(Fp.from(x), Fp.from(y))
   }
 
-  static fromY(y: F, neg: boolean): Point {
+  static fromY(y: F, xOdd: boolean): Point {
     const redY = Fp.from(y).toRed()
     const y2 = redY.redSqr()
     const D = Point.D.toRed()
@@ -35,12 +35,14 @@ export class Point {
     const denominator = Point.A.toRed()
       .redSub(D.redMul(y2))
       .redInvm()
-    const x = numerator.redMul(denominator).redSqrt().fromRed()
-    if (x.gt(Fp.half) === neg) {
-      return Point.from(x.neg(), y)
-    } else {
+    const x = numerator
+      .redMul(denominator)
+      .redSqrt()
+      .fromRed()
+    if (x.isOdd() === xOdd) {
       return Point.from(x, y)
     }
+    return Point.from(x.neg(), y)
   }
 
   static fromHex(hex: string) {
@@ -49,10 +51,12 @@ export class Point {
   }
 
   static decode(packed: Buffer): Point {
-    const n = new BN(packed)
-    const y = n.and(new BN(1).shln(255).subn(1))
-    const positive = n.eq(y)
-    return Point.fromY(y, !positive)
+    if (packed.length !== 32) throw Error('invalid length')
+    const oddX = (packed[31] & 0x80) !== 0
+    const yBuff = Buffer.from(packed)
+    yBuff[31] &= 0x7f // clear the most significant bit
+    const y = new BN(yBuff, 'le')
+    return Point.fromY(y, oddX)
   }
 
   static generate(n: F): Point {
@@ -91,10 +95,15 @@ export class Point {
     ])
   }
 
+  // https://tools.ietf.org/html/rfc8032#section-5.1.5
   encode(): Buffer {
-    const neg = this.x.gt(Fp.half)
-    const packed: BN = neg ? this.y : new BN(1).shln(255).or(this.y)
-    return packed.toBuffer('be', 32)
+    const buff = this.y.toBuffer('le', 32)
+    if ((buff[31] & 0x80) !== 0)
+      throw Error('The MSB of the final octet should be zero')
+    if (this.x.isOdd()) {
+      buff[31] |= 0x80
+    }
+    return buff
   }
 
   toHex(): string {
