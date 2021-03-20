@@ -6,24 +6,24 @@ import { soliditySha3Raw } from 'web3-utils'
 export class ZkViewer {
   private A: Point // EdDSA Public Key
 
-  private n: Fr // viewing key, nullifier seed
+  private v: Fr // viewing key, nullifier seed
 
   zkAddress: ZkAddress // https://github.com/zkopru-network/zkopru/issues/43
 
-  constructor(A: Point, n: Fr) {
+  constructor(A: Point, v: Fr) {
     this.A = A
-    this.n = n
+    this.v = v
     // Public viewing key, public nullifier seed
-    const N = Point.BASE8.mul(n)
+    const V = Point.BASE8.mul(v)
     // Public spending key
     const PubSK = Fp.from(
       poseidon([
         this.A.x.toBigInt(),
         this.A.y.toBigInt(),
-        this.n.toBigInt(),
+        this.v.toBigInt(),
       ]).toString(),
     )
-    this.zkAddress = ZkAddress.from(PubSK, N)
+    this.zkAddress = ZkAddress.from(PubSK, V)
   }
 
   getEdDSAPubKey(): Point {
@@ -42,7 +42,7 @@ export class ZkViewer {
           utxoHash: outflow.note,
           memo,
           spendingPubKey: this.zkAddress.spendingPubKey(),
-          viewingKey: this.n,
+          viewingKey: this.v,
           tokenRegistry,
         })
       } catch (err) {
@@ -54,14 +54,14 @@ export class ZkViewer {
   }
 
   getNullifierSeed(): Fp {
-    return this.n
+    return this.v
   }
 
   encodeViewingKey(): string {
     const concatenated = Buffer.concat([
       this.A.x.toBytes32().toBuffer(),
       this.A.y.toBytes32().toBuffer(),
-      this.n.toBytes32().toBuffer(),
+      this.v.toBytes32().toBuffer(),
       Buffer.from(soliditySha3Raw(this.zkAddress.toString()).slice(-8), 'hex'),
     ])
     return concatenated.toString('hex')
@@ -71,10 +71,10 @@ export class ZkViewer {
     const buff = Buffer.from(encoded, 'hex')
     const Ax = Fp.from(buff.slice(0, 32))
     const Ay = Fp.from(buff.slice(32, 64))
-    const n = Fr.from(buff.slice(64, 92))
+    const v = Fr.from(buff.slice(64, 92))
     const addressHash = buff.slice(92, 96)
     const A = Point.from(Ax, Ay)
-    const viewer = new ZkViewer(A, n)
+    const viewer = new ZkViewer(A, v)
     const success = addressHash.equals(
       Buffer.from(
         soliditySha3Raw(viewer.zkAddress.toString()).slice(-8),

@@ -32,12 +32,12 @@ export class ZkAccount extends ZkViewer {
     // Note: viewing key can be derived using another method. This is just for the convenience
     // to make it easy to restore spending key & viewing key together from a mnemonic source in
     // a deterministic way
-    const n = Fr.from(
+    const v = Fr.from(
       createKeccak('keccak256')
         .update(privateKey)
         .digest(),
     )
-    super(A, n)
+    super(A, v)
     this.privateKey = privateKey
     this.ethAddress = ethAccount.address
     this.ethAccount = ethAccount
