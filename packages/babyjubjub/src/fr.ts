@@ -18,32 +18,25 @@ export class Fr extends BN {
 
   static Red = BN.red(Fr.ORDER)
 
-  constructor(
-    number: F,
-    base?: number | 'hex',
-    endian?: BN.Endianness,
-  ) {
+  constructor(number: F, base?: number | 'hex', endian?: BN.Endianness) {
+    let n: BN
     if (number instanceof BN) {
-      super(number.toString())
+      n = new BN(number.toString())
     } else if (typeof number === 'string' && number.startsWith('0x')) {
-      super(number.substr(2), 16, endian)
+      n = new BN(number.substr(2), 16, endian)
     } else {
-      super(number, base, endian)
+      n = new BN(number, base, endian)
     }
-    if (super.gte(Fr.ORDER)) {
-      // console.warn('Exceeds babyjubjub field range')
-      return Fr.from(super.mod(Fr.ORDER))
+    if (n.isNeg()) {
+      super(n.mod(Fr.ORDER).add(Fr.ORDER), base, endian)
+    } else {
+      super(n.mod(Fr.ORDER), base, endian)
     }
-    if (super.isNeg()) {
-      return Fr.from(super.add(Fr.ORDER))
-    }
+    Object.setPrototypeOf(this, Fr.prototype)
   }
 
   static from(x: F): Fr {
     if (x === undefined) return new Fr(0)
-    if (x instanceof Fr) {
-      return x
-    }
     return new Fr(x)
   }
 
@@ -326,7 +319,7 @@ export class Fr extends BN {
   }
 
   toRed(): RedBN {
-    const r = (new BN(this.toString())).toRed(Fr.Red)
+    const r = new BN(this.toString()).toRed(Fr.Red)
     return r
   }
 }
