@@ -1,7 +1,7 @@
 import { randomHex } from 'web3-utils'
 import { poseidon } from 'circomlib'
 import * as chacha20 from 'chacha20'
-import { Fp, F, Point } from '@zkopru/babyjubjub'
+import { Fp, Fr, F, Point } from '@zkopru/babyjubjub'
 import { ZkAddress } from './zk-address'
 import { Note, OutflowType, NoteStatus, Asset } from './note'
 import { Withdrawal } from './withdrawal'
@@ -44,7 +44,7 @@ export class Utxo extends Note {
   }
 
   encrypt(): Buffer {
-    const ephemeralSecretKey: Fp = Fp.from(randomHex(16))
+    const ephemeralSecretKey: Fr = Fr.from(randomHex(16))
     const sharedKey: Buffer = this.owner
       .viewingPubKey()
       .mul(ephemeralSecretKey)
@@ -72,14 +72,12 @@ export class Utxo extends Note {
     return encryptedMemo
   }
 
-  nullifier(nullifierSeed: Fp, leafIndex: Fp): Fp {
+  nullifier(nullifierSeed: Fr, leafIndex: Fp): Fp {
     const hash = poseidon([
       nullifierSeed.toBigInt(),
       leafIndex.toBigInt(),
     ]).toString()
-    if (
-      !this.owner.viewingPubKey().eq(Point.fromPrivKey(nullifierSeed.toHex(32)))
-    ) {
+    if (!this.owner.viewingPubKey().eq(Point.BASE8.mul(nullifierSeed))) {
       throw Error("Given nullifier does not match utxo's owner address")
     }
     const val = Fp.from(hash)
@@ -114,22 +112,18 @@ export class Utxo extends Note {
     utxoHash: Fp
     memo: Buffer
     spendingPubKey: Fp
-    viewingKey: Fp
+    viewingKey: Fr
     tokenRegistry?: TokenRegistry
   }): Utxo | undefined {
-    const multiplier = Point.getMultiplier(viewingKey.toHex(32))
     const ephemeralPubKey = Point.decode(memo.subarray(0, 32))
-    const sharedKey = ephemeralPubKey.mul(multiplier).encode()
+    const sharedKey = ephemeralPubKey.mul(viewingKey).encode()
     const data = memo.subarray(32, 81)
     const decrypted = chacha20.decrypt(sharedKey, 0, data)
     const salt = Fp.fromBuffer(decrypted.subarray(0, 16))
     const tokenIdentifier = decrypted.subarray(16, 17)[0]
     const value = Fp.fromBuffer(decrypted.subarray(17, 49))
 
-    const owner = ZkAddress.from(
-      spendingPubKey,
-      Point.fromPrivKey(viewingKey.toHex(32)),
-    )
+    const owner = ZkAddress.from(spendingPubKey, Point.BASE8.mul(viewingKey))
     // Return an Ether note if it is an Ether note
     const etherNote = Utxo.newEtherNote({
       owner,

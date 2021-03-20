@@ -1,6 +1,13 @@
 import Web3 from 'web3'
 import { Account, EncryptedKeystoreV3Json, AddAccount } from 'web3-core'
-import { Fp, Point, EdDSA, signEdDSA, verifyEdDSA } from '@zkopru/babyjubjub'
+import {
+  Fr,
+  Fp,
+  Point,
+  EdDSA,
+  signEdDSA,
+  verifyEdDSA,
+} from '@zkopru/babyjubjub'
 import { Keystore } from '@zkopru/prisma'
 import { hexify } from '@zkopru/utils'
 import createKeccak from 'keccak'
@@ -25,7 +32,7 @@ export class ZkAccount extends ZkViewer {
     // Note: viewing key can be derived using another method. This is just for the convenience
     // to make it easy to restore spending key & viewing key together from a mnemonic source in
     // a deterministic way
-    const n = Fp.from(
+    const n = Fr.from(
       createKeccak('keccak256')
         .update(privateKey)
         .digest(),

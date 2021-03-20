@@ -1,26 +1,26 @@
 import { poseidon } from 'circomlib'
-import { Fp, Point } from '@zkopru/babyjubjub'
+import { Fp, Fr, Point } from '@zkopru/babyjubjub'
 import { ZkAddress, ZkTx, Utxo, TokenRegistry } from '@zkopru/transaction'
 import { soliditySha3Raw } from 'web3-utils'
 
 export class ZkViewer {
   private A: Point // EdDSA Public Key
 
-  private v: Fp // viewing key, nullifier seed
+  private n: Fr // viewing key, nullifier seed
 
   zkAddress: ZkAddress // https://github.com/zkopru-network/zkopru/issues/43
 
-  constructor(A: Point, v: Fp) {
+  constructor(A: Point, n: Fr) {
     this.A = A
-    this.v = v
+    this.n = n
     // Public viewing key, public nullifier seed
-    const N = Point.fromPrivKey(this.v.toHex(32))
+    const N = Point.BASE8.mul(n)
     // Public spending key
     const S = Fp.from(
       poseidon([
         this.A.x.toBigInt(),
         this.A.y.toBigInt(),
-        this.v.toBigInt(),
+        this.n.toBigInt(),
       ]).toString(),
     )
     this.zkAddress = ZkAddress.from(S, N)
@@ -42,7 +42,7 @@ export class ZkViewer {
           utxoHash: outflow.note,
           memo,
           spendingPubKey: this.zkAddress.spendingPubKey(),
-          viewingKey: this.v,
+          viewingKey: this.n,
           tokenRegistry,
         })
       } catch (err) {
@@ -54,14 +54,14 @@ export class ZkViewer {
   }
 
   getNullifierSeed(): Fp {
-    return this.v
+    return this.n
   }
 
   encodeViewingKey(): string {
     const concatenated = Buffer.concat([
       this.A.x.toBytes32().toBuffer(),
       this.A.y.toBytes32().toBuffer(),
-      this.v.toBytes32().toBuffer(),
+      this.n.toBytes32().toBuffer(),
       Buffer.from(soliditySha3Raw(this.zkAddress.toString()).slice(-8), 'hex'),
     ])
     return concatenated.toString('hex')
@@ -71,7 +71,7 @@ export class ZkViewer {
     const buff = Buffer.from(encoded, 'hex')
     const Ax = Fp.from(buff.slice(0, 32))
     const Ay = Fp.from(buff.slice(32, 64))
-    const n = Fp.from(buff.slice(64, 92))
+    const n = Fr.from(buff.slice(64, 92))
     const addressHash = buff.slice(92, 96)
     const A = Point.from(Ax, Ay)
     const viewer = new ZkViewer(A, n)
