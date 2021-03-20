@@ -20,7 +20,7 @@ export class ZkAddress {
       .slice(0, 4)
     if (!checksum.equals(decoded.slice(64)))
       throw Error('Checksum does not match')
-    this.P = Fp.fromBuffer(decoded.slice(0, 32))
+    this.P = new Fp(decoded.slice(0, 32), undefined, 'le')
     this.N = Point.decode(decoded.slice(32, 64))
     this.address = addr
   }
@@ -42,14 +42,7 @@ export class ZkAddress {
   }
 
   static from(P: Fp, N: Point): ZkAddress {
-    const to32BytesBuffer = (data: Buffer): Buffer => {
-      const buff = Buffer.alloc(32)
-      data.copy(buff, buff.length - data.length)
-      return buff
-    }
-    const payload = Buffer.concat(
-      [P.toBytes32().toBuffer(), N.encode()].map(to32BytesBuffer),
-    )
+    const payload = Buffer.concat([P.toBuffer('le', 32), N.encode()])
     assert(payload.length === 64)
     const checksum = createKeccak('keccak256')
       .update(payload)
