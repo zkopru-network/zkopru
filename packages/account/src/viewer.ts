@@ -16,14 +16,14 @@ export class ZkViewer {
     // Public viewing key, public nullifier seed
     const N = Point.BASE8.mul(n)
     // Public spending key
-    const S = Fp.from(
+    const PubSK = Fp.from(
       poseidon([
         this.A.x.toBigInt(),
         this.A.y.toBigInt(),
         this.n.toBigInt(),
       ]).toString(),
     )
-    this.zkAddress = ZkAddress.from(S, N)
+    this.zkAddress = ZkAddress.from(PubSK, N)
   }
 
   getEdDSAPubKey(): Point {

@@ -4,9 +4,9 @@ import createKeccak from 'keccak'
 import assert from 'assert'
 
 export class ZkAddress {
-  private P: Fp
+  private PubSK: Fp // public spending key = poseidon(Ax, Ay, n)
 
-  private N: Point
+  private N: Point // public viewing key = nB where n is the nullifier seed and also the viewing key
 
   private address: string
 
@@ -20,13 +20,13 @@ export class ZkAddress {
       .slice(0, 4)
     if (!checksum.equals(decoded.slice(64)))
       throw Error('Checksum does not match')
-    this.P = new Fp(decoded.slice(0, 32), undefined, 'le')
+    this.PubSK = new Fp(decoded.slice(0, 32), undefined, 'le')
     this.N = Point.decode(decoded.slice(32, 64))
     this.address = addr
   }
 
   spendingPubKey(): Fp {
-    return this.P
+    return this.PubSK
   }
 
   viewingPubKey(): Point {
@@ -41,8 +41,8 @@ export class ZkAddress {
     return this.toString() === addr.toString()
   }
 
-  static from(P: Fp, N: Point): ZkAddress {
-    const payload = Buffer.concat([P.toBuffer('le', 32), N.encode()])
+  static from(PubSK: Fp, N: Point): ZkAddress {
+    const payload = Buffer.concat([PubSK.toBuffer('le', 32), N.encode()])
     assert(payload.length === 64)
     const checksum = createKeccak('keccak256')
       .update(payload)
