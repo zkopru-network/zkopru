@@ -18,15 +18,16 @@
   ],
   "scripts": {
     "prebuild": "shx mkdir -p dist",
-    "phase1:pull": "node dist/pull-phase1.js",
+    "phase1:pull": "ts-node src/pull-phase1.ts",
     "phase1:build": "./script/powers_of_tau_phase_1.sh",
-    "phase2:pull": "node dist/pull-keys.js",
-    "phase2:build": "node dist/build-keys.js",
-    "build-keys": "node dist/build-keys.js",
+    "phase2:pull": "ts-node src/pull-keys.ts",
+    "phase2:build": "ts-node src/build-keys.ts",
+    "build-keys": "ts-node src/build-keys.ts",
     "postbuild-keys": "copyfiles -f keys/vks/* ../contracts/keys/vks",
-    "setup": "yarn phase1:pull && yarn phase2:pull",
-    "circuit": "./script/compile_circuits.sh", 
-    "build:circuit": "yarn phase1:pull && yarn circuit && yarn phase2:build",
+    "compile": "./script/compile_circuits.sh",
+    "setup": "yarn setup:pull",
+    "setup:pull": "yarn phase1:pull && yarn phase2:pull",
+    "setup:build": "yarn phase1:pull && yarn compile && yarn phase2:build",
     "build": "tsc --build tsconfig.build.json",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "link-modules": "link-module-alias",
@@ -37,7 +38,7 @@
     "coverage": "jest --coverage",
     "coverage:show": "live-server coverage",
     "dev": "ts-node-dev -r tsconfig-paths/register src/index.ts",
-    "start": "node dist/index.js"
+    "start": "ts-node index.ts"
   },
   "dependencies": {
     "circom": "0.5.42",

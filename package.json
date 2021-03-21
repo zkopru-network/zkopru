@@ -19,7 +19,7 @@
     "build": "lerna run build:contract && lerna run build:prisma && yarn build:ts",
     "build:ts": "lerna run --parallel build && yarn link-modules",
     "build:ts:serial": "lerna run build && yarn link-modules",
-    "build:circuit": "lerna run build:circuit",
+    "circuit:setup": "lerna run setup:build",
     "build:prisma": "lerna run build:prisma",
     "build:contract": "lerna run --parallel build:contract",
     "build:keys": "lerna run build-keys --scope=@zkopru/dataset",

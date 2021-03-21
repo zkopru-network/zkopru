@@ -10,7 +10,7 @@ PHASE_1_FINAL=$PTAU_ARTIFACTS/pot17_final.ptau
 cd $WORK_DIR
 mkdir -p $VK_ARTIFACTS
 mkdir -p $ZKEY_ARTIFACTS
-MAX_JOB=1
+MAX_JOB=$(nproc)
 i=0
 
 phase2() {
@@ -20,7 +20,7 @@ phase2() {
     snarkjs zkey contribute "$ZKEY_ARTIFACTS/$circuit"_0000.zkey "$ZKEY_ARTIFACTS/$circuit"_0001.zkey --name="1st Contributor Name" -v -e="random entropy 1" # Testing purpose
     snarkjs zkey contribute "$ZKEY_ARTIFACTS/$circuit"_0001.zkey "$ZKEY_ARTIFACTS/$circuit"_0002.zkey --name="2nd Contributor Name" -v -e="random entropy 2" # Testing purpose
     snarkjs zkey verify "$CIRCUIT_ARTIFACTS/$circuit".r1cs $PHASE_1_FINAL "$ZKEY_ARTIFACTS/$circuit"_0002.zkey
-    snarkjs zkey beacon "$ZKEY_ARTIFACTS/$circuit"_0002.zkey "$ZKEY_ARTIFACTS/$circuit".final.zkey 0102030405060708090a0b0c0d0e0f101112131415161717191a1b1c1d1e1f 10 -n="Final Beacon phase2"
+    snarkjs zkey beacon "$ZKEY_ARTIFACTS/$circuit"_0002.zkey "$ZKEY_ARTIFACTS/$circuit".final.zkey 0102030405060708090a0b0c0d0e0f101112131415161717191a1b1c1d1e1f 10 -n="Final Beacon phase2 - circuit $i"
     snarkjs zkey verify "$CIRCUIT_ARTIFACTS/$circuit".r1cs $PHASE_1_FINAL "$ZKEY_ARTIFACTS/$circuit".final.zkey
     TMP_DIR="build/tmp/$circuit"
     mkdir -p $TMP_DIR
