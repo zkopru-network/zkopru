@@ -169,16 +169,9 @@ contract UserInteractable is Storage {
 
         //TODO: require(fee >= specified fee);
         // Validate the note is same with the hash result
-        uint256[] memory assetHashInputs = new uint256[](4);
-        assetHashInputs[0] = eth;
-        assetHashInputs[1] = uint256(token);
-        assetHashInputs[2] = amount; //erc20 amount
-        assetHashInputs[3] = nft;
+        uint256[4] memory assetHashInputs = [eth, uint256(token), amount, nft];
         uint256 assetHash = Poseidon4.poseidon(assetHashInputs);
-        uint256[] memory resultHashInputs = new uint256[](3);
-        resultHashInputs[0] = spendingPubKey;
-        resultHashInputs[1] = salt;
-        resultHashInputs[2] = assetHash;
+        uint256[3] memory resultHashInputs = [spendingPubKey, salt, assetHash];
         uint256 note = Poseidon3.poseidon(resultHashInputs);
         // Receive token
         if (token != address(0) && amount != 0) {

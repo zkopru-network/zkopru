@@ -40,8 +40,8 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "circom": "0.5.28",
-    "circomlib": "0.2.4",
+    "circom": "0.5.42",
+    "circomlib": "0.5.1",
     "snarkjs": "0.3.33",
     "tar": "^6.0.2"
   },
