@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity = 0.7.4;
+pragma solidity =0.7.4;
 
 import { Storage } from "../../storage/Storage.sol";
-import {
-    Block,
-    MassDeposit,
-    Types
-} from "../../libraries/Types.sol";
+import { Block, MassDeposit, Types } from "../../libraries/Types.sol";
 import { Deserializer } from "../../libraries/Deserializer.sol";
-import { IDepositValidator } from "../../interfaces/validators/IDepositValidator.sol";
+import {
+    IDepositValidator
+} from "../../interfaces/validators/IDepositValidator.sol";
 
 contract DepositValidator is Storage, IDepositValidator {
     using Types for MassDeposit;
@@ -19,14 +17,14 @@ contract DepositValidator is Storage, IDepositValidator {
      * @param index Index of the mass deposit in the block body's mass deposit array
      */
     function validateMassDeposit(bytes calldata, uint256 index)
-    external
-    view
-    override
-    returns (bool slash, string memory reason)
+        external
+        view
+        override
+        returns (bool slash, string memory reason)
     {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         MassDeposit memory massDeposit = _block.body.massDeposits[index];
-        if(chain.committedDeposits[massDeposit.hash()] == 0) {
+        if (chain.committedDeposits[massDeposit.hash()] == 0) {
             // code D1: "This deposit queue is not committed"
             return (true, "D1");
         }

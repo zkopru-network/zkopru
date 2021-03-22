@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity = 0.7.4;
+pragma solidity =0.7.4;
 
 import { Storage } from "./storage/Storage.sol";
 import { IConfigurable } from "./interfaces/IConfigurable.sol";
@@ -31,7 +31,7 @@ contract Proxy is Storage {
      *              - INullifierTreeChallenge.sol
      *              - ITxChallenge.sol
      */
-    fallback () external payable virtual {
+    fallback() external payable {
         address addr = Storage.proxied[msg.sig];
         require(addr != address(0), "There is no proxy contract");
         (bool success, bytes memory result) = addr.delegatecall(msg.data);
@@ -40,9 +40,8 @@ contract Proxy is Storage {
 
     /**
      * @dev See Coordinatable.sol's register() function
-    */
-    receive() external payable {
-    }
+     */
+    receive() external payable {}
 
     function _connectConfigurable(address addr) internal virtual {
         _connect(addr, IConfigurable(0).setMaxBlockSize.selector);

@@ -4,10 +4,12 @@
     "**/.git/subtree-cache/**": true,
     "**/.hg/store/**": true
   },
-  "jest.runAllTestsFirst": false,
-  "jest.autoEnable": false,
-  "jest.showCoverageOnLoad": false,
   "solidity.packageDefaultDependenciesDirectory": "node_modules",
   "solidity.packageDefaultDependenciesContractsDirectory": "",
-  "solidity.compileUsingRemoteVersion": "v0.7.4+commit.3f05b770"
+  "solidity.compileUsingRemoteVersion": "v0.7.4+commit.3f05b770",
+  "solidity.linter": "solium",
+  "[solidity]": {
+    "editor.defaultFormatter": "JuanBlanco.solidity"
+  },
+  "editor.formatOnSave": true
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity = 0.7.4;
+pragma solidity =0.7.4;
 
 import { Storage } from "../../storage/Storage.sol";
 import { SMT254 } from "../../libraries/SMT.sol";
@@ -13,7 +13,9 @@ import {
     Types
 } from "../../libraries/Types.sol";
 import { Deserializer } from "../../libraries/Deserializer.sol";
-import { INullifierTreeValidator } from "../../interfaces/validators/INullifierTreeValidator.sol";
+import {
+    INullifierTreeValidator
+} from "../../interfaces/validators/INullifierTreeValidator.sol";
 
 contract NullifierTreeValidator is Storage, INullifierTreeValidator {
     using Types for Header;
@@ -30,15 +32,13 @@ contract NullifierTreeValidator is Storage, INullifierTreeValidator {
         bytes calldata,
         uint256 numOfNullifiers,
         bytes32[254][] calldata siblings
-    )
-    external
-    pure
-    override
-    returns (bool slash, string memory reason)
-    {
+    ) external pure override returns (bool slash, string memory reason) {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         Header memory _parentHeader = Deserializer.headerFromCalldataAt(1);
-        require(_block.header.parentBlock == _parentHeader.hash(), "Invalid prev header");
+        require(
+            _block.header.parentBlock == _parentHeader.hash(),
+            "Invalid prev header"
+        );
         // Assign a new array
         bytes32[] memory nullifiers = new bytes32[](numOfNullifiers);
         // Get outputs to append
@@ -52,11 +52,8 @@ contract NullifierTreeValidator is Storage, INullifierTreeValidator {
         require(index == numOfNullifiers, "Invalid numOfNullifier");
 
         // Get rolled up root
-        bytes32 computedRoot = SMT254.fill(
-            _parentHeader.nullifierRoot,
-            nullifiers,
-            siblings
-        );
+        bytes32 computedRoot =
+            SMT254.fill(_parentHeader.nullifierRoot, nullifiers, siblings);
         // Computed new nullifier root is different with the submitted
         // code N1: Nullifier root is different
         return (_block.header.nullifierRoot != computedRoot, "N1");

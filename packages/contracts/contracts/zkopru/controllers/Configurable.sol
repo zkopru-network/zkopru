@@ -1,12 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity = 0.7.4;
+pragma solidity =0.7.4;
 
 import { Storage } from "../storage/Storage.sol";
 import { Deserializer } from "../libraries/Deserializer.sol";
-import {
-    Proposer,
-    Proposal
-} from "../libraries/Types.sol";
+import { Proposer, Proposal } from "../libraries/Types.sol";
 
 contract Configurable is Storage {
     event Update(string name, uint256 value);

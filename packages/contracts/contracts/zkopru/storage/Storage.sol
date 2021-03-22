@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity = 0.7.4;
+pragma solidity =0.7.4;
 
 import "../libraries/Types.sol";
 import { Pairing } from "../libraries/Pairing.sol";
@@ -13,14 +13,14 @@ contract Storage is Config {
     Blockchain chain;
 
     // Addresses where to execute the given function call
-    mapping(bytes4=>address) public proxied;
+    mapping(bytes4 => address) public proxied;
 
     // Addresses of onchain validation contracts
-    mapping(bytes4=>address) public validators;
+    mapping(bytes4 => address) public validators;
 
     // SNARK verifying keys assigned by the setup wizard for each tx type
-    mapping(uint256=>SNARK.VerifyingKey) vks;
+    mapping(uint256 => SNARK.VerifyingKey) vks;
 
     // Addresses allowed to migrate from. Setup wizard manages the list
-    mapping(address=>bool) public allowedMigrants;
+    mapping(address => bool) public allowedMigrants;
 }

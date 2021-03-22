@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity = 0.7.4;
+pragma solidity =0.7.4;
 
 import { Storage } from "../../storage/Storage.sol";
 import {
@@ -10,7 +10,9 @@ import {
     Types
 } from "../../libraries/Types.sol";
 import { Deserializer } from "../../libraries/Deserializer.sol";
-import { IHeaderValidator } from "../../interfaces/validators/IHeaderValidator.sol";
+import {
+    IHeaderValidator
+} from "../../interfaces/validators/IHeaderValidator.sol";
 
 contract HeaderValidator is Storage, IHeaderValidator {
     using Types for MassDeposit[];
@@ -22,14 +24,17 @@ contract HeaderValidator is Storage, IHeaderValidator {
      * @param // blockData Serialized block data
      */
     function validateDepositRoot(bytes calldata)
-    external
-    pure
-    override
-    returns (bool slash, string memory reason)
+        external
+        pure
+        override
+        returns (bool slash, string memory reason)
     {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         // code H1: Header has invalid deposit root
-        return (_block.header.depositRoot != _block.body.massDeposits.root(), "H1");
+        return (
+            _block.header.depositRoot != _block.body.massDeposits.root(),
+            "H1"
+        );
     }
 
     /**
@@ -39,10 +44,10 @@ contract HeaderValidator is Storage, IHeaderValidator {
      * @param // blockData Serialized block data
      */
     function validateTxRoot(bytes calldata)
-    external
-    pure
-    override
-    returns (bool slash, string memory reason)
+        external
+        pure
+        override
+        returns (bool slash, string memory reason)
     {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         // code H2: Header has invalid transaction root
@@ -56,14 +61,17 @@ contract HeaderValidator is Storage, IHeaderValidator {
      * @param // blockData Serialized block data
      */
     function validateMigrationRoot(bytes calldata)
-    external
-    pure
-    override
-    returns (bool slash, string memory reason)
+        external
+        pure
+        override
+        returns (bool slash, string memory reason)
     {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         // code H3: Header has invalid migration root
-        return (_block.header.migrationRoot != _block.body.massMigrations.root(), "H3");
+        return (
+            _block.header.migrationRoot != _block.body.massMigrations.root(),
+            "H3"
+        );
     }
 
     /**
@@ -72,17 +80,17 @@ contract HeaderValidator is Storage, IHeaderValidator {
      * @param // blockData Serialized block data
      */
     function validateTotalFee(bytes calldata)
-    external
-    pure
-    override
-    returns (bool slash, string memory reason)
+        external
+        pure
+        override
+        returns (bool slash, string memory reason)
     {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         uint256 totalFee = 0;
-        for (uint256 i = 0; i < _block.body.massDeposits.length; i ++) {
+        for (uint256 i = 0; i < _block.body.massDeposits.length; i++) {
             totalFee += _block.body.massDeposits[i].fee;
         }
-        for (uint256 i = 0; i < _block.body.txs.length; i ++) {
+        for (uint256 i = 0; i < _block.body.txs.length; i++) {
             totalFee += _block.body.txs[i].fee;
         }
         // FYI, fee in the massMigration is for the destination contract
@@ -95,10 +103,10 @@ contract HeaderValidator is Storage, IHeaderValidator {
      * @param // blockData Serialized block data
      */
     function validateParentBlock(bytes calldata)
-    external
-    view
-    override
-    returns (bool slash, string memory reason)
+        external
+        view
+        override
+        returns (bool slash, string memory reason)
     {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         // code H5: Parent block is a slasehd block.

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity = 0.7.4;
+pragma solidity =0.7.4;
 pragma experimental ABIEncoderV2;
 
 import { Pairing, G1Point, G2Point } from "./Pairing.sol";
@@ -7,7 +7,7 @@ import { Proof } from "./Types.sol";
 
 library SNARK {
     using Pairing for *;
-    
+
     struct VerifyingKey {
         G1Point alpha1;
         G2Point beta2;
@@ -16,11 +16,17 @@ library SNARK {
         G1Point[] ic;
     }
 
-    uint256 constant SNARK_SCALAR_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
-    uint256 constant PRIME_Q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
+    uint256 constant SNARK_SCALAR_FIELD =
+        21888242871839275222246405745257275088548364400416034343698204186575808495617;
+    uint256 constant PRIME_Q =
+        21888242871839275222246405745257275088696311157297823662689037894645226208583;
 
-    function verify(VerifyingKey memory vk, uint256[] memory input, Proof memory proof) internal view returns (bool) {
-        require(input.length + 1 == vk.ic.length,"verifier-bad-input");
+    function verify(
+        VerifyingKey memory vk,
+        uint256[] memory input,
+        Proof memory proof
+    ) internal view returns (bool) {
+        require(input.length + 1 == vk.ic.length, "verifier-bad-input");
         // Compute the linear combination vkX
         G1Point memory vkX = G1Point(0, 0);
 
@@ -38,19 +44,23 @@ library SNARK {
         require(proof.c.Y < PRIME_Q, "verifier-cY-gte-prime-q");
 
         for (uint256 i = 0; i < input.length; i++) {
-            require(input[i] < SNARK_SCALAR_FIELD,"verifier-gte-snark-scalar-field");
+            require(
+                input[i] < SNARK_SCALAR_FIELD,
+                "verifier-gte-snark-scalar-field"
+            );
             vkX = Pairing.plus(vkX, Pairing.scalar_mul(vk.ic[i + 1], input[i]));
         }
         vkX = Pairing.plus(vkX, vk.ic[0]);
-        return Pairing.pairing(
-            Pairing.negate(proof.a),
-            proof.b,
-            vk.alpha1,
-            vk.beta2,
-            vkX,
-            vk.gamma2,
-            proof.c,
-            vk.delta2
-        );
+        return
+            Pairing.pairing(
+                Pairing.negate(proof.a),
+                proof.b,
+                vk.alpha1,
+                vk.beta2,
+                vkX,
+                vk.gamma2,
+                proof.c,
+                vk.delta2
+            );
     }
 }
