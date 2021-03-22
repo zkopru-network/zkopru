@@ -1,4 +1,4 @@
-import { Field, F } from '@zkopru/babyjubjub'
+import { Fp, F } from '@zkopru/babyjubjub'
 import { ZkAddress } from './zk-address'
 import { Utxo } from './utxo'
 import { TxBuilder } from './tx-builder'
@@ -9,7 +9,7 @@ export class SwapTxBuilder extends TxBuilder {
   }
 
   weiPerByte(val: F): SwapTxBuilder {
-    this.feePerByte = Field.from(val)
+    this.feePerByte = Fp.from(val)
     return this
   }
 
@@ -76,7 +76,7 @@ export class SwapTxBuilder extends TxBuilder {
     return this
   }
 
-  receiveEther(amount: Field, salt: F): SwapTxBuilder {
+  receiveEther(amount: Fp, salt: F): SwapTxBuilder {
     this.swap = Utxo.newEtherNote({
       eth: amount,
       owner: this.changeTo,

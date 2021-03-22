@@ -5,7 +5,7 @@ import { WebsocketProvider, Account } from 'web3-core'
 import { Address } from 'soltypes'
 import { MockupDB, DB } from '~prisma'
 import { ZkAccount, HDWallet } from '~account'
-import { sleep, readFromContainer, pullOrBuildAndGetContainer } from '~utils'
+import { sleep, readFromContainer, buildAndGetContainer } from '~utils'
 import { DEFAULT } from '~cli/apps/coordinator/config'
 import { L1Contract, FullNode } from '~core'
 import { Coordinator } from '~coordinator'
@@ -85,11 +85,11 @@ async function getContainers(): Promise<{
   layer1Container: Container
   circuitArtifactContainer: Container
 }> {
-  const layer1Container = await pullOrBuildAndGetContainer({
+  const layer1Container = await buildAndGetContainer({
     compose: [__dirname, '../../../../dockerfiles'],
     service: 'contracts-for-integration-test',
   })
-  const circuitArtifactContainer = await pullOrBuildAndGetContainer({
+  const circuitArtifactContainer = await buildAndGetContainer({
     compose: [__dirname, '../../../../dockerfiles'],
     service: 'circuits',
   })
@@ -213,6 +213,7 @@ async function getCoordinator(
   const coordinator = new Coordinator(fullNode, account, {
     maxBytes,
     priceMultiplier, // 32 gas is the current default price for 1 byte
+    vhosts: '*',
     port,
     maxBid: 20000,
     bootstrap: false,

@@ -1,12 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity = 0.6.12;
+pragma solidity =0.7.4;
 
 import { Storage } from "../storage/Storage.sol";
 import { Deserializer } from "../libraries/Deserializer.sol";
-import {
-    Proposer,
-    Proposal
-} from "../libraries/Types.sol";
+import { Proposer, Proposal } from "../libraries/Types.sol";
 
 contract Challengeable is Storage {
     event Slash(bytes32 blockHash, address proposer, string reason);
@@ -41,10 +38,16 @@ contract Challengeable is Storage {
         // Check validation gas limit
         bool gasExceeds = usedGasForValidation > MAX_VALIDATION_GAS;
         if (gasExceeds) {
-            (slash, reason) = (true, "Exceeds maximum gas for validation process");
+            (slash, reason) = (
+                true,
+                "Exceeds maximum gas for validation process"
+            );
         }
         // Execute slash
-        require(slash, success ? "Couldn't find slash condition" : string(result));
+        require(
+            slash,
+            success ? "Couldn't find slash condition" : string(result)
+        );
         _execute(reason);
     }
 
@@ -73,17 +76,22 @@ contract Challengeable is Storage {
     // Duplicated codes: solidity does not allow linear inheritance
     function _checkChallengeCondition(Proposal storage proposal) internal view {
         // Check the optimistic roll up is in the challenge period
-        require(proposal.challengeDue > block.number, "Out of challenge period");
+        require(
+            proposal.challengeDue > block.number,
+            "Out of challenge period"
+        );
         // Check it is already slashed
         require(!Storage.chain.slashed[proposal.headerHash], "Already slashed");
         // Check the optimistic rollup exists
         require(proposal.headerHash != bytes32(0), "Does not exist");
     }
 
-    function _forfeitAndReward(address proposerAddr, address challenger) internal {
+    function _forfeitAndReward(address proposerAddr, address challenger)
+        internal
+    {
         Proposer storage proposer = Storage.chain.proposers[proposerAddr];
         // Reward
-        uint256 challengeReward = proposer.stake * 2 / 3;
+        uint256 challengeReward = (proposer.stake * 2) / 3;
         payable(challenger).transfer(challengeReward);
         // Forfeit
         proposer.stake = 0;

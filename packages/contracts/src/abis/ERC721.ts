@@ -1,8 +1,8 @@
 export const ERC721ABI = [
   {
     inputs: [
-      { internalType: 'string', name: 'name', type: 'string' },
-      { internalType: 'string', name: 'symbol', type: 'string' },
+      { internalType: 'string', name: 'name_', type: 'string' },
+      { internalType: 'string', name: 'symbol_', type: 'string' },
     ],
     stateMutability: 'nonpayable',
     type: 'constructor',

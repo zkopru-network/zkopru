@@ -1,34 +1,34 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { soliditySha3Raw } from 'web3-utils'
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import * as Utils from '@zkopru/utils'
 import { Bytes32, Uint256 } from 'soltypes'
 import { OutflowType } from './note'
 
 export interface ZkInflow {
-  nullifier: Field
-  root: Field
+  nullifier: Fp
+  root: Fp
 }
 
 export interface ZkOutflow {
-  note: Field
-  outflowType: Field
+  note: Fp
+  outflowType: Fp
   data?: PublicData
 }
 
 export interface PublicData {
-  to: Field
-  eth: Field
-  tokenAddr: Field
-  erc20Amount: Field
-  nft: Field
-  fee: Field
+  to: Fp
+  eth: Fp
+  tokenAddr: Fp
+  erc20Amount: Fp
+  nft: Fp
+  fee: Fp
 }
 
 export interface SNARK {
-  pi_a: Field[]
-  pi_b: Field[][]
-  pi_c: Field[]
+  pi_a: Fp[]
+  pi_b: Fp[][]
+  pi_c: Fp[]
 }
 
 export class ZkTx {
@@ -36,11 +36,11 @@ export class ZkTx {
 
   outflow: ZkOutflow[]
 
-  fee: Field
+  fee: Fp
 
   proof?: SNARK
 
-  swap?: Field
+  swap?: Fp
 
   memo?: Buffer
 
@@ -59,9 +59,9 @@ export class ZkTx {
   }: {
     inflow: ZkInflow[]
     outflow: ZkOutflow[]
-    fee: Field
+    fee: Fp
     proof?: SNARK
-    swap?: Field
+    swap?: Fp
     memo?: Buffer
   }) {
     this.inflow = inflow
@@ -204,31 +204,31 @@ export class ZkTx {
     signal input fee; // tx fee
     signal input swap; // for atomic swap
      */
-    const signals: Field[] = [
+    const signals: Fp[] = [
       ...this.inflow.map(inflow => inflow.root),
       ...this.inflow.map(inflow => inflow.nullifier),
       ...this.outflow.map(outflow => outflow.note),
       ...this.outflow.map(outflow => outflow.outflowType),
       ...this.outflow.map(outflow =>
-        outflow.data ? outflow.data.to : Field.zero,
+        outflow.data ? outflow.data.to : Fp.zero,
       ),
       ...this.outflow.map(outflow =>
-        outflow.data ? outflow.data.eth : Field.zero,
+        outflow.data ? outflow.data.eth : Fp.zero,
       ),
       ...this.outflow.map(outflow =>
-        outflow.data ? outflow.data.tokenAddr : Field.zero,
+        outflow.data ? outflow.data.tokenAddr : Fp.zero,
       ),
       ...this.outflow.map(outflow =>
-        outflow.data ? outflow.data.erc20Amount : Field.zero,
+        outflow.data ? outflow.data.erc20Amount : Fp.zero,
       ),
       ...this.outflow.map(outflow =>
-        outflow.data ? outflow.data.nft : Field.zero,
+        outflow.data ? outflow.data.nft : Fp.zero,
       ),
       ...this.outflow.map(outflow =>
-        outflow.data ? outflow.data.fee : Field.zero,
+        outflow.data ? outflow.data.fee : Fp.zero,
       ),
       this.fee,
-      this.swap ? this.swap : Field.zero,
+      this.swap ? this.swap : Fp.zero,
     ]
     return signals.map(f => f.toBigInt())
   }
@@ -240,8 +240,8 @@ export class ZkTx {
     const nIn = queue.dequeue(1)[0]
     zkTx.inflow = []
     for (let i = 0; i < nIn; i += 1) {
-      const root = Field.fromBuffer(queue.dequeue(32))
-      const nullifier = Field.fromBuffer(queue.dequeue(32))
+      const root = Fp.fromBuffer(queue.dequeue(32))
+      const nullifier = Fp.fromBuffer(queue.dequeue(32))
       zkTx.inflow.push({
         root,
         nullifier,
@@ -251,19 +251,19 @@ export class ZkTx {
     const nOut = queue.dequeue(1)[0]
     zkTx.outflow = []
     for (let i = 0; i < nOut; i += 1) {
-      const note = Field.fromBuffer(queue.dequeue(32))
-      const outflowType = Field.from(queue.dequeue(1)[0])
+      const note = Fp.fromBuffer(queue.dequeue(32))
+      const outflowType = Fp.from(queue.dequeue(1)[0])
       if (!outflowType.isZero()) {
         zkTx.outflow.push({
           note,
           outflowType,
           data: {
-            to: Field.fromBuffer(queue.dequeue(20)),
-            eth: Field.fromBuffer(queue.dequeue(32)),
-            tokenAddr: Field.fromBuffer(queue.dequeue(20)),
-            erc20Amount: Field.fromBuffer(queue.dequeue(32)),
-            nft: Field.fromBuffer(queue.dequeue(32)),
-            fee: Field.fromBuffer(queue.dequeue(32)),
+            to: Fp.fromBuffer(queue.dequeue(20)),
+            eth: Fp.fromBuffer(queue.dequeue(32)),
+            tokenAddr: Fp.fromBuffer(queue.dequeue(20)),
+            erc20Amount: Fp.fromBuffer(queue.dequeue(32)),
+            nft: Fp.fromBuffer(queue.dequeue(32)),
+            fee: Fp.fromBuffer(queue.dequeue(32)),
           },
         })
       } else {
@@ -274,33 +274,33 @@ export class ZkTx {
       }
     }
     // Fee
-    zkTx.fee = Field.fromBuffer(queue.dequeue(32))
+    zkTx.fee = Fp.fromBuffer(queue.dequeue(32))
     // SNARK
     zkTx.proof = {
       pi_a: [
-        Field.fromBuffer(queue.dequeue(32)),
-        Field.fromBuffer(queue.dequeue(32)),
+        Fp.fromBuffer(queue.dequeue(32)),
+        Fp.fromBuffer(queue.dequeue(32)),
       ],
       // caution: snarkjs G2Point is reversed
       pi_b: [
         [
-          Field.fromBuffer(queue.dequeue(32)),
-          Field.fromBuffer(queue.dequeue(32)),
+          Fp.fromBuffer(queue.dequeue(32)),
+          Fp.fromBuffer(queue.dequeue(32)),
         ].reverse(),
         [
-          Field.fromBuffer(queue.dequeue(32)),
-          Field.fromBuffer(queue.dequeue(32)),
+          Fp.fromBuffer(queue.dequeue(32)),
+          Fp.fromBuffer(queue.dequeue(32)),
         ].reverse(),
       ],
       pi_c: [
-        Field.fromBuffer(queue.dequeue(32)),
-        Field.fromBuffer(queue.dequeue(32)),
+        Fp.fromBuffer(queue.dequeue(32)),
+        Fp.fromBuffer(queue.dequeue(32)),
       ],
     }
     // Swap
     const swapAndMemo = queue.dequeue(1)[0]
     if (swapAndMemo & 1) {
-      zkTx.swap = Field.fromBuffer(queue.dequeue(32))
+      zkTx.swap = Fp.fromBuffer(queue.dequeue(32))
     }
     // Memo
     if (swapAndMemo & (1 << 1)) {
@@ -319,8 +319,8 @@ export class ZkTx {
     protocol: string
   } {
     if (!this.proof) throw Error('Does not have SNARK proof')
-    const bigOne = Field.from(1).toBigInt()
-    const bigZero = Field.zero.toBigInt()
+    const bigOne = Fp.from(1).toBigInt()
+    const bigZero = Fp.zero.toBigInt()
     return {
       pi_a: [...this.proof.pi_a.map(f => f.toBigInt()), bigOne],
       pi_b: [

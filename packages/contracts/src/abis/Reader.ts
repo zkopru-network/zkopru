@@ -231,7 +231,7 @@ export const ReaderABI = [
     outputs: [
       { internalType: 'bytes32', name: 'header', type: 'bytes32' },
       { internalType: 'uint256', name: 'challengeDue', type: 'uint256' },
-      { internalType: 'bool', name: 'slashed', type: 'bool' },
+      { internalType: 'bool', name: 'isSlashed', type: 'bool' },
     ],
     stateMutability: 'view',
     type: 'function',

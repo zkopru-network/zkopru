@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { logger, hexify } from '@zkopru/utils'
 import AsyncLock from 'async-lock'
 import BN from 'bn.js'
@@ -20,7 +20,7 @@ export interface GroveConfig {
   nullifierTreeDepth: number
   utxoSubTreeSize: number
   withdrawalSubTreeSize: number
-  utxoHasher: Hasher<Field>
+  utxoHasher: Hasher<Fp>
   withdrawalHasher: Hasher<BN>
   nullifierHasher: Hasher<BN>
   fullSync?: boolean
@@ -31,14 +31,14 @@ export interface GroveConfig {
 
 export interface GrovePatch {
   header?: string
-  utxos: Leaf<Field>[]
+  utxos: Leaf<Fp>[]
   withdrawals: Leaf<BN>[]
-  nullifiers: Field[]
+  nullifiers: Fp[]
 }
 
 export interface GroveSnapshot {
-  utxoTreeIndex: Field
-  utxoTreeRoot: Field
+  utxoTreeIndex: Fp
+  utxoTreeRoot: Fp
   withdrawalTreeIndex: BN
   withdrawalTreeRoot: BN
   nullifierTreeRoot?: BN
@@ -67,7 +67,7 @@ export class Grove {
     utxoStartingLeafProof,
     withdrawalStartingLeafProof,
   }: {
-    utxoStartingLeafProof: MerkleProof<Field>
+    utxoStartingLeafProof: MerkleProof<Fp>
     withdrawalStartingLeafProof: MerkleProof<BN>
   }) {
     logger.info('Applied bootstrap')
@@ -247,15 +247,15 @@ export class Grove {
    * @param utxos utxos to append
    * @returns treeId of appended to
    */
-  private async appendUTXOs(utxos: Leaf<Field>[]): Promise<string> {
+  private async appendUTXOs(utxos: Leaf<Fp>[]): Promise<string> {
     const totalItemLen =
       this.config.utxoSubTreeSize *
       Math.ceil(utxos.length / this.config.utxoSubTreeSize)
 
-    const fixedSizeUtxos: Leaf<Field>[] = Array(totalItemLen).fill({
-      hash: Field.zero,
+    const fixedSizeUtxos: Leaf<Fp>[] = Array(totalItemLen).fill({
+      hash: Fp.zero,
     })
-    utxos.forEach((item: Leaf<Field>, index: number) => {
+    utxos.forEach((item: Leaf<Fp>, index: number) => {
       fixedSizeUtxos[index] = item
     })
     if (!this.utxoTree) throw Error('Grove is not initialized')
@@ -305,7 +305,7 @@ export class Grove {
     }
   }
 
-  async utxoMerkleProof(hash: Field): Promise<MerkleProof<Field>> {
+  async utxoMerkleProof(hash: Fp): Promise<MerkleProof<Fp>> {
     const utxo = await this.db.read(prisma =>
       prisma.utxo.findOne({
         where: { hash: hash.toString(10) },
@@ -319,23 +319,23 @@ export class Grove {
       this.utxoTree.metadata.id,
       utxo.index,
     )
-    let root: Field = this.utxoTree.root()
+    let root: Fp = this.utxoTree.root()
     const siblings = [...this.config.utxoHasher.preHash.slice(0, -1)]
     cachedSiblings.forEach((obj: TreeNode) => {
       const level =
         1 +
         this.config.utxoTreeDepth -
-        Field.from(obj.nodeIndex || 0).toString(2).length
+        Fp.from(obj.nodeIndex || 0).toString(2).length
       if (level === this.config.utxoTreeDepth) {
-        root = Field.from(obj.value)
+        root = Fp.from(obj.value)
       } else {
-        siblings[level] = Field.from(obj.value)
+        siblings[level] = Fp.from(obj.value)
       }
     })
     const proof = {
       root,
-      index: Field.from(utxo.index),
-      leaf: Field.from(utxo.hash),
+      index: Fp.from(utxo.index),
+      leaf: Fp.from(utxo.hash),
       siblings,
     }
     const isValid = verifyProof(this.config.utxoHasher, proof)
@@ -386,12 +386,12 @@ export class Grove {
   }
 
   private async bootstrapUtxoTree(
-    proof?: MerkleProof<Field>,
+    proof?: MerkleProof<Fp>,
   ): Promise<{ treeSql: LightTree; tree: UtxoTree }> {
     const hasher = this.config.utxoHasher
-    let root: Field
-    let index: Field
-    let siblings: Field[]
+    let root: Fp
+    let index: Fp
+    let siblings: Fp[]
 
     if (proof) {
       root = proof.root
@@ -402,7 +402,7 @@ export class Grove {
       }
     } else {
       root = genesisRoot(hasher)
-      index = Field.zero
+      index = Fp.zero
       siblings = hasher.preHash.slice(0, -1)
     }
     const data = {

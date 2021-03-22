@@ -9,15 +9,15 @@ const {
   serializeBody,
   serializeFinalization,
 } = require('~core')
-const { Field } = require('~babyjubjub')
+const { Fp } = require('~babyjubjub')
 
 const { expect } = chai
 
 const DeserializationTester = artifacts.require('DeserializationTester')
 
 const compare = (actual, expected) => {
-  expect(Field.from(actual.toString()).toHex()).equal(
-    Field.from(expected.toString()).toHex(),
+  expect(Fp.from(actual.toString()).toHex()).equal(
+    Fp.from(expected.toString()).toHex(),
   )
 }
 

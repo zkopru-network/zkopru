@@ -1,15 +1,15 @@
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import BN from 'bn.js'
 import { Hasher } from './hasher'
 
-export interface MerkleProof<T extends Field | BN> {
+export interface MerkleProof<T extends Fp | BN> {
   root: T
   index: T
   leaf: T
   siblings: T[]
 }
 
-export function verifyProof<T extends Field | BN>(
+export function verifyProof<T extends Fp | BN>(
   hasher: Hasher<T>,
   proof: MerkleProof<T>,
 ): boolean {
@@ -28,7 +28,7 @@ export function verifyProof<T extends Field | BN>(
   return node.eq(proof.root)
 }
 
-export function startingLeafProof<T extends Field | BN>(
+export function startingLeafProof<T extends Fp | BN>(
   hasher: Hasher<T>,
   root: T,
   index: T,

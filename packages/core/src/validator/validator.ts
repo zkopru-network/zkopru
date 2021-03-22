@@ -1,5 +1,5 @@
 import assert from 'assert'
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { Bytes32, Uint256 } from 'soltypes'
 import { logger } from '@zkopru/utils'
 import BN from 'bn.js'
@@ -251,7 +251,7 @@ export abstract class ValidatorBase {
       ...block.body.massDeposits,
     )
     const deposits = retrievedDeposits.map(deposit =>
-      Field.from(deposit.note).toUint256(),
+      Fp.from(deposit.note).toUint256(),
     )
     const startingLeafProof = this.layer2.grove.utxoTree.getStartingLeafProof()
     if (

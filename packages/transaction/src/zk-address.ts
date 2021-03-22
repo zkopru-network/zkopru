@@ -1,12 +1,12 @@
-import { Field, Point } from '@zkopru/babyjubjub'
+import { Fp, Point } from '@zkopru/babyjubjub'
 import base58 from 'bs58'
 import createKeccak from 'keccak'
 import assert from 'assert'
 
 export class ZkAddress {
-  private P: Field
+  private PubSK: Fp // public spending key = poseidon(Ax, Ay, n)
 
-  private N: Point
+  private N: Point // public viewing key = nB where n is the nullifier seed and also the viewing key
 
   private address: string
 
@@ -20,13 +20,13 @@ export class ZkAddress {
       .slice(0, 4)
     if (!checksum.equals(decoded.slice(64)))
       throw Error('Checksum does not match')
-    this.P = Field.fromBuffer(decoded.slice(0, 32))
+    this.PubSK = new Fp(decoded.slice(0, 32), undefined, 'le')
     this.N = Point.decode(decoded.slice(32, 64))
     this.address = addr
   }
 
-  spendingPubKey(): Field {
-    return this.P
+  spendingPubKey(): Fp {
+    return this.PubSK
   }
 
   viewingPubKey(): Point {
@@ -41,15 +41,8 @@ export class ZkAddress {
     return this.toString() === addr.toString()
   }
 
-  static from(P: Field, N: Point): ZkAddress {
-    const to32BytesBuffer = (data: Buffer): Buffer => {
-      const buff = Buffer.alloc(32)
-      data.copy(buff, buff.length - data.length)
-      return buff
-    }
-    const payload = Buffer.concat(
-      [P.toBytes32().toBuffer(), N.encode()].map(to32BytesBuffer),
-    )
+  static from(PubSK: Fp, N: Point): ZkAddress {
+    const payload = Buffer.concat([PubSK.toBuffer('le', 32), N.encode()])
     assert(payload.length === 64)
     const checksum = createKeccak('keccak256')
       .update(payload)
@@ -60,5 +53,5 @@ export class ZkAddress {
     return new ZkAddress(address)
   }
 
-  static null = ZkAddress.from(Field.zero, Point.zero)
+  static null = ZkAddress.from(Fp.zero, Point.zero)
 }

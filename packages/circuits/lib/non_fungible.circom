@@ -8,6 +8,12 @@ template CountSameNFT(n) {
     signal input comp_addr[n];
     signal input comp_nft[n];
     signal output out;
+    // Filter with the given address and find the number of NFTs that have same ID
+    // If we write the same logic in JS, that should be like below
+    //
+    // out = notes
+    //   .filter(note => note.addr == addr)
+    //   .reduce((acc, note) => acc + (note.nft == nft ? 1 : 0))
 
     component counter[n];
     component nft_exist[n];

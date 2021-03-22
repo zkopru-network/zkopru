@@ -1,6 +1,6 @@
 /* eslint-disable jest/no-disabled-tests */
 /* eslint-disable jest/no-hooks */
-import { Field } from '~babyjubjub'
+import { Fp } from '~babyjubjub'
 import { UtxoTree, poseidonHasher, Leaf, verifyProof } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
 import { accounts } from '~dataset/testset-predefined'
@@ -20,18 +20,15 @@ describe('utxo tree unit test', () => {
     await mockup.terminate()
   })
   describe('dryAppend', () => {
-    let prevRoot: Field
+    let prevRoot: Fp
     let result: {
-      root: Field
-      index: Field
-      siblings: Field[]
+      root: Fp
+      index: Fp
+      siblings: Fp[]
     }
     beforeAll(async () => {
       prevRoot = utxoTree.root()
-      const items: Leaf<Field>[] = [
-        { hash: Field.from(1) },
-        { hash: Field.from(2) },
-      ]
+      const items: Leaf<Fp>[] = [{ hash: Fp.from(1) }, { hash: Fp.from(2) }]
       result = await utxoTree.dryAppend(...items)
     })
     it('should not update its root', () => {
@@ -44,23 +41,20 @@ describe('utxo tree unit test', () => {
     })
   })
   describe('append', () => {
-    let prevRoot: Field
+    let prevRoot: Fp
     let dryResult: {
-      root: Field
-      index: Field
-      siblings: Field[]
+      root: Fp
+      index: Fp
+      siblings: Fp[]
     }
     let result: {
-      root: Field
-      index: Field
-      siblings: Field[]
+      root: Fp
+      index: Fp
+      siblings: Fp[]
     }
     beforeAll(async () => {
       prevRoot = utxoTree.root()
-      const items: Leaf<Field>[] = [
-        { hash: Field.from(1) },
-        { hash: Field.from(2) },
-      ]
+      const items: Leaf<Fp>[] = [{ hash: Fp.from(1) }, { hash: Fp.from(2) }]
       dryResult = await utxoTree.dryAppend(...items)
       result = await utxoTree.append(...items)
     }, 30000)
@@ -75,7 +69,7 @@ describe('utxo tree unit test', () => {
     it.todo('should have same result with its solidity version')
   })
   describe('tracking', () => {
-    const items: Leaf<Field>[] = [
+    const items: Leaf<Fp>[] = [
       utxos.utxo1_out_1,
       utxos.utxo1_out_2,
       utxos.utxo2_1_out_1,

@@ -48,7 +48,14 @@ export const IBurnAuctionABI = [
     inputs: [],
     name: 'roundLength',
     outputs: [{ internalType: 'uint32', name: '', type: 'uint32' }],
-    stateMutability: 'view',
+    stateMutability: 'pure',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'minBid',
+    outputs: [{ internalType: 'uint112', name: '', type: 'uint112' }],
+    stateMutability: 'pure',
     type: 'function',
   },
   {

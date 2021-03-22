@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity = 0.6.12;
+pragma solidity =0.7.4;
 pragma experimental ABIEncoderV2;
 
 import { ISetupWizard } from "./interfaces/ISetupWizard.sol";
@@ -119,7 +119,11 @@ contract Zkopru is Proxy, Reader, ISetupWizard {
             2. On the departure contract, execute migrateTo(). See "IMigratable.sol"
      * @param migrants List of contracts' address to allow migrations.
      */
-    function allowMigrants(address[] memory migrants) public override onlyOwner {
+    function allowMigrants(address[] memory migrants)
+        public
+        override
+        onlyOwner
+    {
         for (uint256 i = 0; i < migrants.length; i++) {
             Storage.allowedMigrants[migrants[i]] = true;
         }
@@ -136,29 +140,27 @@ contract Zkopru is Proxy, Reader, ISetupWizard {
         uint256 withdrawalRoot = keccakPreHashes[keccakPreHashes.length - 1];
         bytes32 nullifierRoot = bytes32(0);
         for (uint256 i = 0; i < NULLIFIER_TREE_DEPTH; i++) {
-            nullifierRoot = keccak256(abi.encodePacked(nullifierRoot, nullifierRoot));
+            nullifierRoot = keccak256(
+                abi.encodePacked(nullifierRoot, nullifierRoot)
+            );
         }
         bytes32 parentBlock = blockhash(block.number - 1);
-        Header memory header = Header(
-            msg.sender, // proposer
-            parentBlock,
-            uint256(0),  // total fee
-            utxoRoot, // root of the utxo tree
-            uint256(0), // index of the utxo tree
-            nullifierRoot, // root of the nullifier tree
-            withdrawalRoot, // root of the withdrawal tree
-            uint256(0), // index of the withdrawal tree
-            bytes32(0), // tx root
-            bytes32(0), // mass deposit root
-            bytes32(0) // mass migration root
-        );
+        Header memory header =
+            Header(
+                msg.sender, // proposer
+                parentBlock,
+                uint256(0), // total fee
+                utxoRoot, // root of the utxo tree
+                uint256(0), // index of the utxo tree
+                nullifierRoot, // root of the nullifier tree
+                withdrawalRoot, // root of the withdrawal tree
+                uint256(0), // index of the withdrawal tree
+                bytes32(0), // tx root
+                bytes32(0), // mass deposit root
+                bytes32(0) // mass migration root
+            );
         bytes32 genesis = header.hash();
         Storage.chain.init(genesis);
-        emit GenesisBlock(
-            genesis,
-            msg.sender,
-            block.number,
-            parentBlock
-        );
+        emit GenesisBlock(genesis, msg.sender, block.number, parentBlock);
     }
 }

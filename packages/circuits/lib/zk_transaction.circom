@@ -15,8 +15,8 @@ include "../node_modules/circomlib/circuits/bitify.circom";
  * Note properties
  *  asset_hash = poseidon(eth, token_addr, erc20Amount, nftId)
  *  note_hash = poseidon(P, salt, asset_hash)
- *  P = poseidon(pG.x, pG.y, n)
- *  pG = from EdDSA
+ *  P = poseidon(A.x, A.y, n)
+ *  A = from EdDSA
  *
  *  nullifier_seed = n // nullifier_seed
  *  spending_note_data[1]: salt
@@ -33,9 +33,9 @@ include "../node_modules/circomlib/circuits/bitify.circom";
  */
 template ZkTransaction(tree_depth, n_i, n_o) {
     /** Spending notes - private signals */
-    signal private input spending_note_eddsa_point[2][n_i]; // pG, when P = poseidon(pG.x, pG.y, n)
-    signal private input spending_note_eddsa_sig[3][n_i]; // eddsa(p, pG)
-    signal private input spending_note_nullifier_seed[n_i]; // n, when P = poseidon(pG.x, pG.y, n)
+    signal private input spending_note_eddsa_point[2][n_i]; // A, when P = poseidon(A.x, A.y, n)
+    signal private input spending_note_eddsa_sig[3][n_i]; // eddsa(p, A)
+    signal private input spending_note_nullifier_seed[n_i]; // n, when P = poseidon(A.x, A.y, n)
     signal private input spending_note_salt[n_i];
     signal private input spending_note_eth[n_i];
     signal private input spending_note_token_addr[n_i];

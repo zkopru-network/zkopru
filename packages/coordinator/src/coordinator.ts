@@ -1,4 +1,4 @@
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { EventEmitter } from 'events'
 import { ZkTx } from '@zkopru/transaction'
 import { logger, root, Worker } from '@zkopru/utils'
@@ -441,14 +441,12 @@ export class Coordinator extends EventEmitter {
 
   private async startSubscribeGasPrice() {
     if (this.gasPriceSubscriber) return
-    this.context.gasPrice = Field.from(
-      await this.layer1().web3.eth.getGasPrice(),
-    )
+    this.context.gasPrice = Fp.from(await this.layer1().web3.eth.getGasPrice())
     this.gasPriceSubscriber = this.layer1()
       .web3.eth.subscribe('newBlockHeaders')
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       .on('data', async _ => {
-        this.context.gasPrice = Field.from(
+        this.context.gasPrice = Fp.from(
           await this.layer1().web3.eth.getGasPrice(),
         )
       })

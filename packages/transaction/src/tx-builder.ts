@@ -1,4 +1,4 @@
-import { Field, F } from '@zkopru/babyjubjub'
+import { Fp, F } from '@zkopru/babyjubjub'
 import { txSizeCalculator, logger } from '@zkopru/utils'
 import { fromWei } from 'web3-utils'
 import assert from 'assert'
@@ -17,9 +17,9 @@ export class TxBuilder {
 
   sendings: Outflow[]
 
-  feePerByte: Field
+  feePerByte: Fp
 
-  swap?: Field
+  swap?: Fp
 
   changeTo: ZkAddress
 
@@ -27,7 +27,7 @@ export class TxBuilder {
     this.spendables = []
     this.sendings = []
     this.changeTo = owner
-    this.feePerByte = Field.zero
+    this.feePerByte = Fp.zero
   }
 
   static from(owner: ZkAddress): TxBuilder {
@@ -35,7 +35,7 @@ export class TxBuilder {
   }
 
   weiPerByte(val: F): TxBuilder {
-    this.feePerByte = Field.from(val)
+    this.feePerByte = Fp.from(val)
     return this
   }
 
@@ -150,12 +150,12 @@ export class TxBuilder {
     ) as (Withdrawal | Migration)[]
     const l1Fee = outgoingNotes.reduce(
       (acc, note) => acc.add(note.publicData.fee),
-      Field.zero,
+      Fp.zero,
     )
 
     // Find ERC20 notes to spend
     Object.keys(sendingAmount.erc20).forEach(addr => {
-      const targetAmount: Field = sendingAmount.getERC20(addr)
+      const targetAmount: Fp = sendingAmount.getERC20(addr)
       const sameERC20UTXOs: Utxo[] = this.spendables
         .filter(utxo =>
           utxo
@@ -178,7 +178,7 @@ export class TxBuilder {
 
     // Find ERC721 notes to spend
     Object.keys(sendingAmount.erc721).forEach(addr => {
-      const sendingNFTs: Field[] = sendingAmount
+      const sendingNFTs: Fp[] = sendingAmount
         .getNFTs(addr)
         .sort((a, b) => (a.gt(b) ? 1 : -1))
       const spendingNFTNotes: Utxo[] = this.spendables.filter(utxo => {
@@ -214,7 +214,7 @@ export class TxBuilder {
         changes.push(
           Utxo.newERC20Note({
             eth: 0,
-            tokenAddr: Field.from(addr),
+            tokenAddr: Fp.from(addr),
             erc20Amount: change,
             owner: this.changeTo,
           }),
@@ -222,7 +222,7 @@ export class TxBuilder {
       }
     })
     // Start to calculate ERC721 changes
-    const extraNFTs: { [addr: string]: Field[] } = {}
+    const extraNFTs: { [addr: string]: Fp[] } = {}
     Object.keys(spendingAmount().erc721).forEach(addr => {
       extraNFTs[addr] = spendingAmount()
         .getNFTs(addr)
@@ -241,7 +241,7 @@ export class TxBuilder {
         changes.push(
           Utxo.newNFTNote({
             eth: 0,
-            tokenAddr: Field.from(addr),
+            tokenAddr: Fp.from(addr),
             nft,
             owner: this.changeTo,
           }),
@@ -250,7 +250,7 @@ export class TxBuilder {
     })
 
     // Start to check how many ETH this tx requires
-    const getTxFee = (): Field => {
+    const getTxFee = (): Fp => {
       const size = txSizeCalculator(
         spendings.length,
         this.sendings.length + changes.length + 1, // 1 is for Ether change note
@@ -262,7 +262,7 @@ export class TxBuilder {
       return this.feePerByte.muln(size)
     }
 
-    const getRequiredETH = (): Field => {
+    const getRequiredETH = (): Fp => {
       return sendingAmount.eth.add(getTxFee()).add(l1Fee)
     }
 

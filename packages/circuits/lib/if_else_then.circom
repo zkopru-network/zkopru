@@ -7,6 +7,9 @@ template IfElseThen(n) {
     signal input if_v;
     signal input else_v;
     signal output out;
+    // It returns `if_v` when obj1[i] == obj2[i] for every i.
+    // Or it returns `else_v`
+    
     component comparators[n];
     signal result[n + 1];
     result[0] <== 1;

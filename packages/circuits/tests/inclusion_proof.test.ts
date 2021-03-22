@@ -6,7 +6,7 @@
 /* eslint-disable jest/no-hooks */
 
 import { v4 } from 'uuid'
-import { Field } from '~babyjubjub'
+import { Fp } from '~babyjubjub'
 import { DB, TreeSpecies, MockupDB } from '~prisma'
 import { genSNARK, SNARKResult } from '~zk-wizard/snark'
 import {
@@ -28,11 +28,11 @@ describe('inclusion_proof.test.circom', () => {
     id: v4(),
     index: 1,
     species: TreeSpecies.UTXO,
-    start: Field.from(0),
-    end: Field.from(0),
+    start: Fp.from(0),
+    end: Fp.from(0),
   }
   const depth = 3
-  const utxoTreeConfig: TreeConfig<Field> = {
+  const utxoTreeConfig: TreeConfig<Fp> = {
     hasher: poseidonHasher(depth),
     forceUpdate: true,
     fullSync: true,
@@ -40,7 +40,7 @@ describe('inclusion_proof.test.circom', () => {
   const preHashes = poseidonHasher(depth).preHash
   const utxoTreeInitialData = {
     root: genesisRoot(poseidonHasher(depth)),
-    index: Field.zero,
+    index: Fp.zero,
     siblings: preHashes.slice(0, -1),
   }
   let mockup: MockupDB
@@ -57,11 +57,11 @@ describe('inclusion_proof.test.circom', () => {
     await utxoTree.init()
     await utxoTree.append(
       ...[
-        { hash: Field.from(10) },
-        { hash: Field.from(11) },
-        { hash: Field.from(12) },
-        { hash: Field.from(13) },
-        { hash: Field.from(14) },
+        { hash: Fp.from(10) },
+        { hash: Fp.from(11) },
+        { hash: Fp.from(12) },
+        { hash: Fp.from(13) },
+        { hash: Fp.from(14) },
       ],
     )
   })
@@ -76,8 +76,8 @@ describe('inclusion_proof.test.circom', () => {
   })
   it('should create SNARK proof', async () => {
     const merkleProof = await utxoTree.merkleProof({
-      hash: Field.from(12),
-      index: Field.from(2),
+      hash: Fp.from(12),
+      index: Fp.from(2),
     })
     const inputs = {
       root: merkleProof.root.toBigInt(),

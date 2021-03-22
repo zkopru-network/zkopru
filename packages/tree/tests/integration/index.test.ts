@@ -1,8 +1,8 @@
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 
 describe('integration test', () => {
   it('field', () => {
     expect.hasAssertions()
-    expect(Field.from(1)).toBeDefined()
+    expect(Fp.from(1)).toBeDefined()
   })
 })

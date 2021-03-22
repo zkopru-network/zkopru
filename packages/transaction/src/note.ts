@@ -1,5 +1,5 @@
 import { poseidon } from 'circomlib'
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { ZkAddress } from './zk-address'
 
 export enum OutflowType {
@@ -20,30 +20,30 @@ export enum NoteStatus {
 }
 
 export type Asset = {
-  eth: Field
-  tokenAddr: Field
-  erc20Amount: Field
-  nft: Field
+  eth: Fp
+  tokenAddr: Fp
+  erc20Amount: Fp
+  nft: Fp
 }
 export class Note {
   owner: ZkAddress
 
-  salt: Field
+  salt: Fp
 
   asset: Asset
 
   outflowType: OutflowType
 
-  constructor(owner: ZkAddress, salt: Field, asset: Asset) {
+  constructor(owner: ZkAddress, salt: Fp, asset: Asset) {
     this.owner = owner
     this.salt = salt
     this.asset = asset
     this.outflowType = OutflowType.UTXO
   }
 
-  hash(): Field {
+  hash(): Fp {
     const assetHash = this.assetHash()
-    const noteHash = Field.from(
+    const noteHash = Fp.from(
       poseidon([
         this.owner.spendingPubKey().toBigInt(),
         this.salt.toBigInt(),
@@ -53,8 +53,8 @@ export class Note {
     return noteHash
   }
 
-  assetHash(): Field {
-    return Field.from(
+  assetHash(): Fp {
+    return Fp.from(
       poseidon([
         this.asset.eth.toBigInt(),
         this.asset.tokenAddr.toBigInt(),
@@ -64,19 +64,19 @@ export class Note {
     )
   }
 
-  eth(): Field {
+  eth(): Fp {
     return this.asset.eth
   }
 
-  tokenAddr(): Field {
+  tokenAddr(): Fp {
     return this.asset.tokenAddr
   }
 
-  erc20Amount(): Field {
+  erc20Amount(): Fp {
     return this.asset.erc20Amount
   }
 
-  nft(): Field {
+  nft(): Fp {
     return this.asset.nft
   }
 }

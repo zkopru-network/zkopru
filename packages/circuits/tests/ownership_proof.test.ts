@@ -37,11 +37,11 @@ describe('ownership_proof.test.circom', () => {
     const eddsa = account.signEdDSA(utxo.hash())
     const inputs = {
       note: utxo.hash().toBigInt(),
-      pG_x: account.getEdDSAPoint().x.toBigInt(),
-      pG_y: account.getEdDSAPoint().y.toBigInt(),
-      sig_r8x: eddsa.R8.x.toBigInt(),
-      sig_r8y: eddsa.R8.y.toBigInt(),
-      sig_s: eddsa.S.toBigInt(),
+      Ax: account.getEdDSAPubKey().x.toBigInt(),
+      Ay: account.getEdDSAPubKey().y.toBigInt(),
+      R8x: eddsa.R8.x.toBigInt(),
+      R8y: eddsa.R8.y.toBigInt(),
+      S: eddsa.S.toBigInt(),
     }
 
     const result: SNARKResult = await genSNARK(inputs, wasm, finalZkey, vk)

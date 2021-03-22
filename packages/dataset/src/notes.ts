@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { RawTx, TokenUtils, Utxo, ZkAddress } from '@zkopru/transaction'
 import { ZkAccount } from '@zkopru/account'
 
@@ -96,7 +96,7 @@ const utxo3_out_1: Utxo = Utxo.newEtherNote({
   salt: 24,
 })
 
-utxo3_out_1.toWithdrawal({ to: Field.from(USER_A), fee: Field.from(1) })
+utxo3_out_1.toWithdrawal({ to: Fp.from(USER_A), fee: Fp.from(1) })
 
 const utxo4_in_1: Utxo = Utxo.newEtherNote({
   eth: 8888888888888,
@@ -137,48 +137,48 @@ const utxo4_out_3: Utxo = Utxo.newNFTNote({
   salt: 30,
 })
 const migration_4_1 = utxo4_out_1.toMigration({
-  to: Field.from(CONTRACT_B),
-  fee: Field.from(1),
+  to: Fp.from(CONTRACT_B),
+  fee: Fp.from(1),
 })
 const migration_4_2 = utxo4_out_2.toMigration({
-  to: Field.from(CONTRACT_B),
-  fee: Field.from(1),
+  to: Fp.from(CONTRACT_B),
+  fee: Fp.from(1),
 })
 const migration_4_3 = utxo4_out_3.toMigration({
-  to: Field.from(CONTRACT_B),
-  fee: Field.from(1),
+  to: Fp.from(CONTRACT_B),
+  fee: Fp.from(1),
 })
 
 const tx_1: RawTx = {
   inflow: [utxo1_in_1],
   outflow: [utxo1_out_1, utxo1_out_2],
-  fee: Field.from(1),
+  fee: Fp.from(1),
 }
 
 const tx_2_1: RawTx = {
   inflow: [utxo2_1_in_1],
   outflow: [utxo2_1_out_1, utxo2_1_out_2],
   swap: utxo2_2_out_2.hash(),
-  fee: Field.from(1),
+  fee: Fp.from(1),
 }
 
 const tx_2_2: RawTx = {
   inflow: [utxo2_2_in_1],
   outflow: [utxo2_2_out_1, utxo2_2_out_2],
   swap: utxo2_1_out_2.hash(),
-  fee: Field.from(1),
+  fee: Fp.from(1),
 }
 
 const tx_3: RawTx = {
   inflow: [utxo3_in_1, utxo3_in_2, utxo3_in_3],
   outflow: [utxo3_out_1],
-  fee: Field.from(1),
+  fee: Fp.from(1),
 }
 
 const tx_4: RawTx = {
   inflow: [utxo4_in_1, utxo4_in_2, utxo4_in_3],
   outflow: [utxo4_out_1, utxo4_out_2, utxo4_out_3],
-  fee: Field.from(1),
+  fee: Fp.from(1),
 }
 
 export const keys = {

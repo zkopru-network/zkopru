@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity = 0.6.12;
+pragma solidity =0.7.4;
 
 import "../libraries/Types.sol";
-import { IConsensusProvider } from "../../consensus/interfaces/IConsensusProvider.sol";
+import {
+    IConsensusProvider
+} from "../../consensus/interfaces/IConsensusProvider.sol";
 import { SNARK } from "../libraries/SNARK.sol";
 import { Storage } from "./Storage.sol";
 import { SMT254 } from "../libraries/SMT.sol";
@@ -36,18 +38,34 @@ contract Reader is Storage {
         return chain.finalizedUTXORoots[uint256(utxoRoot)];
     }
 
-    function proposers(address addr) public view returns (uint256 stake, uint256 reward, uint256 exitAllowance) {
+    function proposers(address addr)
+        public
+        view
+        returns (
+            uint256 stake,
+            uint256 reward,
+            uint256 exitAllowance
+        )
+    {
         Proposer memory proposer = chain.proposers[addr];
         stake = proposer.stake;
         reward = proposer.reward;
         exitAllowance = proposer.exitAllowance;
     }
 
-    function proposals(bytes32 proposalId) public view returns (bytes32 header, uint256 challengeDue, bool slashed) {
+    function proposals(bytes32 proposalId)
+        public
+        view
+        returns (
+            bytes32 header,
+            uint256 challengeDue,
+            bool isSlashed
+        )
+    {
         Proposal memory proposal = chain.proposals[proposalId];
         header = proposal.headerHash;
         challengeDue = proposal.challengeDue;
-        slashed = chain.slashed[proposal.headerHash];
+        isSlashed = chain.slashed[proposal.headerHash];
     }
 
     function finalized(bytes32 headerHash) public view returns (bool) {
@@ -58,7 +76,11 @@ contract Reader is Storage {
         return chain.slashed[headerHash];
     }
 
-    function stagedDeposits() public view returns (bytes32 merged, uint256 fee) {
+    function stagedDeposits()
+        public
+        view
+        returns (bytes32 merged, uint256 fee)
+    {
         MassDeposit memory massDeposit = chain.stagedDeposits;
         merged = massDeposit.merged;
         fee = massDeposit.fee;
@@ -72,7 +94,11 @@ contract Reader is Storage {
         return chain.massDepositId;
     }
 
-    function committedDeposits(bytes32 massDepositHash) public view returns (uint256) {
+    function committedDeposits(bytes32 massDepositHash)
+        public
+        view
+        returns (uint256)
+    {
         return chain.committedDeposits[massDepositHash];
     }
 
@@ -92,13 +118,17 @@ contract Reader is Storage {
         return chain.registeredERC721s[tokenAddr];
     }
 
-    function getVk(uint8 numOfInputs, uint8 numOfOutputs) public view returns (
-        uint256[2] memory alpha1,
-        uint256[2][2] memory beta2,
-        uint256[2][2] memory gamma2,
-        uint256[2][2] memory delta2,
-        uint256[2][] memory ic
-    ) {
+    function getVk(uint8 numOfInputs, uint8 numOfOutputs)
+        public
+        view
+        returns (
+            uint256[2] memory alpha1,
+            uint256[2][2] memory beta2,
+            uint256[2][2] memory gamma2,
+            uint256[2][2] memory delta2,
+            uint256[2][] memory ic
+        )
+    {
         uint256 txSig = Types.getSNARKSignature(numOfInputs, numOfOutputs);
         SNARK.VerifyingKey memory vk = vks[txSig];
         alpha1[0] = vk.alpha1.X;
@@ -110,36 +140,46 @@ contract Reader is Storage {
         delta2[0] = vk.delta2.X;
         delta2[1] = vk.delta2.Y;
         ic = new uint256[2][](vk.ic.length);
-        for(uint256 i = 0; i < vk.ic.length; i++) {
+        for (uint256 i = 0; i < vk.ic.length; i++) {
             ic[i] = [vk.ic[i].X, vk.ic[i].Y];
         }
     }
 
-    function latestProposalBlock(address coordinator) public view returns (uint256) {
+    function latestProposalBlock(address coordinator)
+        public
+        view
+        returns (uint256)
+    {
         uint256 exitAllowance = chain.proposers[coordinator].exitAllowance;
-        return exitAllowance >= CHALLENGE_PERIOD ? exitAllowance - CHALLENGE_PERIOD : 0;
+        return
+            exitAllowance >= CHALLENGE_PERIOD
+                ? exitAllowance - CHALLENGE_PERIOD
+                : 0;
     }
 
     /**
-     * @dev Copy of `isProposable()` in Coordinatable.sol 
+     * @dev Copy of `isProposable()` in Coordinatable.sol
      */
     function isProposable(address proposerAddr) public view returns (bool) {
-        Proposer memory  proposer = Storage.chain.proposers[proposerAddr];
+        Proposer memory proposer = Storage.chain.proposers[proposerAddr];
         // You can add more consensus logic here
         if (proposer.stake >= MINIMUM_STAKE) {
-            return IConsensusProvider(consensusProvider).isProposable(proposerAddr);
+            return
+                IConsensusProvider(consensusProvider).isProposable(
+                    proposerAddr
+                );
         } else {
             return false;
         }
     }
 
     /**
-     * @dev Copy of `isValidRef()` in TxValidator.sol 
+     * @dev Copy of `isValidRef()` in TxValidator.sol
      */
     function isValidRef(bytes32 l2BlockHash, uint256 ref)
-    public
-    view
-    returns (bool)
+        public
+        view
+        returns (bool)
     {
         if (Storage.chain.finalizedUTXORoots[ref]) {
             return true;

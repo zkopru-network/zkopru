@@ -33,8 +33,8 @@ describe('spending_pubkey.test.circom', () => {
   it('should create SNARK proof', async () => {
     const account = accounts.bob
     const inputs = {
-      pubkey_x: account.getEdDSAPoint().x.toBigInt(),
-      pubkey_y: account.getEdDSAPoint().y.toBigInt(),
+      pubkey_x: account.getEdDSAPubKey().x.toBigInt(),
+      pubkey_y: account.getEdDSAPubKey().y.toBigInt(),
       nullifier_seed: account.getNullifierSeed().toBigInt(),
     }
     const result: SNARKResult = await genSNARK(inputs, wasm, finalZkey, vk)

@@ -1,4 +1,4 @@
-import { Field, F } from '@zkopru/babyjubjub'
+import { Fp, F } from '@zkopru/babyjubjub'
 import { ZkAddress } from './zk-address'
 import { ZkOutflow } from './zk-tx'
 import { Note, OutflowType, Asset } from './note'
@@ -12,19 +12,19 @@ export class Migration extends Note {
   status: MigrationStatus
 
   publicData: {
-    to: Field
-    fee: Field
+    to: Fp
+    fee: Fp
   }
 
-  static outflowType: Field = Field.from(2)
+  static outflowType: Fp = Fp.from(2)
 
   constructor(
     owner: ZkAddress,
-    salt: Field,
+    salt: Fp,
     asset: Asset,
     publicData: {
-      to: Field
-      fee: Field
+      to: Fp
+      fee: Fp
     },
   ) {
     super(owner, salt, asset)
@@ -51,8 +51,8 @@ export class Migration extends Note {
 
   static from(note: Note, to: F, fee: F): Migration {
     return new Migration(note.owner, note.salt, note.asset, {
-      to: Field.from(to),
-      fee: Field.from(fee),
+      to: Fp.from(to),
+      fee: Fp.from(fee),
     })
   }
 }

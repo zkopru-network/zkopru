@@ -1,4 +1,4 @@
-pragma solidity = 0.6.12;
+pragma solidity =0.7.4;
 
 /**
  * Truffle migration contract
@@ -6,9 +6,11 @@ pragma solidity = 0.6.12;
 contract Migrations {
     address public owner;
     uint256 public last_completed_migration;
-    constructor() public {
+
+    constructor() {
         owner = msg.sender;
     }
+
     modifier restricted() {
         if (msg.sender == owner) _;
     }

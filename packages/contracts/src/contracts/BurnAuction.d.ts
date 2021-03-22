@@ -40,6 +40,8 @@ export class BurnAuction extends Contract {
 
     lockedRoundIndex(): TransactionObject<string>
 
+    minBid(): TransactionObject<string>
+
     pendingBalances(arg0: string): TransactionObject<string>
 
     roundLength(): TransactionObject<string>

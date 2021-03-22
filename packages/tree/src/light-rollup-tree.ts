@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable no-underscore-dangle */
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import AsyncLock from 'async-lock'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
@@ -9,32 +9,32 @@ import { DB, TreeSpecies } from '@zkopru/prisma'
 import { Hasher } from './hasher'
 import { MerkleProof, startingLeafProof, verifyProof } from './merkle-proof'
 
-export interface Leaf<T extends Field | BN> {
+export interface Leaf<T extends Fp | BN> {
   hash: T
-  noteHash?: Field
+  noteHash?: Fp
   shouldTrack?: boolean
 }
 
-export interface TreeMetadata<T extends Field | BN> {
+export interface TreeMetadata<T extends Fp | BN> {
   id: string
   species: number
   start: T
   end: T
 }
 
-export interface TreeData<T extends Field | BN> {
+export interface TreeData<T extends Fp | BN> {
   root: T
   index: T
   siblings: T[]
 }
 
-export interface TreeConfig<T extends Field | BN> {
+export interface TreeConfig<T extends Fp | BN> {
   hasher: Hasher<T>
   forceUpdate?: boolean
   fullSync?: boolean
 }
 
-export abstract class LightRollUpTree<T extends Field | BN> {
+export abstract class LightRollUpTree<T extends Fp | BN> {
   zero?: T
 
   species: TreeSpecies
@@ -97,13 +97,13 @@ export abstract class LightRollUpTree<T extends Field | BN> {
           start: this.metadata.start.toString(10),
           end: this.metadata.end.toString(10),
           root:
-            this.data.root instanceof Field
+            this.data.root instanceof Fp
               ? this.data.root.toString(10)
               : hexify(this.data.root),
           index: this.data.index.toString(10),
           siblings: JSON.stringify(
             this.data.siblings.map(sib =>
-              sib instanceof Field ? sib.toString(10) : hexify(sib),
+              sib instanceof Fp ? sib.toString(10) : hexify(sib),
             ),
           ),
         },
@@ -186,8 +186,8 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       // update root
       root = node
       // update index
-      if (this.zero instanceof Field) {
-        index = Field.from(index.addn(1)) as T
+      if (this.zero instanceof Fp) {
+        index = Fp.from(index.addn(1)) as T
       } else {
         index = index.addn(1) as T
       }
@@ -246,8 +246,8 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       else {
         const leafNodeIndex: BN = toBN(leafCandidates[0].nodeIndex)
         const prefix = new BN(1).shln(this.depth)
-        if (this.zero instanceof Field) {
-          leafIndex = Field.from(leafNodeIndex.xor(prefix)) as T
+        if (this.zero instanceof Fp) {
+          leafIndex = Fp.from(leafNodeIndex.xor(prefix)) as T
         } else {
           leafIndex = leafNodeIndex.xor(prefix) as T
         }
@@ -290,8 +290,8 @@ export abstract class LightRollUpTree<T extends Field | BN> {
         const cached = cachedSiblings[hexify(siblingNodeIndex)]
         if (!cached) {
           siblings[level] = this.config.hasher.preHash[level]
-        } else if (this.zero instanceof Field) {
-          siblings[level] = Field.from(cached)
+        } else if (this.zero instanceof Fp) {
+          siblings[level] = Fp.from(cached)
         } else {
           siblings[level] = toBN(cached)
         }
@@ -340,8 +340,8 @@ export abstract class LightRollUpTree<T extends Field | BN> {
 
     for (let i = 0; i < leaves.length; i += 1) {
       const leaf = leaves[i]
-      const index = (leaf.hash instanceof Field
-        ? Field.from(i).add(start)
+      const index = (leaf.hash instanceof Fp
+        ? Fp.from(i).add(start)
         : new BN(i).add(start)) as T
       if (leaf.shouldTrack) {
         trackingLeaves.push(index)
@@ -410,11 +410,11 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       end: end.toString(10),
     }
     const rollUpSnapshot = {
-      root: root instanceof Field ? root.toUint256().toString() : hexify(root),
+      root: root instanceof Fp ? root.toUint256().toString() : hexify(root),
       index: end.toString(10),
       siblings: JSON.stringify(
         latestSiblings.map(sib =>
-          sib instanceof Field ? sib.toUint256().toString() : hexify(sib),
+          sib instanceof Fp ? sib.toUint256().toString() : hexify(sib),
         ),
       ),
     }
@@ -462,7 +462,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     }
   }
 
-  static async initTreeFromDatabase<T extends Field | BN>({
+  static async initTreeFromDatabase<T extends Fp | BN>({
     db,
     species,
     metadata,
@@ -505,11 +505,11 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       end: data.index.toString(10),
       // rollup snapshot data
       root:
-        data.root instanceof Field ? data.root.toString(10) : hexify(data.root),
+        data.root instanceof Fp ? data.root.toString(10) : hexify(data.root),
       index: data.index.toString(10),
       siblings: JSON.stringify(
         data.siblings.map(sib =>
-          sib instanceof Field ? sib.toString(10) : hexify(sib),
+          sib instanceof Fp ? sib.toString(10) : hexify(sib),
         ),
       ),
     }
@@ -526,9 +526,9 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     // Return tree object
     let _start: T
     let _end: T
-    if (metadata.start instanceof Field) {
-      _start = Field.from(start) as T
-      _end = Field.from(end) as T
+    if (metadata.start instanceof Fp) {
+      _start = Fp.from(start) as T
+      _end = Fp.from(end) as T
     } else {
       _start = toBN(start) as T
       _end = toBN(end) as T

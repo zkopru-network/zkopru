@@ -3,36 +3,54 @@
 /* eslint-disable jest/prefer-todo */
 /* eslint-disable jest/require-top-level-describe */
 /* eslint-disable jest/consistent-test-it */
-const chai = require('chai')
-const { Field } = require('~babyjubjub')
+const chai = require("chai");
+const { Fp } = require("~babyjubjub");
+const circomlib = require("circomlib");
 
-const { expect } = chai
-const { toBN } = web3.utils
+const { expect } = chai;
+const { toBN } = web3.utils;
+const jsPoseidon = circomlib.poseidon;
 
-const Poseidon2 = artifacts.require('Poseidon2')
+const PoseidonTester = artifacts.require("PoseidonTester");
 
-const compare = (a, b) => {
-  expect(Field.from(a.toString()).toHex()).equal(
-    Field.from(b.toString()).toHex(),
-  )
-}
+const preHashedZeroAt = i => {
+  if (i === 0) return 0;
+  const prev = preHashedZeroAt(i - 1);
+  return jsPoseidon([prev, prev]);
+};
 
-contract('Poseidon', async accounts => {
-  let poseidon
+contract.only("Poseidon", async accounts => {
+  let poseidon;
+  let preHashed;
   before(async () => {
-    poseidon = await Poseidon2.deployed()
-  })
-  describe('preHasehd', () => {
-    it('should show same result', async () => {
-      const hash = await poseidon.poseidon([0, 0])
-      expect(
-        hash.eq(
-          toBN(
-            '10600974484483636649191836183331859514454108476826376357941356292578099372400',
-          ),
-        ),
-      ).to.be.true
-      // compare(solidityAppendResult, utxoTreeResult.root)
-    })
-  })
-})
+    poseidonTester = await PoseidonTester.deployed();
+    preHashed = await poseidonTester.preHashed();
+  });
+  describe("preHasehd", () => {
+    Array(49)
+      .fill(0)
+      .forEach((_, i) => {
+        it(`should equal to the hardcoded value in the smart contract: ${i}: ${preHashedZeroAt(
+          i
+        )}`, async () => {
+          expect(preHashed[i].toString(10)).to.equal(
+            preHashedZeroAt(i).toString()
+          );
+        });
+      });
+  });
+  describe("Poseidon2", () => {
+    it("should show same result", async () => {
+      const hash = await poseidonTester.poseidon2([1, 2]);
+      expect(hash.toString()).to.equal(jsPoseidon([1n, 2n]).toString());
+    });
+    it("should show same result", async () => {
+      const hash = await poseidonTester.poseidon3([1, 2, 3]);
+      expect(hash.toString()).to.equal(jsPoseidon([1n, 2n, 3n]).toString());
+    });
+    it("should show same result", async () => {
+      const hash = await poseidonTester.poseidon4([1, 2, 3, 4]);
+      expect(hash.toString()).to.equal(jsPoseidon([1n, 2n, 3n, 4n]).toString());
+    });
+  });
+});

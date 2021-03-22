@@ -8,7 +8,7 @@ import {
 import crypto from 'crypto'
 import HDNode from 'hdkey'
 import Web3 from 'web3'
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { hexify } from '@zkopru/utils'
 import { DB, EncryptedWallet, Keystore } from '@zkopru/prisma'
 import { ZkAccount } from './account'
@@ -106,7 +106,7 @@ export class HDWallet {
         JSON.parse(keys[i].encrypted),
         this.password,
       )
-      accounts.push(new ZkAccount(ethAccount))
+      accounts.push(ZkAccount.fromEthAccount(ethAccount))
     }
     return accounts
   }
@@ -116,14 +116,14 @@ export class HDWallet {
     const masterNode = HDNode.fromMasterSeed(this.seed)
     const derivedKey = masterNode.derive(PATH(deriveIndex))
     try {
-      Field.fromBuffer(derivedKey.privateKey)
+      Fp.fromBuffer(derivedKey.privateKey)
     } catch (err) {
       throw Error('Jubjub does not support the derived key. Use another index')
     }
     const ethAccount = this.web3.eth.accounts.privateKeyToAccount(
       hexify(derivedKey.privateKey, 32),
     )
-    const account = new ZkAccount(ethAccount)
+    const account = ZkAccount.fromEthAccount(ethAccount)
     await this.db.write(prisma =>
       prisma.keystore.create({
         data: account.toKeystoreSqlObj(this.password),

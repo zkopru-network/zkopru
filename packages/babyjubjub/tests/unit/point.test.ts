@@ -1,5 +1,5 @@
 /* eslint-disable jest/no-hooks */
-import { Point, signEdDSA, verifyEdDSA, Field } from '~babyjubjub'
+import { Point, signEdDSA, verifyEdDSA } from '~babyjubjub'
 
 describe('baby jubjub point', () => {
   it('should return generator', () => {
@@ -19,12 +19,25 @@ describe('baby jubjub point', () => {
   })
   describe('fromHex()', () => {
     it('should return a Point instance from 0x prefixed hex string', () => {
-      const hex = Point.generate(2).toHex()
-      const point = Point.fromHex(hex)
-      const regeneratedHex = point.toHex()
+      const point = Point.generate(2)
+      const pointToHex = point.toHex()
+      const pointFromHex = Point.fromHex(pointToHex)
+      const regeneratedHex = pointFromHex.toHex()
       expect(point).toBeDefined()
-      expect(regeneratedHex).toBe(hex)
+      expect(regeneratedHex).toBe(pointToHex)
     })
+    Array(50)
+      .fill(null)
+      .forEach((_, i) =>
+        it(`should return a Point instance from hex string (${i+1}G)`, () => {
+          const point = Point.generate(i+1)
+          const pointToHex = point.toHex()
+          const pointFromHex = Point.fromHex(pointToHex)
+          const regeneratedHex = pointFromHex.toHex()
+          expect(point).toBeDefined()
+          expect(regeneratedHex).toBe(pointToHex)
+        }),
+      )
   })
   describe('isOnJubjub()', () => {
     it('should return true for generated points', () => {
@@ -32,22 +45,17 @@ describe('baby jubjub point', () => {
       expect(Point.isOnJubjub(point.x, point.y)).toBe(true)
     })
     it('should return true for decoded points', () => {
-      const snarkPk = Field.from(
-        '0x6cbed15c793ce57650b9877cf6fa156fbef513c4e6134f022a85b1ffdd59b2a1',
-      )
-      const pubKey = Point.fromPrivKey(snarkPk.toHex())
+      const secret =
+        '0x6cbed15c793ce57650b9877cf6fa156fbef513c4e6134f022a85b1ffdd59b2a1'
+      const pubKey = Point.fromPrivKey(secret)
       expect(Point.isOnJubjub(pubKey.x, pubKey.y)).toBe(true)
     })
     it('should return true for points from pub key', () => {
-      const snarkPk = Field.from(
-        '0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d',
-      )
-      const pubKey = Point.fromPrivKey(snarkPk.toHex())
+      const secret =
+        '0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d'
+      const pubKey = Point.fromPrivKey(secret)
       const pubKeyToHex = pubKey.toHex()
       const retrievedPoint = Point.fromHex(pubKeyToHex)
-      expect(pubKeyToHex).toBe(
-        '0xa544f842c83b24ec53910f98ff0b22c2dab69bc329ffb81e29d3ed9638bfec28',
-      )
       expect(Point.isOnJubjub(retrievedPoint.x, retrievedPoint.y)).toBe(true)
     })
   })

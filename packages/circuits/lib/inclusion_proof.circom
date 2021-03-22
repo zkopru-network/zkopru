@@ -6,6 +6,15 @@ template BranchNode() {
     signal input left;
     signal input right;
     signal output parent;
+    // parent = poseidon2(left, right)
+    //
+    // poseidon2 => {
+    //     t: 3,
+    //     nRoundsF: 8,
+    //     nRoundsP: 57,
+    // }
+    // https://eprint.iacr.org/2019/458.pdf
+    // https://github.com/iden3/circomlib/blob/86c6a2a6f5e8de4024a8d366eff9e35351bc1a2e/src/poseidon.js
 
     component hasher = Poseidon(2);   // Constant
     hasher.inputs[0] <== left;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity = 0.6.12;
+pragma solidity = 0.7.4;
 
 import { BurnAuction } from "../../../contracts/consensus/BurnAuction.sol";
 import { IConsensusProvider } from "../../../contracts/consensus/interfaces/IConsensusProvider.sol";

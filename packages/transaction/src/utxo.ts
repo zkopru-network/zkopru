@@ -1,7 +1,7 @@
 import { randomHex } from 'web3-utils'
 import { poseidon } from 'circomlib'
 import * as chacha20 from 'chacha20'
-import { Field, F, Point } from '@zkopru/babyjubjub'
+import { Fp, Fr, F, Point } from '@zkopru/babyjubjub'
 import { ZkAddress } from './zk-address'
 import { Note, OutflowType, NoteStatus, Asset } from './note'
 import { Withdrawal } from './withdrawal'
@@ -19,7 +19,7 @@ export enum UtxoStatus {
 export class Utxo extends Note {
   status: UtxoStatus
 
-  constructor(owner: ZkAddress, salt: Field, asset: Asset, status: UtxoStatus) {
+  constructor(owner: ZkAddress, salt: Fp, asset: Asset, status: UtxoStatus) {
     super(owner, salt, asset)
     this.outflowType = OutflowType.UTXO
     this.status = status
@@ -31,26 +31,26 @@ export class Utxo extends Note {
 
   toWithdrawal({ to, fee }: { to: F; fee: F }): Withdrawal {
     return new Withdrawal(this.owner, this.salt, this.asset, {
-      to: Field.from(to),
-      fee: Field.from(fee),
+      to: Fp.from(to),
+      fee: Fp.from(fee),
     })
   }
 
   toMigration({ to, fee }: { to: F; fee: F }): Migration {
     return new Migration(this.owner, this.salt, this.asset, {
-      to: Field.from(to),
-      fee: Field.from(fee),
+      to: Fp.from(to),
+      fee: Fp.from(fee),
     })
   }
 
   encrypt(): Buffer {
-    const ephemeralSecretKey: Field = Field.from(randomHex(16))
+    const ephemeralSecretKey: Fr = Fr.from(randomHex(16))
     const sharedKey: Buffer = this.owner
       .viewingPubKey()
       .mul(ephemeralSecretKey)
       .encode()
     const tokenId = TokenRegistry.getTokenId(this.asset.tokenAddr)
-    let value: Field
+    let value: Fp
     if (this.asset.eth.gtn(0)) {
       value = this.asset.eth
     } else if (this.asset.erc20Amount.gtn(0)) {
@@ -60,7 +60,7 @@ export class Utxo extends Note {
     }
     const secret = [
       this.salt.toBuffer('be', 16),
-      Field.from(tokenId).toBuffer('be', 1),
+      Fp.from(tokenId).toBuffer('be', 1),
       value.toBuffer('be', 32),
     ]
     const ciphertext = chacha20.encrypt(sharedKey, 0, Buffer.concat(secret))
@@ -72,22 +72,20 @@ export class Utxo extends Note {
     return encryptedMemo
   }
 
-  nullifier(nullifierSeed: Field, leafIndex: Field): Field {
+  nullifier(nullifierSeed: Fr, leafIndex: Fp): Fp {
     const hash = poseidon([
       nullifierSeed.toBigInt(),
       leafIndex.toBigInt(),
     ]).toString()
-    if (
-      !this.owner.viewingPubKey().eq(Point.fromPrivKey(nullifierSeed.toHex(32)))
-    ) {
+    if (!this.owner.viewingPubKey().eq(Point.BASE8.mul(nullifierSeed))) {
       throw Error("Given nullifier does not match utxo's owner address")
     }
-    const val = Field.from(hash)
+    const val = Fp.from(hash)
     return val
   }
 
   toZkOutflow(): ZkOutflow {
-    const outflowType: Field = Field.from(OutflowType.UTXO)
+    const outflowType: Fp = Fp.from(OutflowType.UTXO)
     const outflow = {
       note: this.hash(),
       outflowType,
@@ -95,12 +93,12 @@ export class Utxo extends Note {
     return outflow
   }
 
-  static nullifier(nullifierSeed: Field, leafIndex: Field): Field {
+  static nullifier(nullifierSeed: Fp, leafIndex: Fp): Fp {
     const hash = poseidon([
       nullifierSeed.toBigInt(),
       leafIndex.toBigInt(),
     ]).toString()
-    const val = Field.from(hash)
+    const val = Fp.from(hash)
     return val
   }
 
@@ -111,25 +109,21 @@ export class Utxo extends Note {
     viewingKey,
     tokenRegistry,
   }: {
-    utxoHash: Field
+    utxoHash: Fp
     memo: Buffer
-    spendingPubKey: Field
-    viewingKey: Field
+    spendingPubKey: Fp
+    viewingKey: Fr
     tokenRegistry?: TokenRegistry
   }): Utxo | undefined {
-    const multiplier = Point.getMultiplier(viewingKey.toHex(32))
     const ephemeralPubKey = Point.decode(memo.subarray(0, 32))
-    const sharedKey = ephemeralPubKey.mul(multiplier).encode()
+    const sharedKey = ephemeralPubKey.mul(viewingKey).encode()
     const data = memo.subarray(32, 81)
     const decrypted = chacha20.decrypt(sharedKey, 0, data)
-    const salt = Field.fromBuffer(decrypted.subarray(0, 16))
+    const salt = Fp.fromBuffer(decrypted.subarray(0, 16))
     const tokenIdentifier = decrypted.subarray(16, 17)[0]
-    const value = Field.fromBuffer(decrypted.subarray(17, 49))
+    const value = Fp.fromBuffer(decrypted.subarray(17, 49))
 
-    const owner = ZkAddress.from(
-      spendingPubKey,
-      Point.fromPrivKey(viewingKey.toHex(32)),
-    )
+    const owner = ZkAddress.from(spendingPubKey, Point.BASE8.mul(viewingKey))
     // Return an Ether note if it is an Ether note
     const etherNote = Utxo.newEtherNote({
       owner,
@@ -145,7 +139,7 @@ export class Utxo extends Note {
       for (const tokenAddr of erc20Addresses) {
         const erc20Note = Utxo.newERC20Note({
           owner,
-          eth: Field.from(0),
+          eth: Fp.from(0),
           tokenAddr,
           erc20Amount: value,
           salt,
@@ -158,7 +152,7 @@ export class Utxo extends Note {
       for (const tokenAddr of erc721Addresses) {
         const nftNote = Utxo.newNFTNote({
           owner,
-          eth: Field.from(0),
+          eth: Fp.from(0),
           tokenAddr,
           nft: value,
           salt,
@@ -182,12 +176,12 @@ export class Utxo extends Note {
   }): Utxo {
     const note = new Note(
       owner,
-      salt ? Field.from(salt) : Field.from(randomHex(16)),
+      salt ? Fp.from(salt) : Fp.from(randomHex(16)),
       {
-        eth: Field.from(eth),
-        tokenAddr: Field.from(0),
-        erc20Amount: Field.from(0),
-        nft: Field.from(0),
+        eth: Fp.from(eth),
+        tokenAddr: Fp.from(0),
+        erc20Amount: Fp.from(0),
+        nft: Fp.from(0),
       },
     )
     return Utxo.from(note)
@@ -208,12 +202,12 @@ export class Utxo extends Note {
   }): Utxo {
     const note = new Note(
       owner,
-      salt ? Field.from(salt) : Field.from(randomHex(16)),
+      salt ? Fp.from(salt) : Fp.from(randomHex(16)),
       {
-        eth: Field.from(eth),
-        tokenAddr: Field.from(tokenAddr),
-        erc20Amount: Field.from(erc20Amount),
-        nft: Field.from(0),
+        eth: Fp.from(eth),
+        tokenAddr: Fp.from(tokenAddr),
+        erc20Amount: Fp.from(erc20Amount),
+        nft: Fp.from(0),
       },
     )
     return Utxo.from(note)
@@ -234,12 +228,12 @@ export class Utxo extends Note {
   }): Utxo {
     const note = new Note(
       owner,
-      salt ? Field.from(salt) : Field.from(randomHex(16)),
+      salt ? Fp.from(salt) : Fp.from(randomHex(16)),
       {
-        eth: Field.from(eth),
-        tokenAddr: Field.from(tokenAddr),
-        erc20Amount: Field.from(0),
-        nft: Field.from(nft),
+        eth: Fp.from(eth),
+        tokenAddr: Fp.from(tokenAddr),
+        erc20Amount: Fp.from(0),
+        nft: Fp.from(nft),
       },
     )
     return Utxo.from(note)

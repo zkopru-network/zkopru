@@ -3,7 +3,7 @@
  */
 
 import path from 'path'
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { ZkTx, Utxo, UtxoStatus, TokenRegistry } from '@zkopru/transaction'
 import { ZkWizard } from '@zkopru/zk-wizard'
 import { keccakHasher, poseidonHasher, Grove } from '@zkopru/tree'
@@ -29,7 +29,7 @@ async function loadGrove(db: DB): Promise<{ grove: Grove }> {
   })
   await grove.init()
   const latestTree = grove.utxoTree
-  const size = latestTree ? latestTree.latestLeafIndex() : Field.zero
+  const size = latestTree ? latestTree.latestLeafIndex() : Fp.zero
   if (size.eqn(0)) {
     await grove.applyGrovePatch({
       utxos: [

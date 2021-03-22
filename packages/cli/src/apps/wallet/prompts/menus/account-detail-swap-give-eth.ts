@@ -1,4 +1,4 @@
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { Sum, Utxo, SwapTxBuilder, ZkAddress } from '@zkopru/transaction'
 import { parseStringToUnit, logger } from '@zkopru/utils'
 import { fromWei, toBN, toWei } from 'web3-utils'
@@ -91,7 +91,7 @@ export default class AtomicSwapGiveEth extends App {
           .provide(...spendables.map(note => Utxo.from(note)))
           .weiPerByte(confirmedWeiPerByte)
           .sendEther({
-            eth: Field.from(amountWei),
+            eth: Fp.from(amountWei),
             to,
             salt,
           })

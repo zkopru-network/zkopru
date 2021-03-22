@@ -94,7 +94,7 @@ module.exports = {
   // Configure your compilers
   compilers: {
     solc: {
-      version: '0.6.12',
+      version: '0.7.4',
       evmVersion: 'istanbul',
       settings: {
         optimize: true,

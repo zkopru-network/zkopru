@@ -1,15 +1,15 @@
 import { soliditySha3 } from 'web3-utils'
 import { poseidon } from 'circomlib'
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { hexify } from '@zkopru/utils'
 import BN from 'bn.js'
 
-export interface Hasher<T extends Field | BN> {
+export interface Hasher<T extends Fp | BN> {
   parentOf(left: T, right: T): T
   preHash: T[]
 }
 
-function getPreHash<T extends Field | BN>(
+function getPreHash<T extends Fp | BN>(
   zero: T,
   parentOf: (left: T, right: T) => T,
   depth: number,
@@ -23,7 +23,7 @@ function getPreHash<T extends Field | BN>(
   return preHash
 }
 
-export function genesisRoot<T extends Field | BN>(hasher: Hasher<T>): T {
+export function genesisRoot<T extends Fp | BN>(hasher: Hasher<T>): T {
   return hasher.preHash.slice(-1)[0]
 }
 
@@ -36,10 +36,10 @@ export function keccakHasher(depth: number): Hasher<BN> {
   return { parentOf, preHash }
 }
 
-export function poseidonHasher(depth: number): Hasher<Field> {
-  const parentOf = (left: Field, right: Field) => {
-    return Field.from(poseidon([left.toBigInt(), right.toBigInt()]).toString())
+export function poseidonHasher(depth: number): Hasher<Fp> {
+  const parentOf = (left: Fp, right: Fp) => {
+    return Fp.from(poseidon([left.toBigInt(), right.toBigInt()]).toString())
   }
-  const preHash = getPreHash(Field.zero, parentOf, depth)
+  const preHash = getPreHash(Fp.zero, parentOf, depth)
   return { parentOf, preHash }
 }

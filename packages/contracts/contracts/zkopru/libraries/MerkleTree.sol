@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity = 0.6.12;
+pragma solidity =0.7.4;
 
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 
 struct Hasher {
-    function (uint256, uint256) internal pure returns (uint256) parentOf;
+    function(uint256, uint256) internal pure returns (uint256) parentOf;
     uint256[] preHashedZero;
 }
 
@@ -19,12 +19,23 @@ library MerkleTreeLib {
         uint256[] memory initialSiblings
     ) internal pure returns (uint256 newRoot) {
         newRoot = startingRoot;
-        require(self.preHashedZero.length == initialSiblings.length + 1, "Submitted invalid length of siblings");
-        require(_startingLeafProof(self, startingRoot, index, initialSiblings), "Invalid merkle proof of starting leaf node");
+        require(
+            self.preHashedZero.length == initialSiblings.length + 1,
+            "Submitted invalid length of siblings"
+        );
+        require(
+            _startingLeafProof(self, startingRoot, index, initialSiblings),
+            "Invalid merkle proof of starting leaf node"
+        );
         uint256 nextIndex = index;
         uint256[] memory nextSiblings = initialSiblings;
         for (uint256 i = 0; i < leaves.length; i++) {
-            (newRoot, nextIndex, nextSiblings) = _append(self, nextIndex, leaves[i], nextSiblings);
+            (newRoot, nextIndex, nextSiblings) = _append(
+                self,
+                nextIndex,
+                leaves[i],
+                nextSiblings
+            );
         }
     }
 
@@ -91,11 +102,15 @@ library MerkleTreeLib {
         uint256 index,
         uint256 leaf,
         uint256[] memory siblings
-    ) internal pure returns(
-        uint256 nextRoot,
-        uint256 nextIndex,
-        uint256[] memory nextSiblings
-    ) {
+    )
+        internal
+        pure
+        returns (
+            uint256 nextRoot,
+            uint256 nextIndex,
+            uint256[] memory nextSiblings
+        )
+    {
         nextSiblings = new uint256[](siblings.length);
         uint256 path = index;
         uint256 node = leaf;
@@ -131,10 +146,20 @@ library SubTreeLib {
         newRoot = startingRoot;
         require(index % (1 << subTreeDepth) == 0, "Can't merge a subTree");
         require(
-            self.preHashedZero.length == subTreeDepth + subTreeSiblings.length + 1,
+            self.preHashedZero.length ==
+                subTreeDepth + subTreeSiblings.length + 1,
             "Should submit subtree's siblings"
         );
-        require(_emptySubTreeProof(self, startingRoot, index, subTreeDepth, subTreeSiblings), "Insertion is not allowed");
+        require(
+            _emptySubTreeProof(
+                self,
+                startingRoot,
+                index,
+                subTreeDepth,
+                subTreeSiblings
+            ),
+            "Insertion is not allowed"
+        );
         uint256 nextIndex = index;
         uint256[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
         uint256[] memory nextSiblings = subTreeSiblings;
@@ -150,12 +175,15 @@ library SubTreeLib {
         return newRoot;
     }
 
-    function splitToSubTrees(
-        uint256[] memory leaves,
-        uint256 subTreeDepth
-    ) internal pure returns (uint256[][] memory subTrees) {
+    function splitToSubTrees(uint256[] memory leaves, uint256 subTreeDepth)
+        internal
+        pure
+        returns (uint256[][] memory subTrees)
+    {
         uint256 subTreeSize = 1 << subTreeDepth;
-        uint256 numOfSubTrees = (leaves.length / subTreeSize) + (leaves.length % subTreeSize == 0 ? 0 : 1);
+        uint256 numOfSubTrees =
+            (leaves.length / subTreeSize) +
+                (leaves.length % subTreeSize == 0 ? 0 : 1);
         subTrees = new uint256[][](numOfSubTrees);
         for (uint256 i = 0; i < numOfSubTrees; i++) {
             subTrees[i] = new uint256[](subTreeSize);
@@ -189,14 +217,22 @@ library SubTreeLib {
         for (uint256 i = 0; i < siblings.length; i++) {
             if (path % 2 == 0) {
                 // Right sibling should be a prehashed zero
-                if(siblings[i] != self.preHashedZero[i + subTreeDepth]) return false;
+                if (siblings[i] != self.preHashedZero[i + subTreeDepth])
+                    return false;
             } else {
                 // Left sibling should not be a prehashed zero
-                if(siblings[i] == self.preHashedZero[i + subTreeDepth]) return false;
+                if (siblings[i] == self.preHashedZero[i + subTreeDepth])
+                    return false;
             }
             path >>= 1;
         }
-        return self.merkleProof(root, self.preHashedZero[subTreeDepth], subTreePath, siblings);
+        return
+            self.merkleProof(
+                root,
+                self.preHashedZero[subTreeDepth],
+                subTreePath,
+                siblings
+            );
     }
 
     function _appendSubTree(
@@ -205,11 +241,15 @@ library SubTreeLib {
         uint256 subTreeDepth,
         uint256[] memory leaves,
         uint256[] memory siblings
-    ) internal pure returns(
-        uint256 nextRoot,
-        uint256 nextIndex,
-        uint256[] memory nextSiblings
-    ) {
+    )
+        internal
+        pure
+        returns (
+            uint256 nextRoot,
+            uint256 nextIndex,
+            uint256[] memory nextSiblings
+        )
+    {
         uint256 subTreeSize = 1 << subTreeDepth;
         require(leaves.length <= subTreeSize, "Overflowed");
         nextSiblings = new uint256[](siblings.length);
@@ -220,7 +260,10 @@ library SubTreeLib {
             if (path % 2 == 0) {
                 // right empty sibling
                 nextSiblings[i] = node; // current node will be the next merkle proof's left sibling
-                node = self.parentOf(node, self.preHashedZero[i + subTreeDepth]);
+                node = self.parentOf(
+                    node,
+                    self.preHashedZero[i + subTreeDepth]
+                );
             } else {
                 // left sibling
                 nextSiblings[i] = siblings[i]; // keep current sibling
@@ -265,11 +308,10 @@ library SubTreeLib {
             uint256 leftMostOfTheFloor = treeSize >> level;
             // From the right to the left
             for (
-                uint256 nodeIndex = (leftMostOfTheFloor << 1 ) - 1;
+                uint256 nodeIndex = (leftMostOfTheFloor << 1) - 1;
                 nodeIndex >= leftMostOfTheFloor;
                 nodeIndex--
-            )
-            {
+            ) {
                 if (nodeIndex < emptyNode) {
                     // This node is not an empty node
                     if (level == 0) {
@@ -279,7 +321,10 @@ library SubTreeLib {
                         // Parent node
                         uint256 leftChild = nodeIndex << 1;
                         uint256 rightChild = leftChild + 1;
-                        nodes[nodeIndex] = self.parentOf(nodes[leftChild], nodes[rightChild]);
+                        nodes[nodeIndex] = self.parentOf(
+                            nodes[leftChild],
+                            nodes[rightChild]
+                        );
                     }
                 } else {
                     // Use pre hashed

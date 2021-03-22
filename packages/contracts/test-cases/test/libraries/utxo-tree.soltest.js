@@ -5,16 +5,14 @@
 const chai = require('chai')
 const { UtxoTree, poseidonHasher } = require('~tree')
 const { append, appendAsSubTrees } = require('~tree/utils/merkle-tree-sol')
-const { Field } = require('~babyjubjub')
+const { Fp } = require('~babyjubjub')
 
 const { expect } = chai
 
 const UtxoTreeTester = artifacts.require('UtxoTreeTester')
 
 const compare = (a, b) => {
-  expect(Field.from(a.toString()).toHex()).equal(
-    Field.from(b.toString()).toHex(),
-  )
+  expect(Fp.from(a.toString()).toHex()).equal(Fp.from(b.toString()).toHex())
 }
 
 const toLeaf = val => ({
@@ -25,7 +23,7 @@ const appendSubTree = async (tree, subtreeSize, leaves) => {
   const totalItemLen = subtreeSize * Math.ceil(leaves.length / subtreeSize)
 
   const fixedSizeUtxos = Array(totalItemLen).fill({
-    hash: Field.zero,
+    hash: Fp.zero,
   })
   leaves.forEach((item, index) => {
     fixedSizeUtxos[index] = item
@@ -64,7 +62,7 @@ contract('Utxo tree update tests', async accounts => {
     it('should show same result', async () => {
       // const { root, index, siblings } = tsTree.data
       // const prevIndex = tsTree.latestLeafIndex()
-      const leaves = [Field.from('1'), Field.from('2')]
+      const leaves = [Fp.from('1'), Fp.from('2')]
       const prevTree = tsTree.getStartingLeafProof()
       const utxoTreeResult = await tsTree.dryAppend(...leaves.map(toLeaf))
       // console.log(utxoTreeResult)
@@ -82,7 +80,7 @@ contract('Utxo tree update tests', async accounts => {
     it('should show same result', async () => {
       const { root, index, siblings } = tsTree.data
       const prevIndex = tsTree.latestLeafIndex()
-      const leaves = [Field.from('1'), Field.from('2')]
+      const leaves = [Fp.from('1'), Fp.from('2')]
       const subTreeDepth = 5
       const subTreeSize = 1 << subTreeDepth
       const utxoTreeResult = await appendSubTree(

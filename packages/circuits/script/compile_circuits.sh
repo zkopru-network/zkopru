@@ -2,7 +2,7 @@
 
 BASEDIR=$(dirname "$0")
 ARTIFACTS="build/circuits"
-MAX_JOB=1
+MAX_JOB=$(nproc)
 cd $BASEDIR/..
 mkdir -p $ARTIFACTS
 i=0

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity = 0.6.12;
+pragma solidity =0.7.4;
 
 import {
     Header,
@@ -17,10 +17,7 @@ import {
     Finalization
 } from "./Types.sol";
 
-import {
-    G1Point,
-    G2Point
-} from "./Pairing.sol";
+import { G1Point, G2Point } from "./Pairing.sol";
 
 library Deserializer {
     /**
@@ -28,9 +25,9 @@ library Deserializer {
      * @param paramIndex The index of the block calldata parameter in the external function
      */
     function proposalIdFromCalldata(uint256 paramIndex)
-    internal
-    pure
-    returns (bytes32 proposalId)
+        internal
+        pure
+        returns (bytes32 proposalId)
     {
         // This function assumes that bytes type of block data exists in the calldata at the given parameter index.
         // Get the position where the block data starts.
@@ -41,7 +38,7 @@ library Deserializer {
             len := calldataload(pointer)
         }
         // Using slice function memcopy the calldata into the hash function.
-        return keccak256(bytes(msg.data[pointer + 32: pointer + 32 + len]));
+        return keccak256(bytes(msg.data[pointer + 32:pointer + 32 + len]));
     }
 
     /**
@@ -49,9 +46,9 @@ library Deserializer {
      * @param paramIndex The index of the block calldata parameter in the external function
      */
     function proposerAddressFromCalldata(uint256 paramIndex)
-    internal
-    pure
-    returns (address proposer)
+        internal
+        pure
+        returns (address proposer)
     {
         // This function assumes that bytes type of block data exists in the calldata at the given parameter index.
         // Get the position where the block data starts.
@@ -70,9 +67,9 @@ library Deserializer {
      * @param paramIndex The index of the block calldata parameter in the external function
      */
     function blockFromCalldataAt(uint256 paramIndex)
-    internal
-    pure
-    returns (Block memory)
+        internal
+        pure
+        returns (Block memory)
     {
         // This function assumes that bytes type of block data exists in the calldata at the given parameter index.
         // Get the position where the block data starts.
@@ -90,7 +87,7 @@ library Deserializer {
         (_block.body.massDeposits, cp) = dequeueMassDeposits(cp);
         (_block.body.massMigrations, cp) = dequeueMassMigrations(cp);
         // Check that deserialization fits to the original data length
-        if(len != cp - start - 0x20) {
+        if (len != cp - start - 0x20) {
             revert("Serialization has a problem");
         }
         return _block;
@@ -102,10 +99,11 @@ library Deserializer {
      * @return header The dequeued header object
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueHeader(uint256 calldataPos) internal pure returns (
-        Header memory header,
-        uint256 end
-    ) {
+    function dequeueHeader(uint256 calldataPos)
+        internal
+        pure
+        returns (Header memory header, uint256 end)
+    {
         assembly {
             // Header
             mstore(header, 0) // put zeroes into the first 32bytes
@@ -121,13 +119,14 @@ library Deserializer {
      * @return txs The dequeued array of l2 txs.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueTxs(uint256 calldataPos) internal pure returns (
-        Transaction[] memory txs,
-        uint256 end
-    ) {
+    function dequeueTxs(uint256 calldataPos)
+        internal
+        pure
+        returns (Transaction[] memory txs, uint256 end)
+    {
         uint256 cp = calldataPos;
         uint256 txsLen;
-        assembly {            
+        assembly {
             // Acquire the free memory pointer for array length
             let free_mem := mload(0x40)
             // Initialize the 32 bytes size slot with zeroes
@@ -147,17 +146,18 @@ library Deserializer {
         }
         end = cp;
     }
-    
+
     /**
      * @dev It dequeues a tx from the calldata.
      * @param calldataPos The position where the tx data starts in the calldata.
      * @return transaction The dequeued l2 tx.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueTx(uint256 calldataPos) internal pure returns (
-        Transaction memory transaction,
-        uint256 end
-    ) {
+    function dequeueTx(uint256 calldataPos)
+        internal
+        pure
+        returns (Transaction memory transaction, uint256 end)
+    {
         uint256 cp = calldataPos;
         uint8 indicator;
         (transaction.inflow, cp) = dequeueInflowArr(cp);
@@ -182,13 +182,14 @@ library Deserializer {
      * @return inflow The dequeued array of inflow of an l2 transaction.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueInflowArr(uint256 calldataPos) internal pure returns (
-        Inflow[] memory inflow,
-        uint256 end
-    ) {
+    function dequeueInflowArr(uint256 calldataPos)
+        internal
+        pure
+        returns (Inflow[] memory inflow, uint256 end)
+    {
         uint256 cp = calldataPos;
         uint256 inflowLen;
-        assembly {            
+        assembly {
             // Acquire the free memory pointer for array length
             let free_mem := mload(0x40)
             // Initialize the 32 bytes size slot with zeroes
@@ -215,11 +216,12 @@ library Deserializer {
      * @return inflow The dequeued inflow data.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueInflow(uint256 calldataPos) internal pure returns (
-        Inflow memory inflow,
-        uint256 end
-    ) {
-        assembly {            
+    function dequeueInflow(uint256 calldataPos)
+        internal
+        pure
+        returns (Inflow memory inflow, uint256 end)
+    {
+        assembly {
             calldatacopy(inflow, calldataPos, 0x40)
             end := add(calldataPos, 0x40)
         }
@@ -231,13 +233,14 @@ library Deserializer {
      * @return outflow The dequeued array of outflow of an l2 transaction.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueOutflowArr(uint256 calldataPos) internal pure returns (
-        Outflow[] memory outflow,
-        uint256 end
-    ) {
+    function dequeueOutflowArr(uint256 calldataPos)
+        internal
+        pure
+        returns (Outflow[] memory outflow, uint256 end)
+    {
         uint256 cp = calldataPos;
         uint256 outflowLen;
-        assembly {            
+        assembly {
             // Acquire the free memory pointer for array length
             let free_mem := mload(0x40)
             // Initialize the 32 bytes size slot with zeroes
@@ -264,12 +267,13 @@ library Deserializer {
      * @return outflow The dequeued outflow data.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueOutflow(uint256 calldataPos) internal pure returns (
-        Outflow memory outflow,
-        uint256 end
-    ) {
+    function dequeueOutflow(uint256 calldataPos)
+        internal
+        pure
+        returns (Outflow memory outflow, uint256 end)
+    {
         uint256 cp = calldataPos;
-        assembly {        
+        assembly {
             // Outflow.note
             calldatacopy(outflow, cp, 0x20)
             cp := add(cp, 0x20)
@@ -279,7 +283,7 @@ library Deserializer {
         }
         if (outflow.outflowType != 0) {
             PublicData memory publicData;
-            assembly {        
+            assembly {
                 // PublicData.to
                 calldatacopy(add(publicData, 0x0c), cp, 0x14)
                 cp := add(cp, 0x14)
@@ -303,18 +307,19 @@ library Deserializer {
         }
         end = cp;
     }
-    
+
     /**
      * @dev It dequeues 32 bytes from the calldata and returns an uint256 value.
      * @param calldataPos The position where the uint256 starts in the calldata.
      * @return val The dequeued uint256 value.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueUint(uint256 calldataPos) internal pure returns (
-        uint256 val,
-        uint256 end
-    ) {
-        assembly {            
+    function dequeueUint(uint256 calldataPos)
+        internal
+        pure
+        returns (uint256 val, uint256 end)
+    {
+        assembly {
             // Acquire the free memory pointer
             let free_mem := mload(0x40)
             // Copy 32 bytes from the calldata and overwrite it onto the memory slot.
@@ -334,11 +339,12 @@ library Deserializer {
      * @return val The dequeued bytes32 value.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueBytes32(uint256 calldataPos) internal pure returns (
-        bytes32 val,
-        uint256 end
-    ) {
-        assembly {            
+    function dequeueBytes32(uint256 calldataPos)
+        internal
+        pure
+        returns (bytes32 val, uint256 end)
+    {
+        assembly {
             // Acquire the free memory pointer
             let free_mem := mload(0x40)
             // Copy 32 bytes from the calldata and overwrite it onto the memory slot.
@@ -358,11 +364,12 @@ library Deserializer {
      * @return val The dequeued byte value.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueByte(uint256 calldataPos) internal pure returns (
-        uint8 val,
-        uint256 end
-    ) {
-        assembly {            
+    function dequeueByte(uint256 calldataPos)
+        internal
+        pure
+        returns (uint8 val, uint256 end)
+    {
+        assembly {
             // Acquire the free memory pointer
             let free_mem := mload(0x40)
             // Initialize the 32 bytes size slot with zeroes
@@ -384,10 +391,11 @@ library Deserializer {
      * @return point The dequeued G1Point.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueG1Point(uint256 calldataPos) internal pure returns (
-        G1Point memory point,
-        uint256 end
-    ) {
+    function dequeueG1Point(uint256 calldataPos)
+        internal
+        pure
+        returns (G1Point memory point, uint256 end)
+    {
         assembly {
             // Because G1Point has 64 bytes size, we can simply copy the data from calldata to the memory slot
             calldatacopy(point, calldataPos, 0x40)
@@ -395,17 +403,18 @@ library Deserializer {
             end := add(calldataPos, 0x40)
         }
     }
-    
+
     /**
      * @dev It dequeues an array of length 2 uint256 from the calldata.
      * @param calldataPos The position where the array starts in the calldata.
      * @return arr The dequeued array of uint256.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueUint2Arr(uint256 calldataPos) internal pure returns (
-        uint256[2] memory arr,
-        uint256 end
-    ) {
+    function dequeueUint2Arr(uint256 calldataPos)
+        internal
+        pure
+        returns (uint256[2] memory arr, uint256 end)
+    {
         assembly {
             // Because Uint256[2] has 64 bytes size, we can simply copy the data from calldata to the memory slot
             calldatacopy(arr, calldataPos, 0x40)
@@ -420,10 +429,11 @@ library Deserializer {
      * @return point The dequeued G2Point.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueG2Point(uint256 calldataPos) internal pure returns (
-        G2Point memory point,
-        uint256 end
-    ) {
+    function dequeueG2Point(uint256 calldataPos)
+        internal
+        pure
+        returns (G2Point memory point, uint256 end)
+    {
         uint256 cp = calldataPos;
         (point.X, cp) = dequeueUint2Arr(cp);
         (point.Y, cp) = dequeueUint2Arr(cp);
@@ -436,27 +446,29 @@ library Deserializer {
      * @return proof The dequeued Proof.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueProof(uint256 calldataPos) internal pure returns (
-        Proof memory proof,
-        uint256 end
-    ) {
+    function dequeueProof(uint256 calldataPos)
+        internal
+        pure
+        returns (Proof memory proof, uint256 end)
+    {
         uint256 cp = calldataPos;
         (proof.a, cp) = dequeueG1Point(cp);
         (proof.b, cp) = dequeueG2Point(cp);
         (proof.c, cp) = dequeueG1Point(cp);
         end = cp;
     }
-    
+
     /**
      * @dev It dequeues the memo field of an l2 transaction.
      * @param calldataPos The position where the memo field starts in the calldata.
      * @return memo The dequeued memo data.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueMemo(uint256 calldataPos) internal pure returns (
-        bytes memory memo,
-        uint256 end
-    ) {
+    function dequeueMemo(uint256 calldataPos)
+        internal
+        pure
+        returns (bytes memory memo, uint256 end)
+    {
         assembly {
             // Acquire the free memory pointer for the memo object
             let free_mem := mload(0x40)
@@ -472,17 +484,18 @@ library Deserializer {
             mstore(0x40, add(free_mem, 0x71))
         }
     }
-    
+
     /**
      * @dev It dequeues the array of mass deposits from the calldata.
      * @param calldataPos The position where the array starts in the calldata.
      * @return massDeposits The dequeued array of mass deposits.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueMassDeposits(uint256 calldataPos) internal pure returns (
-        MassDeposit[] memory massDeposits,
-        uint256 end
-    ) {
+    function dequeueMassDeposits(uint256 calldataPos)
+        internal
+        pure
+        returns (MassDeposit[] memory massDeposits, uint256 end)
+    {
         uint256 cp = calldataPos;
         uint256 len;
         assembly {
@@ -505,17 +518,18 @@ library Deserializer {
         }
         end = cp;
     }
-    
+
     /**
      * @dev It dequeues a mass deposit from the calldata.
      * @param calldataPos The position where the mass deposit data starts in the calldata.
      * @return massDeposit The dequeued mass deposit.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueMassDeposit(uint256 calldataPos) internal pure returns (
-        MassDeposit memory massDeposit,
-        uint256 end
-    ) {
+    function dequeueMassDeposit(uint256 calldataPos)
+        internal
+        pure
+        returns (MassDeposit memory massDeposit, uint256 end)
+    {
         assembly {
             // Because MassDeposit has 64 bytes size, we can simply copy the data from calldata to the memory slot
             calldatacopy(massDeposit, calldataPos, 0x40)
@@ -530,13 +544,14 @@ library Deserializer {
      * @return massMigrations The dequeued array of mass migrations.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueMassMigrations(uint256 calldataPos) internal pure returns (
-        MassMigration[] memory massMigrations,
-        uint256 end
-    ) {
+    function dequeueMassMigrations(uint256 calldataPos)
+        internal
+        pure
+        returns (MassMigration[] memory massMigrations, uint256 end)
+    {
         uint256 cp = calldataPos;
         uint256 len;
-        assembly {  
+        assembly {
             // Acquire the free memory pointer for the length of the array
             let free_mem := mload(0x40)
             // Initialize the 32 bytes size slot with zeroes
@@ -556,17 +571,18 @@ library Deserializer {
         }
         end = cp;
     }
-    
+
     /**
      * @dev It dequeues a mass migrations from the calldata.
      * @param calldataPos The position where the mass migration data starts in the calldata.
      * @return migration The dequeued mass migration.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueMassMigration(uint256 calldataPos) internal pure returns (
-        MassMigration memory migration,
-        uint256 end
-    ) {
+    function dequeueMassMigration(uint256 calldataPos)
+        internal
+        pure
+        returns (MassMigration memory migration, uint256 end)
+    {
         uint256 cp = calldataPos;
         (migration.destination, cp) = dequeueAddress(cp);
         (migration.totalETH, cp) = dequeueUint(cp);
@@ -582,11 +598,12 @@ library Deserializer {
      * @return val The dequeued address value.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueAddress(uint256 calldataPos) internal pure returns (
-        address val,
-        uint256 end
-    ) {
-        assembly {            
+    function dequeueAddress(uint256 calldataPos)
+        internal
+        pure
+        returns (address val, uint256 end)
+    {
+        assembly {
             // Acquire the free memory pointer
             let free_mem := mload(0x40)
             // Initialize the 32 bytes size slot with zeroes
@@ -608,10 +625,11 @@ library Deserializer {
      * @return erc20 The dequeued array of erc20 migrations.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueERC20Migrations(uint256 calldataPos) internal pure returns (
-        ERC20Migration[] memory erc20,
-        uint256 end
-    ) {
+    function dequeueERC20Migrations(uint256 calldataPos)
+        internal
+        pure
+        returns (ERC20Migration[] memory erc20, uint256 end)
+    {
         uint256 cp = calldataPos;
         uint256 len;
         assembly {
@@ -641,10 +659,11 @@ library Deserializer {
      * @return migration The dequeued erc20 migration.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueERC20Migration(uint256 calldataPos) internal pure returns (
-        ERC20Migration memory migration,
-        uint256 end
-    ) {
+    function dequeueERC20Migration(uint256 calldataPos)
+        internal
+        pure
+        returns (ERC20Migration memory migration, uint256 end)
+    {
         assembly {
             // Initialize with zeroes
             mstore(migration, 0)
@@ -654,17 +673,18 @@ library Deserializer {
             end := add(calldataPos, 0x34)
         }
     }
-    
+
     /**
      * @dev It dequeues the array of ERC721Migrations from the calldata.
      * @param calldataPos The position where the array data starts in the calldata.
      * @return erc721 The dequeued array of erc721 migrations.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueERC721Migrations(uint256 calldataPos) internal pure returns (
-        ERC721Migration[] memory erc721,
-        uint256 end
-    ) {
+    function dequeueERC721Migrations(uint256 calldataPos)
+        internal
+        pure
+        returns (ERC721Migration[] memory erc721, uint256 end)
+    {
         uint256 cp = calldataPos;
         uint256 len;
         assembly {
@@ -687,33 +707,35 @@ library Deserializer {
         }
         end = cp;
     }
-    
+
     /**
      * @dev It dequeues an ERC721Migrations from the calldata.
      * @param calldataPos The position where the array data starts in the calldata.
      * @return migration The dequeued erc721 migration.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueERC721Migration(uint256 calldataPos) internal pure returns (
-        ERC721Migration memory migration,
-        uint256 end
-    ) {
+    function dequeueERC721Migration(uint256 calldataPos)
+        internal
+        pure
+        returns (ERC721Migration memory migration, uint256 end)
+    {
         uint256 cp = calldataPos;
         (migration.addr, cp) = dequeueAddress(cp);
         (migration.nfts, cp) = dequeueNfts(cp);
         end = cp;
     }
-    
+
     /**
      * @dev It dequeues the array of NFTs from the calldata.
      * @param calldataPos The position where the array data starts in the calldata.
      * @return nfts The dequeued array of nfts.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueNfts(uint256 calldataPos) internal pure returns (
-        uint256[] memory nfts,
-        uint256 end
-    ) {
+    function dequeueNfts(uint256 calldataPos)
+        internal
+        pure
+        returns (uint256[] memory nfts, uint256 end)
+    {
         uint256 cp = calldataPos;
         uint256 len;
         assembly {
@@ -741,7 +763,11 @@ library Deserializer {
         end = cp;
     }
 
-    function headerFromCalldataAt(uint256 paramIndex) internal pure returns (Header memory) {
+    function headerFromCalldataAt(uint256 paramIndex)
+        internal
+        pure
+        returns (Header memory)
+    {
         uint256 start = getPointerAddress(paramIndex);
         uint256 cp = start + 0x20; //calldata position
         Header memory _header;
@@ -749,7 +775,11 @@ library Deserializer {
         return _header;
     }
 
-    function massMigrationFromCalldataAt(uint256 paramIndex) internal pure returns (MassMigration memory) {
+    function massMigrationFromCalldataAt(uint256 paramIndex)
+        internal
+        pure
+        returns (MassMigration memory)
+    {
         uint256 start = getPointerAddress(paramIndex);
         uint256 cp = start + 0x20; //calldata position
         MassMigration memory _massMigration;
@@ -757,7 +787,11 @@ library Deserializer {
         return _massMigration;
     }
 
-    function finalizationFromCalldataAt(uint256 paramIndex) internal pure returns (Finalization memory) {
+    function finalizationFromCalldataAt(uint256 paramIndex)
+        internal
+        pure
+        returns (Finalization memory)
+    {
         // 4 means the length of the function signature in the calldata
         uint256 start = getPointerAddress(paramIndex);
         uint256 cp = start + 0x20; //calldata position
@@ -770,13 +804,17 @@ library Deserializer {
         assembly {
             len := calldataload(start)
         }
-        if(len != cp - start - 0x20) {
+        if (len != cp - start - 0x20) {
             revert("Serialization has a problem");
         }
         return _finalization;
     }
 
-    function getPointerAddress(uint256 paramIndex) private pure returns (uint256) {
+    function getPointerAddress(uint256 paramIndex)
+        private
+        pure
+        returns (uint256)
+    {
         uint256 LEFT_PADDING = 4; // function sig 4 bytes
         uint256 pp = LEFT_PADDING + 32 * paramIndex; // pointer of pointer of the given parameter
         uint256 p;

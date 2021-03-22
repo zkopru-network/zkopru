@@ -1,11 +1,11 @@
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import assert from 'assert'
 import BN from 'bn.js'
 import { Hasher } from '../hasher'
 
 // This TS code corresponds to the MerkleTree.sol code file
 
-function appendLeaf<T extends Field | BN>(
+function appendLeaf<T extends Fp | BN>(
   hasher: Hasher<T>,
   index: T,
   leaf: T,
@@ -38,7 +38,7 @@ function appendLeaf<T extends Field | BN>(
   }
 }
 
-function startingLeafProof<T extends Field | BN>(
+function startingLeafProof<T extends Fp | BN>(
   hasher: Hasher<T>,
   root: T,
   index: T,
@@ -60,7 +60,7 @@ function startingLeafProof<T extends Field | BN>(
   return root.eq(node)
 }
 
-export function merkleRoot<T extends Field | BN>(
+export function merkleRoot<T extends Fp | BN>(
   hasher: Hasher<T>,
   leaf: T,
   index: T,
@@ -80,7 +80,7 @@ export function merkleRoot<T extends Field | BN>(
   return node
 }
 
-export function merkleProof<T extends Field | BN>(
+export function merkleProof<T extends Fp | BN>(
   hasher: Hasher<T>,
   root: T,
   leaf: T,
@@ -90,7 +90,7 @@ export function merkleProof<T extends Field | BN>(
   return merkleRoot(hasher, leaf, index, siblings).eq(root)
 }
 
-export function append<T extends Field | BN>(
+export function append<T extends Fp | BN>(
   hasher: Hasher<T>,
   startingRoot: T,
   index: T,
@@ -118,7 +118,7 @@ export function append<T extends Field | BN>(
 }
 
 // Sub tree library
-function subTreeRoot<T extends Field | BN>(
+function subTreeRoot<T extends Fp | BN>(
   hasher: Hasher<T>,
   subTreeDepth: number,
   leaves: T[],
@@ -181,7 +181,7 @@ function subTreeRoot<T extends Field | BN>(
   return rootNode
 }
 
-function appendSubTree<T extends Field | BN>(
+function appendSubTree<T extends Fp | BN>(
   hasher: Hasher<T>,
   index: T,
   subTreeDepth: number,
@@ -219,7 +219,7 @@ function appendSubTree<T extends Field | BN>(
   }
 }
 
-function emptySubTreeProof<T extends Field | BN>(
+function emptySubTreeProof<T extends Fp | BN>(
   hasher: Hasher<T>,
   root: T,
   index: T,
@@ -252,7 +252,7 @@ function emptySubTreeProof<T extends Field | BN>(
   )
 }
 
-export function splitToSubTrees<T extends Field | BN>(
+export function splitToSubTrees<T extends Fp | BN>(
   hasher: Hasher<T>,
   leaves: T[],
   subTreeDepth: number,
@@ -276,7 +276,7 @@ export function splitToSubTrees<T extends Field | BN>(
   return subTrees
 }
 
-export function appendAsSubTrees<T extends Field | BN>(
+export function appendAsSubTrees<T extends Fp | BN>(
   hasher: Hasher<T>,
   startingRoot: T,
   index: T,

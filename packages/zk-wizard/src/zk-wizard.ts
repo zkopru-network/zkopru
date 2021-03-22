@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { ZkAccount } from '@zkopru/account'
-import { Field, F } from '@zkopru/babyjubjub'
+import { Fp, F } from '@zkopru/babyjubjub'
 import {
   RawTx,
   ZkTx,
@@ -41,7 +41,7 @@ export class ZkWizard {
     encryptTo?: ZkAddress
   }): Promise<ZkTx> {
     return new Promise<ZkTx>((resolve, reject) => {
-      const merkleProof: { [hash: number]: MerkleProof<Field> } = {}
+      const merkleProof: { [hash: number]: MerkleProof<Fp> } = {}
 
       function isDataPrepared(): boolean {
         return Object.keys(merkleProof).length === tx.inflow.length
@@ -76,7 +76,7 @@ export class ZkWizard {
     tx: RawTx
     encryptTo?: ZkAddress
     signer: ZkAccount
-    merkleProof: { [hash: number]: MerkleProof<Field> }
+    merkleProof: { [hash: number]: MerkleProof<Fp> }
   }): Promise<ZkTx> {
     const nIn = tx.inflow.length
     const nOut = tx.outflow.length
@@ -143,11 +143,11 @@ export class ZkWizard {
       outflow: tx.outflow.map(utxo => utxo.toZkOutflow()),
       fee: tx.fee,
       proof: {
-        pi_a: result.proof.pi_a.map(Field.from),
+        pi_a: result.proof.pi_a.map(Fp.from),
         pi_b: result.proof.pi_b.map(
-          (arr: F[]) => arr.map((val: F) => Field.from(val)), // caution: snarkjs G2Point is reversed.
+          (arr: F[]) => arr.map((val: F) => Fp.from(val)), // caution: snarkjs G2Point is reversed.
         ),
-        pi_c: result.proof.pi_c.map(Field.from),
+        pi_c: result.proof.pi_c.map(Fp.from),
       },
       swap: tx.swap,
       memo,
@@ -161,7 +161,7 @@ export class ZkWizard {
     signer,
   }: {
     tx: RawTx
-    merkleProof: { [hash: number]: MerkleProof<Field> }
+    merkleProof: { [hash: number]: MerkleProof<Fp> }
     signer: ZkAccount
   }): {
     [name: string]: bigint | bigint[] | bigint[][]
@@ -191,8 +191,8 @@ export class ZkWizard {
       const utxo = tx.inflow[i]
       // private signals
       const eddsa = signer.signEdDSA(utxo.hash())
-      spendingNoteEdDSAPoint[0][i] = signer.getEdDSAPoint().x.toBigInt()
-      spendingNoteEdDSAPoint[1][i] = signer.getEdDSAPoint().y.toBigInt()
+      spendingNoteEdDSAPoint[0][i] = signer.getEdDSAPubKey().x.toBigInt()
+      spendingNoteEdDSAPoint[1][i] = signer.getEdDSAPubKey().y.toBigInt()
       spendingNoteEdDSA[0][i] = eddsa.R8.x.toBigInt()
       spendingNoteEdDSA[1][i] = eddsa.R8.y.toBigInt()
       spendingNoteEdDSA[2][i] = eddsa.S.toBigInt()
@@ -238,33 +238,33 @@ export class ZkWizard {
       newNoteErc721[i] = note.nft().toBigInt()
       // public slignals
       newNoteHashes[i] = note.hash().toBigInt()
-      typeOfNewNotes[i] = Field.from(
+      typeOfNewNotes[i] = Fp.from(
         note.outflowType || OutflowType.UTXO,
       ).toBigInt()
       publicDataTo[i] =
         note instanceof Withdrawal || note instanceof Migration
           ? note.publicData.to.toBigInt()
-          : Field.zero.toBigInt()
+          : Fp.zero.toBigInt()
       publicDataEth[i] =
         note instanceof Withdrawal || note instanceof Migration
           ? note.eth().toBigInt()
-          : Field.zero.toBigInt()
+          : Fp.zero.toBigInt()
       publicDataTokenAddr[i] =
         note instanceof Withdrawal || note instanceof Migration
           ? note.tokenAddr().toBigInt()
-          : Field.zero.toBigInt()
+          : Fp.zero.toBigInt()
       publicDataErc20[i] =
         note instanceof Withdrawal || note instanceof Migration
           ? note.erc20Amount().toBigInt()
-          : Field.zero.toBigInt()
+          : Fp.zero.toBigInt()
       publicDataErc721[i] =
         note instanceof Withdrawal || note instanceof Migration
           ? note.nft().toBigInt()
-          : Field.zero.toBigInt()
+          : Fp.zero.toBigInt()
       publicDataFee[i] =
         note instanceof Withdrawal || note instanceof Migration
           ? note.publicData.fee.toBigInt()
-          : Field.zero.toBigInt()
+          : Fp.zero.toBigInt()
     })
     // spending note private signals
     inputs.spending_note_eddsa_point = spendingNoteEdDSAPoint
@@ -300,7 +300,7 @@ export class ZkWizard {
 
     // tx metadata - public signals
     inputs.fee = tx.fee.toBigInt()
-    inputs.swap = (tx.swap ? tx.swap : Field.zero).toBigInt()
+    inputs.swap = (tx.swap ? tx.swap : Fp.zero).toBigInt()
     return inputs
   }
 }

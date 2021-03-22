@@ -1,33 +1,33 @@
 import { poseidon } from 'circomlib'
-import { Field, Point } from '@zkopru/babyjubjub'
+import { Fp, Fr, Point } from '@zkopru/babyjubjub'
 import { ZkAddress, ZkTx, Utxo, TokenRegistry } from '@zkopru/transaction'
 import { soliditySha3Raw } from 'web3-utils'
 
 export class ZkViewer {
-  private pG: Point // spending key's EdDSA point
+  private A: Point // EdDSA Public Key
 
-  private n: Field // nullifier seed, viewing key
+  private v: Fr // viewing key, nullifier seed
 
   zkAddress: ZkAddress // https://github.com/zkopru-network/zkopru/issues/43
 
-  constructor(pG: Point, n: Field) {
-    this.pG = pG
-    this.n = n
+  constructor(A: Point, v: Fr) {
+    this.A = A
+    this.v = v
     // Public viewing key, public nullifier seed
-    const N = Point.fromPrivKey(this.n.toHex(32))
+    const V = Point.BASE8.mul(v)
     // Public spending key
-    const S = Field.from(
+    const PubSK = Fp.from(
       poseidon([
-        this.pG.x.toBigInt(),
-        this.pG.y.toBigInt(),
-        this.n.toBigInt(),
+        this.A.x.toBigInt(),
+        this.A.y.toBigInt(),
+        this.v.toBigInt(),
       ]).toString(),
     )
-    this.zkAddress = ZkAddress.from(S, N)
+    this.zkAddress = ZkAddress.from(PubSK, V)
   }
 
-  getEdDSAPoint(): Point {
-    return this.pG
+  getEdDSAPubKey(): Point {
+    return this.A
   }
 
   decrypt(zkTx: ZkTx, tokenRegistry?: TokenRegistry): Utxo | undefined {
@@ -42,7 +42,7 @@ export class ZkViewer {
           utxoHash: outflow.note,
           memo,
           spendingPubKey: this.zkAddress.spendingPubKey(),
-          viewingKey: this.n,
+          viewingKey: this.v,
           tokenRegistry,
         })
       } catch (err) {
@@ -53,15 +53,15 @@ export class ZkViewer {
     return note ? Utxo.from(note) : undefined
   }
 
-  getNullifierSeed(): Field {
-    return this.n
+  getNullifierSeed(): Fp {
+    return this.v
   }
 
   encodeViewingKey(): string {
     const concatenated = Buffer.concat([
-      this.pG.x.toBytes32().toBuffer(),
-      this.pG.y.toBytes32().toBuffer(),
-      this.n.toBytes32().toBuffer(),
+      this.A.x.toBytes32().toBuffer(),
+      this.A.y.toBytes32().toBuffer(),
+      this.v.toBytes32().toBuffer(),
       Buffer.from(soliditySha3Raw(this.zkAddress.toString()).slice(-8), 'hex'),
     ])
     return concatenated.toString('hex')
@@ -69,12 +69,12 @@ export class ZkViewer {
 
   static from(encoded: string): ZkViewer {
     const buff = Buffer.from(encoded, 'hex')
-    const pGx = Field.from(buff.slice(0, 32))
-    const pGy = Field.from(buff.slice(32, 64))
-    const n = Field.from(buff.slice(64, 92))
+    const Ax = Fp.from(buff.slice(0, 32))
+    const Ay = Fp.from(buff.slice(32, 64))
+    const v = Fr.from(buff.slice(64, 92))
     const addressHash = buff.slice(92, 96)
-    const pG = Point.from(pGx, pGy)
-    const viewer = new ZkViewer(pG, n)
+    const A = Point.from(Ax, Ay)
+    const viewer = new ZkViewer(A, v)
     const success = addressHash.equals(
       Buffer.from(
         soliditySha3Raw(viewer.zkAddress.toString()).slice(-8),

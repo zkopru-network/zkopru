@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity = 0.6.12;
+pragma solidity =0.7.4;
 
 import { Storage } from "../../storage/Storage.sol";
 import { SNARK } from "../../libraries/SNARK.sol";
@@ -23,8 +23,10 @@ contract TxValidator is Storage, ITxValidator {
     using Types for PublicData;
     using SNARK for SNARK.VerifyingKey;
 
-    uint256 constant SNARK_SCALAR_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
-    uint256 constant PRIME_Q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
+    uint256 constant SNARK_SCALAR_FIELD =
+        21888242871839275222246405745257275088548364400416034343698204186575808495617;
+    uint256 constant PRIME_Q =
+        21888242871839275222246405745257275088696311157297823662689037894645226208583;
 
     /**
      * @dev Challenge when any of the used nullifier's inclusion reference is invalid.
@@ -36,12 +38,7 @@ contract TxValidator is Storage, ITxValidator {
         bytes calldata,
         uint256 txIndex,
         uint256 inflowIndex
-    )
-    external
-    view
-    override
-    returns (bool slash, string memory reason)
-    {
+    ) external view override returns (bool slash, string memory reason) {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         Transaction memory transaction = _block.body.txs[txIndex];
         uint256 ref = transaction.inflow[inflowIndex].inclusionRoot;
@@ -60,10 +57,10 @@ contract TxValidator is Storage, ITxValidator {
      * @param ref Utxo root which includes the nullifier's origin utxo.
      */
     function isValidRef(bytes32 l2BlockHash, uint256 ref)
-    public
-    view
-    override
-    returns (bool)
+        public
+        view
+        override
+        returns (bool)
     {
         if (Storage.chain.finalizedUTXORoots[ref]) {
             return true;
@@ -86,22 +83,18 @@ contract TxValidator is Storage, ITxValidator {
     function validateOutflow(
         bytes calldata, // blockData
         uint256 txIndex
-    )
-    external
-    view
-    override
-    returns (bool slash, string memory reason)
-    {
+    ) external view override returns (bool slash, string memory reason) {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         Transaction memory transaction = _block.body.txs[txIndex];
-        for(uint256 i = 0; i < transaction.outflow.length; i++) {
+        for (uint256 i = 0; i < transaction.outflow.length; i++) {
             Outflow memory outflow = transaction.outflow[i];
             if (outflow.outflowType > 2) {
                 // code T2: An outflow has an invalid type. Only 0, 1, and 2 are allowed.
                 return (true, "T2");
             }
             address tokenAddr = outflow.publicData.token;
-            if (outflow.outflowType == 0) { // means UTXO
+            if (outflow.outflowType == 0) {
+                // means UTXO
                 if (!outflow.publicData.isEmpty()) {
                     // code T3: UTXO type of outflow cannot have public data
                     return (true, "T3");
@@ -148,21 +141,16 @@ contract TxValidator is Storage, ITxValidator {
     function validateAtomicSwap(
         bytes calldata, // blockData
         uint256 txIndex
-    )
-    external
-    pure
-    override
-    returns (bool slash, string memory reason)
-    {
+    ) external pure override returns (bool slash, string memory reason) {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         Transaction memory txA = _block.body.txs[txIndex];
         require(txA.swap != 0, "This tx does not have atomic swap.");
-        for(uint256 i = 0; i < _block.body.txs.length; i++) {
+        for (uint256 i = 0; i < _block.body.txs.length; i++) {
             // skip when txA == txB
             if (i == txIndex) continue;
             // Search transaction
             Transaction memory txB = _block.body.txs[i];
-            if(
+            if (
                 _includeSwapNote(txB, txA.swap) &&
                 _includeSwapNote(txA, txB.swap)
             ) {
@@ -176,11 +164,7 @@ contract TxValidator is Storage, ITxValidator {
     function _includeSwapNote(
         Transaction memory transaction,
         uint256 expectedNote
-    )
-    pure
-    internal
-    returns (bool)
-    {
+    ) internal pure returns (bool) {
         if (transaction.swap == 0) return false;
         for (uint256 i = 0; i < transaction.outflow.length; i++) {
             if (transaction.outflow[i].note == expectedNote) return true;
@@ -202,27 +186,20 @@ contract TxValidator is Storage, ITxValidator {
         uint256 txIndex,
         uint256 inflowIndex,
         bytes32[254] calldata sibling
-    )
-    external
-    pure
-    override
-    returns (bool slash, string memory reason)
-    {
+    ) external pure override returns (bool slash, string memory reason) {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         Header memory _parentHeader = Deserializer.headerFromCalldataAt(1);
-        bytes32 usedNullifier = _block.body.txs[txIndex].inflow[inflowIndex].nullifier;
+        bytes32 usedNullifier =
+            _block.body.txs[txIndex].inflow[inflowIndex].nullifier;
         bytes32[] memory nullifiers = new bytes32[](1);
         bytes32[254][] memory siblings = new bytes32[254][](1);
         nullifiers[0] = usedNullifier;
         siblings[0] = sibling;
-        bytes32 updatedRoot = SMT254.fill(
-            _parentHeader.nullifierRoot,
-            nullifiers,
-            siblings
-        );
+        bytes32 updatedRoot =
+            SMT254.fill(_parentHeader.nullifierRoot, nullifiers, siblings);
         // should be updated if the nullifier wasn't used before.
         // code T9: Transaction is using an already spent nullifier.
-        return (updatedRoot == _parentHeader.nullifierRoot,  "T9");
+        return (updatedRoot == _parentHeader.nullifierRoot, "T9");
     }
 
     /**
@@ -233,12 +210,7 @@ contract TxValidator is Storage, ITxValidator {
     function validateDuplicatedNullifier(
         bytes calldata, // blockData
         bytes32 nullifier
-    )
-    external
-    pure
-    override
-    returns (bool slash, string memory reason)
-    {
+    ) external pure override returns (bool slash, string memory reason) {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         uint256 count = 0;
         for (uint256 i = 0; i < _block.body.txs.length; i++) {
@@ -262,15 +234,11 @@ contract TxValidator is Storage, ITxValidator {
     function validateSNARK(
         bytes calldata, //blockData
         uint256 txIndex
-    )
-    external
-    view
-    override
-    returns (bool slash, string memory reason)
-    {
+    ) external view override returns (bool slash, string memory reason) {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         Transaction memory transaction = _block.body.txs[txIndex];
-        (SNARK.VerifyingKey memory vk, uint256[] memory inputs) = _getParams(transaction);
+        (SNARK.VerifyingKey memory vk, uint256[] memory inputs) =
+            _getParams(transaction);
         // Proof memory proof = transaction.proof;
         if (!_rangeCheck(inputs, transaction.proof)) {
             // Some value is out of range.
@@ -280,10 +248,11 @@ contract TxValidator is Storage, ITxValidator {
         return (!validity, "S2");
     }
 
-    function _rangeCheck(
-        uint256[] memory inputs,
-        Proof memory proof
-    ) internal pure returns (bool) {
+    function _rangeCheck(uint256[] memory inputs, Proof memory proof)
+        internal
+        pure
+        returns (bool)
+    {
         if (proof.a.X >= PRIME_Q) return false;
         if (proof.a.Y >= PRIME_Q) return false;
         if (proof.b.X[0] >= PRIME_Q) return false;
@@ -300,22 +269,20 @@ contract TxValidator is Storage, ITxValidator {
     }
 
     function _getParams(Transaction memory transaction)
-    internal
-    view
-    returns (SNARK.VerifyingKey memory vk, uint256[] memory inputs) {
+        internal
+        view
+        returns (SNARK.VerifyingKey memory vk, uint256[] memory inputs)
+    {
         uint256 numOfInflow = transaction.inflow.length;
         uint256 numOfOutflow = transaction.outflow.length;
-        require(numOfInflow < 256, 'cannot convert to uint8');
-        require(numOfOutflow < 256, 'cannot convert to uint8');
+        require(numOfInflow < 256, "cannot convert to uint8");
+        require(numOfOutflow < 256, "cannot convert to uint8");
         // Transaction memory transaction = _block.body.txs[txIndex];
         // Slash if the transaction type is not supported
-        vk = _getVerifyingKey(
-            uint8(numOfInflow),
-            uint8(numOfOutflow)
-        );
+        vk = _getVerifyingKey(uint8(numOfInflow), uint8(numOfOutflow));
         require(_exist(vk), "S1");
         // Slash if its zk SNARK verification returns false
-        inputs = new uint256[](2*numOfInflow + 8*numOfOutflow + 1 + 1);
+        inputs = new uint256[](2 * numOfInflow + 8 * numOfOutflow + 1 + 1);
         uint256 index = 0;
         for (uint256 i = 0; i < numOfInflow; i++) {
             inputs[index++] = uint256(transaction.inflow[i].inclusionRoot);
@@ -354,10 +321,11 @@ contract TxValidator is Storage, ITxValidator {
     }
 
     /** Internal functions to help reusable clean code */
-    function _getVerifyingKey(
-        uint8 numberOfInputs,
-        uint8 numberOfOutputs
-    ) internal view returns (SNARK.VerifyingKey memory) {
+    function _getVerifyingKey(uint8 numberOfInputs, uint8 numberOfOutputs)
+        internal
+        view
+        returns (SNARK.VerifyingKey memory)
+    {
         return vks[Types.getSNARKSignature(numberOfInputs, numberOfOutputs)];
     }
 

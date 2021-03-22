@@ -101,6 +101,13 @@ export const BurnAuctionABI = [
     type: 'function',
   },
   {
+    inputs: [],
+    name: 'minBid',
+    outputs: [{ internalType: 'uint112', name: '', type: 'uint112' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
     inputs: [{ internalType: 'address', name: '', type: 'address' }],
     name: 'pendingBalances',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],

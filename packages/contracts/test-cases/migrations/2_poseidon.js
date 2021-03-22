@@ -1,3 +1,4 @@
+const path = require('path')
 /*
  * semaphorejs - Zero-knowledge signaling on Ethereum
  * Copyright (C) 2019 Kobi Gurkan <kobigurk@gmail.com>
@@ -18,8 +19,6 @@
  * along with semaphorejs.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const path = require('path')
-
 const poseidonGenContract = require('circomlib/src/poseidon_gencontract.js')
 const Artifactor = require('@truffle/artifactor')
 
@@ -32,7 +31,7 @@ module.exports = function migration(deployer) {
       const poseidonX = args => `Poseidon${args}`
       await artifactor.save({
         contractName: poseidonX(x),
-        abi: poseidonGenContract.abi,
+        abi: poseidonGenContract.generateABI(x),
         unlinked_binary: poseidonGenContract.createCode(x),
       })
       await deployer.deploy(artifacts.require(poseidonX(x)))
