@@ -1,5 +1,5 @@
-const HeaderValidator = artifacts.require('HeaderValidator')
+const HeaderValidator = artifacts.require("HeaderValidator");
 
 module.exports = function migration(deployer) {
-  deployer.deploy(HeaderValidator)
-}
+  deployer.deploy(HeaderValidator);
+};

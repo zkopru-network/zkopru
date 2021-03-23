@@ -1,5 +1,5 @@
-const Coordinatable = artifacts.require('Coordinatable')
+const Coordinatable = artifacts.require("Coordinatable");
 
 module.exports = function migration(deployer) {
-  deployer.deploy(Coordinatable)
-}
+  deployer.deploy(Coordinatable);
+};

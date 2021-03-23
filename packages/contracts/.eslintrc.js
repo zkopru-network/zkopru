@@ -5,13 +5,13 @@ module.exports = {
     it: true,
     before: true,
     beforeEach: true,
-    assert: true,
+    assert: true
   },
   env: {
     mocha: true, // for test files
-    'truffle/globals': true, // same as "truffle/truffle": true
+    "truffle/globals": true // same as "truffle/truffle": true
   },
-  plugins: ['truffle'],
+  plugins: ["truffle"],
   rules: {
     "no-console": "off",
     "no-restricted-syntax": "off",
@@ -19,10 +19,10 @@ module.exports = {
     "no-loop-func": "off",
     "import/no-dynamic-require": "off",
     "global-require": "off",
-    "import/no-extraneous-dependencies": ["error", {"devDependencies": true}],
+    "import/no-extraneous-dependencies": ["error", { devDependencies: true }],
     "@typescript-eslint/camelcase": "warn",
     "@typescript-eslint/ban-ts-ignore": "warn",
     "import/no-unresolved": "warn",
-    "import/export": "warn",
-  },
-}
+    "import/export": "warn"
+  }
+};

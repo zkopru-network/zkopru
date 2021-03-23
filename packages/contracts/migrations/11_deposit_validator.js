@@ -1,5 +1,5 @@
-const DepositValidator = artifacts.require('DepositValidator')
+const DepositValidator = artifacts.require("DepositValidator");
 
 module.exports = function migration(deployer) {
-  deployer.deploy(DepositValidator)
-}
+  deployer.deploy(DepositValidator);
+};

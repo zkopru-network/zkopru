@@ -1,4 +1,4 @@
-const HDWalletProvider = require('@truffle/hdwallet-provider')
+const HDWalletProvider = require("@truffle/hdwallet-provider");
 
 /**
  * Use this file to configure your truffle project. It's seeded with some
@@ -27,7 +27,7 @@ const HDWalletProvider = require('@truffle/hdwallet-provider')
 // const mnemonic = fs.readFileSync(".secret").toString().trim();
 
 module.exports = {
-  contracts_build_directory: '../build',
+  contracts_build_directory: "../build",
   test_file_extension_regexp: /.*.soltest.js$/,
   /**
    * Networks define how you connect to your ethereum client and let you set the
@@ -41,10 +41,10 @@ module.exports = {
 
   networks: {
     develop: {
-      host: '127.0.0.1', // Localhost (default: none)
+      host: "127.0.0.1", // Localhost (default: none)
       port: 8545, // Standard Ethereum port (default: none)
-      network_id: '*', // Any network (default: none)
-    },
+      network_id: "*" // Any network (default: none)
+    }
     // Useful for testing. The `development` name is special - truffle uses it by default
     // if it's defined here and no other network is specified at the command line.
     // You should run a client (like ganache-cli, geth or parity) in a separate terminal
@@ -86,7 +86,7 @@ module.exports = {
   // Set default mocha options here, use special reporters etc.
   mocha: {
     // reporter: 'eth-gas-reporter', // update later when it supports solidity 0.6.0
-    useColors: true,
+    useColors: true
     // timeout: 100000
     // reporterOptions : { ... } // See options below
   },
@@ -94,12 +94,12 @@ module.exports = {
   // Configure your compilers
   compilers: {
     solc: {
-      version: '0.7.4',
-      evmVersion: 'istanbul',
+      version: "0.7.4",
+      evmVersion: "istanbul",
       settings: {
         optimize: true,
-        runs: 1000000,
-      },
+        runs: 1000000
+      }
       // version: "0.5.1",    // Fetch exact version from solc-bin (default: truffle's version)
       // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
       // settings: {          // See the solidity docs for advice about optimization and evmVersion
@@ -111,12 +111,12 @@ module.exports = {
       // }
     },
     external: {
-      command: 'node ../utils/poseidon-generator.js',
+      command: "node ../utils/poseidon-generator.js",
       targets: [
         {
-          path: '../build/generated/*.json',
-        },
-      ],
-    },
-  },
-}
+          path: "../build/generated/*.json"
+        }
+      ]
+    }
+  }
+};

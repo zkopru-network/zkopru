@@ -1,5 +1,5 @@
-const DeserializationTester = artifacts.require('DeserializationTester')
+const DeserializationTester = artifacts.require("DeserializationTester");
 
 module.exports = function migration(deployer, _, accounts) {
-  deployer.deploy(DeserializationTester)
-}
+  deployer.deploy(DeserializationTester);
+};

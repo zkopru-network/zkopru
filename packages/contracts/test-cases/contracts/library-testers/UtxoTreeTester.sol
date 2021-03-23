@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity = 0.7.4;
+pragma solidity =0.7.4;
 
 import {
-  Hasher,
-  MerkleTreeLib,
-  SubTreeLib
+    Hasher,
+    MerkleTreeLib,
+    SubTreeLib
 } from "../../../contracts/zkopru/libraries/MerkleTree.sol";
 
 import { Hash } from "../../../contracts/zkopru/libraries/Hash.sol";
@@ -19,7 +19,13 @@ contract UtxoTreeTester {
         uint256[] memory leaves,
         uint256[] memory initialSiblings
     ) public pure returns (uint256 newRoot) {
-        return Hash.poseidon().append(startingRoot, index, leaves, initialSiblings);
+        return
+            Hash.poseidon().append(
+                startingRoot,
+                index,
+                leaves,
+                initialSiblings
+            );
     }
 
     function merkleProof(
@@ -38,6 +44,13 @@ contract UtxoTreeTester {
         uint256[] memory leaves,
         uint256[] memory subTreeSiblings
     ) public pure returns (uint256 newRoot) {
-        return Hash.poseidon().appendSubTree(startingRoot, index, subTreeDepth, leaves, subTreeSiblings);
+        return
+            Hash.poseidon().appendSubTree(
+                startingRoot,
+                index,
+                subTreeDepth,
+                leaves,
+                subTreeSiblings
+            );
     }
 }

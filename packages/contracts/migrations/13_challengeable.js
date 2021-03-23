@@ -1,5 +1,5 @@
-const Challengeable = artifacts.require('Challengeable')
+const Challengeable = artifacts.require("Challengeable");
 
 module.exports = function migration(deployer) {
-  deployer.deploy(Challengeable)
-}
+  deployer.deploy(Challengeable);
+};

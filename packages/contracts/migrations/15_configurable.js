@@ -1,5 +1,5 @@
-const Configurable = artifacts.require('Configurable')
+const Configurable = artifacts.require("Configurable");
 
 module.exports = function migration(deployer) {
-  deployer.deploy(Configurable)
-}
+  deployer.deploy(Configurable);
+};

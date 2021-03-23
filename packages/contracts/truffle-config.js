@@ -1,4 +1,4 @@
-const HDWalletProvider = require('@truffle/hdwallet-provider')
+const HDWalletProvider = require("@truffle/hdwallet-provider");
 
 /**
  * Use this file to configure your truffle project. It's seeded with some
@@ -40,51 +40,51 @@ module.exports = {
 
   networks: {
     develop: {
-      host: '127.0.0.1', // Localhost (default: none)
+      host: "127.0.0.1", // Localhost (default: none)
       port: 8545, // Standard Ethereum port (default: none)
-      network_id: '*', // Any network (default: none)
+      network_id: "*" // Any network (default: none)
     },
     develop2: {
-      host: '127.0.0.1', // Localhost (default: none)
+      host: "127.0.0.1", // Localhost (default: none)
       port: 8549, // Standard Ethereum port (default: none)
-      network_id: '*', // Any network (default: none)
+      network_id: "*" // Any network (default: none)
     },
     integrationtest: {
-      host: '127.0.0.1',
+      host: "127.0.0.1",
       port: 5000,
-      network_id: '20200406',
+      network_id: "20200406"
     },
     testnet: {
-      host: '127.0.0.1',
+      host: "127.0.0.1",
       port: 5000,
-      network_id: '20200406',
+      network_id: "20200406"
     },
     kovan: {
-      host: '127.0.0.1',
+      host: "127.0.0.1",
       port: 8549,
-      network_id: '42',
-      gasPrice: '1000000000',
+      network_id: "42",
+      gasPrice: "1000000000",
       provider: () => {
         return new HDWalletProvider(
           process.env.KOVAN_KEY,
-          process.env.KOVAN_URL,
-        )
-      },
+          process.env.KOVAN_URL
+        );
+      }
     },
     goerli_pkey: {
       provider: () =>
         new HDWalletProvider(process.env.GOERLI_KEY, process.env.GOERLI_URL),
-      network_id: '5',
-      gasPrice: '1000000000',
+      network_id: "5",
+      gasPrice: "1000000000"
     },
     goerli: {
       provider: () => {
-        return new HDWalletProvider(process.env.MNEMONIC, process.env.GOERLI)
+        return new HDWalletProvider(process.env.MNEMONIC, process.env.GOERLI);
       },
       skipDryRun: true,
-      network_id: '5',
-      gas: 8000000,
-    },
+      network_id: "5",
+      gas: 8000000
+    }
     // Useful for testing. The `development` name is special - truffle uses it by default
     // if it's defined here and no other network is specified at the command line.
     // You should run a client (like ganache-cli, geth or parity) in a separate terminal
@@ -126,7 +126,7 @@ module.exports = {
   // Set default mocha options here, use special reporters etc.
   mocha: {
     // reporter: 'eth-gas-reporter', // update later when it supports solidity 0.6.0
-    useColors: true,
+    useColors: true
     // timeout: 100000
     // reporterOptions : { ... } // See options below
   },
@@ -134,12 +134,12 @@ module.exports = {
   // Configure your compilers
   compilers: {
     solc: {
-      version: '0.7.4',
-      evmVersion: 'istanbul',
+      version: "0.7.4",
+      evmVersion: "istanbul",
       settings: {
         optimize: true,
-        runs: 1000000,
-      },
+        runs: 1000000
+      }
       // version: "0.5.1",    // Fetch exact version from solc-bin (default: truffle's version)
       // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
       // settings: {          // See the solidity docs for advice about optimization and evmVersion
@@ -151,12 +151,12 @@ module.exports = {
       // }
     },
     external: {
-      command: 'node ./utils/poseidon-generator.js',
+      command: "node ./utils/poseidon-generator.js",
       targets: [
         {
-          path: '../build/generated/*.json',
-        },
-      ],
-    },
-  },
-}
+          path: "../build/generated/*.json"
+        }
+      ]
+    }
+  }
+};

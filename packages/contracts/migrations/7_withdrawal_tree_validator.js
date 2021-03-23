@@ -1,5 +1,5 @@
-const WithdrawalTreeValidator = artifacts.require('WithdrawalTreeValidator')
+const WithdrawalTreeValidator = artifacts.require("WithdrawalTreeValidator");
 
 module.exports = function migration(deployer) {
-  deployer.deploy(WithdrawalTreeValidator)
-}
+  deployer.deploy(WithdrawalTreeValidator);
+};

@@ -1,38 +1,38 @@
-console.log('> Generating abi json files')
-const path = require('path')
-const fs = require('fs')
+console.log("> Generating abi json files");
+const path = require("path");
+const fs = require("fs");
 // eslint-disable-next-line import/no-extraneous-dependencies
-const prettier = require('prettier')
+const prettier = require("prettier");
 
 const ts = fs
-  .readdirSync('./src/contracts')
-  .map(filename => filename.split('.d.ts')[0])
+  .readdirSync("./src/contracts")
+  .map(filename => filename.split(".d.ts")[0]);
 const abis = fs
-  .readdirSync('./src/abis')
-  .map(filename => filename.split('.ts')[0])
+  .readdirSync("./src/abis")
+  .map(filename => filename.split(".ts")[0]);
 
 const importContracts = list =>
   `${ts.reduce((prev, name) => {
-    if (!list.includes(name)) return prev
-    return `${prev}import { ${name} } from './contracts/${name}'\n`
-  }, '')}`
+    if (!list.includes(name)) return prev;
+    return `${prev}import { ${name} } from './contracts/${name}'\n`;
+  }, "")}`;
 
 const zkopruTS = `import Web3 from 'web3'
 import { ContractOptions } from 'web3-eth-contract'
 ${importContracts([
-  'ICoordinatable',
-  'IChallengeable',
-  'ISetupWizard',
-  'IDepositValidator',
-  'IHeaderValidator',
-  'IMigratable',
-  'IMigrationValidator',
-  'IUtxoTreeValidator',
-  'IWithdrawalTreeValidator',
-  'INullifierTreeValidator',
-  'ITxValidator',
-  'IUserInteractable',
-  'Zkopru',
+  "ICoordinatable",
+  "IChallengeable",
+  "ISetupWizard",
+  "IDepositValidator",
+  "IHeaderValidator",
+  "IMigratable",
+  "IMigrationValidator",
+  "IUtxoTreeValidator",
+  "IWithdrawalTreeValidator",
+  "INullifierTreeValidator",
+  "ITxValidator",
+  "IUserInteractable",
+  "Zkopru"
 ])}
 import { Layer1 } from './layer1'
 
@@ -76,17 +76,17 @@ export class ZkopruContract {
     }
     this.setup = Layer1.getISetupWizard(web3, address, option)
   }
-}`
+}`;
 
 const importABIs = list =>
   `${abis.reduce((prev, name) => {
-    if (!list.includes(name)) return prev
-    return `${prev}import { ${name}ABI } from './abis/${name}'\n`
-  }, '')}`
+    if (!list.includes(name)) return prev;
+    return `${prev}import { ${name}ABI } from './abis/${name}'\n`;
+  }, "")}`;
 
 const staticClasses = list =>
   `${list.reduce((prev, name) => {
-    if (name === 'types') return prev
+    if (name === "types") return prev;
     return `${prev}
   static get${name}(
     web3: Web3,
@@ -98,29 +98,29 @@ const staticClasses = list =>
     c.setProvider(web3.currentProvider)
     return c as ${name}
   }
-`
-  }, '')}`
+`;
+  }, "")}`;
 
 const list = [
-  'IBurnAuction',
-  'IConsensusProvider',
-  'ICoordinatable',
-  'IChallengeable',
-  'IDepositValidator',
-  'IHeaderValidator',
-  'IMigratable',
-  'IMigrationValidator',
-  'IUtxoTreeValidator',
-  'IWithdrawalTreeValidator',
-  'INullifierTreeValidator',
-  'ISetupWizard',
-  'ITxValidator',
-  'IUserInteractable',
-  'ERC20',
-  'ERC721',
-  'IERC721Enumerable',
-  'Zkopru',
-]
+  "IBurnAuction",
+  "IConsensusProvider",
+  "ICoordinatable",
+  "IChallengeable",
+  "IDepositValidator",
+  "IHeaderValidator",
+  "IMigratable",
+  "IMigrationValidator",
+  "IUtxoTreeValidator",
+  "IWithdrawalTreeValidator",
+  "INullifierTreeValidator",
+  "ISetupWizard",
+  "ITxValidator",
+  "IUserInteractable",
+  "ERC20",
+  "ERC721",
+  "IERC721Enumerable",
+  "Zkopru"
+];
 const layer1TS = `/* eslint-disable @typescript-eslint/no-explicit-any */
 import Web3 from 'web3'
 import Contract, { ContractOptions } from 'web3-eth-contract'
@@ -130,32 +130,32 @@ ${importABIs(list)}
 export class Layer1 {
 ${staticClasses(list)}
 }
-`
+`;
 
-fs.mkdirSync('./src', { recursive: true })
+fs.mkdirSync("./src", { recursive: true });
 
 fs.writeFileSync(
-  './src/layer1.ts',
+  "./src/layer1.ts",
   prettier.format(layer1TS, {
     semi: false,
-    parser: 'typescript',
+    parser: "typescript",
     singleQuote: true,
     useTabs: false,
     tabWidth: 2,
-    trailingComma: 'all',
-    endOfLine: 'lf',
-  }),
-)
+    trailingComma: "all",
+    endOfLine: "lf"
+  })
+);
 
 fs.writeFileSync(
-  './src/zkopru.ts',
+  "./src/zkopru.ts",
   prettier.format(zkopruTS, {
     semi: false,
-    parser: 'typescript',
+    parser: "typescript",
     singleQuote: true,
     useTabs: false,
     tabWidth: 2,
-    trailingComma: 'all',
-    endOfLine: 'lf',
-  }),
-)
+    trailingComma: "all",
+    endOfLine: "lf"
+  })
+);
