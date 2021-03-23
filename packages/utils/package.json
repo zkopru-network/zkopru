@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "axios": "^0.21.1",
-    "bn.js": "^5.1.1",
+    "bn.js": "^5.2.0",
     "circom_runtime": "0.1.13",
     "ffjavascript": "0.2.22",
     "fs-extra": "^9.0.0",

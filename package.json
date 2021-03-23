@@ -98,7 +98,7 @@
     "@typescript-eslint/eslint-plugin": "^2.34.0",
     "@typescript-eslint/parser": "^2.34.0",
     "bignumber.js": "^9.0.0",
-    "bn.js": "^5.1.1",
+    "bn.js": "^5.2.0",
     "circom": "0.5.42",
     "circomlib": "0.5.1",
     "commitizen": "^4.0.3",
