@@ -1,8 +1,11 @@
 const path = require('path')
+
 const common = {
   env: {
     node: true,
     es6: true,
+    es2017: true,
+    // es2020: true,
     'jest/globals': true,
   },
   plugins: ['prettier', 'jest', 'markdown'],
@@ -18,7 +21,10 @@ const common = {
     'jest/prefer-expect-assertions': 'off',
     'jest/no-test-return-statement': 'off',
     'import/prefer-default-export': 'off',
-    'import/no-extraneous-dependencies': ['error', {"devDependencies": ["**/*.test.ts", "**/*.spec.ts"]}],
+    'import/no-extraneous-dependencies': [
+      'error',
+      { devDependencies: ['**/*.test.ts', '**/*.spec.ts'] },
+    ],
     'import/extensions': 'off',
     'no-console': 'off',
     'no-iterator': 'off',
@@ -58,25 +64,28 @@ module.exports = {
       rules: {
         ...common.rules,
         '@typescript-eslint/explicit-function-return-type': 'off',
-        "@typescript-eslint/member-delimiter-style": ["error", {
-          multiline: {
-            delimiter: 'none',    // 'none' or 'semi' or 'comma'
-            requireLast: true,
+        '@typescript-eslint/member-delimiter-style': [
+          'error',
+          {
+            multiline: {
+              delimiter: 'none', // 'none' or 'semi' or 'comma'
+              requireLast: true,
+            },
+            singleline: {
+              delimiter: 'semi', // 'semi' or 'comma'
+              requireLast: false,
+            },
           },
-          singleline: {
-            delimiter: 'semi',    // 'semi' or 'comma'
-            requireLast: false,
-          },
-        }]
+        ],
       },
       overrides: [
         {
-          files: "**/*.ts",
-            rules: {
-                "no-useless-constructor": "off",
-                "@typescript-eslint/no-useless-constructor": "error"
-            }
-        }
+          files: '**/*.ts',
+          rules: {
+            'no-useless-constructor': 'off',
+            '@typescript-eslint/no-useless-constructor': 'error',
+          },
+        },
       ],
       settings: {
         'import/resolver': {
