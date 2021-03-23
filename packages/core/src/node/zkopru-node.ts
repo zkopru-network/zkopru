@@ -208,11 +208,11 @@ export class ZkopruNode {
     if (!header) {
       throw new Error(`Unable to find header for proposal ${proposal.hash}`)
     }
-    const parent = await this.db.read(prisma =>
-      prisma.proposal.findOne({
-        where: { hash: header.parentBlock.toString() },
-      }),
-    )
+    const parent = await this.db.findOne('Proposal', {
+      where: {
+        hash: header.parentBlock.toString(),
+      },
+    })
     if (!parent) {
       throw new Error(`Unable to find parent proposal`)
     }
@@ -220,11 +220,9 @@ export class ZkopruNode {
       throw new Error(`Expected canonicalNum to exist!`)
     }
     // console.log(`canonical num: ${parent.canonicalNum+1}`)
-    await this.db.write(prisma =>
-      prisma.proposal.update({
-        where: { hash },
-        data: { canonicalNum: (parent.canonicalNum as number) + 1 },
-      }),
-    )
+    await this.db.update('Proposal', {
+      where: { hash },
+      update: { canonicalNum: (parent.canonicalNum as number) + 1 },
+    })
   }
 }

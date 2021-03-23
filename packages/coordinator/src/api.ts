@@ -253,12 +253,12 @@ export class CoordinatorApi {
     const header = await layer2.db.findOne('Header', {
       where: {
         hash: includedIn,
-      }
+      },
     })
     const proposal = await layer2.db.findOne('Proposal', {
       where: {
         hash: includedIn,
-      }
+      },
     })
     if (!!header && proposal?.verified) {
       const proof = {

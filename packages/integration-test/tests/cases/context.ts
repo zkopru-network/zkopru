@@ -219,7 +219,6 @@ async function getCoordinator(
     port,
     maxBid: 20000,
     bootstrap: false,
-    vhosts: '*',
   })
   return { coordinator, mockupDB }
 }

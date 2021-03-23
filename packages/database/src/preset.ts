@@ -1,5 +1,5 @@
 import BN from 'bn.js'
-import { Field, F } from '@zkopru/babyjubjub'
+import { Fp, F } from '@zkopru/babyjubjub'
 import { hexify } from '@zkopru/utils'
 import { TreeNode } from './schema.types'
 import { DB } from './types'
@@ -11,8 +11,8 @@ export async function getCachedSiblings(
   leafIndex: F,
 ): Promise<TreeNode[]> {
   const siblingIndexes = Array(depth).fill('')
-  const leafPath = new BN(1).shln(depth).or(Field.toBN(leafIndex))
-  if (leafPath.lte(Field.toBN(leafIndex)))
+  const leafPath = new BN(1).shln(depth).or(Fp.toBN(leafIndex))
+  if (leafPath.lte(Fp.toBN(leafIndex)))
     throw Error('Leaf index is out of range')
 
   for (let level = 0; level < depth; level += 1) {
