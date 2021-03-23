@@ -13,6 +13,7 @@
     "~core": "../core/dist",
     "~dataset": "../dataset/dist",
     "~prisma": "../prisma/dist",
+    "~transaction": "../transaction/dist",
     "~tree": "../tree/dist"
   },
   "dependencies": {
@@ -44,7 +45,7 @@
   },
   "devDependencies": {
     "@truffle/artifactor": "^4.0.54",
-    "@truffle/hdwallet-provider": "^1.0.38",
+    "@truffle/hdwallet-provider": "1.2.3",
     "chai": "^4.2.0",
     "circomlib": "0.5.1",
     "eth-gas-reporter": "^0.2.17",

@@ -6,5 +6,9 @@
     "tsBuildInfoFile": "../../.build-cache/contracts.tsbuildinfo"
   },
   "include": ["src"],
-  "references": []
+  "references": [
+    { "path": "../babyjubjub/tsconfig.build.json", "prepend": false },
+    { "path": "../transaction/tsconfig.build.json", "prepend": false },
+    { "path": "../tree/tsconfig.build.json", "prepend": false }
+  ]
 }

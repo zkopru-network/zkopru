@@ -85,7 +85,7 @@ module.exports = {
 
   // Set default mocha options here, use special reporters etc.
   mocha: {
-    // reporter: 'eth-gas-reporter', // update later when it supports solidity 0.6.0
+    reporter: "eth-gas-reporter", // update later when it supports solidity 0.6.0
     useColors: true
     // timeout: 100000
     // reporterOptions : { ... } // See options below
