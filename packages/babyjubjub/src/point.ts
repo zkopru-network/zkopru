@@ -1,4 +1,3 @@
-/* global BigInt */
 import { hexToBuffer, hexify } from '@zkopru/utils'
 import * as ffjs from 'ffjavascript'
 import * as circomlib from 'circomlib'
