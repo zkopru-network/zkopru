@@ -248,18 +248,22 @@ describe('coordinator test to run testnet', () => {
     }, 15000)
 
     it('should get genesis block', async () => {
-      const { data } = await callMethod('l2_getBlockByNumber', 0)
+      const { response, data } = await callMethod('l2_getBlockByNumber', 0)
+      assert.equal(response.status, 200)
       assert.equal(+data.result.proposalNum, 0)
     })
 
     it('should get block by hash', async () => {
       // first get a hash
       const {
-        data: { hash },
+        data: {
+          result: { hash },
+        },
       } = await callMethod('l2_getBlockByNumber', 0)
       // then retrieve the block with that hash
-      const { data } = await callMethod('l2_getBlockByHash', hash)
-      assert.equal(data.hash, hash)
+      const { response, data } = await callMethod('l2_getBlockByHash', hash)
+      assert.equal(response.status, 200)
+      assert.equal(data.result.hash, hash)
     })
 
     it('should get block by index', async () => {
