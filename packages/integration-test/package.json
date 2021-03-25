@@ -10,6 +10,7 @@
     "~contracts": "../contracts/dist",
     "~core": "../core/dist",
     "~coordinator": "../coordinator/dist",
+    "~database": "../database/dist",
     "~transaction": "../transaction/dist",
     "~utils": "../utils/dist",
     "~zk-wizard": "../zk-wizard/dist"
