@@ -34,7 +34,7 @@ export default class Refund extends App {
     const tx = this.base
       .layer1()
       .sendExternalTx(
-        auction.methods.refund(),
+        auction.methods['refund()'](),
         this.base.context.account,
         consensus,
       )

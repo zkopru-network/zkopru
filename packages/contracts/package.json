@@ -38,7 +38,7 @@
     "web3TS": "typechain --target web3-v1 './build/contracts/*.json' --outDir src/contracts",
     "genABI": "node utils/abi-generator.js",
     "genTS": "yarn web3TS && yarn genABI && node utils/ts-generator.js",
-    "postgenTS": "eslint --fix src/**/*.ts --quiet",
+    "postgenTS": "prettier --write src/**/*.ts",
     "start": "node dist/index.js",
     "testnet": "truffle develop --testnet",
     "prettier": "prettier --write ./**/*.{ts,js,sol}"

@@ -75,6 +75,7 @@
     "@commitlint/config-conventional": "^8.1.0",
     "@prisma/cli": "2.7.1",
     "@truffle/artifactor": "^4.0.30",
+    "@typechain/web3-v1": "^2.2.0",
     "@types/async-lock": "^1.1.1",
     "@types/blessed": "^0.1.17",
     "@types/bs58": "^4.0.1",
@@ -148,8 +149,7 @@
     "ts-jest": "^24.2.0",
     "ts-node-dev": "^1.0.0-pre.44",
     "tsconfig-paths": "^3.9.0",
-    "typechain": "^1.0.5",
-    "typechain-target-web3-v1": "^1.0.4",
+    "typechain": "^4.0.3",
     "typescript": "3.8.3",
     "uuid": "^8.1.0"
   },

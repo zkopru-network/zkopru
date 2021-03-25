@@ -187,17 +187,14 @@ export class Coordinator extends EventEmitter {
       IC: string[][]
     },
   ): Promise<TransactionReceipt | undefined> {
-    const tx = this.layer1().setup.methods.registerVk(nIn, nOut, {
+    const tx = this.layer1().setup.methods.registerVk(nIn, nOut, [
       // caution: snarkjs G2Point is reversed
-      alpha1: { X: vk.vk_alpha_1[0], Y: vk.vk_alpha_1[1] },
-      beta2: { X: vk.vk_beta_2[0].reverse(), Y: vk.vk_beta_2[1].reverse() },
-      gamma2: { X: vk.vk_gamma_2[0].reverse(), Y: vk.vk_gamma_2[1].reverse() },
-      delta2: { X: vk.vk_delta_2[0].reverse(), Y: vk.vk_delta_2[1].reverse() },
-      ic: vk.IC.map((ic: string[]) => ({
-        X: ic[0],
-        Y: ic[1],
-      })),
-    })
+      [vk.vk_alpha_1[0], vk.vk_alpha_1[1]],
+      [vk.vk_beta_2[0].reverse(), vk.vk_beta_2[1].reverse()],
+      [vk.vk_gamma_2[0].reverse(), vk.vk_gamma_2[1].reverse()],
+      [vk.vk_delta_2[0].reverse(), vk.vk_delta_2[1].reverse()],
+      vk.IC.map((ic: string[]) => [ic[0], ic[1]]),
+    ])
     return this.layer1().sendTx(tx, this.context.account)
   }
 
@@ -247,7 +244,7 @@ export class Coordinator extends EventEmitter {
         continue
       }
       logger.info(`Bidding on round ${x}`)
-      const tx = auction.methods.bid(x)
+      const tx = auction.methods['bid(uint256)'](x)
       promises.push(
         this.layer1().sendExternalTx(tx, this.context.account, consensus, {
           value: nextBid,
