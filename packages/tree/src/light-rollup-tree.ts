@@ -477,12 +477,12 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
       throw Error('bootstrapped with invalid merkle proof')
     }
     // If it does not have force update config, check existing merkle tree
-    const exisingTree = await db.findOne('LightTree', {
+    const existingTree = await db.findOne('LightTree', {
       where: { species },
     })
     if (
       !config.forceUpdate &&
-      data.index.lte(toBN(exisingTree?.index || '0'))
+      data.index.lte(toBN(existingTree?.index || '0'))
     ) {
       throw Error('Bootstrap is behind the database. Use forceUpdate config')
     }
