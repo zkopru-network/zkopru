@@ -83,8 +83,7 @@ jobs:
       - run:
           name: Setup
           command: |
-            docker pull jchancehud/zkopru:circuits
-            docker tag jchancehud/zkopru:circuits zkoprunet/circuits:dev
+            docker pull zkoprunet/circuits:dev
             cd packages/circuits
             yarn setup
             yarn build-keys
@@ -103,8 +102,7 @@ jobs:
       - run:
           name: Setup
           command: |
-            docker pull jchancehud/zkopru:circuits
-            docker tag jchancehud/zkopru:circuits zkoprunet/circuits:dev
+            docker pull zkoprunet/circuits:dev
             cd packages/dataset
             yarn load-keys
       - run:
@@ -154,8 +152,7 @@ jobs:
       - run:
           name: ZK Wizard Tests
           command: |
-            docker pull jchancehud/zkopru:circuits
-            docker tag jchancehud/zkopru:circuits zkoprunet/circuits:dev
+            docker pull zkoprunet/circuits:dev
             cd packages/circuits
             yarn setup
             yarn build-keys
