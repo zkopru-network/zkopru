@@ -242,7 +242,7 @@ Currently, Zkopru is using prebuilt docker images for local testing to reduce th
 
 You can open the Prisma Studio to explore the database with following steps:
 
-1. Create `pacakges/prisma/prisma/.env`
+1. Create `packages/prisma/prisma/.env`
 
 2. Write up the database connection information.
 
