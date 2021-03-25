@@ -33,7 +33,7 @@ contract CoordinatableTester is Coordinatable {
     constructor() {
         MockConsensusProvider mock = new MockConsensusProvider();
         consensusProvider = address(mock);
-    }    
+    }
 
     function mockFinalization(
         bytes32 checksum,
