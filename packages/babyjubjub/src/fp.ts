@@ -67,6 +67,10 @@ export class Fp extends BN {
     return n.lt(Fp.ORDER)
   }
 
+  toBuffer(endian?: BN.Endianness, length?: number): Buffer {
+    return this.toArrayLike(Buffer, endian, length);
+  }
+
   addPrefixBit(bitLength: number): BN {
     const prefix = new BN(1).shln(bitLength)
     if (this.gt(prefix)) throw Error('prefix bit is less than current value')
