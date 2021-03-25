@@ -1,7 +1,7 @@
 import chalk from 'chalk'
 import path from 'path'
 import fs from 'fs'
-import { EncryptedWallet } from '@zkopru/prisma'
+import { EncryptedWallet } from '@zkopru/database'
 import Configurator, { Context, Menu } from '../configurator'
 
 export default class SaveConfig extends Configurator {

@@ -1,8 +1,13 @@
 import chalk from 'chalk'
 import fs from 'fs-extra'
-import { DB } from '@zkopru/prisma'
+import {
+  DB,
+  SQLiteConnector,
+  PostgresConnector,
+  schema,
+  initDB,
+} from '@zkopru/database'
 import { L1Contract } from '@zkopru/core'
-import path from 'path'
 import Configurator, { Context, Menu } from '../configurator'
 
 export default class LoadDatabase extends Configurator {
@@ -15,22 +20,10 @@ export default class LoadDatabase extends Configurator {
     }
     let database: DB
     if (this.base.postgres) {
-      database = new DB({
-        datasources: {
-          postgres: { url: this.base.postgres },
-        },
-      })
+      database = await PostgresConnector.create(this.base.postgres)
     } else if (this.base.sqlite) {
       const dbPath = this.base.sqlite
-      if (!fs.existsSync(dbPath)) {
-        // create new dataabase
-        database = await DB.mockup(dbPath)
-      } else {
-        // database exists
-        database = new DB({
-          datasources: { sqlite: { url: `sqlite://${dbPath}` } },
-        })
-      }
+      database = await SQLiteConnector.create(dbPath)
     } else {
       // no configuration. try to create new one
       const enum DBType {
@@ -90,13 +83,9 @@ export default class LoadDatabase extends Configurator {
           message: 'DB Name',
           initial: 'zkopru-wallet',
         })
-        database = new DB({
-          datasources: {
-            postgres: {
-              url: `postgresql://${user}:${password}@${host}:${port}/${dbName}`,
-            },
-          },
-        })
+        database = await PostgresConnector.create(
+          `postgresql://${user}:${password}@${host}:${port}/${dbName}`,
+        )
       } else {
         this.print(`${chalk.blue('Creating a sqlite3 connection')}`)
         this.print(
@@ -110,9 +99,7 @@ export default class LoadDatabase extends Configurator {
           message: 'Provide sqlite db here',
           initial: 'zkopru-wallet.db',
         })
-        if (!fs.existsSync(dbName)) {
-          database = await DB.mockup(dbName)
-        } else {
+        if (fs.existsSync(dbName)) {
           const { overwrite } = await this.ask({
             type: 'confirm',
             name: 'overwrite',
@@ -122,17 +109,15 @@ export default class LoadDatabase extends Configurator {
             initial: false,
           })
           if (overwrite) {
-            database = await DB.mockup(dbName)
-          } else {
-            const dbPath = path.join(path.resolve('.'), dbName)
-            database = new DB({
-              datasources: { sqlite: { url: `sqlite://${dbPath}` } },
-            })
+            fs.unlinkSync(dbName)
           }
         }
+        database = await SQLiteConnector.create(dbName)
       }
     }
-    await database.initDB(
+    await database.createTables(schema)
+    await initDB(
+      database,
       context.web3,
       this.base.address,
       new L1Contract(context.web3, this.base.address),

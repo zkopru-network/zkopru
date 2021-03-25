@@ -10,19 +10,19 @@
       "@zkopru/*": ["*/src"],
       "~account/*": ["account/src/*"],
       "~babyjubjub/*": ["babyjubjub/src/*"],
+      "~database/*": ["database/src/*"],
       "~circuits/*": ["circuits/src/*"],
       "~wallet/*": ["wallet/src/*"],
       "~contracts/*": ["contracts/src/*"],
       "~coordinator/*": ["coordinator/src/*"],
       "~core/*": ["core/src/*"],
       "~dataset/*": ["dataset/src/*"],
-      "~prisma/*": ["prisma/src/*"],
       "~transaction/*": ["transaction/src/*"],
       "~tree/*": ["tree/src/*"],
       "~utils/*": ["utils/src/*"],
       "~zk-wizard/*": ["zk-wizard/src/*"],
       "~*": ["*/src"]
-    },    
+    },
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -37,6 +37,13 @@
     "incremental": true,
     "allowJs": true,
     "resolveJsonModule": true,
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "lib": [
+      "es2019",
+      "DOM",
+      "ES6",
+      "DOM.Iterable",
+      "ScriptHost"
+    ]
   }
 }

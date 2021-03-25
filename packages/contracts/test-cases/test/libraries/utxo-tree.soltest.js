@@ -56,7 +56,7 @@ contract("Utxo tree update tests", async accounts => {
     solTree = await UtxoTreeTester.new();
   });
   after(async () => {
-    await mockup.terminate();
+    await mockup.close();
   });
   describe("append", () => {
     it("should show same result", async () => {

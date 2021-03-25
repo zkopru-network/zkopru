@@ -5,7 +5,7 @@
 import Web3 from 'web3'
 import { WebsocketProvider } from 'web3-core'
 import { Container } from 'node-docker-api/lib/container'
-import { MockupDB, DB } from '@zkopru/prisma'
+import { DB, SQLiteConnector, schema } from '@zkopru/database'
 import { ZkAccount } from '~account'
 import { sleep, readFromContainer, pullOrBuildAndGetContainer } from '~utils'
 import { FullNode } from '~core'
@@ -16,9 +16,10 @@ describe('integration test to run testnet', () => {
   let container: Container
   let fullNode: FullNode
   let wsProvider: WebsocketProvider
-  let mockup: MockupDB
+  let mockup: DB
   beforeAll(async () => {
-    mockup = await DB.testMockup()
+    mockup = await SQLiteConnector.create(':memory:')
+    await mockup.createTables(schema)
     // It may take about few minutes. If you want to skip building image,
     // run `yarn pull:images` on the root directory
     container = await pullOrBuildAndGetContainer({
@@ -52,7 +53,7 @@ describe('integration test to run testnet', () => {
   afterAll(async () => {
     await container.stop()
     await container.delete()
-    await mockup.terminate()
+    await mockup.close()
     wsProvider.disconnect(0, 'close connection')
   }, 20000)
   describe('full node', () => {
@@ -63,7 +64,7 @@ describe('integration test to run testnet', () => {
       fullNode = await FullNode.new({
         provider: wsProvider,
         address,
-        db: mockup.db,
+        db: mockup,
         accounts,
       })
       expect(fullNode).toBeDefined()

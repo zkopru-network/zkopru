@@ -12,7 +12,6 @@
     "~contracts": "dist",
     "~core": "../core/dist",
     "~dataset": "../dataset/dist",
-    "~prisma": "../prisma/dist",
     "~transaction": "../transaction/dist",
     "~tree": "../tree/dist"
   },

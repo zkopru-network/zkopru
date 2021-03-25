@@ -1,5 +1,11 @@
 import { Fp } from '@zkopru/babyjubjub'
-import { DB, LightTree, MockupDB, TreeSpecies } from '@zkopru/prisma'
+import {
+  DB,
+  LightTree,
+  TreeSpecies,
+  SQLiteConnector,
+  schema,
+} from '@zkopru/database'
 import { ZkAddress } from '@zkopru/transaction'
 import { v4 } from 'uuid'
 import { genesisRoot, poseidonHasher } from './hasher'
@@ -33,13 +39,12 @@ export class UtxoTree extends LightRollUpTree<Fp> {
       ? this.zkAddressesToObserve.map(address => address.toString())
       : []
 
-    const trackingLeaves = await this.db.read(prisma =>
-      prisma.utxo.findMany({
-        where: {
-          AND: [{ treeId: this.metadata.id }, { owner: { in: keys } }],
-        },
-      }),
-    )
+    const trackingLeaves = await this.db.findMany('Utxo', {
+      where: {
+        treeId: this.metadata.id,
+        owner: keys,
+      },
+    })
     return trackingLeaves
       .filter(leaf => leaf.index !== null)
       .map(leaf => Fp.from(leaf.index as string))
@@ -84,9 +89,7 @@ export class UtxoTree extends LightRollUpTree<Fp> {
     })
   }
 
-  static async sample(
-    depth: number,
-  ): Promise<{ tree: UtxoTree; db: MockupDB }> {
+  static async sample(depth: number): Promise<{ tree: UtxoTree; db: DB }> {
     const utxoTreeMetadata = {
       id: v4(),
       index: 1,
@@ -105,9 +108,10 @@ export class UtxoTree extends LightRollUpTree<Fp> {
       index: Fp.zero,
       siblings: preHashes.slice(0, -1),
     }
-    const mockupDB: MockupDB = await DB.testMockup()
+    const mockupDB = await SQLiteConnector.create(':memory:')
+    await mockupDB.createTables(schema)
     const utxoTree = new UtxoTree({
-      db: mockupDB.db,
+      db: mockupDB,
       metadata: utxoTreeMetadata,
       data: utxoTreeInitialData,
       config: utxoTreeConfig,

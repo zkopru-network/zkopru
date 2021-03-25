@@ -29,8 +29,8 @@ describe('baby jubjub point', () => {
     Array(50)
       .fill(null)
       .forEach((_, i) =>
-        it(`should return a Point instance from hex string (${i+1}G)`, () => {
-          const point = Point.generate(i+1)
+        it(`should return a Point instance from hex string (${i + 1}G)`, () => {
+          const point = Point.generate(i + 1)
           const pointToHex = point.toHex()
           const pointFromHex = Point.fromHex(pointToHex)
           const regeneratedHex = pointFromHex.toHex()

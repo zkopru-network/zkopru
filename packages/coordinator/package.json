@@ -13,7 +13,7 @@
   "_moduleAliases": {
     "~account": "../account/dist",
     "~coordinator": "dist",
-    "~prisma": "../prisma/dist",
+    "~database": "../database/dist",
     "~utils": "../utils/dist"
   },
   "scripts": {
@@ -35,7 +35,7 @@
     "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/contracts": "file:../contracts",
     "@zkopru/core": "file:../core",
-    "@zkopru/prisma": "file:../prisma",
+    "@zkopru/database": "file:../database",
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/tree": "file:../tree",
     "@zkopru/utils": "file:../utils",

@@ -127,18 +127,15 @@ export class ClientApi {
       this.context.node.layer2.getProposalByCanonicalNumber(blockNumber, false),
       includeUncles
         ? Promise.resolve(0)
-        : this.context.node.db.read(prisma =>
-            prisma.proposal.count({
-              where: { canonicalNum: blockNumber, isUncle: true },
-            }),
-          ),
+        : this.context.node.db.count('Proposal', {
+            canonicalNum: blockNumber,
+            isUncle: true,
+          }),
       !includeUncles
         ? Promise.resolve([])
-        : this.context.node.db.read(prisma =>
-            prisma.proposal.findMany({
-              where: { canonicalNum: blockNumber, isUncle: true },
-            }),
-          ),
+        : this.context.node.db.findMany('Proposal', {
+            where: { canonicalNum: blockNumber, isUncle: true },
+          }),
     ])
     if (!proposal) throw new Error('Unable to find block')
     const blockFromProposal = p => ({

@@ -2,7 +2,7 @@ import { ZkAccount } from '@zkopru/account'
 import { Sum, SwapTxBuilder } from '@zkopru/transaction'
 import { PromptApp } from '@zkopru/utils'
 import { ZkWallet, Balance } from '@zkopru/zk-wizard'
-import { Withdrawal as WithdrawalSql } from '@zkopru/prisma'
+import { Withdrawal as WithdrawalSql } from '@zkopru/database'
 import { Dashboard } from '../../../dashboard'
 
 export enum AppMenu {

@@ -5,7 +5,7 @@ import AsyncLock from 'async-lock'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { hexify } from '@zkopru/utils'
-import { DB, TreeSpecies } from '@zkopru/prisma'
+import { DB, TreeSpecies, getCachedSiblings } from '@zkopru/database'
 import { Hasher } from './hasher'
 import { MerkleProof, startingLeafProof, verifyProof } from './merkle-proof'
 
@@ -90,25 +90,21 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
   }
 
   async init() {
-    const saveResult = await this.db.write(prisma =>
-      prisma.lightTree.create({
-        data: {
-          species: this.species,
-          start: this.metadata.start.toString(10),
-          end: this.metadata.end.toString(10),
-          root:
-            this.data.root instanceof Fp
-              ? this.data.root.toString(10)
-              : hexify(this.data.root),
-          index: this.data.index.toString(10),
-          siblings: JSON.stringify(
-            this.data.siblings.map(sib =>
-              sib instanceof Fp ? sib.toString(10) : hexify(sib),
-            ),
-          ),
-        },
-      }),
-    )
+    const saveResult = await this.db.create('LightTree', {
+      species: this.species,
+      start: this.metadata.start.toString(10),
+      end: this.metadata.end.toString(10),
+      root:
+        this.data.root instanceof Fp
+          ? this.data.root.toString(10)
+          : hexify(this.data.root),
+      index: this.data.index.toString(10),
+      siblings: JSON.stringify(
+        this.data.siblings.map(sib =>
+          sib instanceof Fp ? sib.toString(10) : hexify(sib),
+        ),
+      ),
+    })
     this.metadata.id = saveResult.id
   }
 
@@ -232,14 +228,13 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     if (index) {
       leafIndex = index
     } else {
-      const leafCandidates = await this.db.read(prisma =>
-        prisma.treeNode.findMany({
-          where: {
-            AND: [{ value: hexify(hash) }, { treeId: this.metadata.id }],
-          },
-          take: 1,
-        }),
-      )
+      const leafCandidates = await this.db.findMany('TreeNode', {
+        where: {
+          value: hexify(hash),
+          treeId: this.metadata.id,
+        },
+        limit: 1,
+      })
       if (leafCandidates.length === 0) throw Error('Leaf does not exist.')
       else if (leafCandidates.length > 1)
         throw Error('Multiple leaves exist for same hash.')
@@ -303,7 +298,8 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
   private async _getCachedSiblings(
     leafIndex: T,
   ): Promise<{ [index: string]: string }> {
-    const cachedSiblings = await this.db.preset.getCachedSiblings(
+    const cachedSiblings = await getCachedSiblings(
+      this.db,
       this.depth,
       this.metadata.id,
       leafIndex,
@@ -418,43 +414,36 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
         ),
       ),
     }
-    await this.db.write(prisma =>
-      prisma.lightTree.upsert({
-        where: { species: this.species },
+    await this.db.upsert('LightTree', {
+      where: { species: this.species },
+      update: {
+        ...rollUpSync,
+        ...rollUpSnapshot,
+      },
+      create: {
+        ...rollUpSync,
+        ...rollUpSnapshot,
+        species: this.species,
+      },
+      constraintKey: 'species',
+    })
+    // update cached nodes
+    for (const nodeIndex of Object.keys(cached)) {
+      await this.db.upsert('TreeNode', {
+        where: {
+          treeId: this.metadata.id,
+          nodeIndex,
+        },
         update: {
-          ...rollUpSync,
-          ...rollUpSnapshot,
+          value: cached[nodeIndex],
         },
         create: {
-          ...rollUpSync,
-          ...rollUpSnapshot,
-          species: this.species,
+          treeId: this.metadata.id,
+          nodeIndex,
+          value: cached[nodeIndex],
         },
-      }),
-    )
-    // update cached nodes
-    await this.db.write(prisma =>
-      prisma.$transaction(
-        Object.keys(cached).map(nodeIndex =>
-          prisma.treeNode.upsert({
-            where: {
-              treeId_nodeIndex: {
-                treeId: this.metadata.id,
-                nodeIndex,
-              },
-            },
-            update: {
-              value: cached[nodeIndex],
-            },
-            create: {
-              treeId: this.metadata.id,
-              nodeIndex,
-              value: cached[nodeIndex],
-            },
-          }),
-        ),
-      ),
-    )
+      })
+    }
     return {
       root,
       index: end,
@@ -488,9 +477,9 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
       throw Error('bootstrapped with invalid merkle proof')
     }
     // If it does not have force update config, check existing merkle tree
-    const exisingTree = await db.read(prisma =>
-      prisma.lightTree.findOne({ where: { species } }),
-    )
+    const exisingTree = await db.findOne('LightTree', {
+      where: { species },
+    })
     if (
       !config.forceUpdate &&
       data.index.lte(toBN(exisingTree?.index || '0'))
@@ -513,15 +502,19 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
         ),
       ),
     }
-    const newTree = await db.write(prisma =>
-      prisma.lightTree.upsert({
-        where: { species },
-        update: tree,
-        create: {
-          ...tree,
-        },
-      }),
-    )
+    await db.upsert('LightTree', {
+      where: { species },
+      update: tree,
+      create: {
+        ...tree,
+      },
+      constraintKey: 'species',
+    })
+    const newTree = await db.findOne('LightTree', {
+      where: {
+        species,
+      },
+    })
     const { start, end } = newTree
     // Return tree object
     let _start: T
@@ -562,5 +555,5 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     return false
   }
 
-  abstract async indexesOfTrackingLeaves(): Promise<T[]>
+  abstract indexesOfTrackingLeaves(): Promise<T[]>
 }
