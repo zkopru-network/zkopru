@@ -63,15 +63,13 @@ export class OffchainHeaderValidator extends OffchainValidatorContext
 
   async validateParentBlock(data: BlockData): Promise<Validation> {
     const block = blockDataToBlock(data)
-    const slashed = await this.layer2.db.read(prisma =>
-      prisma.slash.findOne({
-        where: {
-          hash: block.header.parentBlock.toString(),
-        },
-      }),
-    )
+    const slashed = await this.layer2.db.findOne('Slash', {
+      where: {
+        hash: block.header.parentBlock.toString(),
+      },
+    })
     return {
-      slashable: slashed !== null,
+      slashable: slashed !== null && slashed !== undefined,
       reason: CODE.H4,
     }
   }

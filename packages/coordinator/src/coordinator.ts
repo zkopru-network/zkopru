@@ -377,12 +377,10 @@ export class Coordinator extends EventEmitter {
       try {
         const receipt = await this.layer1().sendTx(tx, this.context.account)
         if (receipt) {
-          await this.layer2().db.write(prisma =>
-            prisma.proposal.update({
-              where: { hash: blockHash },
-              data: { finalized: true },
-            }),
-          )
+          await this.layer2().db.update('Proposal', {
+            where: { hash: blockHash },
+            update: { finalized: true },
+          })
           logger.info(`finalized block ${blockHash}`)
         } else {
           logger.warn(`Failed to finalize the block ${blockHash}`)
@@ -399,25 +397,25 @@ export class Coordinator extends EventEmitter {
       .call()
     const currentBlockNumber: number = await this.layer1().web3.eth.getBlockNumber()
     const l1Config = await this.layer1().getConfig()
-    const unfinalizedProposals = await this.layer2().db.read(prisma =>
-      prisma.proposal.findMany({
-        where: {
-          AND: [
-            { finalized: null },
-            { block: { header: { parentBlock: latest } } },
-            { verified: true },
-            { isUncle: null },
-            { proposalData: { not: null } },
-            {
-              proposedAt: {
-                lt: currentBlockNumber - l1Config.challengePeriod,
-              },
-            },
-          ],
+    const blocks = await this.layer2().db.findMany('Header', {
+      where: {
+        parentBlock: latest,
+      },
+    })
+    const blockHashes = blocks.map(({ hash }) => hash)
+    const unfinalizedProposals = await this.layer2().db.findMany('Proposal', {
+      where: {
+        hash: blockHashes,
+        finalized: null,
+        verified: true,
+        isUncle: null,
+        proposalData: { ne: null },
+        proposedAt: {
+          lt: currentBlockNumber - l1Config.challengePeriod,
         },
-        take: 1,
-      }),
-    )
+      },
+      limit: 1,
+    })
     const proposalToFinalize = unfinalizedProposals[0]
     if (!proposalToFinalize) return undefined
     assert(proposalToFinalize.proposalData)

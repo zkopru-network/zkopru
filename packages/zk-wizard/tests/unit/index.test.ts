@@ -7,7 +7,7 @@ import { Fp } from '@zkopru/babyjubjub'
 import { ZkTx, Utxo, UtxoStatus, TokenRegistry } from '@zkopru/transaction'
 import { ZkWizard } from '@zkopru/zk-wizard'
 import { keccakHasher, poseidonHasher, Grove } from '@zkopru/tree'
-import { DB, MockupDB } from '@zkopru/prisma'
+import { DB, SQLiteConnector, schema } from '@zkopru/database'
 import { accounts, address } from '~dataset/testset-predefined'
 import { utxos } from '~dataset/testset-utxos'
 import { txs } from '~dataset/testset-txs'
@@ -53,47 +53,44 @@ async function loadGrove(db: DB): Promise<{ grove: Grove }> {
 async function saveUtxos(db: DB, utxos: Utxo[]): Promise<DB> {
   for (let i = 0; i < utxos.length; i += 1) {
     const utxo = utxos[i]
-    await db.write(prisma =>
-      prisma.utxo.create({
-        data: {
-          hash: utxo
-            .hash()
-            .toUint256()
-            .toString(),
-          owner: utxo.owner.toString(),
-          salt: utxo.salt.toUint256().toString(),
-          eth: utxo
-            .eth()
-            .toUint256()
-            .toString(),
-          tokenAddr: utxo
-            .tokenAddr()
-            .toAddress()
-            .toString(),
-          erc20Amount: utxo
-            .erc20Amount()
-            .toUint256()
-            .toString(),
-          nft: utxo
-            .nft()
-            .toUint256()
-            .toString(),
-          status: UtxoStatus.NON_INCLUDED,
-          index: i.toString(),
-        },
-      }),
-    )
+    await db.create('Utxo', {
+      hash: utxo
+        .hash()
+        .toUint256()
+        .toString(),
+      owner: utxo.owner.toString(),
+      salt: utxo.salt.toUint256().toString(),
+      eth: utxo
+        .eth()
+        .toUint256()
+        .toString(),
+      tokenAddr: utxo
+        .tokenAddr()
+        .toAddress()
+        .toString(),
+      erc20Amount: utxo
+        .erc20Amount()
+        .toUint256()
+        .toString(),
+      nft: utxo
+        .nft()
+        .toUint256()
+        .toString(),
+      status: UtxoStatus.NON_INCLUDED,
+      index: i.toString(),
+    })
   }
   return db
 }
 
 async function loadZkWizard(): Promise<{
   zkWizard: ZkWizard
-  mockupDB: MockupDB
+  mockupDB: DB
 }> {
-  const mockupDB = await DB.testMockup()
-  const { grove } = await loadGrove(mockupDB.db)
-  await saveUtxos(mockupDB.db, [
+  const mockupDB = await SQLiteConnector.create(':memory:')
+  await mockupDB.createTables(schema)
+  const { grove } = await loadGrove(mockupDB)
+  await saveUtxos(mockupDB, [
     utxos.utxo1_in_1,
     utxos.utxo2_1_in_1,
     utxos.utxo2_2_in_1,
@@ -114,7 +111,7 @@ async function loadZkWizard(): Promise<{
 
 describe('index', () => {
   let zkWizard: ZkWizard
-  let mockupDB: MockupDB
+  let mockupDB: DB
   const tokenRegistry: TokenRegistry = new TokenRegistry()
   // eslint-disable-next-line jest/no-hooks
   beforeAll(async () => {
@@ -126,7 +123,7 @@ describe('index', () => {
   }, 60000)
   // eslint-disable-next-line jest/no-hooks
   afterAll(async () => {
-    await mockupDB.terminate()
+    await mockupDB.close()
   })
   describe('1 input 2 output', () => {
     let zkTx1: ZkTx

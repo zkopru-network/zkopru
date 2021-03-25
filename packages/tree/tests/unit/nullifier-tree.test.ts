@@ -3,24 +3,25 @@
 /* eslint-disable jest/no-hooks */
 import { toBN } from 'web3-utils'
 import BN from 'bn.js'
-import { DB, MockupDB } from '~prisma'
+import { DB, SQLiteConnector, schema } from '~database'
 import { NullifierTree, keccakHasher, genesisRoot } from '../../src'
 
 describe('nullifier tree unit test', () => {
   let nullifierTree: NullifierTree
   const depth = 254
   const hasher = keccakHasher(depth)
-  let mockup: MockupDB
+  let mockup: DB
   beforeAll(async () => {
-    mockup = await DB.testMockup()
+    mockup = await SQLiteConnector.create(':memory:')
+    await mockup.createTables(schema)
     nullifierTree = new NullifierTree({
-      db: mockup.db,
+      db: mockup,
       hasher,
       depth,
     })
   })
   afterAll(async () => {
-    await mockup.terminate()
+    await mockup.close()
   })
   describe('root()', () => {
     it('should return the last item of the prehashed zero for its initial root', async () => {

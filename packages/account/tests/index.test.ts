@@ -1,19 +1,20 @@
 /* eslint-disable jest/no-hooks */
 import Web3 from 'web3'
 import { HDWallet, ZkAccount } from '~account'
-import { DB, MockupDB } from '~prisma'
+import { DB, SQLiteConnector, schema } from '~database'
 
 describe('unit test', () => {
-  let mockup: MockupDB
+  let mockup: DB
   beforeAll(async () => {
-    mockup = await DB.testMockup()
+    mockup = await SQLiteConnector.create(':memory:')
+    await mockup.createTables(schema)
   })
   afterAll(async () => {
-    await mockup.terminate()
+    await mockup.close()
   })
   it('has same private keys and eth address with ganache default accounts', async () => {
     const web3 = new Web3()
-    const hdWallet = new HDWallet(web3, mockup.db)
+    const hdWallet = new HDWallet(web3, mockup)
     await hdWallet.init(
       'myth like bonus scare over problem client lizard pioneer submit female collect',
       'samplepassword',

@@ -10,7 +10,7 @@
   "_moduleAliases": {
     "~account": "dist",
     "~utils": "../utils/dist",
-    "~prisma": "../prisma/dist"
+    "~database": "../database/dist"
   },
   "scripts": {
     "prebuild": "shx mkdir -p dist",
@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@zkopru/babyjubjub": "file:../babyjubjub",
-    "@zkopru/prisma": "file:../prisma",
+    "@zkopru/database": "file:../database",
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/utils": "file:../utils",
     "bip39": "^3.0.2",

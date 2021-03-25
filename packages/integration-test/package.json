@@ -10,7 +10,6 @@
     "~contracts": "../contracts/dist",
     "~core": "../core/dist",
     "~coordinator": "../coordinator/dist",
-    "~prisma": "../prisma/dist",
     "~transaction": "../transaction/dist",
     "~utils": "../utils/dist",
     "~zk-wizard": "../zk-wizard/dist"
@@ -36,7 +35,6 @@
     "@zkopru/cli": "file:../cli",
     "@zkopru/coordinator": "file:../coordinator",
     "@zkopru/core": "file:../core",
-    "@zkopru/prisma": "file:../prisma",
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/utils": "file:../utils",
     "@zkopru/zk-wizard": "file:../zk-wizard",

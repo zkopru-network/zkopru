@@ -12,9 +12,6 @@ workflows:
       - test_contracts:
           requires:
             - build
-      - test_prisma:
-          requires:
-            - build
       - test_accounts:
           requires:
             - build
@@ -30,6 +27,12 @@ workflows:
       - test_client:
           requires:
             - build
+      - test_database:
+          requires:
+            - build
+      - test_zkwizard:
+          requires:
+            - build
 jobs:
   build:
     machine:
@@ -42,9 +45,6 @@ jobs:
       - run:
           name: Install
           command: yarn
-      - run:
-          name: Build Prisma
-          command: yarn build:prisma
       - run:
           name: Build Contract
           command: yarn build:contract
@@ -110,15 +110,6 @@ jobs:
       - run:
           name: Dataset Tests
           command: yarn test --scope=@zkopru/dataset
-  test_prisma:
-    machine:
-      image: ubuntu-2004:202010-01
-    steps:
-      - attach_workspace:
-          at: ~/
-      - run:
-          name: Prisma Tests
-          command: yarn test --scope=@zkopru/prisma
   test_accounts:
     machine:
       image: ubuntu-2004:202010-01
@@ -154,6 +145,23 @@ jobs:
       - run:
           name: Tree Tests
           command: yarn test --scope=@zkopru/tree
+  test_zkwizard:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: ZK Wizard Tests
+          command: |
+            docker pull jchancehud/zkopru:circuits
+            docker tag jchancehud/zkopru:circuits zkoprunet/circuits:dev
+            cd packages/circuits
+            yarn setup
+            yarn build-keys
+            yarn postbuild-keys
+            cd ../..
+            yarn test --scope=@zkopru/zk-wizard
   test_client:
     machine:
       image: ubuntu-2004:202010-01
@@ -163,6 +171,15 @@ jobs:
       - run:
           name: Client Tests
           command: yarn test --scope=@zkopru/client
+  test_database:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Database Tests
+          command: yarn test --scope=@zkopru/database
   test_babyjubjub:
     machine:
       image: ubuntu-2004:202010-01

@@ -64,5 +64,5 @@ export abstract class PromptApp<T, C> {
     }
   }
 
-  abstract async run(context: T): Promise<{ context: T; next: number }>
+  abstract run(context: T): Promise<{ context: T; next: number }>
 }

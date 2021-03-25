@@ -10,7 +10,7 @@
   "include": ["src"],
   "references": [
     { "path": "../babyjubjub/tsconfig.build.json", "prepend": false },
-    { "path": "../prisma/tsconfig.build.json", "prepend": false },
+    { "path": "../database/tsconfig.build.json", "prepend": false },
     { "path": "../utils/tsconfig.build.json", "prepend": false }
   ]
 }

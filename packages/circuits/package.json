@@ -7,7 +7,7 @@
     "wasmsnark": "../../node_modules/wasmsnark",
     "~babyjubjub": "../babyjubjub/dist",
     "~dataset": "../dataset/dist",
-    "~prisma": "../prisma/dist",
+    "~database": "../database/dist",
     "~tree": "../tree/dist",
     "~utils": "../utils/dist",
     "~zk-wizard": "../zk-wizard/dist"

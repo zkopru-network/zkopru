@@ -13,7 +13,7 @@ import { Fp, F } from '@zkopru/babyjubjub'
 import { Layer1, TransactionObject, Tx, TxUtil } from '@zkopru/contracts'
 import { HDWallet, ZkAccount } from '@zkopru/account'
 import { ZkopruNode } from '@zkopru/core'
-import { DB, Withdrawal as WithdrawalSql } from '@zkopru/prisma'
+import { DB, Withdrawal as WithdrawalSql } from '@zkopru/database'
 import { logger } from '@zkopru/utils'
 import { soliditySha3 } from 'web3-utils'
 import { Address, Uint256 } from 'soltypes'
@@ -160,13 +160,12 @@ export class ZkWallet {
     const targetAccount = account || this.account
     if (!targetAccount)
       throw Error('Provide account parameter or set default account')
-    const withdrawals = await this.db.read(prisma =>
-      prisma.withdrawal.findMany({
-        where: {
-          AND: [{ to: targetAccount.ethAddress }, { status }],
-        },
-      }),
-    )
+    const withdrawals = await this.db.findMany('Withdrawal', {
+      where: {
+        to: targetAccount.ethAddress,
+        status,
+      },
+    })
     return withdrawals
   }
 
@@ -174,17 +173,13 @@ export class ZkWallet {
     const targetAccount = account || this.account
     if (!targetAccount)
       throw Error('Provide account parameter or set default account')
-    const noteSqls = await this.db.read(prisma =>
-      prisma.utxo.findMany({
-        where: {
-          AND: [
-            { owner: { in: [targetAccount.zkAddress.toString()] } },
-            { status },
-            { usedAt: null },
-          ],
-        },
-      }),
-    )
+    const noteSqls = await this.db.findMany('Utxo', {
+      where: {
+        owner: [targetAccount.zkAddress.toString()],
+        status,
+        usedAt: null,
+      },
+    })
     const notes: Utxo[] = []
     noteSqls.forEach(obj => {
       if (!obj.eth) throw Error('should have Ether data')
@@ -421,12 +416,10 @@ export class ZkWallet {
     )
     const receipt = await this.node.layer1.sendTx(tx, this.account.ethAccount)
     if (receipt) {
-      await this.db.write(prisma =>
-        prisma.withdrawal.update({
-          where: { hash: withdrawal.hash },
-          data: { status: WithdrawalStatus.WITHDRAWN },
-        }),
-      )
+      await this.db.update('Withdrawal', {
+        where: { hash: withdrawal.hash },
+        update: { status: WithdrawalStatus.WITHDRAWN },
+      })
       return true
     }
     return false
@@ -474,12 +467,10 @@ export class ZkWallet {
       )
       if (receipt.status) {
         // mark withdrawal as transferred
-        await this.db.write(prisma =>
-          prisma.withdrawal.update({
-            where: { hash: withdrawal.hash },
-            data: { status: WithdrawalStatus.TRANSFERRED },
-          }),
-        )
+        await this.db.update('Withdrawal', {
+          where: { hash: withdrawal.hash },
+          update: { status: WithdrawalStatus.TRANSFERRED },
+        })
         return true
       }
     }
@@ -520,39 +511,31 @@ export class ZkWallet {
   }
 
   async lockUtxos(utxos: Utxo[]): Promise<void> {
-    await this.db.write(prisma =>
-      prisma.utxo.updateMany({
-        where: {
-          hash: {
-            in: utxos.map(utxo =>
-              utxo
-                .hash()
-                .toUint256()
-                .toString(),
-            ),
-          },
-        },
-        data: { status: UtxoStatus.SPENDING },
-      }),
-    )
+    await this.db.update('Utxo', {
+      where: {
+        hash: utxos.map(utxo =>
+          utxo
+            .hash()
+            .toUint256()
+            .toString(),
+        ),
+      },
+      update: { status: UtxoStatus.SPENDING },
+    })
   }
 
   async unlockUtxos(utxos: Utxo[]): Promise<void> {
-    await this.db.write(prisma =>
-      prisma.utxo.updateMany({
-        where: {
-          hash: {
-            in: utxos.map(utxo =>
-              utxo
-                .hash()
-                .toUint256()
-                .toString(),
-            ),
-          },
-        },
-        data: { status: UtxoStatus.UNSPENT },
-      }),
-    )
+    await this.db.update('Utxo', {
+      where: {
+        hash: utxos.map(utxo =>
+          utxo
+            .hash()
+            .toUint256()
+            .toString(),
+        ),
+      },
+      update: { status: UtxoStatus.UNSPENT },
+    })
   }
 
   async shieldTx({
@@ -658,68 +641,60 @@ export class ZkWallet {
 
   private async saveOutflow(outflow: Outflow) {
     if (outflow instanceof Utxo) {
-      await this.db.write(prisma =>
-        prisma.utxo.create({
-          data: {
-            hash: outflow
-              .hash()
-              .toUint256()
-              .toString(),
-            owner: outflow.owner.toString(),
-            salt: outflow.salt.toUint256().toString(),
-            eth: outflow
-              .eth()
-              .toUint256()
-              .toString(),
-            tokenAddr: outflow
-              .tokenAddr()
-              .toAddress()
-              .toString(),
-            erc20Amount: outflow
-              .erc20Amount()
-              .toUint256()
-              .toString(),
-            nft: outflow
-              .nft()
-              .toUint256()
-              .toString(),
-            status: UtxoStatus.NON_INCLUDED,
-          },
-        }),
-      )
+      await this.db.create('Utxo', {
+        hash: outflow
+          .hash()
+          .toUint256()
+          .toString(),
+        owner: outflow.owner.toString(),
+        salt: outflow.salt.toUint256().toString(),
+        eth: outflow
+          .eth()
+          .toUint256()
+          .toString(),
+        tokenAddr: outflow
+          .tokenAddr()
+          .toAddress()
+          .toString(),
+        erc20Amount: outflow
+          .erc20Amount()
+          .toUint256()
+          .toString(),
+        nft: outflow
+          .nft()
+          .toUint256()
+          .toString(),
+        status: UtxoStatus.NON_INCLUDED,
+      })
     } else if (outflow instanceof Withdrawal) {
-      await this.db.write(prisma =>
-        prisma.withdrawal.create({
-          data: {
-            hash: outflow
-              .hash()
-              .toUint256()
-              .toString(),
-            withdrawalHash: outflow.withdrawalHash().toString(),
-            owner: outflow.owner.toString(),
-            salt: outflow.salt.toUint256().toString(),
-            eth: outflow
-              .eth()
-              .toUint256()
-              .toString(),
-            tokenAddr: outflow
-              .tokenAddr()
-              .toAddress()
-              .toString(),
-            erc20Amount: outflow
-              .erc20Amount()
-              .toUint256()
-              .toString(),
-            nft: outflow
-              .nft()
-              .toUint256()
-              .toString(),
-            to: outflow.publicData.to.toAddress().toString(),
-            fee: outflow.publicData.fee.toAddress().toString(),
-            status: UtxoStatus.NON_INCLUDED,
-          },
-        }),
-      )
+      await this.db.create('Withdrawal', {
+        hash: outflow
+          .hash()
+          .toUint256()
+          .toString(),
+        withdrawalHash: outflow.withdrawalHash().toString(),
+        owner: outflow.owner.toString(),
+        salt: outflow.salt.toUint256().toString(),
+        eth: outflow
+          .eth()
+          .toUint256()
+          .toString(),
+        tokenAddr: outflow
+          .tokenAddr()
+          .toAddress()
+          .toString(),
+        erc20Amount: outflow
+          .erc20Amount()
+          .toUint256()
+          .toString(),
+        nft: outflow
+          .nft()
+          .toUint256()
+          .toString(),
+        to: outflow.publicData.to.toAddress().toString(),
+        fee: outflow.publicData.fee.toAddress().toString(),
+        status: UtxoStatus.NON_INCLUDED,
+      })
     }
   }
 }

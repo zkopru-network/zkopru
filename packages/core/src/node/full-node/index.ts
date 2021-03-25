@@ -1,6 +1,6 @@
 import { ZkAccount } from '@zkopru/account'
 import { WebsocketProvider, IpcProvider, Account } from 'web3-core'
-import { DB } from '@zkopru/prisma'
+import { DB } from '@zkopru/database'
 import Web3 from 'web3'
 import { L1Contract } from '../../context/layer1'
 import { L2Chain } from '../../context/layer2'

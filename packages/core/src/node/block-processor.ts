@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { ZkViewer } from '@zkopru/account'
 import { Fp } from '@zkopru/babyjubjub'
-import { DB, Proposal, MassDeposit as MassDepositSql } from '@zkopru/prisma'
+import { DB, Proposal, MassDeposit as MassDepositSql } from '@zkopru/database'
 import { logger, Worker } from '@zkopru/utils'
 import { Leaf } from '@zkopru/tree'
 import assert from 'assert'
@@ -99,16 +99,14 @@ export class BlockProcessor extends EventEmitter {
         const unprocessed = await this.layer2.getOldestUnprocessedBlock()
         logger.trace(`unprocessed: ${unprocessed}`)
         if (!unprocessed) {
-          const latestProcessed = await this.db.read(prisma =>
-            prisma.proposal.findMany({
-              where: {
-                OR: [{ verified: { not: null } }, { isUncle: { not: null } }],
-              },
-              orderBy: { proposalNum: 'desc' },
-              take: 1,
-              include: { block: true },
-            }),
-          )
+          const latestProcessed = await this.db.findMany('Proposal', {
+            where: {
+              OR: [{ verified: { ne: null } }, { isUncle: { ne: null } }],
+            },
+            orderBy: { proposalNum: 'desc' },
+            limit: 1,
+            include: { block: true },
+          })
           const latest = latestProcessed.pop()
           this.emit('processed', { proposalNum: latest?.proposalNum || 0 })
           // this.synchronizer.setLatestProcessed(latest?.proposalNum || 0)
@@ -152,18 +150,14 @@ export class BlockProcessor extends EventEmitter {
     )
 
     if (isUncle) {
-      await this.db.write(prisma =>
-        prisma.proposal.update({
-          where: { hash: block.hash.toString() },
-          data: { isUncle: true },
-        }),
-      )
-      await this.db.write(prisma =>
-        prisma.massDeposit.updateMany({
-          where: { includedIn: block.hash.toString() },
-          data: { includedIn: null },
-        }),
-      )
+      await this.db.update('Proposal', {
+        where: { hash: block.hash.toString() },
+        update: { isUncle: true },
+      })
+      await this.db.update('MassDeposit', {
+        where: { includedIn: block.hash.toString() },
+        update: { includedIn: null },
+      })
       // TODO: can not process uncle block's grove patch yet
       return proposal.proposalNum
     }
@@ -173,18 +167,14 @@ export class BlockProcessor extends EventEmitter {
     const challengeTx = await this.validator.validate(parent, block)
     if (challengeTx) {
       // implement challenge here & mark as invalidated
-      await this.db.write(prisma =>
-        prisma.proposal.update({
-          where: { hash: block.hash.toString() },
-          data: { verified: false },
-        }),
-      )
-      await this.db.write(prisma =>
-        prisma.massDeposit.updateMany({
-          where: { includedIn: block.hash.toString() },
-          data: { includedIn: null },
-        }),
-      )
+      await this.db.update('Proposal', {
+        where: { hash: block.hash.toString() },
+        update: { verified: false },
+      })
+      await this.db.update('MassDeposit', {
+        where: { includedIn: block.hash.toString() },
+        update: { includedIn: null },
+      })
       // save transactions and mark them as challenged
       await this.saveTransactions(block, true)
       logger.warn('challenge')
@@ -212,15 +202,13 @@ export class BlockProcessor extends EventEmitter {
     const patch = await this.makePatch(parent, block)
     await this.applyPatch(patch)
     // Mark as verified
-    await this.db.write(prisma =>
-      prisma.proposal.update({
-        where: { hash: block.hash.toString() },
-        data: {
-          verified: true,
-          isUncle: isUncle ? true : null,
-        },
-      }),
-    )
+    await this.db.update('Proposal', {
+      where: { hash: block.hash.toString() },
+      update: {
+        verified: true,
+        isUncle: isUncle ? true : null,
+      },
+    })
     // TODO remove proposal data if it completes verification or if the block is finalized
     return proposal.proposalNum
   }
@@ -271,37 +259,31 @@ export class BlockProcessor extends EventEmitter {
         usedAt: null,
       }
     })
-    await this.db.write(prisma =>
-      prisma.$transaction(
-        inputs.map(input =>
-          prisma.utxo.upsert({
-            where: { hash: input.hash },
-            create: input,
-            update: input,
-          }),
-        ),
-      ),
-    )
+    await this.db.transaction(db => {
+      inputs.map(input =>
+        db.upsert('Utxo', {
+          where: { hash: input.hash },
+          create: input,
+          update: input,
+        }),
+      )
+    })
   }
 
   private async saveTransactions(block: Block, challenged = false) {
-    await this.db.write(prisma =>
-      prisma.$transaction(
-        block.body.txs.map(tx =>
-          prisma.tx.create({
-            data: {
-              hash: tx.hash().toString(),
-              blockHash: block.hash.toString(),
-              inflowCount: tx.inflow.length,
-              outflowCount: tx.outflow.length,
-              fee: tx.fee.toHex(),
-              challenged,
-              slashed: false,
-            },
-          }),
-        ),
-      ),
-    )
+    await this.db.transaction(db => {
+      block.body.txs.map(tx =>
+        db.create('Tx', {
+          hash: tx.hash().toString(),
+          blockHash: block.hash.toString(),
+          inflowCount: tx.inflow.length,
+          outflowCount: tx.outflow.length,
+          fee: tx.fee.toHex(),
+          challenged,
+          slashed: false,
+        }),
+      )
+    })
   }
 
   private async saveMyWithdrawals(txs: ZkTx[], accounts: Address[]) {
@@ -344,13 +326,11 @@ export class BlockProcessor extends EventEmitter {
         fee: output.data.fee.toUint256().toString(),
       }
       logger.info(`found my withdrawal: ${withdrawalSql.hash}`)
-      await this.db.write(prisma =>
-        prisma.withdrawal.upsert({
-          where: { hash: withdrawalSql.hash },
-          create: withdrawalSql,
-          update: withdrawalSql,
-        }),
-      )
+      await this.db.upsert('Withdrawal', {
+        where: { hash: withdrawalSql.hash },
+        create: withdrawalSql,
+        update: withdrawalSql,
+      })
     }
   }
 
@@ -396,43 +376,35 @@ export class BlockProcessor extends EventEmitter {
   }
 
   private async markUtxosAsUnspent(utxos: Leaf<Fp>[]) {
-    await this.db.write(prisma =>
-      prisma.utxo.updateMany({
-        where: {
-          hash: { in: utxos.map(utxo => utxo.hash.toUint256().toString()) },
-        },
-        data: { status: UtxoStatus.UNSPENT },
-      }),
-    )
+    await this.db.update('Utxo', {
+      where: {
+        hash: utxos.map(utxo => utxo.hash.toUint256().toString()),
+      },
+      update: { status: UtxoStatus.UNSPENT },
+    })
   }
 
   private async markWithdrawalsAsUnfinalized(withdrawals: Leaf<BN>[]) {
-    await this.db.write(prisma =>
-      prisma.withdrawal.updateMany({
-        where: {
-          hash: {
-            in: withdrawals.map(withdrawal => {
-              assert(withdrawal.noteHash)
-              return withdrawal.noteHash.toString()
-            }),
-          },
-        },
-        data: { status: WithdrawalStatus.UNFINALIZED },
-      }),
-    )
+    await this.db.update('Withdrawal', {
+      where: {
+        hash: withdrawals.map(withdrawal => {
+          assert(withdrawal.noteHash)
+          return withdrawal.noteHash.toString()
+        }),
+      },
+      update: { status: WithdrawalStatus.UNFINALIZED },
+    })
   }
 
   private async markMassDepositsAsIncludedIn(
     massDepositHashes: Bytes32[],
     block: Bytes32,
   ) {
-    const nonIncluded = await this.db.read(prisma =>
-      prisma.massDeposit.findMany({
-        where: {
-          includedIn: null,
-        },
-      }),
-    )
+    const nonIncluded = await this.db.findMany('MassDeposit', {
+      where: {
+        includedIn: null,
+      },
+    })
     const candidates: { [index: string]: MassDepositSql } = {}
     nonIncluded.forEach(md => {
       candidates[md.index] = md
@@ -457,36 +429,30 @@ export class BlockProcessor extends EventEmitter {
         }
       }
     }
-    await this.db.write(prisma =>
-      prisma.massDeposit.updateMany({
-        where: { index: { in: indexes } },
-        data: { includedIn: block.toString() },
-      }),
-    )
+    await this.db.update('MassDeposit', {
+      where: { index: indexes },
+      update: { includedIn: block.toString() },
+    })
   }
 
   private async nullifyUsedUtxos(blockHash: Bytes32, nullifiers: BN[]) {
-    await this.db.write(prisma =>
-      prisma.utxo.updateMany({
-        where: { nullifier: { in: nullifiers.map(v => v.toString()) } },
-        data: {
-          status: UtxoStatus.SPENT,
-          usedAt: blockHash.toString(),
-        },
-      }),
-    )
+    await this.db.update('Utxo', {
+      where: { nullifier: nullifiers.map(v => v.toString()) },
+      update: {
+        status: UtxoStatus.SPENT,
+        usedAt: blockHash.toString(),
+      },
+    })
   }
 
   private async updateMyUtxos(accounts: ZkViewer[], patch: Patch) {
     // Find utxos that I've created
-    const myStoredUtxos = await this.db.read(prisma =>
-      prisma.utxo.findMany({
-        where: {
-          hash: { in: patch.treePatch.utxos.map(leaf => leaf.hash.toString()) },
-          owner: { in: accounts.map(account => account.zkAddress.toString()) },
-        },
-      }),
-    )
+    const myStoredUtxos = await this.db.findMany('Utxo', {
+      where: {
+        hash: patch.treePatch.utxos.map(leaf => leaf.hash.toString()),
+        owner: accounts.map(account => account.zkAddress.toString()),
+      },
+    })
     const startingUtxoIndex = patch.prevHeader.utxoIndex.toBN()
     const utxosToUpdate: {
       hash: string
@@ -510,36 +476,29 @@ export class BlockProcessor extends EventEmitter {
         nullifier: nullifier.toString(),
       })
     }
-    await this.db.write(prisma =>
-      prisma.$transaction(
-        utxosToUpdate.map(utxo =>
-          prisma.utxo.update({
-            where: { hash: utxo.hash },
-            data: {
-              index: utxo.index,
-              nullifier: utxo.nullifier,
-            },
-          }),
-        ),
-      ),
-    )
+    await this.db.transaction(db => {
+      utxosToUpdate.map(utxo =>
+        db.update('Utxo', {
+          where: { hash: utxo.hash },
+          update: {
+            index: utxo.index,
+            nullifier: utxo.nullifier,
+          },
+        }),
+      )
+    })
   }
 
   private async updateMyWithdrawals(accounts: Address[], patch: Patch) {
-    const myStoredWithdrawals = await this.db.read(prisma =>
-      prisma.withdrawal.findMany({
-        where: {
-          hash: {
-            in: patch.treePatch.withdrawals.map(leaf => {
-              if (!leaf.noteHash)
-                throw Error('Patch should provide noteHash field')
-              return leaf.noteHash?.toString()
-            }),
-          },
-          to: { in: accounts.map(account => account.toString()) },
-        },
-      }),
-    )
+    const myStoredWithdrawals = await this.db.findMany('Withdrawal', {
+      where: {
+        hash: patch.treePatch.withdrawals.map(leaf => {
+          if (!leaf.noteHash) throw Error('Patch should provide noteHash field')
+          return leaf.noteHash?.toString()
+        }),
+        to: accounts.map(account => account.toString()),
+      },
+    })
     const startingWithdrawalIndex = patch.prevHeader.withdrawalIndex.toBN()
     const withdrawalsToUpdate: {
       hash: string
@@ -568,19 +527,17 @@ export class BlockProcessor extends EventEmitter {
         ),
       })
     }
-    await this.db.write(prisma =>
-      prisma.$transaction(
-        withdrawalsToUpdate.map(withdrawal =>
-          prisma.withdrawal.update({
-            where: { hash: withdrawal.hash },
-            data: {
-              index: withdrawal.index,
-              includedIn: withdrawal.includedIn,
-              siblings: withdrawal.siblings,
-            },
-          }),
-        ),
-      ),
-    )
+    await this.db.transaction(db => {
+      withdrawalsToUpdate.map(withdrawal =>
+        db.update('Withdrawal', {
+          where: { hash: withdrawal.hash },
+          update: {
+            index: withdrawal.index,
+            includedIn: withdrawal.includedIn,
+            siblings: withdrawal.siblings,
+          },
+        }),
+      )
+    })
   }
 }

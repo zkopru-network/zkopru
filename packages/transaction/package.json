@@ -27,7 +27,6 @@
   },
   "dependencies": {
     "@zkopru/babyjubjub": "file:../babyjubjub",
-    "@zkopru/prisma": "file:../prisma",
     "@zkopru/utils": "file:../utils",
     "big-integer": "^1.6.48",
     "bs58": "^4.0.1",

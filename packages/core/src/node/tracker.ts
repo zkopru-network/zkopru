@@ -1,5 +1,5 @@
 import { ZkAccount, ZkViewer } from '@zkopru/account'
-import { DB } from '@zkopru/prisma'
+import { DB } from '@zkopru/database'
 import { Address } from 'soltypes'
 
 export class Tracker {
@@ -16,7 +16,9 @@ export class Tracker {
   }
 
   async refresh() {
-    const trackers = await this.db.read(prisma => prisma.tracker.findMany())
+    const trackers = await this.db.findMany('Tracker', {
+      where: {},
+    })
     const l2Accounts: ZkViewer[] = []
     const l1Accounts: Address[] = []
     for (const tracker of trackers) {
@@ -39,39 +41,31 @@ export class Tracker {
   }
 
   async addWithdrawalTracker(...accounts: Address[]) {
-    await this.db.write(async prisma => {
-      const unregistered = accounts.filter(
-        account => !this.withdrawalTrackers.find(a => a.eq(account)),
-      )
-      this.withdrawalTrackers.push(...unregistered)
-      return prisma.$transaction(
-        unregistered.map(account =>
-          prisma.tracker.upsert({
-            where: { address: account.toString() },
-            create: { address: account.toString() },
-            update: { address: account.toString() },
-          }),
-        ),
-      )
-    })
+    const unregistered = accounts.filter(
+      account => !this.withdrawalTrackers.find(a => a.eq(account)),
+    )
+    this.withdrawalTrackers.push(...unregistered)
+    for (const account of unregistered) {
+      await this.db.upsert('Tracker', {
+        where: { address: account.toString() },
+        create: { address: account.toString() },
+        update: { address: account.toString() },
+      })
+    }
   }
 
   async addUtxoTracker(...accounts: ZkViewer[]) {
-    await this.db.write(async prisma => {
-      const unregistered = accounts.filter(
-        account =>
-          !this.transferTrackers.find(a => a.zkAddress.eq(account.zkAddress)),
-      )
-      this.transferTrackers.push(...unregistered)
-      return prisma.$transaction(
-        unregistered.map(account =>
-          prisma.tracker.upsert({
-            where: { viewer: account.encodeViewingKey() },
-            create: { viewer: account.encodeViewingKey() },
-            update: { viewer: account.encodeViewingKey() },
-          }),
-        ),
-      )
-    })
+    const unregistered = accounts.filter(
+      account =>
+        !this.transferTrackers.find(a => a.zkAddress.eq(account.zkAddress)),
+    )
+    this.transferTrackers.push(...unregistered)
+    for (const account of unregistered) {
+      await this.db.upsert('Tracker', {
+        where: { viewer: account.encodeViewingKey() },
+        create: { viewer: account.encodeViewingKey() },
+        update: { viewer: account.encodeViewingKey() },
+      })
+    }
   }
 }

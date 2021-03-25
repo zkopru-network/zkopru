@@ -2,7 +2,7 @@ import fetch from 'node-fetch'
 import { MerkleProof } from '@zkopru/tree'
 import { Fp } from '@zkopru/babyjubjub'
 import BN from 'bn.js'
-import { Proposal } from '@zkopru/prisma'
+import { Proposal } from '@zkopru/database'
 import { logger } from '@zkopru/utils'
 
 export interface BootstrapData {

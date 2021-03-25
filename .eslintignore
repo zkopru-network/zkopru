@@ -1,4 +1,3 @@
 node_modules
 dist
 packages/contracts/src/contracts
-packages/prisma/generated

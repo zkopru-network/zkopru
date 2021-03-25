@@ -9,7 +9,7 @@
   ],
   "_moduleAliases": {
     "~babyjubjub": "../babyjubjub/dist",
-    "~prisma": "../prisma/dist",
+    "~database": "../database/dist",
     "~dataset": "../dataset/dist",
     "~tree": "dist"
   },
@@ -31,7 +31,7 @@
   },
   "dependencies": {
     "@zkopru/babyjubjub": "file:../babyjubjub",
-    "@zkopru/prisma": "file:../prisma",
+    "@zkopru/database": "file:../database",
     "@zkopru/transaction": "file:../transaction",
     "async-lock": "^1.2.2",
     "big-integer": "^1.6.48",

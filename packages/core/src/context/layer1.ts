@@ -6,7 +6,7 @@ import {
   Tx,
   TxUtil,
 } from '@zkopru/contracts'
-import { Config } from '@zkopru/prisma'
+import { Config } from '@zkopru/database'
 import { Account, TransactionReceipt } from 'web3-core'
 import { hexify } from '@zkopru/utils'
 import Web3 from 'web3'

@@ -7,7 +7,7 @@
 
 import { v4 } from 'uuid'
 import { Fp } from '~babyjubjub'
-import { DB, TreeSpecies, MockupDB } from '~prisma'
+import { DB, TreeSpecies, SQLiteConnector, schema } from '~database'
 import { genSNARK, SNARKResult } from '~zk-wizard/snark'
 import {
   checkPhase1Setup,
@@ -43,13 +43,14 @@ describe('inclusion_proof.test.circom', () => {
     index: Fp.zero,
     siblings: preHashes.slice(0, -1),
   }
-  let mockup: MockupDB
+  let mockup: DB
   beforeAll(async () => {
     checkPhase1Setup()
     prepareArtifactsDirectory()
-    mockup = await DB.testMockup()
+    mockup = await SQLiteConnector.create(':memory:')
+    await mockup.createTables(schema)
     utxoTree = new UtxoTree({
-      db: mockup.db,
+      db: mockup,
       metadata: utxoTreeMetadata,
       data: utxoTreeInitialData,
       config: utxoTreeConfig,
@@ -66,7 +67,7 @@ describe('inclusion_proof.test.circom', () => {
     )
   })
   afterAll(async () => {
-    await mockup.terminate()
+    await mockup.close()
   })
   it('should compile circuits', () => {
     compileCircuit(fileName)
