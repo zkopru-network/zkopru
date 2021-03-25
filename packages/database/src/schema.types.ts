@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-types */
+
 export type EncryptedWallet = {
   id: string
   ciphertext: string

@@ -27,7 +27,9 @@ for (const table of schema) {
   ${rowTypes.join('\n  ')}
 }`)
 }
-const typeString = types.join('\n\n')
+const typeString = `/* eslint-disable @typescript-eslint/ban-types */
+
+${types.join('\n\n')}`
 ;(async () => {
   await fs.writeFile(path.join(__dirname, '../src/schema.types.ts'), typeString)
 })()
