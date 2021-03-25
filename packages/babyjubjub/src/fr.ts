@@ -1,4 +1,3 @@
-/* global BigInt */
 import BN from 'bn.js'
 import { Bytes32, Uint256, Address } from 'soltypes'
 import RedBN from './types/redbn'

@@ -1,4 +1,3 @@
-/* global BigInt */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
   ZkopruContract,

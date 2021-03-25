@@ -4,8 +4,8 @@
 /* eslint-disable jest/require-top-level-describe */
 /* eslint-disable jest/consistent-test-it */
 const chai = require("chai");
-const { Fp } = require("~babyjubjub");
 const circomlib = require("circomlib");
+const { Fp } = require("~babyjubjub");
 
 const { expect } = chai;
 const { toBN } = web3.utils;
@@ -22,11 +22,12 @@ const preHashedZeroAt = i => {
 contract.only("Poseidon", async accounts => {
   let poseidon;
   let preHashed;
+  let poseidonTester;
   before(async () => {
     poseidonTester = await PoseidonTester.deployed();
     preHashed = await poseidonTester.preHashed();
   });
-  describe("preHasehd", () => {
+  describe("preHashed", () => {
     Array(49)
       .fill(0)
       .forEach((_, i) => {
@@ -39,16 +40,16 @@ contract.only("Poseidon", async accounts => {
         });
       });
   });
-  describe("Poseidon2", () => {
-    it("should show same result", async () => {
+  describe("poseidon2", () => {
+    it("should show same result (1)", async () => {
       const hash = await poseidonTester.poseidon2([1, 2]);
       expect(hash.toString()).to.equal(jsPoseidon([1n, 2n]).toString());
     });
-    it("should show same result", async () => {
+    it("should show same result (2)", async () => {
       const hash = await poseidonTester.poseidon3([1, 2, 3]);
       expect(hash.toString()).to.equal(jsPoseidon([1n, 2n, 3n]).toString());
     });
-    it("should show same result", async () => {
+    it("should show same result (3)", async () => {
       const hash = await poseidonTester.poseidon4([1, 2, 3, 4]);
       expect(hash.toString()).to.equal(jsPoseidon([1n, 2n, 3n, 4n]).toString());
     });

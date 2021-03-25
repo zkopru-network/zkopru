@@ -1,4 +1,3 @@
-/* global BigInt */
 import { join } from 'path'
 import { fork } from 'child_process'
 import * as ffjs from 'ffjavascript'
