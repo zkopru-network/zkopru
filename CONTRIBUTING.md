@@ -13,7 +13,7 @@ Thanks for taking a time to read this document. This document includes how to co
 ## Security vulnerability
 
 After the mainnet stage, you should not open up issues on Github to report bugs that can affect the network's security.
-Mostly, it will be the case when you find some bugs in [`packages/contracts`](./packages/contracts) or [`packages/circuits`](./pacakges/circuits).
+Mostly, it will be the case when you find some bugs in [`packages/contracts`](./packages/contracts) or [`packages/circuits`](./packages/circuits).
 In this case, please report the bug via [security@zkopru.network](mailto:security@zkopru.network) instead of opening a public issue on Github.
 
 ## Commit rule
