@@ -39,9 +39,8 @@
     "resolveJsonModule": true,
     "noImplicitAny": false,
     "lib": [
-      "es2019",
+      "es2020",
       "DOM",
-      "ES6",
       "DOM.Iterable",
       "ScriptHost"
     ]

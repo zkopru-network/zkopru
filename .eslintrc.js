@@ -3,10 +3,11 @@ const path = require('path')
 const common = {
   env: {
     node: true,
-    es6: true,
-    es2017: true,
-    // es2020: true,
+    es2020: true,
     'jest/globals': true,
+  },
+  parserOptions: {
+    ecmaVersion: 2020,
   },
   plugins: ['prettier', 'jest', 'markdown'],
   extends: ['airbnb-base', 'prettier', 'plugin:jest/all'],
