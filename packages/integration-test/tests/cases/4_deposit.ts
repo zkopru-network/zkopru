@@ -52,11 +52,9 @@ export const depositERC721 = (ctx: CtxProvider) => async () => {
   // Send NFT '0' to carl
   await wallets.coordinator.sendLayer1Tx({
     contract: tokens.erc721.address,
-    tx: tokens.erc721.contract.methods.safeTransferFrom(
-      accounts.coordinator.ethAddress,
-      accounts.carl.ethAddress,
-      '1',
-    ),
+    tx: tokens.erc721.contract.methods[
+      'safeTransferFrom(address,address,uint256)'
+    ](accounts.coordinator.ethAddress, accounts.carl.ethAddress, '1'),
   })
   // Approve
   await wallets.carl.sendLayer1Tx({

@@ -1,7 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Web3 from 'web3'
 import { Account, TransactionReceipt } from 'web3-core'
-import { TransactionObject, Tx } from './contracts/types'
+import {
+  PayableTransactionObject,
+  NonPayableTransactionObject,
+  PayableTx,
+  NonPayableTx,
+} from './contracts/types'
+
+export type TransactionObject<T> =
+  | PayableTransactionObject<T>
+  | NonPayableTransactionObject<T>
+export type Tx = PayableTx | NonPayableTx
 
 export class TxUtil {
   // Number of pending transactions keyed to address
@@ -26,13 +36,14 @@ export class TxUtil {
       web3.eth.getGasPrice(),
       web3.eth.getTransactionCount(account.address, 'latest'),
     ])
+    const value = option ? (option as PayableTx).value : undefined
     const { rawTransaction } = await web3.eth.accounts.signTransaction(
       {
         nonce: nonce + this.pendingTxCount(account.address),
         gasPrice,
         gas,
         to: address,
-        value: option?.value,
+        value,
         data: tx.encodeABI(),
       },
       account.privateKey,
