@@ -38,7 +38,7 @@ export default class ConfigureAccount extends Configurator {
         initial: 0,
         choices: [
           {
-            title: 'Do you want to import an exising private key?',
+            title: 'Do you want to import an existing private key?',
             value: 0,
           },
           {

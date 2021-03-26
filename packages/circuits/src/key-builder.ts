@@ -47,7 +47,7 @@ async function loadArtifacts(build?: boolean) {
  * Get SNARK keys from docker container.
  * @param artifactsPath Path to store zk snark keys
  * @param build If the value is true, it builds a new image to get the snark keys.
- *  Otherwise it'll try to pull an exising image from the docker hub.
+ *  Otherwise it'll try to pull an existing image from the docker hub.
  */
 export async function getKeysFromContainer(
   artifactsPath: string,
