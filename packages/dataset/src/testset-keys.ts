@@ -28,7 +28,7 @@ export async function loadCircuits() {
       )
       const zkey = await utils.readFromContainer(
         container,
-        `/proj/build/zkeys/zk_transaction_${i}_${o}.final.zkey`,
+        `/proj/build/zkeys/zk_transaction_${i}_${o}.zkey`,
       )
       const vk = await utils.readFromContainer(
         container,

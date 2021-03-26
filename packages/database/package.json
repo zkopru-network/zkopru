@@ -17,6 +17,7 @@
   "scripts": {
     "prebuild": "shx mkdir -p dist",
     "generateTypes": "ts-node scripts/generateTypes.ts",
+    "postgenerateTypes": "prettier --write src/schema.types.ts",
     "build": "tsc --build tsconfig.build.json",
     "strip-vendor": "cat ./dist/connectors/sqlite.d.ts | tail -n +2 | tee ./dist/connectors/sqlite.d.ts > /dev/null",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",

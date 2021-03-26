@@ -1,7 +1,7 @@
 import path from 'path'
 import fs from 'fs'
 import tar from 'tar'
-import * as utils from '@zkopru/utils'
+import * as utils from '~utils'
 
 async function loadArtifacts(build?: boolean) {
   // It may take about an hour. If you want to skip building image,
@@ -29,7 +29,7 @@ async function loadArtifacts(build?: boolean) {
       )
       await utils.copyFromContainer(
         container,
-        `/proj/build/zkeys/zk_transaction_${i}_${o}.final.zkey`,
+        `/proj/build/zkeys/zk_transaction_${i}_${o}.zkey`,
         path.join(zkeyDir, `zk_transaction_${i}_${o}.zkey`),
       )
       await utils.copyFromContainer(

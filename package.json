@@ -21,7 +21,7 @@
     "build:ts:serial": "lerna run build && yarn link-modules",
     "circuit:setup": "lerna run setup:build",
     "build:contract": "lerna run --parallel build:contract",
-    "build:keys": "lerna run build-keys --scope=@zkopru/dataset",
+    "build:keys": "lerna run build-keys --scope=@zkopru/circuits",
     "build:fresh": "yarn clean && shx rm -rf packages/*/node_modules && yarn build",
     "clean": "lerna run --parallel clean && shx rm -rf packages/*/node_modules && shx rm -rf .build-cache *.log coverage junit.xml",
     "clean:db": "shx rm -rf **/*/.mockup",

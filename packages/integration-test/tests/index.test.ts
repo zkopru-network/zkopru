@@ -174,7 +174,7 @@ describe('testnet', () => {
       it(
         'wallets should have updated processed block number',
         testBlockSync(ctx),
-        15000,
+        30000,
       )
     })
   })
@@ -282,7 +282,11 @@ describe('testnet', () => {
       )
     })
     describe('coordinator prepays ETH for Bob', () => {
-      it('should transfer 1 ETH to Bob', payForEthWithdrawalInAdvance(ctx))
+      it(
+        'should transfer 1 ETH to Bob',
+        payForEthWithdrawalInAdvance(ctx),
+        30000,
+      )
     })
   })
   describe('9: Zk Transactions round 3', () => {

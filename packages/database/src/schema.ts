@@ -119,7 +119,16 @@ export default [
         },
       },
       ['bootstrap', 'Object', { optional: true }],
-      ['slash', 'Object', { optional: true }],
+      {
+        name: 'slash',
+        type: 'Object',
+        optional: true,
+        relation: {
+          localField: 'hash',
+          foreignField: 'hash',
+          foreignTable: 'Slash',
+        },
+      },
     ],
   },
   {

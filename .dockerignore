@@ -7,4 +7,4 @@
 packages/**/keys
 .git
 .build-cache
-!packages/dataset/keys
+!packages/circuits/keys

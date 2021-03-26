@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-types */
+
 export type EncryptedWallet = {
   id: string
   ciphertext: string
@@ -59,10 +61,10 @@ export type Header = {
 
 export type Block = {
   hash: string
-  header?: Record<string, any> | null
-  proposal: Record<string, any>
-  bootstrap?: Record<string, any> | null
-  slash?: Record<string, any> | null
+  header?: Object | null
+  proposal?: Object | null
+  bootstrap?: Object | null
+  slash?: Object | null
 }
 
 export type Proposal = {
@@ -76,7 +78,7 @@ export type Proposal = {
   finalized?: boolean | null
   verified?: boolean | null
   isUncle?: boolean | null
-  block?: Record<string, any> | null
+  block?: Object | null
 }
 
 export type Slash = {
@@ -93,7 +95,7 @@ export type Bootstrap = {
   blockHash?: string | null
   utxoBootstrap: string
   withdrawalBootstrap: string
-  block?: Record<string, any> | null
+  block?: Object | null
 }
 
 export type Tx = {

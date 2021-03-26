@@ -10,7 +10,7 @@ export const waitCoordinatorToProposeANewBlock = (
   ctx: CtxProvider,
 ) => async () => {
   const { contract } = ctx()
-  let msToWait = 18000
+  let msToWait = 60000
   let proposedBlocks!: string
   while (msToWait > 0) {
     proposedBlocks = await contract.upstream.methods.proposedBlocks().call()
@@ -26,7 +26,7 @@ export const waitCoordinatorToProcessTheNewBlock = (
   ctx: CtxProvider,
 ) => async () => {
   const { coordinator } = ctx()
-  let msToWait = 25000
+  let msToWait = 60000
   let processedBlocks!: number
   while (msToWait > 0) {
     processedBlocks = coordinator.node().synchronizer.latestProcessed || 0
@@ -39,7 +39,7 @@ export const waitCoordinatorToProcessTheNewBlock = (
 
 export const testBlockSync = (ctx: CtxProvider) => async () => {
   const { wallets } = ctx()
-  let msToWait = 5000
+  let msToWait = 30000
   while (msToWait > 0) {
     if (
       wallets.alice.node.synchronizer.latestProcessed === 1 &&

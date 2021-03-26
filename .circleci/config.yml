@@ -33,6 +33,9 @@ workflows:
       - test_zkwizard:
           requires:
             - build
+      - test_integration:
+          requires:
+            - build
 jobs:
   build:
     machine:
@@ -51,6 +54,12 @@ jobs:
       - run:
           name: Build TS
           command: yarn build:ts:serial
+      - run:
+          name: Pull Mockup Trusted Setup Artifacts
+          command: |
+            cd packages/circuits
+            yarn setup:pull
+            yarn update-contracts
       - persist_to_workspace:
           root: ~/
           paths: project
@@ -81,16 +90,6 @@ jobs:
       - attach_workspace:
           at: ~/
       - run:
-          name: Setup
-          command: |
-            docker pull zkoprunet/circuits:dev
-            cd packages/circuits
-            yarn setup
-            yarn build-keys
-            yarn postbuild-keys
-            cd ../dataset
-            yarn load-keys
-      - run:
           name: Contract Tests
           command: yarn test --scope=@zkopru/contracts
   test_dataset:
@@ -102,7 +101,7 @@ jobs:
       - run:
           name: Setup
           command: |
-            docker pull zkoprunet/circuits:dev
+            yarn images pull circuits
             cd packages/dataset
             yarn load-keys
       - run:
@@ -117,23 +116,20 @@ jobs:
       - run:
           name: Account Tests
           command: yarn test --scope=@zkopru/account
-  # test_circuits:
-  #   machine:
-  #     image: ubuntu-2004:202010-01
-  #   steps:
-  #     - attach_workspace:
-  #       at: ~/
-  #     - run:
-  #         name: Setup
-  #         command: |
-  #           docker pull jchancehud/zkopru:circuits
-  #           docker tag jchancehud/zkopru:circuits zkoprunet/circuits:dev
-  #           cd packages/circuits
-  #           yarn setup
-  #           yarn build-keys
-  #     - run:
-  #         name: Circuit Tests
-  #         command: yarn test --scope=@zkopru/circuits
+  test_circuits:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+        at: ~/
+      - run:
+          name: Setup
+          command: |
+            cd packages/circuits
+            yarn phase1:pull
+      - run:
+          name: Circuit Tests
+          command: yarn test --scope=@zkopru/circuits
   test_tree:
     machine:
       image: ubuntu-2004:202010-01
@@ -152,12 +148,6 @@ jobs:
       - run:
           name: ZK Wizard Tests
           command: |
-            docker pull zkoprunet/circuits:dev
-            cd packages/circuits
-            yarn setup
-            yarn build-keys
-            yarn postbuild-keys
-            cd ../..
             yarn test --scope=@zkopru/zk-wizard
   test_client:
     machine:
@@ -186,3 +176,17 @@ jobs:
       - run:
           name: BabyJubJub Tests
           command: yarn test --scope=@zkopru/babyjubjub
+  test_integration:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Pull Preset Images
+          command: |
+            yarn images pull circuits
+            yarn images pull contracts-for-integration-test
+      - run:
+          name: Integration Tests
+          command: yarn test --scope=@zkopru/integration-test
