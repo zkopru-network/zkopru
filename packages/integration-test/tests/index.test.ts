@@ -174,7 +174,7 @@ describe('testnet', () => {
       it(
         'wallets should have updated processed block number',
         testBlockSync(ctx),
-        30000,
+        60000,
       )
     })
   })

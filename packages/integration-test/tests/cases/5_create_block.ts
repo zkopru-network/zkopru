@@ -39,7 +39,7 @@ export const waitCoordinatorToProcessTheNewBlock = (
 
 export const testBlockSync = (ctx: CtxProvider) => async () => {
   const { wallets } = ctx()
-  let msToWait = 30000
+  let msToWait = 60000
   while (msToWait > 0) {
     if (
       wallets.alice.node.synchronizer.latestProcessed === 1 &&
