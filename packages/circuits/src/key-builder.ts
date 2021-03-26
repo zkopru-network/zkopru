@@ -29,7 +29,7 @@ async function loadArtifacts(build?: boolean) {
       )
       await utils.copyFromContainer(
         container,
-        `/proj/build/zkeys/zk_transaction_${i}_${o}.final.zkey`,
+        `/proj/build/zkeys/zk_transaction_${i}_${o}.zkey`,
         path.join(zkeyDir, `zk_transaction_${i}_${o}.zkey`),
       )
       await utils.copyFromContainer(

@@ -83,13 +83,9 @@ jobs:
       - run:
           name: Setup
           command: |
-            docker pull zkoprunet/circuits:dev
             cd packages/circuits
-            yarn setup
-            yarn build-keys
-            yarn postbuild-keys
-            cd ../dataset
-            yarn load-keys
+            yarn setup:pull
+            yarn update-contracts
       - run:
           name: Contract Tests
           command: yarn test --scope=@zkopru/contracts
@@ -102,7 +98,7 @@ jobs:
       - run:
           name: Setup
           command: |
-            docker pull zkoprunet/circuits:dev
+            yarn images pull circuits
             cd packages/dataset
             yarn load-keys
       - run:
@@ -117,23 +113,20 @@ jobs:
       - run:
           name: Account Tests
           command: yarn test --scope=@zkopru/account
-  # test_circuits:
-  #   machine:
-  #     image: ubuntu-2004:202010-01
-  #   steps:
-  #     - attach_workspace:
-  #       at: ~/
-  #     - run:
-  #         name: Setup
-  #         command: |
-  #           docker pull jchancehud/zkopru:circuits
-  #           docker tag jchancehud/zkopru:circuits zkoprunet/circuits:dev
-  #           cd packages/circuits
-  #           yarn setup
-  #           yarn build-keys
-  #     - run:
-  #         name: Circuit Tests
-  #         command: yarn test --scope=@zkopru/circuits
+  test_circuits:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+        at: ~/
+      - run:
+          name: Setup
+          command: |
+            cd packages/circuits
+            yarn phase1:pull
+      - run:
+          name: Circuit Tests
+          command: yarn test --scope=@zkopru/circuits
   test_tree:
     machine:
       image: ubuntu-2004:202010-01
@@ -152,11 +145,8 @@ jobs:
       - run:
           name: ZK Wizard Tests
           command: |
-            docker pull zkoprunet/circuits:dev
             cd packages/circuits
-            yarn setup
-            yarn build-keys
-            yarn postbuild-keys
+            yarn setup:pull
             cd ../..
             yarn test --scope=@zkopru/zk-wizard
   test_client:
