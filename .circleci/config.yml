@@ -33,6 +33,9 @@ workflows:
       - test_zkwizard:
           requires:
             - build
+      - test_integration:
+          requires:
+            - build
 jobs:
   build:
     machine:
@@ -51,6 +54,12 @@ jobs:
       - run:
           name: Build TS
           command: yarn build:ts:serial
+      - run:
+          name: Pull Mockup Trusted Setup Artifacts
+          command: |
+            cd packages/circuits
+            yarn setup:pull
+            yarn update-contracts
       - persist_to_workspace:
           root: ~/
           paths: project
@@ -80,12 +89,6 @@ jobs:
     steps:
       - attach_workspace:
           at: ~/
-      - run:
-          name: Setup
-          command: |
-            cd packages/circuits
-            yarn setup:pull
-            yarn update-contracts
       - run:
           name: Contract Tests
           command: yarn test --scope=@zkopru/contracts
@@ -145,9 +148,6 @@ jobs:
       - run:
           name: ZK Wizard Tests
           command: |
-            cd packages/circuits
-            yarn setup:pull
-            cd ../..
             yarn test --scope=@zkopru/zk-wizard
   test_client:
     machine:
@@ -176,3 +176,17 @@ jobs:
       - run:
           name: BabyJubJub Tests
           command: yarn test --scope=@zkopru/babyjubjub
+  test_integration:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Pull Preset Images
+          command: |
+            yarn images pull circuits
+            yarn images pull contracts-for-integration-test
+      - run:
+          name: Integration Tests
+          command: yarn test --scope=@zkopru/integration-test

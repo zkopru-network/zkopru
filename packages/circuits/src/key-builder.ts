@@ -1,7 +1,7 @@
 import path from 'path'
 import fs from 'fs'
 import tar from 'tar'
-import * as utils from '@zkopru/utils'
+import * as utils from '~utils'
 
 async function loadArtifacts(build?: boolean) {
   // It may take about an hour. If you want to skip building image,
