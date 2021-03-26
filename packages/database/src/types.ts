@@ -59,7 +59,7 @@ export type RowDef = {
 export type ShortRowDef = [
   string,
   DataType,
-  { index?: boolean, optional?: boolean; unique?: boolean } | undefined,
+  { index?: boolean; optional?: boolean; unique?: boolean } | undefined,
 ]
 
 export interface TableData {

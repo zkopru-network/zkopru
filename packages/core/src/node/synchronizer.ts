@@ -544,7 +544,6 @@ export class Synchronizer extends EventEmitter {
     const proposalData = await this.l1Contract.web3.eth.getTransaction(
       proposalTx,
     )
-    console.log(proposalData)
     if (!proposalData.blockHash) {
       logger.trace(`pended proposal tx: ${proposalTx}`)
       return

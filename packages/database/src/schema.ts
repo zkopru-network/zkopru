@@ -165,7 +165,7 @@ export default [
       ['proposer', 'String'],
       ['reason', 'String'],
       ['executionTx', 'String'],
-      ['slashedAt', 'Int', { index: true, }],
+      ['slashedAt', 'Int', { index: true }],
       {
         name: 'block',
         relation: {
@@ -240,7 +240,7 @@ export default [
       ['fee', 'String'],
       ['transactionIndex', 'Int'],
       ['logIndex', 'Int'],
-      ['blockNumber', 'Int', { index: true, }],
+      ['blockNumber', 'Int', { index: true }],
       ['queuedAt', 'String'],
     ],
   },

@@ -1,5 +1,6 @@
-/* eslint-disable class-methods-use-this, typescript-eslint/no-unused-vars */
+/* eslint-disable class-methods-use-this, no-underscore-dangle */
 import AsyncLock from 'async-lock'
+import { openDB, IDBPDatabase } from 'idb'
 import {
   DB,
   FindOneOptions,
@@ -15,12 +16,12 @@ import {
   normalizeRowDef,
   constructSchema,
 } from '../types'
-import { openDB, IDBPDatabase } from 'idb'
 
 const DB_NAME = 'zkopru'
 
 export class IndexedDBConnector implements DB {
   db?: IDBPDatabase<any>
+
   schema: Schema = {}
 
   lock = new AsyncLock()
@@ -33,7 +34,7 @@ export class IndexedDBConnector implements DB {
     const schema = constructSchema(tables)
     const connector = new this(schema)
     connector.db = await openDB(DB_NAME, 2, {
-      upgrade(db, /*oldVersion, newVersion, transaction*/) {
+      upgrade(db /* oldVersion, newVersion, transaction */) {
         for (const table of tables) {
           const store = db.createObjectStore(table.name, {
             keyPath: table.primaryKey,
@@ -41,11 +42,13 @@ export class IndexedDBConnector implements DB {
           for (const row of table.rows) {
             const fullRow = normalizeRowDef(row)
             if (fullRow.unique || fullRow.index) {
-              store.createIndex(fullRow.name, fullRow.name, { unique: !!fullRow.unique })
+              store.createIndex(fullRow.name, fullRow.name, {
+                unique: !!fullRow.unique,
+              })
             }
           }
         }
-      }
+      },
     })
     return connector
   }
@@ -55,20 +58,23 @@ export class IndexedDBConnector implements DB {
   }
 
   async _create(collection: string, _doc: any) {
-    console.log(collection, _doc)
     const table = this.schema[collection]
     if (!table) throw new Error(`Invalid collection: "${collection}"`)
-    const docs = [_doc].flat().map((doc) => {
+    const docs = [_doc].flat().map(doc => {
       // insert defaults where needed
       const defaults = {}
       for (const key of Object.keys(table.rows)) {
         const row = table.rows[key]
         if (!row) throw new Error('Expected row to exist')
-        if (!row.default || (doc[row.name] !== undefined && doc[row.name] !== null))
+        if (
+          !row.default ||
+          (doc[row.name] !== undefined && doc[row.name] !== null)
+        )
           // eslint-disable-next-line no-continue
           continue
         Object.assign(defaults, {
-          [row.name]: typeof row.default === 'function' ? row.default() : row.default,
+          [row.name]:
+            typeof row.default === 'function' ? row.default() : row.default,
         })
         if (
           !row.optional &&
@@ -84,10 +90,7 @@ export class IndexedDBConnector implements DB {
     })
     if (!this.db) throw new Error('DB is not initialized')
     const tx = this.db.transaction(collection, 'readwrite')
-    await Promise.all([
-      ...docs.map(doc => tx.store.add(doc)),
-      tx.done,
-    ])
+    await Promise.all([...docs.map(doc => tx.store.add(doc)), tx.done])
     return docs
   }
 
@@ -99,7 +102,10 @@ export class IndexedDBConnector implements DB {
     return obj === undefined ? null : obj
   }
 
-  async loadIncluded(collection: string, options: { models: any[], include?: any}) {
+  async loadIncluded(
+    collection: string,
+    options: { models: any[]; include?: any },
+  ) {
     const { models, include } = options
     if (!include) return
     const table = this.schema[collection]
@@ -113,13 +119,17 @@ export class IndexedDBConnector implements DB {
         await this.loadIncludedModels(
           models,
           relation,
-          typeof include[key] === 'object' ? include[key] : undefined
+          typeof include[key] === 'object' ? include[key] : undefined,
         )
       }
     }
   }
 
-  private async loadIncludedModels(models: any[], relation: Relation & { name: string }, include?: any) {
+  private async loadIncludedModels(
+    models: any[],
+    relation: Relation & { name: string },
+    include?: any,
+  ) {
     const values = models.map(model => model[relation.localField])
     // load relevant submodels
     const submodels = await this._findMany(relation.foreignTable, {
@@ -144,7 +154,9 @@ export class IndexedDBConnector implements DB {
   }
 
   async findMany(collection: string, options: FindManyOptions) {
-    return this.lock.acquire('db', async () => this._findMany(collection, options))
+    return this.lock.acquire('db', async () =>
+      this._findMany(collection, options),
+    )
   }
 
   async _findMany(collection: string, options: FindManyOptions) {
@@ -155,7 +167,6 @@ export class IndexedDBConnector implements DB {
       // use a cursor
       const key = Object.keys(options.orderBy || {})[0]
       const direction = (options.orderBy || {})[key] === 'asc' ? 'next' : 'prev'
-      console.log('loading index for', key)
       const index = this.db.transaction(collection).store.index(key)
       cursor = await index.openCursor(null, direction)
     } else {
@@ -193,7 +204,11 @@ export class IndexedDBConnector implements DB {
             }
           }
           if (!exists) return false
-        } else if (val === null && typeof doc[key] !== 'undefined' && doc[key] !== null) {
+        } else if (
+          val === null &&
+          typeof doc[key] !== 'undefined' &&
+          doc[key] !== null
+        ) {
           return false
         } else if (val !== null && doc[key] !== val) {
           return false
@@ -228,62 +243,68 @@ export class IndexedDBConnector implements DB {
   }
 
   async update(collection: string, options: UpdateOptions) {
-    return this.lock.acquire('db', async () => this._update(collection, options))
+    return this.lock.acquire('db', async () =>
+      this._update(collection, options),
+    )
   }
 
   async _update(collection: string, options: UpdateOptions) {
+    if (!this.db) throw new Error('DB is not initialized')
     const items = await this._findMany(collection, { where: options.where })
-    const tx = this.db?.transaction(collection, 'readwrite')
+    const tx = this.db.transaction(collection, 'readwrite')
     const promises = [] as Promise<any>[]
     const table = this.schema[collection]
     if (!table) throw new Error('Table not found')
     for (const item of items) {
-      console.log('updating')
-      tx?.store.put({
+      tx.store.put({
         ...item,
         ...options.update,
       })
     }
-    await Promise.all([
-      ...promises,
-      tx?.done,
-    ])
+    await Promise.all([...promises, tx.done])
     return items.length
   }
 
   async upsert(collection: string, options: UpsertOptions) {
-    return this.lock.acquire('db', async () => this._upsert(collection, options))
+    return this.lock.acquire('db', async () =>
+      this._upsert(collection, options),
+    )
   }
 
   async _upsert(collection: string, options: UpsertOptions) {
     const updated = await this._update(collection, options)
     if (updated > 0) return updated
-    console.log(options.create)
     const created = await this._create(collection, options.create)
     return created.length
   }
 
   async delete(collection: string, options: DeleteManyOptions) {
-    return this.lock.acquire('db', async () => this._delete(collection, options))
+    return this.lock.acquire('db', async () =>
+      this._delete(collection, options),
+    )
   }
 
   async _delete(collection: string, options: DeleteManyOptions) {
+    if (!this.db) throw new Error('DB is not initialized')
     const items = await this._findMany(collection, { where: options.where })
-    const tx = this.db?.transaction(collection, 'readwrite')
+    const tx = this.db.transaction(collection, 'readwrite')
     const promises = [] as Promise<any>[]
     const table = this.schema[collection]
     if (!table) throw new Error('Table not found')
     for (const item of items) {
-      tx?.store.delete(Array.isArray(table.primaryKey) ? table.primaryKey.map(k => item[k]) : item[table.primaryKey || ''])
+      tx.store.delete(
+        Array.isArray(table.primaryKey)
+          ? table.primaryKey.map(k => item[k])
+          : item[table.primaryKey || ''],
+      )
     }
-    await Promise.all([
-      ...promises,
-      tx?.done,
-    ])
+    await Promise.all([...promises, tx.done])
     return items.length
   }
 
-  async createTables() {}
+  async createTables() {
+    return Promise.resolve()
+  }
 
   async transaction(operation: (db: TransactionDB) => void) {
     return this.lock.acquire('db', async () => this._transaction(operation))
@@ -310,6 +331,7 @@ export class IndexedDBConnector implements DB {
   }
 
   async close() {
-    this.db?.close()
+    if (!this.db) throw new Error('DB is not initialized')
+    this.db.close()
   }
 }

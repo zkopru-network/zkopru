@@ -21,5 +21,4 @@ describe('indexedDB tests', function(this: any) {
   })
 
   CreateTests.bind(this)()
-
 })

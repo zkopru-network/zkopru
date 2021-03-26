@@ -148,7 +148,6 @@ export class SQLiteMemoryConnector implements DB {
     if (!table) throw new Error(`Unable to find table ${collection}`)
     const sql = findManySql(table, options)
     const result = await this.db.exec(sql)
-    console.log('test', result)
     if (result.length === 0) return []
     const [{ columns, values }] = result
     const models = [] as any[]

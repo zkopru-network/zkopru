@@ -12,9 +12,9 @@ module.exports = {
     rules: [
       {
         test: /JSONStream\/index\.js$/,
-        use: 'shebang-loader'
-      }
-    ]
+        use: 'shebang-loader',
+      },
+    ],
   },
   resolve: {
     fallback: {
@@ -34,33 +34,33 @@ module.exports = {
       worker_threads: false,
       net: false,
       tls: false,
-      "aws-sdk": false,
+      'aws-sdk': false,
       dns: false,
-      "pg-native": false,
+      'pg-native': false,
       readline: false,
-      "node-gyp": false,
-      "node-pre-gyp": false,
-      "node-docker-api": false,
+      'node-gyp': false,
+      'node-pre-gyp': false,
+      'node-docker-api': false,
       prompts: false,
       buffer: require.resolve('buffer/'),
-    }
+    },
   },
   externals: {
     sqlite3: {},
   },
   plugins: [
     new webpack.DefinePlugin({
-      "process.title": '"browser"',
+      'process.title': '"browser"',
     }),
     new webpack.DefinePlugin({
-      "process.env": {},
-      "process.argv": [],
-      "process.versions": {},
-      "process.versions.node": '"12"',
+      'process.env': {},
+      'process.argv': [],
+      'process.versions': {},
+      'process.versions.node': '"12"',
       process: {},
     }),
     new webpack.ProvidePlugin({
-      'Buffer': path.resolve(__dirname, 'buffer.js'),
+      Buffer: path.resolve(__dirname, 'buffer.js'),
     }),
-  ]
+  ],
 }
