@@ -108,8 +108,7 @@ export class UtxoTree extends LightRollUpTree<Fp> {
       index: Fp.zero,
       siblings: preHashes.slice(0, -1),
     }
-    const mockupDB = await SQLiteMemoryConnector.create()
-    await mockupDB.createTables(schema)
+    const mockupDB = await SQLiteMemoryConnector.create(schema)
     const utxoTree = new UtxoTree({
       db: mockupDB,
       metadata: utxoTreeMetadata,

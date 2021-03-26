@@ -11,9 +11,9 @@ describe('postgres tests', function(this: any) {
   this.db = {} as DB
   beforeEach(async () => {
     this.db = await PostgresConnector.create(
+      testSchema,
       'postgres://postgres:password@localhost:5432',
     )
-    await this.db.createTables(testSchema)
     for (const { name } of testSchema) {
       await this.db.delete(name, {
         where: {},

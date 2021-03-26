@@ -69,8 +69,7 @@ describe('coordinator test to run testnet', () => {
   const coordinators = [] as Coordinator[]
   beforeAll(async () => {
     // logStream.addStream(process.stdout)
-    mockup = await SQLiteConnector.create(':memory:')
-    await mockup.createTables(schema)
+    mockup = await SQLiteConnector.create(schema, ':memory:')
     // It may take about few minutes. If you want to skip building image,
     // run `yarn pull:images` on the root directory
     container = await pullOrBuildAndGetContainer({

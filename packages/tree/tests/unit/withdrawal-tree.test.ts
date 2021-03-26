@@ -38,8 +38,7 @@ describe('withdrawal tree unit test', () => {
   }
   let mockup: DB
   beforeAll(async () => {
-    mockup = await SQLiteConnector.create(':memory:')
-    await mockup.createTables(schema)
+    mockup = await SQLiteConnector.create(schema, ':memory:')
     withdrawalTree = new WithdrawalTree({
       db: mockup,
       metadata: withdrawalTreeMetadata,

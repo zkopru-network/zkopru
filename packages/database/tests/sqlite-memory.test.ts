@@ -9,8 +9,7 @@ import TransactionTests from './database/transaction'
 
 describe('sqlite memory tests', function(this: { db: DB }) {
   beforeEach(async () => {
-    this.db = await SQLiteMemoryConnector.create()
-    await this.db.createTables(testSchema)
+    this.db = await SQLiteMemoryConnector.create(testSchema)
     for (const { name } of testSchema) {
       await this.db.delete(name, {
         where: {},

@@ -6,8 +6,7 @@ import { DB, SQLiteConnector, schema } from '~database'
 describe('unit test', () => {
   let mockup: DB
   beforeAll(async () => {
-    mockup = await SQLiteConnector.create(':memory:')
-    await mockup.createTables(schema)
+    mockup = await SQLiteConnector.create(schema, ':memory:')
   })
   afterAll(async () => {
     await mockup.close()

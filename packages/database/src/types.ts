@@ -68,24 +68,41 @@ export interface TableData {
   rows: (RowDef | ShortRowDef)[]
 }
 
-export interface DB {
-  create: (collection: string, doc: any | any[]) => Promise<any>
-  findOne: (collection: string, options: FindOneOptions) => Promise<any>
+export abstract class DB {
+  static create: (tables: TableData[], ...args: any[]) => Promise<DB>
+
+  abstract create(collection: string, doc: any | any[]): Promise<any>
+
+  abstract findOne(collection: string, options: FindOneOptions): Promise<any>
+
   // retrieve many documents matching a where clause
-  findMany: (collection: string, options: FindManyOptions) => Promise<any[]>
+  abstract findMany(
+    collection: string,
+    options: FindManyOptions,
+  ): Promise<any[]>
+
   // count document matching a where clause
-  count: (collection: string, where: WhereClause) => Promise<number>
+  abstract count(collection: string, where: WhereClause): Promise<number>
+
   // update some documents returning the number updated
-  update: (collection: string, options: UpdateOptions) => Promise<number>
+  abstract update(collection: string, options: UpdateOptions): Promise<number>
+
   // update or create some documents
-  upsert: (collection: string, options: UpsertOptions) => Promise<number>
+  abstract upsert(collection: string, options: UpsertOptions): Promise<number>
+
   // provide a schema to connectors that need schema info
-  createTables: (tableData: TableData[]) => Promise<void>
+  abstract createTables(tableData: TableData[]): Promise<void>
+
   // delete many documents, return the number of documents deleted
-  delete: (collection: string, options: DeleteManyOptions) => Promise<number>
-  transaction: (operation: (db: TransactionDB) => void) => Promise<void>
+  abstract delete(
+    collection: string,
+    options: DeleteManyOptions,
+  ): Promise<number>
+
+  abstract transaction(operation: (db: TransactionDB) => void): Promise<void>
+
   // close the db and cleanup
-  close: () => Promise<void>
+  abstract close(): Promise<void>
 }
 
 // The object available in a transaction context

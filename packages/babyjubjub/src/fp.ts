@@ -68,7 +68,7 @@ export class Fp extends BN {
   }
 
   toBuffer(endian?: BN.Endianness, length?: number): Buffer {
-    return this.toArrayLike(Buffer, endian, length);
+    return this.toArrayLike(Buffer, endian, length)
   }
 
   addPrefixBit(bitLength: number): BN {

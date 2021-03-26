@@ -155,8 +155,7 @@ async function getAccounts(
   carl: ZkAccount
   coordinator: ZkAccount
 }> {
-  const mockup = await SQLiteConnector.create(':memory:')
-  await mockup.createTables(schema)
+  const mockup = await SQLiteConnector.create(schema, ':memory:')
   const hdWallet = new HDWallet(web3, mockup)
   const mnemonic =
     'myth like bonus scare over problem client lizard pioneer submit female collect'
@@ -205,8 +204,7 @@ async function getCoordinator(
   address: string,
   account: Account,
 ): Promise<{ coordinator: Coordinator; mockupDB: DB }> {
-  const mockupDB = await SQLiteConnector.create(':memory:')
-  await mockupDB.createTables(schema)
+  const mockupDB = await SQLiteConnector.create(schema, ':memory:')
   const fullNode: FullNode = await FullNode.new({
     address,
     provider,
@@ -239,8 +237,7 @@ export async function getWallet({
   erc20s: string[]
   erc721s: string[]
 }): Promise<{ zkWallet: ZkWallet; mockupDB: DB }> {
-  const mockupDB = await SQLiteConnector.create(':memory:')
-  await mockupDB.createTables(schema)
+  const mockupDB = await SQLiteConnector.create(schema, ':memory:')
   const node: FullNode = await FullNode.new({
     address,
     provider,

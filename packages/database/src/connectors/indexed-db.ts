@@ -19,7 +19,7 @@ import {
 
 const DB_NAME = 'zkopru'
 
-export class IndexedDBConnector implements DB {
+export class IndexedDBConnector extends DB {
   db?: IDBPDatabase<any>
 
   schema: Schema = {}
@@ -27,6 +27,7 @@ export class IndexedDBConnector implements DB {
   lock = new AsyncLock()
 
   constructor(schema: Schema) {
+    super()
     this.schema = schema
   }
 

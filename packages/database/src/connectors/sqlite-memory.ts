@@ -26,7 +26,7 @@ import {
   upsertSql,
 } from '../helpers/sql'
 
-export class SQLiteMemoryConnector implements DB {
+export class SQLiteMemoryConnector extends DB {
   db: any
 
   schema: Schema = {}
@@ -34,19 +34,21 @@ export class SQLiteMemoryConnector implements DB {
   lock = new AsyncLock()
 
   constructor() {
+    super()
     this.db = {} as any
   }
 
   async init() {
     const SQL = await initSqlJs({
-      locateFile: (file: string) => `https://sql.js.org/dist/${file}`,
+      // locateFile: (file: string) => `https://sql.js.org/dist/${file}`,
     })
     this.db = new SQL.Database()
   }
 
-  static async create() {
+  static async create(tables: TableData[]) {
     const connector = new this()
     await connector.init()
+    await connector.createTables(tables)
     return connector
   }
 
