@@ -56,7 +56,7 @@ export class SNARKVerifier {
       ]
       const proof = ffjs.utils.stringifyBigInts(tx.circomProof())
       const signals = ffjs.utils.stringifyBigInts(tx.signals())
-      const vk = ffjs.utils.stringifyBigInVts(registeredVk)
+      const vk = ffjs.utils.stringifyBigInts(registeredVk)
       let result!: boolean
       try {
         result = snarkjs.groth16.verify(
@@ -92,7 +92,7 @@ export class SNARKVerifier {
 
       const proof = ffjs.utils.stringifyBigInts(tx.circomProof())
       const signals = ffjs.utils.stringifyBigInts(tx.signals())
-      const vk = ffjs.utils.stringifyBigInVts(registeredVk)
+      const vk = ffjs.utils.stringifyBigInts(registeredVk)
       process.send({ vk, proof, signals })
     })
   }
