@@ -12,6 +12,7 @@
     "~coordinator": "../coordinator/dist",
     "~database": "../database/dist",
     "~transaction": "../transaction/dist",
+    "~utils": "../utils/dist",
     "~utils-docker": "../utils-docker/dist",
     "~zk-wizard": "../zk-wizard/dist"
   },
