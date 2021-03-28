@@ -43,13 +43,14 @@ export const ChallengeableABI = [
     name: 'Slash',
     type: 'event',
   },
-  { stateMutability: 'payable', type: 'fallback' },
+  { stateMutability: 'payable', type: 'fallback', payable: true },
   {
     inputs: [],
     name: 'CHALLENGE_PERIOD',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -57,6 +58,7 @@ export const ChallengeableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -64,6 +66,7 @@ export const ChallengeableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -71,6 +74,7 @@ export const ChallengeableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -78,6 +82,7 @@ export const ChallengeableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -85,6 +90,7 @@ export const ChallengeableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -92,6 +98,7 @@ export const ChallengeableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -99,6 +106,7 @@ export const ChallengeableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -106,6 +114,7 @@ export const ChallengeableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -113,6 +122,7 @@ export const ChallengeableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -120,6 +130,7 @@ export const ChallengeableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -127,6 +138,7 @@ export const ChallengeableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -134,6 +146,7 @@ export const ChallengeableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -141,6 +154,7 @@ export const ChallengeableABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [{ internalType: 'address', name: '', type: 'address' }],
@@ -148,6 +162,7 @@ export const ChallengeableABI = [
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -155,6 +170,7 @@ export const ChallengeableABI = [
     outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -162,6 +178,7 @@ export const ChallengeableABI = [
     outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [{ internalType: 'bytes4', name: '', type: 'bytes4' }],
@@ -169,6 +186,7 @@ export const ChallengeableABI = [
     outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
   {
     inputs: [],
@@ -190,6 +208,7 @@ export const ChallengeableABI = [
     outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
+    constant: true,
   },
-  { stateMutability: 'payable', type: 'receive' },
+  { stateMutability: 'payable', type: 'receive', payable: true },
 ]

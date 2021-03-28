@@ -6,7 +6,7 @@ import RpcClient from './rpc-client'
 import { RpcConfig, RpcType } from './types'
 
 const DEFAULT = {
-  address: '0xcf59A7424E979969FF52982933BD0E33072552c4',
+  address: '0x94D37e8839A7c018328E865906702e9F7Edc3054',
   bootstrap: true,
   // websocket: 'wss://goerli.infura.io/ws/v3/5b122dbc87ed4260bf9a2031e8a0e2aa',
   websocket: 'ws://192.168.1.199:9546',

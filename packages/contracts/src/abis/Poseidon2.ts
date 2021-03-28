@@ -1,8 +1,19 @@
 export const Poseidon2ABI = [
   {
-    inputs: [{ internalType: 'uint256[2]', name: '', type: 'uint256[2]' }],
+    constant: true,
+    inputs: [{ internalType: 'bytes32[2]', name: 'input', type: 'bytes32[2]' }],
+    name: 'poseidon',
+    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
+    payable: false,
+    stateMutability: 'pure',
+    type: 'function',
+  },
+  {
+    constant: true,
+    inputs: [{ internalType: 'uint256[2]', name: 'input', type: 'uint256[2]' }],
     name: 'poseidon',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    payable: false,
     stateMutability: 'pure',
     type: 'function',
   },
