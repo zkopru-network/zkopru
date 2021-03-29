@@ -2,7 +2,7 @@ import {
   DB,
   SQLiteMemoryConnector,
   TreeSpecies,
-  schema
+  schema,
 } from '@zkopru/database/dist/node'
 import { Fp } from '@zkopru/babyjubjub'
 import { v4 } from 'uuid'
@@ -10,7 +10,9 @@ import { TreeConfig } from './light-rollup-tree'
 import { UtxoTree } from './utxo-tree'
 import { genesisRoot, poseidonHasher } from './hasher'
 
-export default async function sample(depth: number): Promise<{ tree: UtxoTree; db: DB }> {
+export default async function sample(
+  depth: number,
+): Promise<{ tree: UtxoTree; db: DB }> {
   const utxoTreeMetadata = {
     id: v4(),
     index: 1,

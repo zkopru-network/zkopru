@@ -1,9 +1,5 @@
 import { Fp } from '@zkopru/babyjubjub'
-import {
-  DB,
-  LightTree,
-  TreeSpecies,
-} from '@zkopru/database'
+import { DB, LightTree, TreeSpecies } from '@zkopru/database'
 import { ZkAddress } from '@zkopru/transaction'
 import {
   LightRollUpTree,

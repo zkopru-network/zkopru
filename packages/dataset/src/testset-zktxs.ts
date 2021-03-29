@@ -5,7 +5,12 @@ import { Fp } from '@zkopru/babyjubjub'
 import { ZkTx, Utxo, UtxoStatus } from '@zkopru/transaction'
 import { ZkWizard } from '@zkopru/zk-wizard'
 import { keccakHasher, poseidonHasher, Grove } from '@zkopru/tree'
-import { DB, SQLiteConnector, TreeSpecies, schema } from '@zkopru/database/dist/node'
+import {
+  DB,
+  SQLiteConnector,
+  TreeSpecies,
+  schema,
+} from '@zkopru/database/dist/node'
 import { accounts, address } from './testset-predefined'
 import { utxos } from './testset-utxos'
 import { txs } from './testset-txs'
