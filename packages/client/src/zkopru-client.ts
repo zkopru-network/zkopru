@@ -1,12 +1,12 @@
 /* eslint-disable no-underscore-dangle */
 import Web3 from 'web3'
-import { IndexedDBConnector, DB, schema } from '@zkopru/database'
+import { IndexedDBConnector, DB, schema } from '@zkopru/database/dist/web'
 import { FullNode } from '@zkopru/core'
 import RpcClient from './rpc-client'
 import { RpcConfig, RpcType } from './types'
 
 const DEFAULT = {
-  address: '0x94D37e8839A7c018328E865906702e9F7Edc3054',
+  address: '0x24A8072a8d2fde1e22b99398a104640f58C8462d',
   bootstrap: true,
   // websocket: 'wss://goerli.infura.io/ws/v3/5b122dbc87ed4260bf9a2031e8a0e2aa',
   websocket: 'ws://192.168.1.199:9546',
@@ -27,7 +27,7 @@ export default class ZkopruClient {
 
   private _db?: DB
 
-  private _node?: FullNode
+  private node?: FullNode
 
   constructor(rpcUrl: string) {
     if (rpcUrl.indexOf('http') === 0) {
@@ -63,7 +63,7 @@ export default class ZkopruClient {
     provider.connect()
     await waitConnection(provider)
     await new Promise(r => setTimeout(r, 1000))
-    client._node = await FullNode.new({
+    client.node = await FullNode.new({
       address: DEFAULT.address,
       provider,
       db: client._db,
@@ -72,8 +72,8 @@ export default class ZkopruClient {
   }
 
   async start() {
-    if (!this._node) throw new Error('Node is not initialized')
-    this._node.start()
+    if (!this.node) throw new Error('Node is not initialized')
+    this.node.start()
   }
 
   get rpc() {

@@ -5,9 +5,11 @@ module.exports = {
   entry: './dist/index.js',
   mode: 'development',
   output: {
-    filename: 'main.js',
+    filename: 'index.js',
     path: path.resolve(__dirname, 'browser'),
+    libraryTarget: 'commonjs2',
   },
+  target: 'web',
   module: {
     rules: [
       {
@@ -36,17 +38,11 @@ module.exports = {
       tls: false,
       'aws-sdk': false,
       dns: false,
-      'pg-native': false,
       readline: false,
-      'node-gyp': false,
-      'node-pre-gyp': false,
       'node-docker-api': false,
       prompts: false,
       buffer: require.resolve('buffer/'),
     },
-  },
-  externals: {
-    sqlite3: {},
   },
   plugins: [
     new webpack.DefinePlugin({
@@ -57,7 +53,11 @@ module.exports = {
       'process.argv': [],
       'process.versions': {},
       'process.versions.node': '"12"',
-      process: {},
+      process: {
+        exit: '(() => {})',
+        browser: true,
+        versions: {},
+      },
     }),
     new webpack.ProvidePlugin({
       Buffer: path.resolve(__dirname, 'buffer.js'),
