@@ -77,8 +77,8 @@ export class FullValidator extends Validator {
     ) {
       onchainResult.forEach((result, index) => {
         if (result.slashable !== offchainResult[index].slashable) {
-          console.log('onchain', onchainResult[index])
-          console.log('offchain', offchainResult[index])
+          logger.info(`onchain slashable: ${(onchainResult[index] as any).slashable}`)
+          logger.info(`offchain slashable: ${(offchainResult[index] as any).slashable}`)
         }
       })
       logger.error(
