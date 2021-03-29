@@ -221,11 +221,13 @@ export class IndexedDBConnector extends DB {
     while (cursor) {
       if (typeof limit === 'number' && found.length >= limit) break
       const obj = cursor.value
-      const or = [where.OR, { ...where, OR: undefined }].flat()
+      const topWhere = { ...where, OR: undefined }
+      const or = where.OR || []
+      if (or.length === 0 && matchDoc(topWhere, obj)) {
+        found.push(obj)
+      }
       for (const _where of or) {
-        // eslint-disable-next-line no-continue
-        if (typeof _where === 'undefined') continue
-        if (matchDoc(_where, obj)) {
+        if (matchDoc(_where, obj) && matchDoc(topWhere, obj)) {
           found.push(obj)
           break
         }
