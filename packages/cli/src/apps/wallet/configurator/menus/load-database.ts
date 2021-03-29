@@ -6,7 +6,7 @@ import {
   PostgresConnector,
   schema,
   initDB,
-} from '@zkopru/database'
+} from '@zkopru/database/dist/node'
 import { L1Contract } from '@zkopru/core'
 import Configurator, { Context, Menu } from '../configurator'
 
