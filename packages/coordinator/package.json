@@ -14,6 +14,7 @@
     "~account": "../account/dist",
     "~coordinator": "dist",
     "~database": "../database/dist",
+    "~database-node": "../database/dist/node.js",
     "~utils": "../utils/dist",
     "~utils-docker": "../utils-docker/dist"
   },

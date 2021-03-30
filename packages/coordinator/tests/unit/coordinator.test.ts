@@ -12,7 +12,7 @@ import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
 import { sleep } from '~utils'
 import { readFromContainer, pullOrBuildAndGetContainer } from '~utils-docker'
-import { DB, SQLiteConnector, schema } from '~database'
+import { DB, SQLiteConnector, schema } from '~database-node'
 
 async function callMethod(
   _method:

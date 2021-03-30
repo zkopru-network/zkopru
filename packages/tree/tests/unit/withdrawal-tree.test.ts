@@ -3,7 +3,7 @@
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { Fp } from '~babyjubjub'
-import { DB, TreeSpecies, SQLiteConnector, schema } from '~database'
+import { DB, TreeSpecies, SQLiteConnector, schema } from '~database-node'
 import {
   WithdrawalTree,
   TreeConfig,

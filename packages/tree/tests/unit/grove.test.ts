@@ -2,7 +2,7 @@
 
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
-import { DB, SQLiteConnector, schema } from '~database'
+import { DB, SQLiteConnector, schema } from '~database-node'
 import { Fp } from '~babyjubjub'
 import { Grove, poseidonHasher, keccakHasher, Leaf } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
