@@ -5,21 +5,24 @@ import { FullNode } from '@zkopru/core'
 import RpcClient from './rpc-client'
 import { RpcConfig, RpcType } from './types'
 
+type Config = {
+  address?: string
+  bootstrap?: boolean
+  websocket?: string
+  rpcUrl?: string
+}
+
 const DEFAULT = {
   address: '0x24A8072a8d2fde1e22b99398a104640f58C8462d',
   bootstrap: true,
   // websocket: 'wss://goerli.infura.io/ws/v3/5b122dbc87ed4260bf9a2031e8a0e2aa',
   websocket: 'ws://192.168.1.199:9546',
-  maxBytes: 131072,
-  priceMultiplier: 48,
-  port: 8888,
-  maxBid: 20000,
-  daemon: false,
-  vhosts: 'localhost,127.0.0.1',
 }
 
 export default class ZkopruClient {
-  config: RpcConfig
+  rpcConfig?: RpcConfig
+
+  config: Config
 
   private _web3?: Web3
 
@@ -29,31 +32,41 @@ export default class ZkopruClient {
 
   private node?: FullNode
 
-  constructor(rpcUrl: string) {
-    if (rpcUrl.indexOf('http') === 0) {
+  constructor(_config: Config) {
+    this.config = {
+      ...DEFAULT,
+      ...(_config || {}),
+    }
+    if (this.config.rpcUrl && this.config.rpcUrl.indexOf('http') === 0) {
       // http rpc
-      this.config = {
+      this.rpcConfig = {
         type: RpcType.http,
-        url: rpcUrl,
+        url: this.config.rpcUrl,
       }
-    } else {
+    } else if (this.config.rpcUrl) {
       throw new Error(`Unsupported RPC protocol, only http(s) allowed`)
     }
   }
 
-  static async create(url: string) {
-    const client = new this(url)
+  static async create(config: Config) {
+    const client = new this(config)
     client._db = await IndexedDBConnector.create(schema)
-    const provider = new Web3.providers.WebsocketProvider(DEFAULT.websocket, {
-      reconnect: {
-        delay: 2000,
-        auto: true,
+    if (!client.config.websocket) {
+      throw new Error('No websocket provided')
+    }
+    const provider = new Web3.providers.WebsocketProvider(
+      client.config.websocket,
+      {
+        reconnect: {
+          delay: 2000,
+          auto: true,
+        },
+        clientConfig: {
+          keepalive: true,
+          keepaliveInterval: 30000,
+        },
       },
-      clientConfig: {
-        keepalive: true,
-        keepaliveInterval: 30000,
-      },
-    })
+    )
     async function waitConnection(_provider) {
       return new Promise<void>(res => {
         if (_provider.connected) return res()
@@ -77,8 +90,11 @@ export default class ZkopruClient {
   }
 
   get rpc() {
+    if (!this.rpcConfig) {
+      throw new Error('No rpc config supplied')
+    }
     if (!this._rpc) {
-      this._rpc = new RpcClient(this.config)
+      this._rpc = new RpcClient(this.rpcConfig)
     }
     return this._rpc
   }
@@ -86,7 +102,9 @@ export default class ZkopruClient {
   // Return a passthrough web3 instance
   get web3() {
     if (!this._web3) {
-      this._web3 = new Web3(this.config.url)
+      this._web3 = new Web3(
+        (this.config.websocket || this.config.rpcUrl) as any,
+      )
     }
     return this._web3
   }
