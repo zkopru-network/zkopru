@@ -103,8 +103,9 @@ export default [
   },
   {
     name: 'Table7',
+    primaryKey: 'id',
     rows: [
-      ['id', 'Int', { unique: true }],
+      ['id', 'Int'],
       ['boolField', 'Bool'],
       ['stringField', 'String'],
       ['objectField', 'Object'],

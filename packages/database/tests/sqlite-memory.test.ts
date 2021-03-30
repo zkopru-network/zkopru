@@ -1,6 +1,6 @@
 /* eslint-disable jest/no-hooks, jest/valid-describe */
 import testSchema from './test-schema'
-import { DB, SQLiteMemoryConnector } from '~database'
+import { DB, SQLiteMemoryConnector } from '~database-node'
 import FindTests from './database/find'
 import CreateTests from './database/create'
 import UpdateTests from './database/update'

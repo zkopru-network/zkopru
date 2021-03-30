@@ -156,8 +156,8 @@ export class PostgresConnector extends DB {
     if (!table) throw new Error(`Unable to find table ${collection}`)
     const sql = findManySql(table, options)
     const { rows } = await this.db.query(sql)
-    const objectKeys = Object.keys(table.rows).filter(key => {
-      return table.rows[key]?.type === 'Object'
+    const objectKeys = Object.keys(table.rowsByName).filter(key => {
+      return table.rowsByName[key]?.type === 'Object'
     })
     if (objectKeys.length > 0) {
       // need to expand json objects

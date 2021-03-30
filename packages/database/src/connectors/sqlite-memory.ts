@@ -160,8 +160,8 @@ export class SQLiteMemoryConnector extends DB {
       }
       models.push(obj)
     }
-    const objectKeys = Object.keys(table.rows).filter(key => {
-      return table.rows[key]?.type === 'Object'
+    const objectKeys = Object.keys(table.rowsByName).filter(key => {
+      return table.rowsByName[key]?.type === 'Object'
     })
     if (objectKeys.length > 0) {
       // need to expand json objects

@@ -33,12 +33,12 @@ export function parseType(type: string, value: any) {
   throw new Error(`Unrecognized value "${value}" for type ${type}`)
 }
 
-export function whereToSql(table: TableData, doc: any = {}, sqlOnly = false) {
+export function whereToSql(table: SchemaTable, doc: any = {}, sqlOnly = false) {
   if (Object.keys(doc).length === 0) return ''
   const sql = Object.keys(doc)
     .map(key => {
       if (key === 'OR') return
-      const rowDef = table.rows[key]
+      const rowDef = table.rowsByName[key]
       if (!rowDef)
         throw new Error(`Unable to find row definition for key: "${key}"`)
       const val = doc[key]
@@ -173,7 +173,7 @@ export function createSql(
   }
   // query for retrieving the created documents, uses IN operator for all
   // primary keys
-  const uniqueKeys = keys.filter(k => table.rows[k]?.unique)
+  const uniqueKeys = keys.filter(k => table.rowsByName[k]?.unique)
   const query = [table.primaryKey, uniqueKeys].flat().reduce((acc, key) => {
     if (key === undefined) return acc
     return {
@@ -186,7 +186,7 @@ export function createSql(
   for (const doc of docs) {
     const values = keys
       .map(k => {
-        const rowDef = table.rows[k]
+        const rowDef = table.rowsByName[k]
         if (!rowDef)
           throw new Error(`Unable to find row definition for key: "${k}"`)
         if (query[k]) {
@@ -234,7 +234,7 @@ export function updateSql(table: SchemaTable, options: UpdateOptions): string {
   const { where, update } = options
   const setSql = Object.keys(update)
     .map(key => {
-      const rowDef = table.rows[key]
+      const rowDef = table.rowsByName[key]
       if (!rowDef)
         throw new Error(`Unable to find row definition for key: "${key}"`)
       return `"${key}" = ${parseType(rowDef.type, update[key])}`
@@ -291,7 +291,7 @@ export function upsertSql(table: SchemaTable, options: UpsertOptions): string {
     .join(',')
   const updateSqlCommand = Object.keys(options.update)
     .map(key => {
-      const rowDef = table.rows[key]
+      const rowDef = table.rowsByName[key]
       if (!rowDef)
         throw new Error(`Unable to find row definition for key: "${key}"`)
       return `"${key}" = ${parseType(rowDef.type, options.update[key])}`

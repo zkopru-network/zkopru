@@ -9,7 +9,9 @@
     "dist/web.js"
   ],
   "_moduleAliases": {
-    "~database": "./src"
+    "~database": "./dist",
+    "~database-web": "./dist/web.js",
+    "~database-node": "./dist/node.js"
   },
   "keywords": [
     "cli"

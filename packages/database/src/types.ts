@@ -64,7 +64,7 @@ export type ShortRowDef = [
 
 export interface TableData {
   name: string
-  primaryKey?: string | string[]
+  primaryKey: string | string[]
   rows: (RowDef | ShortRowDef)[]
 }
 
@@ -127,10 +127,11 @@ export function normalizeRowDef(row: RowDef | ShortRowDef): RowDef {
 }
 
 export type SchemaTable = {
-  rows: { [rowKey: string]: RowDef | undefined }
+  rowsByName: { [rowKey: string]: RowDef | undefined }
   relations: {
     [relation: string]: (Relation & { name: string }) | undefined
   }
+  rows: RowDef[]
 } & TableData
 
 export type Schema = {
@@ -142,11 +143,13 @@ export function constructSchema(tables: TableData[]): Schema {
   for (const table of tables) {
     schema[table.name] = {
       relations: {},
+      rowsByName: {},
       ...table,
     }
     for (const row of table.rows) {
       const fullRow = normalizeRowDef(row)
-      schema[table.name].rows[fullRow.name] = fullRow
+      schema[table.name].rowsByName[fullRow.name] = fullRow
+      schema[table.name].rows = schema[table.name].rows.map(normalizeRowDef)
       if (fullRow.relation) {
         schema[table.name].relations[fullRow.name] = {
           name: fullRow.name,

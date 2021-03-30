@@ -42,7 +42,11 @@ export class IndexedDBConnector extends DB {
           })
           for (const row of table.rows) {
             const fullRow = normalizeRowDef(row)
-            if (fullRow.unique || fullRow.index) {
+            if (
+              fullRow.unique ||
+              fullRow.index ||
+              [table.primaryKey].flat().indexOf(fullRow.name) !== -1
+            ) {
               store.createIndex(fullRow.name, fullRow.name, {
                 unique: !!fullRow.unique,
               })
@@ -64,25 +68,60 @@ export class IndexedDBConnector extends DB {
     const docs = [_doc].flat().map(doc => {
       // insert defaults where needed
       const defaults = {}
-      for (const key of Object.keys(table.rows)) {
-        const row = table.rows[key]
+      for (const key of Object.keys(table.rowsByName)) {
+        const row = table.rowsByName[key]
         if (!row) throw new Error('Expected row to exist')
         if (
-          !row.default ||
-          (doc[row.name] !== undefined && doc[row.name] !== null)
-        )
-          // eslint-disable-next-line no-continue
-          continue
-        Object.assign(defaults, {
-          [row.name]:
-            typeof row.default === 'function' ? row.default() : row.default,
-        })
+          row.default &&
+          (doc[row.name] === undefined || doc[row.name] === null)
+        ) {
+          Object.assign(defaults, {
+            [row.name]:
+              typeof row.default === 'function' ? row.default() : row.default,
+          })
+        }
+        const wipDoc = {
+          ...defaults,
+          ...doc,
+        }
         if (
           !row.optional &&
-          (defaults[row.name] === undefined || defaults[row.name] === null) &&
-          (doc[row.name] === undefined || doc[row.name] === null)
-        )
+          !row.relation &&
+          (wipDoc[row.name] === undefined || wipDoc[row.name] === null)
+        ) {
           throw new Error(`NULL received for non-optional field "${row.name}"`)
+        }
+        if (
+          typeof wipDoc[row.name] !== 'undefined' &&
+          wipDoc[row.name] !== null
+        ) {
+          if (row.type === 'Bool' && typeof wipDoc[row.name] !== 'boolean') {
+            throw new Error(
+              `Unrecognized value ${wipDoc[row.name]} for type Bool`,
+            )
+          } else if (
+            row.type === 'Int' &&
+            typeof wipDoc[row.name] !== 'number'
+          ) {
+            throw new Error(
+              `Unrecognized value ${wipDoc[row.name]} for type Int`,
+            )
+          } else if (
+            row.type === 'String' &&
+            typeof wipDoc[row.name] !== 'string'
+          ) {
+            throw new Error(
+              `Unrecognized value ${wipDoc[row.name]} for type String`,
+            )
+          } else if (
+            row.type === 'Object' &&
+            typeof wipDoc[row.name] !== 'object'
+          ) {
+            throw new Error(
+              `Unrecognized value ${wipDoc[row.name]} for type Object`,
+            )
+          }
+        }
       }
       return {
         ...defaults,
@@ -92,7 +131,7 @@ export class IndexedDBConnector extends DB {
     if (!this.db) throw new Error('DB is not initialized')
     const tx = this.db.transaction(collection, 'readwrite')
     await Promise.all([...docs.map(doc => tx.store.add(doc)), tx.done])
-    return docs
+    return docs.length === 1 ? docs[0] : docs
   }
 
   async findOne(collection: string, options: FindOneOptions) {
@@ -183,13 +222,13 @@ export class IndexedDBConnector extends DB {
           if (typeof val.lt !== 'undefined' && doc[key] >= val.lt) {
             return false
           }
-          if (typeof val.lte !== 'undefined' && doc[key] > val.lt) {
+          if (typeof val.lte !== 'undefined' && doc[key] > val.lte) {
             return false
           }
-          if (typeof val.gt !== 'undefined' && doc[key] <= val.lt) {
+          if (typeof val.gt !== 'undefined' && doc[key] <= val.gt) {
             return false
           }
-          if (typeof val.gte !== 'undefined' && doc[key] < val.lt) {
+          if (typeof val.gte !== 'undefined' && doc[key] < val.gte) {
             return false
           }
         } else if (Array.isArray(val)) {
@@ -254,6 +293,7 @@ export class IndexedDBConnector extends DB {
   async _update(collection: string, options: UpdateOptions) {
     if (!this.db) throw new Error('DB is not initialized')
     const items = await this._findMany(collection, { where: options.where })
+    if (Object.keys(options.update).length === 0) return items.length
     const tx = this.db.transaction(collection, 'readwrite')
     const promises = [] as Promise<any>[]
     const table = this.schema[collection]
@@ -276,9 +316,11 @@ export class IndexedDBConnector extends DB {
 
   async _upsert(collection: string, options: UpsertOptions) {
     const updated = await this._update(collection, options)
-    if (updated > 0) return updated
+    if (updated > 0) {
+      return Object.keys(options.update).length === 0 ? 0 : updated
+    }
     const created = await this._create(collection, options.create)
-    return created.length
+    return Array.isArray(created) ? created.length : 1
   }
 
   async delete(collection: string, options: DeleteManyOptions) {
@@ -295,10 +337,12 @@ export class IndexedDBConnector extends DB {
     const table = this.schema[collection]
     if (!table) throw new Error('Table not found')
     for (const item of items) {
-      tx.store.delete(
-        Array.isArray(table.primaryKey)
-          ? table.primaryKey.map(k => item[k])
-          : item[table.primaryKey || ''],
+      promises.push(
+        tx.store.delete(
+          Array.isArray(table.primaryKey)
+            ? table.primaryKey.map(k => item[k])
+            : item[table.primaryKey],
+        ),
       )
     }
     await Promise.all([...promises, tx.done])
