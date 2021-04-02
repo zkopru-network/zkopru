@@ -1,5 +1,4 @@
 import { Bytes32 } from 'soltypes'
-import { Block } from '@zkopru/core'
 import { CoordinatorContext } from './context'
 import EthMethods from './eth-rpc-methods'
 
@@ -138,16 +137,18 @@ export class ClientApi {
           }),
     ])
     if (!proposal) throw new Error('Unable to find block')
-    const blockFromProposal = p => ({
+    const blockFromProposal = async p => ({
       ...p,
-      ...(p.proposalData ? Block.fromTx(JSON.parse(p.proposalData)) : {}),
-      proposalData: undefined,
+      ...(await this.context.node.layer2.getBlock(p.hash)),
     })
+    const uncleBlocks = includeUncles
+      ? await Promise.all((uncles || []).map(blockFromProposal))
+      : undefined
     return {
-      ...blockFromProposal(proposal),
+      ...(await blockFromProposal(proposal)),
       ...(includeUncles
         ? {
-            uncles: (uncles || []).map(p => blockFromProposal(p)),
+            uncles: uncleBlocks,
           }
         : {
             uncleCount,
@@ -163,14 +164,11 @@ export class ClientApi {
     if (Number.isNaN(blockIndex)) {
       throw new Error('Supplied block index is not a number')
     }
-    const proposal = await this.context.node.layer2.getProposalByNumber(
-      blockIndex,
-      false,
-    )
-    if (!proposal) throw new Error('Unable to find block')
-    const block = proposal.proposalData
-      ? Block.fromTx(JSON.parse(proposal.proposalData))
-      : {}
+    const [proposal, block] = await Promise.all([
+      this.context.node.layer2.getProposalByNumber(blockIndex, false),
+      this.context.node.layer2.getBlockByNumber(blockIndex),
+    ])
+    if (!proposal || !block) throw new Error('Unable to find proposal or block')
     return {
       ...proposal,
       ...block,
@@ -183,14 +181,14 @@ export class ClientApi {
     if (hash === 'latest') {
       hash = await this.context.node.layer2.latestBlock()
     }
-    const proposal = await this.context.node.layer2.getProposal(
-      new Bytes32(hash.toString()),
-      false,
-    )
-    if (!proposal) throw new Error('Unable to find block')
-    const block = proposal.proposalData
-      ? Block.fromTx(JSON.parse(proposal.proposalData))
-      : {}
+    const [proposal, block] = await Promise.all([
+      this.context.node.layer2.getProposal(
+        Bytes32.from(hash.toString()),
+        false,
+      ),
+      this.context.node.layer2.getBlock(Bytes32.from(hash.toString())),
+    ])
+    if (!proposal || !block) throw new Error('Unable to find proposal or block')
     return {
       ...proposal,
       ...block,
