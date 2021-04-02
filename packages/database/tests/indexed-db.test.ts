@@ -5,7 +5,7 @@ import FindTests from './database/find'
 import CreateTests from './database/create'
 import UpdateTests from './database/update'
 import DeleteTests from './database/delete'
-// import TransactionTests from './database/transaction'
+import TransactionTests from './database/transaction'
 
 describe('indexedDB tests', function(this: any) {
   this.db = {} as DB
@@ -26,5 +26,5 @@ describe('indexedDB tests', function(this: any) {
   CreateTests.bind(this)()
   UpdateTests.bind(this)()
   DeleteTests.bind(this)()
-  // TransactionTests.bind(this)()
+  TransactionTests.bind(this)()
 })

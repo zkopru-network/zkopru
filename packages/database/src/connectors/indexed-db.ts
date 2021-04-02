@@ -1,6 +1,6 @@
 /* eslint-disable class-methods-use-this, no-underscore-dangle */
 import AsyncLock from 'async-lock'
-import { openDB, IDBPDatabase } from 'idb'
+import { openDB, IDBPDatabase, IDBPTransaction } from 'idb'
 import {
   DB,
   FindOneOptions,
@@ -62,7 +62,11 @@ export class IndexedDBConnector extends DB {
     return this.lock.acquire('db', async () => this._create(collection, _doc))
   }
 
-  async _create(collection: string, _doc: any) {
+  async _create(
+    collection: string,
+    _doc: any,
+    _tx?: IDBPTransaction<any, string[], 'readwrite'>,
+  ) {
     const table = this.schema[collection]
     if (!table) throw new Error(`Invalid collection: "${collection}"`)
     const docs = [_doc].flat().map(doc => {
@@ -129,8 +133,14 @@ export class IndexedDBConnector extends DB {
       }
     })
     if (!this.db) throw new Error('DB is not initialized')
-    const tx = this.db.transaction(collection, 'readwrite')
-    await Promise.all([...docs.map(doc => tx.store.add(doc)), tx.done])
+    const tx = _tx || this.db.transaction(collection, 'readwrite')
+    const createPromises = docs.map(doc => {
+      const store = tx.objectStore(collection)
+      return store.add(doc)
+    })
+    if (!_tx) {
+      await Promise.all([...createPromises, tx.done])
+    }
     return docs.length === 1 ? docs[0] : docs
   }
 
@@ -199,18 +209,23 @@ export class IndexedDBConnector extends DB {
     )
   }
 
-  async _findMany(collection: string, options: FindManyOptions) {
+  async _findMany(
+    collection: string,
+    options: FindManyOptions,
+    _tx?: IDBPTransaction<any, string[], 'readwrite' | 'readonly'>,
+  ) {
     if (!this.db) throw new Error('DB is not initialized')
     const found = [] as any[]
     let cursor: any
+    const tx = _tx || this.db.transaction(collection)
     if (Object.keys(options.orderBy || {}).length > 0) {
       // use a cursor
       const key = Object.keys(options.orderBy || {})[0]
       const direction = (options.orderBy || {})[key] === 'asc' ? 'next' : 'prev'
-      const index = this.db.transaction(collection).store.index(key)
+      const index = tx.objectStore(collection).index(key)
       cursor = await index.openCursor(null, direction)
     } else {
-      cursor = await this.db.transaction(collection).store.openCursor()
+      cursor = await tx.objectStore(collection).openCursor()
     }
     // TODO: index accelerated queries when possible
     const matchDoc = (where: WhereClause, doc: any) => {
@@ -290,21 +305,32 @@ export class IndexedDBConnector extends DB {
     )
   }
 
-  async _update(collection: string, options: UpdateOptions) {
+  async _update(
+    collection: string,
+    options: UpdateOptions,
+    _tx?: IDBPTransaction<any, string[], 'readwrite'>,
+  ) {
     if (!this.db) throw new Error('DB is not initialized')
-    const items = await this._findMany(collection, { where: options.where })
+    const items = await this._findMany(
+      collection,
+      { where: options.where },
+      _tx,
+    )
     if (Object.keys(options.update).length === 0) return items.length
-    const tx = this.db.transaction(collection, 'readwrite')
+    const tx = _tx || this.db.transaction(collection, 'readwrite')
     const promises = [] as Promise<any>[]
     const table = this.schema[collection]
     if (!table) throw new Error('Table not found')
     for (const item of items) {
-      tx.store.put({
+      const store = tx.objectStore(collection)
+      store.put({
         ...item,
         ...options.update,
       })
     }
-    await Promise.all([...promises, tx.done])
+    if (!_tx) {
+      await Promise.all([...promises, tx.done])
+    }
     return items.length
   }
 
@@ -314,12 +340,16 @@ export class IndexedDBConnector extends DB {
     )
   }
 
-  async _upsert(collection: string, options: UpsertOptions) {
-    const updated = await this._update(collection, options)
+  async _upsert(
+    collection: string,
+    options: UpsertOptions,
+    _tx?: IDBPTransaction<any, string[], 'readwrite'>,
+  ) {
+    const updated = await this._update(collection, options, _tx)
     if (updated > 0) {
       return Object.keys(options.update).length === 0 ? 0 : updated
     }
-    const created = await this._create(collection, options.create)
+    const created = await this._create(collection, options.create, _tx)
     return Array.isArray(created) ? created.length : 1
   }
 
@@ -329,23 +359,34 @@ export class IndexedDBConnector extends DB {
     )
   }
 
-  async _delete(collection: string, options: DeleteManyOptions) {
+  async _delete(
+    collection: string,
+    options: DeleteManyOptions,
+    _tx?: IDBPTransaction<any, string[], 'readwrite'>,
+  ) {
     if (!this.db) throw new Error('DB is not initialized')
-    const items = await this._findMany(collection, { where: options.where })
-    const tx = this.db.transaction(collection, 'readwrite')
+    const items = await this._findMany(
+      collection,
+      { where: options.where },
+      _tx,
+    )
+    const tx = _tx || this.db.transaction(collection, 'readwrite')
     const promises = [] as Promise<any>[]
     const table = this.schema[collection]
     if (!table) throw new Error('Table not found')
+    const store = tx.objectStore(collection)
     for (const item of items) {
       promises.push(
-        tx.store.delete(
+        store.delete(
           Array.isArray(table.primaryKey)
             ? table.primaryKey.map(k => item[k])
             : item[table.primaryKey],
         ),
       )
     }
-    await Promise.all([...promises, tx.done])
+    if (!_tx) {
+      await Promise.all([...promises, tx.done])
+    }
     return items.length
   }
 
@@ -358,23 +399,51 @@ export class IndexedDBConnector extends DB {
   }
 
   async _transaction(operation: (db: TransactionDB) => void) {
-    let promise = Promise.resolve<any>(null)
+    if (!this.db) throw new Error('DB is not initialized')
+    // create an array of stores that the operation will mutate
+    const stores = [] as string[]
+    let tx: IDBPTransaction<any, string[], 'readwrite'>
+    // don't start the transaction until we know what stores to involve and have
+    // created and set the tx object
+    let start: Function | undefined
+    let promise = new Promise(rs => {
+      start = rs
+    })
     const db = {
-      delete: (...args) => {
-        promise = promise.then(() => this._delete(...args))
+      delete: (collection: string, options: DeleteManyOptions) => {
+        stores.push(collection)
+        promise = promise.then(() => this._delete(collection, options, tx))
       },
-      create: (...args) => {
-        promise = promise.then(() => this._create(...args))
+      create: (collection: string, docs: any) => {
+        stores.push(collection)
+        promise = promise.then(() => this._create(collection, docs, tx))
       },
-      update: (...args) => {
-        promise = promise.then(() => this._update(...args))
+      update: (collection: string, options: UpdateOptions) => {
+        stores.push(collection)
+        promise = promise.then(() => this._update(collection, options, tx))
       },
-      upsert: (...args) => {
-        promise = promise.then(() => this._upsert(...args))
+      upsert: (collection: string, options: UpsertOptions) => {
+        stores.push(collection)
+        promise = promise.then(() => this._upsert(collection, options, tx))
       },
     } as TransactionDB
-    await Promise.resolve(operation(db))
-    await promise
+    // Call the `operation` function to get a list of the stores that are going
+    // to be accessed. Once that is done create the transaction and call the
+    // start function to begin executing the transaction operations
+    operation(db)
+    // get a unique list of stores
+    const storeNames = {}
+    const storesUnique = stores.filter(store => {
+      if (storeNames[store]) return false
+      storeNames[store] = true
+      return true
+    })
+    tx = this.db.transaction(storesUnique, 'readwrite')
+    // explicitly cast the start function because TS cannot determine that it's
+    // set above. The body of a promise is executed sychronously so start will
+    // be assigned at this point
+    ;(start as Function)()
+    await Promise.all([promise, tx.done])
   }
 
   async close() {
