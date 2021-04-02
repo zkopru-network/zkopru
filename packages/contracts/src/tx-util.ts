@@ -14,13 +14,6 @@ export type TransactionObject<T> =
 export type Tx = PayableTx | NonPayableTx
 
 export class TxUtil {
-  // Number of pending transactions keyed to address
-  static pendingTransactions = {} as { [key: string]: number }
-
-  static pendingTxCount(address: string) {
-    return this.pendingTransactions[address] || 0
-  }
-
   static async getSignedTransaction<T>(
     tx: TransactionObject<T>,
     address: string,
@@ -28,18 +21,16 @@ export class TxUtil {
     account: Account,
     option?: Tx,
   ): Promise<string> {
-    const [gas, gasPrice, nonce] = await Promise.all([
+    const [gas, gasPrice] = await Promise.all([
       tx.estimateGas({
         ...option,
         from: account.address,
       }),
       web3.eth.getGasPrice(),
-      web3.eth.getTransactionCount(account.address, 'latest'),
     ])
     const value = option ? (option as PayableTx).value : undefined
     const { rawTransaction } = await web3.eth.accounts.signTransaction(
       {
-        nonce: nonce + this.pendingTxCount(account.address),
         gasPrice,
         gas,
         to: address,
@@ -65,16 +56,6 @@ export class TxUtil {
       account,
       option,
     )
-    let receipt: TransactionReceipt
-    try {
-      this.pendingTransactions[account.address] =
-        this.pendingTxCount(account.address) + 1
-      receipt = await web3.eth.sendSignedTransaction(signedTx)
-      this.pendingTransactions[account.address] -= 1
-    } catch (err) {
-      this.pendingTransactions[account.address] -= 1
-      throw Error(err)
-    }
-    return receipt
+    return web3.eth.sendSignedTransaction(signedTx)
   }
 }
