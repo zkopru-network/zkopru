@@ -90,9 +90,6 @@ export abstract class DB {
   // update or create some documents
   abstract upsert(collection: string, options: UpsertOptions): Promise<number>
 
-  // provide a schema to connectors that need schema info
-  abstract createTables(tableData: TableData[]): Promise<void>
-
   // delete many documents, return the number of documents deleted
   abstract delete(
     collection: string,

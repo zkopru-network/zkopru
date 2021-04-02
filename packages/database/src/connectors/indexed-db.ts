@@ -390,10 +390,6 @@ export class IndexedDBConnector extends DB {
     return items.length
   }
 
-  async createTables() {
-    return Promise.resolve()
-  }
-
   async transaction(operation: (db: TransactionDB) => void) {
     return this.lock.acquire('db', async () => this._transaction(operation))
   }
