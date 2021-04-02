@@ -54,7 +54,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'uint32', name: '', type: 'uint32' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -62,7 +61,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'uint32', name: '', type: 'uint32' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -70,7 +68,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'address', name: '', type: 'address' }],
@@ -78,7 +75,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'string', name: '', type: 'string' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
@@ -89,7 +85,6 @@ export const BurnAuctionABI = [
     ],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -97,7 +92,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'uint64', name: '', type: 'uint64' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -105,7 +99,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'uint64', name: '', type: 'uint64' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -113,7 +106,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'uint112', name: '', type: 'uint112' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'address', name: '', type: 'address' }],
@@ -121,7 +113,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -129,7 +120,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'uint32', name: '', type: 'uint32' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -137,7 +127,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'uint32', name: '', type: 'uint32' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -145,7 +134,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'contract Zkopru', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'uint256', name: 'roundIndex', type: 'uint256' }],
@@ -153,7 +141,6 @@ export const BurnAuctionABI = [
     outputs: [],
     stateMutability: 'payable',
     type: 'function',
-    payable: true,
   },
   {
     inputs: [
@@ -176,7 +163,6 @@ export const BurnAuctionABI = [
     outputs: [],
     stateMutability: 'payable',
     type: 'function',
-    payable: true,
   },
   {
     inputs: [{ internalType: 'uint256', name: 'roundIndex', type: 'uint256' }],
@@ -187,7 +173,6 @@ export const BurnAuctionABI = [
     ],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'string', name: 'url', type: 'string' }],
@@ -209,7 +194,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -217,7 +201,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'uint256', name: 'roundIndex', type: 'uint256' }],
@@ -225,7 +208,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'uint256', name: 'roundIndex', type: 'uint256' }],
@@ -233,7 +215,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -241,7 +222,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'uint256', name: 'roundIndex', type: 'uint256' }],
@@ -249,7 +229,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'uint256', name: 'blockNumber', type: 'uint256' }],
@@ -257,7 +236,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -265,7 +243,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -314,7 +291,6 @@ export const BurnAuctionABI = [
     outputs: [],
     stateMutability: 'payable',
     type: 'function',
-    payable: true,
   },
   {
     inputs: [],
@@ -329,7 +305,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -337,7 +312,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'address', name: 'proposer', type: 'address' }],
@@ -345,7 +319,6 @@ export const BurnAuctionABI = [
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'uint256', name: 'roundIndex', type: 'uint256' }],

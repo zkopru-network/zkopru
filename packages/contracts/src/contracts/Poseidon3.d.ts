@@ -29,12 +29,11 @@ export interface Poseidon3 extends BaseContract {
   ): Poseidon3
   clone(): Poseidon3
   methods: {
-    'poseidon(bytes32[3])'(
-      input: (string | number[])[],
-    ): NonPayableTransactionObject<string>
-
-    'poseidon(uint256[3])'(
-      input: (number | string | BN)[],
+    /**
+     * This is a dummy implementation for contract compilation We'll use a generated library by circomlib instead of this dummy library Please see 1. migrations/3_deploy_poseidon.js 2. https://github.com/iden3/circomlib/blob/master/src/poseidon_gencontract.js
+     */
+    poseidon(
+      arg0: (number | string | BN)[],
     ): NonPayableTransactionObject<string>
   }
   events: {

@@ -24,7 +24,6 @@ export const WithdrawalTreeValidatorABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -32,7 +31,6 @@ export const WithdrawalTreeValidatorABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -40,7 +38,6 @@ export const WithdrawalTreeValidatorABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -48,7 +45,6 @@ export const WithdrawalTreeValidatorABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -56,7 +52,6 @@ export const WithdrawalTreeValidatorABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -64,7 +59,6 @@ export const WithdrawalTreeValidatorABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -72,7 +66,6 @@ export const WithdrawalTreeValidatorABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -80,7 +73,6 @@ export const WithdrawalTreeValidatorABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -88,7 +80,6 @@ export const WithdrawalTreeValidatorABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -96,7 +87,6 @@ export const WithdrawalTreeValidatorABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -104,7 +94,6 @@ export const WithdrawalTreeValidatorABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -112,7 +101,6 @@ export const WithdrawalTreeValidatorABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -120,7 +108,6 @@ export const WithdrawalTreeValidatorABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -128,7 +115,6 @@ export const WithdrawalTreeValidatorABI = [
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'address', name: '', type: 'address' }],
@@ -136,7 +122,6 @@ export const WithdrawalTreeValidatorABI = [
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -144,7 +129,6 @@ export const WithdrawalTreeValidatorABI = [
     outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -152,7 +136,6 @@ export const WithdrawalTreeValidatorABI = [
     outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [{ internalType: 'bytes4', name: '', type: 'bytes4' }],
@@ -160,7 +143,6 @@ export const WithdrawalTreeValidatorABI = [
     outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [],
@@ -182,7 +164,6 @@ export const WithdrawalTreeValidatorABI = [
     outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [
@@ -196,7 +177,6 @@ export const WithdrawalTreeValidatorABI = [
     ],
     stateMutability: 'pure',
     type: 'function',
-    constant: true,
   },
   {
     inputs: [
@@ -211,6 +191,5 @@ export const WithdrawalTreeValidatorABI = [
     ],
     stateMutability: 'pure',
     type: 'function',
-    constant: true,
   },
 ]
