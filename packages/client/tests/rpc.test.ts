@@ -1,17 +1,17 @@
 /* eslint-disable jest/no-hooks */
 import assert from 'assert'
-import Zkopru from '../src'
 import Web3 from 'web3'
 import { WebsocketProvider } from 'web3-core'
 import { Container } from 'node-docker-api/lib/container'
 import { FullNode } from '@zkopru/core'
+import Zkopru from '../src'
 import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
 import { sleep } from '~utils'
 import { readFromContainer, pullOrBuildAndGetContainer } from '~utils-docker'
 import { DB, SQLiteConnector, schema } from '~database-node'
 
-describe('RPC tests', () => {
+describe('rPC tests', () => {
   const accounts: ZkAccount[] = [
     new ZkAccount(Buffer.from('sample private key')),
   ]
@@ -94,7 +94,9 @@ describe('RPC tests', () => {
 
   it('should fail with bad url', async () => {
     try {
-      new Zkopru.RPC('this is a bad url')
+      const tmp = new Zkopru.RPC('this is a bad url')
+      // use tmp to avoid the "don't use new for side effects issue"
+      assert(tmp)
       assert(false)
     } catch (err) {
       assert(true)
@@ -166,7 +168,7 @@ describe('RPC tests', () => {
   it.todo('should get transaction by hash')
 
   it('should get passthrough web3 instance', async () => {
-    const web3 = rpc.web3
+    const { web3 } = rpc
     const blockNumber = await web3.eth.getBlockNumber()
     assert(typeof blockNumber === 'number')
   })
