@@ -31,11 +31,6 @@ export default class ZkopruNode {
     }
   }
 
-  static async create(config: NodeConfig, connectorType: SomeDBConnector) {
-    const client = new this(config, connectorType)
-    return client
-  }
-
   // Accept database configuration here
   async start(...args: any[]) {
     if (!this._db) {
