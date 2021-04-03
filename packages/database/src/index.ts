@@ -38,7 +38,7 @@ export enum TreeSpecies {
 
 export const NULLIFIER_TREE_ID = 'nullifier-tree'
 
-export { DB, TableData } from './types'
+export * from './types'
 export * from './schema.types'
 export * from './preset'
 export { schema }
