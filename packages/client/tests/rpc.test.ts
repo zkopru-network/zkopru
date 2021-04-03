@@ -12,9 +12,6 @@ import { readFromContainer, pullOrBuildAndGetContainer } from '~utils-docker'
 import { DB, SQLiteConnector, schema } from '~database-node'
 
 describe('RPC tests', () => {
-  // for mac only?
-  global.URL.createObjectURL = jest.fn();
-
   const accounts: ZkAccount[] = [
     new ZkAccount(Buffer.from('sample private key')),
   ]
