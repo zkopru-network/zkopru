@@ -3,11 +3,12 @@
   "fullnode": true,
   "develop": false,
   "websocket": "ws://192.168.1.199:9546",
-  "coordinator": "http://localhost:8888",
+  "websocket": "ws://10.10.10.1:9546",
+  "coordinator": "http://10.10.10.1:8888",
   "networkId": 5,
   "chainId": 5,
   "address": "0x24A8072a8d2fde1e22b99398a104640f58C8462d",
-  "keys": "keys",
+  "keys_bak": "keys",
   "db": "db",
   "seedKeystore": {
     "ciphertext": "f34047785c14c5b1b87ce540c1bbd0bdb748f7ddf95fdf95d2d1e462de1dde98cf7815e280084111567fc3aac24225aa",
@@ -22,5 +23,6 @@
     },
     "salt": "9950f726377129f30ad64e5f56e5a4077765ecf433e677481f9ce141c474e011"
   },
-  "accountNumber": 3
+  "accountNumber": 3,
+  "snarkKeyCid": "/ipfs/QmWdQnPVdbS61ERWJY76xfkbzrLDiQptE81LRTQUupSP7G"
 }

@@ -50,6 +50,17 @@ export default class DownloadKeys extends Configurator {
   static code = Menu.DOWNLOAD_KEYS
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
+    if (this.base.snarkKeyCid) {
+      // If a CID is provided don't download here, we'll lazily load
+      return {
+        context,
+        next: Menu.LOAD_DATABASE,
+      }
+    }
+    if (!this.base.keys) {
+      this.print(chalk.red('No keys path specified!'))
+      process.exit(1)
+    }
     this.print(chalk.blue('Downloading keys'))
     const pwd = path.join(process.cwd(), this.base.keys)
     if (fs.existsSync(pwd)) {
