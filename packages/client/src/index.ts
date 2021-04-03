@@ -1,3 +1,3 @@
-import ZkopruClient from './zkopru-client'
+import Zkopru from './node'
 
-export default ZkopruClient
+export default Zkopru

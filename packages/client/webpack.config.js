@@ -2,7 +2,7 @@ const path = require('path')
 const webpack = require('webpack')
 
 module.exports = {
-  entry: './dist/index.js',
+  entry: './dist/web.js',
   mode: 'development',
   output: {
     filename: 'index.js',

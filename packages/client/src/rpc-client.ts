@@ -1,3 +1,5 @@
+/* eslint-disable no-underscore-dangle */
+import Web3 from 'web3'
 import { RpcType, RpcConfig, Block, Tx, Registry } from './types'
 import fetch from './fetch'
 
@@ -17,8 +19,31 @@ enum RpcMethod {
 export default class RpcClient {
   config: RpcConfig
 
-  constructor(config: RpcConfig) {
-    this.config = config
+  private _web3?: Web3
+
+  constructor(config: RpcConfig | string) {
+    if (typeof config === 'string' && config.indexOf('http') === 0) {
+      this.config = {
+        type: RpcType.http,
+        url: config,
+      }
+    } else if (typeof config === 'string' && config.indexOf('http') !== 0) {
+      throw new Error(`Unsupported RPC protocol, only http(s) allowed`)
+    } else if (typeof config === 'object' && config.url.indexOf('http') === 0) {
+      this.config = Object.assign(config, { type: RpcType.http })
+    } else if (typeof config === 'object' && config.url.indexOf('http') !== 0) {
+      throw new Error(`Unsupported RPC protocol, only http(s) allowed`)
+    } else {
+      throw new Error('Invalid config supplied')
+    }
+  }
+
+  // Return a passthrough web3 instance
+  get web3() {
+    if (!this._web3) {
+      this._web3 = new Web3(this.config.url as any)
+    }
+    return this._web3
   }
 
   async getAddress(): Promise<string> {
