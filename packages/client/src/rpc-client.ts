@@ -56,7 +56,7 @@ export default class RpcClient {
     return result
   }
 
-  async getProposalCount(): Promise<number> {
+  async getBlockCount(): Promise<number> {
     const { result } = await this.callMethod(RpcMethod.blockCount)
     return +result
   }
