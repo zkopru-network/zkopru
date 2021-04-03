@@ -20,3 +20,10 @@ export interface Registry {
   erc20s: string[]
   erc721s: string[]
 }
+
+export type NodeConfig = {
+  address?: string
+  bootstrap?: boolean
+  websocket?: string
+  rpcUrl?: string
+}
