@@ -1,5 +1,4 @@
 import assert from 'assert'
-import fs from 'fs'
 import prove from './snark-prover'
 
 process.on(
@@ -8,15 +7,14 @@ process.on(
     inputs: any
     wasmPath: string
     zKeyPath: string
-    vkPath: string
+    vKey: Record<string, any>
   }) => {
     assert(
       process.send,
       'It looks a master process. This should be a forked process',
     )
     try {
-      const vKey = JSON.parse(fs.readFileSync(message.vkPath).toString())
-      const snark = await prove(message, vKey)
+      const snark = await prove(message)
       process.send({ snark })
     } catch (err) {
       process.send({ err })

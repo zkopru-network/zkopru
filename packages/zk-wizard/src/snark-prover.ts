@@ -5,10 +5,10 @@ export default async (data: {
   inputs: any
   wasmPath: string
   zKeyPath: string
-  vkPath: string
-}, vKey: Object) => {
+  vKey: Record<string, any>
+}) => {
   try {
-    const { inputs, wasmPath, zKeyPath } = data
+    const { inputs, wasmPath, zKeyPath, vKey } = data
     const { proof, publicSignals } = await snarkjs.groth16.fullProve(
       ffjs.utils.unstringifyBigInts(inputs),
       wasmPath,

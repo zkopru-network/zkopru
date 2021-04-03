@@ -46,7 +46,7 @@ export const { argv } = yargs
     },
     keys: {
       type: 'string',
-      default: 'keys',
+      // default: 'keys',
       describe: 'Path to store SNARK keys',
     },
     sqlite: {
@@ -62,6 +62,10 @@ export const { argv } = yargs
     config: {
       type: 'string',
       describe: 'You can save wallet configuration file',
+    },
+    snarkKeyCid: {
+      type: 'string',
+      describe: 'An IPFS content identifier storing the proving keys',
     },
   })
   .help()

@@ -67,6 +67,7 @@ export class ZkWallet {
     erc721,
     coordinator,
     snarkKeyPath,
+    snarkKeyCid,
   }: {
     db: DB
     wallet: HDWallet
@@ -76,7 +77,8 @@ export class ZkWallet {
     erc20: Address[]
     erc721: Address[]
     coordinator: string
-    snarkKeyPath: string
+    snarkKeyPath?: string
+    snarkKeyCid?: string
   }) {
     this.db = db
     this.wallet = wallet
@@ -93,6 +95,7 @@ export class ZkWallet {
     this.wizard = new ZkWizard({
       utxoTree: this.node.layer2.grove.utxoTree,
       path: snarkKeyPath,
+      cid: snarkKeyCid,
     })
   }
 

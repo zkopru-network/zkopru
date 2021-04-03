@@ -13,19 +13,48 @@ import {
 import { MerkleProof, UtxoTree } from '@zkopru/tree'
 import { logger } from '@zkopru/utils'
 import path from 'path'
+import os from 'os'
 import fs from 'fs'
+import fetch from 'node-fetch'
 import { SNARKResult, genSNARK } from './snark'
 
+const IPFS_GATEWAY_HOST = `https://ipfs.tubby.cloud`
+
 export class ZkWizard {
-  path: string
+  path?: string
+
+  cid?: string
+
+  tmpdirPath?: string
 
   utxoTree: UtxoTree
 
   // genProof!: (witness: ArrayBuffer, provingKey: ArrayBuffer) => Promise<any>
 
-  constructor({ utxoTree, path }: { utxoTree: UtxoTree; path: string }) {
+  constructor({
+    utxoTree,
+    path: localPath,
+    cid,
+  }: {
+    utxoTree: UtxoTree
+    path?: string
+    cid?: string
+  }) {
     this.utxoTree = utxoTree
-    this.path = path
+    if (!localPath && !cid) {
+      throw new Error('Either a snark key path or cid must be specified')
+    }
+    this.path = localPath
+    if (cid && cid.indexOf('/ipfs/') !== 0 && cid.indexOf('/ipns/') !== 0) {
+      throw new Error('CID should begin with /ipfs/ or /ipns/')
+    }
+    this.cid = cid
+  }
+
+  get tmpdir() {
+    if (this.tmpdirPath) return this.tmpdirPath
+    this.tmpdirPath = os.tmpdir()
+    return this.tmpdirPath
   }
 
   /**
@@ -67,6 +96,103 @@ export class ZkWizard {
     })
   }
 
+  private async loadKeyPaths(
+    nIn: number,
+    nOut: number,
+  ): Promise<{
+    wasmPath: string
+    zkeyPath: string
+    vKey: Record<string, any>
+  }> {
+    logger.info(`${this.path}`)
+    if (this.path) {
+      const vKeyPath = path.join(
+        this.path,
+        'vks',
+        `zk_transaction_${nIn}_${nOut}.vk.json`,
+      )
+      const vKey = JSON.parse(fs.readFileSync(vKeyPath).toString())
+      return {
+        wasmPath: path.join(
+          this.path,
+          'circuits',
+          `zk_transaction_${nIn}_${nOut}.wasm`,
+        ),
+        zkeyPath: path.join(
+          this.path,
+          'zkeys',
+          `zk_transaction_${nIn}_${nOut}.zkey`,
+        ),
+        vKey,
+      }
+    }
+    // TODO: hash verification
+    logger.info(this.tmpdir)
+    if (this.cid) {
+      const wasmUrlPath = path.join(
+        this.cid,
+        'circuits',
+        `zk_transaction_${nIn}_${nOut}.wasm`,
+      )
+      const zKeyUrlPath = path.join(
+        this.cid,
+        'zkeys',
+        `zk_transaction_${nIn}_${nOut}.zkey`,
+      )
+      const vKeyUrlPath = path.join(
+        this.cid,
+        'vks',
+        `zk_transaction_${nIn}_${nOut}.vk.json`,
+      )
+      const wasmPath = path.join(
+        this.tmpdir,
+        `zk_transaction_${nIn}_${nOut}.wasm`,
+      )
+      const zkeyPath = path.join(
+        this.tmpdir,
+        `zk_transaction_${nIn}_${nOut}.zkey`,
+      )
+      let vKey: Record<string, any>
+      {
+        logger.info('Downloading vkey')
+        const response = await fetch(
+          new URL(vKeyUrlPath, IPFS_GATEWAY_HOST).toString(),
+        )
+        vKey = await response.json()
+      }
+      if (!fs.existsSync(wasmPath)) {
+        logger.info('Downloading wasm')
+        const response = await fetch(
+          new URL(wasmUrlPath, IPFS_GATEWAY_HOST).toString(),
+        )
+        const filestream = fs.createWriteStream(wasmPath)
+        await new Promise((rs, rj) => {
+          response.body.pipe(filestream)
+          response.body.on('error', rj)
+          filestream.on('finish', rs)
+        })
+      }
+      if (!fs.existsSync(zkeyPath)) {
+        logger.info('Downloading zkey')
+        const response = await fetch(
+          new URL(zKeyUrlPath, IPFS_GATEWAY_HOST).toString(),
+        )
+        const filestream = fs.createWriteStream(zkeyPath)
+        await new Promise((rs, rj) => {
+          response.body.pipe(filestream)
+          response.body.on('error', rj)
+          filestream.on('finish', rs)
+        })
+      }
+      return {
+        wasmPath,
+        zkeyPath,
+        vKey,
+      }
+    }
+    throw new Error('No cid or path for keys!')
+  }
+
   private async buildZkTx({
     tx,
     encryptTo,
@@ -80,28 +206,12 @@ export class ZkWizard {
   }): Promise<ZkTx> {
     const nIn = tx.inflow.length
     const nOut = tx.outflow.length
-    const wasmPath = path.join(
-      this.path,
-      'circuits',
-      `zk_transaction_${nIn}_${nOut}.wasm`,
-    )
-    const zkeyPath = path.join(
-      this.path,
-      'zkeys',
-      `zk_transaction_${nIn}_${nOut}.zkey`,
-    )
-    const vkPath = path.join(
-      this.path,
-      'vks',
-      `zk_transaction_${nIn}_${nOut}.vk.json`,
-    )
+    const { wasmPath, zkeyPath, vKey } = await this.loadKeyPaths(nIn, nOut)
     let fileNotExistMsg: string | undefined
     if (!fs.existsSync(wasmPath)) {
       fileNotExistMsg = `Does not have the wasm code for the ${tx.inflow.length} inputs and ${tx.outflow.length} outputs circuit`
     } else if (!fs.existsSync(zkeyPath)) {
       fileNotExistMsg = `Does not have the zkey for the ${tx.inflow.length} inputs and ${tx.outflow.length} outputs circuit`
-    } else if (!fs.existsSync(vkPath)) {
-      fileNotExistMsg = `Does not have the vk for the ${tx.inflow.length} inputs and ${tx.outflow.length} outputs circuit`
     }
     if (fileNotExistMsg) throw new Error(fileNotExistMsg)
     const inputs = ZkWizard.snarkInput({
@@ -111,12 +221,7 @@ export class ZkWizard {
     })
 
     const start = Date.now()
-    const result: SNARKResult = await genSNARK(
-      inputs,
-      wasmPath,
-      zkeyPath,
-      vkPath,
-    )
+    const result: SNARKResult = await genSNARK(inputs, wasmPath, zkeyPath, vKey)
     const end = Date.now()
     logger.debug(
       `Shielded (${tx.inflow.length} => ${tx.outflow.length}): proof: ${end -
