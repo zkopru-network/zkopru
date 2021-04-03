@@ -158,6 +158,11 @@ describe('RPC tests', () => {
     assert(Array.isArray(tokens.erc721s))
   })
 
+  it('should get verifying keys', async () => {
+    const keys = await rpc.getVerifyingKeys()
+    assert(keys)
+  })
+
   it.todo('should get transaction by hash')
 
   it('should get passthrough web3 instance', async () => {

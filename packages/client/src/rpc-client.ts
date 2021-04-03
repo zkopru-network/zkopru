@@ -98,6 +98,11 @@ export default class RpcClient {
     return result
   }
 
+  async getVerifyingKeys(): Promise<any> {
+    const { result } = await this.callMethod(RpcMethod.vks)
+    return result
+  }
+
   private async callMethod(method: RpcMethod, ...params: any[]) {
     if (this.config.type === RpcType.http) {
       const response = await fetch(this.config.url, {

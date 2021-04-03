@@ -130,13 +130,20 @@ export class CoordinatorApi {
         id,
         jsonrpc,
       )
+      // The id at the top level of the response needs to be left as a number
+      // we use this variable to avoid leaving other id variables as numbers
+      let firstId = true
       const payload = JSON.stringify(
         {
           id,
           jsonrpc,
           result,
         },
-        (_, value: any) => {
+        (key: any, value: any) => {
+          if (firstId && key === 'id' && typeof value === 'number') {
+            firstId = false
+            return value
+          }
           if (typeof value === 'number' || typeof value === 'bigint') {
             return `0x${value.toString(16)}`
           }
