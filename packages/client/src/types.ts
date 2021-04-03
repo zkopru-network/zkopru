@@ -8,8 +8,41 @@ export interface RpcConfig {
 }
 
 export interface Block {
+  hash: string
   proposalNum: number
-  // TODO
+  canonicalNum: number
+  proposedAt: number
+  proposalTx: string
+  fetched: string
+  finalized: boolean
+  verified: boolean
+  isUncle: boolean
+  header: {
+    hash: string
+    proposer: string
+    parentBlock: string
+    fee: string
+    utxoRoot: string
+    utxoIndex: string
+    nullifierRoot: string
+    withdrawalRoot: string
+    withdrawalIndex: string
+    txRoot: string
+    depositRoot: string
+    migrationRoot: string
+  }
+  body: {
+    txs: {
+      inflow: string
+      outflow: string
+      fee: string
+    }[]
+    massDeposits: {
+      merged: string
+      fee: string
+    }[]
+    massMigrations: any[]
+  }
 }
 
 export interface Tx {
