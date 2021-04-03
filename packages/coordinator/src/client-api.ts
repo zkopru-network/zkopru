@@ -43,7 +43,7 @@ export class ClientApi {
       return new Promise((rs, rj) =>
         (provider as any).send(
           {
-            id,
+            id: `0x${id.toString(16)}`,
             method,
             params,
             jsonrpc,
