@@ -1,6 +1,7 @@
 import { join } from 'path'
 import { fork } from 'child_process'
 import * as ffjs from 'ffjavascript'
+import prove from './snark-prover'
 
 export type SNARKResult = {
   proof: any
@@ -30,8 +31,20 @@ export async function genSNARK(
   zKeyPath: string,
   vkPath: string,
 ): Promise<SNARKResult> {
+  if (typeof window !== 'undefined') {
+    // we're in a browser, use a webworker instead of a forked process
+    // TODO: actually use a webworker
+    const response = await fetch(vkPath)
+    const vKey = await response.json()
+    return prove({
+      inputs,
+      wasmPath,
+      zKeyPath,
+      vkPath,
+    }, vKey)
+  }
   return new Promise<SNARKResult>((res, rej) => {
-    const process = fork(join(__dirname, 'snark-prover.js'), [
+    const process = fork(join(__dirname, 'snark-prover-node.js'), [
       '-r',
       'ts-node/register',
     ])
