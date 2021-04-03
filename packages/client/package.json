@@ -25,6 +25,10 @@
     "test": "jest"
   },
   "license": "GPL-3.0-or-later",
+  "devDependencies": {
+    "node-docker-api": "^1.1.22",
+    "web3-core": "^1.3.4"
+  },
   "dependencies": {
     "@zkopru/coordinator": "file:../coordinator",
     "@zkopru/core": "file:../core",
