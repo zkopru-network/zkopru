@@ -8,25 +8,6 @@ services:
       context: ./packages/contracts/
       dockerfile: ../../dockerfiles/Contract.dockerfile
     command: ganache-cli --db=/data -i 20200406 -p 5000 --deterministic --host 0.0.0.0 --secure
-  postgres:
-    ports:
-      - "5678:5432"
-    build:
-      context: ./
-      dockerfile: ./dockerfiles/Postgres.dockerfile
-    environment:
-      POSTGRES_PASSWORD: helloworld
-  postgres-setup:
-    build:
-      context: ./
-      dockerfile: ./dockerfiles/PostgresSetup.dockerfile
-    depends_on:
-      - 'postgres'
-    links:
-      - 'postgres:postgres'
-    environment:
-      POSTGRES_URL: postgresql://postgres:helloworld@postgres:5432/zkopru
-    command: prisma migrate up --experimental --schema /proj/prisma/postgres-migrator.prisma --verbose
   coordinator:
     build:
       context: ./
@@ -36,10 +17,8 @@ services:
       - "8888:8888"
     links:
       - 'testnet:testnet'
-      - 'postgres:postgres'
     depends_on:
       - 'testnet'
-      - 'postgres-setup'
     command: sh -c "sleep 5s && gotty -w --port 1234 node /proj/packages/cli/dist/apps/coordinator/cli.js --config /proj/packages/cli/coordinator.dev.json"
   wallet:
     build:
@@ -49,9 +28,7 @@ services:
       - "4321:4321"
     links:
       - 'testnet:testnet'
-      - 'postgres:postgres'
       - 'coordinator:coordinator'
     depends_on:
       - 'testnet'
-      - 'postgres-setup'
     command: sh -c "sleep 5s && gotty -w --port 4321 node /proj/packages/cli/dist/apps/wallet/cli.js --config /proj/packages/cli/wallet.dev.json"

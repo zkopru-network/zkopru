@@ -8,15 +8,6 @@ services:
       context: ./packages/contracts/
       dockerfile: ../../dockerfiles/Contract.dockerfile
     command: ganache-cli --db=/data -i 20200406 -p 5000 --gasLimit 12000000 --deterministic --host 0.0.0.0 --secure --blockTime 10
-  postgres:
-    ports:
-      - "5678:5432"
-    build:
-      context: ./
-      dockerfile: ./dockerfiles/Postgres.dockerfile
-    environment:
-      POSTGRES_PASSWORD: helloworld
-      POSTGRES_URL: postgresql://postgres:helloworld@localhost:5432/zkopru
   coordinator:
     build:
       context: ./
