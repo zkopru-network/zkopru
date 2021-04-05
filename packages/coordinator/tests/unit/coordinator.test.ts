@@ -111,7 +111,7 @@ describe('coordinator test to run testnet', () => {
       db: mockup,
       accounts,
     })
-  }, 60000)
+  }, 90000)
   afterAll(async () => {
     await coordinator.stop()
     wsProvider.disconnect(0, 'close connection')

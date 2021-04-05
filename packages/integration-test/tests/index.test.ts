@@ -155,7 +155,7 @@ describe('testnet', () => {
       it(
         'should process the new submitted block',
         waitCoordinatorToProcessTheNewBlock(ctx),
-        30000,
+        60000,
       )
     })
     describe('new block should update trees', () => {
