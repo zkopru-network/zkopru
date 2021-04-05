@@ -48,10 +48,12 @@ metadata:
     io.kompose.service: wallet
   name: wallet
 spec:
+  type: NodePort
   ports:
     - name: "4321"
       port: 4321
       targetPort: 4321
+      nodePort: 32134
   selector:
     io.kompose.service: wallet
 status:
