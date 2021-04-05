@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose -f docker-compose.instant-block.yml convert
+    kompose.version: 1.22.0 (955b78124)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: wallet
+  name: wallet
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: wallet
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose -f docker-compose.instant-block.yml convert
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: wallet
+    spec:
+      containers:
+        - args:
+            - sh
+            - -c
+            - sleep 5s && gotty -w --port 4321 node /proj/packages/cli/dist/apps/wallet/cli.js --config /proj/packages/cli/wallet.dev.json
+          image: zkopru/wallet
+          name: wallet
+          ports:
+            - containerPort: 4321
+          resources: {}
+          imagePullPolicy: Never
+      restartPolicy: Always
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose -f docker-compose.instant-block.yml convert
+    kompose.version: 1.22.0 (955b78124)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: wallet
+  name: wallet
+spec:
+  ports:
+    - name: "4321"
+      port: 4321
+      targetPort: 4321
+  selector:
+    io.kompose.service: wallet
+status:
+  loadBalancer: {}
+

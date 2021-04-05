@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose -f docker-compose.instant-block.yml convert
+    kompose.version: 1.22.0 (955b78124)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: coordinator
+  name: coordinator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: coordinator
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose -f docker-compose.instant-block.yml convert
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: coordinator
+    spec:
+      containers:
+        - args:
+            - sh
+            - -c
+            - sleep 5s && gotty -w --port 1234 node /proj/packages/cli/dist/apps/coordinator/cli.js --config /proj/packages/cli/coordinator.dev.json
+          image: zkopru/coordinator
+          name: coordinator
+          ports:
+            - containerPort: 1234
+            - containerPort: 8888
+          resources: {}
+          imagePullPolicy: Never
+      restartPolicy: Always
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose -f docker-compose.instant-block.yml convert
+    kompose.version: 1.22.0 (955b78124)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: coordinator
+  name: coordinator
+spec:
+  type: NodePort
+  ports:
+    - name: "1234"
+      port: 1234
+      targetPort: 1234
+      nodePort: 31234
+    - name: "8888"
+      port: 8888
+      targetPort: 8888
+      nodePort: 31238
+  selector:
+    io.kompose.service: coordinator
+status:
+  loadBalancer: {}
