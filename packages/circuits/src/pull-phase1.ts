@@ -1,6 +1,6 @@
 import path from 'path'
 import fs from 'fs'
-import * as utils from '@zkopru/utils'
+import * as utils from '@zkopru/utils-docker'
 
 async function loadArtifacts() {
   // It may take about an hour. If you want to skip building image,

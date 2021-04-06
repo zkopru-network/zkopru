@@ -52,8 +52,7 @@ describe('zk_transaction_1_2.test.circom', () => {
   beforeAll(async () => {
     checkPhase1Setup()
     prepareArtifactsDirectory()
-    mockup = await SQLiteConnector.create(':memory:')
-    await mockup.createTables(schema)
+    mockup = await SQLiteConnector.create(schema, ':memory:')
     utxoTree = new UtxoTree({
       db: mockup,
       metadata: utxoTreeMetadata,

@@ -27,7 +27,7 @@ import {
   upsertSql,
 } from '../helpers/sql'
 
-export class SQLiteConnector implements DB {
+export class SQLiteConnector extends DB {
   db: any // Database<sqlite3.Database, sqlite3.Statement>
 
   config: {
@@ -39,6 +39,7 @@ export class SQLiteConnector implements DB {
   lock = new AsyncLock()
 
   constructor(config: any /* ISqlite.Config */) {
+    super()
     this.config = config
     this.db = {} as any
   }
@@ -47,7 +48,10 @@ export class SQLiteConnector implements DB {
     this.db = await open(this.config)
   }
 
-  static async create(_config: any /* ISqlite.Config */ | string) {
+  static async create(
+    tables: TableData[],
+    _config: any /* ISqlite.Config */ | string,
+  ) {
     const config =
       typeof _config === 'string'
         ? {
@@ -57,6 +61,7 @@ export class SQLiteConnector implements DB {
         : _config
     const connector = new this(config)
     await connector.init()
+    await connector.createTables(tables)
     return connector
   }
 
@@ -161,8 +166,8 @@ export class SQLiteConnector implements DB {
     if (!table) throw new Error(`Unable to find table ${collection}`)
     const sql = findManySql(table, options)
     const models = await this.db.all(sql)
-    const objectKeys = Object.keys(table.rows).filter(key => {
-      return table.rows[key]?.type === 'Object'
+    const objectKeys = Object.keys(table.rowsByName).filter(key => {
+      return table.rowsByName[key]?.type === 'Object'
     })
     if (objectKeys.length > 0) {
       // need to expand json objects

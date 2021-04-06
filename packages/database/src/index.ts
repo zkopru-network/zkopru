@@ -1,15 +1,8 @@
 import Web3 from 'web3'
-import schema from './schema'
 
+import schema from './schema'
 import { DB } from './types'
 import { Config } from './schema.types'
-
-export { SQLiteConnector } from './connectors/sqlite'
-export { PostgresConnector } from './connectors/postgres'
-export { DB, TableData } from './types'
-export * from './schema.types'
-export * from './preset'
-export { schema }
 
 interface L1Contract {
   getConfig(): Promise<Config>
@@ -44,3 +37,8 @@ export enum TreeSpecies {
 }
 
 export const NULLIFIER_TREE_ID = 'nullifier-tree'
+
+export { DB, TableData } from './types'
+export * from './schema.types'
+export * from './preset'
+export { schema }

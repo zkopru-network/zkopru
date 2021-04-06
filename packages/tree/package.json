@@ -10,6 +10,7 @@
   "_moduleAliases": {
     "~babyjubjub": "../babyjubjub/dist",
     "~database": "../database/dist",
+    "~database-node": "../database/dist/node.js",
     "~dataset": "../dataset/dist",
     "~tree": "dist"
   },
@@ -35,7 +36,7 @@
     "@zkopru/transaction": "file:../transaction",
     "async-lock": "^1.2.2",
     "big-integer": "^1.6.48",
-    "bn.js": "^5.1.1",
+    "bn.js": "^5.2.0",
     "circomlib": "0.5.1",
     "soltypes": "^1.3.5",
     "uuid": "^8.1.0",

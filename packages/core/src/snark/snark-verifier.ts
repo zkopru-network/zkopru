@@ -5,6 +5,7 @@ import { join } from 'path'
 import assert from 'assert'
 import { Uint256 } from 'soltypes'
 import * as ffjs from 'ffjavascript'
+import * as snarkjs from 'snarkjs'
 
 export interface VerifyingKey {
   protocol: string
@@ -47,10 +48,37 @@ export class SNARKVerifier {
   }
 
   async verifyTx(tx: ZkTx): Promise<boolean> {
+    // run in main process if in browser
+    // TODO: use webworker
+    if (typeof window !== 'undefined') {
+      const registeredVk = this.vks[
+        verifyingKeyIdentifier(tx.inflow.length, tx.outflow.length)
+      ]
+      const proof = ffjs.utils.stringifyBigInts(tx.circomProof())
+      const signals = ffjs.utils.stringifyBigInts(tx.signals())
+      const vk = ffjs.utils.stringifyBigInts(registeredVk)
+      let result!: boolean
+      try {
+        result = snarkjs.groth16.verify(
+          ffjs.utils.unstringifyBigInts(vk),
+          ffjs.utils.unstringifyBigInts(signals),
+          ffjs.utils.unstringifyBigInts(proof),
+        )
+      } catch (e) {
+        logger.error(e)
+        result = false
+      }
+      return result
+    }
     return new Promise<boolean>(res => {
       const registeredVk = this.vks[
         verifyingKeyIdentifier(tx.inflow.length, tx.outflow.length)
       ]
+      logger.info(
+        `verifying key: ${JSON.stringify(registeredVk, (_, v) =>
+          typeof v === 'bigint' ? v.toString() : v,
+        )}`,
+      )
       if (!registeredVk) {
         res(false)
         return
@@ -75,6 +103,13 @@ export class SNARKVerifier {
   }
 
   async verifyTxs(txs: ZkTx[]): Promise<{ result: boolean; index?: number }> {
+    if (typeof window !== 'undefined') {
+      for (const [index, tx] of Object.entries(txs)) {
+        const result = await this.verifyTx(tx)
+        if (!result) return Promise.resolve({ result: false, index: +index })
+      }
+      return Promise.resolve({ result: true })
+    }
     return new Promise<{ result: boolean; index?: number }>(res => {
       // 1. check vk existence
       for (let index = 0; index < txs.length; index += 1) {

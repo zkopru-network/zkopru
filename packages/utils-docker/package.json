@@ -1,0 +1,28 @@
+{
+  "name": "@zkopru/utils-docker",
+  "version": "1.0.0-beta.2",
+  "license": "GPL-3.0-or-later",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "_moduleAliases": {
+    "~utils-docker": "dist"
+  },
+  "scripts": {
+    "prebuild": "shx mkdir -p dist",
+    "build": "tsc --build tsconfig.build.json",
+    "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
+    "link-modules": "link-module-alias"
+  },
+  "dependencies": {
+    "docker-compose": "^0.23.5",
+    "js-yaml": "^3.14.0",
+    "node-docker-api": "^1.1.22",
+    "tar": "^6.0.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

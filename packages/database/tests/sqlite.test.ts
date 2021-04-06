@@ -1,6 +1,6 @@
 /* eslint-disable jest/no-hooks, jest/valid-describe */
 import testSchema from './test-schema'
-import { DB, SQLiteConnector } from '~database'
+import { DB, SQLiteConnector } from '~database-node'
 import FindTests from './database/find'
 import CreateTests from './database/create'
 import UpdateTests from './database/update'
@@ -9,8 +9,7 @@ import TransactionTests from './database/transaction'
 
 describe('sqlite tests', function(this: { db: DB }) {
   beforeEach(async () => {
-    this.db = await SQLiteConnector.create(':memory:')
-    await this.db.createTables(testSchema)
+    this.db = await SQLiteConnector.create(testSchema, ':memory:')
     for (const { name } of testSchema) {
       await this.db.delete(name, {
         where: {},

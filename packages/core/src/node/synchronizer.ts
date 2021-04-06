@@ -552,12 +552,6 @@ export class Synchronizer extends EventEmitter {
     const block = Block.fromTx(proposalData)
     const header = block.getHeaderSql()
     try {
-      await this.db.update('Proposal', {
-        where: { hash: header.hash },
-        update: {
-          proposalData: JSON.stringify(proposalData),
-        },
-      })
       await this.db.upsert('Block', {
         where: { hash: header.hash },
         create: { hash: header.hash },
@@ -567,6 +561,12 @@ export class Synchronizer extends EventEmitter {
         where: { hash: header.hash },
         create: header,
         update: header,
+      })
+      await this.db.update('Proposal', {
+        where: { hash: header.hash },
+        update: {
+          proposalData: JSON.stringify(proposalData),
+        },
       })
     } catch (err) {
       logger.error(err)

@@ -1,6 +1,6 @@
 /* eslint-disable jest/no-hooks, jest/valid-describe */
 import testSchema from './test-schema'
-import { DB, PostgresConnector } from '~database'
+import { DB, PostgresConnector } from '~database-node'
 import FindTests from './database/find'
 import CreateTests from './database/create'
 import UpdateTests from './database/update'
@@ -11,9 +11,9 @@ describe('postgres tests', function(this: any) {
   this.db = {} as DB
   beforeEach(async () => {
     this.db = await PostgresConnector.create(
+      testSchema,
       'postgres://postgres:password@localhost:5432',
     )
-    await this.db.createTables(testSchema)
     for (const { name } of testSchema) {
       await this.db.delete(name, {
         where: {},

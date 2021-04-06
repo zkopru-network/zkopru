@@ -157,15 +157,6 @@ Batch database operations to be executed at once. If any operation in the transa
 
 Once the `operation` function finishes executing the transaction will be applied.
 
-### Create Tables
-
-Call this method to ensure tables (collections) exist. This _must_ be called each time a new DB instance is initialized.
-
-`createTables(tableData: TableData[]): Promise<void>`
-
-`TableData`: A [schema array](#Schema).
-
-
 ### Close
 
 A function for closing and tearing down database instances. Call this when disposing of a `DB` reference.

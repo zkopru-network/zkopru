@@ -2,6 +2,7 @@
 /* eslint-disable jest/no-hooks */
 import { Fp } from '~babyjubjub'
 import { UtxoTree, poseidonHasher, Leaf, verifyProof } from '~tree'
+import sample from '~tree/sample'
 import { utxos } from '~dataset/testset-utxos'
 import { accounts } from '~dataset/testset-predefined'
 import { DB } from '~database'
@@ -12,7 +13,7 @@ describe('utxo tree unit test', () => {
   const depth = 48
   beforeAll(async () => {
     // const db = nSQL()
-    const { tree, db } = await UtxoTree.sample(depth)
+    const { tree, db } = await sample(depth)
     utxoTree = tree
     mockup = db
   })

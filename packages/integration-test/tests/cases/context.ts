@@ -3,9 +3,10 @@ import Web3 from 'web3'
 import path from 'path'
 import { WebsocketProvider, Account } from 'web3-core'
 import { Address } from 'soltypes'
-import { DB, SQLiteConnector, schema } from '~database'
+import { DB, SQLiteConnector, schema } from '~database-node'
 import { ZkAccount, HDWallet } from '~account'
-import { sleep, readFromContainer, pullAndGetContainer } from '~utils'
+import { sleep } from '~utils'
+import { readFromContainer, pullAndGetContainer } from '~utils-docker'
 import { DEFAULT } from '~cli/apps/coordinator/config'
 import { L1Contract, FullNode } from '~core'
 import { Coordinator } from '~coordinator'
@@ -154,8 +155,7 @@ async function getAccounts(
   carl: ZkAccount
   coordinator: ZkAccount
 }> {
-  const mockup = await SQLiteConnector.create(':memory:')
-  await mockup.createTables(schema)
+  const mockup = await SQLiteConnector.create(schema, ':memory:')
   const hdWallet = new HDWallet(web3, mockup)
   const mnemonic =
     'myth like bonus scare over problem client lizard pioneer submit female collect'
@@ -204,8 +204,7 @@ async function getCoordinator(
   address: string,
   account: Account,
 ): Promise<{ coordinator: Coordinator; mockupDB: DB }> {
-  const mockupDB = await SQLiteConnector.create(':memory:')
-  await mockupDB.createTables(schema)
+  const mockupDB = await SQLiteConnector.create(schema, ':memory:')
   const fullNode: FullNode = await FullNode.new({
     address,
     provider,
@@ -238,8 +237,7 @@ export async function getWallet({
   erc20s: string[]
   erc721s: string[]
 }): Promise<{ zkWallet: ZkWallet; mockupDB: DB }> {
-  const mockupDB = await SQLiteConnector.create(':memory:')
-  await mockupDB.createTables(schema)
+  const mockupDB = await SQLiteConnector.create(schema, ':memory:')
   const node: FullNode = await FullNode.new({
     address,
     provider,

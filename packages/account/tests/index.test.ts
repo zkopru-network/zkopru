@@ -1,13 +1,12 @@
 /* eslint-disable jest/no-hooks */
 import Web3 from 'web3'
 import { HDWallet, ZkAccount } from '~account'
-import { DB, SQLiteConnector, schema } from '~database'
+import { DB, SQLiteConnector, schema } from '~database-node'
 
 describe('unit test', () => {
   let mockup: DB
   beforeAll(async () => {
-    mockup = await SQLiteConnector.create(':memory:')
-    await mockup.createTables(schema)
+    mockup = await SQLiteConnector.create(schema, ':memory:')
   })
   afterAll(async () => {
     await mockup.close()

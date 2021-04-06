@@ -25,7 +25,7 @@ import {
   upsertSql,
 } from '../helpers/sql'
 
-export class PostgresConnector implements DB {
+export class PostgresConnector extends DB {
   db: Client
 
   config: any | string
@@ -35,6 +35,7 @@ export class PostgresConnector implements DB {
   lock = new AsyncLock()
 
   constructor(config: any | string) {
+    super()
     this.config = config
     this.db = {} as any
   }
@@ -50,9 +51,10 @@ export class PostgresConnector implements DB {
     await this.db.connect()
   }
 
-  static async create(config: any | string) {
+  static async create(tables: TableData[], config: any | string) {
     const connector = new this(config)
     await connector.init()
+    await connector.createTables(tables)
     return connector
   }
 
@@ -154,8 +156,8 @@ export class PostgresConnector implements DB {
     if (!table) throw new Error(`Unable to find table ${collection}`)
     const sql = findManySql(table, options)
     const { rows } = await this.db.query(sql)
-    const objectKeys = Object.keys(table.rows).filter(key => {
-      return table.rows[key]?.type === 'Object'
+    const objectKeys = Object.keys(table.rowsByName).filter(key => {
+      return table.rowsByName[key]?.type === 'Object'
     })
     if (objectKeys.length > 0) {
       // need to expand json objects

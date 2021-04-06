@@ -14,7 +14,9 @@
     "~account": "../account/dist",
     "~coordinator": "dist",
     "~database": "../database/dist",
-    "~utils": "../utils/dist"
+    "~database-node": "../database/dist/node.js",
+    "~utils": "../utils/dist",
+    "~utils-docker": "../utils-docker/dist"
   },
   "scripts": {
     "prebuild": "shx mkdir -p dist",
@@ -44,7 +46,7 @@
     "big-integer": "^1.6.48",
     "bip39": "^3.0.2",
     "blessed": "^0.1.81",
-    "bn.js": "^5.1.1",
+    "bn.js": "^5.2.0",
     "chalk": "^4.0.0",
     "express": "^4.17.1",
     "figlet": "^1.4.0",

@@ -5,6 +5,7 @@
 const chai = require("chai");
 const { UtxoTree, poseidonHasher } = require("~tree");
 const { append, appendAsSubTrees } = require("~tree/utils/merkle-tree-sol");
+const sample = require("~tree/sample");
 const { Fp } = require("~babyjubjub");
 
 const { expect } = chai;
@@ -50,7 +51,7 @@ contract("Utxo tree update tests", async accounts => {
   let db;
   const depth = 48;
   before(async () => {
-    const { tree, db } = await UtxoTree.sample(depth);
+    const { tree, db } = await sample(depth);
     tsTree = tree;
     mockup = db;
     solTree = await UtxoTreeTester.new();

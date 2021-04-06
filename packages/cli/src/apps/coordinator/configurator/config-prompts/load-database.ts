@@ -6,7 +6,7 @@ import {
   PostgresConnector,
   schema,
   initDB,
-} from '@zkopru/database'
+} from '@zkopru/database/dist/node'
 import { L1Contract } from '@zkopru/core'
 import Configurator, { Context, Menu } from '../configurator'
 
@@ -20,10 +20,10 @@ export default class LoadDatabase extends Configurator {
     }
     let database: DB
     if (this.base.postgres) {
-      database = await PostgresConnector.create(this.base.postgres)
+      database = await PostgresConnector.create(schema, this.base.postgres)
     } else if (this.base.sqlite) {
       const dbPath = this.base.sqlite
-      database = await SQLiteConnector.create(dbPath)
+      database = await SQLiteConnector.create(schema, dbPath)
     } else {
       // no configuration. try to create new one
       const enum DBType {
@@ -84,6 +84,7 @@ export default class LoadDatabase extends Configurator {
           initial: 'zkopru-coordinator',
         })
         database = await PostgresConnector.create(
+          schema,
           `postgresql://${user}:${password}@${host}:${port}/${dbName}`,
         )
       } else {
@@ -109,10 +110,9 @@ export default class LoadDatabase extends Configurator {
             fs.unlinkSync(dbName)
           }
         }
-        database = await SQLiteConnector.create(dbName)
+        database = await SQLiteConnector.create(schema, dbName)
       }
     }
-    await database.createTables(schema)
     await initDB(
       database,
       context.web3,

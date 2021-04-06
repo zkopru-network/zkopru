@@ -3,13 +3,15 @@ import { ZkAccount } from '@zkopru/account'
 import { DB } from '@zkopru/database'
 import { Grove, poseidonHasher, keccakHasher } from '@zkopru/tree'
 import { logger } from '@zkopru/utils'
+import AsyncLock from 'async-lock'
 import { L1Contract } from '../context/layer1'
 import { L2Chain } from '../context/layer2'
 import { BootstrapHelper } from './bootstrap'
-import { Synchronizer, NetworkStatus } from './synchronizer'
+import { Synchronizer } from './synchronizer'
 import { Tracker } from './tracker'
 import { BlockProcessor } from './block-processor'
 import { Watchdog } from './watchdog'
+import { Block } from '../block'
 
 export class ZkopruNode {
   running: boolean
@@ -34,6 +36,8 @@ export class ZkopruNode {
   watchdog?: Watchdog
 
   bootstrapHelper?: BootstrapHelper
+
+  canonicalLock = new AsyncLock()
 
   constructor({
     db,
@@ -85,14 +89,10 @@ export class ZkopruNode {
       })
       this.blockProcessor.on('processed', async proposal => {
         this.synchronizer.setLatestProcessed(proposal.proposalNum)
-        if (this.synchronizer.status === NetworkStatus.FULLY_SYNCED) {
-          await this.calcCanonicalBlockHeights()
-        }
+        await this.calcCanonicalBlockHeights()
       })
-      this.synchronizer.on('status', async status => {
-        if (status === NetworkStatus.FULLY_SYNCED) {
-          await this.calcCanonicalBlockHeights()
-        }
+      this.synchronizer.on('status', async () => {
+        await this.calcCanonicalBlockHeights()
       })
     } else {
       logger.info('already on syncing')
@@ -157,32 +157,35 @@ export class ZkopruNode {
 
   // idempotently calculate canonical numbers
   private async calcCanonicalBlockHeights() {
-    // find earliest block with no canonical num
-    const startBlock = await this.db.findMany('Proposal', {
-      where: {
-        canonicalNum: null,
-      },
-      orderBy: { proposalNum: 'asc' },
-      limit: 1,
+    await this.canonicalLock.acquire('canon', async () => {
+      // find earliest block with no canonical num
+      const startBlock = await this.db.findMany('Proposal', {
+        where: {
+          canonicalNum: null,
+          OR: [{ proposalData: { ne: null } }, { proposalNum: 0 }],
+        },
+        orderBy: { proposalNum: 'asc' },
+        limit: 1,
+      })
+      if (startBlock.length === 0) {
+        // have canonical numbers for all blocks
+        return
+      }
+      // The proposal to start at
+      const [{ proposalNum }] = startBlock
+      if (proposalNum === null) {
+        throw new Error('Proposal number is null')
+      }
+      const blockHeight = await this.db.count('Proposal', {})
+      const latestProcessed = this.synchronizer.latestProcessed || 0
+      for (
+        let x = proposalNum;
+        x <= Math.min(blockHeight, latestProcessed);
+        x += 1
+      ) {
+        await this.calcCanonicalBlockHeight(x)
+      }
     })
-    if (startBlock.length === 0) {
-      // have canonical numbers for all blocks
-      return
-    }
-    // The proposal to start at
-    const [{ proposalNum }] = startBlock
-    if (proposalNum === null) {
-      throw new Error('Proposal number is null')
-    }
-    const blockHeight = await this.db.count('Proposal', {})
-    const latestProcessed = this.synchronizer.latestProcessed || 0
-    for (
-      let x = proposalNum;
-      x < Math.min(blockHeight, latestProcessed);
-      x += 1
-    ) {
-      this.calcCanonicalBlockHeight(x)
-    }
   }
 
   private async calcCanonicalBlockHeight(proposalNum: number) {
@@ -199,15 +202,11 @@ export class ZkopruNode {
         where: { hash },
         update: { canonicalNum: 0 },
       })
-      // eslint-disable-next-line no-continue
       return
     }
-    const header = await this.db.findOne('Header', {
-      where: { hash },
-    })
-    if (!header) {
-      throw new Error(`Unable to find header for proposal ${proposal.hash}`)
-    }
+    if (!proposal.proposalData) return
+    const block = Block.fromTx(JSON.parse(proposal.proposalData))
+    const header = block.getHeaderSql()
     const parent = await this.db.findOne('Proposal', {
       where: {
         hash: header.parentBlock.toString(),
@@ -219,7 +218,6 @@ export class ZkopruNode {
     if (parent.canonicalNum === null) {
       throw new Error(`Expected canonicalNum to exist!`)
     }
-    // console.log(`canonical num: ${parent.canonicalNum+1}`)
     await this.db.update('Proposal', {
       where: { hash },
       update: { canonicalNum: (parent.canonicalNum as number) + 1 },

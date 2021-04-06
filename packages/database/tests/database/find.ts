@@ -25,6 +25,12 @@ export default function(this: { db: DB }) {
       })
       assert.equal(row.id, 'test9')
     }
+    {
+      const row = await this.db.findOne(table, {
+        where: { optionalField: 'nonexistent' },
+      })
+      assert.strictEqual(row, null)
+    }
   })
 
   test('should return null if not found', async () => {

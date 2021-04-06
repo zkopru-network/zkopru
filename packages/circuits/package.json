@@ -48,7 +48,7 @@
     "tar": "^6.0.2"
   },
   "devDependencies": {
-    "@zkopru/utils": "file:../utils",
+    "@zkopru/utils-docker": "file:../utils-docker",
     "ffjavascript": "0.2.22",
     "node-docker-api": "^1.1.22",
     "shelljs": "^0.8.4",

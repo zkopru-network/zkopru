@@ -10,8 +10,9 @@ import assert from 'assert'
 import fetch from 'node-fetch'
 import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
-import { readFromContainer, sleep, pullOrBuildAndGetContainer } from '~utils'
-import { DB, SQLiteConnector, schema } from '~database'
+import { sleep } from '~utils'
+import { readFromContainer, pullOrBuildAndGetContainer } from '~utils-docker'
+import { DB, SQLiteConnector, schema } from '~database-node'
 
 async function callMethod(
   _method:
@@ -68,8 +69,7 @@ describe('coordinator test to run testnet', () => {
   const coordinators = [] as Coordinator[]
   beforeAll(async () => {
     // logStream.addStream(process.stdout)
-    mockup = await SQLiteConnector.create(':memory:')
-    await mockup.createTables(schema)
+    mockup = await SQLiteConnector.create(schema, ':memory:')
     // It may take about few minutes. If you want to skip building image,
     // run `yarn pull:images` on the root directory
     container = await pullOrBuildAndGetContainer({
