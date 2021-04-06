@@ -80,6 +80,24 @@ export class L2Chain {
     })
     if (proposals.length === 0) return null
     const [proposal] = proposals as [Proposal & { block: Block | null }]
+    if (proposal.proposalNum === 0) {
+      // load the genesis block
+      const header = await this.db.findOne('Header', {
+        where: {
+          hash: proposal.hash,
+        },
+      })
+      return new Block({
+        hash: Bytes32.from(proposal.hash),
+        verified: proposal.verified === null ? undefined : proposal.verified,
+        header,
+        body: {
+          txs: [],
+          massDeposits: [],
+          massMigrations: [],
+        },
+      })
+    }
     if (typeof proposal.proposalData !== 'string') return null
     const tx = JSON.parse(proposal.proposalData)
     return Block.fromTx(tx, proposal.verified || false)
@@ -92,6 +110,24 @@ export class L2Chain {
       },
       include: { block: true },
     })
+    if (proposal && proposal.proposalNum === 0) {
+      // load the genesis block
+      const header = await this.db.findOne('Header', {
+        where: {
+          hash: proposal.hash,
+        },
+      })
+      return new Block({
+        hash: Bytes32.from(proposal.hash),
+        verified: proposal.verified === null ? undefined : proposal.verified,
+        header,
+        body: {
+          txs: [],
+          massDeposits: [],
+          massMigrations: [],
+        },
+      })
+    }
     if (!proposal || !proposal.proposalData) return null
     const tx = JSON.parse(proposal.proposalData)
     return Block.fromTx(tx, proposal.verified || false)
