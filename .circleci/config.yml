@@ -193,5 +193,5 @@ jobs:
             yarn images pull contracts-for-integration-test
       - run:
           name: Integration Tests
-          no_output_timeout: 30m
+          no_output_timeout: 45m
           command: yarn test --scope=@zkopru/integration-test
