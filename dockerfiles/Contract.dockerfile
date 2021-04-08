@@ -1,8 +1,8 @@
 FROM node:12-alpine
 RUN apk add --no-cache --virtual .gyp \
-        python \
-        make \
-        g++ \
+    python \
+    make \
+    g++ \
     && npm install -g truffle --unsafe-perm=true --allow-root \
     && apk del .gyp
 RUN apk add git
@@ -17,3 +17,4 @@ COPY ./truffle-config.js /proj/truffle-config.js
 EXPOSE 5000
 COPY ./keys /proj/keys
 CMD npx hardhat node --hostname 0.0.0.0 --port 5000
+# In integration test blockTime is 5 sec.
