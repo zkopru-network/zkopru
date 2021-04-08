@@ -1,36 +1,55 @@
-version: "3"
+version: '3'
 
 services:
   testnet:
     ports:
-      - "5000:5000"
+      - '5000:5000'
     build:
       context: ./packages/contracts/
       dockerfile: ../../dockerfiles/Contract.dockerfile
-    command: ganache-cli --db=/data -i 20200406 -p 5000 --gasLimit 12000000 --deterministic --host 0.0.0.0 --secure --blockTime 10
+    environment:
+      BLOCKTIME: 10000
+    command: >
+      sh -c "npx hardhat node --hostname 0.0.0.0 --port 5000 &
+      sleep 5 &&
+      truffle migrate --network testnet &&
+      echo 'Finished Zkopru contract deployment.' &&
+      echo "Done" | nc -w0 coordinator 5354 &&
+      echo "Done" | nc -w0 wallet 5354 &&
+      tail -f /dev/null"
   coordinator:
     build:
       context: ./
       dockerfile: ./dockerfiles/Cli.dockerfile
     ports:
-      - "1234:1234"
-      - "8888:8888"
+      - '1234:1234'
+      - '8888:8888'
+    links:
+      - 'testnet:testnet'
     depends_on:
       - 'testnet'
-      - 'postgres'
     environment:
+      TARGET_HOST: 'testnet'
       PORT: 1234
-      POSTGRES_URL: postgresql://postgres:helloworld@postgres:5432/zkopru
+    command: >
+      bash -c "nc -l -p 5354 &&
+      bash wait_deploy_contracts.sh &&
+      gotty -w --port 1234 node /proj/packages/cli/dist/apps/coordinator/cli.js --config /proj/packages/cli/coordinator.dev.json"
   wallet:
     build:
       context: ./
       dockerfile: ./dockerfiles/Cli.dockerfile
     ports:
-      - "4321:4321"
+      - '4321:4321'
+    links:
+      - 'testnet:testnet'
+      - 'coordinator:coordinator'
     depends_on:
       - 'testnet'
-      - 'postgres'
     environment:
+      TARGET_HOST: 'testnet'
       PORT: 4321
-      SKIP_MIGRATE: 1
-      POSTGRES_URL: postgresql://postgres:helloworld@postgres:5432/zkopru
+    command: >
+      bash -c "nc -l -p 5354  &&
+      bash wait_deploy_contracts.sh &&
+      gotty -w --port 4321 node /proj/packages/cli/dist/apps/wallet/cli.js --config /proj/packages/cli/wallet.dev.json"

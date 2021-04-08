@@ -11,7 +11,9 @@ services:
       sh -c "npx hardhat node --hostname 0.0.0.0 --port 5000 &
       sleep 5 &&
       truffle migrate --network testnet &&
-      echo 'Finished contract deployment.' &&
+      echo 'Finished Zkopru contract deployment.' &&
+      echo "Done" | nc -w0 coordinator 5354 &&
+      echo "Done" | nc -w0 wallet 5354 &&
       tail -f /dev/null"
   coordinator:
     build:
@@ -25,9 +27,9 @@ services:
     depends_on:
       - 'testnet'
     environment:
-      target_host: 'testnet'
+      TARGET_HOST: 'testnet'
     command: >
-      bash -c "sleep 10 &&
+      bash -c "nc -l -p 5354 &&
       bash wait_deploy_contracts.sh &&
       gotty -w --port 1234 node /proj/packages/cli/dist/apps/coordinator/cli.js --config /proj/packages/cli/coordinator.dev.json"
   wallet:
@@ -42,8 +44,8 @@ services:
     depends_on:
       - 'testnet'
     environment:
-        target_host: 'testnet'
+      TARGET_HOST: 'testnet'
     command: >
-      bash -c "sleep 10 &&
+      bash -c "nc -l -p 5354 &&
       bash wait_deploy_contracts.sh &&
       gotty -w --port 4321 node /proj/packages/cli/dist/apps/wallet/cli.js --config /proj/packages/cli/wallet.dev.json"
