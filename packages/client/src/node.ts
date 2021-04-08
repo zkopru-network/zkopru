@@ -1,5 +1,6 @@
 import { SomeDBConnector, SQLiteConnector } from '@zkopru/database/dist/node'
 import ZkopruNode from './zkopru-node'
+import ZkopruWallet from './zkopru-wallet'
 import RpcClient from './rpc-client'
 import { NodeConfig } from './types'
 
@@ -19,5 +20,5 @@ export default {
   Node: function ZkopruNodeDB(config: NodeConfig, connector?: SomeDBConnector) {
     return new ZkopruNode(config, connector || SQLiteConnector)
   },
-  // Wallet: () => {},
+  Wallet: ZkopruWallet,
 }

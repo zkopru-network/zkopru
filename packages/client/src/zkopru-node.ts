@@ -14,9 +14,9 @@ const DEFAULT = {
 export default class ZkopruNode {
   config: NodeConfig
 
-  private _db?: DB
+  _db?: DB
 
-  private node?: FullNode
+  node?: FullNode
 
   private connectorType: SomeDBConnector
 
@@ -29,6 +29,10 @@ export default class ZkopruNode {
     if (!this.config.websocket) {
       throw new Error('No websocket provided')
     }
+  }
+
+  get isRunning() {
+    return this.node?.isRunning()
   }
 
   // Accept database configuration here
