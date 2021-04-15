@@ -1,5 +1,6 @@
 import { HDWallet, ZkAccount } from '@zkopru/account'
 import { ZkWalletAccount, ZkWalletAccountConfig } from './zk-wallet-account'
+import { DB } from '@zkopru/database'
 
 export class ZkWallet extends ZkWalletAccount {
   private wallet: HDWallet
@@ -8,11 +9,16 @@ export class ZkWallet extends ZkWalletAccount {
 
   constructor(
     config: ZkWalletAccountConfig & {
+      db?: DB,
       accounts: ZkAccount[]
       wallet: HDWallet
     },
   ) {
     super(config)
+    if (config.db) {
+      // optionally override the superclass
+      this.db = config.db
+    }
     this.accounts = config.accounts || []
     this.wallet = config.wallet
     this.node.tracker.addAccounts(...this.accounts)
