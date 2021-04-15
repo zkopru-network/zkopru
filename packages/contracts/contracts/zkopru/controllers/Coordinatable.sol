@@ -157,7 +157,7 @@ contract Coordinatable is Storage {
         require(
             finalization.massMigrations.root() ==
                 finalization.header.migrationRoot,
-            "Submitted different deposit root"
+            "Submitted different migration root"
         );
         require(
             finalization.header.hash() == proposal.headerHash,
