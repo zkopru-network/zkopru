@@ -1,20 +1,32 @@
-// import { ZkWallet } from '@zkopru/zk-wizard'
-import { ZkAccount } from '@zkopru/account'
 import ZkopruNode from './zkopru-node'
+import { ZkWalletAccount } from '@zkopru/zk-wizard'
+
+// The ipfs path for the latest proving keys
+const DEFAULT_KEY_CID = '/ipfs/QmWdQnPVdbS61ERWJY76xfkbzrLDiQptE81LRTQUupSP7G'
 
 export default class ZkopruWallet {
   node: ZkopruNode
 
-  // wallet: ZkopruWallet
-  account: ZkAccount
+  wallet: ZkWalletAccount
 
-  constructor(node: ZkopruNode, privateKey: Buffer | string) {
+  constructor(
+    node: ZkopruNode,
+    privateKey: Buffer | string,
+    coordinator: string
+  ) {
     this.node = node
-    this.account = new ZkAccount(privateKey)
-    // this.wallet = new ZkopruWallet({
-    //   db: this.node._db,
-    //   node: node.node,
-    //   accounts: [],
-    // })
+    if (!this.node.node) {
+      throw new Error('ZkopruNode does not have a full node initialized')
+    }
+    this.wallet = new ZkWalletAccount({
+      privateKey,
+      node: this.node.node,
+      snarkKeyCid: DEFAULT_KEY_CID,
+      coordinator,
+      // TODO: pre-written list or retrieve from remote
+      erc20: [],
+      erc721: [],
+    })
   }
+
 }
