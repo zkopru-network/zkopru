@@ -15,7 +15,7 @@ import {
 } from '@zkopru/transaction'
 import { Fp, F } from '@zkopru/babyjubjub'
 import { Layer1, TransactionObject, Tx, TxUtil } from '@zkopru/contracts'
-import fetch from 'node-fetch'
+import fetch, { Response } from 'node-fetch'
 import { logger } from '@zkopru/utils'
 import { TransactionReceipt, Account } from 'web3-core'
 import { ZkWizard } from './zk-wizard'
@@ -98,20 +98,20 @@ export class ZkWalletAccount {
     this.erc721 = this.erc721.filter(addr => !addr.eq(Address.from(address)))
   }
 
-  async getSpendableAmount(): Promise<Sum> {
-    const notes: Utxo[] = await this.getSpendables()
+  async getSpendableAmount(account?: ZkAccount): Promise<Sum> {
+    const notes: Utxo[] = await this.getSpendables(account)
     const assets = Sum.from(notes)
     return assets
   }
 
-  async getLockedAmount(): Promise<Sum> {
-    const notes: Utxo[] = await this.getUtxos(this.account, UtxoStatus.SPENDING)
+  async getLockedAmount(account?: ZkAccount): Promise<Sum> {
+    const notes: Utxo[] = await this.getUtxos(account, UtxoStatus.SPENDING)
     const assets = Sum.from(notes)
     return assets
   }
 
-  async getSpendables(): Promise<Utxo[]> {
-    const utxos = await this.getUtxos(this.account, UtxoStatus.UNSPENT)
+  async getSpendables(account?: ZkAccount): Promise<Utxo[]> {
+    const utxos = await this.getUtxos(account, UtxoStatus.UNSPENT)
     return utxos
   }
 
@@ -257,7 +257,7 @@ export class ZkWalletAccount {
       logger.error('Account is not set')
       return false
     }
-    const balance = await this.fetchLayer1Assets()
+    const balance = await this.fetchLayer1Assets(this.account)
     if (
       Fp.strictFrom(balance.eth).lt(Fp.strictFrom(eth).add(Fp.strictFrom(fee)))
     ) {
@@ -283,7 +283,7 @@ export class ZkWalletAccount {
       logger.error('Account is not set')
       return false
     }
-    const balance = await this.fetchLayer1Assets()
+    const balance = await this.fetchLayer1Assets(this.account)
     if (!balance) {
       logger.error('Failed to fetch balance')
       return false
@@ -319,7 +319,7 @@ export class ZkWalletAccount {
       logger.error('Account is not set')
       return false
     }
-    const balance = await this.fetchLayer1Assets()
+    const balance = await this.fetchLayer1Assets(this.account)
     if (!balance) {
       logger.error('Failed to fetch balance')
       return false
@@ -457,6 +457,15 @@ export class ZkWalletAccount {
     }
     return false
   }
+
+  async fetchPrice(): Promise<string> {
+   const response = await fetch(`${this.coordinator}/price`)
+   if (response.ok) {
+     const { weiPerByte } = await response.json()
+     if (weiPerByte) return weiPerByte
+   }
+   throw Error(`${response}`)
+ }
 
   async sendLayer1Tx<T>({
     contract,
