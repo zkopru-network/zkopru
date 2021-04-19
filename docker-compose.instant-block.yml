@@ -6,14 +6,9 @@ services:
       - '5000:5000'
     build:
       context: ./packages/contracts/
-      dockerfile: ../../dockerfiles/Contract.dockerfile
+      dockerfile: ../../dockerfiles/Contract.fork.dockerfile
     command: >
-      sh -c "npx hardhat node --hostname 0.0.0.0 --port 5000 &
-      sleep 5 &&
-      truffle migrate --network testnet &&
-      echo 'Finished Zkopru contract deployment.' &&
-      echo "Done" | nc -w0 coordinator 5354 &&
-      echo "Done" | nc -w0 wallet 5354 &&
+      sh -c "npx hardhat node --port 5000 &
       tail -f /dev/null"
   coordinator:
     build:
@@ -29,8 +24,7 @@ services:
     environment:
       TARGET_HOST: 'testnet'
     command: >
-      bash -c "nc -l -p 5354 &&
-      bash wait_deploy_contracts.sh &&
+      bash -c "bash wait_deploy_contracts.sh &&
       gotty -w --port 1234 node /proj/packages/cli/dist/apps/coordinator/cli.js --config /proj/packages/cli/coordinator.dev.json"
   wallet:
     build:
@@ -46,6 +40,5 @@ services:
     environment:
       TARGET_HOST: 'testnet'
     command: >
-      bash -c "nc -l -p 5354 &&
-      bash wait_deploy_contracts.sh &&
+      bash -c "bash wait_deploy_contracts.sh &&
       gotty -w --port 4321 node /proj/packages/cli/dist/apps/wallet/cli.js --config /proj/packages/cli/wallet.dev.json"

@@ -4,15 +4,11 @@ services:
   testnet:
     build:
       context: ./packages/contracts/
-      dockerfile: ../../dockerfiles/Contract.dockerfile
+      dockerfile: ../../dockerfiles/Contract.fork.dockerfile
     ports:
       - '5000:5000'
     command: >
-      sh -c "npx hardhat node --hostname 0.0.0.0 --port 5000 &
-      sleep 5 &&
-      truffle migrate --network testnet &&
-      echo 'Finished Zkopru contract deployment.' &&
-      echo "Done" | nc -w0 coordinator 5354 &&
+      sh -c "npx hardhat node --port 5000 &
       tail -f /dev/null"
   coordinator:
     build:
