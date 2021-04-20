@@ -2,6 +2,7 @@
 pragma solidity =0.7.4;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { MerkleTreeLib } from "../libraries/MerkleTree.sol";
@@ -15,6 +16,7 @@ contract UserInteractable is Storage {
     uint256 public constant RANGE_LIMIT = SNARK_FIELD >> 32;
     using MerkleTreeLib for *;
     using SafeMath for uint256;
+    using SafeERC20 for IERC20;
 
     event Deposit(uint256 indexed queuedAt, uint256 note, uint256 fee);
 
@@ -179,17 +181,19 @@ contract UserInteractable is Storage {
         uint256[3] memory resultHashInputs = [spendingPubKey, salt, assetHash];
         uint256 note = Poseidon3.poseidon(resultHashInputs);
         // Receive token
-        if (token != address(0) && amount != 0) {
-            try
-                IERC20(token).transferFrom(msg.sender, address(this), amount)
-            {} catch {
-                revert("Transfer ERC20 failed");
-            }
-        } else if (token != address(0)) {
-            try
-                IERC721(token).transferFrom(msg.sender, address(this), nft)
-            {} catch {
-                revert("Transfer NFT failed");
+        if (token != address(0)) {
+            if (chain.registeredERC20s[token]) {
+                require(nft == 0, "ERC20 note cannot have NFT");
+                IERC20(token).safeTransferFrom(
+                    msg.sender,
+                    address(this),
+                    amount
+                );
+            } else if (chain.registeredERC721s[token]) {
+                require(amount == 0, "NFT note cannot have amount");
+                IERC721(token).transferFrom(msg.sender, address(this), nft);
+            } else {
+                revert("Not a registered token.");
             }
         }
         // Update the mass deposit
