@@ -5,7 +5,7 @@
 import Web3 from 'web3'
 import { WebsocketProvider } from 'web3-core'
 import { Container } from 'node-docker-api/lib/container'
-import { DB, SQLiteConnector, schema } from '@zkopru/database'
+import { DB, SQLiteConnector, schema } from '~database/node'
 import { ZkAccount } from '~account'
 import { sleep } from '~utils'
 import { readFromContainer, pullOrBuildAndGetContainer } from '~utils-docker'

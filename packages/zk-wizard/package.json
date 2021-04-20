@@ -9,6 +9,7 @@
   ],
   "_moduleAliases": {
     "~dataset": "../dataset/dist",
+    "~database": "../database/dist",
     "~zk-wizard": "dist"
   },
   "preferGlobal": true,

@@ -10,8 +10,7 @@
   "_moduleAliases": {
     "~account": "dist",
     "~utils": "../utils/dist",
-    "~database": "../database/dist",
-    "~database-node": "../database/dist/node.js"
+    "~database": "../database/dist"
   },
   "scripts": {
     "prebuild": "shx mkdir -p dist",

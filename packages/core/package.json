@@ -11,6 +11,7 @@
     "~core": "dist",
     "~account": "../account/dist",
     "~babyjubjub": "../babyjubjub/dist",
+    "~database": "../database/dist",
     "~dataset": "../dataset/dist",
     "~utils": "../utils/dist",
     "~utils-docker": "../utils-docker/dist"

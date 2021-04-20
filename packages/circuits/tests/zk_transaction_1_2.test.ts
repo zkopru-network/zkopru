@@ -7,7 +7,7 @@
 
 import { v4 } from 'uuid'
 import { Fp } from '~babyjubjub'
-import { DB, TreeSpecies, SQLiteConnector, schema } from '~database'
+import { DB, SQLiteConnector, TreeSpecies, schema } from '~database/node'
 import { genSNARK, SNARKResult } from '~zk-wizard/snark'
 import { ZkWizard } from '~zk-wizard'
 import {
