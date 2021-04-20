@@ -11,7 +11,6 @@
     "~core": "../core/dist",
     "~coordinator": "../coordinator/dist",
     "~database": "../database/dist",
-    "~database-node": "../database/dist/node.js",
     "~transaction": "../transaction/dist",
     "~utils": "../utils/dist",
     "~utils-docker": "../utils-docker/dist",
