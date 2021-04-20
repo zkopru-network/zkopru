@@ -12,9 +12,8 @@ RUN yarn install
 COPY ./contracts /proj/contracts
 COPY ./utils /proj/utils
 COPY ./migrations /proj/migrations
-COPY ./hardhat.config.js /proj/hardhat.config.js
+COPY ./hardhat.config-fork.js /proj/hardhat.config.js
 COPY ./truffle-config.js /proj/truffle-config.js
 EXPOSE 5000
 COPY ./keys /proj/keys
 CMD npx hardhat node --hostname 0.0.0.0 --port 5000
-# In integration test blockTime is 5 sec.

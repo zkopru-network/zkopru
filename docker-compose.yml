@@ -1,29 +1,28 @@
-version: "3"
+version: '3'
 
 services:
   testnet:
     build:
       context: ./packages/contracts/
-      dockerfile: ../../dockerfiles/Contract.dockerfile
+      dockerfile: ../../dockerfiles/Contract.fork.dockerfile
     ports:
-      - "5000:5000"
-    command: ganache-cli --db=/data -i 20200406 -p 5000 --deterministic --host 0.0.0.0
+      - '5000:5000'
+    command: >
+      sh -c "npx hardhat node --port 5000 &
+      tail -f /dev/null"
   coordinator:
     build:
       context: ./
       dockerfile: ./dockerfiles/Coordinator.dockerfile
     ports:
-      - "8888:8888"
+      - '8888:8888'
     links:
       - 'testnet:testnet'
     depends_on:
       - 'testnet'
-      - 'postgres'
-    command: 'node /proj/packages/coordinator/dist/cli.js --ws ws://testnet:5000 --config /proj/packages/coordinator/coordinator.json'
-  postgres:
-    image: postgres
-    restart: always
     environment:
-      POSTGRES_PASSWORD: helloworld
-    ports:
-      - "5432:5432"
+      TARGET_HOST: 'testnet'
+    command: >
+      bash -c "nc -l -p 5354 &&
+      bash wait_deploy_contracts.sh &&
+      node /proj/packages/coordinator/dist/cli.js --ws ws://testnet:5000 --config /proj/packages/coordinator/coordinator.json"
