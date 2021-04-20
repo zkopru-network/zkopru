@@ -92,11 +92,11 @@ contract Challengeable is Storage {
         Proposer storage proposer = Storage.chain.proposers[proposerAddr];
         // Reward
         uint256 challengeReward = (proposer.stake * 2) / 3;
-        payable(challenger).transfer(challengeReward);
         // Forfeit
         proposer.stake = 0;
         proposer.reward = 0;
         // Delete proposer
         delete Storage.chain.proposers[proposerAddr];
+        payable(challenger).transfer(challengeReward);
     }
 }
