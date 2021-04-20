@@ -17,6 +17,7 @@ export const CODE = {
   M7: 'Duplicated ERC721 migration destinations exist.',
   M8: 'MassMigration is destroying the non-fungibility of a token.',
   M9: 'MassMigration is not including an NFT.',
+  M10: 'MassMigration is missed.',
   // Nullifier tree challenge
   N1: 'Nullifier root is different.',
   // SNARK challenge

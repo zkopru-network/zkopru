@@ -126,4 +126,18 @@ export const IMigrationValidatorABI = [
     stateMutability: 'pure',
     type: 'function',
   },
+  {
+    inputs: [
+      { internalType: 'bytes', name: '', type: 'bytes' },
+      { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
+      { internalType: 'uint256', name: 'outflowIndex', type: 'uint256' },
+    ],
+    name: 'validateMissingDestination',
+    outputs: [
+      { internalType: 'bool', name: 'slash', type: 'bool' },
+      { internalType: 'string', name: 'reason', type: 'string' },
+    ],
+    stateMutability: 'pure',
+    type: 'function',
+  },
 ]

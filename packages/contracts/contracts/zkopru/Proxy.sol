@@ -98,6 +98,7 @@ contract Proxy is Storage {
         _connect(challengeable, IMigrationValidator(0).validateDuplicatedERC721Migration.selector);
         _connect(challengeable, IMigrationValidator(0).validateNonFungibility.selector);
         _connect(challengeable, IMigrationValidator(0).validateNftExistence.selector);
+        _connect(challengeable, IMigrationValidator(0).validateMissingDestination.selector);
         _connect(challengeable, IUtxoTreeValidator(0).validateUTXOIndex.selector);
         _connect(challengeable, IUtxoTreeValidator(0).validateUTXORoot.selector);
         _connect(challengeable, IWithdrawalTreeValidator(0).validateWithdrawalIndex.selector);
@@ -123,6 +124,7 @@ contract Proxy is Storage {
         _connectValidator(migrationValidator, IMigrationValidator(0).validateDuplicatedERC721Migration.selector);
         _connectValidator(migrationValidator, IMigrationValidator(0).validateNonFungibility.selector);
         _connectValidator(migrationValidator, IMigrationValidator(0).validateNftExistence.selector);
+        _connectValidator(migrationValidator, IMigrationValidator(0).validateMissingDestination.selector);
         _connectValidator(utxoTreeValidator, IUtxoTreeValidator(0).validateUTXOIndex.selector);
         _connectValidator(utxoTreeValidator, IUtxoTreeValidator(0).validateUTXORoot.selector);
         _connectValidator(withdrawalTreeValidator, IWithdrawalTreeValidator(0).validateWithdrawalIndex.selector);

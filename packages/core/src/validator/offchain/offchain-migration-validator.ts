@@ -1,4 +1,4 @@
-import { ZkOutflow } from '@zkopru/transaction'
+import { OutflowType, ZkOutflow } from '@zkopru/transaction'
 import assert from 'assert'
 import BN from 'bn.js'
 /* eslint-disable class-methods-use-this */
@@ -251,6 +251,34 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
       // NFT cannot exists more than 1
       slashable: nftsToMigrate.length !== migrationOutflowArr.length,
       reason: CODE.M9,
+    }
+    return slash
+  }
+
+  async validateMissingDestination(
+    data: BlockData,
+    txIndex: Uint256,
+    outflowIndex: Uint256,
+  ): Promise<Validation> {
+    const block = blockDataToBlock(data)
+    // get target output
+    const transaction = block.body.txs[txIndex.toBN().toNumber()]
+    const outflow = transaction.outflow[outflowIndex.toBN().toNumber()]
+    let slashable: boolean
+    if (outflow.outflowType.eqn(OutflowType.MIGRATION)) {
+      // Find mass migration for the given destination
+      const dest = outflow.data?.to
+      if (!dest) throw Error('Destination does not exist.')
+      const migration = block.body.massMigrations.find(mm => {
+        return dest.eq(mm.destination.toBN())
+      })
+      slashable = migration === undefined
+    } else {
+      slashable = false
+    }
+    const slash: Validation = {
+      slashable,
+      reason: CODE.M10,
     }
     return slash
   }
