@@ -35,6 +35,8 @@ contract Migratable is Storage {
         bytes32 migrationId =
             keccak256(abi.encodePacked(proposalChecksum, migration.hash()));
         require(chain.migrations[migrationId], "MassMigration does not exist");
+        // Delete mass migration
+        delete chain.migrations[migrationId];
         try
             Migratable(to).acceptMigration(
                 migrationId,
@@ -62,8 +64,6 @@ contract Migratable is Storage {
                     );
                 }
             }
-            // Delete mass migration
-            delete chain.migrations[migrationId];
         } catch {
             revert("Dest contract denied migration");
         }
