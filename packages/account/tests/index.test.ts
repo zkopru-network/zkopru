@@ -1,7 +1,7 @@
 /* eslint-disable jest/no-hooks */
 import Web3 from 'web3'
 import { HDWallet, ZkAccount } from '~account'
-import { DB, SQLiteConnector, schema } from '~database-node'
+import { DB, SQLiteConnector, schema } from '~database/node'
 
 describe('unit test', () => {
   let mockup: DB

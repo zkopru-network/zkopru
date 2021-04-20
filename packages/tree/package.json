@@ -10,7 +10,6 @@
   "_moduleAliases": {
     "~babyjubjub": "../babyjubjub/dist",
     "~database": "../database/dist",
-    "~database-node": "../database/dist/node.js",
     "~dataset": "../dataset/dist",
     "~tree": "dist"
   },
