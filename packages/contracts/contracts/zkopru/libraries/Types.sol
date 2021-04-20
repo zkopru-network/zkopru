@@ -378,7 +378,7 @@ library Types {
         for (uint256 i = 0; i < nodes.length; i++) {
             if (hasEmptyLeaf && i == nodes.length - 1) {
                 nodes[i] = keccak256(
-                    abi.encodePacked(leaves[i * 2], bytes32(0))
+                    abi.encodePacked(leaves[i * 2], leaves[i * 2])
                 );
             } else {
                 nodes[i] = keccak256(
