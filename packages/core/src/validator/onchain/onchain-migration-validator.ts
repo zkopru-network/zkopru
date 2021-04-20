@@ -132,4 +132,18 @@ export class OnchainMigrationValidator extends OnchainValidatorContext
     const result = await this.isSlashable(tx)
     return result
   }
+
+  async validateMissingDestination(
+    block: BlockData,
+    txIndex: Uint256,
+    outflowIndex: Uint256,
+  ): Promise<OnchainValidation> {
+    const tx = this.layer1.validators.migration.methods.validateMissingDestination(
+      blockDataToHexString(block),
+      txIndex.toString(),
+      outflowIndex.toString(),
+    )
+    const result = await this.isSlashable(tx)
+    return result
+  }
 }

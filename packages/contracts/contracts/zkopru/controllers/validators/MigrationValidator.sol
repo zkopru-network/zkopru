@@ -315,4 +315,31 @@ contract MigrationValidator is Storage, IMigrationValidator {
         // code M9: MassMigration is not including an NFT
         return (shouldMigrateNft != nftExistsInMigrationLeaves, "M9");
     }
+
+    function validateMissingDestination(
+        bytes calldata,
+        uint256 txIndex,
+        uint256 outflowIndex
+    ) external pure override returns (bool slash, string memory reason) {
+        Block memory _block = Deserializer.blockFromCalldataAt(0);
+        require(txIndex < _block.body.txs.length, "out of index");
+        Transaction memory transaction = _block.body.txs[txIndex];
+        Outflow memory outflow = transaction.outflow[outflowIndex];
+        require(
+            outflow.outflowType == uint8(OutflowType.Migration),
+            "Not a migration output"
+        );
+        bool massMigrationExist;
+        for (uint256 i = 0; i < _block.body.massMigrations.length; i++) {
+            if (
+                _block.body.massMigrations[i].destination ==
+                outflow.publicData.to
+            ) {
+                massMigrationExist = true;
+                break;
+            }
+        }
+        // code M10: MassMigration for the given migration output's destination does not exist.
+        return (!massMigrationExist, "M10");
+    }
 }
