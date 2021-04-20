@@ -103,7 +103,7 @@ export function root(hashes: Bytes32[]): Bytes32 {
   for (let i = 0; i < numOfParentNodes; i += 1) {
     if (hasEmptyLeaf && i === numOfParentNodes - 1) {
       parents[i] = Bytes32.from(
-        soliditySha3Raw(hashes[i * 2].toString(), zeroBytes.toString()),
+        soliditySha3Raw(hashes[i * 2].toString(), hashes[i * 2].toString()),
       )
     } else {
       parents[i] = Bytes32.from(
