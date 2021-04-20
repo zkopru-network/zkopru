@@ -79,6 +79,11 @@ export interface MigrationValidator {
     erc721Idx: Uint256,
     tokenId: Uint256,
   ) => Promise<Validation>
+  validateMissingDestination: (
+    block: BlockData,
+    txIndex: Uint256,
+    outflowIndex: Uint256,
+  ) => Promise<Validation>
 }
 
 export interface UtxoTreeValidator {

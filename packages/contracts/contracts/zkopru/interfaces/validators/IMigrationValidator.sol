@@ -56,4 +56,10 @@ interface IMigrationValidator {
         uint256 erc721Index,
         uint256 tokenId
     ) external pure returns (bool slash, string memory reason);
+
+    function validateMissingDestination(
+        bytes calldata,
+        uint256 txIndex,
+        uint256 outflowIndex
+    ) external pure returns (bool slash, string memory reason);
 }

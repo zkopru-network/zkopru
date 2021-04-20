@@ -69,6 +69,7 @@ export abstract class ValidatorBase {
     const validateDuplicatedERC721MigrationCalls: FnCall[] = []
     const validateNonFungibilityCalls: FnCall[] = []
     const validateNftExistenceCalls: FnCall[] = []
+    const validateMissingDestinationCalls: FnCall[] = []
     for (let i = 0; i < block.body.massMigrations.length; i += 1) {
       for (let j = 0; j < block.body.massMigrations.length; j += 1) {
         validateDuplicatedDestinationCalls.push(
@@ -160,6 +161,18 @@ export abstract class ValidatorBase {
         }
       }
     }
+    for (let i = 0; i < block.body.txs.length; i += 1) {
+      for (let j = 0; j < block.body.txs[i].outflow.length; j += 1) {
+        validateMissingDestinationCalls.push(
+          toFnCall(
+            'validateMissingDestination',
+            block,
+            Uint256.from(i.toString()),
+            Uint256.from(j.toString()),
+          ),
+        )
+      }
+    }
     return {
       onchainValidator,
       offchainValidator,
@@ -173,6 +186,7 @@ export abstract class ValidatorBase {
         ...validateDuplicatedERC721MigrationCalls,
         ...validateNonFungibilityCalls,
         ...validateNftExistenceCalls,
+        ...validateMissingDestinationCalls,
       ],
     }
   }

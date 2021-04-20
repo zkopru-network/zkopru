@@ -128,6 +128,17 @@ export interface IMigrationValidator extends BaseContract {
       0: boolean
       1: string
     }>
+
+    validateMissingDestination(
+      arg0: string | number[],
+      txIndex: number | string | BN,
+      outflowIndex: number | string | BN,
+    ): NonPayableTransactionObject<{
+      slash: boolean
+      reason: string
+      0: boolean
+      1: string
+    }>
   }
   events: {
     allEvents(options?: EventOptions, cb?: Callback<EventLog>): EventEmitter
