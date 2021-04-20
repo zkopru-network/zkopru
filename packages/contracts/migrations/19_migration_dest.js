@@ -101,20 +101,20 @@ module.exports = function migration(deployer, network, accounts) {
         await dest.registerVk(...vkToInput(nIn, nOut, vk));
       }
     }
-    // await wizard.allowMigrants(...)
+    await dest.allowMigrants([source.address]);
 
     const coordinatable = await Coordinatable.at(dest.address);
     // register erc20
     await coordinatable.registerERC20(instances.erc20.address);
     // register erc721
     await coordinatable.registerERC721(instances.erc721.address);
-    // Complete setup
-    await dest.completeSetup();
     if (network === "testnet") {
       // Register as coordinator
       const configurable = await Configurable.at(dest.address);
       await configurable.setChallengePeriod(30);
       await instances.burnAuction.register({ value: "32000000000000000000" });
     }
+    // Complete setup
+    await dest.completeSetup();
   });
 };
