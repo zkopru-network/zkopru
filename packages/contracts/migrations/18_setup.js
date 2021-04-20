@@ -121,13 +121,13 @@ module.exports = function migration(deployer, network, accounts) {
     await coordinatable.registerERC20(instances.erc20.address);
     // register erc721
     await coordinatable.registerERC721(instances.erc721.address);
-    // Complete setup
-    await zkopru.completeSetup();
     if (network === "testnet") {
       // Register as coordinator
       const configurable = await Configurable.at(zkopru.address);
       await configurable.setChallengePeriod(30);
       await instances.burnAuction.register({ value: "32000000000000000000" });
     }
+    // Complete setup
+    await zkopru.completeSetup();
   });
 };

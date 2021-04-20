@@ -133,6 +133,7 @@ contract Zkopru is Proxy, Reader, ISetupWizard {
      * @dev If you once execute this, every configuration freezes and does not change forever.
      */
     function completeSetup() public override onlyOwner {
+        renounceOwnership();
         require(Storage.chain.latest == bytes32(0), "Already initialized");
         uint256[] memory poseidonPreHashes = Hash.poseidonPrehashedZeroes();
         uint256 utxoRoot = poseidonPreHashes[poseidonPreHashes.length - 1];
