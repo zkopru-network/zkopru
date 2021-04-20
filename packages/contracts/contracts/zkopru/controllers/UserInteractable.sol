@@ -124,6 +124,9 @@ contract UserInteractable is Storage {
             _verifySignature(currentOwner, payInAdvanceMsg, signature),
             "Invalid owner signature"
         );
+        // transfer ownership
+        Storage.chain.newWithdrawalOwner[withdrawalHash] = prepayer;
+        // transfer assets
         uint256 ethToWithdraw = eth.sub(prepayFeeInEth);
         uint256 tokenToWithdraw = amount.sub(prepayFeeInToken);
         require(msg.value == eth, "not enough ether");
@@ -135,8 +138,6 @@ contract UserInteractable is Storage {
         }
         // prepay ether
         _sendEth(currentOwner, ethToWithdraw);
-        // transfer ownership
-        Storage.chain.newWithdrawalOwner[withdrawalHash] = prepayer;
     }
 
     function _deposit(

@@ -55,17 +55,17 @@ contract Coordinatable is Storage {
      */
     function deregister() public {
         address payable proposerAddr = msg.sender;
-        Proposer storage proposer = Storage.chain.proposers[proposerAddr];
+        Proposer memory proposer = Storage.chain.proposers[proposerAddr];
         require(
             proposer.exitAllowance <= block.number,
             "Still in the challenge period"
         );
+        // Delete proposer
+        delete Storage.chain.proposers[proposerAddr];
         // Withdraw stake
         proposerAddr.transfer(proposer.stake);
         // Withdraw reward
         payable(proposerAddr).transfer(proposer.reward);
-        // Delete proposer
-        delete Storage.chain.proposers[proposerAddr];
     }
 
     /**
