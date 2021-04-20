@@ -3,6 +3,7 @@ pragma solidity =0.7.4;
 
 import { Storage } from "../storage/Storage.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import { IERC165 } from "@openzeppelin/contracts/introspection/IERC165.sol";
 import { Hash } from "../libraries/Hash.sol";
 import {
@@ -23,6 +24,7 @@ import { Deserializer } from "../libraries/Deserializer.sol";
 
 contract Coordinatable is Storage {
     using Types for *;
+    using SafeERC20 for IERC20;
 
     event NewProposal(uint256 proposalNum, bytes32 blockHash);
     event Finalized(bytes32 blockHash);
@@ -253,53 +255,14 @@ contract Coordinatable is Storage {
             !Storage.chain.registeredERC20s[tokenAddr],
             "Already registered"
         );
+        require(
+            !Storage.chain.registeredERC721s[tokenAddr],
+            "Registered as ERC721"
+        );
         // Make sure that this token is ERC20
-        try IERC20(tokenAddr).transfer(address(this), 0) returns (bool result) {
-            require(result, "Failed to send dummy tx");
-        } catch Error(string memory reason) {
-            revert(reason);
-        } catch (
-            bytes memory /*reason*/
-        ) {
-            // pass: it means that this address is not ERC721
-            revert("does not support transfer()");
-        }
-        try
-            IERC20(tokenAddr).transferFrom(address(this), address(this), 0)
-        returns (bool result) {
-            require(result, "Failed to send dummy tx");
-        } catch Error(string memory reason) {
-            revert(reason);
-        } catch (
-            bytes memory /*reason*/
-        ) {
-            // pass: it means that this address is not ERC721
-            revert("does not support transfer()");
-        }
-        try IERC20(tokenAddr).balanceOf(address(this)) returns (uint256) {
-            // success
-        } catch Error(string memory reason) {
-            revert(reason);
-        } catch (
-            bytes memory /*reason*/
-        ) {
-            // pass: it means that this address is not ERC721
-            revert("does not support transfer()");
-        }
-        // Make sure that this token is not an ERC721
-        try IERC165(tokenAddr).supportsInterface(_INTERFACE_ID_ERC721) returns (
-            bool erc721
-        ) {
-            require(!erc721, "This address seems an ERC721 contract");
-        } catch Error(
-            string memory /*reason*/
-        ) {
-            // success
-        } catch (
-            bytes memory /*reason*/
-        ) {
-            // success
-        }
+        IERC20(tokenAddr).safeTransfer(address(this), 0);
+        IERC20(tokenAddr).safeTransferFrom(address(this), address(this), 0);
+        IERC20(tokenAddr).balanceOf(address(this));
         Storage.chain.registeredERC20s[tokenAddr] = true;
         emit NewErc20(tokenAddr);
     }
@@ -314,15 +277,17 @@ contract Coordinatable is Storage {
             !Storage.chain.registeredERC721s[tokenAddr],
             "Already registered"
         );
+        require(
+            !Storage.chain.registeredERC20s[tokenAddr],
+            "Registered as ERC20"
+        );
         // Make sure that this token is an ERC721
         try IERC165(tokenAddr).supportsInterface(_INTERFACE_ID_ERC721) returns (
             bool erc721
         ) {
             require(erc721, "This address is not an ERC721 contract");
-        } catch Error(string memory reason) {
-            revert(reason);
-        } catch (bytes memory reason) {
-            revert(string(reason));
+        } catch {
+            revert("This address is not an ERC721 contract");
         }
         Storage.chain.registeredERC721s[tokenAddr] = true;
         emit NewErc721(tokenAddr);
