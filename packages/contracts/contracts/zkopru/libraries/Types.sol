@@ -320,7 +320,7 @@ library Types {
                 massMigration.erc20[i].amount
             );
         }
-        for (uint256 i = 0; i < massMigration.erc20.length; i++) {
+        for (uint256 i = 0; i < massMigration.erc721.length; i++) {
             packed = abi.encodePacked(
                 packed,
                 massMigration.erc721[i].addr,
