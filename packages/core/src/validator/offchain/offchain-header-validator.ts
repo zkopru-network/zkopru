@@ -48,9 +48,6 @@ export class OffchainHeaderValidator extends OffchainValidatorContext
     for (const massDeposit of block.body.massDeposits) {
       fee = fee.add(massDeposit.fee.toBN())
     }
-    for (const massMigration of block.body.massMigrations) {
-      fee = fee.add(massMigration.migratingLeaves.fee.toBN())
-    }
     for (const tx of block.body.txs) {
       fee = fee.add(tx.fee)
     }

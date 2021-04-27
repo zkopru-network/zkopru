@@ -90,9 +90,9 @@ export interface MigrationValidator extends BaseContract {
     /**
      * @param  // blockData Serialized block data
      * @param massMigrationIdx1 mass migration index in the block body
-     * @param massMigrationIdx2 mass migration index in the block body that has same destination with the first mass migration
+     * @param massMigrationIdx2 mass migration index in the block body that has same destination and token address with the first mass migration
      */
-    validateDuplicatedDestination(
+    validateDuplicatedMigrations(
       arg0: string | number[],
       massMigrationIdx1: number | string | BN,
       massMigrationIdx2: number | string | BN,
@@ -107,7 +107,21 @@ export interface MigrationValidator extends BaseContract {
      * @param  // blockData Serialized block data
      * @param migrationIndex Index of the mass migration to challenge
      */
-    validateTotalEth(
+    validateEthMigration(
+      arg0: string | number[],
+      migrationIndex: number | string | BN,
+    ): NonPayableTransactionObject<{
+      slash: boolean
+      reason: string
+      0: boolean
+      1: string
+    }>
+
+    /**
+     * @param  // blockData Serialized block data
+     * @param migrationIndex Index of the mass migration to challenge
+     */
+    validateERC20Migration(
       arg0: string | number[],
       migrationIndex: number | string | BN,
     ): NonPayableTransactionObject<{
@@ -145,11 +159,9 @@ export interface MigrationValidator extends BaseContract {
       1: string
     }>
 
-    validateDuplicatedERC20Migration(
+    validateTokenRegistration(
       arg0: string | number[],
       migrationIndex: number | string | BN,
-      erc20MigrationIdx1: number | string | BN,
-      erc20MigrationIdx2: number | string | BN,
     ): NonPayableTransactionObject<{
       slash: boolean
       reason: string
@@ -157,54 +169,7 @@ export interface MigrationValidator extends BaseContract {
       1: string
     }>
 
-    validateERC20Amount(
-      arg0: string | number[],
-      migrationIndex: number | string | BN,
-      erc20Index: number | string | BN,
-    ): NonPayableTransactionObject<{
-      slash: boolean
-      reason: string
-      0: boolean
-      1: string
-    }>
-
-    validateDuplicatedERC721Migration(
-      arg0: string | number[],
-      migrationIndex: number | string | BN,
-      erc721MigrationIdx1: number | string | BN,
-      erc721MigrationIdx2: number | string | BN,
-    ): NonPayableTransactionObject<{
-      slash: boolean
-      reason: string
-      0: boolean
-      1: string
-    }>
-
-    validateNonFungibility(
-      arg0: string | number[],
-      migrationIndex: number | string | BN,
-      erc721Index: number | string | BN,
-      tokenId: number | string | BN,
-    ): NonPayableTransactionObject<{
-      slash: boolean
-      reason: string
-      0: boolean
-      1: string
-    }>
-
-    validateNftExistence(
-      arg0: string | number[],
-      migrationIndex: number | string | BN,
-      erc721Index: number | string | BN,
-      tokenId: number | string | BN,
-    ): NonPayableTransactionObject<{
-      slash: boolean
-      reason: string
-      0: boolean
-      1: string
-    }>
-
-    validateMissingDestination(
+    validateMissedMassMigration(
       arg0: string | number[],
       txIndex: number | string | BN,
       outflowIndex: number | string | BN,

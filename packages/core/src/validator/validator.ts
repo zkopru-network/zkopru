@@ -60,29 +60,29 @@ export abstract class ValidatorBase {
   ): Promise<ValidateFnCalls> {
     const onchainValidator = this.onchain.migration
     const offchainValidator = this.offchain.migration
-    const validateDuplicatedDestinationCalls: FnCall[] = []
-    const validateTotalEthCalls: FnCall[] = []
+    const validateDuplicatedMigrationsCalls: FnCall[] = []
+    const validateEthMigrationCalls: FnCall[] = []
+    const validateERC20MigrationCalls: FnCall[] = []
     const validateMergedLeavesCalls: FnCall[] = []
     const validateMigrationFeeCalls: FnCall[] = []
-    const validateDuplicatedERC20MigrationCalls: FnCall[] = []
-    const validateERC20AmountCalls: FnCall[] = []
-    const validateDuplicatedERC721MigrationCalls: FnCall[] = []
-    const validateNonFungibilityCalls: FnCall[] = []
-    const validateNftExistenceCalls: FnCall[] = []
-    const validateMissingDestinationCalls: FnCall[] = []
+    const validateTokenRegistrationCalls: FnCall[] = []
+    const validateMissedMassMigrationCalls: FnCall[] = []
     for (let i = 0; i < block.body.massMigrations.length; i += 1) {
       for (let j = 0; j < block.body.massMigrations.length; j += 1) {
-        validateDuplicatedDestinationCalls.push(
+        validateDuplicatedMigrationsCalls.push(
           toFnCall(
-            'validateDuplicatedDestination',
+            'validateDuplicatedMigrations',
             block,
             Uint256.from(i.toString()),
             Uint256.from(j.toString()),
           ),
         )
       }
-      validateTotalEthCalls.push(
-        toFnCall('validateTotalEth', block, Uint256.from(i.toString())),
+      validateEthMigrationCalls.push(
+        toFnCall('validateEthMigration', block, Uint256.from(i.toString())),
+      )
+      validateERC20MigrationCalls.push(
+        toFnCall('validateERC20Migration', block, Uint256.from(i.toString())),
       )
       validateMergedLeavesCalls.push(
         toFnCall('validateMergedLeaves', block, Uint256.from(i.toString())),
@@ -94,78 +94,19 @@ export abstract class ValidatorBase {
           Uint256.from(i.toString()),
         ),
       )
-      for (let j = 0; j < block.body.massMigrations[i].erc20.length; j += 1) {
-        for (let k = 0; k < block.body.massMigrations[i].erc20.length; k += 1) {
-          validateDuplicatedERC20MigrationCalls.push(
-            toFnCall(
-              'validateDuplicatedERC20Migration',
-              block,
-              Uint256.from(i.toString()),
-              Uint256.from(j.toString()),
-              Uint256.from(k.toString()),
-            ),
-          )
-        }
-        validateERC20AmountCalls.push(
-          toFnCall(
-            'validateERC20Amount',
-            block,
-            Uint256.from(i.toString()),
-            Uint256.from(j.toString()),
-          ),
-        )
-      }
-      for (let j = 0; j < block.body.massMigrations[i].erc721.length; j += 1) {
-        for (
-          let k = 0;
-          k < block.body.massMigrations[i].erc721.length;
-          k += 1
-        ) {
-          validateDuplicatedERC721MigrationCalls.push(
-            toFnCall(
-              'validateDuplicatedERC721Migration',
-              block,
-              Uint256.from(i.toString()),
-              Uint256.from(j.toString()),
-              Uint256.from(k.toString()),
-            ),
-          )
-        }
-        for (
-          let k = 0;
-          k < block.body.massMigrations[i].erc721[j].nfts.length;
-          k += 1
-        ) {
-          validateNonFungibilityCalls.push(
-            toFnCall(
-              'validateNonFungibility',
-              block,
-              Uint256.from(i.toString()),
-              Uint256.from(j.toString()),
-              Uint256.from(
-                block.body.massMigrations[i].erc721[j].nfts[k].toString(),
-              ),
-            ),
-          )
-          validateNftExistenceCalls.push(
-            toFnCall(
-              'validateNftExistence',
-              block,
-              Uint256.from(i.toString()),
-              Uint256.from(j.toString()),
-              Uint256.from(
-                block.body.massMigrations[i].erc721[j].nfts[k].toString(),
-              ),
-            ),
-          )
-        }
-      }
+      validateTokenRegistrationCalls.push(
+        toFnCall(
+          'validateTokenRegistration',
+          block,
+          Uint256.from(i.toString()),
+        ),
+      )
     }
     for (let i = 0; i < block.body.txs.length; i += 1) {
       for (let j = 0; j < block.body.txs[i].outflow.length; j += 1) {
-        validateMissingDestinationCalls.push(
+        validateMissedMassMigrationCalls.push(
           toFnCall(
-            'validateMissingDestination',
+            'validateMissedMassMigration',
             block,
             Uint256.from(i.toString()),
             Uint256.from(j.toString()),
@@ -177,16 +118,13 @@ export abstract class ValidatorBase {
       onchainValidator,
       offchainValidator,
       fnCalls: [
-        ...validateDuplicatedDestinationCalls,
-        ...validateTotalEthCalls,
+        ...validateDuplicatedMigrationsCalls,
+        ...validateEthMigrationCalls,
+        ...validateERC20MigrationCalls,
         ...validateMergedLeavesCalls,
         ...validateMigrationFeeCalls,
-        ...validateDuplicatedERC20MigrationCalls,
-        ...validateERC20AmountCalls,
-        ...validateDuplicatedERC721MigrationCalls,
-        ...validateNonFungibilityCalls,
-        ...validateNftExistenceCalls,
-        ...validateMissingDestinationCalls,
+        ...validateTokenRegistrationCalls,
+        ...validateMissedMassMigrationCalls,
       ],
     }
   }

@@ -8,8 +8,6 @@ import {
     Outflow,
     MassDeposit,
     MassMigration,
-    ERC20Migration,
-    ERC721Migration,
     OutflowType,
     Types
 } from "../../libraries/Types.sol";
@@ -20,14 +18,15 @@ import {
 
 contract MigrationValidator is Storage, IMigrationValidator {
     using Types for Outflow;
+    using Types for MassMigration;
 
     /**
      * @param // blockData Serialized block data
      * @param massMigrationIdx1 mass migration index in the block body
-     * @param massMigrationIdx2 mass migration index in the block body that has same destination
+     * @param massMigrationIdx2 mass migration index in the block body that has same destination and token address
             with the first mass migration
      */
-    function validateDuplicatedDestination(
+    function validateDuplicatedMigrations(
         bytes calldata,
         uint256 massMigrationIdx1,
         uint256 massMigrationIdx2
@@ -43,15 +42,15 @@ contract MigrationValidator is Storage, IMigrationValidator {
         );
         MassMigration memory m1 = _block.body.massMigrations[massMigrationIdx1];
         MassMigration memory m2 = _block.body.massMigrations[massMigrationIdx2];
-        // code M1: Duplicated MassMigration destinations exist
-        return (m1.destination == m2.destination, "M1");
+        // code M1: Duplicated MassMigration ids exist
+        return (m1.getMigrationId() == m2.getMigrationId(), "M1");
     }
 
     /**
      * @param // blockData Serialized block data
      * @param migrationIndex Index of the mass migration to challenge
      */
-    function validateTotalEth(bytes calldata, uint256 migrationIndex)
+    function validateEthMigration(bytes calldata, uint256 migrationIndex)
         external
         pure
         override
@@ -64,21 +63,53 @@ contract MigrationValidator is Storage, IMigrationValidator {
         );
         MassMigration memory migration =
             _block.body.massMigrations[migrationIndex];
-        uint256 totalETH;
+        bytes32 migrationId = migration.getMigrationId();
+
+        uint256 eth;
         for (uint256 i = 0; i < _block.body.txs.length; i++) {
             Transaction memory transaction = _block.body.txs[i];
             for (uint256 j = 0; j < transaction.outflow.length; j++) {
                 Outflow memory outflow = transaction.outflow[j];
-                if (
-                    outflow.outflowType == uint8(OutflowType.Migration) &&
-                    outflow.publicData.to == migration.destination
-                ) {
-                    totalETH += outflow.publicData.eth;
+                if (outflow.getMigrationId() == migrationId) {
+                    eth += outflow.publicData.eth;
                 }
             }
         }
         // code M2: MassMigration is carrying invalid amount of ETH
-        return (totalETH != migration.totalETH, "M2");
+        return (!(eth == migration.asset.eth), "M2");
+    }
+
+    /**
+     * @param // blockData Serialized block data
+     * @param migrationIndex Index of the mass migration to challenge
+     */
+    function validateERC20Migration(bytes calldata, uint256 migrationIndex)
+        external
+        pure
+        override
+        returns (bool slash, string memory reason)
+    {
+        Block memory _block = Deserializer.blockFromCalldataAt(0);
+        require(
+            migrationIndex < _block.body.massMigrations.length,
+            "out of index"
+        );
+        MassMigration memory migration =
+            _block.body.massMigrations[migrationIndex];
+        bytes32 migrationId = migration.getMigrationId();
+
+        uint256 amount;
+        for (uint256 i = 0; i < _block.body.txs.length; i++) {
+            Transaction memory transaction = _block.body.txs[i];
+            for (uint256 j = 0; j < transaction.outflow.length; j++) {
+                Outflow memory outflow = transaction.outflow[j];
+                if (outflow.getMigrationId() == migrationId) {
+                    amount += outflow.publicData.amount;
+                }
+            }
+        }
+        // code M3: MassMigration is carrying invalid amount of token
+        return (!(amount == migration.asset.amount), "M3");
     }
 
     /**
@@ -98,26 +129,22 @@ contract MigrationValidator is Storage, IMigrationValidator {
         );
         MassMigration memory migration =
             _block.body.massMigrations[migrationIndex];
-        MassDeposit memory migratingLeaves;
+        bytes32 migrationId = migration.getMigrationId();
+
+        MassDeposit memory depositForDest;
         for (uint256 i = 0; i < _block.body.txs.length; i++) {
             Transaction memory transaction = _block.body.txs[i];
             for (uint256 j = 0; j < transaction.outflow.length; j++) {
                 Outflow memory outflow = transaction.outflow[j];
-                if (
-                    outflow.outflowType == uint8(OutflowType.Migration) &&
-                    outflow.publicData.to == migration.destination
-                ) {
-                    migratingLeaves.merged = keccak256(
-                        abi.encodePacked(migratingLeaves.merged, outflow.note)
+                if (outflow.getMigrationId() == migrationId) {
+                    depositForDest.merged = keccak256(
+                        abi.encodePacked(depositForDest.merged, outflow.note)
                     );
                 }
             }
         }
-        // code M3: MassMigration is carrying invalid merged leaves value
-        return (
-            migratingLeaves.merged != migration.migratingLeaves.merged,
-            "M3"
-        );
+        // code M4: MassMigration is carrying invalid merged leaves value
+        return (depositForDest.merged != migration.depositForDest.merged, "M4");
     }
 
     /**
@@ -137,57 +164,28 @@ contract MigrationValidator is Storage, IMigrationValidator {
         );
         MassMigration memory migration =
             _block.body.massMigrations[migrationIndex];
-        MassDeposit memory migratingLeaves;
+        bytes32 migrationId = migration.getMigrationId();
+
+        MassDeposit memory depositForDest;
         for (uint256 i = 0; i < _block.body.txs.length; i++) {
             Transaction memory transaction = _block.body.txs[i];
             for (uint256 j = 0; j < transaction.outflow.length; j++) {
                 Outflow memory outflow = transaction.outflow[j];
-                if (
-                    outflow.outflowType == uint8(OutflowType.Migration) &&
-                    outflow.publicData.to == migration.destination
-                ) {
-                    migratingLeaves.fee += outflow.publicData.fee;
+                if (outflow.getMigrationId() == migrationId) {
+                    depositForDest.fee += outflow.publicData.fee;
                 }
             }
         }
-        // code M4: Aggregated migration fee is not correct
-        return (migratingLeaves.fee != migration.migratingLeaves.fee, "M4");
+        // code M5: Aggregated migration fee is not correct
+        return (depositForDest.fee != migration.depositForDest.fee, "M5");
     }
 
-    function validateDuplicatedERC20Migration(
-        bytes calldata,
-        uint256 migrationIndex,
-        uint256 erc20MigrationIdx1,
-        uint256 erc20MigrationIdx2
-    ) external pure override returns (bool slash, string memory reason) {
-        Block memory _block = Deserializer.blockFromCalldataAt(0);
-        require(
-            migrationIndex < _block.body.massMigrations.length,
-            "out of index"
-        );
-        MassMigration memory massMigration =
-            _block.body.massMigrations[migrationIndex];
-        require(
-            erc20MigrationIdx1 < massMigration.erc20.length,
-            "erc20 idx1 out of index"
-        );
-        require(
-            erc20MigrationIdx2 < massMigration.erc20.length,
-            "erc20 idx1 out of index"
-        );
-        ERC20Migration memory erc20Migration1 =
-            massMigration.erc20[erc20MigrationIdx1];
-        ERC20Migration memory erc20Migration2 =
-            massMigration.erc20[erc20MigrationIdx2];
-        // code M5: Duplicated ERC20 migration destinations exist
-        return (erc20Migration1.addr == erc20Migration2.addr, "M5");
-    }
-
-    function validateERC20Amount(
-        bytes calldata,
-        uint256 migrationIndex,
-        uint256 erc20Index
-    ) external pure override returns (bool slash, string memory reason) {
+    function validateTokenRegistration(bytes calldata, uint256 migrationIndex)
+        external
+        view
+        override
+        returns (bool slash, string memory reason)
+    {
         Block memory _block = Deserializer.blockFromCalldataAt(0);
         require(
             migrationIndex < _block.body.massMigrations.length,
@@ -195,128 +193,14 @@ contract MigrationValidator is Storage, IMigrationValidator {
         );
         MassMigration memory migration =
             _block.body.massMigrations[migrationIndex];
-        require(erc20Index < migration.erc20.length, "Invalid erc20 index");
-        ERC20Migration memory erc20Migration = migration.erc20[erc20Index];
-        uint256 erc20Amount;
-        for (uint256 i = 0; i < _block.body.txs.length; i++) {
-            Transaction memory transaction = _block.body.txs[i];
-            for (uint256 j = 0; j < transaction.outflow.length; j++) {
-                Outflow memory outflow = transaction.outflow[j];
-                if (
-                    outflow.outflowType == uint8(OutflowType.Migration) &&
-                    outflow.publicData.to == migration.destination &&
-                    outflow.publicData.token == erc20Migration.addr
-                ) {
-                    erc20Amount += outflow.publicData.amount;
-                }
-            }
-        }
-        // code M6: MassMigration is carrying invalid amount of token
-        return (erc20Amount == erc20Migration.amount, "M6");
+
+        address token = migration.asset.token;
+        require(token != address(0), "Not a token migration");
+        // code M6: Only registered ERC20 tokens are supported for mass migration.
+        return (!Storage.chain.registeredERC20s[token], "M6");
     }
 
-    function validateDuplicatedERC721Migration(
-        bytes calldata,
-        uint256 migrationIndex,
-        uint256 erc721MigrationIdx1,
-        uint256 erc721MigrationIdx2
-    ) external pure override returns (bool slash, string memory reason) {
-        Block memory _block = Deserializer.blockFromCalldataAt(0);
-        require(
-            migrationIndex < _block.body.massMigrations.length,
-            "out of index"
-        );
-        MassMigration memory massMigration =
-            _block.body.massMigrations[migrationIndex];
-        require(
-            erc721MigrationIdx1 < massMigration.erc721.length,
-            "erc721 idx1 out of index"
-        );
-        require(
-            erc721MigrationIdx2 < massMigration.erc721.length,
-            "erc721 idx1 out of index"
-        );
-        ERC721Migration memory erc721Migration1 =
-            massMigration.erc721[erc721MigrationIdx1];
-        ERC721Migration memory erc721Migration2 =
-            massMigration.erc721[erc721MigrationIdx2];
-        // code M7: Duplicated ERC721 migration destinations exist
-        return (erc721Migration1.addr == erc721Migration2.addr, "M7");
-    }
-
-    function validateNonFungibility(
-        bytes calldata,
-        uint256 migrationIndex,
-        uint256 erc721Index,
-        uint256 tokenId
-    ) external pure override returns (bool slash, string memory reason) {
-        Block memory _block = Deserializer.blockFromCalldataAt(0);
-        require(
-            migrationIndex < _block.body.massMigrations.length,
-            "out of index"
-        );
-        MassMigration memory migration =
-            _block.body.massMigrations[migrationIndex];
-        require(erc721Index < migration.erc721.length, "Invalid erc20 index");
-        ERC721Migration memory erc721Migration = migration.erc721[erc721Index];
-        uint256 nftCount = 0;
-        for (uint256 i = 0; i < erc721Migration.nfts.length; i++) {
-            if (tokenId == erc721Migration.nfts[i]) {
-                nftCount++;
-            }
-        }
-        if (nftCount > 1) {
-            // NFT id should be unique
-            // code M8: MassMigration is destroying the non-fungibility of a token
-            return (true, "M8");
-        }
-    }
-
-    function validateNftExistence(
-        bytes calldata,
-        uint256 migrationIndex,
-        uint256 erc721Index,
-        uint256 tokenId
-    ) external pure override returns (bool slash, string memory reason) {
-        Block memory _block = Deserializer.blockFromCalldataAt(0);
-        require(
-            migrationIndex < _block.body.massMigrations.length,
-            "out of index"
-        );
-        MassMigration memory migration =
-            _block.body.massMigrations[migrationIndex];
-        require(erc721Index < migration.erc721.length, "Invalid erc20 index");
-        ERC721Migration memory erc721Migration = migration.erc721[erc721Index];
-
-        bool shouldMigrateNft;
-        for (uint256 i = 0; i < erc721Migration.nfts.length; i++) {
-            if (tokenId == erc721Migration.nfts[i]) {
-                shouldMigrateNft = true;
-                break;
-            }
-        }
-        bool nftExistsInMigrationLeaves;
-        for (uint256 i = 0; i < _block.body.txs.length; i++) {
-            Transaction memory transaction = _block.body.txs[i];
-            for (uint256 j = 0; j < transaction.outflow.length; j++) {
-                Outflow memory outflow = transaction.outflow[j];
-                if (
-                    outflow.outflowType == uint8(OutflowType.Migration) &&
-                    outflow.publicData.to == migration.destination &&
-                    outflow.publicData.token == erc721Migration.addr &&
-                    outflow.publicData.nft == tokenId
-                ) {
-                    nftExistsInMigrationLeaves = true;
-                    break;
-                }
-            }
-            if (nftExistsInMigrationLeaves) break;
-        }
-        // code M9: MassMigration is not including an NFT
-        return (shouldMigrateNft != nftExistsInMigrationLeaves, "M9");
-    }
-
-    function validateMissingDestination(
+    function validateMissedMassMigration(
         bytes calldata,
         uint256 txIndex,
         uint256 outflowIndex
@@ -325,21 +209,19 @@ contract MigrationValidator is Storage, IMigrationValidator {
         require(txIndex < _block.body.txs.length, "out of index");
         Transaction memory transaction = _block.body.txs[txIndex];
         Outflow memory outflow = transaction.outflow[outflowIndex];
+        bytes32 migrationId = outflow.getMigrationId();
         require(
             outflow.outflowType == uint8(OutflowType.Migration),
             "Not a migration output"
         );
         bool massMigrationExist;
         for (uint256 i = 0; i < _block.body.massMigrations.length; i++) {
-            if (
-                _block.body.massMigrations[i].destination ==
-                outflow.publicData.to
-            ) {
+            if (migrationId == _block.body.massMigrations[i].getMigrationId()) {
                 massMigrationExist = true;
                 break;
             }
         }
-        // code M10: MassMigration for the given migration output's destination does not exist.
-        return (!massMigrationExist, "M10");
+        // code M7: MassMigration for the given migration output does not exist.
+        return (!massMigrationExist, "M7");
     }
 }

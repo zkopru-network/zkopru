@@ -250,9 +250,9 @@ export const ZkopruABI = [
   },
   {
     inputs: [
-      { internalType: 'bytes32', name: 'migrationHash', type: 'bytes32' },
+      { internalType: 'bytes32', name: 'migrationRoot', type: 'bytes32' },
     ],
-    name: 'migrations',
+    name: 'migrationRoots',
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
@@ -357,6 +357,16 @@ export const ZkopruABI = [
     name: 'transferOwnership',
     outputs: [],
     stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'bytes32', name: 'migrationRoot', type: 'bytes32' },
+      { internalType: 'bytes32', name: 'migrationHash', type: 'bytes32' },
+    ],
+    name: 'transferredMigrations',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
     type: 'function',
   },
   {

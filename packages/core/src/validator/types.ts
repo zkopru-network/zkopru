@@ -33,12 +33,16 @@ export interface HeaderValidator {
 }
 
 export interface MigrationValidator {
-  validateDuplicatedDestination: (
+  validateDuplicatedMigrations: (
     block: BlockData,
     migrationIndex1: Uint256,
     migrationIndex2: Uint256,
   ) => Promise<Validation>
-  validateTotalEth: (
+  validateEthMigration: (
+    block: BlockData,
+    migrationIndex: Uint256,
+  ) => Promise<Validation>
+  validateERC20Migration: (
     block: BlockData,
     migrationIndex: Uint256,
   ) => Promise<Validation>
@@ -50,36 +54,11 @@ export interface MigrationValidator {
     block: BlockData,
     migrationIndex: Uint256,
   ) => Promise<Validation>
-  validateDuplicatedERC20Migration: (
+  validateTokenRegistration: (
     block: BlockData,
     migrationIndex: Uint256,
-    erc20Idx1: Uint256,
-    erc20Idx2: Uint256,
   ) => Promise<Validation>
-  validateERC20Amount: (
-    block: BlockData,
-    migrationIndex: Uint256,
-    erc20Idx: Uint256,
-  ) => Promise<Validation>
-  validateDuplicatedERC721Migration: (
-    block: BlockData,
-    migrationIndex: Uint256,
-    erc721Idx1: Uint256,
-    erc721Idx2: Uint256,
-  ) => Promise<Validation>
-  validateNonFungibility: (
-    block: BlockData,
-    migrationIndex: Uint256,
-    erc721Idx: Uint256,
-    tokenId: Uint256,
-  ) => Promise<Validation>
-  validateNftExistence: (
-    block: BlockData,
-    migrationIndex: Uint256,
-    erc721Idx: Uint256,
-    tokenId: Uint256,
-  ) => Promise<Validation>
-  validateMissingDestination: (
+  validateMissedMassMigration: (
     block: BlockData,
     txIndex: Uint256,
     outflowIndex: Uint256,

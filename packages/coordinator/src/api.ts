@@ -186,7 +186,7 @@ export class CoordinatorApi {
     const zkTx = ZkTx.decode(Buffer.from(txData, 'hex'))
     // const zkTx = ZkTx.decode(txData)
     const { layer2 } = this.context.node
-    const result = await layer2.snarkVerifier.verifyTx(zkTx)
+    const result = await layer2.isValidTx(zkTx)
     if (result) {
       logger.info('add a transaction')
       await this.context.txPool.addToTxPool(zkTx)

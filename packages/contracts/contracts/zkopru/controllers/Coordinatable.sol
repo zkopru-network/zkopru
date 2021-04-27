@@ -157,11 +157,6 @@ contract Coordinatable is Storage {
             "Submitted different deposit root"
         );
         require(
-            finalization.massMigrations.root() ==
-                finalization.header.migrationRoot,
-            "Submitted different migration root"
-        );
-        require(
             finalization.header.hash() == proposal.headerHash,
             "Invalid header data"
         );
@@ -198,21 +193,12 @@ contract Coordinatable is Storage {
         }
 
         // Record mass migrations and collect fees.
-        // A MassMigration becomes a MassDeposit for the migration destination.
-        for (uint256 i = 0; i < finalization.massMigrations.length; i++) {
-            bytes32 migrationId =
-                keccak256(
-                    abi.encodePacked(
-                        finalization.proposalChecksum,
-                        finalization.massMigrations[i].hash()
-                    )
-                );
-            require(
-                !Storage.chain.migrations[migrationId],
-                "Same id exists. Migrate it first"
-            );
-            Storage.chain.migrations[migrationId] = true;
-        }
+        require(
+            Storage.chain.migrationRoots[finalization.header.migrationRoot] ==
+                false,
+            "Migration root already exists."
+        );
+        Storage.chain.migrationRoots[finalization.header.migrationRoot] = true;
 
         // Give fee to the proposer
         Proposer storage proposer =

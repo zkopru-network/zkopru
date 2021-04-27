@@ -10,8 +10,7 @@ import {
     Proof,
     MassDeposit,
     MassMigration,
-    ERC20Migration,
-    ERC721Migration,
+    MigrationAsset,
     Block,
     PublicData,
     Finalization
@@ -585,10 +584,26 @@ library Deserializer {
     {
         uint256 cp = calldataPos;
         (migration.destination, cp) = dequeueAddress(cp);
-        (migration.totalETH, cp) = dequeueUint(cp);
-        (migration.migratingLeaves, cp) = dequeueMassDeposit(cp);
-        (migration.erc20, cp) = dequeueERC20Migrations(cp);
-        (migration.erc721, cp) = dequeueERC721Migrations(cp);
+        (migration.asset, cp) = dequeueMigrationAsset(cp);
+        (migration.depositForDest, cp) = dequeueMassDeposit(cp);
+        end = cp;
+    }
+
+    /**
+     * @dev It dequeues a migration asset from the calldata.
+     * @param calldataPos The position where the migration asset data starts in the calldata.
+     * @return asset The dequeued migration asset.
+     * @return end The calldata cursor position to start to read the next items.
+     */
+    function dequeueMigrationAsset(uint256 calldataPos)
+        internal
+        pure
+        returns (MigrationAsset memory asset, uint256 end)
+    {
+        uint256 cp = calldataPos;
+        (asset.eth, cp) = dequeueUint(cp);
+        (asset.token, cp) = dequeueAddress(cp);
+        (asset.amount, cp) = dequeueUint(cp);
         end = cp;
     }
 
@@ -617,150 +632,6 @@ library Deserializer {
             // Release the free memory pointer
             mstore(0x40, add(free_mem, 0x20))
         }
-    }
-
-    /**
-     * @dev It dequeues the array of ERC20Migrations from the calldata.
-     * @param calldataPos The position where the array data starts in the calldata.
-     * @return erc20 The dequeued array of erc20 migrations.
-     * @return end The calldata cursor position to start to read the next items.
-     */
-    function dequeueERC20Migrations(uint256 calldataPos)
-        internal
-        pure
-        returns (ERC20Migration[] memory erc20, uint256 end)
-    {
-        uint256 cp = calldataPos;
-        uint256 len;
-        assembly {
-            // Acquire the free memory pointer for the length of the array
-            let free_mem := mload(0x40)
-            // Initialize the 32 bytes size slot with zeroes
-            mstore(free_mem, 0)
-            // Copy 1 byte from the calldata and overwrite it onto the end of the memory slot. (31 bytes zeroes + 1 byte data)
-            calldatacopy(add(free_mem, 0x1f), cp, 0x01)
-            // Point the length variable to the given memory slot
-            len := mload(free_mem)
-            // Move the cursor 1 byte
-            cp := add(cp, 0x01)
-            // Release the free memory pointer
-            mstore(0x40, add(free_mem, 0x20))
-        }
-        erc20 = new ERC20Migration[](len);
-        for (uint256 i = 0; i < len; i++) {
-            (erc20[i], cp) = dequeueERC20Migration(cp);
-        }
-        end = cp;
-    }
-
-    /**
-     * @dev It dequeues an ERC20Migrations from the calldata.
-     * @param calldataPos The position where the array data starts in the calldata.
-     * @return migration The dequeued erc20 migration.
-     * @return end The calldata cursor position to start to read the next items.
-     */
-    function dequeueERC20Migration(uint256 calldataPos)
-        internal
-        pure
-        returns (ERC20Migration memory migration, uint256 end)
-    {
-        assembly {
-            // Initialize with zeroes
-            mstore(migration, 0)
-            // Copy 52 bytes and overwrite on the the end of the memory slot(10 bytes zero + 20 bytes address + 32 bytes amount)
-            calldatacopy(add(migration, 0x0c), calldataPos, 0x34)
-            // Move cursor 52 bytes
-            end := add(calldataPos, 0x34)
-        }
-    }
-
-    /**
-     * @dev It dequeues the array of ERC721Migrations from the calldata.
-     * @param calldataPos The position where the array data starts in the calldata.
-     * @return erc721 The dequeued array of erc721 migrations.
-     * @return end The calldata cursor position to start to read the next items.
-     */
-    function dequeueERC721Migrations(uint256 calldataPos)
-        internal
-        pure
-        returns (ERC721Migration[] memory erc721, uint256 end)
-    {
-        uint256 cp = calldataPos;
-        uint256 len;
-        assembly {
-            // Acquire the free memory pointer for the length of the array
-            let free_mem := mload(0x40)
-            // Initialize the 32 bytes size slot with zeroes
-            mstore(free_mem, 0)
-            // Copy 1 byte from the calldata and overwrite it onto the end of the memory slot. (31 bytes zeroes + 1 byte data)
-            calldatacopy(add(free_mem, 0x1f), cp, 0x01)
-            // Point the length variable to the given memory slot
-            len := mload(free_mem)
-            // Move the cursor 1 byte
-            cp := add(cp, 0x01)
-            // Release the free memory pointer
-            mstore(0x40, add(free_mem, 0x20))
-        }
-        erc721 = new ERC721Migration[](len);
-        for (uint256 i = 0; i < len; i++) {
-            (erc721[i], cp) = dequeueERC721Migration(cp);
-        }
-        end = cp;
-    }
-
-    /**
-     * @dev It dequeues an ERC721Migrations from the calldata.
-     * @param calldataPos The position where the array data starts in the calldata.
-     * @return migration The dequeued erc721 migration.
-     * @return end The calldata cursor position to start to read the next items.
-     */
-    function dequeueERC721Migration(uint256 calldataPos)
-        internal
-        pure
-        returns (ERC721Migration memory migration, uint256 end)
-    {
-        uint256 cp = calldataPos;
-        (migration.addr, cp) = dequeueAddress(cp);
-        (migration.nfts, cp) = dequeueNfts(cp);
-        end = cp;
-    }
-
-    /**
-     * @dev It dequeues the array of NFTs from the calldata.
-     * @param calldataPos The position where the array data starts in the calldata.
-     * @return nfts The dequeued array of nfts.
-     * @return end The calldata cursor position to start to read the next items.
-     */
-    function dequeueNfts(uint256 calldataPos)
-        internal
-        pure
-        returns (uint256[] memory nfts, uint256 end)
-    {
-        uint256 cp = calldataPos;
-        uint256 len;
-        assembly {
-            // Acquire the free memory pointer for the length of the array
-            let free_mem := mload(0x40)
-            // Point the nfts variable to the given memory slot
-            nfts := free_mem
-            // Initialize the first 32 bytes slot with zeroes
-            mstore(nfts, 0)
-            // Copy 1 byte from the calldata and overwrite it onto the end of the memory slot. (31 bytes zeroes + 1 byte data)
-            calldatacopy(add(nfts, 0x1f), cp, 0x01)
-            // Point the length variable to the given memory slot and get the number of nfts
-            len := mload(nfts)
-            // Move the cursor 1 byte
-            cp := add(cp, 0x01)
-            // Get the total size of the nfts
-            let total_len_of_items := mul(0x20, len)
-            // Copy every nfts into the array
-            calldatacopy(add(nfts, 0x20), cp, total_len_of_items)
-            // Move the cursor
-            cp := add(cp, total_len_of_items)
-            // Release the free memory pointer
-            mstore(0x40, add(free_mem, add(0x20, total_len_of_items)))
-        }
-        end = cp;
     }
 
     function headerFromCalldataAt(uint256 paramIndex)
@@ -799,7 +670,6 @@ library Deserializer {
         (_finalization.proposalChecksum, cp) = dequeueBytes32(cp);
         (_finalization.header, cp) = dequeueHeader(cp);
         (_finalization.massDeposits, cp) = dequeueMassDeposits(cp);
-        (_finalization.massMigrations, cp) = dequeueMassMigrations(cp);
         uint256 len;
         assembly {
             len := calldataload(start)

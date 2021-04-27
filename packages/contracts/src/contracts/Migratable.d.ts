@@ -22,14 +22,12 @@ interface EventOptions {
 }
 
 export type NewMassMigration = ContractEventLog<{
-  checksum: string
-  network: string
-  merged: string
-  fee: string
+  sourceNetwork: string
+  migrationRoot: string
+  migrationHash: string
   0: string
   1: string
   2: string
-  3: string
 }>
 export type OwnershipTransferred = ContractEventLog<{
   previousOwner: string
@@ -97,20 +95,28 @@ export interface Migratable extends BaseContract {
 
     validators(arg0: string | number[]): NonPayableTransactionObject<string>
 
-    /**
-     * You can do the mass migration using this function. To execute      this function, the destination contract should inherits the      "Migratable" contract and have registered this current contract's      address as an allowed migrant.
-     * @param  // data Serialized mass migration data
-     * @param proposalChecksum Checksum of the block where the mass migration is included.
-     */
-    migrateTo(
-      proposalChecksum: string | number[],
-      arg1: string | number[],
+    migrateFrom(
+      source: string,
+      migrationRoot: string | number[],
+      migration: [
+        string,
+        [number | string | BN, string, number | string | BN],
+        [string | number[], number | string | BN],
+      ],
+      index: number | string | BN,
+      siblings: (string | number[])[],
+      leaves: (string | number[])[],
     ): NonPayableTransactionObject<void>
 
-    acceptMigration(
-      checksum: string | number[],
-      merged: string | number[],
-      fee: number | string | BN,
+    transfer(
+      migrationRoot: string | number[],
+      migration: [
+        string,
+        [number | string | BN, string, number | string | BN],
+        [string | number[], number | string | BN],
+      ],
+      index: number | string | BN,
+      siblings: (string | number[])[],
     ): NonPayableTransactionObject<void>
   }
   events: {

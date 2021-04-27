@@ -6,22 +6,16 @@ export interface MassDeposit {
   fee: Uint256
 }
 
-export interface ERC20Migration {
-  addr: Address
+export interface MigrationAsset {
+  eth: Uint256
+  token: Address
   amount: Uint256
-}
-
-export interface ERC721Migration {
-  addr: Address
-  nfts: Uint256[]
 }
 
 export interface MassMigration {
   destination: Address
-  totalETH: Uint256
-  migratingLeaves: MassDeposit
-  erc20: ERC20Migration[]
-  erc721: ERC721Migration[]
+  asset: MigrationAsset
+  depositForDest: MassDeposit
 }
 
 export interface Header {
@@ -48,5 +42,4 @@ export interface Finalization {
   proposalChecksum: Bytes32
   header: Header
   massDeposits: MassDeposit[]
-  massMigration: MassMigration[]
 }

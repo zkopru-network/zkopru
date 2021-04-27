@@ -129,8 +129,8 @@ export interface Zkopru extends BaseContract {
 
     massDepositId(): NonPayableTransactionObject<string>
 
-    migrations(
-      migrationHash: string | number[],
+    migrationRoots(
+      migrationRoot: string | number[],
     ): NonPayableTransactionObject<boolean>
 
     /**
@@ -190,6 +190,11 @@ export interface Zkopru extends BaseContract {
      * Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner.
      */
     transferOwnership(newOwner: string): NonPayableTransactionObject<void>
+
+    transferredMigrations(
+      migrationRoot: string | number[],
+      migrationHash: string | number[],
+    ): NonPayableTransactionObject<boolean>
 
     utxoRootOf(header: string | number[]): NonPayableTransactionObject<string>
 

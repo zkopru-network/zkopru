@@ -8,16 +8,13 @@ export const CODE = {
   H4: 'Header has invalid total fee value.',
   H5: 'Parent block is a slashed block.',
   // Migration challenge
-  M1: 'Duplicated MassMigration destinations exist.',
+  M1: 'Duplicated MassMigration ids exist.',
   M2: 'MassMigration is carrying invalid amount of ETH.',
-  M3: 'MassMigration is carrying invalid merged leaves value.',
-  M4: 'Aggregated migration fee is not correct.',
-  M5: 'Duplicated ERC20 migration destinations exist.',
-  M6: 'MassMigration is carrying invalid amount of token.',
-  M7: 'Duplicated ERC721 migration destinations exist.',
-  M8: 'MassMigration is destroying the non-fungibility of a token.',
-  M9: 'MassMigration is not including an NFT.',
-  M10: 'MassMigration is missed.',
+  M3: 'MassMigration is carrying invalid amount of token.',
+  M4: 'MassMigration is carrying invalid merged leaves value.',
+  M5: 'Aggregated migration fee is not correct.',
+  M6: 'Only registered ERC20 tokens are supported for mass migration.',
+  M7: 'MassMigration for the given migration output does not exist.',
   // Nullifier tree challenge
   N1: 'Nullifier root is different.',
   // SNARK challenge

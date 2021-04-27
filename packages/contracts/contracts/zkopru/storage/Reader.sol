@@ -106,8 +106,16 @@ contract Reader is Storage {
         return chain.withdrawn[leaf];
     }
 
-    function migrations(bytes32 migrationHash) public view returns (bool) {
-        return chain.migrations[migrationHash];
+    function migrationRoots(bytes32 migrationRoot) public view returns (bool) {
+        return chain.migrationRoots[migrationRoot];
+    }
+
+    function transferredMigrations(bytes32 migrationRoot, bytes32 migrationHash)
+        public
+        view
+        returns (bool)
+    {
+        return chain.transferredMigrations[migrationRoot][migrationHash];
     }
 
     function registeredERC20s(address tokenAddr) public view returns (bool) {
