@@ -127,7 +127,6 @@ export class ZkWizard {
       }
     }
     // TODO: hash verification
-    logger.info(this.tmpdir)
     if (this.cid) {
       const wasmUrlPath = path.join(
         this.cid,

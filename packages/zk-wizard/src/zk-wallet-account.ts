@@ -32,6 +32,7 @@ export interface Balance {
 export interface ZkWalletAccountConfig {
   privateKey?: Buffer | string
   account?: ZkAccount
+  accounts?: ZkAccount[]
   node: ZkopruNode
   erc20: Address[]
   erc721: Address[]
@@ -65,6 +66,8 @@ export class ZkWalletAccount {
       this.account = new ZkAccount(obj.privateKey)
     } else if (obj.account) {
       this.account = obj.account
+    } else if (obj.accounts && obj.accounts.length > 0) {
+      this.account = obj.accounts[0]
     } else {
       throw new Error(
         'Neither privateKey or account supplied for wallet account',
