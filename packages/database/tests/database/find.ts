@@ -148,6 +148,19 @@ export default function(this: { db: DB }) {
     }
   })
 
+  test('should return null for non-existent relations', async () => {
+    await this.db.create('TableFour', [
+      {
+        id: 'test0',
+      },
+    ])
+    const row = await this.db.findOne('TableFour', {
+      where: { id: 'test0', },
+      include: { relation1: true },
+    })
+    assert.strictEqual(row.relation1, null)
+  })
+
   test('should count documents', async () => {
     const table = 'Table5'
     await this.db.create(table, [

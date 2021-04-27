@@ -23,7 +23,7 @@ export async function getCachedSiblings(
   const cachedSiblings = await db.findMany('TreeNode', {
     where: {
       treeId,
-      nodeIndex: [...siblingIndexes],
+      nodeIndex: siblingIndexes,
     },
   })
   return cachedSiblings

@@ -49,7 +49,7 @@ export default [
     primaryKey: 'id',
     rows: [
       ['id', 'String'],
-      ['relation1Id', 'String'],
+      ['relation1Id', 'String', { optional: true }],
       {
         name: 'relation1',
         type: 'String',
