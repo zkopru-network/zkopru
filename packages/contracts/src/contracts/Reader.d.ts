@@ -150,7 +150,12 @@ export interface Reader extends BaseContract {
 
     withdrawn(leaf: string | number[]): NonPayableTransactionObject<boolean>
 
-    migrations(
+    migrationRoots(
+      migrationRoot: string | number[],
+    ): NonPayableTransactionObject<boolean>
+
+    transferredMigrations(
+      migrationRoot: string | number[],
       migrationHash: string | number[],
     ): NonPayableTransactionObject<boolean>
 

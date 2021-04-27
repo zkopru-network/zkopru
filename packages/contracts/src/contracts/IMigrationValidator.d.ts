@@ -29,7 +29,7 @@ export interface IMigrationValidator extends BaseContract {
   ): IMigrationValidator
   clone(): IMigrationValidator
   methods: {
-    validateDuplicatedDestination(
+    validateDuplicatedMigrations(
       blockData: string | number[],
       massMigrationIdx1: number | string | BN,
       massMigrationIdx2: number | string | BN,
@@ -40,7 +40,17 @@ export interface IMigrationValidator extends BaseContract {
       1: string
     }>
 
-    validateTotalEth(
+    validateEthMigration(
+      blockData: string | number[],
+      migrationIndex: number | string | BN,
+    ): NonPayableTransactionObject<{
+      slash: boolean
+      reason: string
+      0: boolean
+      1: string
+    }>
+
+    validateERC20Migration(
       blockData: string | number[],
       migrationIndex: number | string | BN,
     ): NonPayableTransactionObject<{
@@ -70,11 +80,9 @@ export interface IMigrationValidator extends BaseContract {
       1: string
     }>
 
-    validateDuplicatedERC20Migration(
+    validateTokenRegistration(
       blockData: string | number[],
       migrationIndex: number | string | BN,
-      erc20MigrationIdx1: number | string | BN,
-      erc20MigrationIdx2: number | string | BN,
     ): NonPayableTransactionObject<{
       slash: boolean
       reason: string
@@ -82,54 +90,7 @@ export interface IMigrationValidator extends BaseContract {
       1: string
     }>
 
-    validateERC20Amount(
-      blockData: string | number[],
-      migrationIndex: number | string | BN,
-      erc20Index: number | string | BN,
-    ): NonPayableTransactionObject<{
-      slash: boolean
-      reason: string
-      0: boolean
-      1: string
-    }>
-
-    validateDuplicatedERC721Migration(
-      blockData: string | number[],
-      migrationIndex: number | string | BN,
-      erc721MigrationIdx1: number | string | BN,
-      erc721MigrationIdx2: number | string | BN,
-    ): NonPayableTransactionObject<{
-      slash: boolean
-      reason: string
-      0: boolean
-      1: string
-    }>
-
-    validateNonFungibility(
-      blockData: string | number[],
-      migrationIndex: number | string | BN,
-      erc721Index: number | string | BN,
-      tokenId: number | string | BN,
-    ): NonPayableTransactionObject<{
-      slash: boolean
-      reason: string
-      0: boolean
-      1: string
-    }>
-
-    validateNftExistence(
-      blockData: string | number[],
-      migrationIndex: number | string | BN,
-      erc721Index: number | string | BN,
-      tokenId: number | string | BN,
-    ): NonPayableTransactionObject<{
-      slash: boolean
-      reason: string
-      0: boolean
-      1: string
-    }>
-
-    validateMissingDestination(
+    validateMissedMassMigration(
       arg0: string | number[],
       txIndex: number | string | BN,
       outflowIndex: number | string | BN,

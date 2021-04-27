@@ -4,8 +4,7 @@
 export {
   MassDeposit,
   MassMigration,
-  ERC20Migration,
-  ERC721Migration,
+  MigrationAsset,
   Header,
   Body,
   Finalization,
@@ -27,9 +26,7 @@ export {
   headerHash,
   massDepositHash,
   massMigrationHash,
-  getErc20Migrations,
-  getErc721Migrations,
-  getMassMigrationToAddress,
+  getMassMigrationForToken,
   getMassMigrations,
 } from './utils'
 

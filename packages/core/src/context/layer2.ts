@@ -11,7 +11,12 @@ import AsyncLock from 'async-lock'
 import { Bytes32, Address, Uint256 } from 'soltypes'
 import { logger } from '@zkopru/utils'
 import { Fp } from '@zkopru/babyjubjub'
-import { OutflowType, Withdrawal, TokenRegistry } from '@zkopru/transaction'
+import {
+  OutflowType,
+  Withdrawal,
+  TokenRegistry,
+  ZkTx,
+} from '@zkopru/transaction'
 import { Block, Header, MassDeposit } from '../block'
 import { BootstrapData } from '../node/bootstrap'
 import { SNARKVerifier, VerifyingKey } from '../snark/snark-verifier'
@@ -321,6 +326,36 @@ export class L2Chain {
       orderBy: { proposalNum: 'asc' },
     })
     return canonical.length > 0
+  }
+
+  async isValidTx(zkTx: ZkTx): Promise<boolean> {
+    // 1. verify snark
+    const snarkResult = await this.snarkVerifier.verifyTx(zkTx)
+    if (!snarkResult) return false
+
+    // 2. try to find invalid outflow
+    for (const outflow of zkTx.outflow) {
+      if (outflow.outflowType.eqn(OutflowType.UTXO)) {
+        if (outflow.data !== undefined) return false
+      } else if (outflow.outflowType.eqn(OutflowType.MIGRATION)) {
+        if (outflow.data === undefined) return false
+        if (!outflow.data.nft.eqn(0)) return false // migration cannot have nft
+        if (outflow.data.tokenAddr.eqn(0) && !outflow.data.erc20Amount.eqn(0))
+          return false // migration cannot have nft
+        if (!outflow.data.tokenAddr.eqn(0)) {
+          const registeredInfo = await this.db.findOne('TokenRegistry', {
+            where: { address: outflow.data.tokenAddr.toString() },
+          })
+          if (!registeredInfo) {
+            return false
+          }
+          if (!registeredInfo.isERC20) {
+            return false
+          }
+        }
+      }
+    }
+    return true
   }
 
   async applyBootstrap(block: Block, bootstrapData: BootstrapData) {

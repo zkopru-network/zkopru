@@ -29,9 +29,28 @@ export interface IMigratable extends BaseContract {
   ): IMigratable
   clone(): IMigratable
   methods: {
-    migrateTo(
-      migrationId: number | string | BN,
-      to: string,
+    migrateFrom(
+      source: string,
+      migrationRoot: string | number[],
+      migration: [
+        string,
+        [number | string | BN, string, number | string | BN],
+        [string | number[], number | string | BN],
+      ],
+      index: number | string | BN,
+      siblings: (string | number[])[],
+      leaves: (string | number[])[],
+    ): NonPayableTransactionObject<void>
+
+    transfer(
+      migrationRoot: string | number[],
+      migration: [
+        string,
+        [number | string | BN, string, number | string | BN],
+        [string | number[], number | string | BN],
+      ],
+      index: number | string | BN,
+      siblings: (string | number[])[],
     ): NonPayableTransactionObject<void>
   }
   events: {

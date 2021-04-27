@@ -73,7 +73,6 @@ export class Block {
       proposalChecksum: Bytes32.from(checksum),
       header: this.header,
       massDeposits: this.body.massDeposits,
-      massMigration: this.body.massMigrations,
     }
   }
 

@@ -47,27 +47,15 @@ export async function getDummyBody(): Promise<Body> {
     massMigrations: [
       {
         destination: Address.from(strToFp('mm1/dest').toHex(20)),
-        totalETH: strToFp('mm1/totalETH').toUint256(),
-        migratingLeaves: {
+        asset: {
+          eth: strToFp('mm1/totalETH').toUint256(),
+          token: strToFp('mm1/totalETH').toAddress(),
+          amount: strToFp('mm1/totalETH').toUint256(),
+        },
+        depositForDest: {
           merged: strToFp('mm1/md').toBytes32(),
           fee: strToFp('mm1/fee').toUint256(),
         },
-        erc20: [
-          {
-            addr: Address.from(strToFp('mm1/erc20').toHex(20)),
-            amount: strToFp('mm1/amount').toUint256(),
-          },
-        ],
-        erc721: [
-          {
-            addr: Address.from(strToFp('mm1/erc721').toHex(20)),
-            nfts: [
-              strToFp('mm1/erc721/nft1').toUint256(),
-              strToFp('mm1/erc721/nft2').toUint256(),
-              strToFp('mm1/erc721/nft3').toUint256(),
-            ],
-          },
-        ],
       },
     ],
   }

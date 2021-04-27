@@ -71,7 +71,8 @@ contract Proxy is Storage {
     }
 
     function _connectMigratable(address addr) internal virtual {
-        _connect(addr, IMigratable(0).migrateTo.selector);
+        _connect(addr, IMigratable(0).transfer.selector);
+        _connect(addr, IMigratable(0).migrateFrom.selector);
     }
 
     function _connectChallengeable(
@@ -89,16 +90,13 @@ contract Proxy is Storage {
         _connect(challengeable, IHeaderValidator(0).validateTxRoot.selector);
         _connect(challengeable, IHeaderValidator(0).validateMigrationRoot.selector);
         _connect(challengeable, IHeaderValidator(0).validateTotalFee.selector);
-        _connect(challengeable, IMigrationValidator(0).validateDuplicatedDestination.selector);
-        _connect(challengeable, IMigrationValidator(0).validateTotalEth.selector);
+        _connect(challengeable, IMigrationValidator(0).validateDuplicatedMigrations.selector);
+        _connect(challengeable, IMigrationValidator(0).validateEthMigration.selector);
+        _connect(challengeable, IMigrationValidator(0).validateERC20Migration.selector);
         _connect(challengeable, IMigrationValidator(0).validateMergedLeaves.selector);
         _connect(challengeable, IMigrationValidator(0).validateMigrationFee.selector);
-        _connect(challengeable, IMigrationValidator(0).validateDuplicatedERC20Migration.selector);
-        _connect(challengeable, IMigrationValidator(0).validateERC20Amount.selector);
-        _connect(challengeable, IMigrationValidator(0).validateDuplicatedERC721Migration.selector);
-        _connect(challengeable, IMigrationValidator(0).validateNonFungibility.selector);
-        _connect(challengeable, IMigrationValidator(0).validateNftExistence.selector);
-        _connect(challengeable, IMigrationValidator(0).validateMissingDestination.selector);
+        _connect(challengeable, IMigrationValidator(0).validateTokenRegistration.selector);
+        _connect(challengeable, IMigrationValidator(0).validateMissedMassMigration.selector);
         _connect(challengeable, IUtxoTreeValidator(0).validateUTXOIndex.selector);
         _connect(challengeable, IUtxoTreeValidator(0).validateUTXORoot.selector);
         _connect(challengeable, IWithdrawalTreeValidator(0).validateWithdrawalIndex.selector);
@@ -115,16 +113,13 @@ contract Proxy is Storage {
         _connectValidator(headerValidator, IHeaderValidator(0).validateTxRoot.selector);
         _connectValidator(headerValidator, IHeaderValidator(0).validateMigrationRoot.selector);
         _connectValidator(headerValidator, IHeaderValidator(0).validateTotalFee.selector);
-        _connectValidator(migrationValidator, IMigrationValidator(0).validateDuplicatedDestination.selector);
-        _connectValidator(migrationValidator, IMigrationValidator(0).validateTotalEth.selector);
+        _connectValidator(migrationValidator, IMigrationValidator(0).validateDuplicatedMigrations.selector);
+        _connectValidator(migrationValidator, IMigrationValidator(0).validateEthMigration.selector);
+        _connectValidator(migrationValidator, IMigrationValidator(0).validateERC20Migration.selector);
         _connectValidator(migrationValidator, IMigrationValidator(0).validateMergedLeaves.selector);
         _connectValidator(migrationValidator, IMigrationValidator(0).validateMigrationFee.selector);
-        _connectValidator(migrationValidator, IMigrationValidator(0).validateDuplicatedERC20Migration.selector);
-        _connectValidator(migrationValidator, IMigrationValidator(0).validateERC20Amount.selector);
-        _connectValidator(migrationValidator, IMigrationValidator(0).validateDuplicatedERC721Migration.selector);
-        _connectValidator(migrationValidator, IMigrationValidator(0).validateNonFungibility.selector);
-        _connectValidator(migrationValidator, IMigrationValidator(0).validateNftExistence.selector);
-        _connectValidator(migrationValidator, IMigrationValidator(0).validateMissingDestination.selector);
+        _connectValidator(migrationValidator, IMigrationValidator(0).validateTokenRegistration.selector);
+        _connectValidator(migrationValidator, IMigrationValidator(0).validateMissedMassMigration.selector);
         _connectValidator(utxoTreeValidator, IUtxoTreeValidator(0).validateUTXOIndex.selector);
         _connectValidator(utxoTreeValidator, IUtxoTreeValidator(0).validateUTXORoot.selector);
         _connectValidator(withdrawalTreeValidator, IWithdrawalTreeValidator(0).validateWithdrawalIndex.selector);

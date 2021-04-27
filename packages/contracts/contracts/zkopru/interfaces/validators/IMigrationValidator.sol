@@ -2,16 +2,21 @@
 pragma solidity =0.7.4;
 
 interface IMigrationValidator {
-    function validateDuplicatedDestination(
+    function validateDuplicatedMigrations(
         bytes calldata blockData,
         uint256 massMigrationIdx1,
         uint256 massMigrationIdx2
     ) external pure returns (bool slash, string memory reason);
 
-    function validateTotalEth(bytes calldata blockData, uint256 migrationIndex)
-        external
-        pure
-        returns (bool slash, string memory reason);
+    function validateEthMigration(
+        bytes calldata blockData,
+        uint256 migrationIndex
+    ) external pure returns (bool slash, string memory reason);
+
+    function validateERC20Migration(
+        bytes calldata blockData,
+        uint256 migrationIndex
+    ) external pure returns (bool slash, string memory reason);
 
     function validateMergedLeaves(
         bytes calldata blockData,
@@ -23,41 +28,12 @@ interface IMigrationValidator {
         uint256 migrationIndex
     ) external pure returns (bool slash, string memory reason);
 
-    function validateDuplicatedERC20Migration(
+    function validateTokenRegistration(
         bytes calldata blockData,
-        uint256 migrationIndex,
-        uint256 erc20MigrationIdx1,
-        uint256 erc20MigrationIdx2
-    ) external pure returns (bool slash, string memory reason);
+        uint256 migrationIndex
+    ) external view returns (bool slash, string memory reason);
 
-    function validateERC20Amount(
-        bytes calldata blockData,
-        uint256 migrationIndex,
-        uint256 erc20Index
-    ) external pure returns (bool slash, string memory reason);
-
-    function validateDuplicatedERC721Migration(
-        bytes calldata blockData,
-        uint256 migrationIndex,
-        uint256 erc721MigrationIdx1,
-        uint256 erc721MigrationIdx2
-    ) external pure returns (bool slash, string memory reason);
-
-    function validateNonFungibility(
-        bytes calldata blockData,
-        uint256 migrationIndex,
-        uint256 erc721Index,
-        uint256 tokenId
-    ) external pure returns (bool slash, string memory reason);
-
-    function validateNftExistence(
-        bytes calldata blockData,
-        uint256 migrationIndex,
-        uint256 erc721Index,
-        uint256 tokenId
-    ) external pure returns (bool slash, string memory reason);
-
-    function validateMissingDestination(
+    function validateMissedMassMigration(
         bytes calldata,
         uint256 txIndex,
         uint256 outflowIndex

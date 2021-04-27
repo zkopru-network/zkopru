@@ -62,27 +62,15 @@ describe('block.ts', () => {
     })
     dBody.massMigrations.forEach((mm, i) => {
       expect(mm.destination).toStrictEqual(body.massMigrations[i].destination)
-      expect(mm.totalETH).toStrictEqual(body.massMigrations[i].totalETH)
-      expect(mm.migratingLeaves.merged).toStrictEqual(
-        body.massMigrations[i].migratingLeaves.merged,
+      expect(mm.asset.eth).toStrictEqual(body.massMigrations[i].asset.eth)
+      expect(mm.asset.token).toStrictEqual(body.massMigrations[i].asset.token)
+      expect(mm.asset.amount).toStrictEqual(body.massMigrations[i].asset.amount)
+      expect(mm.depositForDest.merged).toStrictEqual(
+        body.massMigrations[i].depositForDest.merged,
       )
-      expect(mm.migratingLeaves.fee).toStrictEqual(
-        body.massMigrations[i].migratingLeaves.fee,
+      expect(mm.depositForDest.fee).toStrictEqual(
+        body.massMigrations[i].depositForDest.fee,
       )
-      expect(mm.erc20).toHaveLength(body.massMigrations[i].erc20.length)
-      expect(mm.erc721).toHaveLength(body.massMigrations[i].erc721.length)
-      mm.erc20.forEach((token, j) => {
-        expect(token.addr).toStrictEqual(body.massMigrations[i].erc20[j].addr)
-        expect(token.amount).toStrictEqual(
-          body.massMigrations[i].erc20[j].amount,
-        )
-      })
-      mm.erc721.forEach((token, j) => {
-        expect(token.addr).toStrictEqual(body.massMigrations[i].erc721[j].addr)
-        token.nfts.forEach((nft, k) => {
-          expect(nft).toStrictEqual(body.massMigrations[i].erc721[j].nfts[k])
-        })
-      })
     })
   }, 600000)
 })

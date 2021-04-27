@@ -5,12 +5,12 @@ import { OnchainValidatorContext } from './onchain-context'
 
 export class OnchainMigrationValidator extends OnchainValidatorContext
   implements MigrationValidator {
-  async validateDuplicatedDestination(
+  async validateDuplicatedMigrations(
     block: BlockData,
     migrationIndex1: Uint256,
     migrationIndex2: Uint256,
   ): Promise<OnchainValidation> {
-    const tx = this.layer1.validators.migration.methods.validateDuplicatedDestination(
+    const tx = this.layer1.validators.migration.methods.validateDuplicatedMigrations(
       blockDataToHexString(block),
       migrationIndex1.toString(),
       migrationIndex2.toString(),
@@ -19,11 +19,23 @@ export class OnchainMigrationValidator extends OnchainValidatorContext
     return result
   }
 
-  async validateTotalEth(
+  async validateEthMigration(
     block: BlockData,
     migrationIndex: Uint256,
   ): Promise<OnchainValidation> {
-    const tx = this.layer1.validators.migration.methods.validateTotalEth(
+    const tx = this.layer1.validators.migration.methods.validateEthMigration(
+      blockDataToHexString(block),
+      migrationIndex.toString(),
+    )
+    const result = await this.isSlashable(tx)
+    return result
+  }
+
+  async validateERC20Migration(
+    block: BlockData,
+    migrationIndex: Uint256,
+  ): Promise<OnchainValidation> {
+    const tx = this.layer1.validators.migration.methods.validateERC20Migration(
       blockDataToHexString(block),
       migrationIndex.toString(),
     )
@@ -55,90 +67,24 @@ export class OnchainMigrationValidator extends OnchainValidatorContext
     return result
   }
 
-  async validateDuplicatedERC20Migration(
+  async validateTokenRegistration(
     block: BlockData,
     migrationIndex: Uint256,
-    erc20Idx1: Uint256,
-    erc20Idx2: Uint256,
   ): Promise<OnchainValidation> {
-    const tx = this.layer1.validators.migration.methods.validateDuplicatedERC20Migration(
+    const tx = this.layer1.validators.migration.methods.validateTokenRegistration(
       blockDataToHexString(block),
       migrationIndex.toString(),
-      erc20Idx1.toString(),
-      erc20Idx2.toString(),
     )
     const result = await this.isSlashable(tx)
     return result
   }
 
-  async validateERC20Amount(
-    block: BlockData,
-    migrationIndex: Uint256,
-    erc20Idx: Uint256,
-  ): Promise<OnchainValidation> {
-    const tx = this.layer1.validators.migration.methods.validateERC20Amount(
-      blockDataToHexString(block),
-      migrationIndex.toString(),
-      erc20Idx.toString(),
-    )
-    const result = await this.isSlashable(tx)
-    return result
-  }
-
-  async validateDuplicatedERC721Migration(
-    block: BlockData,
-    migrationIndex: Uint256,
-    erc721Idx1: Uint256,
-    erc721Idx2: Uint256,
-  ): Promise<OnchainValidation> {
-    const tx = this.layer1.validators.migration.methods.validateDuplicatedERC721Migration(
-      blockDataToHexString(block),
-      migrationIndex.toString(),
-      erc721Idx1.toString(),
-      erc721Idx2.toString(),
-    )
-    const result = await this.isSlashable(tx)
-    return result
-  }
-
-  async validateNonFungibility(
-    block: BlockData,
-    migrationIndex: Uint256,
-    erc721Idx: Uint256,
-    tokenId: Uint256,
-  ): Promise<OnchainValidation> {
-    const tx = this.layer1.validators.migration.methods.validateNonFungibility(
-      blockDataToHexString(block),
-      migrationIndex.toString(),
-      erc721Idx.toString(),
-      tokenId.toString(),
-    )
-    const result = await this.isSlashable(tx)
-    return result
-  }
-
-  async validateNftExistence(
-    block: BlockData,
-    migrationIndex: Uint256,
-    erc721Idx: Uint256,
-    tokenId: Uint256,
-  ): Promise<OnchainValidation> {
-    const tx = this.layer1.validators.migration.methods.validateNftExistence(
-      blockDataToHexString(block),
-      migrationIndex.toString(),
-      erc721Idx.toString(),
-      tokenId.toString(),
-    )
-    const result = await this.isSlashable(tx)
-    return result
-  }
-
-  async validateMissingDestination(
+  async validateMissedMassMigration(
     block: BlockData,
     txIndex: Uint256,
     outflowIndex: Uint256,
   ): Promise<OnchainValidation> {
-    const tx = this.layer1.validators.migration.methods.validateMissingDestination(
+    const tx = this.layer1.validators.migration.methods.validateMissedMassMigration(
       blockDataToHexString(block),
       txIndex.toString(),
       outflowIndex.toString(),

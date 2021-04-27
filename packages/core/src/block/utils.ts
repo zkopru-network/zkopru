@@ -14,12 +14,11 @@ import { soliditySha3Raw } from 'web3-utils'
 import { Bytes32, Uint256, Address } from 'soltypes'
 import {
   Body,
-  ERC20Migration,
-  ERC721Migration,
   Finalization,
   Header,
   MassDeposit,
   MassMigration,
+  MigrationAsset,
 } from './types'
 
 export function headerToSql(header: Header): HeaderSql {
@@ -146,24 +145,11 @@ export function serializeMassMigrations(
   arr.push(massMigrationLenBytes)
   for (let i = 0; i < massMigrations.length; i += 1) {
     arr.push(massMigrations[i].destination.toBuffer())
-    arr.push(massMigrations[i].totalETH.toBuffer())
-    arr.push(massMigrations[i].migratingLeaves.merged.toBuffer())
-    arr.push(massMigrations[i].migratingLeaves.fee.toBuffer())
-    const { erc20, erc721 } = massMigrations[i]
-    arr.push(Utils.numToBuffer(erc20.length, 1))
-    for (let j = 0; j < erc20.length; j += 1) {
-      arr.push(erc20[j].addr.toBuffer())
-      arr.push(erc20[j].amount.toBuffer())
-    }
-    arr.push(Utils.numToBuffer(erc721.length, 1))
-    for (let j = 0; j < erc721.length; j += 1) {
-      arr.push(erc721[j].addr.toBuffer())
-      const { nfts } = erc721[j]
-      arr.push(Utils.numToBuffer(nfts.length, 1))
-      for (let k = 0; k < nfts.length; k += 1) {
-        arr.push(nfts[k].toBuffer())
-      }
-    }
+    arr.push(massMigrations[i].asset.eth.toBuffer())
+    arr.push(massMigrations[i].asset.token.toBuffer())
+    arr.push(massMigrations[i].asset.amount.toBuffer())
+    arr.push(massMigrations[i].depositForDest.merged.toBuffer())
+    arr.push(massMigrations[i].depositForDest.fee.toBuffer())
   }
   return Buffer.concat(arr)
 }
@@ -181,7 +167,6 @@ export function serializeFinalization(finalization: Finalization): Buffer {
     finalization.proposalChecksum.toBuffer(),
     serializeHeader(finalization.header),
     serializeMassDeposits(finalization.massDeposits),
-    serializeMassMigrations(finalization.massMigration),
   ])
 }
 
@@ -289,40 +274,20 @@ export function deserializeMassMigrations(
   const mmLength: number = queue.dequeueToNumber(1)
   const massMigrations: MassMigration[] = []
   while (massMigrations.length < mmLength) {
-    const destination = queue.dequeue(20)
-    const totalETH = queue.dequeueToUint256()
-    const migratingLeaves: MassDeposit = {
+    const destination = queue.dequeueToAddress()
+    const asset: MigrationAsset = {
+      eth: queue.dequeueToUint256(),
+      token: queue.dequeueToAddress(),
+      amount: queue.dequeueToUint256(),
+    }
+    const depositForDest: MassDeposit = {
       merged: queue.dequeueToBytes32(),
       fee: queue.dequeueToUint256(),
     }
-    const erc20MigrationLength = queue.dequeueToNumber(1)
-    const erc20Migrations: ERC20Migration[] = []
-    while (erc20Migrations.length < erc20MigrationLength) {
-      erc20Migrations.push({
-        addr: queue.dequeueToAddress(),
-        amount: queue.dequeueToUint256(),
-      })
-    }
-    const erc721MigrationLength = queue.dequeueToNumber(1)
-    const erc721Migrations: ERC721Migration[] = []
-    while (erc721Migrations.length < erc721MigrationLength) {
-      const addr = queue.dequeue(20)
-      const nftLen = queue.dequeueToNumber(1)
-      const nfts: Uint256[] = []
-      while (nfts.length < nftLen) {
-        nfts.push(queue.dequeueToUint256())
-      }
-      erc721Migrations.push({
-        addr: Address.from(addr),
-        nfts,
-      })
-    }
     massMigrations.push({
-      destination: Address.from(destination),
-      totalETH,
-      migratingLeaves,
-      erc20: erc20Migrations,
-      erc721: erc721Migrations,
+      destination,
+      asset,
+      depositForDest,
     })
   }
   return { massMigrations, rest: queue.dequeueAll() }
@@ -357,122 +322,72 @@ export function massDepositHash(massDeposit: MassDeposit): Bytes32 {
 }
 
 export function massMigrationHash(massMigration: MassMigration): Bytes32 {
-  let concatenated = Buffer.concat(
+  const concatenated = Buffer.concat(
     [
       massMigration.destination,
-      massMigration.migratingLeaves.merged,
-      massMigration.migratingLeaves.fee,
+      massMigration.asset.eth,
+      massMigration.asset.token,
+      massMigration.asset.amount,
+      massMigration.depositForDest.merged,
+      massMigration.depositForDest.fee,
     ].map(val => val.toBuffer()),
   )
-  for (let i = 0; i < massMigration.erc20.length; i += 1) {
-    concatenated = Buffer.concat([
-      concatenated,
-      massMigration.erc20[i].addr.toBuffer(),
-      massMigration.erc20[i].amount.toBuffer(),
-    ])
-  }
-  for (let i = 0; i < massMigration.erc721.length; i += 1) {
-    concatenated = Buffer.concat([
-      concatenated,
-      massMigration.erc721[i].addr.toBuffer(),
-      massMigration.erc721[i].nfts.reduce((buff, nft) => {
-        return Buffer.concat([buff, nft.toBuffer()])
-      }, Buffer.from([])),
-    ])
-  }
   const result = soliditySha3Raw(`0x${concatenated.toString('hex')}`)
   return Bytes32.from(result)
 }
 
-export function getErc20Migrations(notes: ZkOutflow[]): ERC20Migration[] {
-  const erc20Notes = notes.filter(note => note.data?.erc20Amount !== undefined)
-  const erc20Addresses = erc20Notes
-    .map(note => note.data?.tokenAddr.toHex())
-    .filter((v, i, self) => self.indexOf(v) === i)
-
-  const erc20Migrations: ERC20Migration[] = []
-  for (const addr of erc20Addresses) {
-    if (!addr) break
-    const targetNotes = erc20Notes.filter(note =>
-      note.data?.tokenAddr.eq(Fp.from(addr)),
-    )
-    const amount: Uint256 = targetNotes
-      .reduce(
-        (acc, note) => acc.add(note.data?.erc20Amount || Fp.zero),
-        Fp.zero,
-      )
-      .toUint256()
-    erc20Migrations.push({
-      addr: Address.from(addr),
-      amount,
-    })
-  }
-  return erc20Migrations
-}
-
-export function getErc721Migrations(notes: ZkOutflow[]): ERC721Migration[] {
-  const erc721Notes = notes.filter(note => note.data?.nft !== undefined)
-  const erc721Addresses = erc721Notes
-    .map(note => note.data?.tokenAddr.toHex())
-    .filter((v, i, self) => self.indexOf(v) === i)
-  const erc721Migrations: ERC721Migration[] = []
-  for (const addr of erc721Addresses) {
-    if (!addr) break
-    const targetNotes = erc721Notes.filter(note =>
-      note.data?.tokenAddr.eq(Fp.from(addr)),
-    )
-    const nfts: Uint256[] = targetNotes
-      .map(note => note.data?.nft || Fp.zero)
-      .map(nft => nft.toUint256())
-    erc721Migrations.push({
-      addr: Address.from(addr),
-      nfts,
-    })
-  }
-  return erc721Migrations
-}
-
-export function getMassMigrationToAddress(
-  dest: string,
+export function getMassMigrationForToken(
+  destination: Address,
+  token: Address,
   migratingNotes: ZkOutflow[],
 ): MassMigration {
-  const notes = migratingNotes.filter(note => note.data?.to.eq(Fp.from(dest)))
-  const totalETH = notes
+  const notes = migratingNotes
+    .filter(note => note.data?.to.eq(destination.toBN()))
+    .filter(note => note.data?.tokenAddr.eq(token.toBN()))
+  const eth = notes
     .reduce((acc, note) => acc.add(note.data?.eth || Fp.zero), Fp.zero)
     .toUint256()
-  const migratingLeaves: MassDeposit = Utils.mergeDeposits(
+  const amount = notes
+    .reduce((acc, note) => acc.add(note.data?.erc20Amount || Fp.zero), Fp.zero)
+    .toUint256()
+  const depositForDest: MassDeposit = Utils.mergeDeposits(
     notes.map(note => ({
       note: note.note.toBytes32(),
       fee: note.data?.fee.toUint256() || Uint256.from(''),
     })),
   )
-  const erc20Migrations: ERC20Migration[] = getErc20Migrations(notes)
-  const erc721Migrations: ERC721Migration[] = getErc721Migrations(notes)
   return {
-    destination: Address.from(dest),
-    migratingLeaves,
-    totalETH,
-    erc20: erc20Migrations,
-    erc721: erc721Migrations,
+    destination,
+    asset: {
+      eth,
+      token,
+      amount,
+    },
+    depositForDest,
   }
 }
 
 export function getMassMigrations(txs: ZkTx[]): MassMigration[] {
-  const migratingNotes: ZkOutflow[] = []
-  for (const tx of txs) {
-    for (const outflow of tx.outflow) {
-      if (outflow.outflowType.eqn(OutflowType.MIGRATION)) {
-        migratingNotes.push(outflow)
-      }
-    }
-  }
+  const migratingNotes: ZkOutflow[] = txs
+    .reduce((acc, tx) => [...acc, ...tx.outflow], [] as ZkOutflow[])
+    .filter(outflow => outflow.outflowType.eqn(OutflowType.MIGRATION))
+
+  const tokens = migratingNotes
+    .map(note => note.data?.tokenAddr)
+    .map(addr => addr?.toHex())
+    .filter((v, i, self) => self.indexOf(v) === i)
+    .map(addr => Address.from(addr as string))
+
   const destinations = migratingNotes
     .map(note => note.data?.to.toHex())
     .filter((v, i, self) => self.indexOf(v) === i)
+    .map(addr => Address.from(addr as string))
+
   const migrations: MassMigration[] = []
   for (const dest of destinations) {
-    if (!dest) break
-    migrations.push(getMassMigrationToAddress(dest, migratingNotes))
+    for (const token of tokens) {
+      migrations.push(getMassMigrationForToken(dest, token, migratingNotes))
+    }
   }
   return migrations
 }

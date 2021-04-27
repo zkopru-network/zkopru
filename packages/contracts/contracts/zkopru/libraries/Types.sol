@@ -26,7 +26,8 @@ struct Blockchain {
     mapping(bytes32 => bool) withdrawn;
     mapping(bytes32 => address) newWithdrawalOwner;
     // For migrations
-    mapping(bytes32 => bool) migrations;
+    mapping(bytes32 => bool) migrationRoots;
+    mapping(bytes32 => mapping(bytes32 => bool)) transferredMigrations;
     // For ERC20 and ERC721
     mapping(address => bool) registeredERC20s;
     mapping(address => bool) registeredERC721s;
@@ -37,23 +38,16 @@ struct MassDeposit {
     uint256 fee;
 }
 
-// needs gas limit
+struct MigrationAsset {
+    uint256 eth; // eth amount
+    address token; // ERC20 token address
+    uint256 amount; // ERC20 token amount
+}
+
 struct MassMigration {
     address destination;
-    uint256 totalETH;
-    MassDeposit migratingLeaves;
-    ERC20Migration[] erc20;
-    ERC721Migration[] erc721;
-}
-
-struct ERC20Migration {
-    address addr;
-    uint256 amount;
-}
-
-struct ERC721Migration {
-    address addr;
-    uint256[] nfts;
+    MigrationAsset asset;
+    MassDeposit depositForDest;
 }
 
 struct WithdrawalTree {
@@ -66,7 +60,6 @@ struct Finalization {
     bytes32 proposalChecksum;
     Header header;
     MassDeposit[] massDeposits;
-    MassMigration[] massMigrations;
 }
 
 struct Proposer {
@@ -306,28 +299,17 @@ library Types {
         pure
         returns (bytes32)
     {
-        bytes memory packed;
-        packed = abi.encodePacked(
-            packed,
-            massMigration.destination,
-            massMigration.migratingLeaves.merged,
-            massMigration.migratingLeaves.fee
-        );
-        for (uint256 i = 0; i < massMigration.erc20.length; i++) {
-            packed = abi.encodePacked(
-                packed,
-                massMigration.erc20[i].addr,
-                massMigration.erc20[i].amount
+        return
+            keccak256(
+                abi.encodePacked(
+                    massMigration.destination,
+                    massMigration.asset.eth,
+                    massMigration.asset.token,
+                    massMigration.asset.amount,
+                    massMigration.depositForDest.merged,
+                    massMigration.depositForDest.fee
+                )
             );
-        }
-        for (uint256 i = 0; i < massMigration.erc721.length; i++) {
-            packed = abi.encodePacked(
-                packed,
-                massMigration.erc721[i].addr,
-                massMigration.erc721[i].nfts
-            );
-        }
-        return keccak256(packed);
     }
 
     function root(Transaction[] memory transactions)
@@ -424,5 +406,36 @@ library Types {
         returns (uint256)
     {
         return (uint256(numberOfInputs) << 128) + numberOfOutputs;
+    }
+
+    /**
+     * @dev MassMigrations in a block should have unique id each other.
+     */
+    function getMigrationId(MassMigration memory migration)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return
+            keccak256(
+                abi.encodePacked(migration.destination, migration.asset.token)
+            );
+    }
+
+    /**
+     * @dev MassMigrations in a block should have unique id each other.
+     */
+    function getMigrationId(Outflow memory outflow)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return
+            keccak256(
+                abi.encodePacked(
+                    outflow.publicData.to,
+                    outflow.publicData.token
+                )
+            );
     }
 }

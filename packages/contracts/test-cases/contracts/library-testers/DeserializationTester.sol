@@ -244,36 +244,20 @@ contract DeserializationTester {
         pure
         returns (
             address destination,
-            uint256 totalETH,
+            uint256 eth,
+            address token,
+            uint256 amount,
             bytes32 merged,
             uint256 fee
         )
     {
         Block memory _block = Deserializer.blockFromCalldataAt(1);
         destination = _block.body.massMigrations[index].destination;
-        totalETH = _block.body.massMigrations[index].totalETH;
-        merged = _block.body.massMigrations[index].migratingLeaves.merged;
-        fee = _block.body.massMigrations[index].migratingLeaves.fee;
-    }
-
-    function getERC20Migration(
-        uint256 index,
-        uint256 erc20Index,
-        bytes calldata
-    ) external pure returns (address token, uint256 amount) {
-        Block memory _block = Deserializer.blockFromCalldataAt(2);
-        token = _block.body.massMigrations[index].erc20[erc20Index].addr;
-        amount = _block.body.massMigrations[index].erc20[erc20Index].amount;
-    }
-
-    function getERC721Migration(
-        uint256 index,
-        uint256 erc721Index,
-        bytes calldata
-    ) external pure returns (address token, uint256[] memory nfts) {
-        Block memory _block = Deserializer.blockFromCalldataAt(2);
-        token = _block.body.massMigrations[index].erc721[erc721Index].addr;
-        nfts = _block.body.massMigrations[index].erc721[erc721Index].nfts;
+        eth = _block.body.massMigrations[index].asset.eth;
+        token = _block.body.massMigrations[index].asset.token;
+        amount = _block.body.massMigrations[index].asset.amount;
+        merged = _block.body.massMigrations[index].depositForDest.merged;
+        fee = _block.body.massMigrations[index].depositForDest.fee;
     }
 
     function computeTxRoot(bytes calldata) external pure returns (bytes32) {
@@ -423,56 +407,6 @@ contract DeserializationTester {
         fee = _finalization.massDeposits[index].fee;
     }
 
-    function getMassMigrationsLenFromFinalization(bytes calldata)
-        external
-        pure
-        returns (uint256 len)
-    {
-        Finalization memory _finalization =
-            Deserializer.finalizationFromCalldataAt(0);
-        return _finalization.massMigrations.length;
-    }
-
-    function getMassMigrationFromFinalization(uint256 index, bytes calldata)
-        external
-        pure
-        returns (
-            address destination,
-            uint256 totalETH,
-            bytes32 merged,
-            uint256 fee
-        )
-    {
-        Finalization memory _finalization =
-            Deserializer.finalizationFromCalldataAt(1);
-        destination = _finalization.massMigrations[index].destination;
-        totalETH = _finalization.massMigrations[index].totalETH;
-        merged = _finalization.massMigrations[index].migratingLeaves.merged;
-        fee = _finalization.massMigrations[index].migratingLeaves.fee;
-    }
-
-    function getERC20MigrationFromFinalization(
-        uint256 index,
-        uint256 erc20Index,
-        bytes calldata
-    ) external pure returns (address token, uint256 amount) {
-        Finalization memory _finalization =
-            Deserializer.finalizationFromCalldataAt(2);
-        token = _finalization.massMigrations[index].erc20[erc20Index].addr;
-        amount = _finalization.massMigrations[index].erc20[erc20Index].amount;
-    }
-
-    function getERC721MigrationFromFinalization(
-        uint256 index,
-        uint256 erc721Index,
-        bytes calldata
-    ) external pure returns (address token, uint256[] memory nfts) {
-        Finalization memory _finalization =
-            Deserializer.finalizationFromCalldataAt(2);
-        token = _finalization.massMigrations[index].erc721[erc721Index].addr;
-        nfts = _finalization.massMigrations[index].erc721[erc721Index].nfts;
-    }
-
     function computeDepositRootFromFinalization(bytes calldata)
         external
         pure
@@ -481,15 +415,5 @@ contract DeserializationTester {
         Finalization memory _finalization =
             Deserializer.finalizationFromCalldataAt(0);
         return _finalization.massDeposits.root();
-    }
-
-    function computeMigrationRootFromFinalization(bytes calldata)
-        external
-        pure
-        returns (bytes32)
-    {
-        Finalization memory _finalization =
-            Deserializer.finalizationFromCalldataAt(0);
-        return _finalization.massMigrations.root();
     }
 }

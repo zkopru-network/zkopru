@@ -5,7 +5,7 @@ export const IMigrationValidatorABI = [
       { internalType: 'uint256', name: 'massMigrationIdx1', type: 'uint256' },
       { internalType: 'uint256', name: 'massMigrationIdx2', type: 'uint256' },
     ],
-    name: 'validateDuplicatedDestination',
+    name: 'validateDuplicatedMigrations',
     outputs: [
       { internalType: 'bool', name: 'slash', type: 'bool' },
       { internalType: 'string', name: 'reason', type: 'string' },
@@ -18,7 +18,20 @@ export const IMigrationValidatorABI = [
       { internalType: 'bytes', name: 'blockData', type: 'bytes' },
       { internalType: 'uint256', name: 'migrationIndex', type: 'uint256' },
     ],
-    name: 'validateTotalEth',
+    name: 'validateEthMigration',
+    outputs: [
+      { internalType: 'bool', name: 'slash', type: 'bool' },
+      { internalType: 'string', name: 'reason', type: 'string' },
+    ],
+    stateMutability: 'pure',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'bytes', name: 'blockData', type: 'bytes' },
+      { internalType: 'uint256', name: 'migrationIndex', type: 'uint256' },
+    ],
+    name: 'validateERC20Migration',
     outputs: [
       { internalType: 'bool', name: 'slash', type: 'bool' },
       { internalType: 'string', name: 'reason', type: 'string' },
@@ -56,74 +69,13 @@ export const IMigrationValidatorABI = [
     inputs: [
       { internalType: 'bytes', name: 'blockData', type: 'bytes' },
       { internalType: 'uint256', name: 'migrationIndex', type: 'uint256' },
-      { internalType: 'uint256', name: 'erc20MigrationIdx1', type: 'uint256' },
-      { internalType: 'uint256', name: 'erc20MigrationIdx2', type: 'uint256' },
     ],
-    name: 'validateDuplicatedERC20Migration',
+    name: 'validateTokenRegistration',
     outputs: [
       { internalType: 'bool', name: 'slash', type: 'bool' },
       { internalType: 'string', name: 'reason', type: 'string' },
     ],
-    stateMutability: 'pure',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { internalType: 'bytes', name: 'blockData', type: 'bytes' },
-      { internalType: 'uint256', name: 'migrationIndex', type: 'uint256' },
-      { internalType: 'uint256', name: 'erc20Index', type: 'uint256' },
-    ],
-    name: 'validateERC20Amount',
-    outputs: [
-      { internalType: 'bool', name: 'slash', type: 'bool' },
-      { internalType: 'string', name: 'reason', type: 'string' },
-    ],
-    stateMutability: 'pure',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { internalType: 'bytes', name: 'blockData', type: 'bytes' },
-      { internalType: 'uint256', name: 'migrationIndex', type: 'uint256' },
-      { internalType: 'uint256', name: 'erc721MigrationIdx1', type: 'uint256' },
-      { internalType: 'uint256', name: 'erc721MigrationIdx2', type: 'uint256' },
-    ],
-    name: 'validateDuplicatedERC721Migration',
-    outputs: [
-      { internalType: 'bool', name: 'slash', type: 'bool' },
-      { internalType: 'string', name: 'reason', type: 'string' },
-    ],
-    stateMutability: 'pure',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { internalType: 'bytes', name: 'blockData', type: 'bytes' },
-      { internalType: 'uint256', name: 'migrationIndex', type: 'uint256' },
-      { internalType: 'uint256', name: 'erc721Index', type: 'uint256' },
-      { internalType: 'uint256', name: 'tokenId', type: 'uint256' },
-    ],
-    name: 'validateNonFungibility',
-    outputs: [
-      { internalType: 'bool', name: 'slash', type: 'bool' },
-      { internalType: 'string', name: 'reason', type: 'string' },
-    ],
-    stateMutability: 'pure',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { internalType: 'bytes', name: 'blockData', type: 'bytes' },
-      { internalType: 'uint256', name: 'migrationIndex', type: 'uint256' },
-      { internalType: 'uint256', name: 'erc721Index', type: 'uint256' },
-      { internalType: 'uint256', name: 'tokenId', type: 'uint256' },
-    ],
-    name: 'validateNftExistence',
-    outputs: [
-      { internalType: 'bool', name: 'slash', type: 'bool' },
-      { internalType: 'string', name: 'reason', type: 'string' },
-    ],
-    stateMutability: 'pure',
+    stateMutability: 'view',
     type: 'function',
   },
   {
@@ -132,7 +84,7 @@ export const IMigrationValidatorABI = [
       { internalType: 'uint256', name: 'txIndex', type: 'uint256' },
       { internalType: 'uint256', name: 'outflowIndex', type: 'uint256' },
     ],
-    name: 'validateMissingDestination',
+    name: 'validateMissedMassMigration',
     outputs: [
       { internalType: 'bool', name: 'slash', type: 'bool' },
       { internalType: 'string', name: 'reason', type: 'string' },
