@@ -30,10 +30,10 @@ export class OffchainTxValidator extends OffchainValidatorContext
     const tx = block.body.txs[txIndex.toBN().toNumber()]
     const ref = tx.inflow[inflowIndex.toBN().toNumber()].root
     return {
-      slashable: await this.isValidRef(
+      slashable: !(await (this.isValidRef(
         headerHash(block.header),
         ref.toUint256(),
-      ),
+      ))),
       reason: CODE.T1,
     }
   }
