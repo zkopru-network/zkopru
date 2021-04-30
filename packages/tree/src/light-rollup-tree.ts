@@ -115,11 +115,7 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     hash: T
     index?: T
   }): Promise<MerkleProof<T>> {
-    let proof!: MerkleProof<T>
-    await this.lock.acquire('root', async () => {
-      proof = await this._merkleProof({ hash, index })
-    })
-    return proof
+    return this.lock.acquire('root', async () => this._merkleProof({ hash, index }))
   }
 
   async append(
