@@ -275,6 +275,44 @@ export class ZkWalletAccount {
     return result
   }
 
+  depositEtherTx(eth: F, fee: F, to?: ZkAddress): any {
+    if (!this.account) {
+      logger.error('Account is not set')
+      return false
+    }
+    const note = Utxo.newEtherNote({
+      eth,
+      owner: to || this.account.zkAddress,
+    })
+    const tx = this.node.layer1.user.methods.deposit(
+      note.owner.spendingPubKey().toString(),
+      note.salt.toUint256().toString(),
+      note
+        .eth()
+        .toUint256()
+        .toString(),
+      note
+        .tokenAddr()
+        .toAddress()
+        .toString(),
+      note
+        .erc20Amount()
+        .toUint256()
+        .toString(),
+      note
+        .nft()
+        .toUint256()
+        .toString(),
+      Fp.strictFrom(fee).toUint256().toString(),
+    )
+    return {
+      to: this.node.layer1.user.options.address,
+      data: tx.encodeABI(),
+      value: note.eth().add(fee).toString(16),
+      onComplete: async () => this.saveOutflow(note),
+    }
+  }
+
   async depositERC20(
     eth: F,
     addr: string,
