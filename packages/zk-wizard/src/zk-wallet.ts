@@ -1,6 +1,6 @@
 import { HDWallet, ZkAccount } from '@zkopru/account'
-import { ZkWalletAccount, ZkWalletAccountConfig } from './zk-wallet-account'
 import { DB } from '@zkopru/database'
+import { ZkWalletAccount, ZkWalletAccountConfig } from './zk-wallet-account'
 
 export class ZkWallet extends ZkWalletAccount {
   private wallet: HDWallet
@@ -9,7 +9,7 @@ export class ZkWallet extends ZkWalletAccount {
 
   constructor(
     config: ZkWalletAccountConfig & {
-      db?: DB,
+      db?: DB
       accounts: ZkAccount[]
       wallet: HDWallet
     },

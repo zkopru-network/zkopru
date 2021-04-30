@@ -1,5 +1,5 @@
-import ZkopruNode from './zkopru-node'
 import { ZkWalletAccount } from '@zkopru/zk-wizard'
+import ZkopruNode from './zkopru-node'
 
 // The ipfs path for the latest proving keys
 const DEFAULT_KEY_CID = '/ipfs/QmWdQnPVdbS61ERWJY76xfkbzrLDiQptE81LRTQUupSP7G'
@@ -12,7 +12,7 @@ export default class ZkopruWallet {
   constructor(
     node: ZkopruNode,
     privateKey: Buffer | string,
-    coordinator: string
+    coordinator: string,
   ) {
     this.node = node
     if (!this.node.node) {
@@ -28,5 +28,4 @@ export default class ZkopruWallet {
       erc721: [],
     })
   }
-
 }
