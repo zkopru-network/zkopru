@@ -3,11 +3,10 @@
   "fullnode": true,
   "develop": false,
   "websocket": "ws://192.168.1.199:9546",
-  "websocket": "ws://10.10.10.1:9546",
-  "coordinator": "http://10.10.10.1:8888",
+  "coordinator": "http://localhost:8888",
   "networkId": 5,
   "chainId": 5,
-  "address": "0x24A8072a8d2fde1e22b99398a104640f58C8462d",
+  "address": "0x517efDF97ECa8518dcfc3dcf947D4933e465CaE2",
   "keys_bak": "keys",
   "db": "db",
   "seedKeystore": {
