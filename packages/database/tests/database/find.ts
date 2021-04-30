@@ -155,7 +155,7 @@ export default function(this: { db: DB }) {
       },
     ])
     const row = await this.db.findOne('TableFour', {
-      where: { id: 'test0', },
+      where: { id: 'test0' },
       include: { relation1: true },
     })
     assert.strictEqual(row.relation1, null)

@@ -67,6 +67,7 @@ export class ZkWalletAccount {
     } else if (obj.account) {
       this.account = obj.account
     } else if (obj.accounts && obj.accounts.length > 0) {
+      // eslint-disable-next-line prefer-destructuring
       this.account = obj.accounts[0]
     } else {
       throw new Error(
@@ -303,12 +304,17 @@ export class ZkWalletAccount {
         .nft()
         .toUint256()
         .toString(),
-      Fp.strictFrom(fee).toUint256().toString(),
+      Fp.strictFrom(fee)
+        .toUint256()
+        .toString(),
     )
     return {
       to: this.node.layer1.user.options.address,
       data: tx.encodeABI(),
-      value: note.eth().add(fee).toString(16),
+      value: note
+        .eth()
+        .add(fee)
+        .toString(16),
       onComplete: async () => this.saveOutflow(note),
     }
   }
@@ -500,13 +506,13 @@ export class ZkWalletAccount {
   }
 
   async fetchPrice(): Promise<string> {
-   const response = await fetch(`${this.coordinator}/price`)
-   if (response.ok) {
-     const { weiPerByte } = await response.json()
-     if (weiPerByte) return weiPerByte
-   }
-   throw Error(`${response}`)
- }
+    const response = await fetch(`${this.coordinator}/price`)
+    if (response.ok) {
+      const { weiPerByte } = await response.json()
+      if (weiPerByte) return weiPerByte
+    }
+    throw Error(`${response}`)
+  }
 
   async sendLayer1Tx<T>({
     contract,
