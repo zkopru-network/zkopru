@@ -61,7 +61,7 @@ export default [
       {
         name: 'id',
         type: 'Int',
-        // Int primary keys default to auto-incrementing
+        default: () => Math.floor(Math.random() * 100000000),
       },
       {
         name: 'viewer',
