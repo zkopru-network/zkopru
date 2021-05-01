@@ -143,49 +143,61 @@ export class ZkWizard {
         'vks',
         `zk_transaction_${nIn}_${nOut}.vk.json`,
       )
-      const wasmPath = path.join(
-        this.tmpdir,
-        `zk_transaction_${nIn}_${nOut}.wasm`,
+      if (typeof window === 'undefined') {
+        const wasmPath = path.join(
+          this.tmpdir,
+          `zk_transaction_${nIn}_${nOut}.wasm`,
+        )
+        const zkeyPath = path.join(
+          this.tmpdir,
+          `zk_transaction_${nIn}_${nOut}.zkey`,
+        )
+        let vKey: Record<string, any>
+        {
+          logger.info('Downloading vkey')
+          const response = await fetch(
+            new URL(vKeyUrlPath, IPFS_GATEWAY_HOST).toString(),
+          )
+          vKey = await response.json()
+        }
+        if (!fs.existsSync(wasmPath)) {
+          logger.info('Downloading wasm')
+          const response = await fetch(
+            new URL(wasmUrlPath, IPFS_GATEWAY_HOST).toString(),
+          )
+          const filestream = fs.createWriteStream(wasmPath)
+          await new Promise((rs, rj) => {
+            response.body.pipe(filestream)
+            response.body.on('error', rj)
+            filestream.on('finish', rs)
+          })
+        }
+        if (!fs.existsSync(zkeyPath)) {
+          logger.info('Downloading zkey')
+          const response = await fetch(
+            new URL(zKeyUrlPath, IPFS_GATEWAY_HOST).toString(),
+          )
+          const filestream = fs.createWriteStream(zkeyPath)
+          await new Promise((rs, rj) => {
+            response.body.pipe(filestream)
+            response.body.on('error', rj)
+            filestream.on('finish', rs)
+          })
+        }
+        return {
+          wasmPath,
+          zkeyPath,
+          vKey,
+        }
+      }
+      // In a web browser, no fs access, store in localstorage
+      const response = await window.fetch(
+        new URL(vKeyUrlPath, IPFS_GATEWAY_HOST).toString(),
       )
-      const zkeyPath = path.join(
-        this.tmpdir,
-        `zk_transaction_${nIn}_${nOut}.zkey`,
-      )
-      let vKey: Record<string, any>
-      {
-        logger.info('Downloading vkey')
-        const response = await fetch(
-          new URL(vKeyUrlPath, IPFS_GATEWAY_HOST).toString(),
-        )
-        vKey = await response.json()
-      }
-      if (!fs.existsSync(wasmPath)) {
-        logger.info('Downloading wasm')
-        const response = await fetch(
-          new URL(wasmUrlPath, IPFS_GATEWAY_HOST).toString(),
-        )
-        const filestream = fs.createWriteStream(wasmPath)
-        await new Promise((rs, rj) => {
-          response.body.pipe(filestream)
-          response.body.on('error', rj)
-          filestream.on('finish', rs)
-        })
-      }
-      if (!fs.existsSync(zkeyPath)) {
-        logger.info('Downloading zkey')
-        const response = await fetch(
-          new URL(zKeyUrlPath, IPFS_GATEWAY_HOST).toString(),
-        )
-        const filestream = fs.createWriteStream(zkeyPath)
-        await new Promise((rs, rj) => {
-          response.body.pipe(filestream)
-          response.body.on('error', rj)
-          filestream.on('finish', rs)
-        })
-      }
+      const vKey = await response.json()
       return {
-        wasmPath,
-        zkeyPath,
+        wasmPath: new URL(wasmUrlPath, IPFS_GATEWAY_HOST).toString(),
+        zkeyPath: new URL(zKeyUrlPath, IPFS_GATEWAY_HOST).toString(),
         vKey,
       }
     }
@@ -207,9 +219,10 @@ export class ZkWizard {
     const nOut = tx.outflow.length
     const { wasmPath, zkeyPath, vKey } = await this.loadKeyPaths(nIn, nOut)
     let fileNotExistMsg: string | undefined
-    if (!fs.existsSync(wasmPath)) {
+    const isUrl = (str: string) => /http(s)?:\/\//.test(str)
+    if (!isUrl(wasmPath) && !fs.existsSync(wasmPath)) {
       fileNotExistMsg = `Does not have the wasm code for the ${tx.inflow.length} inputs and ${tx.outflow.length} outputs circuit`
-    } else if (!fs.existsSync(zkeyPath)) {
+    } else if (!isUrl(zkeyPath) && !fs.existsSync(zkeyPath)) {
       fileNotExistMsg = `Does not have the zkey for the ${tx.inflow.length} inputs and ${tx.outflow.length} outputs circuit`
     }
     if (fileNotExistMsg) throw new Error(fileNotExistMsg)
