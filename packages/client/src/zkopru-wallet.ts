@@ -1,4 +1,6 @@
 import { ZkWalletAccount } from '@zkopru/zk-wizard'
+import { TxBuilder, RawTx, Utxo, ZkAddress } from '@zkopru/transaction'
+import { Fp } from '@zkopru/babyjubjub'
 import ZkopruNode from './zkopru-node'
 
 // The ipfs path for the latest proving keys
@@ -27,5 +29,36 @@ export default class ZkopruWallet {
       erc20: [],
       erc721: [],
     })
+  }
+
+  async generateWithdrawal(
+    to: string,
+    amountWei: string,
+    weiPerByte: number | string,
+    prepayFeeWei: string,
+  ): Promise<RawTx> {
+    if (!this.wallet.account) {
+      throw new Error('Account is not set')
+    }
+    const spendables = await this.wallet.getSpendables(this.wallet.account)
+    // const spendableAmount = Sum.from(spendables)
+    const txBuilder = TxBuilder.from(this.wallet.account.zkAddress)
+    try {
+      return txBuilder
+        .provide(...spendables.map(note => Utxo.from(note)))
+        .weiPerByte(weiPerByte)
+        .sendEther({
+          eth: Fp.from(amountWei),
+          to: ZkAddress.null,
+          withdrawal: {
+            to: Fp.from(to),
+            fee: Fp.from(prepayFeeWei),
+          },
+        })
+        .build()
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
   }
 }
