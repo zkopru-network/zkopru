@@ -331,7 +331,6 @@ library SubTreeLib {
                     nodes[nodeIndex] = self.preHashedZero[level];
                 }
             }
-            leftMostOfTheFloor >>= 1;
             emptyNode >>= 1;
         }
         return nodes[1];
