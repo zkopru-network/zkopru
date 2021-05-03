@@ -393,13 +393,6 @@ library Types {
         return true;
     }
 
-    // TODO temporal calculation
-    function maxChallengeCost(Block memory blockData)
-        internal
-        pure
-        returns (uint256 maxCost)
-    {}
-
     function getSNARKSignature(uint8 numberOfInputs, uint8 numberOfOutputs)
         internal
         pure

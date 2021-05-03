@@ -43,6 +43,10 @@ contract Coordinatable is Storage {
 
     function stake(address coordinator) public payable {
         require(
+            coordinator != address(0),
+            "Cannot add ETH to the null address"
+        );
+        require(
             msg.value >= MINIMUM_STAKE,
             "Should stake more than minimum amount of ETH"
         );
@@ -232,9 +236,6 @@ contract Coordinatable is Storage {
 
     /**
      * @dev Provide registered erc20 token information for decryption
-     * TODO
-     * 1. verify erc20 token
-     * 2. governance to register the token address
      */
     function registerERC20(address tokenAddr) public {
         require(
@@ -296,8 +297,3 @@ contract Coordinatable is Storage {
         }
     }
 }
-
-//  TODO - If the gas usage exceeds the challenge limit, the proposer will get slashed
-//  TODO - instant withdrawal
-//  TODO - guarantee of tx including
-//  Some thoughts - There exists a possibility of racing condition to get the slash reward
