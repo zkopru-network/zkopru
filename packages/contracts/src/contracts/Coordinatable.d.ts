@@ -151,7 +151,7 @@ export interface Coordinatable extends BaseContract {
     ): NonPayableTransactionObject<void>
 
     /**
-     * Provide registered erc20 token information for decryption TODO 1. verify erc20 token 2. governance to register the token address
+     * Provide registered erc20 token information for decryption
      */
     registerERC20(tokenAddr: string): NonPayableTransactionObject<void>
 

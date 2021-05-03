@@ -217,7 +217,6 @@ contract UserInteractable is Storage {
         // check note fields
         require(_checkNoteFields(eth, token, amount, nft));
 
-        //TODO: require(fee >= specified fee);
         // Validate the note is same with the hash result
         uint256[4] memory assetHashInputs = [eth, uint256(token), amount, nft];
         uint256 assetHash = Poseidon4.poseidon(assetHashInputs);
