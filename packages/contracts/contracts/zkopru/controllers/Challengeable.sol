@@ -68,8 +68,6 @@ contract Challengeable is Storage {
         // Since the challenge satisfies the given conditions, slash the optimistic rollup proposer
         Storage.chain.slashed[proposal.headerHash] = true; // Record it as slashed;
         _forfeitAndReward(proposer, msg.sender);
-        // Emit event
-        Storage.chain.slashed[proposal.headerHash] = true;
         emit Slash(proposal.headerHash, proposer, reason);
     }
 
