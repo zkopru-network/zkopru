@@ -145,27 +145,23 @@ export interface UserInteractable extends BaseContract {
       siblings: (number | string | BN)[],
     ): NonPayableTransactionObject<void>
 
-    /**
-     * Someone can pay in advance for unfinalized withdrawals
-     * @param amount Amount of ERC20 when the token param is defined and it is an ERC20
-     * @param callerFee Amount of fee to give to the caller. This can be used when the withdrawer account has no ETH.
-     * @param eth Amount of Ether to withdraw out
-     * @param nft NFT id when the token param is defined and it is an ERC721
-     * @param note Poseidon note hash of the withdrawal
-     * @param owner Address of the note
-     * @param signature ECDSA signature
-     * @param token Token address of ERC20 or ERC721. It can be undefined.
-     */
     payInAdvance(
       note: number | string | BN,
-      owner: string,
-      eth: number | string | BN,
-      token: string,
-      amount: number | string | BN,
-      nft: number | string | BN,
-      callerFee: number | string | BN,
-      prepayFeeInEth: number | string | BN,
-      prepayFeeInToken: number | string | BN,
+      publicData: [
+        string,
+        number | string | BN,
+        string,
+        number | string | BN,
+        number | string | BN,
+        number | string | BN,
+      ],
+      prepayRequest: [
+        string,
+        string | number[],
+        number | string | BN,
+        number | string | BN,
+        number | string | BN,
+      ],
       signature: string | number[],
     ): PayableTransactionObject<void>
   }

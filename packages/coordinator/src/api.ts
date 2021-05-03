@@ -2,7 +2,7 @@ import express, { RequestHandler } from 'express'
 import { WithdrawalStatus, ZkTx } from '@zkopru/transaction'
 import { logger } from '@zkopru/utils'
 import { Server } from 'http'
-import { soliditySha3Raw, toBN } from 'web3-utils'
+import { soliditySha3Raw, toBN, toChecksumAddress } from 'web3-utils'
 import { Bytes32 } from 'soltypes'
 import { Fp } from '@zkopru/babyjubjub'
 import { BootstrapData } from '@zkopru/core'
@@ -213,20 +213,17 @@ export class CoordinatorApi {
       prepayFeeInToken,
       includedIn,
       index,
-      sign,
+      prepayer,
+      expiration,
+      signature,
     } = withdrawal
-    const tx = layer1.user.methods.payInAdvance(
-      hash,
-      to,
-      eth,
-      tokenAddr,
-      erc20Amount,
-      nft,
-      fee,
-      prepayFeeInEth,
-      prepayFeeInToken,
-      sign.signature,
-    )
+    if (
+      toChecksumAddress(prepayer) !==
+      toChecksumAddress(this.context.account.address)
+    ) {
+      res.status(400).send('This server does not have that prepayer account.')
+      return
+    }
     const withdrawalHash = soliditySha3Raw(
       hash,
       to,
@@ -236,6 +233,13 @@ export class CoordinatorApi {
       nft,
       fee,
     )
+    const tx = layer1.user.methods.payInAdvance(
+      hash,
+      [to, eth, tokenAddr, erc20Amount, nft, fee],
+      [prepayer, withdrawalHash, prepayFeeInEth, prepayFeeInToken, expiration],
+      signature,
+    )
+
     const data = {
       hash,
       withdrawalHash,
@@ -247,6 +251,7 @@ export class CoordinatorApi {
       fee,
       includedIn,
       index,
+      expiration: parseInt(expiration, 10),
       siblings: JSON.stringify(withdrawal.siblings),
       status: WithdrawalStatus.UNFINALIZED,
     }

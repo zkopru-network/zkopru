@@ -55,14 +55,35 @@ export const IUserInteractableABI = [
   {
     inputs: [
       { internalType: 'uint256', name: 'note', type: 'uint256' },
-      { internalType: 'address', name: 'owner', type: 'address' },
-      { internalType: 'uint256', name: 'eth', type: 'uint256' },
-      { internalType: 'address', name: 'token', type: 'address' },
-      { internalType: 'uint256', name: 'amount', type: 'uint256' },
-      { internalType: 'uint256', name: 'nft', type: 'uint256' },
-      { internalType: 'uint256', name: 'callerFee', type: 'uint256' },
-      { internalType: 'uint256', name: 'prepayFeeInEth', type: 'uint256' },
-      { internalType: 'uint256', name: 'prepayFeeInToken', type: 'uint256' },
+      {
+        components: [
+          { internalType: 'address', name: 'to', type: 'address' },
+          { internalType: 'uint256', name: 'eth', type: 'uint256' },
+          { internalType: 'address', name: 'token', type: 'address' },
+          { internalType: 'uint256', name: 'amount', type: 'uint256' },
+          { internalType: 'uint256', name: 'nft', type: 'uint256' },
+          { internalType: 'uint256', name: 'fee', type: 'uint256' },
+        ],
+        internalType: 'struct PublicData',
+        name: 'publicData',
+        type: 'tuple',
+      },
+      {
+        components: [
+          { internalType: 'address', name: 'prepayer', type: 'address' },
+          { internalType: 'bytes32', name: 'withdrawalHash', type: 'bytes32' },
+          { internalType: 'uint256', name: 'prepayFeeInEth', type: 'uint256' },
+          {
+            internalType: 'uint256',
+            name: 'prepayFeeInToken',
+            type: 'uint256',
+          },
+          { internalType: 'uint256', name: 'expiration', type: 'uint256' },
+        ],
+        internalType: 'struct PrepayRequest',
+        name: 'prepayRequest',
+        type: 'tuple',
+      },
       { internalType: 'bytes', name: 'signature', type: 'bytes' },
     ],
     name: 'payInAdvance',

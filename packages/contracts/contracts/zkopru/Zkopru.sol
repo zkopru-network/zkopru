@@ -9,9 +9,12 @@ import { Proxy } from "./Proxy.sol";
 import { SNARK } from "./libraries/SNARK.sol";
 import { Blockchain, Header, Types } from "./libraries/Types.sol";
 import { Pairing, G1Point, G2Point } from "./libraries/Pairing.sol";
+import {
+    ERC721Holder
+} from "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol";
 import { Hash } from "./libraries/Hash.sol";
 
-contract Zkopru is Proxy, Reader, ISetupWizard {
+contract Zkopru is Proxy, Reader, ISetupWizard, ERC721Holder {
     using Types for Header;
     using Types for Blockchain;
 

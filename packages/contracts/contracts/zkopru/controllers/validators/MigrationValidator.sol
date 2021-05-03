@@ -76,7 +76,7 @@ contract MigrationValidator is Storage, IMigrationValidator {
             }
         }
         // code M2: MassMigration is carrying invalid amount of ETH
-        return (!(eth == migration.asset.eth), "M2");
+        return (eth != migration.asset.eth, "M2");
     }
 
     /**
@@ -109,7 +109,7 @@ contract MigrationValidator is Storage, IMigrationValidator {
             }
         }
         // code M3: MassMigration is carrying invalid amount of token
-        return (!(amount == migration.asset.amount), "M3");
+        return (amount != migration.asset.amount, "M3");
     }
 
     /**

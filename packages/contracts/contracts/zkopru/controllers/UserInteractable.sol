@@ -1,22 +1,37 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.7.4;
+pragma experimental ABIEncoderV2;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
+import { EIP712, EIP712Domain } from "../libraries/EIP712.sol";
 import { MerkleTreeLib } from "../libraries/MerkleTree.sol";
 import { Storage } from "../storage/Storage.sol";
 import { Hash, Poseidon3, Poseidon4 } from "../libraries/Hash.sol";
-import { WithdrawalTree, Blockchain, Types } from "../libraries/Types.sol";
+import {
+    WithdrawalTree,
+    Blockchain,
+    PublicData,
+    Types
+} from "../libraries/Types.sol";
+import { PrepayRequest } from "../interfaces/IUserInteractable.sol";
 
 contract UserInteractable is Storage {
     uint256 public constant SNARK_FIELD =
         21888242871839275222246405745257275088548364400416034343698204186575808495617;
     uint256 public constant RANGE_LIMIT = SNARK_FIELD >> 32;
+    bytes32 private constant PREPAY_TYPEHASH =
+        keccak256(
+            "PrepayRequest(address prepayer,bytes32 withdrawalHash,uint256 prepayFeeInEth,uint256 prepayFeeInToken,uint256 expiration)"
+        );
+
     using MerkleTreeLib for *;
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
+    using EIP712 for bytes32;
+    using EIP712 for EIP712Domain;
 
     event Deposit(uint256 indexed queuedAt, uint256 note, uint256 fee);
 
@@ -85,65 +100,89 @@ contract UserInteractable is Storage {
     /**
      * @notice Someone can pay in advance for unfinalized withdrawals
      * @param note Poseidon note hash of the withdrawal
-     * @param owner Address of the note
-     * @param eth Amount of Ether to withdraw out
-     * @param token Token address of ERC20 or ERC721. It can be undefined.
-     * @param amount Amount of ERC20 when the token param is defined and it is an ERC20
-     * @param nft NFT id when the token param is defined and it is an ERC721
-     * @param callerFee Amount of fee to give to the caller. This can be used when the withdrawer account has no ETH.
+     * @param publicData Public Data from its outflow
+     * @param prepayRequest Prepay request data for the signature
      * @param signature ECDSA signature
      */
     function payInAdvance(
         uint256 note,
-        address owner,
-        uint256 eth,
-        address token,
-        uint256 amount,
-        uint256 nft,
-        uint256 callerFee,
-        uint256 prepayFeeInEth,
-        uint256 prepayFeeInToken,
+        PublicData memory publicData,
+        PrepayRequest memory prepayRequest,
         bytes memory signature
     ) public payable {
+        require(
+            block.timestamp < prepayRequest.expiration,
+            "Signature expired"
+        );
         bytes32 withdrawalHash =
-            _withdrawalHash(note, owner, eth, token, amount, nft, callerFee);
+            _withdrawalHash(
+                note,
+                publicData.to,
+                publicData.eth,
+                publicData.token,
+                publicData.amount,
+                publicData.nft,
+                publicData.fee
+            );
         require(!Storage.chain.withdrawn[withdrawalHash], "Already withdrawn");
+        require(
+            prepayRequest.withdrawalHash == withdrawalHash,
+            "Prepay data is different with the given withdrawal note."
+        );
+        require(
+            prepayRequest.prepayer == msg.sender,
+            "This tx should be from the prepayer."
+        );
 
         address currentOwner =
-            Storage.chain.newWithdrawalOwner[withdrawalHash] == address(0)
-                ? owner
-                : Storage.chain.newWithdrawalOwner[withdrawalHash];
+            Storage.chain.newWithdrawalOwner[withdrawalHash] != address(0)
+                ? Storage.chain.newWithdrawalOwner[withdrawalHash]
+                : publicData.to;
         address prepayer = msg.sender;
-        bytes32 payInAdvanceMsg =
+
+        // verify original owner's signature
+        bytes32 structHash =
             keccak256(
-                abi.encodePacked(
-                    prepayer,
-                    withdrawalHash,
-                    prepayFeeInEth,
-                    prepayFeeInToken
+                abi.encode(
+                    PREPAY_TYPEHASH,
+                    prepayRequest.prepayer,
+                    prepayRequest.withdrawalHash,
+                    prepayRequest.prepayFeeInEth,
+                    prepayRequest.prepayFeeInToken,
+                    prepayRequest.expiration
                 )
             );
-        // verify original owner's signature
+        uint256 chainId;
+        assembly {
+            chainId := chainid()
+        }
         require(
-            _verifySignature(currentOwner, payInAdvanceMsg, signature),
+            currentOwner ==
+                EIP712.separator("Zkopru", "1").recoverTypedSignV4(
+                    structHash,
+                    signature
+                ),
             "Invalid owner signature"
         );
         // transfer ownership
         Storage.chain.newWithdrawalOwner[withdrawalHash] = prepayer;
         // transfer assets
-        require(msg.value == eth, "not enough ether");
+        require(msg.value == publicData.eth, "not enough ether");
         // prepay tokens
-        if (Storage.chain.registeredERC20s[token]) {
-            IERC20(token).safeTransferFrom(
+        if (Storage.chain.registeredERC20s[publicData.token]) {
+            IERC20(publicData.token).safeTransferFrom(
                 prepayer,
                 currentOwner,
-                amount.sub(prepayFeeInToken)
+                publicData.amount.sub(prepayRequest.prepayFeeInToken)
             );
-        } else if (Storage.chain.registeredERC721s[token]) {
+        } else if (Storage.chain.registeredERC721s[publicData.token]) {
             revert("Does not support NFT prepay");
         }
         // prepay ether
-        _sendEth(currentOwner, eth.sub(prepayFeeInEth));
+        _sendEth(
+            currentOwner,
+            publicData.eth.sub(prepayRequest.prepayFeeInEth)
+        );
     }
 
     function _deposit(
@@ -195,6 +234,7 @@ contract UserInteractable is Storage {
                 );
             } else if (chain.registeredERC721s[token]) {
                 require(amount == 0, "NFT note cannot have amount");
+                require(nft != 0, "Zkopru does not support NFT which id is 0");
                 IERC721(token).safeTransferFrom(msg.sender, address(this), nft);
             } else {
                 revert("Not a registered token.");
@@ -304,30 +344,6 @@ contract UserInteractable is Storage {
                     callerFee
                 )
             );
-    }
-
-    function _verifySignature(
-        address signer,
-        bytes32 message,
-        bytes memory sig
-    ) internal pure returns (bool) {
-        require(sig.length == 65);
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-        assembly {
-            // first 32 bytes, after the length prefix.
-            r := mload(add(sig, 32))
-            // second 32 bytes.
-            s := mload(add(sig, 64))
-            // final byte (first byte of the next 32 bytes).
-            v := byte(0, mload(add(sig, 96)))
-        }
-        bytes32 prefixedHash =
-            keccak256(
-                abi.encodePacked("\x19Ethereum Signed Message:\n32", message)
-            );
-        return signer == ecrecover(prefixedHash, v, r, s);
     }
 
     function _checkNoteFields(

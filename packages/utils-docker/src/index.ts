@@ -46,6 +46,7 @@ export async function buildAndGetContainer({
     socketPath?: string
   }
 }): Promise<Container> {
+  console.log('building..')
   const cwd = typeof compose === 'string' ? compose : pathLib.join(...compose)
   const config = await dockerCompose.config({ cwd })
   const { services } = jsyaml.load(config.out)

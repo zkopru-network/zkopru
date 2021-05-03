@@ -63,14 +63,21 @@ export interface IUserInteractable extends BaseContract {
 
     payInAdvance(
       note: number | string | BN,
-      owner: string,
-      eth: number | string | BN,
-      token: string,
-      amount: number | string | BN,
-      nft: number | string | BN,
-      callerFee: number | string | BN,
-      prepayFeeInEth: number | string | BN,
-      prepayFeeInToken: number | string | BN,
+      publicData: [
+        string,
+        number | string | BN,
+        string,
+        number | string | BN,
+        number | string | BN,
+        number | string | BN,
+      ],
+      prepayRequest: [
+        string,
+        string | number[],
+        number | string | BN,
+        number | string | BN,
+        number | string | BN,
+      ],
       signature: string | number[],
     ): NonPayableTransactionObject<void>
   }
