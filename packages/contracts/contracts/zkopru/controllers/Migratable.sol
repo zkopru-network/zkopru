@@ -3,6 +3,7 @@ pragma solidity =0.7.4;
 pragma experimental ABIEncoderV2;
 
 import { Storage } from "../storage/Storage.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
@@ -15,6 +16,7 @@ contract Migratable is Storage {
     using Types for *;
     using MerkleTreeLib for Hasher;
     using SafeMath for uint256;
+    using SafeERC20 for IERC20;
 
     event NewMassMigration(
         address sourceNetwork,
@@ -114,7 +116,7 @@ contract Migratable is Storage {
         payable(migration.destination).transfer(migration.asset.eth);
         // send ERC20
         if (migration.asset.token != address(0)) {
-            IERC20(migration.asset.token).transfer(
+            IERC20(migration.asset.token).safeTransfer(
                 migration.destination,
                 migration.asset.amount
             );
