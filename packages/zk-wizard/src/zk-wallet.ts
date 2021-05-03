@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import {
   UtxoStatus,
   Sum,
@@ -15,11 +16,11 @@ import { HDWallet, ZkAccount } from '@zkopru/account'
 import { ZkopruNode } from '@zkopru/core'
 import { DB, Withdrawal as WithdrawalSql } from '@zkopru/database'
 import { logger } from '@zkopru/utils'
-import { soliditySha3 } from 'web3-utils'
-import { Address, Uint256 } from 'soltypes'
+import { Address, Bytes32, Uint256 } from 'soltypes'
 import fetch, { Response } from 'node-fetch'
 import assert from 'assert'
 import { TransactionReceipt, Account } from 'web3-core'
+import { signTypedData_v4 } from 'eth-sig-util'
 import { ZkWizard } from './zk-wizard'
 
 export interface Balance {
@@ -430,6 +431,7 @@ export class ZkWallet {
     prepayFeeInEth: Uint256,
     prepayFeeInToken: Uint256,
     withdrawal: WithdrawalSql,
+    expiration: number,
   ): Promise<boolean> {
     if (!this.account) {
       logger.error('Account is not set')
@@ -438,23 +440,56 @@ export class ZkWallet {
     if (!withdrawal.siblings) throw Error('No sibling data')
     if (!withdrawal.includedIn) throw Error('No block hash which includes it')
     if (!withdrawal.index) throw Error('No leaf index')
-    const message = soliditySha3(
-      prePayer.toString(),
-      Uint256.from(withdrawal.withdrawalHash)
-        .toBytes()
-        .toString(),
-      prepayFeeInEth.toBytes().toString(),
-      prepayFeeInToken.toBytes().toString(),
-    )
-    assert(message)
+
     const siblings: string[] = JSON.parse(withdrawal.siblings)
-    const sign = this.account.ethAccount.sign(message)
+    const chainId = await this.node.layer1.web3.eth.getChainId()
+    const msgParams = {
+      domain: {
+        chainId,
+        name: 'Zkopru',
+        verifyingContract: this.node.layer1.address,
+        version: '1',
+      },
+      primaryType: 'PrepayRequest' as const,
+      types: {
+        EIP712Domain: [
+          { name: 'name', type: 'string' },
+          { name: 'version', type: 'string' },
+          { name: 'chainId', type: 'uint256' },
+          { name: 'verifyingContract', type: 'address' },
+        ],
+        PrepayRequest: [
+          { name: 'prepayer', type: 'address' },
+          { name: 'withdrawalHash', type: 'bytes32' },
+          { name: 'prepayFeeInEth', type: 'uint256' },
+          { name: 'prepayFeeInToken', type: 'uint256' },
+          { name: 'expiration', type: 'uint256' },
+        ],
+      },
+      message: {
+        prepayer: prePayer.toString(),
+        withdrawalHash: Uint256.from(withdrawal.withdrawalHash)
+          .toBytes()
+          .toString(),
+        prepayFeeInEth: prepayFeeInEth.toString(),
+        prepayFeeInToken: prepayFeeInToken.toString(),
+        expiration,
+      },
+    }
+    const signature = signTypedData_v4(
+      Bytes32.from(this.account.ethAccount.privateKey).toBuffer(),
+      {
+        data: msgParams,
+      },
+    )
     const data = {
       ...withdrawal,
       siblings,
+      prepayer: prePayer.toString(),
       prepayFeeInEth: prepayFeeInEth.toString(),
       prepayFeeInToken: prepayFeeInToken.toString(),
-      sign,
+      expiration,
+      signature,
     }
     const response = await fetch(`${this.coordinator}/instant-withdraw`, {
       method: 'post',

@@ -325,6 +325,7 @@ export default [
       ['index', 'String', { optional: true }],
       ['includedIn', 'String', { optional: true }],
       ['prepayer', 'String', { optional: true }],
+      ['expiration', 'Int', { optional: true }],
       ['siblings', 'String', { optional: true }],
     ],
   },

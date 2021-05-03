@@ -134,6 +134,16 @@ export interface Zkopru extends BaseContract {
     ): NonPayableTransactionObject<boolean>
 
     /**
+     * See {IERC721Receiver-onERC721Received}. Always returns `IERC721Receiver.onERC721Received.selector`.
+     */
+    onERC721Received(
+      arg0: string,
+      arg1: string,
+      arg2: number | string | BN,
+      arg3: string | number[],
+    ): NonPayableTransactionObject<string>
+
+    /**
      * Returns the address of the current owner.
      */
     owner(): NonPayableTransactionObject<string>

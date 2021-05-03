@@ -38,11 +38,6 @@
     "allowJs": true,
     "resolveJsonModule": true,
     "noImplicitAny": false,
-    "lib": [
-      "es2020",
-      "DOM",
-      "DOM.Iterable",
-      "ScriptHost"
-    ]
+    "lib": ["es2020", "DOM", "DOM.Iterable", "ScriptHost"]
   }
 }

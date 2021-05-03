@@ -156,6 +156,7 @@ export type Withdrawal = {
   index?: string | null
   includedIn?: string | null
   prepayer?: string | null
+  expiration?: number | null
   siblings?: string | null
 }
 
