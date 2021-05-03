@@ -109,8 +109,10 @@ contract UserInteractable is Storage {
             _withdrawalHash(note, owner, eth, token, amount, nft, callerFee);
         require(!Storage.chain.withdrawn[withdrawalHash], "Already withdrawn");
 
-        address newOwner = Storage.chain.newWithdrawalOwner[withdrawalHash];
-        address currentOwner = newOwner == address(0) ? owner : newOwner;
+        address currentOwner =
+            Storage.chain.newWithdrawalOwner[withdrawalHash] == address(0)
+                ? owner
+                : Storage.chain.newWithdrawalOwner[withdrawalHash];
         address prepayer = msg.sender;
         bytes32 payInAdvanceMsg =
             keccak256(
@@ -129,17 +131,19 @@ contract UserInteractable is Storage {
         // transfer ownership
         Storage.chain.newWithdrawalOwner[withdrawalHash] = prepayer;
         // transfer assets
-        uint256 ethToWithdraw = eth.sub(prepayFeeInEth);
-        uint256 tokenToWithdraw = amount.sub(prepayFeeInToken);
         require(msg.value == eth, "not enough ether");
         // prepay tokens
         if (Storage.chain.registeredERC20s[token]) {
-            IERC20(token).transferFrom(prepayer, currentOwner, tokenToWithdraw);
+            IERC20(token).safeTransferFrom(
+                prepayer,
+                currentOwner,
+                amount.sub(prepayFeeInToken)
+            );
         } else if (Storage.chain.registeredERC721s[token]) {
             revert("Does not support NFT prepay");
         }
         // prepay ether
-        _sendEth(currentOwner, ethToWithdraw);
+        _sendEth(currentOwner, eth.sub(prepayFeeInEth));
     }
 
     function _deposit(
@@ -191,7 +195,7 @@ contract UserInteractable is Storage {
                 );
             } else if (chain.registeredERC721s[token]) {
                 require(amount == 0, "NFT note cannot have amount");
-                IERC721(token).transferFrom(msg.sender, address(this), nft);
+                IERC721(token).safeTransferFrom(msg.sender, address(this), nft);
             } else {
                 revert("Not a registered token.");
             }
@@ -269,13 +273,13 @@ contract UserInteractable is Storage {
         }
         // Withdraw tokens if exists
         if (Storage.chain.registeredERC20s[token]) {
-            IERC20(token).transfer(to, amount);
+            IERC20(token).safeTransfer(to, amount);
         } else if (Storage.chain.registeredERC721s[token]) {
             require(
                 nft != 0,
                 "Circuit cannot accept NFT id 0. Please deposit other NFT."
             );
-            IERC721(token).transferFrom(address(this), to, nft);
+            IERC721(token).safeTransferFrom(address(this), to, nft);
         }
     }
 
