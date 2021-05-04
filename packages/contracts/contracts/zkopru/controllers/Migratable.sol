@@ -56,7 +56,7 @@ contract Migratable is Storage {
         if (token != address(0)) {
             newTokenBal = IERC20(token).balanceOf(address(this));
         }
-        // 4.ccheck asset transfer validity
+        // 4. check asset transfer validity
         require(
             prevEthBal.add(migration.asset.eth) == newEthBal,
             "Invalid ETH transfer"
