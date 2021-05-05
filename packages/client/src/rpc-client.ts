@@ -41,7 +41,7 @@ export default class RpcClient {
   // Return a passthrough web3 instance
   get web3() {
     if (!this._web3) {
-      this._web3 = new Web3(this.config.url as any)
+      this._web3 = new Web3(this.config.url)
     }
     return this._web3
   }
