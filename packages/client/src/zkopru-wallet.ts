@@ -31,6 +31,31 @@ export default class ZkopruWallet {
     })
   }
 
+  async generateEtherTransfer(
+    to: string,
+    amountWei: string,
+    weiPerByte: number | string,
+  ): Promise<RawTx> {
+    if (!this.wallet.account) {
+      throw new Error('Account is not set')
+    }
+    const spendables = await this.wallet.getSpendables(this.wallet.account)
+    const txBuilder = TxBuilder.from(this.wallet.account.zkAddress)
+    try {
+      return txBuilder
+        .provide(...spendables.map(note => Utxo.from(note)))
+        .weiPerByte(weiPerByte)
+        .sendEther({
+          eth: Fp.from(amountWei),
+          to: new ZkAddress(to),
+        })
+        .build()
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
+  }
+
   async generateWithdrawal(
     to: string,
     amountWei: string,
