@@ -89,11 +89,7 @@ export class CoordinatorApi {
         app.get('/bootstrap', catchError(this.bootstrapHandler))
       }
       app.get('/price', catchError(this.bytePriceHandler))
-      app.post(
-        '/',
-        express.json(),
-        catchError(this.clientApiHandler),
-      )
+      app.post('/', express.json(), catchError(this.clientApiHandler))
       this.server = app.listen(this.context.config.port, () => {
         logger.info(
           `coordinator.js: API is running on serverPort ${this.context.config.port}`,

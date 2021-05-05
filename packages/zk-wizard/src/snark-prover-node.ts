@@ -1,6 +1,6 @@
 import assert from 'assert'
-import prove from './snark-prover'
 import * as ffjs from 'ffjavascript'
+import prove from './snark-prover'
 
 process.on(
   'message',
