@@ -191,7 +191,7 @@ export class ZkWizard {
         }
       }
       // In a web browser, no fs access, store in localstorage
-      const response = await window.fetch(
+      const response = await fetch(
         new URL(vKeyUrlPath, IPFS_GATEWAY_HOST).toString(),
       )
       const vKey = await response.json()
