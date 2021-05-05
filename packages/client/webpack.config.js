@@ -43,6 +43,9 @@ module.exports = {
       prompts: false,
       buffer: require.resolve('buffer/'),
     },
+    alias: {
+      'node-fetch': require.resolve('./fetch'),
+    },
   },
   plugins: [
     new webpack.DefinePlugin({
