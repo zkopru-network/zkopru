@@ -5,7 +5,7 @@ import { FullNode } from '@zkopru/core'
 import { NodeConfig } from './types'
 
 const DEFAULT = {
-  address: '0x517efDF97ECa8518dcfc3dcf947D4933e465CaE2',
+  address: '0xdadF77fdc462900B98458eA310a18d60946161a6',
   bootstrap: true,
   // websocket: 'wss://goerli.infura.io/ws/v3/5b122dbc87ed4260bf9a2031e8a0e2aa',
   websocket: 'ws://192.168.1.199:9546',

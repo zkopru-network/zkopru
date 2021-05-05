@@ -6,7 +6,7 @@
   "coordinator": "http://localhost:8888",
   "networkId": 5,
   "chainId": 5,
-  "address": "0x517efDF97ECa8518dcfc3dcf947D4933e465CaE2",
+  "address": "0xdadF77fdc462900B98458eA310a18d60946161a6",
   "keys_bak": "keys",
   "db": "db",
   "seedKeystore": {
