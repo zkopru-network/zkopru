@@ -43,12 +43,6 @@ export class CoordinatorApi {
     if (!this.server) {
       const app = express()
       app.use(express.text())
-      app.post('/tx', catchError(this.txHandler))
-      app.post('/instant-withdraw', catchError(this.instantWithdrawHandler))
-      if (this.context.config.bootstrap) {
-        app.get('/bootstrap', catchError(this.bootstrapHandler))
-      }
-      app.get('/price', catchError(this.bytePriceHandler))
       // CORS/vhosts enforced only for RPC API
       const parseCommaList = (list = '') =>
         list
@@ -88,11 +82,16 @@ export class CoordinatorApi {
         )
         next()
       }
-      app.options('/', corsMiddleware)
+      app.use(corsMiddleware)
+      app.post('/tx', catchError(this.txHandler))
+      app.post('/instant-withdraw', catchError(this.instantWithdrawHandler))
+      if (this.context.config.bootstrap) {
+        app.get('/bootstrap', catchError(this.bootstrapHandler))
+      }
+      app.get('/price', catchError(this.bytePriceHandler))
       app.post(
         '/',
         express.json(),
-        corsMiddleware,
         catchError(this.clientApiHandler),
       )
       this.server = app.listen(this.context.config.port, () => {
