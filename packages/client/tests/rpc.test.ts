@@ -163,7 +163,7 @@ describe('rPC tests', () => {
   it('should get verifying keys', async () => {
     const keys = await rpc.getVerifyingKeys()
     assert(keys)
-  })
+  }, 20000)
 
   it.todo('should get transaction by hash')
 
