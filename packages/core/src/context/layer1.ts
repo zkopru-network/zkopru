@@ -47,17 +47,17 @@ export class L1Contract extends ZkopruContract {
           // caution: snarkjs G2Point is reversed
           const vk_beta_2 = [
             [BigInt(vk.beta2[0][1]), BigInt(vk.beta2[0][0])],
-            [BigInt(vk.beta2[1][0]), BigInt(vk.beta2[1][1])],
+            [BigInt(vk.beta2[1][1]), BigInt(vk.beta2[1][0])],
             [BigInt('1'), BigInt('0')],
           ]
           const vk_gamma_2 = [
-            [BigInt(vk.gamma2[0][0]), BigInt(vk.gamma2[0][1])],
-            [BigInt(vk.gamma2[1][0]), BigInt(vk.gamma2[1][1])],
+            [BigInt(vk.gamma2[0][1]), BigInt(vk.gamma2[0][0])],
+            [BigInt(vk.gamma2[1][1]), BigInt(vk.gamma2[1][0])],
             [BigInt('1'), BigInt('0')],
           ]
           const vk_delta_2 = [
-            [BigInt(vk.delta2[0][0]), BigInt(vk.delta2[0][1])],
-            [BigInt(vk.delta2[1][0]), BigInt(vk.delta2[1][1])],
+            [BigInt(vk.delta2[0][1]), BigInt(vk.delta2[0][0])],
+            [BigInt(vk.delta2[1][1]), BigInt(vk.delta2[1][0])],
             [BigInt('1'), BigInt('0')],
           ]
           const vk_alphabeta_12 = bn128.pairing(
@@ -70,11 +70,7 @@ export class L1Contract extends ZkopruContract {
             curve: 'bn128',
             nPublic: vk.ic.length - 1,
             vk_alpha_1,
-            vk_beta_2: [
-              [BigInt(vk.beta2[0][0]), BigInt(vk.beta2[0][1])],
-              [BigInt(vk.beta2[1][0]), BigInt(vk.beta2[1][1])],
-              [BigInt('1'), BigInt('0')],
-            ],
+            vk_beta_2,
             vk_gamma_2,
             vk_delta_2,
             vk_alphabeta_12,
@@ -83,8 +79,8 @@ export class L1Contract extends ZkopruContract {
         })
       }
     }
-    await bn128.terminate()
     await Promise.all(tasks.map(task => task()))
+    await bn128.terminate()
     return vks
   }
 

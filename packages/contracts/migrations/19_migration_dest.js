@@ -77,20 +77,25 @@ module.exports = function migration(deployer, network, accounts) {
     // Setup zkSNARKs
     // Setup migrations
     const keyDir = path.join(__dirname, "../keys/vks");
+    /**
+     * The solidity implementation of snarks expects beta2, gamma2 and delta2 to
+     * have their x/y point ordering reversed. We reverse here and then again
+     * when reading from the contract. Internally the contract uses reversed
+     * points
+     * */
     const vkToInput = (nIn, nOut, vk) => {
       return [
         nIn,
         nOut,
         {
           alpha1: vk.vk_alpha_1.slice(0, 2),
-          beta2: vk.vk_beta_2.slice(0, 2),
-          gamma2: vk.vk_gamma_2.slice(0, 2),
-          delta2: vk.vk_delta_2.slice(0, 2),
+          beta2: vk.vk_beta_2.slice(0, 2).map(a => [...a].reverse()),
+          gamma2: vk.vk_gamma_2.slice(0, 2).map(a => [...a].reverse()),
+          delta2: vk.vk_delta_2.slice(0, 2).map(a => [...a].reverse()),
           ic: vk.IC.map(arr => arr.slice(0, 2))
         }
       ];
     };
-    // console.log(path.resolve(keyDir))
     for (let nIn = 1; nIn <= 4; nIn += 1) {
       for (let nOut = 1; nOut <= 4; nOut += 1) {
         const vk = JSON.parse(
