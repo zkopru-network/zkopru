@@ -113,9 +113,11 @@ contract Migratable is Storage {
         ] = true;
         // 4. transfer assets.
         // send ETH
-        payable(migration.destination).transfer(migration.asset.eth);
+        if (migration.asset.eth > 0) {
+            payable(migration.destination).transfer(migration.asset.eth);
+        }
         // send ERC20
-        if (migration.asset.token != address(0)) {
+        if (migration.asset.token != address(0) && migration.asset.amount > 0) {
             IERC20(migration.asset.token).safeTransfer(
                 migration.destination,
                 migration.asset.amount
