@@ -2,6 +2,7 @@
 pragma solidity =0.7.4;
 
 import { Storage } from "../storage/Storage.sol";
+import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import { IERC165 } from "@openzeppelin/contracts/introspection/IERC165.sol";
@@ -25,6 +26,7 @@ import { Deserializer } from "../libraries/Deserializer.sol";
 contract Coordinatable is Storage {
     using Types for *;
     using SafeERC20 for IERC20;
+    using SafeMath for uint256;
 
     event NewProposal(uint256 proposalNum, bytes32 blockHash);
     event Finalized(bytes32 blockHash);
@@ -66,10 +68,8 @@ contract Coordinatable is Storage {
         );
         // Delete proposer
         delete Storage.chain.proposers[proposerAddr];
-        // Withdraw stake
-        proposerAddr.transfer(proposer.stake);
-        // Withdraw reward
-        payable(proposerAddr).transfer(proposer.reward);
+        // Withdraw staked amount and reward
+        payable(proposerAddr).transfer(proposer.stake.add(proposer.reward));
     }
 
     /**
