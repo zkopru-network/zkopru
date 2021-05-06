@@ -225,15 +225,12 @@ contract UserInteractable is Storage {
         // Receive token
         if (token != address(0)) {
             if (chain.registeredERC20s[token]) {
-                require(nft == 0, "ERC20 note cannot have NFT");
                 IERC20(token).safeTransferFrom(
                     msg.sender,
                     address(this),
                     amount
                 );
             } else if (chain.registeredERC721s[token]) {
-                require(amount == 0, "NFT note cannot have amount");
-                require(nft != 0, "Zkopru does not support NFT which id is 0");
                 IERC721(token).safeTransferFrom(msg.sender, address(this), nft);
             } else {
                 revert("Not a registered token.");
@@ -314,10 +311,6 @@ contract UserInteractable is Storage {
         if (Storage.chain.registeredERC20s[token]) {
             IERC20(token).safeTransfer(to, amount);
         } else if (Storage.chain.registeredERC721s[token]) {
-            require(
-                nft != 0,
-                "Circuit cannot accept NFT id 0. Please deposit other NFT."
-            );
             IERC721(token).safeTransferFrom(address(this), to, nft);
         }
     }
