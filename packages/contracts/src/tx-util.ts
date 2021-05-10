@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Web3 from 'web3'
 import { Account, TransactionReceipt } from 'web3-core'
+import { Fp } from '@zkopru/babyjubjub'
+import { logger } from '@zkopru/utils'
 import {
   PayableTransactionObject,
   NonPayableTransactionObject,
@@ -21,18 +23,41 @@ export class TxUtil {
     account: Account,
     option?: Tx,
   ): Promise<string> {
-    const [gas, gasPrice] = await Promise.all([
-      tx.estimateGas({
-        ...option,
+    let gasPrice: string
+    let selectedGas: number
+
+    // To Prevent using `option.gas` lower than estimated gas
+    if (!option?.gas) {
+      selectedGas = await tx.estimateGas({ ...option, from: account.address })
+    } else {
+      const { gas, ...otherOption } = option
+      const estimateGas = await tx.estimateGas({
+        ...otherOption,
         from: account.address,
-      }),
-      web3.eth.getGasPrice(),
-    ])
+      })
+      const optionGas = Fp.from(gas).toNumber()
+
+      if (optionGas >= estimateGas) {
+        selectedGas = optionGas
+      } else {
+        selectedGas = estimateGas
+        logger.info(
+          `Lower than estimated Gas, Using gas amount as ${selectedGas} instead of ${option.gas} `,
+        )
+      }
+    }
+
+    if (option?.gasPrice) {
+      gasPrice = Fp.from(option.gasPrice).toString()
+    } else {
+      gasPrice = await web3.eth.getGasPrice()
+    }
+
     const value = option ? (option as PayableTx).value : undefined
     const { rawTransaction } = await web3.eth.accounts.signTransaction(
       {
         gasPrice,
-        gas,
+        gas: selectedGas,
         to: address,
         value,
         data: tx.encodeABI(),
