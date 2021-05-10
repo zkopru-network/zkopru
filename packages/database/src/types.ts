@@ -68,6 +68,12 @@ export interface TableData {
   rows: (RowDef | ShortRowDef)[]
 }
 
+// For accepting a specific DB connector as an argument to a function
+// A type representing any database connector without having to specify which
+export type SomeDBConnector = (new (...args: any[]) => DB) & {
+  create: (tables: TableData[], ...args: any[]) => Promise<DB>
+}
+
 export abstract class DB {
   static create: (tables: TableData[], ...args: any[]) => Promise<DB>
 

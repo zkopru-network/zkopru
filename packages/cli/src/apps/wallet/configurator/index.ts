@@ -75,6 +75,7 @@ export async function getZkWallet(
     erc721: erc721?.map(Address.from) || [],
     coordinator,
     snarkKeyPath: keys,
+    snarkKeyCid: config.snarkKeyCid,
   })
   return zkWallet
 }

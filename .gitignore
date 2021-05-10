@@ -212,3 +212,4 @@ typings/
 *.secret
 config.json
 *.swp
+.DS_Store

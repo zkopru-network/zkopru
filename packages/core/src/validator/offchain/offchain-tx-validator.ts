@@ -30,10 +30,10 @@ export class OffchainTxValidator extends OffchainValidatorContext
     const tx = block.body.txs[txIndex.toBN().toNumber()]
     const ref = tx.inflow[inflowIndex.toBN().toNumber()].root
     return {
-      slashable: await this.isValidRef(
+      slashable: !(await this.isValidRef(
         headerHash(block.header),
         ref.toUint256(),
-      ),
+      )),
       reason: CODE.T1,
     }
   }
@@ -180,20 +180,20 @@ export class OffchainTxValidator extends OffchainValidatorContext
     })
     if (finalized.length > 0) return true
     // Or check the recent precedent blocks has that utxo tree root
-    let parentBlockHash: string = blockHash.toString()
+    let currentBlockHash: string = blockHash.toString()
     for (let i = 0; i < this.layer2.config.referenceDepth; i += 1) {
-      const hash = parentBlockHash
-      const parentBlock = await this.layer2.db.findOne('Block', {
+      const hash = currentBlockHash
+      const currentBlock = await this.layer2.db.findOne('Block', {
         where: { hash },
         include: { header: true, slash: true },
       })
-      if (parentBlock === null || parentBlock.slash !== null) {
+      if (currentBlock === null || currentBlock.slash !== null) {
         return false
       }
-      if (inclusionRef.eq(Uint256.from(parentBlock.header.utxoRoot))) {
+      if (inclusionRef.eq(Uint256.from(currentBlock.header.utxoRoot))) {
         return true
       }
-      parentBlockHash = parentBlock.header.hash
+      currentBlockHash = currentBlock.header.parentBlock
     }
     return false
   }

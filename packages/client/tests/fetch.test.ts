@@ -14,7 +14,7 @@ describe('mocked fetch', () => {
   })
 
   it('should use mocked fetch implementation', async () => {
-    const zkopru = new Zkopru({ rpcUrl: 'http://localhost' })
-    assert.equal(await zkopru.rpc.getAddress(), 'mocked')
+    const rpc = new Zkopru.RPC('http://localhost')
+    assert.equal(await rpc.getAddress(), 'mocked')
   })
 })

@@ -140,7 +140,7 @@ export abstract class ValidatorBase {
     const currentRoot = await this.layer2.grove.nullifierTree.root()
     assert(
       parent.nullifierRoot.toBN().eq(currentRoot),
-      'Only full node can run this validation',
+      'Nullifier tree root mismatch',
     )
     const onchainValidator = this.onchain.nullifierTree
     const offchainValidator = this.offchain.nullifierTree
