@@ -44,7 +44,7 @@ export const { argv } = yargs
       alias: 'ws',
       default: DEFAULT.websocket,
     },
-    keys: {
+    snarkKeyPath: {
       type: 'string',
       describe: 'Path to local SNARK keys, snarkKeyCid will override',
     },
@@ -64,6 +64,7 @@ export const { argv } = yargs
     },
     snarkKeyCid: {
       type: 'string',
+      default: '/ipfs/QmWdQnPVdbS61ERWJY76xfkbzrLDiQptE81LRTQUupSP7G',
       describe: 'An IPFS content identifier storing the proving keys',
     },
   })

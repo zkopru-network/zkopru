@@ -11,7 +11,6 @@ export interface Config {
   address: string
   coordinator: string
   websocket: string
-  keys?: string
   sqlite?: string
   postgres?: string
   config?: string
@@ -22,6 +21,7 @@ export interface Config {
   password?: string
   numberOfAccounts?: number
   snarkKeyCid?: string
+  snarkKeyPath?: string
 }
 
 export enum Menu {

@@ -57,12 +57,12 @@ export default class DownloadKeys extends Configurator {
         next: Menu.LOAD_DATABASE,
       }
     }
-    if (!this.base.keys) {
+    if (!this.base.snarkKeyPath) {
       this.print(chalk.red('No keys path specified!'))
       process.exit(1)
     }
     this.print(chalk.blue('Downloading keys'))
-    const pwd = path.join(process.cwd(), this.base.keys)
+    const pwd = path.join(process.cwd(), this.base.snarkKeyPath)
     if (fs.existsSync(pwd)) {
       return {
         context,
