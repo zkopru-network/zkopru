@@ -46,7 +46,7 @@ export const { argv } = yargs
     },
     snarkKeyPath: {
       type: 'string',
-      describe: 'Path to local SNARK keys, snarkKeyCid will override',
+      describe: 'Path to local SNARK keys, overrides snarkKeyCid',
     },
     sqlite: {
       type: 'string',
