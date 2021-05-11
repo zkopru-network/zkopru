@@ -46,8 +46,7 @@ export const { argv } = yargs
     },
     keys: {
       type: 'string',
-      // default: 'keys',
-      describe: 'Path to store SNARK keys',
+      describe: 'Path to local SNARK keys, snarkKeyCid will override',
     },
     sqlite: {
       type: 'string',
