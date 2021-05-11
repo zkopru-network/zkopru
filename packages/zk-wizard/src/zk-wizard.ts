@@ -104,7 +104,7 @@ export class ZkWizard {
     zkeyPath: string
     vKey: Record<string, any>
   }> {
-    logger.info(`${this.path}`)
+    logger.info(`${this.path ?? this.cid}`)
     if (this.path) {
       const vKeyPath = path.join(
         this.path,
