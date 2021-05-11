@@ -18,8 +18,8 @@ import { Layer1, TransactionObject, Tx, TxUtil } from '@zkopru/contracts'
 import fetch, { Response } from 'node-fetch'
 import { logger } from '@zkopru/utils'
 import { TransactionReceipt, Account } from 'web3-core'
+import { signTypedData_v4 as signTypedData } from 'eth-sig-util'
 import { ZkWizard } from './zk-wizard'
-import { signTypedData_v4 } from 'eth-sig-util'
 
 export interface Balance {
   eth: string
@@ -469,7 +469,7 @@ export class ZkWalletAccount {
         expiration,
       },
     }
-    const signature = signTypedData_v4(
+    const signature = signTypedData(
       Bytes32.from(this.account.ethAccount.privateKey).toBuffer(),
       {
         data: msgParams,
