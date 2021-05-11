@@ -276,7 +276,18 @@ export class ZkWalletAccount {
     return result
   }
 
-  depositEtherTx(eth: F, fee: F, to?: ZkAddress): any {
+  depositEtherTx(
+    eth: F,
+    fee: F,
+    to?: ZkAddress,
+  ):
+    | boolean
+    | {
+        to: string
+        data: any
+        value: string
+        onComplete: () => Promise<any>
+      } {
     if (!this.account) {
       logger.error('Account is not set')
       return false
