@@ -30,28 +30,36 @@ export class CoordinatorManager {
     this._web3 = web3
   }
 
-  async loadUrls() {
-    const blockCount = 1000
-    const latestBlock = await this._web3.eth.getBlockNumber()
+  // find some number of reachable coordinator urls
+  async loadUrls(count = 1) {
+    const urls = [] as string[]
     const burnAuction = await this.burnAuction()
-    for (let x = 0; x < 50; x += 1) {
+    const startBlock = await burnAuction.methods.startBlock().call()
+    const blockCount = 500
+    const latestBlock = await this._web3.eth.getBlockNumber()
+    const currentBlock = startBlock
+    const loaded: { [key: string]: boolean } = {}
+    for (;;) {
+      const toBlock = currentBlock + blockCount
       const updates = await burnAuction.getPastEvents('UrlUpdate', {
-        fromBlock: latestBlock - (x + 1) * blockCount,
-        toBlock: latestBlock - x * blockCount,
+        fromBlock: currentBlock,
+        toBlock: toBlock > latestBlock ? 'latest' : toBlock,
       })
       const promises = [] as Promise<any>[]
-      const loading: { [key: string]: boolean } = {}
       for (const { returnValues } of updates) {
         if (
           this.urlsByAddress[returnValues.coordinator] ||
-          loading[returnValues.coordinator]
+          loaded[returnValues.coordinator]
         )
           continue
-        loading[returnValues.coordinator] = true
-        promises.push(this.updateUrl(returnValues.coordinator))
+        loaded[returnValues.coordinator] = true
+        promises.push(this.coordinatorUrl(returnValues.coordinator))
       }
-      await Promise.all(promises)
+      urls.push(...(await Promise.all(promises)).filter(u => !!u))
+      if (urls.length > count) break
+      if (toBlock >= latestBlock) break
     }
+    return urls
   }
 
   async updateUrl(addr: string) {
@@ -66,9 +74,11 @@ export class CoordinatorManager {
   }
 
   async activeCoordinatorUrl(): Promise<string | void> {
-    // TODO: update when current round changes
-    // calculate offline using UTC time
     const activeCoord = await this.activeCoordinator()
+    if (activeCoord === '0x0000000000000000000000000000000000000000') {
+      const urls = await this.loadUrls()
+      return urls[0]
+    }
     if (!activeCoord) return
     return this.coordinatorUrl(activeCoord)
   }
