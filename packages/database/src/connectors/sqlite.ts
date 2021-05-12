@@ -150,7 +150,7 @@ export class SQLiteConnector extends DB {
     for (const model of models) {
       const submodel = keyedSubmodels[model[relation.localField]]
       Object.assign(model, {
-        [relation.name]: submodel,
+        [relation.name]: submodel || null,
       })
     }
   }

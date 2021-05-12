@@ -198,7 +198,7 @@ export class IndexedDBConnector extends DB {
     for (const model of models) {
       const submodel = keyedSubmodels[model[relation.localField]]
       Object.assign(model, {
-        [relation.name]: submodel,
+        [relation.name]: submodel || null,
       })
     }
   }
@@ -427,6 +427,8 @@ export class IndexedDBConnector extends DB {
     // to be accessed. Once that is done create the transaction and call the
     // start function to begin executing the transaction operations
     operation(db)
+    // no operations to commit
+    if (!stores.length) return (start as Function)()
     // get a unique list of stores
     const storeNames = {}
     const storesUnique = stores.filter(store => {

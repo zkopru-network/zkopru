@@ -2,7 +2,7 @@ const path = require('path')
 const webpack = require('webpack')
 
 module.exports = {
-  entry: './dist/index.js',
+  entry: './dist/web.js',
   mode: 'development',
   output: {
     filename: 'index.js',
@@ -42,6 +42,9 @@ module.exports = {
       'node-docker-api': false,
       prompts: false,
       buffer: require.resolve('buffer/'),
+    },
+    alias: {
+      'node-fetch': require.resolve('./fetch'),
     },
   },
   plugins: [

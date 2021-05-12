@@ -43,12 +43,6 @@ export class CoordinatorApi {
     if (!this.server) {
       const app = express()
       app.use(express.text())
-      app.post('/tx', catchError(this.txHandler))
-      app.post('/instant-withdraw', catchError(this.instantWithdrawHandler))
-      if (this.context.config.bootstrap) {
-        app.get('/bootstrap', catchError(this.bootstrapHandler))
-      }
-      app.get('/price', catchError(this.bytePriceHandler))
       // CORS/vhosts enforced only for RPC API
       const parseCommaList = (list = '') =>
         list
@@ -88,13 +82,14 @@ export class CoordinatorApi {
         )
         next()
       }
-      app.options('/', corsMiddleware)
-      app.post(
-        '/',
-        express.json(),
-        corsMiddleware,
-        catchError(this.clientApiHandler),
-      )
+      app.use(corsMiddleware)
+      app.post('/tx', catchError(this.txHandler))
+      app.post('/instant-withdraw', catchError(this.instantWithdrawHandler))
+      if (this.context.config.bootstrap) {
+        app.get('/bootstrap', catchError(this.bootstrapHandler))
+      }
+      app.get('/price', catchError(this.bytePriceHandler))
+      app.post('/', express.json(), catchError(this.clientApiHandler))
       this.server = app.listen(this.context.config.port, () => {
         logger.info(
           `coordinator.js: API is running on serverPort ${this.context.config.port}`,
@@ -130,13 +125,20 @@ export class CoordinatorApi {
         id,
         jsonrpc,
       )
+      // The id at the top level of the response needs to be left as a number
+      // we use this variable to avoid leaving other id variables as numbers
+      let firstId = true
       const payload = JSON.stringify(
         {
           id,
           jsonrpc,
           result,
         },
-        (_, value: any) => {
+        (key: any, value: any) => {
+          if (firstId && key === 'id' && typeof value === 'number') {
+            firstId = false
+            return value
+          }
           if (typeof value === 'number' || typeof value === 'bigint') {
             return `0x${value.toString(16)}`
           }

@@ -3,11 +3,9 @@ import Zkopru from '../src'
 
 describe('client tests', () => {
   it('should use node-fetch implementation', async () => {
-    const zkopru = new Zkopru({
-      rpcUrl: 'http://localhost',
-    })
+    const zkopru = new Zkopru.RPC('http://localhost')
     try {
-      await zkopru.rpc.getAddress()
+      await zkopru.getAddress()
       assert(false)
     } catch (err) {
       assert(true)

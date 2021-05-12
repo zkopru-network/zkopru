@@ -61,7 +61,7 @@ export class NullifierTree implements SMT<BN> {
     this.hasher = hasher
     this.depth = depth
     if (hasher.preHash.length <= depth)
-      throw Error('Hasher should have enough prehased values')
+      throw Error('Hasher should have enough prehashed values')
   }
 
   async root(): Promise<BN> {

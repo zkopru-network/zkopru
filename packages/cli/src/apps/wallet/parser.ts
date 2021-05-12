@@ -44,10 +44,9 @@ export const { argv } = yargs
       alias: 'ws',
       default: DEFAULT.websocket,
     },
-    keys: {
+    snarkKeyPath: {
       type: 'string',
-      default: 'keys',
-      describe: 'Path to store SNARK keys',
+      describe: 'Path to local SNARK keys, overrides snarkKeyCid',
     },
     sqlite: {
       type: 'string',
@@ -62,6 +61,11 @@ export const { argv } = yargs
     config: {
       type: 'string',
       describe: 'You can save wallet configuration file',
+    },
+    snarkKeyCid: {
+      type: 'string',
+      default: '/ipfs/QmWdQnPVdbS61ERWJY76xfkbzrLDiQptE81LRTQUupSP7G',
+      describe: 'An IPFS content identifier storing the proving keys',
     },
   })
   .help()
