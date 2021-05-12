@@ -24,27 +24,16 @@ export class TxUtil {
     option?: Tx,
   ): Promise<string> {
     let gasPrice: string
-    let selectedGas: number
+    let gas: number
 
-    // To Prevent using `option.gas` lower than estimated gas
-    if (!option?.gas) {
-      selectedGas = await tx.estimateGas({ ...option, from: account.address })
+    if (option?.gas) {
+      gas = Fp.from(option.gas).toNumber()
     } else {
-      const { gas, ...otherOption } = option
-      const estimateGas = await tx.estimateGas({
-        ...otherOption,
+      gas = await tx.estimateGas({
+        ...option,
+        gas: undefined,
         from: account.address,
       })
-      const optionGas = Fp.from(gas).toNumber()
-
-      if (optionGas >= estimateGas) {
-        selectedGas = optionGas
-      } else {
-        selectedGas = estimateGas
-        logger.info(
-          `Lower than estimated Gas, Using gas amount as ${selectedGas} instead of ${option.gas} `,
-        )
-      }
     }
 
     if (option?.gasPrice) {
@@ -57,7 +46,7 @@ export class TxUtil {
     const { rawTransaction } = await web3.eth.accounts.signTransaction(
       {
         gasPrice,
-        gas: selectedGas,
+        gas,
         to: address,
         value,
         data: tx.encodeABI(),
@@ -81,6 +70,10 @@ export class TxUtil {
       account,
       option,
     )
-    return web3.eth.sendSignedTransaction(signedTx)
+    const receipt = await web3.eth.sendSignedTransaction(signedTx)
+    if (option?.gas && !receipt?.status) {
+      logger.info('Check gas amount for this transaction revert')
+    }
+    return receipt
   }
 }
