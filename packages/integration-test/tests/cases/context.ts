@@ -215,6 +215,7 @@ async function getCoordinator(
     maxBytes,
     priceMultiplier, // 32 gas is the current default price for 1 byte
     vhosts: '*',
+    publicUrls: `localhost:${port}`,
     port,
     maxBid: 20000,
     bootstrap: false,
@@ -225,14 +226,12 @@ async function getCoordinator(
 export async function getWallet({
   account,
   provider,
-  coordinator,
   erc20s,
   erc721s,
   address,
 }: {
   account: ZkAccount
   provider: WebsocketProvider
-  coordinator: string
   address: string
   erc20s: string[]
   erc721s: string[]
@@ -253,7 +252,6 @@ export async function getWallet({
     accounts: [account],
     erc20: erc20s.map(Address.from),
     erc721: erc721s.map(Address.from),
-    coordinator,
     snarkKeyPath: path.join(__dirname, '../../../circuits/keys'),
   })
   zkWallet.setAccount(account)
@@ -272,7 +270,6 @@ async function getWallets({
   }
   config: {
     provider: WebsocketProvider
-    coordinator: string
     address: string
     erc20s: string[]
     erc721s: string[]
@@ -333,7 +330,6 @@ export async function initContext(): Promise<Context> {
     accounts,
     config: {
       provider,
-      coordinator: `http://localhost:${coordinator.context.config.port}`,
       address: zkopruAddress,
       erc20s: [erc20Address],
       erc721s: [erc721Address],
