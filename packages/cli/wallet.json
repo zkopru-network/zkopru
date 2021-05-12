@@ -3,7 +3,6 @@
   "fullnode": true,
   "develop": false,
   "websocket": "ws://192.168.1.199:9546",
-  "coordinator": "http://localhost:8888",
   "networkId": 5,
   "chainId": 5,
   "address": "0xdadF77fdc462900B98458eA310a18d60946161a6",

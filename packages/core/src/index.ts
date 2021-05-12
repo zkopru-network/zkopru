@@ -28,3 +28,4 @@ export {
 export { L1Contract } from './context/layer1'
 export { L2Chain } from './context/layer2'
 export { SNARKVerifier, verifyingKeyIdentifier } from './snark/snark-verifier'
+export { CoordinatorManager } from './coordinator-manager'

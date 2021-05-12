@@ -19,6 +19,7 @@ export default class TransferEth extends App {
       weiPerByte = await wallet.fetchPrice()
     } catch (err) {
       logger.error('price fetch error')
+      logger.error(err.toString())
       throw err
     }
     const regularPrice = fromWei(

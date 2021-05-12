@@ -1,4 +1,4 @@
-import { ZkopruNode } from '@zkopru/core'
+import { ZkopruNode, CoordinatorManager } from '@zkopru/core'
 import { ZkAccount } from '@zkopru/account'
 import { DB, Withdrawal as WithdrawalSql } from '@zkopru/database'
 import { Address, Uint256, Bytes32 } from 'soltypes'
@@ -36,7 +36,6 @@ export interface ZkWalletAccountConfig {
   node: ZkopruNode
   erc20: Address[]
   erc721: Address[]
-  coordinator: string
   snarkKeyPath?: string
   snarkKeyCid?: string
 }
@@ -46,7 +45,7 @@ export class ZkWalletAccount {
 
   node: ZkopruNode
 
-  coordinator: string
+  coordinatorManager: CoordinatorManager
 
   account?: ZkAccount
 
@@ -59,7 +58,10 @@ export class ZkWalletAccount {
   constructor(obj: ZkWalletAccountConfig) {
     this.db = obj.node.db
     this.node = obj.node
-    this.coordinator = obj.coordinator
+    this.coordinatorManager = new CoordinatorManager(
+      this.node.layer1.address,
+      this.node.layer1.web3,
+    )
     this.erc20 = obj.erc20
     this.erc721 = obj.erc721
     if (obj.privateKey) {
@@ -495,7 +497,8 @@ export class ZkWalletAccount {
       expiration,
       signature,
     }
-    const response = await fetch(`${this.coordinator}/instant-withdraw`, {
+    const coordinatorUrl = await this.coordinatorManager.activeCoordinatorUrl()
+    const response = await fetch(`${coordinatorUrl}/instant-withdraw`, {
       method: 'post',
       body: JSON.stringify(data),
     })
@@ -517,7 +520,8 @@ export class ZkWalletAccount {
   }
 
   async fetchPrice(): Promise<string> {
-    const response = await fetch(`${this.coordinator}/price`)
+    const coordinatorUrl = await this.coordinatorManager.activeCoordinatorUrl()
+    const response = await fetch(`${coordinatorUrl}/price`)
     if (response.ok) {
       const { weiPerByte } = await response.json()
       if (weiPerByte) return weiPerByte
@@ -616,7 +620,8 @@ export class ZkWalletAccount {
   }
 
   async sendLayer2Tx(zkTx: ZkTx): Promise<Response> {
-    const response = await fetch(`${this.coordinator}/tx`, {
+    const coordinatorUrl = await this.coordinatorManager.activeCoordinatorUrl()
+    const response = await fetch(`${coordinatorUrl}/tx`, {
       method: 'post',
       body: zkTx.encode().toString('hex'),
     })

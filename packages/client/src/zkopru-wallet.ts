@@ -11,11 +11,7 @@ export default class ZkopruWallet {
 
   wallet: ZkWalletAccount
 
-  constructor(
-    node: ZkopruNode,
-    privateKey: Buffer | string,
-    coordinator: string,
-  ) {
+  constructor(node: ZkopruNode, privateKey: Buffer | string) {
     this.node = node
     if (!this.node.node) {
       throw new Error('ZkopruNode does not have a full node initialized')
@@ -24,7 +20,6 @@ export default class ZkopruWallet {
       privateKey,
       node: this.node.node,
       snarkKeyCid: DEFAULT_KEY_CID,
-      coordinator,
       // TODO: pre-written list or retrieve from remote
       erc20: [],
       erc721: [],
