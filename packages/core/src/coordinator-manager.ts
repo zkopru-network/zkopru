@@ -65,6 +65,9 @@ export class CoordinatorManager {
   async updateUrl(addr: string) {
     const burnAuction = await this.burnAuction()
     const newUrl = await burnAuction.methods.coordinatorUrls(addr).call()
+    if (newUrl !== this.urlsByAddress[addr]) {
+      delete this.functionalUrlByAddress[addr]
+    }
     this.urlsByAddress[addr] = newUrl
   }
 
@@ -75,12 +78,15 @@ export class CoordinatorManager {
 
   async activeCoordinatorUrl(): Promise<string | void> {
     const activeCoord = await this.activeCoordinator()
+    const { DEFAULT_COORDINATOR } = process.env
     if (activeCoord === '0x0000000000000000000000000000000000000000') {
       const urls = await this.loadUrls()
-      return urls[0]
+      return urls[0] || DEFAULT_COORDINATOR
     }
-    if (!activeCoord) return
-    return this.coordinatorUrl(activeCoord)
+    if (activeCoord) {
+      return (await this.coordinatorUrl(activeCoord)) || DEFAULT_COORDINATOR
+    }
+    if (!activeCoord) return DEFAULT_COORDINATOR
   }
 
   async coordinatorUrl(addr: string): Promise<string | void> {
@@ -128,7 +134,6 @@ export class CoordinatorManager {
       })
       .on('data', async (data: any) => {
         const { coordinator } = data.returnValues
-        delete this.functionalUrlByAddress[coordinator]
         await this.updateUrl(coordinator)
       })
   }
