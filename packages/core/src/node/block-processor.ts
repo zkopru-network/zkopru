@@ -272,7 +272,7 @@ export class BlockProcessor extends EventEmitter {
 
   private async saveTransactions(block: Block, challenged = false) {
     await this.db.transaction(db => {
-      block.body.txs.map(tx =>
+      block.body.txs.forEach(tx => {
         db.create('Tx', {
           hash: tx.hash().toString(),
           blockHash: block.hash.toString(),
@@ -281,8 +281,11 @@ export class BlockProcessor extends EventEmitter {
           fee: tx.fee.toHex(),
           challenged,
           slashed: false,
-        }),
-      )
+        })
+        db.delete('PendingTx', {
+          where: { hash: tx.hash().toString() },
+        })
+      })
     })
   }
 
