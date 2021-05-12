@@ -16,7 +16,7 @@ export class CoordinatorManager {
 
   private _web3: Web3
 
-  // private _burnAuction: any
+  private _burnAuction: any
 
   urlUpdateSubscription?: any
 
@@ -118,6 +118,7 @@ export class CoordinatorManager {
       })
       .on('data', async (data: any) => {
         const { coordinator } = data.returnValues
+        delete this.functionalUrlByAddress[coordinator]
         await this.updateUrl(coordinator)
       })
   }
@@ -138,10 +139,9 @@ export class CoordinatorManager {
   }
 
   async burnAuction() {
-    // if (this._burnAuction) return this._burnAuction
+    if (this._burnAuction) return this._burnAuction
     const address = await this.burnAuctionAddress()
-    // this._burnAuction = Layer1.getIBurnAuction(this._web3, address)
-    // return this._burnAuction
-    return Layer1.getIBurnAuction(this._web3, address)
+    this._burnAuction = Layer1.getIBurnAuction(this._web3, address)
+    return this._burnAuction
   }
 }
