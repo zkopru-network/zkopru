@@ -298,7 +298,7 @@ export function validatePublicUrls(publicUrls: string) {
     if (!host || !port) {
       throw new Error(`Missing host or port in public url: ${url}`)
     }
-    if (!HostRegex.test(host) && !IP4Regex.test(host)) {
+    if (!HostRegex.test(host) && !IP4Regex.test(host) && host !== 'localhost') {
       throw new Error(`Invalid public url host or ip supplied: ${url}`)
     }
     if (!PortRegex.test(port)) {
