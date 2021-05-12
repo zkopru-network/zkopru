@@ -608,11 +608,24 @@ export class ZkWalletAccount {
         await this.saveOutflow(outflow)
       }
       await this.lockUtxos(tx.inflow)
+      await this.storePendingTx(zkTx)
       return zkTx
     } catch (err) {
       logger.error(err)
       throw err
     }
+  }
+
+  async storePendingTx(tx: ZkTx) {
+    await this.db.create('PendingTx', {
+      hash: tx.hash().toString(),
+      fee: tx.fee.toString(),
+      proof: tx.proof,
+      memo: tx.memo?.toString('base64'),
+      swap: tx.swap?.toString(),
+      inflow: tx.inflow,
+      outflow: tx.outflow,
+    })
   }
 
   async sendLayer2Tx(zkTx: ZkTx): Promise<Response> {
