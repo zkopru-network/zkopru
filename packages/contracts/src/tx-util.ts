@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import BN from 'bn.js'
 import Web3 from 'web3'
 import { Account, TransactionReceipt } from 'web3-core'
-import { Fp } from '@zkopru/babyjubjub'
 import { logger } from '@zkopru/utils'
 import {
   PayableTransactionObject,
@@ -27,7 +27,7 @@ export class TxUtil {
     let gas: number
 
     if (option?.gas) {
-      gas = Fp.from(option.gas).toNumber()
+      gas = new BN(option.gas).toNumber()
     } else {
       gas = await tx.estimateGas({
         ...option,
@@ -37,7 +37,7 @@ export class TxUtil {
     }
 
     if (option?.gasPrice) {
-      gasPrice = Fp.from(option.gasPrice).toString()
+      gasPrice = new BN(option.gasPrice).toString()
     } else {
       gasPrice = await web3.eth.getGasPrice()
     }
