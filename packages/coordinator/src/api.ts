@@ -159,14 +159,26 @@ export class CoordinatorApi {
     const txData = req.body
     logger.info(`tx data ${typeof txData} ${txData}`)
     const { auctionMonitor } = this.context
+    logger.info(`tx data is ${txData}`)
+    logger.info(txData)
+    const zkTx = ZkTx.decode(Buffer.from(txData, 'hex'))
+    // const zkTx = ZkTx.decode(txData)
+    const { layer2 } = this.context.node
+    const result = await layer2.isValidTx(zkTx)
+    if (!result) {
+      logger.info('Failed to verify zk snark')
+      res.status(500).send('Coordinator is not running')
+      return
+    }
+    await this.context.txPool.addToTxPool(zkTx)
+    res.send(result)
+    // Immediately forward the transaction if needed
     if (!auctionMonitor.isProposable) {
-      // forward the tx
       const url = await auctionMonitor.functionalCoordinatorUrl(
         auctionMonitor.currentProposer,
       )
       if (!url) {
         logger.error(`No url to forward to!`)
-        res.status(500).send('No url to forward to')
         return
       }
       logger.info(`forwarding tx data to "${url}"`)
@@ -175,27 +187,13 @@ export class CoordinatorApi {
           method: 'post',
           body: txData.toString(),
         })
-        res.status(r.status).send(await r.text())
+        if (!r.ok) {
+          throw new Error(await r.text())
+        }
       } catch (err) {
         logger.error(err)
-        logger.error('Error calling active auction api')
-        res.status(500).send(err)
+        logger.error('Error forwarding transaction')
       }
-      return
-    }
-    logger.info(`tx data is ${txData}`)
-    logger.info(txData)
-    const zkTx = ZkTx.decode(Buffer.from(txData, 'hex'))
-    // const zkTx = ZkTx.decode(txData)
-    const { layer2 } = this.context.node
-    const result = await layer2.isValidTx(zkTx)
-    if (result) {
-      logger.info('add a transaction')
-      await this.context.txPool.addToTxPool(zkTx)
-      res.send(result)
-    } else {
-      logger.info('Failed to verify zk snark')
-      res.status(500).send('Coordinator is not running')
     }
   }
 
