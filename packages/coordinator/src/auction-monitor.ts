@@ -1,13 +1,12 @@
 import { Layer1 } from '@zkopru/contracts'
 import { Subscription } from 'web3-core-subscriptions'
-import { FullNode } from '@zkopru/core'
+import { FullNode, CoordinatorManager } from '@zkopru/core'
 import BN from 'bn.js'
 import { Account } from 'web3-core'
 import { BlockHeader } from 'web3-eth'
 import { logger, validatePublicUrls, externalIp } from '@zkopru/utils'
 import AsyncLock from 'async-lock'
 import { EventEmitter } from 'events'
-import axios from 'axios'
 
 export interface AuctionMonitorConfig {
   port: number
@@ -27,8 +26,6 @@ export class AuctionMonitor {
 
   newHighBidSubscription?: EventEmitter
 
-  urlUpdateSubscription?: EventEmitter
-
   currentProposer: string
 
   consensusAddress: string
@@ -42,10 +39,6 @@ export class AuctionMonitor {
   isProposable = false
 
   isProposableLastUpdated = 0
-
-  urlsByAddress: { [key: string]: string } = {}
-
-  functionalUrlsByAddress: { [key: string]: string } = {}
 
   account: Account
 
@@ -66,6 +59,8 @@ export class AuctionMonitor {
 
   bidLock = new AsyncLock()
 
+  coordinatorManager: CoordinatorManager
+
   constructor(node: FullNode, account: Account, config: AuctionMonitorConfig) {
     this.node = node
     this.currentProposer = '0x0000000000000000000000000000000000000000'
@@ -74,6 +69,10 @@ export class AuctionMonitor {
     this.port = config.port
     this.maxBid = new BN(config.maxBid.toString()).mul(new BN(`${10 ** 9}`))
     this.nodeUrl = config.publicUrls || ''
+    this.coordinatorManager = new CoordinatorManager(
+      this.node.layer1.address,
+      this.node.layer1.web3,
+    )
   }
 
   auction() {
@@ -95,7 +94,7 @@ export class AuctionMonitor {
         this.account,
         this.consensusAddress,
       )
-      this.urlsByAddress[this.account.address] = newUrl
+      await this.coordinatorManager.updateUrl(this.account.address)
     } catch (err) {
       logger.error(err.toString())
       logger.error('Error updating url')
@@ -120,7 +119,7 @@ export class AuctionMonitor {
 
     this.startBlockSubscription()
     this.startNewHighBidSubscription()
-    this.startUrlUpdateSubscription()
+    this.coordinatorManager.start()
 
     const balance = await layer1.web3.eth.getBalance(this.account.address)
     if (new BN(balance).eq(new BN('0'))) {
@@ -176,24 +175,6 @@ export class AuctionMonitor {
       })
   }
 
-  startUrlUpdateSubscription() {
-    if (this.urlUpdateSubscription) return
-    this.urlUpdateSubscription = this.auction()
-      .events.UrlUpdate()
-      .on('connected', subId => {
-        logger.info(
-          `auction-monitor.js: UrlUpdate listener is connected. Id: ${subId}`,
-        )
-      })
-      .on('data', async (data: any) => {
-        const { coordinator } = data.returnValues
-        const newUrl = await this.auction()
-          .methods.coordinatorUrls(coordinator)
-          .call()
-        this.urlsByAddress[coordinator] = newUrl
-      })
-  }
-
   async stop() {
     if (this.blockSubscription) {
       try {
@@ -208,44 +189,11 @@ export class AuctionMonitor {
       this.newHighBidSubscription.removeAllListeners()
       this.newHighBidSubscription = undefined
     }
-    if (this.urlUpdateSubscription) {
-      this.urlUpdateSubscription.removeAllListeners()
-      this.urlUpdateSubscription = undefined
-    }
+    await this.coordinatorManager.stop()
   }
 
   async functionalCoordinatorUrl(address: string): Promise<string | void> {
-    if (this.functionalUrlsByAddress[address]) {
-      return this.functionalUrlsByAddress[address]
-    }
-    await this.loadUrl(address)
-    const url = this.urlsByAddress[address]
-    if (!url) return
-    const urls = url.split(',')
-    if (urls.length === 0) return
-    for (const u of urls) {
-      // ping to see if it's active
-      try {
-        const fullUrl = `https://${u}`
-        await axios.get(`${fullUrl}/price`, { timeout: 5000 })
-        this.functionalUrlsByAddress[address] = fullUrl
-        return fullUrl
-      } catch (e) {
-        // skip and test http
-      }
-      try {
-        const fullUrl = `http://${u}`
-        await axios.get(`${fullUrl}/price`, { timeout: 5000 })
-        this.functionalUrlsByAddress[address] = fullUrl
-        return fullUrl
-      } catch (e) {
-        // test next host/port combo
-      }
-    }
-  }
-
-  activeCoordinatorUrl() {
-    return this.urlsByAddress[this.currentProposer]
+    return this.coordinatorManager.coordinatorUrl(address)
   }
 
   roundForBlock(blockNumber: number) {
@@ -291,17 +239,12 @@ export class AuctionMonitor {
     // Entered a new round, update the proposer
     this.currentRound = newRound
     this.currentProposer = activeProposer
-    if (!this.urlsByAddress[this.currentProposer]) {
-      await this.loadUrl(this.currentProposer)
-    }
     // Call on each new round
     await this.bidIfNeeded()
   }
 
   async loadUrl(address: string) {
-    this.urlsByAddress[address] = await this.auction()
-      .methods.coordinatorUrls(address)
-      .call()
+    await this.coordinatorManager.updateUrl(address)
   }
 
   async setMaxBid(newMaxBid: BN | string) {
