@@ -33,14 +33,11 @@ export class TxMemPool implements TxPoolInterface {
     this.db = db
   }
 
-  async loadPendingTx() {
-    const txs = await this.db.findMany('PendingTx', {
-      where: {},
-    })
-    // Look for pending transactions that have since been included in a block
+  // Look for transactions that have been included in a verified block
+  private async verifiedTx(hashes: string[]): Promise<string[]> {
     const includedTxs = await this.db.findMany('Tx', {
       where: {
-        hash: txs.map(({ hash }) => hash),
+        hash: hashes,
       },
     })
     // check if the tx is in a valid block, if so delete it from PendingTx
@@ -56,7 +53,7 @@ export class TxMemPool implements TxPoolInterface {
       }),
       {},
     )
-    const hashesToDrop = {} as { [hash: string]: boolean }
+    const hashesToDrop = [] as string[]
     for (const tx of includedTxs) {
       if (
         !tx.challenged &&
@@ -66,14 +63,25 @@ export class TxMemPool implements TxPoolInterface {
       ) {
         // if the tx is not challenged and we've locally verified the block it's
         // included in we can drop the pending tx
-        hashesToDrop[tx.hash] = true
+        hashesToDrop.push(tx.hash)
       }
     }
-    await this.db.delete('PendingTx', {
-      where: {
-        hash: Object.keys(hashesToDrop),
-      },
+    return hashesToDrop
+  }
+
+  async loadPendingTx() {
+    const txs = await this.db.findMany('PendingTx', {
+      where: {},
     })
+    // Look for pending transactions that have since been included in a block
+    const hashesToDrop = await this.verifiedTx(txs.map(({ hash }) => hash))
+    if (hashesToDrop.length > 0) {
+      await this.db.delete('PendingTx', {
+        where: {
+          hash: hashesToDrop,
+        },
+      })
+    }
     for (const tx of txs) {
       // Parse the tx from the db
       // eslint-disable-next-line no-continue
@@ -138,8 +146,16 @@ export class TxMemPool implements TxPoolInterface {
     await this.storePendingTx(zkTx)
   }
 
-  // TODO: make sure a tx is not already in a block
+  private async prunePendingTx() {
+    const txHashes = Object.keys(this.txs)
+    const hashesToDrop = await this.verifiedTx(txHashes)
+    for (const hash of hashesToDrop) {
+      delete this.txs[hash]
+    }
+  }
+
   async pickTxs(maxBytes: number, minPricePerByte: BN): Promise<ZkTx[]> {
+    await this.prunePendingTx()
     // TODO add atomic swap tx logic here
     let available = maxBytes
     const sorted = this.getSortedTxs()
