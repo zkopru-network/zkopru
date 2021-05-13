@@ -77,7 +77,7 @@ export default class ZkopruNode {
       this.node = await FullNode.new({
         address: this.config.address as string,
         provider,
-        db: (await this.db(...args)),
+        db: await this.db(...args),
       })
     }
     this.node.start()
@@ -92,7 +92,7 @@ export default class ZkopruNode {
   // clear all blockchain info and prepare for complete resync
   async resetDB() {
     const db = await this.db()
-    await db.transaction((_db) => {
+    await db.transaction(_db => {
       _db.delete('Config', { where: {} })
       _db.delete('Tracker', { where: {} })
       _db.delete('Header', { where: {} })
