@@ -9,8 +9,8 @@ import {
   headerHash,
   getMassMigrations,
 } from '@zkopru/core'
-import { OutflowType, Withdrawal } from '@zkopru/transaction'
-import { Leaf } from '@zkopru/tree'
+import { OutflowType, Withdrawal, ZkTx } from '@zkopru/transaction'
+import { Leaf, DryPatchResult } from '@zkopru/tree'
 import { logger, root, bnToBytes32, bnToUint256 } from '@zkopru/utils'
 import { Address } from 'soltypes'
 import BN from 'bn.js'
@@ -37,56 +37,37 @@ export class BlockGenerator extends GeneratorBase {
       this.context.config.maxBytes - consumedBytes,
       this.context.gasPrice.muln(this.context.config.priceMultiplier),
     )
-    const txs = pendingTxs || []
+    const txs = [] as ZkTx[]
+    // check each pending tx to make sure it doesn't break the dry patch
+    for (const tx of pendingTxs) {
+      const { ok } = await this.dryRun([...txs, tx], pendingMassDeposits)
+      if (!ok) {
+        logger.info('Warning, transaction dry run not ok, skipping')
+      } else {
+        txs.push(tx)
+      }
+    }
+    const { expectedGrove, ok } = await this.dryRun(txs, pendingMassDeposits)
+    if (!ok || !expectedGrove) {
+      throw new Error('Unexpected grove patch failure in block proposal')
+    }
     aggregatedFee = aggregatedFee.add(
       txs.map(tx => tx.fee).reduce((prev, fee) => prev.add(fee), Fp.zero),
     )
     // TODO 3 make sure every nullifier is unique and not used before
     // * if there exists invalid transactions, remove them from the tx pool and try genBlock recursively
-    const utxos = txs
-      .reduce((arr, tx) => {
-        return [
-          ...arr,
-          ...tx.outflow
-            .filter(outflow => outflow.outflowType.isZero())
-            .map(outflow => outflow.note),
-        ]
-      }, pendingMassDeposits.leaves)
-      .map(hash => ({ hash })) as Leaf<Fp>[]
-
-    const withdrawals: Leaf<BN>[] = txs.reduce((arr, tx) => {
-      return [
-        ...arr,
-        ...tx.outflow
-          .filter(outflow => outflow.outflowType.eqn(OutflowType.WITHDRAWAL))
-          .map(outflow => {
-            if (!outflow.data) throw Error('No withdrawal public data')
-            return {
-              hash: Withdrawal.withdrawalHash(
-                outflow.note,
-                outflow.data,
-              ).toBN(),
-              noteHash: outflow.note,
-            }
-          }),
-      ]
-    }, [] as Leaf<BN>[])
 
     if (
       pendingMassDeposits.leaves.length ||
       txs.length ||
-      this.context.txPool.pendingNum() ||
-      withdrawals.length
+      this.context.txPool.pendingNum()
+      // withdrawals.length
     ) {
       logger.info(`Pending deposits: ${pendingMassDeposits.leaves.length}`)
       logger.info(`Picked txs: ${txs.length}`)
       logger.info(`Pending txs: ${this.context.txPool.pendingNum()}`)
-      logger.info(`Withdrawals: ${withdrawals.length}`)
+      // logger.info(`Withdrawals: ${withdrawals.length}`)
     }
-    const nullifiers = txs.reduce((arr, tx) => {
-      return [...arr, ...tx.inflow.map(inflow => inflow.nullifier)]
-    }, [] as Fp[])
-
     if (!this.context.node.synchronizer.isSynced()) {
       throw Error('Layer 2 chain is not synced yet.')
     }
@@ -94,14 +75,9 @@ export class BlockGenerator extends GeneratorBase {
     logger.info(`Trying to create a child block of ${latest}`)
     // TODO acquire lock during gen block
     const massMigrations: MassMigration[] = getMassMigrations(txs)
-    const expectedGrove = await layer2.grove.dryPatch({
-      utxos,
-      withdrawals,
-      nullifiers,
-    })
-    logger.info(
-      `nullifiers: ${JSON.stringify(nullifiers.map(f => f.toString()))}`,
-    )
+    // logger.info(
+    //   `nullifiers: ${JSON.stringify(nullifiers.map(f => f.toString()))}`,
+    // )
     if (!expectedGrove.nullifierTreeRoot) {
       throw Error(
         'Grove does not have the nullifier tree. Use full node option',
@@ -131,5 +107,61 @@ export class BlockGenerator extends GeneratorBase {
       header,
       body,
     })
+  }
+
+  async dryRun(
+    txs: ZkTx[],
+    pendingMassDeposits: any,
+  ): Promise<{
+    expectedGrove?: DryPatchResult
+    ok: boolean
+  }> {
+    try {
+      const utxos = txs
+        .reduce((arr, tx) => {
+          return [
+            ...arr,
+            ...tx.outflow
+              .filter(outflow => outflow.outflowType.isZero())
+              .map(outflow => outflow.note),
+          ]
+        }, pendingMassDeposits.leaves)
+        .map(hash => ({ hash })) as Leaf<Fp>[]
+
+      const withdrawals: Leaf<BN>[] = txs.reduce((arr, tx) => {
+        return [
+          ...arr,
+          ...tx.outflow
+            .filter(outflow => outflow.outflowType.eqn(OutflowType.WITHDRAWAL))
+            .map(outflow => {
+              if (!outflow.data) throw Error('No withdrawal public data')
+              return {
+                hash: Withdrawal.withdrawalHash(
+                  outflow.note,
+                  outflow.data,
+                ).toBN(),
+                noteHash: outflow.note,
+              }
+            }),
+        ]
+      }, [] as Leaf<BN>[])
+      const nullifiers = txs.reduce((arr, tx) => {
+        return [...arr, ...tx.inflow.map(inflow => inflow.nullifier)]
+      }, [] as Fp[])
+      const { layer2 } = this.context.node
+      const expectedGrove = await layer2.grove.dryPatch({
+        utxos,
+        withdrawals,
+        nullifiers,
+      })
+      return {
+        expectedGrove,
+        ok: true,
+      }
+    } catch (e) {
+      return {
+        ok: false,
+      }
+    }
   }
 }
