@@ -34,9 +34,11 @@ export class IndexedDBConnector extends DB {
   static async create(tables: TableData[]) {
     const schema = constructSchema(tables)
     const connector = new this(schema)
-    connector.db = await openDB(DB_NAME, 2, {
+    connector.db = await openDB(DB_NAME, 3, {
       upgrade(db /* oldVersion, newVersion, transaction */) {
         for (const table of tables) {
+          // eslint-disable-next-line no-continue
+          if (db.objectStoreNames.contains(table.name)) continue
           const store = db.createObjectStore(table.name, {
             keyPath: table.primaryKey,
           })
