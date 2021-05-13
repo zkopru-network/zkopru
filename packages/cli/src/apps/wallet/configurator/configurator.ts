@@ -9,7 +9,6 @@ export interface Config {
   fullnode: boolean
   develop: boolean
   address: string
-  coordinator: string
   websocket: string
   sqlite?: string
   postgres?: string

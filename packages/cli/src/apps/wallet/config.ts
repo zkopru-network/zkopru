@@ -3,9 +3,7 @@ export const DEFAULT = {
   networkId: 1,
   chainId: 1,
   websocket: 'ws://goerli.zkopru.network:8546',
-  coordinator: 'https://coordinator.zkopru.network',
   maxBytes: 131072,
   priceMultiplier: 48,
-  port: 8888,
   maxBid: 20000,
 }

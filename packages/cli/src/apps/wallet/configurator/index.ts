@@ -61,7 +61,7 @@ export async function getZkWallet(
   }
   if (context.menu === Menu.EXIT) return undefined
   const { db, wallet, node, accounts } = context
-  const { erc20, erc721, coordinator, snarkKeyPath, snarkKeyCid } = config
+  const { erc20, erc721, snarkKeyPath, snarkKeyCid } = config
   assert(db, 'db')
   assert(wallet, 'wallet')
   assert(accounts, 'accounts')
@@ -73,7 +73,6 @@ export async function getZkWallet(
     accounts,
     erc20: erc20?.map(Address.from) || [],
     erc721: erc721?.map(Address.from) || [],
-    coordinator,
     snarkKeyPath,
     snarkKeyCid,
   })

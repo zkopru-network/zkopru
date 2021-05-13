@@ -34,11 +34,6 @@ export const { argv } = yargs
       alias: 'a',
       default: DEFAULT.address,
     },
-    coordinator: {
-      type: 'string',
-      alias: 'r',
-      default: DEFAULT.coordinator,
-    },
     websocket: {
       type: 'string',
       alias: 'ws',

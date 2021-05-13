@@ -67,6 +67,8 @@ import {
   testRound3NewBlockProposalAndSlashing,
 } from './cases/9_zk_tx_round_3'
 
+process.env.DEFAULT_COORDINATOR = 'http://localhost:8888'
+
 jestExtendToCompareBigNumber(expect)
 
 describe('testnet', () => {
