@@ -249,61 +249,17 @@ export default [
     primaryKey: 'hash',
     rows: [
       ['hash', 'String'],
-      {
-        name: 'eth',
-        type: 'String',
-        optional: true,
-      },
-      {
-        name: 'owner',
-        type: 'String',
-        optional: true,
-      },
-      {
-        name: 'salt',
-        type: 'String',
-        optional: true,
-      },
-      {
-        name: 'tokenAddr',
-        type: 'String',
-        optional: true,
-      },
-      {
-        name: 'erc20Amount',
-        type: 'String',
-        optional: true,
-      },
-      {
-        name: 'nft',
-        type: 'String',
-        optional: true,
-      },
-      {
-        name: 'status',
-        type: 'Int',
-        optional: true,
-      },
-      {
-        name: 'treeId',
-        type: 'String',
-        optional: true,
-      },
-      {
-        name: 'index',
-        type: 'String',
-        optional: true,
-      },
-      {
-        name: 'nullifier',
-        type: 'String',
-        optional: true,
-      },
-      {
-        name: 'usedAt',
-        type: 'String',
-        optional: true,
-      },
+      ['eth', 'String', { optional: true }],
+      ['owner', 'String', { optional: true }],
+      ['salt', 'String', { optional: true }],
+      ['tokenAddr', 'String', { optional: true }],
+      ['erc20Amount', 'String', { optional: true }],
+      ['nft', 'String', { optional: true }],
+      ['status', 'Int', { optional: true }],
+      ['treeId', 'String', { optional: true }],
+      ['index', 'String', { optional: true }],
+      ['nullifier', 'String', { optional: true }],
+      ['usedAt', 'String', { optional: true }],
     ],
   },
   {

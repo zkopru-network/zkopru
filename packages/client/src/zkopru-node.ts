@@ -37,11 +37,19 @@ export default class ZkopruNode {
     return this.node?.isRunning()
   }
 
-  // Accept database configuration here
-  async start(...args: any[]) {
+  private async initDB(...args: any[]) {
     if (!this._db) {
       this._db = await this.connectorType.create(schema, ...args)
     }
+  }
+
+  private async db(...args: any[]) {
+    await this.initDB(schema, ...args)
+    return this._db as DB
+  }
+
+  // Accept database configuration here
+  async start(...args: any[]) {
     if (!this.node) {
       const provider = new Web3.providers.WebsocketProvider(
         this.config.websocket as string,
@@ -69,9 +77,38 @@ export default class ZkopruNode {
       this.node = await FullNode.new({
         address: this.config.address as string,
         provider,
-        db: this._db,
+        db: await this.db(...args),
       })
     }
     this.node.start()
+  }
+
+  async stop() {
+    if (!this.node) return
+    await this.node.stop()
+    delete this.node
+  }
+
+  // clear all blockchain info and prepare for complete resync
+  async resetDB() {
+    const db = await this.db()
+    await db.transaction(_db => {
+      _db.delete('Config', { where: {} })
+      _db.delete('Tracker', { where: {} })
+      _db.delete('Header', { where: {} })
+      _db.delete('Block', { where: {} })
+      _db.delete('Proposal', { where: {} })
+      _db.delete('Slash', { where: {} })
+      _db.delete('Bootstrap', { where: {} })
+      _db.delete('Tx', { where: {} })
+      _db.delete('MassDeposit', { where: {} })
+      _db.delete('Deposit', { where: {} })
+      _db.delete('Utxo', { where: {} })
+      _db.delete('Withdrawal', { where: {} })
+      _db.delete('Migration', { where: {} })
+      _db.delete('TreeNode', { where: {} })
+      _db.delete('LightTree', { where: {} })
+      _db.delete('TokenRegistry', { where: {} })
+    })
   }
 }
