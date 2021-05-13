@@ -1,5 +1,6 @@
 import { Fp } from '@zkopru/babyjubjub'
 import { ZkTx } from '@zkopru/transaction'
+import { DB } from '@zkopru/database'
 import { root, logger } from '@zkopru/utils'
 import assert from 'assert'
 import BN from 'bn.js'
@@ -12,6 +13,7 @@ export interface TxPoolInterface {
   pendingTxs(): ZkTx[]
   drop(txRoot: string): void
   revert(txRoot: string): void
+  loadPendingTx(): Promise<void>
 }
 
 export class TxMemPool implements TxPoolInterface {
@@ -23,9 +25,103 @@ export class TxMemPool implements TxPoolInterface {
     [proposalTx: string]: ZkTx
   }
 
-  constructor() {
+  db: DB
+
+  constructor(db: DB) {
     this.txs = {}
     this.queued = {}
+    this.db = db
+  }
+
+  async loadPendingTx() {
+    const txs = await this.db.findMany('PendingTx', {
+      where: {},
+    })
+    // Look for pending transactions that have since been included in a block
+    const includedTxs = await this.db.findMany('Tx', {
+      where: {
+        hash: txs.map(({ hash }) => hash),
+      },
+    })
+    // check if the tx is in a valid block, if so delete it from PendingTx
+    const blocks = await this.db.findMany('Block', {
+      where: {
+        hash: includedTxs.map(({ blockHash }) => blockHash),
+      },
+    })
+    const blocksByHash = blocks.reduce(
+      (acc, block) => ({
+        ...acc,
+        [block.hash]: block,
+      }),
+      {},
+    )
+    const hashesToDrop = {} as { [hash: string]: boolean }
+    for (const tx of includedTxs) {
+      if (
+        !tx.challenged &&
+        !tx.slashed &&
+        blocksByHash[tx.blockHash] &&
+        blocksByHash[tx.blockHash].verified
+      ) {
+        // if the tx is not challenged and we've locally verified the block it's
+        // included in we can drop the pending tx
+        hashesToDrop[tx.hash] = true
+      }
+    }
+    await this.db.delete('PendingTx', {
+      where: {
+        hash: Object.keys(hashesToDrop),
+      },
+    })
+    for (const tx of txs) {
+      // Parse the tx from the db
+      // eslint-disable-next-line no-continue
+      if (hashesToDrop[tx.hash]) continue
+      // unwrap the ZkTx from the db entry
+      /* eslint-disable @typescript-eslint/camelcase */
+      const zktx = new ZkTx({
+        inflow: tx.inflow.map(({ nullifier, root }) => ({
+          nullifier: Fp.from(nullifier),
+          root: Fp.from(root),
+        })),
+        outflow: tx.outflow.map(({ note, outflowType, data }) => ({
+          note: Fp.from(note),
+          outflowType: Fp.from(outflowType),
+          data: data ? Fp.from(data) : undefined,
+        })),
+        fee: Fp.from(tx.fee),
+        proof: {
+          pi_a: tx.proof.pi_a.map((v: string) => Fp.from(v)),
+          pi_b: tx.proof.pi_b.map((a: string[]) =>
+            a.map((v: string) => Fp.from(v)),
+          ),
+          pi_c: tx.proof.pi_c.map((v: string) => Fp.from(v)),
+        },
+        swap: tx.swap ? Fp.from(tx.swap) : undefined,
+        memo: tx.memo ? Buffer.from(tx.memo, 'base64') : undefined,
+      })
+      /* eslint-enable @typescript-eslint/camelcase */
+      this.txs[zktx.hash().toString()] = zktx
+    }
+  }
+
+  async storePendingTx(tx: ZkTx) {
+    await this.db.upsert('PendingTx', {
+      where: {
+        hash: tx.hash().toString(),
+      },
+      update: {},
+      create: {
+        hash: tx.hash().toString(),
+        fee: tx.fee.toString(),
+        proof: tx.proof,
+        memo: tx.memo?.toString('base64'),
+        swap: tx.swap?.toString(),
+        inflow: tx.inflow,
+        outflow: tx.outflow,
+      },
+    })
   }
 
   pendingNum(): number {
@@ -39,8 +135,10 @@ export class TxMemPool implements TxPoolInterface {
   async addToTxPool(zkTx: ZkTx): Promise<void> {
     const txHash = zkTx.hash()
     this.txs[txHash.toString()] = zkTx
+    await this.storePendingTx(zkTx)
   }
 
+  // TODO: make sure a tx is not already in a block
   async pickTxs(maxBytes: number, minPricePerByte: BN): Promise<ZkTx[]> {
     // TODO add atomic swap tx logic here
     let available = maxBytes
