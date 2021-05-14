@@ -1,0 +1,52 @@
+version: '3'
+
+services:
+  testnet:
+    ports:
+      - '5000:5000'
+    build:
+      context: ./packages/contracts/
+      dockerfile: ../../dockerfiles/Contract.dockerfile
+    networks:
+      default:
+        ipv4_address: 172.30.1.2
+    command: ganache-cli --db=/data -i 20200406 -p 5000 --gasLimit 12000000 --deterministic --host 0.0.0.0 --secure --blockTime 10
+  coordinator:
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/Cli.localtest.dockerfile
+    ports:
+      - '8888:8888'
+    volumes:
+      - './packages:/proj/packages'
+    links:
+      - 'testnet'
+    networks:
+      default:
+        ipv4_address: 172.30.1.3
+    depends_on:
+      - 'testnet'
+    command: bash -c "env && sleep 2 && node /proj/packages/generator/dist/coordinator.js"
+  wallet:
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/Cli.localtest.dockerfile
+    links:
+      - 'testnet'
+      - 'coordinator'
+    networks:
+      default:
+        ipv4_address: 172.30.1.4
+    environment:
+      - DEFAULT_COORDINATOR=http://172.30.1.3:8888
+    volumes:
+      - './packages:/proj/packages'
+    depends_on:
+      - 'testnet'
+    command: bash -c "env && sleep 15 && node /proj/packages/generator/dist/wallet.js"
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.1.0/24
