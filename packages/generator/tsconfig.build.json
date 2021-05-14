@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.build.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "../../.build-cache/generator.tsbuildinfo"
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../account/tsconfig.build.json", "prepend": false },
+    { "path": "../client/tsconfig.build.json", "prepend": false },
+    { "path": "../coordinator/tsconfig.build.json", "prepend": false },
+    { "path": "../core/tsconfig.build.json", "prepend": false },
+    { "path": "../database/tsconfig.build.json", "prepend": false },
+    { "path": "../transaction/tsconfig.build.json", "prepend": false },
+    { "path": "../utils/tsconfig.build.json", "prepend": false },
+    { "path": "../zk-wizard/tsconfig.build.json", "prepend": false }
+  ]
+}
