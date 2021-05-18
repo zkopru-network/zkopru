@@ -386,11 +386,12 @@ export class IndexedDBConnector extends DB {
       const obj = cursor.value
       const topWhere = { ...where, OR: undefined }
       const or = where.OR || []
-      if (or.length === 0 && matchDoc(topWhere, obj)) {
+      const matched = matchDoc(topWhere, obj)
+      if (or.length === 0 && matched) {
         found.push(obj)
       }
       for (const _where of or) {
-        if (matchDoc(_where, obj) && matchDoc(topWhere, obj)) {
+        if (matchDoc(_where, obj) && matched) {
           found.push(obj)
           break
         }

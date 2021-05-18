@@ -111,6 +111,7 @@ export class BlockProcessor extends EventEmitter {
             include: { block: true },
           })
           const latest = latestProcessed.pop()
+          await this.calcCanonicalBlockHeights(latest?.proposalNum)
           this.emit('processed', { proposalNum: latest?.proposalNum || 0 })
           // this.synchronizer.setLatestProcessed(latest?.proposalNum || 0)
           break
