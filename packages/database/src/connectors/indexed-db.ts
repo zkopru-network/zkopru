@@ -13,7 +13,6 @@ import {
   TransactionDB,
   Schema,
   Relation,
-  normalizeRowDef,
   constructSchema,
 } from '../types'
 
@@ -34,15 +33,15 @@ export class IndexedDBConnector extends DB {
   static async create(tables: TableData[]) {
     const schema = constructSchema(tables)
     const connector = new this(schema)
-    connector.db = await openDB(DB_NAME, 5, {
+    connector.db = await openDB(DB_NAME, 6, {
       /**
        * If an index is changed (e.g. same keys different "unique" value) the
        * index will not be updated. If such a case occurs the name should be
        * changed to force a new index to be created and the old index deleted
-       **/
+       * */
       async upgrade(db, _, __, tx) {
         for (const table of tables) {
-          const indexes = table.indexes || []
+          const indexes = (schema[table.name] || {}).indexes || []
           if (db.objectStoreNames.contains(table.name)) {
             // table exists, look for indexes we need to create
             for (const index of indexes) {
@@ -51,13 +50,9 @@ export class IndexedDBConnector extends DB {
                 continue
               }
               // otherwise we need to create the index
-              tx.objectStore(table.name).createIndex(
-                index.name,
-                index.keys,
-                {
-                  unique: !!index.unique,
-                }
-              )
+              tx.objectStore(table.name).createIndex(index.name, index.keys, {
+                unique: !!index.unique,
+              })
             }
             // look for indexes we need to delete
             for (const indexName of tx.objectStore(table.name).indexNames) {
@@ -74,13 +69,9 @@ export class IndexedDBConnector extends DB {
               keyPath: table.primaryKey,
             })
             for (const index of indexes) {
-              store.createIndex(
-                index.name,
-                index.keys,
-                {
-                  unique: !!index.unique,
-                }
-              )
+              store.createIndex(index.name, index.keys, {
+                unique: !!index.unique,
+              })
             }
           }
         }
@@ -245,21 +236,107 @@ export class IndexedDBConnector extends DB {
     options: FindManyOptions,
     _tx?: IDBPTransaction<any, string[], 'readwrite' | 'readonly'>,
   ) {
+    /**
+     * Currently only queries for single values can be accelerated by index.
+     * Many fields can be specified, but each may have only 1 value.
+     *
+     * TODO: gt, lt, exists, include operators
+     * */
     if (!this.db) throw new Error('DB is not initialized')
+    // scan if there's a complex query
+    if (
+      typeof options.orderBy === 'object' ||
+      Object.keys(options.where).length === 0
+    ) {
+      return this.findUsingScan(collection, options, _tx)
+    }
+    for (const key of Object.keys(options.where)) {
+      if (typeof options.where[key] === 'object') {
+        return this.findUsingScan(collection, options, _tx)
+      }
+    }
+    // otherwise look for an index containing all relevant keys
+    const allKeys = [] as string[]
+    const whereObjects = [options.where, ...(options.where.OR || [])]
+    for (const where of whereObjects) {
+      allKeys.push(...Object.keys(where))
+    }
+    const foundKeys = {}
+    const keys = allKeys.filter(key => {
+      if (key === 'OR') return false
+      if (foundKeys[key]) return false
+      foundKeys[key] = true
+      return true
+    })
+    // keys is now a unique list of keys we need in an index
+    const table = this.schema[collection]
+    if (!table) throw new Error(`Invalid collection: "${collection}"`)
+    // now let's look for an index to accelerate the query with
+    for (const index of table.indexes || []) {
+      // make sure each required key is in the index, and all index keys are present
+      let useIndex = true
+      for (const key of keys) {
+        if (index.keys.indexOf(key) === -1) {
+          useIndex = false
+          break
+        }
+      }
+      for (const key of index.keys) {
+        if (keys.indexOf(key) === -1) {
+          useIndex = false
+          break
+        }
+      }
+      if (!useIndex) {
+        // eslint-disable-next-line no-continue
+        continue
+      }
+      // use this index
+      const tx = _tx || this.db.transaction(collection)
+      const txIndex = tx.objectStore(collection).index(index.name)
+      const query = index.keys.map(k => options.where[k])
+      const result = await txIndex.getAll(query)
+      const found = result.filter(i => !!i)
+      await this.loadIncluded(collection, {
+        models: found,
+        include: options.include,
+      })
+      return found
+    }
+    // no index supports the query, scan
+    return this.findUsingScan(collection, options, _tx)
+  }
+
+  private async findUsingScan(
+    collection: string,
+    options: FindManyOptions,
+    _tx?: IDBPTransaction<any, string[], 'readwrite' | 'readonly'>,
+  ) {
+    if (!this.db) throw new Error('DB is not initialized')
+    const table = this.schema[collection]
+    if (!table) throw new Error(`Invalid collection: "${collection}"`)
     const found = [] as any[]
     let cursor: any
     const tx = _tx || this.db.transaction(collection)
     if (Object.keys(options.orderBy || {}).length > 0) {
-      // use a cursor
       const key = Object.keys(options.orderBy || {})[0]
+      // find an index to use for ordering by
+      let indexName: string | undefined
+      for (const index of table.indexes || []) {
+        if (index.keys.length === 1 && index.keys[0] === key) {
+          indexName = index.name
+          break
+        }
+      }
+      if (!indexName)
+        throw new Error(`Unable to find index for ordering by ${key}`)
+      // use a cursor
       const direction = (options.orderBy || {})[key] === 'asc' ? 'next' : 'prev'
-      const index = tx.objectStore(collection).index(key)
+      const index = tx.objectStore(collection).index(indexName)
       cursor = await index.openCursor(null, direction)
     } else {
       cursor = await tx.objectStore(collection).openCursor()
     }
-    console.log(`Scanning ${collection}: ${JSON.stringify(options.where)}`)
-    // TODO: index accelerated queries when possible
     const matchDoc = (where: WhereClause, doc: any) => {
       for (const [key, val] of Object.entries(where)) {
         if (typeof val === 'object' && !Array.isArray(val) && val !== null) {
