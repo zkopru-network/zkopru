@@ -41,6 +41,7 @@
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/utils": "file:../utils",
     "@zkopru/zk-wizard": "file:../zk-wizard",
+    "@zkopru/contracts": "file:../contracts",
     "axios": "^0.21.1",
     "big-integer": "^1.6.48",
     "bip39": "^3.0.2",

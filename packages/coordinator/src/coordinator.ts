@@ -223,7 +223,6 @@ export class Coordinator extends EventEmitter {
     if (!url) {
       // Set a url
       // TODO: determine apparent external ip/port
-      logger.info(`Coordinator url doesnot exist >> set Localhost`)
       const urlTx = auction.methods.setUrl('http://localhost')
       await this.layer1().sendExternalTx(urlTx, this.context.account, consensus)
     }

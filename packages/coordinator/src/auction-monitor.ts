@@ -132,7 +132,6 @@ export class AuctionMonitor {
     const myUrl = await auction.methods
       .coordinatorUrls(this.account.address)
       .call()
-    logger.info(`Coordinator Auction Monitor coordiantoUrls : >> ${myUrl}`)
     if (!myUrl || myUrl !== this.nodeUrl) {
       const newUrl = this.nodeUrl || `${await externalIp()}:${this.port}`
       // This will throw if invalid

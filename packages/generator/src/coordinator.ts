@@ -3,7 +3,7 @@ import { FullNode } from '@zkopru/core'
 import { Coordinator } from '@zkopru/coordinator'
 import { logger } from '@zkopru/utils'
 import { config } from './config'
-import { getBase, startLogger } from './baseGenerator'
+import { getBase, startLogger } from './generator-utils'
 
 startLogger('COORDINATOR_LOG')
 
@@ -34,7 +34,7 @@ async function testCoodinator() {
     maxBid: 20000,
     vhosts: '*',
     priceMultiplier: 48,
-    publicUrls: `${coordinatorIp}:8888`, // Coordinator Network address will be register on Contract.
+    publicUrls: `${coordinatorIp}:8888`, // This is default params, Will be using registered coordinator address on Contract.
     port: 8888,
   }
 
@@ -47,8 +47,4 @@ async function testCoodinator() {
   await coordinator.start()
 }
 
-async function main() {
-  await testCoodinator()
-}
-
-main()
+testCoodinator()

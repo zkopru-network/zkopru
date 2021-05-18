@@ -1,16 +1,8 @@
 /* eslint-disable no-continue, no-underscore-dangle */
-import util from 'util'
 import Web3 from 'web3'
 import { logger } from '@zkopru/utils'
 import { Layer1 } from '@zkopru/contracts'
 import fetch from 'node-fetch'
-
-export function logAll(Object) {
-  return util.inspect(Object, {
-    showHidden: true,
-    depth: null,
-  })
-}
 
 /**
  * Manages remote URLs for coordinators
@@ -109,6 +101,7 @@ export class CoordinatorManager {
     const urls = url.split(',')
     if (urls.length === 0) return
     for (const u of urls) {
+      logger.info(u)
       // ping to see if it's active
       try {
         const fullUrl = `https://${u}`
@@ -143,7 +136,6 @@ export class CoordinatorManager {
       })
       .on('data', async (data: any) => {
         const { coordinator } = data.returnValues
-        logger.info(`Start then update Coordinator as ${coordinator}`)
         await this.updateUrl(coordinator)
       })
   }
