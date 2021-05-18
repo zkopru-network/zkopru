@@ -137,6 +137,18 @@ export type Schema = {
   [tableKey: string]: SchemaTable | undefined
 }
 
+export function normalizeRowDef(row: RowDef | ShortRowDef): RowDef {
+  if (Array.isArray(row)) {
+    const [name, type, options] = row
+    return {
+      name,
+      type,
+      ...(options || {}),
+    }
+  }
+  return row
+}
+
 export function constructSchema(tables: TableData[]): Schema {
   const schema = {}
   for (const table of tables) {
@@ -145,7 +157,7 @@ export function constructSchema(tables: TableData[]): Schema {
       rowsByName: {},
       ...table,
     }
-    const indexes = (table.indexes || []).map((index) => ({
+    const indexes = (table.indexes || []).map(index => ({
       ...index,
       name: index.name ? index.name : `${index.keys.join('-')}-index`,
     }))
@@ -160,12 +172,13 @@ export function constructSchema(tables: TableData[]): Schema {
         }
       }
       if (
-        fullRow.optional ||
-        fullRow.unique ||
-        fullRow.index ||
-        [table.primaryKey].flat().indexOf(fullRow.name) !== -1
+        fullRow.type !== 'Bool' &&
+        (fullRow.optional ||
+          fullRow.unique ||
+          fullRow.index ||
+          [table.primaryKey].flat().indexOf(fullRow.name) !== -1)
       ) {
-        // record it as an index
+        // record it as an index, but don't index booleans
         indexes.push({
           name: `${fullRow.name}-index`,
           keys: [fullRow.name],
@@ -177,16 +190,4 @@ export function constructSchema(tables: TableData[]): Schema {
     schema[table.name].indexes = indexes
   }
   return schema
-}
-
-export function normalizeRowDef(row: RowDef | ShortRowDef): RowDef {
-  if (Array.isArray(row)) {
-    const [name, type, options] = row
-    return {
-      name,
-      type,
-      ...(options || {}),
-    }
-  }
-  return row
 }
