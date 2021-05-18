@@ -18,6 +18,7 @@ import {
   ZkTx,
 } from '@zkopru/transaction'
 import { Bytes32, Address, Uint256 } from 'soltypes'
+import AsyncLock from 'async-lock'
 import { L2Chain, Patch } from '../context/layer2'
 import { Block, Header, massDepositHash } from '../block'
 import { ChallengeTx, ValidatorBase as Validator } from '../validator'
@@ -50,6 +51,8 @@ export class BlockProcessor extends EventEmitter {
   validator: Validator
 
   worker: Worker<void>
+
+  canonicalLock = new AsyncLock()
 
   constructor({
     db,
@@ -113,6 +116,7 @@ export class BlockProcessor extends EventEmitter {
           break
         }
         const processedProposalNum = await this.processBlock(unprocessed)
+        await this.calcCanonicalBlockHeights(processedProposalNum)
         this.emit('processed', {
           proposalNum: processedProposalNum,
           block: unprocessed.block,
@@ -541,6 +545,74 @@ export class BlockProcessor extends EventEmitter {
           },
         }),
       )
+    })
+  }
+
+  // idempotently calculate canonical numbers
+  private async calcCanonicalBlockHeights(latestProcessed = 0) {
+    await this.canonicalLock.acquire('canon', async () => {
+      // find earliest block with no canonical num
+      const startBlock = await this.db.findMany('Proposal', {
+        where: {
+          canonicalNum: null,
+          OR: [{ proposalData: { ne: null } }, { proposalNum: 0 }],
+        },
+        orderBy: { proposalNum: 'asc' },
+        limit: 1,
+      })
+      if (startBlock.length === 0) {
+        // have canonical numbers for all blocks
+        return
+      }
+      // The proposal to start at
+      const [{ proposalNum }] = startBlock
+      if (proposalNum === null) {
+        throw new Error('Proposal number is null')
+      }
+      const blockHeight = await this.db.count('Proposal', {})
+      for (
+        let x = proposalNum;
+        x <= Math.min(blockHeight, latestProcessed);
+        x += 1
+      ) {
+        await this.calcCanonicalBlockHeight(x)
+      }
+    })
+  }
+
+  private async calcCanonicalBlockHeight(proposalNum: number) {
+    const proposals = await this.db.findMany('Proposal', {
+      where: { proposalNum },
+    })
+    if (proposals.length !== 1) {
+      throw new Error(`Did not find one proposal for number: ${proposalNum}`)
+    }
+    const [proposal] = proposals
+    const { hash } = proposal
+    if (proposalNum === 0) {
+      await this.db.update('Proposal', {
+        where: { hash },
+        update: { canonicalNum: 0 },
+      })
+      return
+    }
+    if (!proposal.proposalData) return
+    const block = Block.fromTx(JSON.parse(proposal.proposalData))
+    const header = block.getHeaderSql()
+    const parent = await this.db.findOne('Proposal', {
+      where: {
+        hash: header.parentBlock.toString(),
+      },
+    })
+    if (!parent) {
+      throw new Error(`Unable to find parent proposal`)
+    }
+    if (parent.canonicalNum === null) {
+      throw new Error(`Expected canonicalNum to exist!`)
+    }
+    await this.db.update('Proposal', {
+      where: { hash },
+      update: { canonicalNum: (parent.canonicalNum as number) + 1 },
     })
   }
 }
