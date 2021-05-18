@@ -1,4 +1,3 @@
-import util from 'util'
 import { ZkopruNode, CoordinatorManager } from '@zkopru/core'
 import { ZkAccount } from '@zkopru/account'
 import {
@@ -25,13 +24,6 @@ import { logger } from '@zkopru/utils'
 import { TransactionReceipt, Account } from 'web3-core'
 import { signTypedData_v4 as signTypedData } from 'eth-sig-util'
 import { ZkWizard } from './zk-wizard'
-
-export function logAll(Object) {
-  return util.inspect(Object, {
-    showHidden: true,
-    depth: null,
-  })
-}
 
 export interface Balance {
   eth: string

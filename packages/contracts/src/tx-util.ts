@@ -48,7 +48,6 @@ export class TxUtil {
         gasPrice,
         gas,
         to: address,
-        nonce: (option?.nonce as number) ?? undefined,
         value,
         data: tx.encodeABI(),
         nonce: option?.nonce ? +option.nonce.toString() : undefined,
