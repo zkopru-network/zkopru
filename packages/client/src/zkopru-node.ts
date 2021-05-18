@@ -101,6 +101,7 @@ export default class ZkopruNode {
       _db.delete('Slash', { where: {} })
       _db.delete('Bootstrap', { where: {} })
       _db.delete('Tx', { where: {} })
+      _db.delete('PendingTx', { where: {} })
       _db.delete('MassDeposit', { where: {} })
       _db.delete('Deposit', { where: {} })
       _db.delete('Utxo', { where: {} })

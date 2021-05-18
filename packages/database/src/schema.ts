@@ -218,6 +218,19 @@ export default [
     ],
   },
   {
+    name: 'PendingTx',
+    primaryKey: 'hash',
+    rows: [
+      ['hash', 'String'],
+      ['fee', 'String'],
+      ['proof', 'Object'],
+      ['memo', 'String', { optional: true }],
+      ['swap', 'String', { optional: true }],
+      ['inflow', 'Object'],
+      ['outflow', 'Object'],
+    ],
+  },
+  {
     name: 'MassDeposit',
     primaryKey: 'index',
     rows: [

@@ -77,7 +77,7 @@ export class Coordinator extends EventEmitter {
       account,
       node,
       auctionMonitor: new AuctionMonitor(node, account, config),
-      txPool: new TxMemPool(),
+      txPool: new TxMemPool(node.db),
       // eslint-disable-next-line prefer-object-spread
       config: Object.assign({ priceMultiplier: 32 }, config),
     }
@@ -108,6 +108,7 @@ export class Coordinator extends EventEmitter {
 
   async start() {
     logger.info('Starting coordinator')
+    await this.context.txPool.loadPendingTx()
     this.context.node.synchronizer.on(
       'status',
       async (status: NetworkStatus) => {
