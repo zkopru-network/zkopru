@@ -320,6 +320,11 @@ export default [
   {
     name: 'TreeNode',
     primaryKey: ['treeId', 'nodeIndex'],
+    indexes: [
+      {
+        keys: ['nodeIndex', 'treeId'],
+      },
+    ],
     rows: [
       ['treeId', 'String'],
       ['nodeIndex', 'String'],

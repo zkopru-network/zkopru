@@ -66,6 +66,14 @@ export interface TableData {
   name: string
   primaryKey: string | string[]
   rows: (RowDef | ShortRowDef)[]
+  indexes?: TableIndex[]
+}
+
+export interface TableIndex {
+  name: string
+  keys: string[] // can be an array of length 1
+  unique?: boolean
+  optional?: boolean
 }
 
 // For accepting a specific DB connector as an argument to a function
@@ -117,18 +125,6 @@ export interface TransactionDB {
   delete: (collection: string, options: DeleteManyOptions) => void
 }
 
-export function normalizeRowDef(row: RowDef | ShortRowDef): RowDef {
-  if (Array.isArray(row)) {
-    const [name, type, options] = row
-    return {
-      name,
-      type,
-      ...(options || {}),
-    }
-  }
-  return row
-}
-
 export type SchemaTable = {
   rowsByName: { [rowKey: string]: RowDef | undefined }
   relations: {
@@ -149,6 +145,10 @@ export function constructSchema(tables: TableData[]): Schema {
       rowsByName: {},
       ...table,
     }
+    const indexes = (table.indexes || []).map((index) => ({
+      ...index,
+      name: index.name ? index.name : `${index.keys.join('-')}-index`,
+    }))
     for (const row of table.rows) {
       const fullRow = normalizeRowDef(row)
       schema[table.name].rowsByName[fullRow.name] = fullRow
@@ -159,7 +159,34 @@ export function constructSchema(tables: TableData[]): Schema {
           ...fullRow.relation,
         }
       }
+      if (
+        fullRow.optional ||
+        fullRow.unique ||
+        fullRow.index ||
+        [table.primaryKey].flat().indexOf(fullRow.name) !== -1
+      ) {
+        // record it as an index
+        indexes.push({
+          name: `${fullRow.name}-index`,
+          keys: [fullRow.name],
+          unique: fullRow.unique,
+          optional: fullRow.optional,
+        })
+      }
     }
+    schema[table.name].indexes = indexes
   }
   return schema
+}
+
+export function normalizeRowDef(row: RowDef | ShortRowDef): RowDef {
+  if (Array.isArray(row)) {
+    const [name, type, options] = row
+    return {
+      name,
+      type,
+      ...(options || {}),
+    }
+  }
+  return row
 }

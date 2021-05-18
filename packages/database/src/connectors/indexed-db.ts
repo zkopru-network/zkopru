@@ -34,24 +34,53 @@ export class IndexedDBConnector extends DB {
   static async create(tables: TableData[]) {
     const schema = constructSchema(tables)
     const connector = new this(schema)
-    connector.db = await openDB(DB_NAME, 3, {
-      upgrade(db /* oldVersion, newVersion, transaction */) {
+    connector.db = await openDB(DB_NAME, 5, {
+      /**
+       * If an index is changed (e.g. same keys different "unique" value) the
+       * index will not be updated. If such a case occurs the name should be
+       * changed to force a new index to be created and the old index deleted
+       **/
+      async upgrade(db, _, __, tx) {
         for (const table of tables) {
-          // eslint-disable-next-line no-continue
-          if (db.objectStoreNames.contains(table.name)) continue
-          const store = db.createObjectStore(table.name, {
-            keyPath: table.primaryKey,
-          })
-          for (const row of table.rows) {
-            const fullRow = normalizeRowDef(row)
-            if (
-              fullRow.unique ||
-              fullRow.index ||
-              [table.primaryKey].flat().indexOf(fullRow.name) !== -1
-            ) {
-              store.createIndex(fullRow.name, fullRow.name, {
-                unique: !!fullRow.unique,
-              })
+          const indexes = table.indexes || []
+          if (db.objectStoreNames.contains(table.name)) {
+            // table exists, look for indexes we need to create
+            for (const index of indexes) {
+              if (tx.objectStore(table.name).indexNames.contains(index.name)) {
+                // eslint-disable-next-line no-continue
+                continue
+              }
+              // otherwise we need to create the index
+              tx.objectStore(table.name).createIndex(
+                index.name,
+                index.keys,
+                {
+                  unique: !!index.unique,
+                }
+              )
+            }
+            // look for indexes we need to delete
+            for (const indexName of tx.objectStore(table.name).indexNames) {
+              if (indexes.find(({ name }) => name === indexName)) {
+                // eslint-disable-next-line no-continue
+                continue
+              }
+              // otherwise we need to delete the index
+              tx.objectStore(table.name).deleteIndex(indexName.toString())
+            }
+          } else {
+            // create table as usual
+            const store = db.createObjectStore(table.name, {
+              keyPath: table.primaryKey,
+            })
+            for (const index of indexes) {
+              store.createIndex(
+                index.name,
+                index.keys,
+                {
+                  unique: !!index.unique,
+                }
+              )
             }
           }
         }
@@ -229,6 +258,7 @@ export class IndexedDBConnector extends DB {
     } else {
       cursor = await tx.objectStore(collection).openCursor()
     }
+    console.log(`Scanning ${collection}: ${JSON.stringify(options.where)}`)
     // TODO: index accelerated queries when possible
     const matchDoc = (where: WhereClause, doc: any) => {
       for (const [key, val] of Object.entries(where)) {
