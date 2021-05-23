@@ -5,6 +5,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable jest/no-hooks */
 
+import * as snarkjs from 'snarkjs'
 import { genSNARK, SNARKResult } from '~zk-wizard/snark'
 import {
   checkPhase1Setup,
@@ -45,6 +46,27 @@ describe('ownership_proof.test.circom', () => {
     }
 
     const result: SNARKResult = await genSNARK(inputs, wasm, finalZkey, vk)
+    const validity = await snarkjs.groth16.verify(
+      vk,
+      result.publicSignals,
+      result.proof,
+    )
     expect(result).toBeDefined()
+    expect(validity).toEqual(true)
+  })
+  it('should fail to create SNARK proof with invalid account', async () => {
+    const utxo = utxos.utxo1_out_1
+    const { alice } = accounts
+    const { bob } = accounts
+    const eddsa = alice.signEdDSA(utxo.hash())
+    const inputs = {
+      note: utxo.hash().toBigInt(),
+      Ax: bob.getEdDSAPubKey().x.toBigInt(),
+      Ay: bob.getEdDSAPubKey().y.toBigInt(),
+      R8x: eddsa.R8.x.toBigInt(),
+      R8y: eddsa.R8.y.toBigInt(),
+      S: eddsa.S.toBigInt(),
+    }
+    await expect(genSNARK(inputs, wasm, finalZkey, vk)).rejects.toThrowError()
   })
 })
