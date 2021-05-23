@@ -1,9 +1,13 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { ZkViewer } from '@zkopru/account'
 import { Fp } from '@zkopru/babyjubjub'
-import { DB, Proposal, MassDeposit as MassDepositSql } from '@zkopru/database'
+import {
+  DB,
+  Proposal,
+  MassDeposit as MassDepositSql,
+  TransactionDB,
+} from '@zkopru/database'
 import { logger, Worker } from '@zkopru/utils'
-import { Leaf } from '@zkopru/tree'
 import assert from 'assert'
 import BN from 'bn.js'
 import { EventEmitter } from 'events'
@@ -112,6 +116,9 @@ export class BlockProcessor extends EventEmitter {
           })
           const latest = latestProcessed.pop()
           await this.calcCanonicalBlockHeights(latest?.proposalNum)
+          // once we're out of unprocessed blocks update utxos and withdrawals
+          // await this.db.transaction(db => {
+          // })
           this.emit('processed', { proposalNum: latest?.proposalNum || 0 })
           // this.synchronizer.setLatestProcessed(latest?.proposalNum || 0)
           break
@@ -181,7 +188,7 @@ export class BlockProcessor extends EventEmitter {
         update: { includedIn: null },
       })
       // save transactions and mark them as challenged
-      await this.saveTransactions(block, true)
+      await this.db.transaction(db => this.saveTransactions(block, db, true))
       logger.warn('challenge')
       // TODO slasher option
       this.emit('slash', {
@@ -192,27 +199,40 @@ export class BlockProcessor extends EventEmitter {
     }
     const tokenRegistry = await this.layer2.getTokenRegistry()
     // Find decryptable Utxos
+    // Performs only upserts
     await this.decryptMyUtxos(
       block.body.txs,
       this.tracker.transferTrackers,
       tokenRegistry,
     )
     // Find withdrawals to track
+    // Performs only upserts
     await this.saveMyWithdrawals(
       block.body.txs,
       this.tracker.withdrawalTrackers,
     )
-    await this.saveTransactions(block)
-    // generate a patch
+    // generate a patch, performs only reads
     const patch = await this.makePatch(parent, block)
-    await this.applyPatch(patch)
-    // Mark as verified
-    await this.db.update('Proposal', {
-      where: { hash: block.hash.toString() },
-      update: {
-        verified: true,
-        isUncle: isUncle ? true : null,
-      },
+    await this.db.transaction(async db => {
+      // Performs creations, start tx here
+      this.saveTransactions(block, db)
+      await this.applyPatch(patch, db)
+      logger.info('patch applied')
+      // Mark as verified
+      db.update('Proposal', {
+        where: { hash: block.hash.toString() },
+        update: {
+          verified: true,
+          isUncle: isUncle ? true : null,
+        },
+      })
+    })
+    // These can be done idempotently outside of/after the applyPatch?
+    await this.db.transaction(async db => {
+      await this.updateMyUtxos(this.tracker.transferTrackers, patch, db)
+      logger.trace('update my utxos')
+      await this.updateMyWithdrawals(this.tracker.withdrawalTrackers, patch, db)
+      logger.trace('update my withdrawals')
     })
     // TODO remove proposal data if it completes verification or if the block is finalized
     return proposal.proposalNum
@@ -275,21 +295,24 @@ export class BlockProcessor extends EventEmitter {
     })
   }
 
-  private async saveTransactions(block: Block, challenged = false) {
-    await this.db.transaction(db => {
-      block.body.txs.forEach(tx => {
-        db.create('Tx', {
-          hash: tx.hash().toString(),
-          blockHash: block.hash.toString(),
-          inflowCount: tx.inflow.length,
-          outflowCount: tx.outflow.length,
-          fee: tx.fee.toHex(),
-          challenged,
-          slashed: false,
-        })
-        db.delete('PendingTx', {
-          where: { hash: tx.hash().toString() },
-        })
+  // eslint-disable-next-line class-methods-use-this
+  private saveTransactions(
+    block: Block,
+    db: TransactionDB,
+    challenged = false,
+  ) {
+    block.body.txs.forEach(tx => {
+      db.create('Tx', {
+        hash: tx.hash().toString(),
+        blockHash: block.hash.toString(),
+        inflowCount: tx.inflow.length,
+        outflowCount: tx.outflow.length,
+        fee: tx.fee.toHex(),
+        challenged,
+        slashed: false,
+      })
+      db.delete('PendingTx', {
+        where: { hash: tx.hash().toString() },
       })
     })
   }
@@ -361,52 +384,50 @@ export class BlockProcessor extends EventEmitter {
     return patch
   }
 
-  private async applyPatch(patch: Patch) {
+  private async applyPatch(patch: Patch, db: TransactionDB) {
     logger.trace('layer2.ts: applyPatch()')
     const { block, treePatch, massDeposits } = patch
-    await this.nullifyUsedUtxos(block, treePatch.nullifiers)
+    db.update('Utxo', {
+      where: { nullifier: treePatch.nullifiers.map(v => v.toString()) },
+      update: {
+        status: UtxoStatus.SPENT,
+        usedAt: block.toString(),
+      },
+    })
     logger.trace('nullify used utxos')
     // Update mass deposits inclusion status
     if (massDeposits) {
-      await this.markMassDepositsAsIncludedIn(massDeposits, block)
+      await this.markMassDepositsAsIncludedIn(massDeposits, block, db)
     }
     logger.trace('mark mass deposits included in the given block')
-    await this.markUtxosAsUnspent(patch.treePatch?.utxos || [])
-    logger.trace('mark utxos as unspent')
-    await this.markWithdrawalsAsUnfinalized(patch.treePatch?.withdrawals || [])
-    logger.trace('mark withdrawals as unfinalized')
-    // Apply tree patch
-    await this.layer2.grove.applyGrovePatch(treePatch)
-    await this.updateMyUtxos(this.tracker.transferTrackers, patch)
-    logger.trace('update my utxos')
-    await this.updateMyWithdrawals(this.tracker.withdrawalTrackers, patch)
-    logger.trace('update my withdrawals')
-  }
 
-  private async markUtxosAsUnspent(utxos: Leaf<Fp>[]) {
-    await this.db.update('Utxo', {
+    db.update('Utxo', {
       where: {
-        hash: utxos.map(utxo => utxo.hash.toUint256().toString()),
+        hash: patch.treePatch?.utxos.map(utxo =>
+          utxo.hash.toUint256().toString(),
+        ),
       },
       update: { status: UtxoStatus.UNSPENT },
     })
-  }
-
-  private async markWithdrawalsAsUnfinalized(withdrawals: Leaf<BN>[]) {
-    await this.db.update('Withdrawal', {
+    logger.trace('mark utxos as unspent')
+    db.update('Withdrawal', {
       where: {
-        hash: withdrawals.map(withdrawal => {
+        hash: patch.treePatch?.withdrawals.map(withdrawal => {
           assert(withdrawal.noteHash)
           return withdrawal.noteHash.toString()
         }),
       },
       update: { status: WithdrawalStatus.UNFINALIZED },
     })
+    logger.trace('mark withdrawals as unfinalized')
+    // Apply tree patch
+    await this.layer2.grove.applyGrovePatch(treePatch, db)
   }
 
   private async markMassDepositsAsIncludedIn(
     massDepositHashes: Bytes32[],
     block: Bytes32,
+    db: TransactionDB,
   ) {
     const nonIncluded = await this.db.findMany('MassDeposit', {
       where: {
@@ -437,23 +458,18 @@ export class BlockProcessor extends EventEmitter {
         }
       }
     }
-    await this.db.update('MassDeposit', {
+    if (indexes.length === 0) return
+    db.update('MassDeposit', {
       where: { index: indexes },
       update: { includedIn: block.toString() },
     })
   }
 
-  private async nullifyUsedUtxos(blockHash: Bytes32, nullifiers: BN[]) {
-    await this.db.update('Utxo', {
-      where: { nullifier: nullifiers.map(v => v.toString()) },
-      update: {
-        status: UtxoStatus.SPENT,
-        usedAt: blockHash.toString(),
-      },
-    })
-  }
-
-  private async updateMyUtxos(accounts: ZkViewer[], patch: Patch) {
+  private async updateMyUtxos(
+    accounts: ZkViewer[],
+    patch: Patch,
+    db: TransactionDB,
+  ) {
     // Find utxos that I've created
     const myStoredUtxos = await this.db.findMany('Utxo', {
       where: {
@@ -476,7 +492,7 @@ export class BlockProcessor extends EventEmitter {
       const viewer = accounts.find(
         account => account.zkAddress.toString() === utxoData.owner,
       )
-      if (!viewer) throw Error('Cannot create nullifier')
+      if (!viewer) throw new Error('Cannot create nullifier')
       const nullifier = Utxo.nullifier(viewer.getNullifierSeed(), index)
       utxosToUpdate.push({
         hash: utxoData.hash,
@@ -484,20 +500,22 @@ export class BlockProcessor extends EventEmitter {
         nullifier: nullifier.toString(),
       })
     }
-    await this.db.transaction(db => {
-      utxosToUpdate.map(utxo =>
-        db.update('Utxo', {
-          where: { hash: utxo.hash },
-          update: {
-            index: utxo.index,
-            nullifier: utxo.nullifier,
-          },
-        }),
-      )
-    })
+    utxosToUpdate.forEach(utxo =>
+      db.update('Utxo', {
+        where: { hash: utxo.hash },
+        update: {
+          index: utxo.index,
+          nullifier: utxo.nullifier,
+        },
+      }),
+    )
   }
 
-  private async updateMyWithdrawals(accounts: Address[], patch: Patch) {
+  private async updateMyWithdrawals(
+    accounts: Address[],
+    patch: Patch,
+    db: TransactionDB,
+  ) {
     const myStoredWithdrawals = await this.db.findMany('Withdrawal', {
       where: {
         hash: patch.treePatch.withdrawals.map(leaf => {
@@ -535,18 +553,16 @@ export class BlockProcessor extends EventEmitter {
         ),
       })
     }
-    await this.db.transaction(db => {
-      withdrawalsToUpdate.map(withdrawal =>
-        db.update('Withdrawal', {
-          where: { hash: withdrawal.hash },
-          update: {
-            index: withdrawal.index,
-            includedIn: withdrawal.includedIn,
-            siblings: withdrawal.siblings,
-          },
-        }),
-      )
-    })
+    withdrawalsToUpdate.forEach(withdrawal =>
+      db.update('Withdrawal', {
+        where: { hash: withdrawal.hash },
+        update: {
+          index: withdrawal.index,
+          includedIn: withdrawal.includedIn,
+          siblings: withdrawal.siblings,
+        },
+      }),
+    )
   }
 
   // idempotently calculate canonical numbers
