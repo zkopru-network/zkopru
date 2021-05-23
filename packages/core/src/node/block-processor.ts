@@ -116,9 +116,6 @@ export class BlockProcessor extends EventEmitter {
           })
           const latest = latestProcessed.pop()
           await this.calcCanonicalBlockHeights(latest?.proposalNum)
-          // once we're out of unprocessed blocks update utxos and withdrawals
-          // await this.db.transaction(db => {
-          // })
           this.emit('processed', { proposalNum: latest?.proposalNum || 0 })
           // this.synchronizer.setLatestProcessed(latest?.proposalNum || 0)
           break
