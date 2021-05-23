@@ -66,7 +66,9 @@ export class SQLiteConnector extends DB {
   }
 
   async create(collection: string, _doc: any | any): Promise<any> {
-    return this.lock.acquire('db', async () => this._create(collection, _doc))
+    return this.lock.acquire('write', async () =>
+      this._create(collection, _doc),
+    )
   }
 
   private async _create(collection: string, _doc: any | any): Promise<any> {
@@ -89,7 +91,7 @@ export class SQLiteConnector extends DB {
   }
 
   async findOne(collection: string, options: FindOneOptions) {
-    return this.lock.acquire('db', async () =>
+    return this.lock.acquire('read', async () =>
       this._findOne(collection, options),
     )
   }
@@ -156,7 +158,7 @@ export class SQLiteConnector extends DB {
   }
 
   async findMany(collection: string, options: FindManyOptions) {
-    return this.lock.acquire('db', async () =>
+    return this.lock.acquire('read', async () =>
       this._findMany(collection, options),
     )
   }
@@ -192,7 +194,7 @@ export class SQLiteConnector extends DB {
   }
 
   async count(collection: string, where: WhereClause) {
-    return this.lock.acquire('db', async () => this._count(collection, where))
+    return this.lock.acquire('read', async () => this._count(collection, where))
   }
 
   async _count(collection: string, where: WhereClause) {
@@ -204,7 +206,7 @@ export class SQLiteConnector extends DB {
   }
 
   async update(collection: string, options: UpdateOptions) {
-    return this.lock.acquire('db', async () =>
+    return this.lock.acquire('write', async () =>
       this._update(collection, options),
     )
   }
@@ -220,7 +222,7 @@ export class SQLiteConnector extends DB {
   }
 
   async upsert(collection: string, options: UpsertOptions) {
-    return this.lock.acquire('db', async () =>
+    return this.lock.acquire('write', async () =>
       this._upsert(collection, options),
     )
   }
@@ -239,7 +241,7 @@ export class SQLiteConnector extends DB {
   }
 
   async delete(collection: string, options: DeleteManyOptions) {
-    return this.lock.acquire('db', async () =>
+    return this.lock.acquire('write', async () =>
       this._deleteMany(collection, options),
     )
   }
@@ -253,7 +255,7 @@ export class SQLiteConnector extends DB {
   }
 
   async transaction(operation: (db: TransactionDB) => void) {
-    return this.lock.acquire('db', async () => this._transaction(operation))
+    return this.lock.acquire('write', async () => this._transaction(operation))
   }
 
   // Allow only updates, upserts, deletes, and creates
