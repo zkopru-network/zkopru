@@ -217,7 +217,6 @@ export class BlockProcessor extends EventEmitter {
       // Performs creations, start tx here
       this.saveTransactions(block, db)
       await this.applyPatch(patch, db)
-      logger.info('patch applied')
       // Mark as verified
       db.update('Proposal', {
         where: { hash: block.hash.toString() },
@@ -226,13 +225,6 @@ export class BlockProcessor extends EventEmitter {
           isUncle: isUncle ? true : null,
         },
       })
-    })
-    // These can be done idempotently outside of/after the applyPatch?
-    await this.db.transaction(async db => {
-      await this.updateMyUtxos(this.tracker.transferTrackers, patch, db)
-      logger.trace('update my utxos')
-      await this.updateMyWithdrawals(this.tracker.withdrawalTrackers, patch, db)
-      logger.trace('update my withdrawals')
     })
     // TODO remove proposal data if it completes verification or if the block is finalized
     return proposal.proposalNum
@@ -422,6 +414,10 @@ export class BlockProcessor extends EventEmitter {
     logger.trace('mark withdrawals as unfinalized')
     // Apply tree patch
     await this.layer2.grove.applyGrovePatch(treePatch, db)
+    await this.updateMyUtxos(this.tracker.transferTrackers, patch, db)
+    logger.trace('update my utxos')
+    await this.updateMyWithdrawals(this.tracker.withdrawalTrackers, patch, db)
+    logger.trace('update my withdrawals')
   }
 
   private async markMassDepositsAsIncludedIn(
