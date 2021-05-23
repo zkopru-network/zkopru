@@ -9,14 +9,14 @@ import { genSNARK, SNARKResult } from '~zk-wizard/snark'
 import {
   checkPhase1Setup,
   compileCircuit,
-  getArtifactPaths,
+  getArtifacts,
   phase2Setup,
   prepareArtifactsDirectory,
 } from './helper'
 import { accounts } from '~dataset/testset-predefined'
 
 const fileName = 'spending_pubkey.test.circom'
-const artifacts = getArtifactPaths(fileName)
+const artifacts = getArtifacts(fileName)
 const { wasm, finalZkey, vk } = artifacts
 
 describe('spending_pubkey.test.circom', () => {

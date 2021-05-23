@@ -9,7 +9,7 @@ import { genSNARK, SNARKResult } from '~zk-wizard/snark'
 import {
   checkPhase1Setup,
   compileCircuit,
-  getArtifactPaths,
+  getArtifacts,
   phase2Setup,
   prepareArtifactsDirectory,
 } from './helper'
@@ -18,7 +18,7 @@ import { accounts } from '~dataset/testset-predefined'
 import { Fp } from '~babyjubjub'
 
 const fileName = 'nullifier.test.circom'
-const artifacts = getArtifactPaths(fileName)
+const artifacts = getArtifacts(fileName)
 const { wasm, finalZkey, vk } = artifacts
 
 describe('nullifier.test.circom', () => {

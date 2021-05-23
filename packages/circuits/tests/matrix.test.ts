@@ -9,13 +9,13 @@ import { genSNARK, SNARKResult } from '~zk-wizard/snark'
 import {
   checkPhase1Setup,
   compileCircuit,
-  getArtifactPaths,
+  getArtifacts,
   phase2Setup,
   prepareArtifactsDirectory,
 } from './helper'
 
 const fileName = 'matrix.test.circom'
-const artifacts = getArtifactPaths(fileName)
+const artifacts = getArtifacts(fileName)
 const { wasm, finalZkey, vk } = artifacts
 const validData = {
   a: [

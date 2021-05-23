@@ -10,13 +10,13 @@ import { genSNARK, SNARKResult } from '~zk-wizard/snark'
 import {
   checkPhase1Setup,
   compileCircuit,
-  getArtifactPaths,
+  getArtifacts,
   phase2Setup,
   prepareArtifactsDirectory,
 } from './helper'
 
 const fileName = 'range_limit.test.circom'
-const artifacts = getArtifactPaths(fileName)
+const artifacts = getArtifacts(fileName)
 const { wasm, finalZkey, vk } = artifacts
 
 describe('multiplier.test.circom', () => {

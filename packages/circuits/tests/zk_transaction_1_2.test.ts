@@ -13,7 +13,7 @@ import { ZkWizard } from '~zk-wizard'
 import {
   checkPhase1Setup,
   compileCircuit,
-  getArtifactPaths,
+  getArtifacts,
   phase2Setup,
   prepareArtifactsDirectory,
 } from './helper'
@@ -23,7 +23,7 @@ import { txs } from '~dataset/testset-txs'
 import { accounts } from '~dataset/testset-predefined'
 
 const fileName = 'zk_transaction_1_2.test.circom'
-const artifacts = getArtifactPaths(fileName)
+const artifacts = getArtifacts(fileName)
 const { wasm, finalZkey, vk } = artifacts
 const overwrite = false // set it true not to skip circuit compilation & phase 2 setup
 

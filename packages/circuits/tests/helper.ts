@@ -5,14 +5,15 @@ import shell from 'shelljs'
 const BUILD = './build/test'
 const POWERS_OF_TAU_PHASE_1 = './build/ptau/pot17_final.ptau'
 
-export const getArtifactPaths = (filename: string) => {
+export const getArtifacts = (filename: string) => {
   const circuit = `./tester/${filename}`
   const r1cs = `${BUILD}/circuits/${filename}.r1cs`
   const wasm = `${BUILD}/circuits/${filename}.wasm`
   const sym = `${BUILD}/circuits/${filename}.sym`
   const zkey = `${BUILD}/zkeys/${filename}.zkey`
   const finalZkey = `${BUILD}/zkeys/${filename}.final.zkey`
-  const vk = `${BUILD}/vks/${filename}.vk.json`
+  const vKeyPath = `${BUILD}/vks/${filename}.vk.json`
+  const vk = JSON.parse(fs.readFileSync(vKeyPath).toString())
   const phase1 = POWERS_OF_TAU_PHASE_1
   return {
     circuit,
@@ -23,6 +24,7 @@ export const getArtifactPaths = (filename: string) => {
     zkey,
     finalZkey,
     vk,
+    vKeyPath,
   }
 }
 
@@ -62,7 +64,7 @@ export const compileCircuit = (
   fileName: string,
   option?: { overwrite?: boolean },
 ) => {
-  const artifacts = getArtifactPaths(fileName)
+  const artifacts = getArtifacts(fileName)
   const { circuit, r1cs, wasm, sym } = artifacts
   if (!option?.overwrite) {
     const circuitExist = fs.existsSync(circuit)
@@ -93,11 +95,11 @@ export const phase2Setup = (
   fileName: string,
   option?: { overwrite?: boolean },
 ) => {
-  const artifacts = getArtifactPaths(fileName)
-  const { phase1, r1cs, zkey, finalZkey, vk } = artifacts
+  const artifacts = getArtifacts(fileName)
+  const { phase1, r1cs, zkey, finalZkey, vKeyPath } = artifacts
   if (!option?.overwrite) {
     const finalZKeyExist = fs.existsSync(finalZkey)
-    const vkExist = fs.existsSync(vk)
+    const vkExist = fs.existsSync(vKeyPath)
     if (finalZKeyExist && vkExist) {
       console.log(
         [
@@ -118,7 +120,7 @@ export const phase2Setup = (
     `mkdir -p ${tmpDir}`,
     `cp ${finalZkey} ${tmpDir}`,
     `cd ${tmpDir} && snarkjs zkey export verificationkey ${fileName}.final.zkey`,
-    `mv ${tmpDir}/verification_key.json ${vk}`,
+    `mv ${tmpDir}/verification_key.json ${vKeyPath}`,
     `rm -rf ${tmpDir}`,
   ]
   commands.forEach(sh)

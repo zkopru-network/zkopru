@@ -9,7 +9,7 @@ import { genSNARK, SNARKResult } from '~zk-wizard/snark'
 import {
   checkPhase1Setup,
   compileCircuit,
-  getArtifactPaths,
+  getArtifacts,
   phase2Setup,
   prepareArtifactsDirectory,
 } from './helper'
@@ -17,7 +17,7 @@ import { utxos } from '~dataset/testset-utxos'
 import { accounts } from '~dataset/testset-predefined'
 
 const fileName = 'note_hash.test.circom'
-const artifacts = getArtifactPaths(fileName)
+const artifacts = getArtifacts(fileName)
 const { wasm, finalZkey, vk } = artifacts
 
 describe('note_hash.test.circom', () => {
