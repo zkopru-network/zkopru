@@ -52,7 +52,7 @@ describe('ownership_proof.test.circom', () => {
       result.proof,
     )
     expect(result).toBeDefined()
-    expect(validity).toEqual(true)
+    expect(validity).toStrictEqual(true)
   })
   it('should fail to create SNARK proof with invalid account', async () => {
     const utxo = utxos.utxo1_out_1
@@ -67,6 +67,8 @@ describe('ownership_proof.test.circom', () => {
       R8y: eddsa.R8.y.toBigInt(),
       S: eddsa.S.toBigInt(),
     }
-    await expect(genSNARK(inputs, wasm, finalZkey, vk)).rejects.toThrowError()
+    await expect(genSNARK(inputs, wasm, finalZkey, vk)).rejects.toThrow(
+      'Failed to generate SNARK proof',
+    )
   })
 })

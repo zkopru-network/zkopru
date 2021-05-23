@@ -5,20 +5,25 @@ export default async (data: {
   wasmPath: string
   zKeyPath: string
   vKey: Record<string, any>
-}) => {
-  try {
+}): Promise<{ proof: any; publicSignals: any }> => {
+  return new Promise<{ proof: any; publicSignals: any }>((res, rej) => {
     const { inputs, wasmPath, zKeyPath, vKey } = data
-    const { proof, publicSignals } = await snarkjs.groth16.fullProve(
-      inputs,
-      wasmPath,
-      zKeyPath,
-    )
-    const validity = await snarkjs.groth16.verify(vKey, publicSignals, proof)
-    if (!validity) {
-      throw new Error(`Failed to generate SNARK proof`)
+    try {
+      snarkjs.groth16
+        .fullProve(inputs, wasmPath, zKeyPath)
+        .then(({ proof, publicSignals }) => {
+          snarkjs.groth16
+            .verify(vKey, publicSignals, proof)
+            .then((validity: boolean) => {
+              if (validity) {
+                res({ proof, publicSignals })
+              } else {
+                rej(new Error(`Failed to generate SNARK proof`))
+              }
+            })
+        })
+    } catch (err) {
+      rej(new Error(`SNARK full prove failure: ${err}`))
     }
-    return { proof, publicSignals }
-  } catch (err) {
-    throw new Error(`SNARK runtime error ${err}`)
-  }
+  })
 }

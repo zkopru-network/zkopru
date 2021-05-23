@@ -49,7 +49,7 @@ export async function genSNARK(
     process.on('message', message => {
       const result = message as ProverResult
       if (result.snark) res(result.snark)
-      else rej(new Error(result.err))
+      if (result.err) rej(new Error(result.err))
       process.kill()
     })
     process.send({
