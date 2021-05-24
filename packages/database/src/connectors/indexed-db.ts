@@ -517,7 +517,9 @@ export class IndexedDBConnector extends DB {
     let promise = new Promise(rs => {
       start = rs
     })
-    const onCommittedCallbacks = [] as Function[]
+    const onCommitCallbacks = [] as Function[]
+    const onErrorCallbacks = [] as Function[]
+    const onCompleteCallbacks = [] as Function[]
     const db = {
       delete: (collection: string, options: DeleteManyOptions) => {
         stores.push(collection)
@@ -535,10 +537,20 @@ export class IndexedDBConnector extends DB {
         stores.push(collection)
         promise = promise.then(() => this._upsert(collection, options, tx))
       },
-      onCommitted: (cb: Function) => {
+      onCommit: (cb: Function) => {
         if (typeof cb !== 'function')
-          throw new Error('Non-function onCommitted callback supplied')
-        onCommittedCallbacks.push(cb)
+          throw new Error('Non-function onCommit callback supplied')
+        onCommitCallbacks.push(cb)
+      },
+      onError: (cb: Function) => {
+        if (typeof cb !== 'function')
+          throw new Error('Non-function onError callback supplied')
+        onErrorCallbacks.push(cb)
+      },
+      onComplete: (cb: Function) => {
+        if (typeof cb !== 'function')
+          throw new Error('Non-function onComplete callback supplied')
+        onCompleteCallbacks.push(cb)
       },
     } as TransactionDB
     // Call the `operation` function to get a list of the stores that are going
@@ -558,10 +570,17 @@ export class IndexedDBConnector extends DB {
     // explicitly cast the start function because TS cannot determine that it's
     // set above. The body of a promise is executed sychronously so start will
     // be assigned at this point
-    ;(start as Function)()
-    await Promise.all([promise, tx.done])
-    for (const cb of onCommittedCallbacks) {
-      cb()
+    try {
+      ;(start as Function)()
+      await Promise.all([promise, tx.done])
+      for (const cb of [...onCommitCallbacks, ...onCompleteCallbacks]) {
+        cb()
+      }
+    } catch (err) {
+      for (const cb of [...onErrorCallbacks, ...onCompleteCallbacks]) {
+        cb()
+      }
+      throw err
     }
   }
 

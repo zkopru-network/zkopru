@@ -252,7 +252,9 @@ export class PostgresConnector extends DB {
   private async _transaction(operation: (db: TransactionDB) => void) {
     if (typeof operation !== 'function') throw new Error('Invalid operation')
     const sqlOperations = [] as string[]
-    const onCommittedCallbacks = [] as Function[]
+    const onCommitCallbacks = [] as Function[]
+    const onErrorCallbacks = [] as Function[]
+    const onCompleteCallbacks = [] as Function[]
     const transactionDB = {
       create: (collection: string, _doc: any) => {
         const table = this.schema[collection]
@@ -280,10 +282,20 @@ export class PostgresConnector extends DB {
         const sql = upsertSql(table, options)
         sqlOperations.push(sql)
       },
-      onCommitted: (cb: Function) => {
+      onCommit: (cb: Function) => {
         if (typeof cb !== 'function')
-          throw new Error('Non-function onCommitted callback supplied')
-        onCommittedCallbacks.push(cb)
+          throw new Error('Non-function onCommit callback supplied')
+        onCommitCallbacks.push(cb)
+      },
+      onError: (cb: Function) => {
+        if (typeof cb !== 'function')
+          throw new Error('Non-function onError callback supplied')
+        onErrorCallbacks.push(cb)
+      },
+      onComplete: (cb: Function) => {
+        if (typeof cb !== 'function')
+          throw new Error('Non-function onComplete callback supplied')
+        onCompleteCallbacks.push(cb)
       },
     }
     await Promise.resolve(operation(transactionDB))
@@ -293,11 +305,14 @@ export class PostgresConnector extends DB {
     COMMIT;`
     try {
       await this.db.query(transactionSql)
-      for (const cb of onCommittedCallbacks) {
+      for (const cb of [...onCommitCallbacks, ...onCompleteCallbacks]) {
         cb()
       }
     } catch (err) {
       await this.db.query('ROLLBACK;')
+      for (const cb of [...onErrorCallbacks, ...onCompleteCallbacks]) {
+        cb()
+      }
       throw err
     }
   }
