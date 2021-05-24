@@ -36,14 +36,18 @@ describe('nullifier tree unit test', () => {
       ).rejects.toThrow('Generated invalid inclusion proof')
     }, 60000)
     it('should be able to generate an inclusion proof for an existing item', async () => {
-      await nullifierTree.nullify(toBN(123456))
+      await mockup.transaction(async db =>
+        nullifierTree.nullify([toBN(123456)], db),
+      )
       const proof = await nullifierTree.getInclusionProof(toBN(123456))
       expect(proof).toBeDefined()
     }, 60000)
   })
   describe('getNonInclusionProof()', () => {
     it('should not be able to generate a non-inclusion proof for an existing item', async () => {
-      await nullifierTree.nullify(toBN(1234567))
+      await mockup.transaction(async db =>
+        nullifierTree.nullify([toBN(1234567)], db),
+      )
       await expect(
         nullifierTree.getNonInclusionProof(toBN(1234567)),
       ).rejects.toThrow('Generated invalid non inclusion proof')
@@ -55,22 +59,30 @@ describe('nullifier tree unit test', () => {
   })
   describe('recover()', () => {
     it('should not update when you call recover() against an empty leaf', async () => {
-      await expect(nullifierTree.recover(toBN(123))).rejects.toThrow()
+      await expect(
+        mockup.transaction(async db => nullifierTree.recover([toBN(123)], db)),
+      ).rejects.toThrow()
     }, 60000)
   })
   describe('nullify()', () => {
     it('should update the root when you nullify() against an empty leaf', async () => {
       const prevRoot = await nullifierTree.root()
-      await nullifierTree.nullify(toBN(123))
+      await mockup.transaction(async db =>
+        nullifierTree.nullify([toBN(123)], db),
+      )
       expect((await nullifierTree.root()).eq(prevRoot)).toStrictEqual(false)
     }, 30000)
     it('should not update the root when you nullify() against an already nullified leaf', async () => {
-      await expect(nullifierTree.nullify(toBN(123))).rejects.toThrow()
+      await expect(
+        mockup.transaction(async db => nullifierTree.nullify([toBN(123)], db)),
+      ).rejects.toThrow()
     }, 30000)
     it('should be recovered by recover()', async () => {
       const prevRoot = await nullifierTree.root()
-      await nullifierTree.nullify(toBN(1234))
-      await nullifierTree.recover(toBN(1234))
+      await mockup.transaction(async db => {
+        await nullifierTree.nullify([toBN(1234)], db)
+        await nullifierTree.recover([toBN(1234)], db)
+      })
       expect((await nullifierTree.root()).eq(prevRoot)).toStrictEqual(true)
     }, 30000)
   })
@@ -91,7 +103,10 @@ describe('nullifier tree unit test', () => {
       const prevRoot = await nullifierTree.root()
       const nullifiers: BN[] = [toBN(33333333), toBN(444444444)]
       const dryResult = await nullifierTree.dryRunNullify(...nullifiers)
-      const result = await nullifierTree.nullify(...nullifiers)
+      let result!: BN
+      await mockup.transaction(async db => {
+        result = await nullifierTree.nullify(nullifiers, db)
+      })
       expect(result.eq(prevRoot)).toBe(false)
       expect(result.eq(dryResult)).toBe(true)
     }, 120000)

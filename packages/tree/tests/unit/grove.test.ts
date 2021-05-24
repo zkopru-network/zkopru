@@ -10,12 +10,12 @@ import { accounts, address } from '~dataset/testset-predefined'
 
 /* eslint-disable jest/no-hooks */
 describe('grove full sync grove()', () => {
-  let fullSyncGrvoe: Grove
+  let fullSyncGrove: Grove
   let lightSyncGrove: Grove
   let mockup: DB
   beforeAll(async () => {
     mockup = await SQLiteConnector.create(schema, ':memory:')
-    fullSyncGrvoe = new Grove(mockup, {
+    fullSyncGrove = new Grove(mockup, {
       utxoTreeDepth: 31,
       withdrawalTreeDepth: 31,
       utxoSubTreeSize: 32,
@@ -29,32 +29,32 @@ describe('grove full sync grove()', () => {
       zkAddressesToObserve: [accounts.alice.zkAddress],
       addressesToObserve: [address.USER_A],
     })
-    await fullSyncGrvoe.init()
+    await fullSyncGrove.init()
   })
   afterAll(async () => {
     await mockup.close()
   })
   it('should have nullifier tree when it has full sync option', async () => {
-    expect(fullSyncGrvoe.nullifierTree).toBeDefined()
+    expect(fullSyncGrove.nullifierTree).toBeDefined()
   })
   describe('setPubKeysToObserve()', () => {
     it('should register public keys to keep track for the inclusion proof for tx building', () => {
-      fullSyncGrvoe.setZkAddressesToObserve([accounts.alice.zkAddress])
+      fullSyncGrove.setZkAddressesToObserve([accounts.alice.zkAddress])
     })
   })
   describe('setAddressesToObserve()', () => {
     it('should set Ethereum address for withdrawal tracking', () => {
-      fullSyncGrvoe.setAddressesToObserve([address.USER_A])
+      fullSyncGrove.setAddressesToObserve([address.USER_A])
     })
   })
   describe('dryPatch', () => {
     it('should not update the grove', async () => {
       const prevResult = {
-        utxoRoot: fullSyncGrvoe.utxoTree.root(),
-        utxoIndex: fullSyncGrvoe.utxoTree.latestLeafIndex(),
-        withdrawalRoot: fullSyncGrvoe.withdrawalTree.root(),
-        withdrawalIndex: fullSyncGrvoe.withdrawalTree.latestLeafIndex(),
-        nullifierRoot: await fullSyncGrvoe.nullifierTree?.root(),
+        utxoRoot: fullSyncGrove.utxoTree.root(),
+        utxoIndex: fullSyncGrove.utxoTree.latestLeafIndex(),
+        withdrawalRoot: fullSyncGrove.withdrawalTree.root(),
+        withdrawalIndex: fullSyncGrove.withdrawalTree.latestLeafIndex(),
+        nullifierRoot: await fullSyncGrove.nullifierTree?.root(),
       }
       const utxosToAppend: Leaf<Fp>[] = [
         utxos.utxo1_out_1,
@@ -77,13 +77,13 @@ describe('grove full sync grove()', () => {
         withdrawals: withdrawalsToAppend,
         nullifiers: [Fp.from(12), Fp.from(23)],
       }
-      await fullSyncGrvoe.dryPatch(patch)
+      await fullSyncGrove.dryPatch(patch)
       const postResult = {
-        utxoRoot: fullSyncGrvoe.utxoTree.root(),
-        utxoIndex: fullSyncGrvoe.utxoTree.latestLeafIndex(),
-        withdrawalRoot: fullSyncGrvoe.withdrawalTree.root(),
-        withdrawalIndex: fullSyncGrvoe.withdrawalTree.latestLeafIndex(),
-        nullifierRoot: await fullSyncGrvoe.nullifierTree?.root(),
+        utxoRoot: fullSyncGrove.utxoTree.root(),
+        utxoIndex: fullSyncGrove.utxoTree.latestLeafIndex(),
+        withdrawalRoot: fullSyncGrove.withdrawalTree.root(),
+        withdrawalIndex: fullSyncGrove.withdrawalTree.latestLeafIndex(),
+        nullifierRoot: await fullSyncGrove.nullifierTree?.root(),
       }
       expect(prevResult.utxoRoot.eq(postResult.utxoRoot)).toBe(true)
       expect(prevResult.utxoIndex.eq(postResult.utxoIndex)).toBe(true)
@@ -119,14 +119,14 @@ describe('grove full sync grove()', () => {
         withdrawals: withdrawalsToAppend,
         nullifiers: [Fp.from(12), Fp.from(23)],
       }
-      const expected = await fullSyncGrvoe.dryPatch(patch)
-      await fullSyncGrvoe.applyGrovePatch(patch)
+      const expected = await fullSyncGrove.dryPatch(patch)
+      await mockup.transaction(db => fullSyncGrove.applyGrovePatch(patch, db))
       const result = {
-        utxoRoot: fullSyncGrvoe.utxoTree.root(),
-        utxoIndex: fullSyncGrvoe.utxoTree.latestLeafIndex(),
-        withdrawalRoot: fullSyncGrvoe.withdrawalTree.root(),
-        withdrawalIndex: fullSyncGrvoe.withdrawalTree.latestLeafIndex(),
-        nullifierRoot: await fullSyncGrvoe.nullifierTree?.root(),
+        utxoRoot: fullSyncGrove.utxoTree.root(),
+        utxoIndex: fullSyncGrove.utxoTree.latestLeafIndex(),
+        withdrawalRoot: fullSyncGrove.withdrawalTree.root(),
+        withdrawalIndex: fullSyncGrove.withdrawalTree.latestLeafIndex(),
+        nullifierRoot: await fullSyncGrove.nullifierTree?.root(),
       }
       expect(result.utxoRoot.eq(expected.utxoTreeRoot)).toBe(true)
       expect(result.utxoIndex.eq(expected.utxoTreeIndex)).toBe(true)
@@ -141,8 +141,8 @@ describe('grove full sync grove()', () => {
   })
   describe('light sync grove - applyBootstrap()', () => {
     it('should update the grove using bootstrap data', async () => {
-      const { utxoTree } = fullSyncGrvoe
-      const { withdrawalTree } = fullSyncGrvoe
+      const { utxoTree } = fullSyncGrove
+      const { withdrawalTree } = fullSyncGrove
       const bootstrapData = {
         utxoStartingLeafProof: {
           ...utxoTree.getStartingLeafProof(),
@@ -172,22 +172,22 @@ describe('grove full sync grove()', () => {
       await lightSyncGrove.init()
       await lightSyncGrove.applyBootstrap(bootstrapData)
       expect(
-        lightSyncGrove.utxoTree.root().eq(fullSyncGrvoe.utxoTree.root()),
+        lightSyncGrove.utxoTree.root().eq(fullSyncGrove.utxoTree.root()),
       ).toBe(true)
       expect(
         lightSyncGrove.utxoTree
           .latestLeafIndex()
-          .eq(fullSyncGrvoe.utxoTree.latestLeafIndex()),
+          .eq(fullSyncGrove.utxoTree.latestLeafIndex()),
       ).toBe(true)
       expect(
         lightSyncGrove.withdrawalTree
           .root()
-          .eq(fullSyncGrvoe.withdrawalTree.root()),
+          .eq(fullSyncGrove.withdrawalTree.root()),
       ).toBe(true)
       expect(
         lightSyncGrove.withdrawalTree
           .latestLeafIndex()
-          .eq(fullSyncGrvoe.withdrawalTree.latestLeafIndex()),
+          .eq(fullSyncGrove.withdrawalTree.latestLeafIndex()),
       ).toBe(true)
       await mockup.close()
     })
