@@ -159,13 +159,15 @@ export class BlockProcessor extends EventEmitter {
     )
 
     if (isUncle) {
-      await this.db.update('Proposal', {
-        where: { hash: block.hash.toString() },
-        update: { isUncle: true },
-      })
-      await this.db.update('MassDeposit', {
-        where: { includedIn: block.hash.toString() },
-        update: { includedIn: null },
+      await this.db.transaction(db => {
+        db.update('Proposal', {
+          where: { hash: block.hash.toString() },
+          update: { isUncle: true },
+        })
+        db.update('MassDeposit', {
+          where: { includedIn: block.hash.toString() },
+          update: { includedIn: null },
+        })
       })
       // TODO: can not process uncle block's grove patch yet
       return proposal.proposalNum
@@ -176,16 +178,18 @@ export class BlockProcessor extends EventEmitter {
     const challengeTx = await this.validator.validate(parent, block)
     if (challengeTx) {
       // implement challenge here & mark as invalidated
-      await this.db.update('Proposal', {
-        where: { hash: block.hash.toString() },
-        update: { verified: false },
+      await this.db.transaction(db => {
+        db.update('Proposal', {
+          where: { hash: block.hash.toString() },
+          update: { verified: false },
+        })
+        db.update('MassDeposit', {
+          where: { includedIn: block.hash.toString() },
+          update: { includedIn: null },
+        })
+        // save transactions and mark them as challenged
+        this.saveTransactions(block, db, true)
       })
-      await this.db.update('MassDeposit', {
-        where: { includedIn: block.hash.toString() },
-        update: { includedIn: null },
-      })
-      // save transactions and mark them as challenged
-      await this.db.transaction(db => this.saveTransactions(block, db, true))
       logger.warn('challenge')
       // TODO slasher option
       this.emit('slash', {
