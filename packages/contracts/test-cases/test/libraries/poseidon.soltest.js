@@ -19,7 +19,7 @@ const preHashedZeroAt = i => {
   return jsPoseidon([prev, prev]);
 };
 
-contract.only("Poseidon", async accounts => {
+contract("Poseidon test", async accounts => {
   let poseidon;
   let preHashed;
   let poseidonTester;
