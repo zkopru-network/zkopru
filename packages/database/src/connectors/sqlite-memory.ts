@@ -256,6 +256,7 @@ export class SQLiteMemoryConnector extends DB {
   private async _transaction(operation: (db: TransactionDB) => void) {
     if (typeof operation !== 'function') throw new Error('Invalid operation')
     const sqlOperations = [] as string[]
+    const onCommittedCallbacks = [] as Function[]
     const transactionDB = {
       create: (collection: string, _doc: any) => {
         const table = this.schema[collection]
@@ -283,6 +284,11 @@ export class SQLiteMemoryConnector extends DB {
         const sql = upsertSql(table, options)
         sqlOperations.push(sql)
       },
+      onCommitted: (cb: Function) => {
+        if (typeof cb !== 'function')
+          throw new Error('Non-function onCommitted callback supplied')
+        onCommittedCallbacks.push(cb)
+      },
     }
     await Promise.resolve(operation(transactionDB))
     // now apply the transaction
@@ -291,6 +297,9 @@ export class SQLiteMemoryConnector extends DB {
     COMMIT;`
     try {
       await this.db.exec(transactionSql)
+      for (const cb of onCommittedCallbacks) {
+        cb()
+      }
     } catch (err) {
       await this.db.exec('ROLLBACK;')
       throw err

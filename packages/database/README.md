@@ -153,7 +153,7 @@ Batch database operations to be executed at once. If any operation in the transa
 
 `operation`: A function performing database operations.
 
-`TransactionDB`: A pseudo object with the following functions: `create`, `update`, `upsert`, `delete`. Each function behaves the same as the normal version BUT the functions are not asynchronous, they return immediately.
+`TransactionDB`: A pseudo object with the following functions: `create`, `update`, `upsert`, `delete`, `onCommitted`. Each function behaves the same as the normal version BUT the functions are not asynchronous, they return immediately but data is not persisted until the transaction is committed. `onCommitted` allows a function to be registered as a callback when the transaction is successfully completed. `onCommitted` callbacks are not executed if the transaction errors.
 
 Once the `operation` function finishes executing the transaction will be applied.
 

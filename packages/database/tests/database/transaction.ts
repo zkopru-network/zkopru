@@ -81,4 +81,39 @@ export default function(this: { db: DB }) {
     const count = await this.db.count(table, {})
     assert.equal(count, 0)
   })
+
+  test('should execute onCommitted callback', async () => {
+    const table = 'TableThree'
+    let committed = false
+    const transactionPromise = this.db.transaction(db => {
+      db.create(table, {
+        id: 'test0',
+      })
+      db.onCommitted(() => {
+        committed = true
+      })
+    })
+    assert(!committed)
+    await transactionPromise
+    assert(committed)
+  })
+
+  test('should fail to register non-function onCommitted callback', async () => {
+    const table = 'TableThree'
+    const transactionPromise = this.db.transaction(db => {
+      db.create(table, {
+        id: 'test0',
+      })
+      try {
+        db.onCommitted({} as any)
+        assert(false)
+      } catch (err) {
+        assert.equal(
+          err.toString(),
+          'Error: Non-function onCommitted callback supplied',
+        )
+      }
+    })
+    await transactionPromise
+  })
 }

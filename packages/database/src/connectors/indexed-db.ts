@@ -517,6 +517,7 @@ export class IndexedDBConnector extends DB {
     let promise = new Promise(rs => {
       start = rs
     })
+    const onCommittedCallbacks = [] as Function[]
     const db = {
       delete: (collection: string, options: DeleteManyOptions) => {
         stores.push(collection)
@@ -533,6 +534,11 @@ export class IndexedDBConnector extends DB {
       upsert: (collection: string, options: UpsertOptions) => {
         stores.push(collection)
         promise = promise.then(() => this._upsert(collection, options, tx))
+      },
+      onCommitted: (cb: Function) => {
+        if (typeof cb !== 'function')
+          throw new Error('Non-function onCommitted callback supplied')
+        onCommittedCallbacks.push(cb)
       },
     } as TransactionDB
     // Call the `operation` function to get a list of the stores that are going
@@ -554,6 +560,9 @@ export class IndexedDBConnector extends DB {
     // be assigned at this point
     ;(start as Function)()
     await Promise.all([promise, tx.done])
+    for (const cb of onCommittedCallbacks) {
+      cb()
+    }
   }
 
   async close() {
