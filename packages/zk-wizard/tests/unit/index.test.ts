@@ -31,21 +31,26 @@ async function loadGrove(db: DB): Promise<{ grove: Grove }> {
   const latestTree = grove.utxoTree
   const size = latestTree ? latestTree.latestLeafIndex() : Fp.zero
   if (size.eqn(0)) {
-    await grove.applyGrovePatch({
-      utxos: [
-        utxos.utxo1_in_1,
-        utxos.utxo2_1_in_1,
-        utxos.utxo2_2_in_1,
-        utxos.utxo3_in_1,
-        utxos.utxo3_in_2,
-        utxos.utxo3_in_3,
-        utxos.utxo4_in_1,
-        utxos.utxo4_in_2,
-        utxos.utxo4_in_3,
-      ].map(utxo => ({ hash: utxo.hash(), note: utxo })),
-      withdrawals: [],
-      nullifiers: [],
-    })
+    await db.transaction(txdb =>
+      grove.applyGrovePatch(
+        {
+          utxos: [
+            utxos.utxo1_in_1,
+            utxos.utxo2_1_in_1,
+            utxos.utxo2_2_in_1,
+            utxos.utxo3_in_1,
+            utxos.utxo3_in_2,
+            utxos.utxo3_in_3,
+            utxos.utxo4_in_1,
+            utxos.utxo4_in_2,
+            utxos.utxo4_in_3,
+          ].map(utxo => ({ hash: utxo.hash(), note: utxo })),
+          withdrawals: [],
+          nullifiers: [],
+        },
+        txdb,
+      ),
+    )
   }
   return { grove }
 }
