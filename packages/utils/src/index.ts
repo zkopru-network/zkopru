@@ -6,7 +6,7 @@ import { Bytes32, Uint256, Address } from 'soltypes'
 import BN from 'bn.js'
 import axios from 'axios'
 
-export { logger, logStream } from './logger'
+export { logger, logStream, attachConsoleLogToPino } from './logger'
 
 export { PromptApp } from './prompt'
 

@@ -66,12 +66,14 @@ import {
   testRound3SendZkTxsToCoordinator,
   testRound3NewBlockProposalAndSlashing,
 } from './cases/9_zk_tx_round_3'
+// import { attachConsoleLogToPino } from '~utils'
 
 process.env.DEFAULT_COORDINATOR = 'http://localhost:8888'
 
 jestExtendToCompareBigNumber(expect)
 
 describe('testnet', () => {
+  // attachConsoleLogToPino()
   let context!: Context
   const ctx = () => context
   beforeAll(async () => {
