@@ -9,6 +9,7 @@ import {
   DB,
   TreeSpecies,
   getCachedSiblings,
+  cacheTreeNode,
   TransactionDB,
 } from '@zkopru/database'
 import { Hasher } from './hasher'
@@ -426,6 +427,11 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     })
     // update cached nodes
     for (const nodeIndex of Object.keys(cached)) {
+      cacheTreeNode(this.metadata.id, nodeIndex, {
+        treeId: this.metadata.id,
+        nodeIndex,
+        value: cached[nodeIndex],
+      })
       db.upsert('TreeNode', {
         where: {
           treeId: this.metadata.id,

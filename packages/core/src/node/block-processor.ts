@@ -6,6 +6,7 @@ import {
   Proposal,
   MassDeposit as MassDepositSql,
   TransactionDB,
+  clearTreeCache,
 } from '@zkopru/database'
 import { logger, Worker } from '@zkopru/utils'
 import assert from 'assert'
@@ -227,6 +228,7 @@ export class BlockProcessor extends EventEmitter {
         },
       })
     })
+    clearTreeCache()
     // TODO remove proposal data if it completes verification or if the block is finalized
     return proposal.proposalNum
   }
@@ -396,7 +398,7 @@ export class BlockProcessor extends EventEmitter {
 
     db.update('Utxo', {
       where: {
-        hash: patch.treePatch?.utxos.map(utxo =>
+        hash: (patch.treePatch?.utxos || []).map(utxo =>
           utxo.hash.toUint256().toString(),
         ),
       },
@@ -405,7 +407,7 @@ export class BlockProcessor extends EventEmitter {
     logger.trace('mark utxos as unspent')
     db.update('Withdrawal', {
       where: {
-        hash: patch.treePatch?.withdrawals.map(withdrawal => {
+        hash: (patch.treePatch?.withdrawals || []).map(withdrawal => {
           assert(withdrawal.noteHash)
           return withdrawal.noteHash.toString()
         }),

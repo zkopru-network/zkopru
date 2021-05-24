@@ -4,6 +4,22 @@ import { hexify } from '@zkopru/utils'
 import { TreeNode } from './schema.types'
 import { DB } from './types'
 
+// An in memory cache for loading tree indexes in a database transaction
+//
+// This is used during block synchronization to allow updated data to be used
+// before a database transaction is finished (see block-processor.ts)
+const cachedTreeNodes = {} as { [key: string]: any }
+
+export function cacheTreeNode(treeId: string, nodeIndex: string, node: any) {
+  cachedTreeNodes[`${treeId}-${nodeIndex}`] = node
+}
+
+export function clearTreeCache() {
+  for (const key of Object.keys(cachedTreeNodes)) {
+    delete cachedTreeNodes[key]
+  }
+}
+
 export async function getCachedSiblings(
   db: DB,
   depth: number,
@@ -20,11 +36,17 @@ export async function getCachedSiblings(
     const siblingIndex = new BN(1).xor(pathIndex)
     siblingIndexes[level] = hexify(siblingIndex)
   }
+  const inMemoryNodes = siblingIndexes
+    .map(index => cachedTreeNodes[`${treeId}-${index}`])
+    .filter(node => !!node)
+  const uncachedSiblingIndexes = siblingIndexes.filter(index => {
+    return !cachedTreeNodes[`${treeId}-${index}`]
+  })
   const cachedSiblings = await db.findMany('TreeNode', {
     where: {
       treeId,
-      nodeIndex: siblingIndexes,
+      nodeIndex: uncachedSiblingIndexes,
     },
   })
-  return cachedSiblings
+  return [...inMemoryNodes, ...cachedSiblings]
 }

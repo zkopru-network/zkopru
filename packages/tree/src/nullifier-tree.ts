@@ -9,6 +9,7 @@ import {
   TreeNode,
   NULLIFIER_TREE_ID,
   getCachedSiblings,
+  cacheTreeNode,
   TransactionDB,
 } from '@zkopru/database'
 import { Hasher, genesisRoot } from './hasher'
@@ -250,6 +251,11 @@ export class NullifierTree implements SMT<BN> {
     const { updatedNodes } = await this.dryRun(leaves, option)
     // need batch query here..
     for (const nodeIndex of Object.keys(updatedNodes)) {
+      cacheTreeNode(NULLIFIER_TREE_ID, nodeIndex, {
+        treeId: NULLIFIER_TREE_ID,
+        nodeIndex,
+        value: hexify(updatedNodes[nodeIndex]),
+      })
       db.upsert('TreeNode', {
         where: {
           treeId: NULLIFIER_TREE_ID,
