@@ -10,6 +10,7 @@ import {
   TreeSpecies,
   getCachedSiblings,
   cacheTreeNode,
+  clearTreeCache,
   TransactionDB,
 } from '@zkopru/database'
 import { Hasher } from './hasher'
@@ -447,6 +448,7 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
         },
       })
     }
+    db.onCommitted(() => clearTreeCache())
     return {
       root,
       index: end,
