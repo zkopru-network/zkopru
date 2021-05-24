@@ -270,7 +270,7 @@ export class NullifierTree implements SMT<BN> {
         },
       })
     }
-    db.onCommitted(() => clearTreeCache())
+    db.onComplete(() => clearTreeCache())
     const newRoot = updatedNodes[hexify(new BN(1))]
     logger.trace(`setting new root - ${newRoot}`)
     this.rootNode = newRoot

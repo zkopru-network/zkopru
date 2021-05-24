@@ -448,7 +448,7 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
         },
       })
     }
-    db.onCommitted(() => clearTreeCache())
+    db.onComplete(() => clearTreeCache())
     return {
       root,
       index: end,
