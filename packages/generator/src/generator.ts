@@ -1,16 +1,15 @@
 import BN from 'bn.js'
 import { toWei } from 'web3-utils'
 
+import { F } from '@zkopru/babyjubjub'
 import { DB } from '@zkopru/database'
 import { TxBuilder, UtxoStatus, Utxo, RawTx } from '@zkopru/transaction'
-import { HDWallet, ZkAccount } from '@zkopru/account'
-import { logger, sleep } from '@zkopru/utils'
-import { F } from '~babyjubjub/fp'
-import { ZkWallet } from '~zk-wizard'
+import { ZkAccount } from '@zkopru/account'
 import {
   ZkWalletAccount,
   ZkWalletAccountConfig,
 } from '~zk-wizard/zk-wallet-account'
+import { logger, sleep } from '@zkopru/utils'
 import { logAll } from './generator-utils'
 
 // TODO : extends to other type of assets
@@ -18,7 +17,6 @@ export type noteAmount = { eth: string; fee: string }
 
 export interface GeneratorConfig {
   db: DB
-  hdWallet: HDWallet
   account: ZkAccount
   noteAmount?: noteAmount
   maxInflowNote?: number // Can be extend to 4
@@ -26,10 +24,6 @@ export interface GeneratorConfig {
 }
 
 export class TransferGenerator extends ZkWalletAccount {
-  private hdWallet: HDWallet
-
-  wallet: ZkWallet
-
   activating: boolean
 
   txCount: number
@@ -48,20 +42,6 @@ export class TransferGenerator extends ZkWalletAccount {
     super(config)
     this.activating = false
     this.txCount = 0
-
-    this.hdWallet = config.hdWallet
-
-    // TODO: More base generator can be added erc20 or erc721
-    this.wallet = new ZkWallet({
-      db: config.db,
-      wallet: this.hdWallet,
-      node: this.node,
-      account: config.account,
-      accounts: [config.account],
-      erc20: [],
-      erc721: [],
-      snarkKeyPath: config.snarkKeyPath,
-    })
     this.noteAmount = config.noteAmount ?? {
       eth: toWei('0.1'),
       fee: toWei('0.01'),
@@ -84,18 +64,13 @@ export class TransferGenerator extends ZkWalletAccount {
     let stagedUtxo
 
     while (this.activating) {
-      this.unspentUTXO = await this.wallet.getUtxos(
-        this.account,
-        UtxoStatus.UNSPENT,
-      )
-
-      // Dequeue necessary?
+      this.unspentUTXO = await this.getUtxos(this.account, UtxoStatus.UNSPENT)
 
       // Deposit if does not exist unspent utxo in this wallet
       if (this.unspentUTXO.length === 0) {
         logger.info('No Spendable Utxo, send Deposit Tx')
         try {
-          const result = await this.wallet.depositEther(
+          const result = await this.depositEther(
             this.noteAmount.eth,
             this.noteAmount.fee,
             this.account?.zkAddress,
@@ -144,7 +119,7 @@ export class TransferGenerator extends ZkWalletAccount {
           .build()
 
         try {
-          await this.wallet.sendTx({
+          await this.sendTx({
             tx,
             from: this.account,
             encryptTo: this.account?.zkAddress,
