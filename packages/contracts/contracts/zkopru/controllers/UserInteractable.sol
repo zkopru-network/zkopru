@@ -58,6 +58,13 @@ contract UserInteractable is Storage {
     }
 
     /**
+     * @notice IERC721Receiver implementation. Adds support for safeTransfer.
+     **/
+    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data) external returns (bytes4) {
+      return this.onERC721Received.selector;
+    }
+
+    /**
      * @notice Users can withdraw notes when only after they're finazlied.
      * @param note Note hash in layer 2. It is a poseidon hash
      * @param owner The original owner's address of the note
