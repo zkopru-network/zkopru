@@ -196,13 +196,18 @@ contract Coordinatable is Storage {
             Storage.chain.committedDeposits[massDepositHash] -= 1;
         }
 
-        // Record mass migrations and collect fees.
-        require(
-            Storage.chain.migrationRoots[finalization.header.migrationRoot] ==
-                false,
-            "Migration root already exists."
-        );
-        Storage.chain.migrationRoots[finalization.header.migrationRoot] = true;
+        // Record mass migrations
+        if (finalization.header.migrationRoot != bytes32(0)) {
+            require(
+                Storage.chain.migrationRoots[
+                    finalization.header.migrationRoot
+                ] == false,
+                "Migration root already exists."
+            );
+            Storage.chain.migrationRoots[
+                finalization.header.migrationRoot
+            ] = true;
+        }
 
         // Give fee to the proposer
         Proposer storage proposer =
