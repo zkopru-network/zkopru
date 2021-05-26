@@ -68,7 +68,7 @@ export async function main() {
   web3.eth
     .subscribe('newBlockHeaders')
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    .on('data', async function (data) {
+    .on('data', async function(data) {
       const blockData = await web3.eth.getBlock(data.hash)
       const txs: Promise<Transaction>[] = []
       const receipts: Promise<TransactionReceipt>[] = []

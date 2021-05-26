@@ -4,12 +4,12 @@ import { toWei } from 'web3-utils'
 import { F } from '@zkopru/babyjubjub'
 import { DB } from '@zkopru/database'
 import { TxBuilder, UtxoStatus, Utxo, RawTx } from '@zkopru/transaction'
-import { ZkAccount } from '@zkopru/account'
+import { HDWallet, ZkAccount } from '@zkopru/account'
+import { logger, sleep } from '@zkopru/utils'
 import {
   ZkWalletAccount,
   ZkWalletAccountConfig,
 } from '~zk-wizard/zk-wallet-account'
-import { logger, sleep } from '@zkopru/utils'
 import { logAll } from './generator-utils'
 
 // TODO : extends to other type of assets
@@ -17,6 +17,7 @@ export type noteAmount = { eth: string; fee: string }
 
 export interface GeneratorConfig {
   db: DB
+  hdWallet: HDWallet
   account: ZkAccount
   noteAmount?: noteAmount
   maxInflowNote?: number // Can be extend to 4
