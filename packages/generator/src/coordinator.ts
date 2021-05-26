@@ -3,6 +3,7 @@ import { FullNode } from '@zkopru/core'
 import { Coordinator } from '@zkopru/coordinator'
 import { logger } from '@zkopru/utils'
 import { config } from './config'
+import { TestBlockProposer } from './middleware'
 import { getBase, startLogger } from './generator-utils'
 
 startLogger('COORDINATOR_LOG')
@@ -44,7 +45,10 @@ async function testCoodinator() {
     coordinatorConfig,
   )
 
-  await coordinator.start()
+  // Override Block Generator for Observing
+  coordinator.middlewares.proposer = new TestBlockProposer(coordinator.context)
+
+  coordinator.start()
 }
 
 testCoodinator()
