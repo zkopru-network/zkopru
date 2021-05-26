@@ -84,6 +84,12 @@ jobs:
       - attach_workspace:
           at: ~/
       - run:
+          name: Setup
+          command: |
+            yarn images pull circuits
+            cd packages/dataset
+            yarn load-keys
+      - run:
           name: Contract Tests
           command: yarn test --scope=@zkopru/contracts
   test_dataset:
