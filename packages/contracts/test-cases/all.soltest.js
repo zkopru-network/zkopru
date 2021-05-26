@@ -3,7 +3,9 @@ const path = require("path");
 
 function scanPath(dir) {
   const files = fs.readdirSync(dir);
-  return files.map(name => path.join(dir, name));
+  return files
+    .filter(filename => filename.indexOf(".soltest.js") !== -1)
+    .map(name => path.join(dir, name));
 }
 
 const allFiles = [
@@ -14,7 +16,5 @@ const allFiles = [
 ];
 
 for (const file of allFiles) {
-  // eslint-disable-next-line no-continue
-  if (file.indexOf(".soltest.js") === -1) continue;
   require(file);
 }
