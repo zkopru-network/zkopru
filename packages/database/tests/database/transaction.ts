@@ -81,4 +81,98 @@ export default function(this: { db: DB }) {
     const count = await this.db.count(table, {})
     assert.equal(count, 0)
   })
+
+  test('should execute transactions callbacks on success', async () => {
+    const table = 'TableThree'
+    let committed = false
+    let completed = false
+    let errored = false
+    const transactionPromise = this.db.transaction(db => {
+      db.create(table, {
+        id: 'test0',
+      })
+      db.onCommit(() => {
+        committed = true
+      })
+      db.onComplete(() => {
+        completed = true
+      })
+      db.onError(() => {
+        errored = true
+      })
+    })
+    assert(!committed)
+    assert(!completed)
+    assert(!errored)
+    await transactionPromise
+    assert(committed)
+    assert(completed)
+    assert(!errored)
+  })
+
+  test('should execute transactions callbacks on error', async () => {
+    const table = 'TableThree'
+    let committed = false
+    let completed = false
+    let errored = false
+    const transactionPromise = this.db.transaction(db => {
+      db.create(table, {
+        id: null,
+      })
+      db.onCommit(() => {
+        committed = true
+      })
+      db.onComplete(() => {
+        completed = true
+      })
+      db.onError(() => {
+        errored = true
+      })
+    })
+    assert(!committed)
+    assert(!completed)
+    assert(!errored)
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    await transactionPromise.catch(() => {})
+    assert(!committed)
+    assert(completed)
+    assert(errored)
+  })
+
+  test('should fail to register non-function callbacks', async () => {
+    const table = 'TableThree'
+    const transactionPromise = this.db.transaction(db => {
+      db.create(table, {
+        id: 'test0',
+      })
+      try {
+        db.onCommit({} as any)
+        assert(false)
+      } catch (err) {
+        assert.equal(
+          err.toString(),
+          'Error: Non-function onCommit callback supplied',
+        )
+      }
+      try {
+        db.onError({} as any)
+        assert(false)
+      } catch (err) {
+        assert.equal(
+          err.toString(),
+          'Error: Non-function onError callback supplied',
+        )
+      }
+      try {
+        db.onComplete({} as any)
+        assert(false)
+      } catch (err) {
+        assert.equal(
+          err.toString(),
+          'Error: Non-function onComplete callback supplied',
+        )
+      }
+    })
+    await transactionPromise
+  })
 }

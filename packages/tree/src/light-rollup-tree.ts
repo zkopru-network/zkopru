@@ -5,7 +5,14 @@ import AsyncLock from 'async-lock'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { hexify } from '@zkopru/utils'
-import { DB, TreeSpecies, getCachedSiblings } from '@zkopru/database'
+import {
+  DB,
+  TreeSpecies,
+  getCachedSiblings,
+  cacheTreeNode,
+  clearTreeCache,
+  TransactionDB,
+} from '@zkopru/database'
 import { Hasher } from './hasher'
 import { MerkleProof, startingLeafProof, verifyProof } from './merkle-proof'
 
@@ -121,25 +128,18 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
   }
 
   async append(
-    ...items: Leaf<T>[]
+    items: Leaf<T>[],
+    db: TransactionDB,
   ): Promise<{
     root: T
     index: T
     siblings: T[]
   }> {
-    let result!: {
-      root: T
-      index: T
-      siblings: T[]
-    }
-    await this.lock.acquire('root', async () => {
-      result = await this._append(...items)
-    })
-    return result
+    return this.lock.acquire('root', async () => this._append(items, db))
   }
 
   async dryAppend(
-    ...items: Leaf<T>[]
+    items: Leaf<T>[],
   ): Promise<{
     root: T
     index: T
@@ -316,7 +316,8 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
   }
 
   private async _append(
-    ...leaves: Leaf<T>[]
+    leaves: Leaf<T>[],
+    db: TransactionDB,
   ): Promise<{
     root: T
     index: T
@@ -412,7 +413,7 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
         ),
       ),
     }
-    await this.db.upsert('LightTree', {
+    db.upsert('LightTree', {
       where: { species: this.species },
       update: {
         ...rollUpSync,
@@ -427,7 +428,12 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     })
     // update cached nodes
     for (const nodeIndex of Object.keys(cached)) {
-      await this.db.upsert('TreeNode', {
+      cacheTreeNode(this.metadata.id, nodeIndex, {
+        treeId: this.metadata.id,
+        nodeIndex,
+        value: cached[nodeIndex],
+      })
+      db.upsert('TreeNode', {
         where: {
           treeId: this.metadata.id,
           nodeIndex,
@@ -442,6 +448,7 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
         },
       })
     }
+    db.onComplete(() => clearTreeCache())
     return {
       root,
       index: end,

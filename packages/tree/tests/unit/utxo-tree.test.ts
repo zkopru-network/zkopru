@@ -30,7 +30,7 @@ describe('utxo tree unit test', () => {
     beforeAll(async () => {
       prevRoot = utxoTree.root()
       const items: Leaf<Fp>[] = [{ hash: Fp.from(1) }, { hash: Fp.from(2) }]
-      result = await utxoTree.dryAppend(...items)
+      result = await utxoTree.dryAppend(items)
     })
     it('should not update its root', () => {
       expect(utxoTree.root().eq(prevRoot)).toBe(true)
@@ -56,8 +56,10 @@ describe('utxo tree unit test', () => {
     beforeAll(async () => {
       prevRoot = utxoTree.root()
       const items: Leaf<Fp>[] = [{ hash: Fp.from(1) }, { hash: Fp.from(2) }]
-      dryResult = await utxoTree.dryAppend(...items)
-      result = await utxoTree.append(...items)
+      dryResult = await utxoTree.dryAppend(items)
+      await mockup.transaction(async db => {
+        result = await utxoTree.append(items, db)
+      })
     }, 30000)
     it('should update its root and its value should equal to the dry run', () => {
       expect(result.root.eq(prevRoot)).toBe(false)
@@ -80,7 +82,7 @@ describe('utxo tree unit test', () => {
       note,
     }))
     beforeAll(async () => {
-      await utxoTree.append(...items)
+      await mockup.transaction(async db => utxoTree.append(items, db))
       utxoTree.updatePubKeys([accounts.alice.zkAddress])
     })
     it("should track Alice's utxos while not tracking Bob's", async () => {

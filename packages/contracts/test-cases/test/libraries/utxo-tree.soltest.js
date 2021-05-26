@@ -5,7 +5,7 @@
 const chai = require("chai");
 const { UtxoTree, poseidonHasher } = require("~tree");
 const { append, appendAsSubTrees } = require("~tree/utils/merkle-tree-sol");
-const sample = require("~tree/sample");
+const sample = require("~tree/sample").default;
 const { Fp } = require("~babyjubjub");
 
 const { expect } = chai;
@@ -35,7 +35,7 @@ const appendSubTree = async (tree, subtreeSize, leaves) => {
       .add(totalItemLen)
       .lte(tree.maxSize())
   ) {
-    const result = await tree.dryAppend(...fixedSizeUtxos);
+    const result = await tree.dryAppend(fixedSizeUtxos);
     return result;
   }
   throw Error("utxo tree flushes.");
@@ -65,7 +65,7 @@ contract("Utxo tree update tests", async accounts => {
       // const prevIndex = tsTree.latestLeafIndex()
       const leaves = [Fp.from("1"), Fp.from("2")];
       const prevTree = tsTree.getStartingLeafProof();
-      const utxoTreeResult = await tsTree.dryAppend(...leaves.map(toLeaf));
+      const utxoTreeResult = await tsTree.dryAppend(leaves.map(toLeaf));
       // console.log(utxoTreeResult)
       // console.log(siblings)
       const solidityAppendResult = await solTree.append(

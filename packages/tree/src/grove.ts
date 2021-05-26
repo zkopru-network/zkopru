@@ -11,6 +11,7 @@ import {
   LightTree,
   TreeNode,
   getCachedSiblings,
+  TransactionDB,
 } from '@zkopru/database'
 import { ZkAddress } from '@zkopru/transaction'
 import { Hasher, genesisRoot } from './hasher'
@@ -156,6 +157,7 @@ export class Grove {
 
   async applyGrovePatch(
     patch: GrovePatch,
+    db: TransactionDB,
   ): Promise<{
     utxoTreeId: string
     withdrawalTreeId: string
@@ -163,11 +165,11 @@ export class Grove {
     let utxoTreeId!: string
     let withdrawalTreeId!: string
     await this.lock.acquire('grove', async () => {
-      utxoTreeId = await this.appendUTXOs(patch.utxos)
-      withdrawalTreeId = await this.appendWithdrawals(patch.withdrawals)
-      await this.markAsNullified(patch.nullifiers)
+      utxoTreeId = await this.appendUTXOs(patch.utxos, db)
+      withdrawalTreeId = await this.appendWithdrawals(patch.withdrawals, db)
+      await this.markAsNullified(patch.nullifiers, db)
       if (this.config.fullSync) {
-        await this.recordBootstrap(patch.header)
+        this.recordBootstrap(db, patch.header)
       }
     })
     return {
@@ -182,10 +184,10 @@ export class Grove {
       this.lock
         .acquire('grove', async () => {
           const utxoResult = await this.utxoTree.dryAppend(
-            ...patch.utxos.map(leaf => ({ ...leaf, shouldTrack: false })),
+            patch.utxos.map(leaf => ({ ...leaf, shouldTrack: false })),
           )
           const withdrawalResult = await this.withdrawalTree.dryAppend(
-            ...patch.withdrawals.map(leaf => ({ ...leaf, shouldTrack: false })),
+            patch.withdrawals.map(leaf => ({ ...leaf, shouldTrack: false })),
           )
           const nullifierRoot = await this.nullifierTree?.dryRunNullify(
             ...patch.nullifiers,
@@ -217,7 +219,7 @@ export class Grove {
     })
   }
 
-  private async recordBootstrap(header?: string): Promise<void> {
+  private recordBootstrap(db: TransactionDB, header?: string): void {
     const bootstrapData = {
       utxoBootstrap: JSON.stringify(
         this.utxoTree.data.siblings.map(val => hexify(val)),
@@ -227,18 +229,18 @@ export class Grove {
       ),
     }
     if (header) {
-      await this.db.upsert('Bootstrap', {
+      db.upsert('Bootstrap', {
         where: { blockHash: header },
         update: bootstrapData,
         create: bootstrapData,
       })
-      await this.db.upsert('Block', {
+      db.upsert('Block', {
         where: { hash: header },
         update: {},
         create: { hash: header },
       })
     } else {
-      await this.db.create('Bootstrap', bootstrapData)
+      db.create('Bootstrap', bootstrapData)
     }
   }
 
@@ -247,7 +249,10 @@ export class Grove {
    * @param utxos utxos to append
    * @returns treeId of appended to
    */
-  private async appendUTXOs(utxos: Leaf<Fp>[]): Promise<string> {
+  private async appendUTXOs(
+    utxos: Leaf<Fp>[],
+    db: TransactionDB,
+  ): Promise<string> {
     const totalItemLen =
       this.config.utxoSubTreeSize *
       Math.ceil(utxos.length / this.config.utxoSubTreeSize)
@@ -265,14 +270,17 @@ export class Grove {
         .add(totalItemLen)
         .lte(this.utxoTree.maxSize())
     ) {
-      await this.utxoTree.append(...fixedSizeUtxos)
+      await this.utxoTree.append(fixedSizeUtxos, db)
     } else {
       throw Error('utxo tree flushes.')
     }
     return this.utxoTree.metadata.id
   }
 
-  private async appendWithdrawals(withdrawals: Leaf<BN>[]): Promise<string> {
+  private async appendWithdrawals(
+    withdrawals: Leaf<BN>[],
+    db: TransactionDB,
+  ): Promise<string> {
     const totalItemLen =
       this.config.withdrawalSubTreeSize *
       Math.ceil(withdrawals.length / this.config.withdrawalSubTreeSize)
@@ -290,18 +298,21 @@ export class Grove {
         .addn(totalItemLen)
         .lte(this.withdrawalTree.maxSize())
     ) {
-      await this.withdrawalTree.append(...fixedSizeWithdrawals)
+      await this.withdrawalTree.append(fixedSizeWithdrawals, db)
     } else {
       throw Error('withdrawal tree flushes')
     }
     return this.withdrawalTree.metadata.id
   }
 
-  private async markAsNullified(nullifiers: BN[]): Promise<void> {
+  private async markAsNullified(
+    nullifiers: BN[],
+    db: TransactionDB,
+  ): Promise<void> {
     // only the full node manages the nullifier tree
     const tree = this.nullifierTree
     if (tree) {
-      await tree.nullify(...nullifiers)
+      await tree.nullify(nullifiers, db)
     }
   }
 

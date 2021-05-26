@@ -123,6 +123,9 @@ export interface TransactionDB {
   upsert: (collection: string, options: UpsertOptions) => void
   // deleteOne: (collection: string, options: FindOneOptions) => void
   delete: (collection: string, options: DeleteManyOptions) => void
+  onCommit: (callback: Function) => void
+  onError: (callback: Function) => void
+  onComplete: (callback: Function) => void
 }
 
 export type SchemaTable = {

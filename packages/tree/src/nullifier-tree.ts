@@ -9,6 +9,9 @@ import {
   TreeNode,
   NULLIFIER_TREE_ID,
   getCachedSiblings,
+  cacheTreeNode,
+  clearTreeCache,
+  TransactionDB,
 } from '@zkopru/database'
 import { Hasher, genesisRoot } from './hasher'
 import { verifyProof, MerkleProof } from './merkle-proof'
@@ -144,7 +147,7 @@ export class NullifierTree implements SMT<BN> {
     return merkleProof
   }
 
-  async nullify(...leaves: BN[]): Promise<BN> {
+  async nullify(leaves: BN[], db: TransactionDB): Promise<BN> {
     let root: BN = this.rootNode
     await this.lock.acquire('root', async () => {
       root = await this.update(
@@ -152,19 +155,21 @@ export class NullifierTree implements SMT<BN> {
           index: leaf,
           val: SMTLeaf.FILLED,
         })),
+        db,
         { strictUpdate: true },
       )
     })
     return root
   }
 
-  async recover(...leaves: BN[]) {
+  async recover(leaves: BN[], db: TransactionDB) {
     await this.lock.acquire('root', async () => {
       await this.update(
         leaves.map(leaf => ({
           index: leaf,
           val: SMTLeaf.EMPTY,
         })),
+        db,
         { strictUpdate: true },
       )
     })
@@ -241,12 +246,18 @@ export class NullifierTree implements SMT<BN> {
    */
   private async update(
     leaves: Leaf[],
+    db: TransactionDB,
     option?: { strictUpdate?: boolean },
   ): Promise<BN> {
     const { updatedNodes } = await this.dryRun(leaves, option)
     // need batch query here..
     for (const nodeIndex of Object.keys(updatedNodes)) {
-      await this.db.upsert('TreeNode', {
+      cacheTreeNode(NULLIFIER_TREE_ID, nodeIndex, {
+        treeId: NULLIFIER_TREE_ID,
+        nodeIndex,
+        value: hexify(updatedNodes[nodeIndex]),
+      })
+      db.upsert('TreeNode', {
         where: {
           treeId: NULLIFIER_TREE_ID,
           nodeIndex,
@@ -259,6 +270,7 @@ export class NullifierTree implements SMT<BN> {
         },
       })
     }
+    db.onComplete(() => clearTreeCache())
     const newRoot = updatedNodes[hexify(new BN(1))]
     logger.trace(`setting new root - ${newRoot}`)
     this.rootNode = newRoot

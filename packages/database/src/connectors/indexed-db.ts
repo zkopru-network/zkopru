@@ -81,7 +81,9 @@ export class IndexedDBConnector extends DB {
   }
 
   async create(collection: string, _doc: any) {
-    return this.lock.acquire('db', async () => this._create(collection, _doc))
+    return this.lock.acquire('write', async () =>
+      this._create(collection, _doc),
+    )
   }
 
   async _create(
@@ -226,7 +228,7 @@ export class IndexedDBConnector extends DB {
   }
 
   async findMany(collection: string, options: FindManyOptions) {
-    return this.lock.acquire('db', async () =>
+    return this.lock.acquire('read', async () =>
       this._findMany(collection, options),
     )
   }
@@ -410,7 +412,7 @@ export class IndexedDBConnector extends DB {
   }
 
   async update(collection: string, options: UpdateOptions) {
-    return this.lock.acquire('db', async () =>
+    return this.lock.acquire('write', async () =>
       this._update(collection, options),
     )
   }
@@ -445,7 +447,7 @@ export class IndexedDBConnector extends DB {
   }
 
   async upsert(collection: string, options: UpsertOptions) {
-    return this.lock.acquire('db', async () =>
+    return this.lock.acquire('write', async () =>
       this._upsert(collection, options),
     )
   }
@@ -464,7 +466,7 @@ export class IndexedDBConnector extends DB {
   }
 
   async delete(collection: string, options: DeleteManyOptions) {
-    return this.lock.acquire('db', async () =>
+    return this.lock.acquire('write', async () =>
       this._delete(collection, options),
     )
   }
@@ -501,10 +503,10 @@ export class IndexedDBConnector extends DB {
   }
 
   async transaction(operation: (db: TransactionDB) => void) {
-    return this.lock.acquire('db', async () => this._transaction(operation))
+    return this.lock.acquire('write', async () => this._transaction(operation))
   }
 
-  async _transaction(operation: (db: TransactionDB) => void) {
+  async _transaction(operation: (db: TransactionDB) => void | Promise<void>) {
     if (!this.db) throw new Error('DB is not initialized')
     // create an array of stores that the operation will mutate
     const stores = [] as string[]
@@ -515,6 +517,9 @@ export class IndexedDBConnector extends DB {
     let promise = new Promise(rs => {
       start = rs
     })
+    const onCommitCallbacks = [] as Function[]
+    const onErrorCallbacks = [] as Function[]
+    const onCompleteCallbacks = [] as Function[]
     const db = {
       delete: (collection: string, options: DeleteManyOptions) => {
         stores.push(collection)
@@ -532,11 +537,26 @@ export class IndexedDBConnector extends DB {
         stores.push(collection)
         promise = promise.then(() => this._upsert(collection, options, tx))
       },
+      onCommit: (cb: Function) => {
+        if (typeof cb !== 'function')
+          throw new Error('Non-function onCommit callback supplied')
+        onCommitCallbacks.push(cb)
+      },
+      onError: (cb: Function) => {
+        if (typeof cb !== 'function')
+          throw new Error('Non-function onError callback supplied')
+        onErrorCallbacks.push(cb)
+      },
+      onComplete: (cb: Function) => {
+        if (typeof cb !== 'function')
+          throw new Error('Non-function onComplete callback supplied')
+        onCompleteCallbacks.push(cb)
+      },
     } as TransactionDB
     // Call the `operation` function to get a list of the stores that are going
     // to be accessed. Once that is done create the transaction and call the
     // start function to begin executing the transaction operations
-    operation(db)
+    await Promise.resolve(operation(db))
     // no operations to commit
     if (!stores.length) return (start as Function)()
     // get a unique list of stores
@@ -550,8 +570,18 @@ export class IndexedDBConnector extends DB {
     // explicitly cast the start function because TS cannot determine that it's
     // set above. The body of a promise is executed sychronously so start will
     // be assigned at this point
-    ;(start as Function)()
-    await Promise.all([promise, tx.done])
+    try {
+      ;(start as Function)()
+      await Promise.all([promise, tx.done])
+      for (const cb of [...onCommitCallbacks, ...onCompleteCallbacks]) {
+        cb()
+      }
+    } catch (err) {
+      for (const cb of [...onErrorCallbacks, ...onCompleteCallbacks]) {
+        cb()
+      }
+      throw err
+    }
   }
 
   async close() {

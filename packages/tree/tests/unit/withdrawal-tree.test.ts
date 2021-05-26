@@ -67,7 +67,7 @@ describe('withdrawal tree unit test', () => {
     beforeAll(async () => {
       prevRoot = withdrawalTree.root()
       const items: Leaf<BN>[] = [{ hash: toBN(1) }, { hash: toBN(2) }]
-      result = await withdrawalTree.dryAppend(...items)
+      result = await withdrawalTree.dryAppend(items)
     })
     it('should not update its root', () => {
       expect(withdrawalTree.root().eq(prevRoot)).toBe(true)
@@ -93,8 +93,10 @@ describe('withdrawal tree unit test', () => {
     it('should update its root and its value should equal to the dry run', async () => {
       prevRoot = withdrawalTree.root()
       const items: Leaf<BN>[] = [{ hash: toBN(1) }, { hash: toBN(2) }]
-      dryResult = await withdrawalTree.dryAppend(...items)
-      result = await withdrawalTree.append(...items)
+      dryResult = await withdrawalTree.dryAppend(items)
+      await mockup.transaction(async db => {
+        result = await withdrawalTree.append(items, db)
+      })
       expect(result.root.eq(prevRoot)).toBe(false)
       expect(result.root.eq(dryResult.root)).toBe(true)
       expect(result.index.eq(dryResult.index)).toBe(true)
@@ -117,7 +119,7 @@ describe('withdrawal tree unit test', () => {
     }))
     it("should track Alice's utxos while not tracking Bob's", async () => {
       withdrawalTree.updateAddresses(addresses)
-      await withdrawalTree.append(...items)
+      await mockup.transaction(async db => withdrawalTree.append(items, db))
       const proof = await withdrawalTree.merkleProof({
         hash: items[0].hash,
       })
