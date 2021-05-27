@@ -10,7 +10,7 @@ const fs = require("fs");
 const path = require("path");
 const { Bytes32, Uint256 } = require("soltypes");
 const { Block } = require("~core/block");
-const { compare, sampleBlock } = require("../../helper");
+const { compare, sampleFirstBlock } = require("../../helper");
 
 const { expect } = chai;
 
@@ -24,25 +24,29 @@ contract("HeaderValidator test", async accounts => {
   });
   describe("valid cases", () => {
     it("deposit root test", async () => {
-      const result = await headerValidator.validateDepositRoot(sampleBlock);
+      const result = await headerValidator.validateDepositRoot(
+        sampleFirstBlock
+      );
       expect(result.slash).to.be.false;
     });
     it("tx root test", async () => {
-      const result = await headerValidator.validateTxRoot(sampleBlock);
+      const result = await headerValidator.validateTxRoot(sampleFirstBlock);
       expect(result.slash).to.be.false;
     });
     it("migration root test", async () => {
-      const result = await headerValidator.validateMigrationRoot(sampleBlock);
+      const result = await headerValidator.validateMigrationRoot(
+        sampleFirstBlock
+      );
       expect(result.slash).to.be.false;
     });
     it("total fee test", async () => {
-      const result = await headerValidator.validateTotalFee(sampleBlock);
+      const result = await headerValidator.validateTotalFee(sampleFirstBlock);
       expect(result.slash).to.be.false;
     });
   });
   describe("challenge cases", () => {
     it("deposit root test", async () => {
-      const block = Block.from(sampleBlock);
+      const block = Block.from(sampleFirstBlock);
       block.header.depositRoot = Bytes32.from(
         "0xabababababababababababababababababababababababababababababababab"
       );
@@ -52,7 +56,7 @@ contract("HeaderValidator test", async accounts => {
       expect(result.slash).to.be.true;
     });
     it("tx root test", async () => {
-      const block = Block.from(sampleBlock);
+      const block = Block.from(sampleFirstBlock);
       block.header.txRoot = Bytes32.from(
         "0xabababababababababababababababababababababababababababababababab"
       );
@@ -62,7 +66,7 @@ contract("HeaderValidator test", async accounts => {
       expect(result.slash).to.be.true;
     });
     it("migration root test", async () => {
-      const block = Block.from(sampleBlock);
+      const block = Block.from(sampleFirstBlock);
       block.header.migrationRoot = Bytes32.from(
         "0xabababababababababababababababababababababababababababababababab"
       );
@@ -72,7 +76,7 @@ contract("HeaderValidator test", async accounts => {
       expect(result.slash).to.be.true;
     });
     it("total fee test", async () => {
-      const block = Block.from(sampleBlock);
+      const block = Block.from(sampleFirstBlock);
       block.header.fee = Uint256.from(
         "10000000000000000000000000000000000000000000000"
       );
