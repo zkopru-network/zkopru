@@ -176,45 +176,20 @@ contract("Block serialize-deserialize tests", async accounts => {
     });
     it("should have correct mass migration data", async () => {
       for (let index = 0; index < body.massMigrations.length; index += 1) {
-        const { destination, eth, merged, fee } = await dt.getMassMigration(
-          index,
-          rawData
-        );
+        const {
+          destination,
+          eth,
+          token,
+          amount,
+          merged,
+          fee
+        } = await dt.getMassMigration(index, rawData);
         compare(destination, body.massMigrations[index].destination);
         compare(eth, body.massMigrations[index].asset.eth);
+        compare(token, body.massMigrations[index].asset.token);
+        compare(amount, body.massMigrations[index].asset.amount);
         compare(merged, body.massMigrations[index].depositForDest.merged);
         compare(fee, body.massMigrations[index].depositForDest.fee);
-      }
-    });
-    it("should have correct erc20 mass migration data", async () => {
-      for (let index = 0; index < body.massMigrations.length; index += 1) {
-        const { erc20 } = body.massMigrations[index];
-        for (let j = 0; j < erc20.length; j += 1) {
-          const { token, amount } = await dt.getERC20Migration(
-            index,
-            j,
-            rawData
-          );
-          compare(token, erc20[j].addr);
-          compare(amount, erc20[j].amount);
-        }
-      }
-    });
-    it("should have correct erc721 mass migration data", async () => {
-      for (let index = 0; index < body.massMigrations.length; index += 1) {
-        const { erc721 } = body.massMigrations[index];
-        for (let j = 0; j < erc721.length; j += 1) {
-          const { token, nfts } = await dt.getERC721Migration(
-            index,
-            j,
-            rawData
-          );
-          compare(token, erc721[j].addr);
-          compare(nfts.length, erc721[j].nfts.length);
-          for (let k = 0; k < erc721[j].nfts.length; k += 1) {
-            compare(nfts[k], erc721[j].nfts[k]);
-          }
-        }
       }
     });
   });
