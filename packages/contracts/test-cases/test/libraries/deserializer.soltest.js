@@ -80,7 +80,6 @@ contract("Block serialize-deserialize tests", async accounts => {
   describe("body txs", () => {
     it("should have correct tx array length", async () => {
       const txsLen = await dt.getTxsLen(rawData);
-      // eslint-disable-next-line no-unused-expressions
       compare(txsLen, body.txs.length);
     });
     it("should have correct tx inflow data", async () => {
@@ -160,7 +159,6 @@ contract("Block serialize-deserialize tests", async accounts => {
   describe("body massDeposits", () => {
     it("should have correct mass deposit array length", async () => {
       const len = await dt.getMassDepositsLen(rawData);
-      // eslint-disable-next-line no-unused-expressions
       compare(len, body.massDeposits.length);
     });
     it("should have correct mass deposit data", async () => {
@@ -174,21 +172,18 @@ contract("Block serialize-deserialize tests", async accounts => {
   describe("body massMigrations", () => {
     it("should have correct mass migration array length", async () => {
       const len = await dt.getMassMigrationsLen(rawData);
-      // eslint-disable-next-line no-unused-expressions
       compare(len, body.massMigrations.length);
     });
     it("should have correct mass migration data", async () => {
       for (let index = 0; index < body.massMigrations.length; index += 1) {
-        const {
-          destination,
-          totalETH,
-          merged,
-          fee
-        } = await dt.getMassMigration(index, rawData);
+        const { destination, eth, merged, fee } = await dt.getMassMigration(
+          index,
+          rawData
+        );
         compare(destination, body.massMigrations[index].destination);
-        compare(totalETH, body.massMigrations[index].totalETH);
-        compare(merged, body.massMigrations[index].migratingLeaves.merged);
-        compare(fee, body.massMigrations[index].migratingLeaves.fee);
+        compare(eth, body.massMigrations[index].asset.eth);
+        compare(merged, body.massMigrations[index].depositForDest.merged);
+        compare(fee, body.massMigrations[index].depositForDest.fee);
       }
     });
     it("should have correct erc20 mass migration data", async () => {

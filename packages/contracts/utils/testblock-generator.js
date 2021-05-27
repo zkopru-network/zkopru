@@ -241,13 +241,41 @@ const outputPath = path.join(__dirname, "../test-cases");
       );
     }
     console.log("File(s) written, exiting");
+    await terminate(context);
     process.exit(0);
   } catch (err) {
     console.log(err);
     console.log("Uncaught error generating block");
+    await terminate(context).catch(() => {});
     process.exit(1);
   }
 })();
+
+async function terminate(context) {
+  const {
+    layer1Container,
+    circuitArtifactContainer,
+    dbs,
+    coordinator,
+    wallets,
+    provider
+  } = context;
+  provider.disconnect(0, "exit");
+  await Promise.all([
+    coordinator.stop(),
+    wallets.wallet.node.stop(),
+    wallets.coordinator.node.stop()
+  ]);
+  await Promise.all([dbs.map(db => db.close())]);
+  await Promise.all([
+    await layer1Container.stop(),
+    await circuitArtifactContainer.stop()
+  ]);
+  await Promise.all([
+    await layer1Container.delete(),
+    await circuitArtifactContainer.delete()
+  ]);
+}
 
 async function registerCoordinator({ wallets, web3, contract }) {
   const consensus = await contract.upstream.methods.consensusProvider().call();
