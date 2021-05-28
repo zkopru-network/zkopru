@@ -4,6 +4,7 @@
 /* eslint-disable jest/consistent-test-it */
 const chai = require("chai");
 const { Address } = require("soltypes");
+const BN = require("bn.js");
 const { Block, serializeFinalization, headerHash } = require("~core");
 const { Fp } = require("~babyjubjub");
 
@@ -23,6 +24,10 @@ contract("Coordinator functions gas report", async accounts => {
     ct = await CoordinatableTester.deployed();
     const block = Block.from(rawData);
     [tx1In2Out, tx2In2Out, tx2In3Out] = block.body.txs;
+    await ct.stake(accounts[0], {
+      from: accounts[0],
+      value: new BN("32").mul(new BN("10").pow(new BN("18")))
+    });
   });
   describe("propose(): (1 input - 2 output)", () => {
     it("10 tx", async () => {

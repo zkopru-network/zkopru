@@ -80,7 +80,6 @@ contract("Block serialize-deserialize tests", async accounts => {
   describe("body txs", () => {
     it("should have correct tx array length", async () => {
       const txsLen = await dt.getTxsLen(rawData);
-      // eslint-disable-next-line no-unused-expressions
       compare(txsLen, body.txs.length);
     });
     it("should have correct tx inflow data", async () => {
@@ -160,7 +159,6 @@ contract("Block serialize-deserialize tests", async accounts => {
   describe("body massDeposits", () => {
     it("should have correct mass deposit array length", async () => {
       const len = await dt.getMassDepositsLen(rawData);
-      // eslint-disable-next-line no-unused-expressions
       compare(len, body.massDeposits.length);
     });
     it("should have correct mass deposit data", async () => {
@@ -174,52 +172,24 @@ contract("Block serialize-deserialize tests", async accounts => {
   describe("body massMigrations", () => {
     it("should have correct mass migration array length", async () => {
       const len = await dt.getMassMigrationsLen(rawData);
-      // eslint-disable-next-line no-unused-expressions
       compare(len, body.massMigrations.length);
     });
     it("should have correct mass migration data", async () => {
       for (let index = 0; index < body.massMigrations.length; index += 1) {
         const {
           destination,
-          totalETH,
+          eth,
+          token,
+          amount,
           merged,
           fee
         } = await dt.getMassMigration(index, rawData);
         compare(destination, body.massMigrations[index].destination);
-        compare(totalETH, body.massMigrations[index].totalETH);
-        compare(merged, body.massMigrations[index].migratingLeaves.merged);
-        compare(fee, body.massMigrations[index].migratingLeaves.fee);
-      }
-    });
-    it("should have correct erc20 mass migration data", async () => {
-      for (let index = 0; index < body.massMigrations.length; index += 1) {
-        const { erc20 } = body.massMigrations[index];
-        for (let j = 0; j < erc20.length; j += 1) {
-          const { token, amount } = await dt.getERC20Migration(
-            index,
-            j,
-            rawData
-          );
-          compare(token, erc20[j].addr);
-          compare(amount, erc20[j].amount);
-        }
-      }
-    });
-    it("should have correct erc721 mass migration data", async () => {
-      for (let index = 0; index < body.massMigrations.length; index += 1) {
-        const { erc721 } = body.massMigrations[index];
-        for (let j = 0; j < erc721.length; j += 1) {
-          const { token, nfts } = await dt.getERC721Migration(
-            index,
-            j,
-            rawData
-          );
-          compare(token, erc721[j].addr);
-          compare(nfts.length, erc721[j].nfts.length);
-          for (let k = 0; k < erc721[j].nfts.length; k += 1) {
-            compare(nfts[k], erc721[j].nfts[k]);
-          }
-        }
+        compare(eth, body.massMigrations[index].asset.eth);
+        compare(token, body.massMigrations[index].asset.token);
+        compare(amount, body.massMigrations[index].asset.amount);
+        compare(merged, body.massMigrations[index].depositForDest.merged);
+        compare(fee, body.massMigrations[index].depositForDest.fee);
       }
     });
   });

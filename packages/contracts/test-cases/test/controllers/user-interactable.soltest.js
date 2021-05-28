@@ -2,6 +2,7 @@
 /* eslint-disable jest/prefer-todo */
 /* eslint-disable jest/require-top-level-describe */
 /* eslint-disable jest/consistent-test-it */
+/* eslint-disable jest/lowercase-name */
 const chai = require("chai");
 const { Address } = require("soltypes");
 const { toWei, toBN } = require("web3-utils");
@@ -52,7 +53,7 @@ contract("User Interaction gas report", async accounts => {
         }
       );
     });
-    it("eRC20 only", async () => {
+    it("ERC20 only", async () => {
       const spendingPubKey = 0;
       const salt = 0;
       const eth = 0;
@@ -62,7 +63,7 @@ contract("User Interaction gas report", async accounts => {
       const fee = 0;
       await ui.deposit(spendingPubKey, salt, eth, token, erc20Amount, nft, fee);
     });
-    it("eRC20 with Ether", async () => {
+    it("ERC20 with Ether", async () => {
       const spendingPubKey = 0;
       const salt = 0;
       const eth = toWei("10");
@@ -83,7 +84,7 @@ contract("User Interaction gas report", async accounts => {
         }
       );
     });
-    it("nFT only", async () => {
+    it("NFT only", async () => {
       const spendingPubKey = 0;
       const salt = 0;
       const eth = 0;
@@ -93,7 +94,7 @@ contract("User Interaction gas report", async accounts => {
       const fee = 0;
       await ui.deposit(spendingPubKey, salt, eth, token, erc20Amount, nft, fee);
     });
-    it("nFT with Ether", async () => {
+    it("NFT with Ether", async () => {
       const spendingPubKey = 0;
       const salt = 0;
       const eth = toWei("10");
