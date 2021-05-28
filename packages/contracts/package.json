@@ -47,7 +47,8 @@
     "postgenTS": "prettier --write src/**/*.ts",
     "start": "node dist/index.js",
     "testnet": "truffle develop --testnet",
-    "prettier": "prettier --write ./**/*.{ts,js,sol}"
+    "prettier": "prettier --write ./**/*.{ts,js,sol}",
+    "testblock:generate": "node utils/testblock-generator"
   },
   "devDependencies": {
     "@truffle/artifactor": "^4.0.54",

@@ -89,6 +89,15 @@ jobs:
             yarn images pull circuits
             cd packages/dataset
             yarn load-keys
+            cd ../circuits
+            yarn setup
+            yarn build-keys
+            yarn postbuild-keys
+      - run:
+          name: Generate Block Data
+          command: |
+            cd packages/contracts
+            yarn testblock:generate --scope=@zkopru/contracts
       - run:
           name: Contract Tests
           command: yarn test --scope=@zkopru/contracts
