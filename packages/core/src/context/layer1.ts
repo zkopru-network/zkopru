@@ -12,6 +12,7 @@ import Web3 from 'web3'
 import { ContractOptions } from 'web3-eth-contract'
 import * as ffjs from 'ffjavascript'
 import { soliditySha3 } from 'web3-utils'
+import AsyncLock from 'async-lock'
 import { verifyingKeyIdentifier, VerifyingKey } from '../snark/snark-verifier'
 
 export class L1Contract extends ZkopruContract {
@@ -21,10 +22,13 @@ export class L1Contract extends ZkopruContract {
 
   config?: Config
 
+  sendTxLock: AsyncLock
+
   constructor(web3: Web3, address: string, option?: ContractOptions) {
     super(web3, address, option)
     this.web3 = web3
     this.address = address
+    this.sendTxLock = new AsyncLock()
   }
 
   async getVKs(): Promise<{ [txSig: string]: VerifyingKey }> {
@@ -216,6 +220,7 @@ export class L1Contract extends ZkopruContract {
     account: Account,
     option?: Tx,
   ): Promise<TransactionReceipt | undefined> {
+    const done = await this.aquireSendTxLock(account.address)
     const result = await TxUtil.sendTx(
       tx,
       this.address,
@@ -223,6 +228,23 @@ export class L1Contract extends ZkopruContract {
       account,
       option,
     )
+    done()
     return result
+  }
+
+  private async aquireSendTxLock(accountAddress: string): Promise<() => void> {
+    return new Promise((resolve, reject) => {
+      this.sendTxLock.acquire(
+        accountAddress,
+        done => {
+          resolve(done)
+        },
+        err => {
+          if (err) {
+            reject(err)
+          }
+        },
+      )
+    })
   }
 }
