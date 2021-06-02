@@ -83,6 +83,8 @@ export type SomeDBConnector = (new (...args: any[]) => DB) & {
 }
 
 export abstract class DB {
+  abstract readonly schema: Schema
+
   static create: (tables: TableData[], ...args: any[]) => Promise<DB>
 
   abstract create(collection: string, doc: any | any[]): Promise<any>

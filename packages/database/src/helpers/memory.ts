@@ -64,7 +64,7 @@ export function validateDocuments(table: SchemaTable, _docs: any | any[]) {
       ...defaults,
       ...doc,
     }
-  })
+  }) as any[]
 }
 
 // Match a document in memory
