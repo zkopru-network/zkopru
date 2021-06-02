@@ -220,31 +220,9 @@ export class L1Contract extends ZkopruContract {
     account: Account,
     option?: Tx,
   ): Promise<TransactionReceipt | undefined> {
-    const done = await this.aquireSendTxLock(account.address)
-    const result = await TxUtil.sendTx(
-      tx,
-      this.address,
-      this.web3,
-      account,
-      option,
+    const result = await this.sendTxLock.acquire(account.address, () =>
+      TxUtil.sendTx(tx, this.address, this.web3, account, option),
     )
-    done()
     return result
-  }
-
-  private async aquireSendTxLock(accountAddress: string): Promise<() => void> {
-    return new Promise((resolve, reject) => {
-      this.sendTxLock.acquire(
-        accountAddress,
-        done => {
-          resolve(done)
-        },
-        err => {
-          if (err) {
-            reject(err)
-          }
-        },
-      )
-    })
   }
 }
