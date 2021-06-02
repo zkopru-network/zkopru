@@ -6,6 +6,7 @@ import {
   PublicData,
   SNARK,
   OutflowType,
+  Memo,
 } from '@zkopru/transaction'
 import { Header as HeaderSql } from '@zkopru/database'
 import * as Utils from '@zkopru/utils'
@@ -117,8 +118,16 @@ export function serializeTxs(txs: ZkTx[]): Buffer {
       arr.push(swap.toBuffer('be', 32))
     }
     if (memo) {
-      if (memo.byteLength !== 81) throw Error('Memo field should have 81 bytes')
-      arr.push(memo)
+      if (memo.version === 1) {
+        if (memo.data.byteLength !== 81)
+          throw Error('Memo field should have 81 bytes')
+        arr.push(memo.data)
+      } else if (memo.version === 2) {
+        arr.push(Fp.from(memo.data.length).toBuffer('be', 2))
+        arr.push(memo.data)
+      } else {
+        throw Error(`Unsupported version: ${memo.version}`)
+      }
     }
   }
   return Buffer.concat(arr)
@@ -242,10 +251,20 @@ export function deserializeTxsFrom(
       // swap exist
       swap = Fp.from(queue.dequeue(32))
     }
-    let memo: Buffer | undefined
+    let memo: Memo | undefined
     if ((indicator & 2) !== 0) {
-      // memo exist
-      memo = queue.dequeueToBuffer(81)
+      // v1 memo exist
+      memo = {
+        version: 1,
+        data: queue.dequeueToBuffer(81),
+      }
+    } else if ((indicator & 4) !== 0) {
+      // v2 memo exist
+      const len = queue.dequeueToNumber(2)
+      memo = {
+        version: 2,
+        data: queue.dequeueToBuffer(len),
+      }
     }
     txs.push(new ZkTx({ inflow, outflow, swap, fee, proof, memo }))
   }

@@ -32,7 +32,7 @@ export class ZkViewer {
 
   decrypt(zkTx: ZkTx, tokenRegistry?: TokenRegistry): Utxo | undefined {
     const { memo } = zkTx
-    if (!memo) {
+    if (!memo || memo.version !== 1) {
       return
     }
     let note: Utxo | undefined
@@ -40,7 +40,7 @@ export class ZkViewer {
       try {
         note = Utxo.decrypt({
           utxoHash: outflow.note,
-          memo,
+          memo: memo.data,
           spendingPubKey: this.zkAddress.spendingPubKey(),
           viewingKey: this.v,
           tokenRegistry,

@@ -625,7 +625,12 @@ export class ZkWalletAccount {
       hash: tx.hash().toString(),
       fee: tx.fee.toString(),
       proof: tx.proof,
-      memo: tx.memo?.toString('base64'),
+      memo: tx.memo
+        ? {
+            version: tx.memo.version,
+            data: tx.memo.data.toString('base64'),
+          }
+        : undefined,
       swap: tx.swap?.toString(),
       inflow: tx.inflow,
       outflow: tx.outflow,
