@@ -60,8 +60,13 @@ contract UserInteractable is Storage {
     /**
      * @notice IERC721Receiver implementation. Adds support for safeTransfer.
      **/
-    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data) external returns (bytes4) {
-      return this.onERC721Received.selector;
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external returns (bytes4) {
+        return this.onERC721Received.selector;
     }
 
     /**

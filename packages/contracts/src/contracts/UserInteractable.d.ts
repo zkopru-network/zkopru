@@ -120,6 +120,16 @@ export interface UserInteractable extends BaseContract {
     ): PayableTransactionObject<void>
 
     /**
+     * IERC721Receiver implementation. Adds support for safeTransfer.*
+     */
+    onERC721Received(
+      operator: string,
+      from: string,
+      tokenId: number | string | BN,
+      data: string | number[],
+    ): NonPayableTransactionObject<string>
+
+    /**
      * Users can withdraw notes when only after they're finazlied.
      * @param amount Amount of ERC20 when the token param is defined and it is an ERC20
      * @param blockHash Finalized block hash to find the finalized withdrawal root
