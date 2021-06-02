@@ -158,6 +158,32 @@ export class TransactionCache {
     return keys.join('-')
   }
 
+  identifierPrimaryKeys(collection: string, identifier: string) {
+    const table = this.db.schema[collection]
+    if (!table) {
+      throw new Error(`Unknown collection ${collection}`)
+    }
+    const primaryKeys = [table.primaryKey].flat()
+    const values = identifier.split('-').map((value, index) => {
+      const row = table.rowsByName[primaryKeys[index]]
+      if (!row) throw new Error(`Bad row ${primaryKeys} ${index}`)
+      if (row.type === 'Bool') {
+        return !!value
+      } else if (row.type === 'String') {
+        return value
+      } else if (row.type === 'Int') {
+        return +value
+      } else {
+        return JSON.parse(value)
+      }
+    })
+    const obj = {}
+    for (let x = 0; x < primaryKeys.length; x++) {
+      obj[primaryKeys[x]] = values[x]
+    }
+    return obj
+  }
+
   async create(collection: string, docs: any | any[], forceCache = false) {
     return this.lock.acquire('readwrite', () => this._create(collection, docs, forceCache))
   }
@@ -221,5 +247,58 @@ export class TransactionCache {
     options: FindManyOptions,
   ) {
     // have to scan in memory and THEN query the actual DB
+    const table = this.db.schema[collection]
+    if (!table) {
+      throw new Error(`Unknown collection ${collection}`)
+    }
+    const matchedCacheDocs = [] as any[]
+    const deletedCacheClauses = {} as { [key: string]: object[] }
+    for (const identifier of Object.keys(this.latestCache[collection])) {
+      const doc = this.latestCache[collection][identifier]
+      if (doc !== undefined) {
+        // nothing to match
+        const primaryKeyValues = this.identifierPrimaryKeys(collection, identifier)
+        for (const key of Object.keys(primaryKeyValues)) {
+          deletedCacheClauses[key] = [...(deletedCacheClauses[key] || []), { ne: primaryKeyValues[key] }]
+        }
+      }
+      if (doc) {
+        // potentially include this cache doc in the results
+        matchedCacheDocs.push(doc)
+      }
+    }
+    // construct a query using the deleted cache clause, then insert matched docs where appropriate
+    const where = {
+      ...options.where,
+    }
+    for (const key of Object.keys(deletedCacheClauses)) {
+      if (Array.isArray(where[key])) {
+        where[key].push(...deletedCacheClauses[key])
+      } else if (typeof where[key] === undefined) {
+        where[key] = deletedCacheClauses[key]
+      } else {
+        where[key] = [where[key], ...deletedCacheClauses[key]]
+      }
+    }
+    // where is ready
+    const found = await this.db.findMany(collection, {
+      ...options,
+      where,
+    })
+    if (matchedCacheDocs.length === 0) {
+      return found
+    }
+    // otherwise insert where appropriate based on orderBy and then limit
+    const allFound = [...found, ...matchedCacheDocs]
+    if (options.orderBy) {
+      allFound.sort((a, b) => {
+        let sum = 0
+        for (const key of Object.keys(options.orderBy || {})) {
+          const ascending = (options.orderBy || {})[key] === 'asc'
+
+        }
+      })
+    }
+    return allFound.slice(0, options.limit)
   }
 }
