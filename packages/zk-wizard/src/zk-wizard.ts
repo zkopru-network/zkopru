@@ -240,12 +240,12 @@ export class ZkWizard {
         start}`,
     )
     // TODO handle genProof exception
-    let memo: Buffer | undefined
+    let v1Memo: Buffer | undefined
     if (encryptTo !== undefined) {
       const noteToEncrypt = tx.outflow.find(outflow =>
         outflow.owner.eq(encryptTo),
       )
-      if (noteToEncrypt instanceof Utxo) memo = noteToEncrypt.encrypt()
+      if (noteToEncrypt instanceof Utxo) v1Memo = noteToEncrypt.encrypt()
     }
     const zkTx: ZkTx = new ZkTx({
       inflow: tx.inflow.map((utxo, index) => {
@@ -267,7 +267,7 @@ export class ZkWizard {
         pi_c: result.proof.pi_c.map(Fp.from),
       },
       swap: tx.swap,
-      memo,
+      memo: v1Memo ? { version: 1, data: v1Memo } : undefined,
     })
     return zkTx
   }
