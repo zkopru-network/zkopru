@@ -7,7 +7,7 @@
 
 import { v4 } from 'uuid'
 import { Fp } from '~babyjubjub'
-import { DB, SQLiteConnector, TreeSpecies, schema } from '~database/node'
+import { DB, TreeSpecies, schema, SQLiteMemoryConnector } from '~database/node'
 import { genSNARK, SNARKResult } from '~zk-wizard/snark'
 import {
   checkPhase1Setup,
@@ -47,7 +47,7 @@ describe('inclusion_proof.test.circom', () => {
   beforeAll(async () => {
     checkPhase1Setup()
     prepareArtifactsDirectory()
-    mockup = await SQLiteConnector.create(schema, ':memory:')
+    mockup = await SQLiteMemoryConnector.create(schema)
     utxoTree = new UtxoTree({
       db: mockup,
       metadata: utxoTreeMetadata,
@@ -55,15 +55,18 @@ describe('inclusion_proof.test.circom', () => {
       config: utxoTreeConfig,
     })
     await utxoTree.init()
-    await utxoTree.append(
-      ...[
-        { hash: Fp.from(10) },
-        { hash: Fp.from(11) },
-        { hash: Fp.from(12) },
-        { hash: Fp.from(13) },
-        { hash: Fp.from(14) },
-      ],
-    )
+    await mockup.transaction(db => {
+      utxoTree.append(
+        [
+          { hash: Fp.from(10) },
+          { hash: Fp.from(11) },
+          { hash: Fp.from(12) },
+          { hash: Fp.from(13) },
+          { hash: Fp.from(14) },
+        ],
+        db,
+      )
+    })
   })
   afterAll(async () => {
     await mockup.close()

@@ -7,7 +7,7 @@
 
 import { v4 } from 'uuid'
 import { Fp } from '~babyjubjub'
-import { DB, SQLiteConnector, TreeSpecies, schema } from '~database/node'
+import { DB, SQLiteMemoryConnector, TreeSpecies, schema } from '~database/node'
 import { genSNARK, SNARKResult } from '~zk-wizard/snark'
 import { ZkWizard } from '~zk-wizard'
 import {
@@ -52,7 +52,7 @@ describe('zk_transaction_1_2.test.circom', () => {
   beforeAll(async () => {
     checkPhase1Setup()
     prepareArtifactsDirectory()
-    mockup = await SQLiteConnector.create(schema, ':memory:')
+    mockup = await SQLiteMemoryConnector.create(schema)
     utxoTree = new UtxoTree({
       db: mockup,
       metadata: utxoTreeMetadata,
@@ -60,19 +60,22 @@ describe('zk_transaction_1_2.test.circom', () => {
       config: utxoTreeConfig,
     })
     await utxoTree.init()
-    await utxoTree.append(
-      ...[
-        { hash: utxos.utxo1_in_1.hash() },
-        { hash: utxos.utxo2_1_in_1.hash() },
-        { hash: utxos.utxo2_2_in_1.hash() },
-        { hash: utxos.utxo3_in_1.hash() },
-        { hash: utxos.utxo3_in_2.hash() },
-        { hash: utxos.utxo3_in_3.hash() },
-        { hash: utxos.utxo4_in_1.hash() },
-        { hash: utxos.utxo4_in_2.hash() },
-        { hash: utxos.utxo4_in_3.hash() },
-      ],
-    )
+    await mockup.transaction(db => {
+      utxoTree.append(
+        [
+          { hash: utxos.utxo1_in_1.hash() },
+          { hash: utxos.utxo2_1_in_1.hash() },
+          { hash: utxos.utxo2_2_in_1.hash() },
+          { hash: utxos.utxo3_in_1.hash() },
+          { hash: utxos.utxo3_in_2.hash() },
+          { hash: utxos.utxo3_in_3.hash() },
+          { hash: utxos.utxo4_in_1.hash() },
+          { hash: utxos.utxo4_in_2.hash() },
+          { hash: utxos.utxo4_in_3.hash() },
+        ],
+        db,
+      )
+    })
   })
   afterAll(async () => {
     await mockup.close()
