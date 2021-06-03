@@ -82,6 +82,13 @@ function _matchDocument(where: WhereClause, doc: any) {
       if (typeof val.gte !== 'undefined' && doc[key] < val.gte) {
         return false
       }
+      if (typeof val.nin !== 'undefined') {
+        if (!Array.isArray(val.nin))
+          throw new Error('Invalid nin value provided, must be array')
+        for (const v of val.nin) {
+          if (doc[key] === v) return false
+        }
+      }
     } else if (Array.isArray(val)) {
       let exists = false
       for (const v of val) {

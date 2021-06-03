@@ -66,6 +66,13 @@ export function whereToSql(table: SchemaTable, doc: any = {}, sqlOnly = false) {
           eq: 'IS',
         }
         return Object.keys(val).map(k => {
+          if (k === 'nin') {
+            if (!Array.isArray(val[k]))
+              throw new Error(`Non array value provided for nin operator`)
+            // need to generate a NOT IN query
+            const values = val[k].map((v: any) => parseType(rowDef.type, v))
+            return `"${key}" NOT IN (${values.join(',')})`
+          }
           const operator = val[k] === null ? nullOperatorMap[k] : operatorMap[k]
           if (!operator) throw new Error(`Invalid operator ${k}`)
           const parsed = parseType(rowDef.type, val[k])

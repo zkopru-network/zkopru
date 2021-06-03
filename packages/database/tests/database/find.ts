@@ -94,6 +94,22 @@ export default function(this: { db: DB }) {
     assert.equal(rows[2].id, 'test4')
   })
 
+  test('should find using nin operator', async () => {
+    const table = 'TableThree'
+    for (let x = 0; x < 10; x++) {
+      await this.db.create(table, {
+        id: `test${x}`,
+        optionalField: 'test',
+      })
+    }
+    const rows = await this.db.findMany(table, {
+      where: {
+        id: { nin: ['test0', 'test1', 'test8', 'test9'] },
+      }
+    })
+    assert.equal(rows.length, 6)
+  })
+
   test('should load nested relations', async () => {
     await this.db.create('TableFour', [
       {
