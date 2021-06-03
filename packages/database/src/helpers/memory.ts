@@ -120,12 +120,12 @@ export function matchDocument(where: WhereClause, doc: any) {
   }
   for (const _where of and) {
     // All AND clauses must be met
-    if (!_matchDocument(_where, doc)) return false
+    if (!matchDocument(_where, doc)) return false
   }
   if (or.length === 0) return true
   for (const _where of or) {
     // only 1 OR clause must be matched
-    if (_matchDocument(_where, doc) && matched) {
+    if (matchDocument(_where, doc) && matched) {
       return true
     }
   }
