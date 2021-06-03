@@ -10,7 +10,7 @@ This is the interface for a `DB` object. This is the primary way to interact wit
 
 #### Where
 
-The where clause is used in many different queries. It allows matches based on simple property comparison or more complex operators including `lt`, `lte`, `gt`, `gte`, and `ne` (not equal).
+The where clause is used in many different queries. It allows matches based on simple property comparison or more complex operators including `lt`, `lte`, `gt`, `gte`, `ne` (not equal), and `nin` (not in array).
 
 A where clause may contain the top level keys `AND` or `OR`. Each may contain an array of where clauses to be combined using and/or logic respectively.
 
@@ -27,6 +27,7 @@ A where clause using all possible comparison operators is shown below.
     gt: 5, // requires that this field be greater than 5
     lt: 10, // multiple operators may be used, they are combined using AND logic
   },
+  textField2: { nin: [ 'not', 'these', 'words' ] },
   // a top level key named OR allows you to specify conditions combined by OR logic
   OR: [
     {
