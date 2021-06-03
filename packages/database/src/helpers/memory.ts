@@ -1,3 +1,4 @@
+/* eslint-disable no-underscore-dangle */
 import { SchemaTable, WhereClause } from '../types'
 
 // Validate documents, insert defaults, ensure non-optional fields are present
@@ -36,13 +37,8 @@ export function validateDocuments(table: SchemaTable, _docs: any | any[]) {
           throw new Error(
             `Unrecognized value ${wipDoc[row.name]} for type Bool`,
           )
-        } else if (
-          row.type === 'Int' &&
-          typeof wipDoc[row.name] !== 'number'
-        ) {
-          throw new Error(
-            `Unrecognized value ${wipDoc[row.name]} for type Int`,
-          )
+        } else if (row.type === 'Int' && typeof wipDoc[row.name] !== 'number') {
+          throw new Error(`Unrecognized value ${wipDoc[row.name]} for type Int`)
         } else if (
           row.type === 'String' &&
           typeof wipDoc[row.name] !== 'string'
@@ -65,22 +61,6 @@ export function validateDocuments(table: SchemaTable, _docs: any | any[]) {
       ...doc,
     }
   }) as any[]
-}
-
-// Match a document in memory
-export function matchDocument(where: WhereClause, doc: any) {
-  const topWhere = { ...where, OR: undefined }
-  const or = where.OR || []
-  const matched = _matchDocument(topWhere, doc)
-  if (or.length === 0 && matched) {
-    return true
-  }
-  for (const _where of or) {
-    if (_matchDocument(_where, doc) && matched) {
-      return true
-    }
-  }
-  return false
 }
 
 // Matches without considering OR clauses
@@ -126,4 +106,20 @@ function _matchDocument(where: WhereClause, doc: any) {
     }
   }
   return true
+}
+
+// Match a document in memory
+export function matchDocument(where: WhereClause, doc: any) {
+  const topWhere = { ...where, OR: undefined }
+  const or = where.OR || []
+  const matched = _matchDocument(topWhere, doc)
+  if (or.length === 0 && matched) {
+    return true
+  }
+  for (const _where of or) {
+    if (_matchDocument(_where, doc) && matched) {
+      return true
+    }
+  }
+  return false
 }
