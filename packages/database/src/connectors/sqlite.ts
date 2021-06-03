@@ -14,7 +14,6 @@ import {
   // normalizeRowDef,
   constructSchema,
   Schema,
-  Relation,
   TransactionDB,
 } from '../types'
 import {
@@ -26,6 +25,7 @@ import {
   deleteManySql,
   upsertSql,
 } from '../helpers/sql'
+import { loadIncluded } from '../helpers/shared'
 
 export class SQLiteConnector extends DB {
   db: any // Database<sqlite3.Database, sqlite3.Statement>
@@ -104,59 +104,6 @@ export class SQLiteConnector extends DB {
     return obj === undefined ? null : obj
   }
 
-  // load related models
-  async loadIncluded(
-    collection: string,
-    options: { models: any[]; include?: any },
-  ) {
-    const { models, include } = options
-    if (!include) return
-    const table = this.schema[collection]
-    if (!table) throw new Error(`Unable to find table ${collection} in schema`)
-    for (const key of Object.keys(include)) {
-      // for each relation to include
-      const relation = table.relations[key]
-      if (!relation)
-        throw new Error(`Unable to find relation ${key} in ${collection}`)
-      if (include[key]) {
-        await this.loadIncludedModels(
-          models,
-          relation,
-          typeof include[key] === 'object' ? include[key] : undefined,
-        )
-      }
-    }
-  }
-
-  // load and assign submodels, mutates the models array supplied
-  private async loadIncludedModels(
-    models: any[],
-    relation: Relation & { name: string },
-    include?: any,
-  ) {
-    const values = models.map(model => model[relation.localField])
-    // load relevant submodels
-    const submodels = await this._findMany(relation.foreignTable, {
-      where: {
-        [relation.foreignField]: values,
-      },
-      include: include as any, // load subrelations if needed
-    })
-    // key the submodels by their relation field
-    const keyedSubmodels = {}
-    for (const submodel of submodels) {
-      // assign to the models
-      keyedSubmodels[submodel[relation.foreignField]] = submodel
-    }
-    // Assign submodel onto model
-    for (const model of models) {
-      const submodel = keyedSubmodels[model[relation.localField]]
-      Object.assign(model, {
-        [relation.name]: submodel || null,
-      })
-    }
-  }
-
   async findMany(collection: string, options: FindManyOptions) {
     return this.lock.acquire('read', async () =>
       this._findMany(collection, options),
@@ -186,9 +133,11 @@ export class SQLiteConnector extends DB {
       }
     }
     const { include } = options
-    await this.loadIncluded(collection, {
+    await loadIncluded(collection, {
       models,
       include,
+      findMany: this._findMany.bind(this),
+      table,
     })
     return models
   }
