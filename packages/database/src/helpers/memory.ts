@@ -110,13 +110,21 @@ function _matchDocument(where: WhereClause, doc: any) {
 
 // Match a document in memory
 export function matchDocument(where: WhereClause, doc: any) {
-  const topWhere = { ...where, OR: undefined }
+  const topWhere = { ...where, OR: undefined, AND: undefined }
   const or = where.OR || []
+  const and = where.AND || []
   const matched = _matchDocument(topWhere, doc)
-  if (or.length === 0 && matched) {
+  if (!matched) return false
+  if (or.length === 0 && and.length === 0 && matched) {
     return true
   }
+  for (const _where of and) {
+    // All AND clauses must be met
+    if (!_matchDocument(_where, doc)) return false
+  }
+  if (or.length === 0) return true
   for (const _where of or) {
+    // only 1 OR clause must be matched
     if (_matchDocument(_where, doc) && matched) {
       return true
     }
