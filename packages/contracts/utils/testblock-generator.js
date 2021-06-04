@@ -241,12 +241,18 @@ const outputPath = path.join(__dirname, "../test-cases");
       );
     }
     console.log("File(s) written, exiting");
-    await terminate(context);
+    await Promise.race([
+      terminate(context),
+      new Promise(r => setTimeout(r, 30000))
+    ]);
     process.exit(0);
   } catch (err) {
     console.log(err);
     console.log("Uncaught error generating block");
-    await terminate(context).catch(() => {});
+    await Promise.race([
+      terminate(context).catch(() => {}),
+      new Promise(r => setTimeout(r, 30000))
+    ]);
     process.exit(1);
   }
 })();
