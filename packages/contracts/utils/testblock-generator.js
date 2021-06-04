@@ -113,7 +113,7 @@ const outputPath = path.join(__dirname, "../test-cases");
       );
       const ethRawTx = TxBuilder.from(context.accounts.wallet.zkAddress)
         .provide(...walletSpendables.map(note => Utxo.from(note)))
-        .weiPerByte(toWei("1000000", "gwei"))
+        .weiPerByte(toWei("10000", "gwei"))
         .sendEther({
           eth: Fp.from(toWei("1", "ether")),
           to: context.accounts.coordinator.zkAddress
@@ -133,7 +133,7 @@ const outputPath = path.join(__dirname, "../test-cases");
       );
       const erc20RawTx = TxBuilder.from(context.accounts.wallet.zkAddress)
         .provide(...walletSpendables.map(note => Utxo.from(note)))
-        .weiPerByte(toWei("100000", "gwei"))
+        .weiPerByte(toWei("10000", "gwei"))
         .sendERC20({
           eth: Fp.zero,
           tokenAddr: context.tokens.erc20.address,
@@ -155,7 +155,7 @@ const outputPath = path.join(__dirname, "../test-cases");
       );
       const erc20RawTx = TxBuilder.from(context.accounts.wallet.zkAddress)
         .provide(...walletSpendables.map(note => Utxo.from(note)))
-        .weiPerByte(toWei("100000", "gwei"))
+        .weiPerByte(toWei("10000", "gwei"))
         .sendERC20({
           eth: Fp.zero,
           tokenAddr: context.tokens.erc20.address,
@@ -163,7 +163,7 @@ const outputPath = path.join(__dirname, "../test-cases");
           to: ZkAddress.null,
           withdrawal: {
             to: Fp.from(context.accounts.wallet.ethAddress),
-            fee: Fp.from(toWei("100000", "gwei"))
+            fee: Fp.from(toWei("10000", "gwei"))
           }
         })
         .build();
