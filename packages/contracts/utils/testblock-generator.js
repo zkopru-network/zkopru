@@ -28,10 +28,11 @@ const outputPath = path.join(__dirname, "../test-cases");
 process.env.BLOCK_CONFIRMATIONS = "0";
 
 (async () => {
+  let context;
   try {
     if (process.env.DEBUG) attachConsoleLogToPino();
     console.log(`Generating test block, writing to "${outputPath}"`);
-    const context = await initContext();
+    context = await initContext();
     console.log("Registering vks");
     await registerVks(context);
     console.log("Finishing setup");
