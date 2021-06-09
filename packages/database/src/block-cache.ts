@@ -1,6 +1,12 @@
 import Web3 from 'web3'
 import { logger } from '@zkopru/utils'
-import { DB, UpsertOptions, UpdateOptions } from './types'
+import {
+  DB,
+  UpsertOptions,
+  UpdateOptions,
+  DeleteManyOptions,
+  TransactionDB,
+} from './types'
 
 // process block in memory, write to DB when confirmed by enough blocks
 
@@ -10,16 +16,27 @@ enum OperationType {
   UPSERT,
   CREATE,
   UPDATE,
+  TRANSACTION,
+  DELETE,
 }
 
-type PendingDocument = {
-  blockNumber: number
-  blockHash: string
+type TransactionOperation = {
   collection: string
-  operation: OperationType
+  type: OperationType
   where?: any
   create?: any
   update?: any
+}
+
+type PendingOperation = {
+  blockNumber: number
+  blockHash: string
+  collection: string
+  type: OperationType
+  where?: any
+  create?: any
+  update?: any
+  transactionOperations?: TransactionOperation[]
 }
 
 export class BlockCache {
@@ -27,7 +44,7 @@ export class BlockCache {
 
   db: DB
 
-  pendingDocs = [] as PendingDocument[]
+  pendingOperations = [] as PendingOperation[]
 
   currentBlockNumber = 0
 
@@ -68,7 +85,7 @@ export class BlockCache {
   }
 
   async clearChangesForBlockHash(hash: string) {
-    this.pendingDocs = this.pendingDocs.filter(({ blockHash }) => {
+    this.pendingOperations = this.pendingOperations.filter(({ blockHash }) => {
       return blockHash !== hash
     })
   }
@@ -76,41 +93,74 @@ export class BlockCache {
   // Write any data that is old enough to be considered confirmed
   async writeChangesIfNeeded() {
     const docsToRemove = [] as any[]
-    for (const doc of this.pendingDocs) {
-      if (
-        this.currentBlockNumber - doc.blockNumber <
-        this.BLOCK_CONFIRMATIONS
-      ) {
+    for (const op of this.pendingOperations) {
+      if (this.currentBlockNumber - op.blockNumber < this.BLOCK_CONFIRMATIONS) {
         // eslint-disable-next-line no-continue
         continue
       }
       // otherwise write
       try {
-        logger.info(`Writing ${doc.collection}`)
-        if (doc.operation === OperationType.CREATE) {
-          await this.db.create(doc.collection, doc.create)
-        } else if (doc.operation === OperationType.UPSERT) {
-          await this.db.upsert(doc.collection, {
-            where: doc.where,
-            create: doc.create,
-            update: doc.update,
-          })
-        } else if (doc.operation === OperationType.UPDATE) {
-          await this.db.update(doc.collection, {
-            where: doc.where,
-            update: doc.update,
-          })
-        } else {
-          throw new Error(`Unrecognized operation type: "${doc.operation}"`)
-        }
-        docsToRemove.push(doc)
+        logger.info(`Writing ${op.collection}`)
+        await this.writeChange(op)
+        docsToRemove.push(op)
       } catch (err) {
         console.log(`Error writing document`)
       }
     }
-    this.pendingDocs = this.pendingDocs.filter(
+    this.pendingOperations = this.pendingOperations.filter(
       doc => docsToRemove.indexOf(doc) === -1,
     )
+  }
+
+  async writeChange(operation: PendingOperation) {
+    if (operation.type === OperationType.CREATE) {
+      await this.db.create(operation.collection, operation.create)
+    } else if (operation.type === OperationType.UPSERT) {
+      await this.db.upsert(operation.collection, {
+        where: operation.where,
+        create: operation.create,
+        update: operation.update,
+      })
+    } else if (operation.type === OperationType.UPDATE) {
+      await this.db.update(operation.collection, {
+        where: operation.where,
+        update: operation.update,
+      })
+    } else if (operation.type === OperationType.TRANSACTION) {
+      await this.db.transaction(db => {
+        if (!operation.transactionOperations) return
+        for (const op of operation.transactionOperations) {
+          if (op.type === OperationType.CREATE) {
+            db.create(op.collection, op.create)
+          } else if (op.type === OperationType.UPSERT) {
+            db.upsert(op.collection, {
+              where: op.where,
+              create: op.create,
+              update: op.update,
+            })
+          } else if (op.type === OperationType.UPDATE) {
+            db.update(op.collection, {
+              where: op.where,
+              update: op.update,
+            })
+          } else if (op.type === OperationType.DELETE) {
+            db.delete(op.collection, {
+              where: op.where,
+            })
+          } else {
+            throw new Error(
+              `Unrecognized transaction operation type: "${op.type}"`,
+            )
+          }
+        }
+      })
+    } else if (operation.type === OperationType.DELETE) {
+      await this.db.delete(operation.collection, {
+        where: operation.where,
+      })
+    } else {
+      throw new Error(`Unrecognized operation type: "${operation.type}"`)
+    }
   }
 
   async upsertCache(
@@ -122,19 +172,19 @@ export class BlockCache {
     if (typeof blockNumber !== 'number')
       throw new Error('Invalid block number provided to BlockCache.upsertCache')
     const currentBlockNumber = await this.blockNumber()
+    const pendingOperation = {
+      blockNumber,
+      blockHash,
+      collection,
+      type: OperationType.UPSERT,
+      ...options,
+    }
     if (currentBlockNumber - blockNumber < this.BLOCK_CONFIRMATIONS) {
       // store in memory
-      this.pendingDocs.push({
-        blockNumber,
-        blockHash,
-        collection,
-        operation: OperationType.UPSERT,
-        ...options,
-      })
-      return
+      this.pendingOperations.push(pendingOperation)
+    } else {
+      await this.writeChange(pendingOperation)
     }
-    // otherwise create as usual
-    await this.db.upsert(collection, options)
   }
 
   async updateCache(
@@ -146,18 +196,82 @@ export class BlockCache {
     if (typeof blockNumber !== 'number')
       throw new Error('Invalid block number provided to BlockCache.upsertCache')
     const currentBlockNumber = await this.blockNumber()
+    const pendingOperation = {
+      blockNumber,
+      blockHash,
+      collection,
+      type: OperationType.UPDATE,
+      ...options,
+    }
     if (currentBlockNumber - blockNumber < this.BLOCK_CONFIRMATIONS) {
       // store in memory
-      this.pendingDocs.push({
-        blockNumber,
-        blockHash,
-        collection,
-        operation: OperationType.UPDATE,
-        ...options,
-      })
-      return
+      this.pendingOperations.push(pendingOperation)
+    } else {
+      await this.writeChange(pendingOperation)
     }
-    // otherwise operate as usual
-    await this.db.update(collection, options)
+  }
+
+  async transactionCache(
+    operation: (db: TransactionDB) => void | Promise<void>,
+    blockNumber: number,
+    blockHash: string,
+  ) {
+    if (typeof blockNumber !== 'number')
+      throw new Error('Invalid block number provided to BlockCache.upsertCache')
+    const currentBlockNumber = await this.blockNumber()
+    // store in memory
+    const operations = [] as TransactionOperation[]
+    const db = {
+      create: (collection: string, doc: any | any[]) => {
+        operations.push({
+          type: OperationType.CREATE,
+          collection,
+          create: doc,
+        })
+      },
+      update: (collection: string, options: UpdateOptions) => {
+        operations.push({
+          type: OperationType.UPDATE,
+          collection,
+          ...options,
+        })
+      },
+      upsert: (collection: string, options: UpsertOptions) => {
+        operations.push({
+          type: OperationType.UPSERT,
+          collection,
+          ...options,
+        })
+      },
+      delete: (collection: string, options: DeleteManyOptions) => {
+        operations.push({
+          type: OperationType.DELETE,
+          collection,
+          ...options,
+        })
+      },
+      onCommit: () => {
+        throw new Error('Not supported')
+      },
+      onError: () => {
+        throw new Error('Not supported')
+      },
+      onComplete: () => {
+        throw new Error('Not supported')
+      },
+    }
+    await Promise.resolve(operation(db))
+    const pendingOperation = {
+      blockNumber,
+      blockHash,
+      collection: '',
+      type: OperationType.TRANSACTION,
+      transactionOperations: operations,
+    }
+    if (currentBlockNumber - blockNumber < this.BLOCK_CONFIRMATIONS) {
+      await this.writeChange(pendingOperation)
+    } else {
+      this.pendingOperations.push(pendingOperation)
+    }
   }
 }

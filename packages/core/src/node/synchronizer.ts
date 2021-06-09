@@ -461,33 +461,29 @@ export class Synchronizer extends EventEmitter {
 
         logger.debug(`slashed hash@!${hash}`)
         logger.debug(`${JSON.stringify(event.returnValues)}`)
-        await this.blockCache.upsertCache(
-          'Slash',
-          {
-            where: { hash },
-            create: {
-              proposer,
-              reason,
-              executionTx: transactionHash,
-              slashedAt: blockNumber,
-              hash,
-            },
-            update: {
-              hash,
-              proposer,
-              reason,
-              executionTx: transactionHash,
-              slashedAt: blockNumber,
-            },
-          },
-          blockNumber,
-          event.blockHash,
-        )
-        await this.blockCache.updateCache(
-          'Tx',
-          {
-            where: { blockHash: hash },
-            update: { slashed: true },
+        await this.blockCache.transactionCache(
+          db => {
+            db.upsert('Slash', {
+              where: { hash },
+              create: {
+                proposer,
+                reason,
+                executionTx: transactionHash,
+                slashedAt: blockNumber,
+                hash,
+              },
+              update: {
+                hash,
+                proposer,
+                reason,
+                executionTx: transactionHash,
+                slashedAt: blockNumber,
+              },
+            })
+            db.update('Tx', {
+              where: { blockHash: hash },
+              update: { slashed: true },
+            })
           },
           blockNumber,
           event.blockHash,
