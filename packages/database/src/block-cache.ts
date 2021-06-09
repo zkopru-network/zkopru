@@ -32,6 +32,7 @@ export class BlockCache {
   currentBlockNumber = 0
 
   blockHeaderSubscription: any
+
   BLOCK_CONFIRMATIONS = +(
     process.env.BLOCK_CONFIRMATIONS || DEFAULT_BLOCK_CONFIRMATIONS
   )
