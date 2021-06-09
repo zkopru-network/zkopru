@@ -3,6 +3,7 @@ import { ZkViewer } from '@zkopru/account'
 import { Fp } from '@zkopru/babyjubjub'
 import {
   DB,
+  BlockCache,
   Proposal,
   MassDeposit as MassDepositSql,
   TransactionDB,
@@ -48,6 +49,8 @@ export declare interface BlockProcessor {
 export class BlockProcessor extends EventEmitter {
   db: DB
 
+  blockCache: BlockCache
+
   layer2: L2Chain
 
   tracker: Tracker
@@ -60,17 +63,20 @@ export class BlockProcessor extends EventEmitter {
 
   constructor({
     db,
+    blockCache,
     l2Chain,
     tracker,
     validator,
   }: {
     db: DB
+    blockCache: BlockCache
     l2Chain: L2Chain
     tracker: Tracker
     validator: Validator
   }) {
     super()
     this.db = db
+    this.blockCache = blockCache
     this.layer2 = l2Chain
     this.tracker = tracker
     this.validator = validator

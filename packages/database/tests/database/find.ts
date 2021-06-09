@@ -105,7 +105,7 @@ export default function(this: { db: DB }) {
     const rows = await this.db.findMany(table, {
       where: {
         id: { nin: ['test0', 'test1', 'test8', 'test9'] },
-      }
+      },
     })
     assert.equal(rows.length, 6)
   })
@@ -380,10 +380,10 @@ export default function(this: { db: DB }) {
       const docs = await this.db.findMany(table, {
         where: {
           AND: [
-            { OR: [{ counterField: { lt: 4 }}, { counterField: { gt: 6}}]},
-            { counterField: [1, 5, 8]}
-          ]
-        }
+            { OR: [{ counterField: { lt: 4 } }, { counterField: { gt: 6 } }] },
+            { counterField: [1, 5, 8] },
+          ],
+        },
       })
       assert.equal(docs.length, 2)
     }

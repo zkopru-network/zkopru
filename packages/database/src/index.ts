@@ -41,4 +41,6 @@ export const NULLIFIER_TREE_ID = 'nullifier-tree'
 export * from './types'
 export * from './schema.types'
 export * from './preset'
+export * from './block-cache'
+export * from './helpers/memory'
 export { schema }

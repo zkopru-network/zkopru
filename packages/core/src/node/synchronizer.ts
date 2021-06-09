@@ -7,6 +7,7 @@ import {
   Deposit as DepositSql,
   MassDeposit as MassDepositSql,
   TokenRegistry as TokenRegistrySql,
+  BlockCache,
 } from '@zkopru/database'
 import { EventEmitter } from 'events'
 import { Bytes32, Address, Uint256 } from 'soltypes'
@@ -26,6 +27,8 @@ export enum NetworkStatus {
 
 export class Synchronizer extends EventEmitter {
   db: DB
+
+  blockCache: BlockCache
 
   l1Contract!: L1Contract
 
@@ -58,9 +61,10 @@ export class Synchronizer extends EventEmitter {
     [proposalTx: string]: boolean
   }
 
-  constructor(db: DB, l1Contract: L1Contract) {
+  constructor(db: DB, l1Contract: L1Contract, blockCache: BlockCache) {
     super()
     this.db = db
+    this.blockCache = blockCache
     this.l1Contract = l1Contract
     this.isListening = false
     this.fetching = {}
@@ -306,7 +310,7 @@ export class Synchronizer extends EventEmitter {
           blockNumber,
         }
         logger.info(`synchronizer.js: NewDeposit(${deposit.note})`)
-        await this.db.upsert('Deposit', {
+        await this.blockCache.upsertCache(blockNumber, 'Deposit', {
           where: { note: deposit.note },
           update: deposit,
           create: deposit,
@@ -357,7 +361,7 @@ export class Synchronizer extends EventEmitter {
           `Massdeposit: index ${massDeposit.index} / merged: ${massDeposit.merged} / fee: ${massDeposit.fee}`,
         )
         logger.info('massdeposit commit is', massDeposit)
-        await this.db.upsert('MassDeposit', {
+        await this.blockCache.upsertCache(blockNumber, 'MassDeposit', {
           where: { index: massDeposit.index },
           create: massDeposit,
           update: {},
@@ -403,7 +407,7 @@ export class Synchronizer extends EventEmitter {
           proposedAt: blockNumber,
           proposalTx: transactionHash,
         }
-        await this.db.upsert('Proposal', {
+        await this.blockCache.upsertCache(newProposal.proposedAt, 'Proposal', {
           where: { hash: newProposal.hash },
           create: newProposal,
           update: newProposal,
@@ -442,7 +446,7 @@ export class Synchronizer extends EventEmitter {
 
         logger.debug(`slashed hash@!${hash}`)
         logger.debug(`${JSON.stringify(event.returnValues)}`)
-        await this.db.upsert('Slash', {
+        await this.blockCache.upsertCache(blockNumber, 'Slash', {
           where: { hash },
           create: {
             proposer,
@@ -459,7 +463,7 @@ export class Synchronizer extends EventEmitter {
             slashedAt: blockNumber,
           },
         })
-        await this.db.update('Tx', {
+        await this.blockCache.updateCache(blockNumber, 'Tx', {
           where: { blockHash: hash },
           update: { slashed: true },
         })
@@ -497,7 +501,7 @@ export class Synchronizer extends EventEmitter {
         const hash = Bytes32.from(blockHash).toString()
         logger.debug(`finalization hash@!${hash}`)
         logger.debug(`${JSON.stringify(event.returnValues)}`)
-        await this.db.upsert('Proposal', {
+        await this.blockCache.upsertCache(event.blockNumber, 'Proposal', {
           where: { hash },
           create: { hash, finalized: true },
           update: { finalized: true },

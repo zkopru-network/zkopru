@@ -6,6 +6,7 @@ import {
   PostgresConnector,
   schema,
   initDB,
+  BlockCache,
 } from '@zkopru/database/dist/node'
 import { L1Contract } from '@zkopru/core'
 import Configurator, { Context, Menu } from '../configurator'
@@ -120,7 +121,11 @@ export default class LoadDatabase extends Configurator {
       new L1Contract(context.web3, this.base.address),
     )
     return {
-      context: { ...context, db: database },
+      context: {
+        ...context,
+        db: database,
+        blockCache: new BlockCache(context.web3, database),
+      },
       next: Menu.LOAD_COORDINATOR,
     }
   }
