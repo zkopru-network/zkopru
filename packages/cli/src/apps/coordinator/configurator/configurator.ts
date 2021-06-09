@@ -1,7 +1,7 @@
 import Web3 from 'web3'
 import { Coordinator } from '@zkopru/coordinator'
 import { NetworkStatus } from '@zkopru/core'
-import { DB, BlockCache } from '@zkopru/database'
+import { DB } from '@zkopru/database'
 import { PromptApp } from '@zkopru/utils'
 import { Account, WebsocketProvider, EncryptedKeystoreV3Json } from 'web3-core'
 
@@ -41,7 +41,6 @@ export interface Context {
   web3?: Web3
   provider?: WebsocketProvider
   db?: DB
-  blockCache?: BlockCache
   coordinator?: Coordinator
   keystore?: EncryptedKeystoreV3Json
   account?: Account

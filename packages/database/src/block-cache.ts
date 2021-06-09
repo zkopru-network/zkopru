@@ -1,9 +1,10 @@
 import Web3 from 'web3'
 import { DB, UpsertOptions, UpdateOptions } from './types'
+import { logger } from '@zkopru/utils'
 
 // process block in memory, write to DB when confirmed by enough blocks
 
-const BLOCK_CONFIRMATIONS = 15
+const BLOCK_CONFIRMATIONS = process.env.BLOCK_CONFIRMATIONS || 15
 
 enum OperationType {
   UPSERT,
@@ -37,8 +38,8 @@ export class BlockCache {
     this.blockHeaderSubscription = this.web3.eth
       .subscribe('newBlockHeaders', err => {
         if (err) {
-          console.log('Error subscribing to block headers')
-          console.log(err)
+          logger.info('Error subscribing to block headers')
+          logger.info(err)
         }
       })
       .on('data', async blockHeader => {
@@ -47,8 +48,8 @@ export class BlockCache {
         try {
           await this.writeChangesIfNeeded()
         } catch (err) {
-          console.log('Error writing block cache changes')
-          console.log(err)
+          logger.info('Error writing block cache changes')
+          logger.info(err)
         }
       })
   }
@@ -63,29 +64,37 @@ export class BlockCache {
 
   // Write any data that is old enough to be considered confirmed
   async writeChangesIfNeeded() {
+    const docsToRemove = [] as any[]
     for (const doc of this.pendingDocs) {
       if (this.currentBlockNumber - doc.createdAtBlock <= BLOCK_CONFIRMATIONS) {
         // eslint-disable-next-line no-continue
         continue
       }
       // otherwise write
-      if (doc.operation === OperationType.CREATE) {
-        await this.db.create(doc.collection, doc.create)
-      } else if (doc.operation === OperationType.UPSERT) {
-        await this.db.upsert(doc.collection, {
-          where: doc.where,
-          create: doc.create,
-          update: doc.update,
-        })
-      } else if (doc.operation === OperationType.UPDATE) {
-        await this.db.update(doc.collection, {
-          where: doc.where,
-          update: doc.update,
-        })
-      } else {
-        throw new Error(`Unrecognized operation type: "${doc.operation}"`)
+      try {
+        logger.info(`Writing ${doc.collection}`)
+        if (doc.operation === OperationType.CREATE) {
+          await this.db.create(doc.collection, doc.create)
+        } else if (doc.operation === OperationType.UPSERT) {
+          await this.db.upsert(doc.collection, {
+            where: doc.where,
+            create: doc.create,
+            update: doc.update,
+          })
+        } else if (doc.operation === OperationType.UPDATE) {
+          await this.db.update(doc.collection, {
+            where: doc.where,
+            update: doc.update,
+          })
+        } else {
+          throw new Error(`Unrecognized operation type: "${doc.operation}"`)
+        }
+        docsToRemove.push(doc)
+      } catch (err) {
+        console.log(`Error writing document`)
       }
     }
+    this.pendingDocs = this.pendingDocs.filter((doc) => docsToRemove.indexOf(doc) === -1)
   }
 
   async upsertCache(
