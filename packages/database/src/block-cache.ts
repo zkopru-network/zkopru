@@ -1,10 +1,10 @@
 import Web3 from 'web3'
-import { DB, UpsertOptions, UpdateOptions } from './types'
 import { logger } from '@zkopru/utils'
+import { DB, UpsertOptions, UpdateOptions } from './types'
 
 // process block in memory, write to DB when confirmed by enough blocks
 
-const BLOCK_CONFIRMATIONS = process.env.BLOCK_CONFIRMATIONS || 15
+const BLOCK_CONFIRMATIONS = +(process.env.BLOCK_CONFIRMATIONS || 15)
 
 enum OperationType {
   UPSERT,
@@ -13,7 +13,8 @@ enum OperationType {
 }
 
 type PendingDocument = {
-  createdAtBlock: number
+  blockNumber: number
+  blockHash: string
   collection: string
   operation: OperationType
   where?: any
@@ -62,11 +63,17 @@ export class BlockCache {
     return this.currentBlockNumber
   }
 
+  async clearChangesForBlockHash(hash: string) {
+    this.pendingDocs = this.pendingDocs.filter(({ blockHash }) => {
+      return blockHash !== hash
+    })
+  }
+
   // Write any data that is old enough to be considered confirmed
   async writeChangesIfNeeded() {
     const docsToRemove = [] as any[]
     for (const doc of this.pendingDocs) {
-      if (this.currentBlockNumber - doc.createdAtBlock <= BLOCK_CONFIRMATIONS) {
+      if (this.currentBlockNumber - doc.blockNumber <= BLOCK_CONFIRMATIONS) {
         // eslint-disable-next-line no-continue
         continue
       }
@@ -94,13 +101,16 @@ export class BlockCache {
         console.log(`Error writing document`)
       }
     }
-    this.pendingDocs = this.pendingDocs.filter((doc) => docsToRemove.indexOf(doc) === -1)
+    this.pendingDocs = this.pendingDocs.filter(
+      doc => docsToRemove.indexOf(doc) === -1,
+    )
   }
 
   async upsertCache(
-    blockNumber: number,
     collection: string,
     options: UpsertOptions,
+    blockNumber: number,
+    blockHash: string,
   ) {
     if (typeof blockNumber !== 'number')
       throw new Error('Invalid block number provided to BlockCache.upsertCache')
@@ -108,7 +118,8 @@ export class BlockCache {
     if (currentBlockNumber - blockNumber <= BLOCK_CONFIRMATIONS) {
       // store in memory
       this.pendingDocs.push({
-        createdAtBlock: blockNumber,
+        blockNumber,
+        blockHash,
         collection,
         operation: OperationType.UPSERT,
         ...options,
@@ -120,9 +131,10 @@ export class BlockCache {
   }
 
   async updateCache(
-    blockNumber: number,
     collection: string,
     options: UpdateOptions,
+    blockNumber: number,
+    blockHash: string,
   ) {
     if (typeof blockNumber !== 'number')
       throw new Error('Invalid block number provided to BlockCache.upsertCache')
@@ -130,7 +142,8 @@ export class BlockCache {
     if (currentBlockNumber - blockNumber <= BLOCK_CONFIRMATIONS) {
       // store in memory
       this.pendingDocs.push({
-        createdAtBlock: blockNumber,
+        blockNumber,
+        blockHash,
         collection,
         operation: OperationType.UPDATE,
         ...options,

@@ -310,15 +310,20 @@ export class Synchronizer extends EventEmitter {
           blockNumber,
         }
         logger.info(`synchronizer.js: NewDeposit(${deposit.note})`)
-        await this.blockCache.upsertCache(blockNumber, 'Deposit', {
-          where: { note: deposit.note },
-          update: deposit,
-          create: deposit,
-        })
+        await this.blockCache.upsertCache(
+          'Deposit',
+          {
+            where: { note: deposit.note },
+            update: deposit,
+            create: deposit,
+          },
+          blockNumber,
+          event.blockHash,
+        )
         if (cb) cb(deposit)
       })
       .on('changed', event => {
-        // TODO
+        this.blockCache.clearChangesForBlockHash(event.blockHash)
         logger.info(`synchronizer.js: Deposit Event changed`, event)
       })
       .on('error', event => {
@@ -361,16 +366,21 @@ export class Synchronizer extends EventEmitter {
           `Massdeposit: index ${massDeposit.index} / merged: ${massDeposit.merged} / fee: ${massDeposit.fee}`,
         )
         logger.info('massdeposit commit is', massDeposit)
-        await this.blockCache.upsertCache(blockNumber, 'MassDeposit', {
-          where: { index: massDeposit.index },
-          create: massDeposit,
-          update: {},
-        })
+        await this.blockCache.upsertCache(
+          'MassDeposit',
+          {
+            where: { index: massDeposit.index },
+            create: massDeposit,
+            update: {},
+          },
+          blockNumber,
+          event.blockHash,
+        )
         if (cb) cb(massDeposit)
         logger.info('massdeposit commit succeeded')
       })
       .on('changed', event => {
-        // TODO
+        this.blockCache.clearChangesForBlockHash(event.blockHash)
         logger.info(`synchronizer.js: MassDeposit Event changed`, event)
       })
       .on('error', event => {
@@ -407,15 +417,20 @@ export class Synchronizer extends EventEmitter {
           proposedAt: blockNumber,
           proposalTx: transactionHash,
         }
-        await this.blockCache.upsertCache(newProposal.proposedAt, 'Proposal', {
-          where: { hash: newProposal.hash },
-          create: newProposal,
-          update: newProposal,
-        })
+        await this.blockCache.upsertCache(
+          'Proposal',
+          {
+            where: { hash: newProposal.hash },
+            create: newProposal,
+            update: newProposal,
+          },
+          blockNumber,
+          event.blockHash,
+        )
         if (cb) cb(blockHash)
       })
       .on('changed', event => {
-        // TODO
+        this.blockCache.clearChangesForBlockHash(event.blockHash)
         logger.info(`synchronizer.js: NewProposal Event changed`, event)
       })
       .on('error', err => {
@@ -446,31 +461,41 @@ export class Synchronizer extends EventEmitter {
 
         logger.debug(`slashed hash@!${hash}`)
         logger.debug(`${JSON.stringify(event.returnValues)}`)
-        await this.blockCache.upsertCache(blockNumber, 'Slash', {
-          where: { hash },
-          create: {
-            proposer,
-            reason,
-            executionTx: transactionHash,
-            slashedAt: blockNumber,
-            hash,
+        await this.blockCache.upsertCache(
+          'Slash',
+          {
+            where: { hash },
+            create: {
+              proposer,
+              reason,
+              executionTx: transactionHash,
+              slashedAt: blockNumber,
+              hash,
+            },
+            update: {
+              hash,
+              proposer,
+              reason,
+              executionTx: transactionHash,
+              slashedAt: blockNumber,
+            },
           },
-          update: {
-            hash,
-            proposer,
-            reason,
-            executionTx: transactionHash,
-            slashedAt: blockNumber,
+          blockNumber,
+          event.blockHash,
+        )
+        await this.blockCache.updateCache(
+          'Tx',
+          {
+            where: { blockHash: hash },
+            update: { slashed: true },
           },
-        })
-        await this.blockCache.updateCache(blockNumber, 'Tx', {
-          where: { blockHash: hash },
-          update: { slashed: true },
-        })
+          blockNumber,
+          event.blockHash,
+        )
         if (cb) cb(hash)
       })
       .on('changed', event => {
-        // TODO removed
+        this.blockCache.clearChangesForBlockHash(event.blockHash)
         logger.info(`synchronizer.js: Slash Event changed`, event)
       })
       .on('error', err => {
@@ -501,15 +526,20 @@ export class Synchronizer extends EventEmitter {
         const hash = Bytes32.from(blockHash).toString()
         logger.debug(`finalization hash@!${hash}`)
         logger.debug(`${JSON.stringify(event.returnValues)}`)
-        await this.blockCache.upsertCache(event.blockNumber, 'Proposal', {
-          where: { hash },
-          create: { hash, finalized: true },
-          update: { finalized: true },
-        })
+        await this.blockCache.upsertCache(
+          'Proposal',
+          {
+            where: { hash },
+            create: { hash, finalized: true },
+            update: { finalized: true },
+          },
+          event.blockNumber,
+          event.blockHash,
+        )
         if (cb) cb(blockHash)
       })
       .on('changed', event => {
-        // TODO removed
+        this.blockCache.clearChangesForBlockHash(event.blockHash)
         logger.info(`synchronizer.js: Finalization Event changed`, event)
       })
       .on('error', err => {
