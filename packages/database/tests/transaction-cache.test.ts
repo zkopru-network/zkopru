@@ -1,12 +1,12 @@
 /* eslint-disable jest/no-hooks, jest/valid-describe */
 import testSchema from './test-schema'
 import { DB, SQLiteConnector } from '~database/node'
-import TransactionCache from '../src/transaction-cache'
+import { TransactionCache } from '../src/transaction-cache'
 import FindTests from './database/find'
 import CreateTests from './database/create'
 import UpdateTests from './database/update'
 import DeleteTests from './database/delete'
-// import TransactionTests from './database/transaction'
+import TransactionTests from './database/transaction'
 
 describe('transaction cache tests', function(this: any) {
   this.db = {} as DB
@@ -28,4 +28,5 @@ describe('transaction cache tests', function(this: any) {
   CreateTests.bind(this)()
   DeleteTests.bind(this)()
   UpdateTests.bind(this)()
+  TransactionTests.bind(this)()
 })

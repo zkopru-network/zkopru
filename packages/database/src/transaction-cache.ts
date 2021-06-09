@@ -21,6 +21,10 @@ import { loadIncluded } from './helpers/shared'
 
 export type CacheTransactionCommit = Function
 
+export type CacheOptions = {
+  forceCache?: boolean // force the operation to be applied in memory, regardless of whether documents exist
+}
+
 export type MemoryCacheDB = {
   [collection: string]: {
     // the document, or null if it's been deleted
@@ -30,7 +34,7 @@ export type MemoryCacheDB = {
   }
 }
 
-export default class TransactionCache {
+export class TransactionCache extends DB {
   db: DB
 
   // snapshots between cache transactions, can be incrementally applied
@@ -42,11 +46,16 @@ export default class TransactionCache {
   lock = new AsyncLock()
 
   constructor(db: DB) {
+    super()
     this.db = db
     // The empty first cache state
     this.transactionCaches.push(this.emptyCache())
     // push a dummy identifier for a 0 diff change
     this.queuedTransactions.push(uuid.v4())
+  }
+
+  get schema() {
+    return this.db.schema
   }
 
   async cachedTransaction(
@@ -71,16 +80,22 @@ export default class TransactionCache {
     // the cache transaction db object
     const db = {
       create: async (collection: string, docs: any | any[]) => {
-        promise.then(() => this._create(collection, docs, true))
+        promise.then(() => this._create(collection, docs, { forceCache: true }))
       },
       update: (collection: string, options: UpdateOptions) => {
-        promise.then(() => this._update(collection, options))
+        promise.then(() =>
+          this._update(collection, options, { forceCache: true }),
+        )
       },
       upsert: (collection: string, options: UpsertOptions) => {
-        promise.then(() => this._upsert(collection, options))
+        promise.then(() =>
+          this._upsert(collection, options, { forceCache: true }),
+        )
       },
       delete: (collection: string, options: DeleteManyOptions) => {
-        promise.then(() => this._delete(collection, options))
+        promise.then(() =>
+          this._delete(collection, options, { forceCache: true }),
+        )
       },
       onCommit: (callback: Function) => {
         onCommitCallbacks.push(callback)
@@ -291,13 +306,21 @@ export default class TransactionCache {
     }
   }
 
-  async create(collection: string, docs: any | any[], forceCache = false) {
+  async create(
+    collection: string,
+    docs: any | any[],
+    cacheOptions?: CacheOptions,
+  ) {
     return this.lock.acquire('readwrite', () =>
-      this._create(collection, docs, forceCache),
+      this._create(collection, docs, cacheOptions),
     )
   }
 
-  async _create(collection: string, docs: any | any[], forceCache = false) {
+  private async getDocsForCreation(
+    collection: string,
+    docs: any | any[],
+    cacheOptions: CacheOptions = {},
+  ) {
     const table = this.tableForCollection(collection)
     const validatedDocuments = validateDocuments(table, docs)
     const orClauses = validatedDocuments.map((doc: any) => ({
@@ -322,20 +345,40 @@ export default class TransactionCache {
     if (count !== 0) throw new Error(`Duplicate primary key`)
     // now create docs in memory we need to, e.g. if deleted in memory
     const docsForCreation = [] as any[]
+    const docsForCache = [] as any[]
     for (const doc of validatedDocuments) {
       const identifier = this.documentIdentifier(collection, doc)
       if (
         this.latestCache[collection].docs[identifier] === null ||
-        forceCache
+        cacheOptions.forceCache
       ) {
-        this.latestCache[collection].docs[identifier] = doc
+        docsForCache.push(doc)
       } else {
         docsForCreation.push(doc)
       }
     }
-    // now create docs on disk we need to
+    return { validatedDocuments, docsForCreation, docsForCache }
+  }
+
+  async _create(
+    collection: string,
+    docs: any | any[],
+    cacheOptions: CacheOptions = {},
+  ) {
+    const {
+      validatedDocuments,
+      docsForCache,
+      docsForCreation,
+    } = await this.getDocsForCreation(collection, docs, cacheOptions)
+    // create docs on disk we need to
+    // do this first so we don't mess up the cache if it throws
     if (docsForCreation.length) {
       await this.db.create(collection, docsForCreation)
+    }
+    // create the docs in memory we need to
+    for (const doc of docsForCache) {
+      const identifier = this.documentIdentifier(collection, doc)
+      this.latestCache[collection].docs[identifier] = doc
     }
     // return all docs
     if (validatedDocuments.length === 1) {
@@ -405,13 +448,21 @@ export default class TransactionCache {
     return (await this.findMany(collection, { where })).length
   }
 
-  async update(collection: string, options: UpdateOptions) {
+  async update(
+    collection: string,
+    options: UpdateOptions,
+    cacheOptions?: CacheOptions,
+  ) {
     return this.lock.acquire('readwrite', () =>
-      this._update(collection, options),
+      this._update(collection, options, cacheOptions),
     )
   }
 
-  async _update(collection: string, options: UpdateOptions) {
+  async _update(
+    collection: string,
+    options: UpdateOptions,
+    cacheOptions: CacheOptions = {},
+  ) {
     const docsInCache = this.findInCache(collection, options.where)
     const deleted = this.deletedInCache(collection, options.where)
     const where = this.modifyWhereClause(collection, options.where, [
@@ -421,10 +472,26 @@ export default class TransactionCache {
     // exclude these docs ^ from update
     // TODO: validate unique fields constraints
     // if the update operation succeeds then modify in cache
-    const updated = await this.db.update(collection, {
-      ...options,
-      where, // update using AND operator to exclude certain docs
-    })
+    let updatedCount: number
+    if (cacheOptions.forceCache) {
+      const docs = await this.db.findMany(collection, {
+        where,
+      })
+      updatedCount = docs.length
+      await this._create(
+        collection,
+        docs.map(doc => ({
+          ...doc,
+          ...options.update,
+        })),
+        { forceCache: true },
+      )
+    } else {
+      updatedCount = await this.db.update(collection, {
+        ...options,
+        where, // update using AND operator to exclude certain docs
+      })
+    }
     // now modify in cache
     for (const doc of docsInCache) {
       const identifier = this.documentIdentifier(collection, doc)
@@ -432,26 +499,47 @@ export default class TransactionCache {
         this.latestCache[collection].docs[identifier][key] = options.update[key]
       }
     }
-    return updated + docsInCache.length
+    return updatedCount + docsInCache.length
   }
 
-  async delete(collection: string, options: DeleteManyOptions) {
+  async delete(
+    collection: string,
+    options: DeleteManyOptions,
+    cacheOptions?: CacheOptions,
+  ) {
     return this.lock.acquire('readwrite', () =>
-      this._delete(collection, options),
+      this._delete(collection, options, cacheOptions),
     )
   }
 
-  async _delete(collection: string, options: DeleteManyOptions) {
+  async _delete(
+    collection: string,
+    options: DeleteManyOptions,
+    cacheOptions: CacheOptions = {},
+  ) {
     const docsInCache = this.findInCache(collection, options.where)
     const deleted = this.deletedInCache(collection, options.where)
     const where = this.modifyWhereClause(collection, options.where, [
       ...docsInCache,
       ...deleted,
     ])
-    const deletedCount = await this.db.delete(collection, {
-      ...options,
-      where,
-    })
+    let deletedCount: number
+    if (cacheOptions.forceCache) {
+      const docs = await this.db.findMany(collection, {
+        where,
+      })
+      for (const doc of docs) {
+        const identifier = this.documentIdentifier(collection, doc)
+        this.latestCache[collection].deleted.push(doc)
+        this.latestCache[collection].docs[identifier] = null
+      }
+      deletedCount = docs.length
+    } else {
+      deletedCount = await this.db.delete(collection, {
+        ...options,
+        where,
+      })
+    }
     // now modify the cache
     for (const doc of docsInCache) {
       const identifier = this.documentIdentifier(collection, doc)
@@ -461,19 +549,163 @@ export default class TransactionCache {
     return deletedCount + docsInCache.length
   }
 
-  async upsert(collection: string, options: UpsertOptions) {
+  async upsert(
+    collection: string,
+    options: UpsertOptions,
+    cacheOptions?: CacheOptions,
+  ) {
     return this.lock.acquire('readwrite', () =>
-      this._upsert(collection, options),
+      this._upsert(collection, options, cacheOptions),
     )
   }
 
-  async _upsert(collection: string, options: UpsertOptions) {
-    const updated = await this._update(collection, options)
+  async _upsert(
+    collection: string,
+    options: UpsertOptions,
+    cacheOptions: CacheOptions = {},
+  ) {
+    const updated = await this._update(collection, options, cacheOptions)
     if (updated > 0) {
       return Object.keys(options.update).length === 0 ? 0 : updated
     }
-    const created = await this._create(collection, options.create)
+    const created = await this._create(collection, options.create, cacheOptions)
     return Array.isArray(created) ? created.length : 1
+  }
+
+  async _transaction(operation: (db: TransactionDB) => void) {
+    return this.lock.acquire('readwrite', () => this.transaction(operation))
+  }
+
+  async transaction(operation: (db: TransactionDB) => void | Promise<void>) {
+    const onCommitCallbacks = [] as Function[]
+    const onErrorCallbacks = [] as Function[]
+    const onCompleteCallbacks = [] as Function[]
+    // execute these on a normal TransactionDB object
+    const queuedTransactionOperations = [] as ((db: TransactionDB) => void | Promise<void>)[]
+    const queuedCacheOpertions = [] as (() => void)[]
+    let start!: Function
+    const promise = new Promise((rs) => {
+      start = rs
+    })
+    const db = {} as TransactionDB
+    db.create = (collection: string, docs: any | any[]) => {
+      promise.then(async () => {
+        const { docsForCreation, docsForCache } = await this.getDocsForCreation(
+          collection,
+          docs,
+        )
+        if (docsForCreation.length) {
+          queuedTransactionOperations.push((_db: TransactionDB) =>
+            _db.create(collection, docsForCreation),
+          )
+        }
+        // create the docs in memory we need to
+        if (docsForCache.length) {
+          queuedCacheOpertions.push(() => {
+            for (const doc of docsForCache) {
+              const identifier = this.documentIdentifier(collection, doc)
+              this.latestCache[collection].docs[identifier] = doc
+            }
+          })
+        }
+      })
+    }
+    db.update = (collection: string, options: UpdateOptions) => {
+      const docsInCache = this.findInCache(collection, options.where)
+      const deleted = this.deletedInCache(collection, options.where)
+      const where = this.modifyWhereClause(collection, options.where, [
+        ...docsInCache,
+        ...deleted,
+      ])
+      // queue the disk operation as needed
+      queuedTransactionOperations.push((_db: TransactionDB) =>
+        _db.update(collection, {
+          ...options,
+          where,
+        }),
+      )
+      // queue the memory operation as needed
+      queuedCacheOpertions.push(() => {
+        for (const doc of docsInCache) {
+          const identifier = this.documentIdentifier(collection, doc)
+          for (const key of Object.keys(options.update)) {
+            this.latestCache[collection].docs[identifier][key] =
+              options.update[key]
+          }
+        }
+      })
+    }
+    db.upsert = (collection: string, options: UpsertOptions) => {
+      promise.then(async () => {
+        const count = await this.count(collection, {
+          where: options.where,
+        })
+        if (count > 0) {
+          // performing an update
+          db.update(collection, options)
+        } else {
+          // performing a create
+          db.create(collection, options.create)
+        }
+      })
+    }
+    db.delete = (collection: string, options: DeleteManyOptions) => {
+      const docsInCache = this.findInCache(collection, options.where)
+      const deleted = this.deletedInCache(collection, options.where)
+      const where = this.modifyWhereClause(collection, options.where, [
+        ...docsInCache,
+        ...deleted,
+      ])
+      queuedTransactionOperations.push((_db: TransactionDB) =>
+        _db.delete(collection, {
+          ...options,
+          where,
+        }),
+      )
+      queuedCacheOpertions.push(() => {
+        for (const doc of docsInCache) {
+          const identifier = this.documentIdentifier(collection, doc)
+          this.latestCache[collection].deleted.push(doc)
+          this.latestCache[collection].docs[identifier] = null
+        }
+      })
+    }
+    db.onCommit = (callback: Function) => {
+      onCommitCallbacks.push(callback)
+    }
+    db.onError = (callback: Function) => {
+      onErrorCallbacks.push(callback)
+    }
+    db.onComplete = (callback: Function) => {
+      onCompleteCallbacks.push(callback)
+    }
+    try {
+      // queue the db operations
+      await Promise.resolve(operation(db))
+      start()
+      await promise
+      // if they complete apply the cache operations using the real transaction
+      console.log('applying tx')
+      await this.db.transaction(_db => {
+        for (const queuedOperation of queuedTransactionOperations) {
+          queuedOperation(_db)
+        }
+      })
+      console.log('applying operation')
+      // then apply the cache operations if the transaction succeeds
+      for (const queuedOperation of queuedCacheOpertions) {
+        await Promise.resolve(queuedOperation())
+      }
+      for (const cb of [...onCommitCallbacks, ...onCompleteCallbacks]) {
+        cb()
+      }
+    } catch (err) {
+      console.log('threw', err)
+      for (const cb of [...onErrorCallbacks, ...onCompleteCallbacks]) {
+        cb()
+      }
+      throw err
+    }
   }
 
   async close() {
