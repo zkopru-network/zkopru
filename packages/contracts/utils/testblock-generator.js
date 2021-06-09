@@ -25,6 +25,8 @@ const { TxBuilder, Utxo, ZkTx, ZkAddress } = require("~transaction");
 
 const outputPath = path.join(__dirname, "../test-cases");
 
+process.env.BLOCK_CONFIRMATIONS = "0";
+
 (async () => {
   try {
     if (process.env.DEBUG) attachConsoleLogToPino();

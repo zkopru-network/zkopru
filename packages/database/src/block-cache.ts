@@ -4,7 +4,7 @@ import { DB, UpsertOptions, UpdateOptions } from './types'
 
 // process block in memory, write to DB when confirmed by enough blocks
 
-const BLOCK_CONFIRMATIONS = +(process.env.BLOCK_CONFIRMATIONS || 15)
+const DEFAULT_BLOCK_CONFIRMATIONS = 15
 
 enum OperationType {
   UPSERT,
@@ -32,6 +32,9 @@ export class BlockCache {
   currentBlockNumber = 0
 
   blockHeaderSubscription: any
+  BLOCK_CONFIRMATIONS = +(
+    process.env.BLOCK_CONFIRMATIONS || DEFAULT_BLOCK_CONFIRMATIONS
+  )
 
   constructor(web3: Web3, db: DB) {
     this.web3 = web3
@@ -73,7 +76,10 @@ export class BlockCache {
   async writeChangesIfNeeded() {
     const docsToRemove = [] as any[]
     for (const doc of this.pendingDocs) {
-      if (this.currentBlockNumber - doc.blockNumber <= BLOCK_CONFIRMATIONS) {
+      if (
+        this.currentBlockNumber - doc.blockNumber <
+        this.BLOCK_CONFIRMATIONS
+      ) {
         // eslint-disable-next-line no-continue
         continue
       }
@@ -115,7 +121,7 @@ export class BlockCache {
     if (typeof blockNumber !== 'number')
       throw new Error('Invalid block number provided to BlockCache.upsertCache')
     const currentBlockNumber = await this.blockNumber()
-    if (currentBlockNumber - blockNumber <= BLOCK_CONFIRMATIONS) {
+    if (currentBlockNumber - blockNumber < this.BLOCK_CONFIRMATIONS) {
       // store in memory
       this.pendingDocs.push({
         blockNumber,
@@ -139,7 +145,7 @@ export class BlockCache {
     if (typeof blockNumber !== 'number')
       throw new Error('Invalid block number provided to BlockCache.upsertCache')
     const currentBlockNumber = await this.blockNumber()
-    if (currentBlockNumber - blockNumber <= BLOCK_CONFIRMATIONS) {
+    if (currentBlockNumber - blockNumber < this.BLOCK_CONFIRMATIONS) {
       // store in memory
       this.pendingDocs.push({
         blockNumber,
