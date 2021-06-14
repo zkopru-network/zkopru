@@ -120,7 +120,10 @@ export default class LoadDatabase extends Configurator {
       new L1Contract(context.web3, this.base.address),
     )
     return {
-      context: { ...context, db: database },
+      context: {
+        ...context,
+        db: database,
+      },
       next: Menu.LOAD_COORDINATOR,
     }
   }

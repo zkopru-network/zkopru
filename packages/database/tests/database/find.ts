@@ -94,6 +94,22 @@ export default function(this: { db: DB }) {
     assert.equal(rows[2].id, 'test4')
   })
 
+  test('should find using nin operator', async () => {
+    const table = 'TableThree'
+    for (let x = 0; x < 10; x++) {
+      await this.db.create(table, {
+        id: `test${x}`,
+        optionalField: 'test',
+      })
+    }
+    const rows = await this.db.findMany(table, {
+      where: {
+        id: { nin: ['test0', 'test1', 'test8', 'test9'] },
+      },
+    })
+    assert.equal(rows.length, 6)
+  })
+
   test('should load nested relations', async () => {
     await this.db.create('TableFour', [
       {
@@ -276,6 +292,100 @@ export default function(this: { db: DB }) {
         },
       })
       assert.equal(docs.length, 5)
+    }
+  })
+
+  test('should use AND logic', async () => {
+    const table = 'TableTwo'
+    for (let x = 0; x < 10; x++) {
+      await this.db.create(table, {
+        counterField: x,
+      })
+      await new Promise(r => setTimeout(r, 10))
+    }
+    {
+      const docs = await this.db.findMany(table, {
+        where: {
+          AND: [{ counterField: 0 }, { counterField: 1 }],
+        },
+      })
+      assert.equal(docs.length, 0)
+    }
+    {
+      const docs = await this.db.findMany(table, {
+        where: {
+          AND: [{ counterField: { gte: 5 } }, { counterField: { ne: 6 } }],
+        },
+      })
+      assert.equal(docs.length, 4)
+    }
+    {
+      const docs = await this.db.findMany(table, {
+        where: {
+          AND: [{ counterField: { lte: 5 } }, { counterField: [1, 2, 7, 9] }],
+        },
+      })
+      assert.equal(docs.length, 2)
+    }
+    {
+      const docs = await this.db.findMany(table, {
+        where: {
+          AND: [{ counterField: { ne: 5 } }, { counterField: [5] }],
+        },
+      })
+      assert.equal(docs.length, 0)
+    }
+  })
+
+  test('should use OR and AND logic', async () => {
+    const table = 'TableTwo'
+    for (let x = 0; x < 10; x++) {
+      await this.db.create(table, {
+        counterField: x,
+      })
+      await new Promise(r => setTimeout(r, 10))
+    }
+    {
+      const docs = await this.db.findMany(table, {
+        where: {
+          AND: [{ counterField: { gt: 5 } }, { counterField: [7, 8, 9] }],
+          OR: [{ counterField: { gt: 8 } }, { counterField: 7 }],
+        },
+      })
+      assert.equal(docs.length, 2)
+    }
+  })
+
+  test('should use nested OR and AND logic', async () => {
+    const table = 'TableTwo'
+    for (let x = 0; x < 10; x++) {
+      await this.db.create(table, {
+        counterField: x,
+      })
+    }
+    {
+      const docs = await this.db.findMany(table, {
+        where: {
+          AND: [
+            { AND: [{ counterField: { gt: 2 } }, { counterField: { lt: 8 } }] },
+            {
+              counterField: [1, 4, 6, 9],
+            },
+          ],
+        },
+      })
+      assert.equal(docs.length, 2)
+    }
+    {
+      const docs = await this.db.findMany(table, {
+        where: {
+          AND: [
+            { OR: [{ counterField: { lt: 4 } }, { counterField: { gt: 6 } }] },
+            { counterField: [1, 5, 8] },
+          ],
+        },
+      })
+      assert.equal(docs.length, 2)
     }
   })
 }

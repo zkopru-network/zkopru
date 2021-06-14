@@ -1,6 +1,6 @@
 import { ZkAccount } from '@zkopru/account'
 import { WebsocketProvider, IpcProvider, Account } from 'web3-core'
-import { DB } from '@zkopru/database'
+import { DB, BlockCache } from '@zkopru/database'
 import Web3 from 'web3'
 import { L1Contract } from '../../context/layer1'
 import { L2Chain } from '../../context/layer2'
@@ -16,6 +16,7 @@ type provider = WebsocketProvider | IpcProvider
 export class FullNode extends ZkopruNode {
   constructor({
     db,
+    blockCache,
     l1Contract,
     l2Chain,
     synchronizer,
@@ -24,6 +25,7 @@ export class FullNode extends ZkopruNode {
     blockProcessor,
   }: {
     db: DB
+    blockCache: BlockCache
     l1Contract: L1Contract
     l2Chain: L2Chain
     synchronizer: Synchronizer
@@ -34,6 +36,7 @@ export class FullNode extends ZkopruNode {
   }) {
     super({
       db,
+      blockCache,
       l1Contract,
       l2Chain,
       synchronizer,
@@ -79,17 +82,20 @@ export class FullNode extends ZkopruNode {
       accounts,
     )
     const validator = new FullValidator(l1Contract, l2Chain)
+    const blockCache = new BlockCache(web3, db)
     const blockProcessor = new BlockProcessor({
       db,
+      blockCache,
       validator,
       l2Chain,
       tracker,
     })
     // If the chain needs bootstraping, fetch bootstrap data and apply
-    const synchronizer = new Synchronizer(db, l1Contract)
+    const synchronizer = new Synchronizer(db, l1Contract, blockCache)
     const watchdog = slasher ? new Watchdog(l1Contract, slasher) : undefined
     return new FullNode({
       db,
+      blockCache,
       l1Contract,
       l2Chain,
       synchronizer,

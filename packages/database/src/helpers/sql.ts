@@ -37,7 +37,7 @@ export function whereToSql(table: SchemaTable, doc: any = {}, sqlOnly = false) {
   if (Object.keys(doc).length === 0) return ''
   const sql = Object.keys(doc)
     .map(key => {
-      if (key === 'OR') return
+      if (key === 'OR' || key === 'AND') return
       const rowDef = table.rowsByName[key]
       if (!rowDef)
         throw new Error(`Unable to find row definition for key: "${key}"`)
@@ -66,6 +66,13 @@ export function whereToSql(table: SchemaTable, doc: any = {}, sqlOnly = false) {
           eq: 'IS',
         }
         return Object.keys(val).map(k => {
+          if (k === 'nin') {
+            if (!Array.isArray(val[k]))
+              throw new Error(`Non array value provided for nin operator`)
+            // need to generate a NOT IN query
+            const values = val[k].map((v: any) => parseType(rowDef.type, v))
+            return `"${key}" NOT IN (${values.join(',')})`
+          }
           const operator = val[k] === null ? nullOperatorMap[k] : operatorMap[k]
           if (!operator) throw new Error(`Invalid operator ${k}`)
           const parsed = parseType(rowDef.type, val[k])
@@ -78,14 +85,22 @@ export function whereToSql(table: SchemaTable, doc: any = {}, sqlOnly = false) {
     .flat()
     .filter(i => !!i)
     .join(' AND ')
-  if (Array.isArray(doc.OR)) {
-    const orConditions = doc.OR.map((w: any) =>
-      whereToSql(table, w, true),
-    ).join(' OR ')
-    return ` ${sqlOnly ? '' : 'WHERE'}
-    (${sql || 'true'}) AND (${orConditions})`
-  }
-  return ` ${sqlOnly ? '' : 'WHERE'} ${sql} `
+  const orConditions = Array.isArray(doc.OR)
+    ? doc.OR.map((w: any) => whereToSql(table, w, true)).join(' OR ')
+    : 'true'
+  const andConditions = Array.isArray(doc.AND)
+    ? doc.AND.map((w: any) => whereToSql(table, w, true)).join(' AND ')
+    : 'true'
+  return ` ${sqlOnly ? '' : 'WHERE'} (${sql ||
+    'true'}) AND (${orConditions}) AND (${andConditions})`
+  // if (Array.isArray(doc.OR)) {
+  //   const orConditions = doc.OR.map((w: any) =>
+  //     whereToSql(table, w, true),
+  //   ).join(' OR ')
+  //   return ` ${sqlOnly ? '' : 'WHERE'}
+  //   (${sql || 'true'}) AND (${orConditions})`
+  // }
+  // return ` ${sqlOnly ? '' : 'WHERE'} ${sql} `
 }
 
 export function tableCreationSql(tableData: TableData[]) {

@@ -29,7 +29,11 @@ import {
   depositERC721,
   testMassDeposits,
 } from './cases/4_deposit'
-import { jestExtendToCompareBigNumber, sleep } from '~utils'
+import {
+  jestExtendToCompareBigNumber,
+  sleep,
+  attachConsoleLogToPino,
+} from '~utils'
 import { attachConsoleErrorToPino } from '~utils/logger'
 import {
   waitCoordinatorToProposeANewBlock,
@@ -66,9 +70,9 @@ import {
   testRound3SendZkTxsToCoordinator,
   testRound3NewBlockProposalAndSlashing,
 } from './cases/9_zk_tx_round_3'
-// import { attachConsoleLogToPino } from '~utils'
 
 process.env.DEFAULT_COORDINATOR = 'http://localhost:8888'
+process.env.BLOCK_CONFIRMATIONS = '0'
 
 jestExtendToCompareBigNumber(expect)
 
@@ -77,6 +81,7 @@ describe('testnet', () => {
   let context!: Context
   const ctx = () => context
   beforeAll(async () => {
+    if (process.env.DEBUG) attachConsoleLogToPino()
     attachConsoleErrorToPino()
     context = await initContext()
   }, 90000)

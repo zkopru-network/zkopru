@@ -97,7 +97,7 @@ jobs:
           name: Generate Block Data
           command: |
             cd packages/contracts
-            yarn testblock:generate --scope=@zkopru/contracts
+            DEBUG=1 yarn testblock:generate --scope=@zkopru/contracts
       - run:
           name: Contract Tests
           command: yarn test --scope=@zkopru/contracts
@@ -209,4 +209,4 @@ jobs:
       - run:
           name: Integration Tests
           no_output_timeout: 45m
-          command: yarn test --scope=@zkopru/integration-test
+          command: DEBUG=1 yarn test --scope=@zkopru/integration-test

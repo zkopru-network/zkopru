@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { ZkAccount } from '@zkopru/account'
-import { DB } from '@zkopru/database'
+import { DB, BlockCache } from '@zkopru/database'
 import { Grove, poseidonHasher, keccakHasher } from '@zkopru/tree'
 import { logger } from '@zkopru/utils'
 import { L1Contract } from '../context/layer1'
@@ -15,6 +15,8 @@ export class ZkopruNode {
   running: boolean
 
   db: DB
+
+  blockCache: BlockCache
 
   tracker: Tracker
 
@@ -37,6 +39,7 @@ export class ZkopruNode {
 
   constructor({
     db,
+    blockCache,
     l1Contract,
     l2Chain,
     synchronizer,
@@ -46,6 +49,7 @@ export class ZkopruNode {
     bootstrapHelper,
   }: {
     db: DB
+    blockCache: BlockCache
     l1Contract: L1Contract
     l2Chain: L2Chain
     synchronizer: Synchronizer
@@ -55,6 +59,7 @@ export class ZkopruNode {
     bootstrapHelper?: BootstrapHelper
   }) {
     this.db = db
+    this.blockCache = blockCache
     this.tracker = tracker
     this.context = {
       layer1: l1Contract,
