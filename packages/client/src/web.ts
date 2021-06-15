@@ -1,4 +1,5 @@
 import { SomeDBConnector, IndexedDBConnector } from '@zkopru/database/dist/web'
+import { ZkAddress } from '@zkopru/transaction'
 import ZkopruNode from './zkopru-node'
 import ZkopruWallet from './zkopru-wallet'
 import RpcClient from './rpc-client'
@@ -10,4 +11,5 @@ export default {
     return new ZkopruNode(config, connector || IndexedDBConnector)
   },
   Wallet: ZkopruWallet,
+  ZkAddress,
 }
