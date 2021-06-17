@@ -48,37 +48,43 @@ export default class ZkopruNode {
     return this._db as DB
   }
 
+  async initNode(...args: any[]) {
+    if (this.node) return
+    const provider = new Web3.providers.WebsocketProvider(
+      this.config.websocket as string,
+      {
+        reconnect: {
+          delay: 2000,
+          auto: true,
+        },
+        clientConfig: {
+          keepalive: true,
+          keepaliveInterval: 30000,
+        },
+      },
+    )
+    // eslint-disable-next-line no-inner-declarations
+    async function waitConnection(_provider: any) {
+      return new Promise<void>(res => {
+        if (_provider.connected) return res()
+        _provider.on('connect', res)
+      })
+    }
+    provider.connect()
+    await waitConnection(provider)
+    await new Promise(r => setTimeout(r, 1000))
+    this.node = await FullNode.new({
+      address: this.config.address as string,
+      provider,
+      db: await this.db(...args),
+    })
+  }
+
   // Accept database configuration here
   async start(...args: any[]) {
+    await this.initNode(...args)
     if (!this.node) {
-      const provider = new Web3.providers.WebsocketProvider(
-        this.config.websocket as string,
-        {
-          reconnect: {
-            delay: 2000,
-            auto: true,
-          },
-          clientConfig: {
-            keepalive: true,
-            keepaliveInterval: 30000,
-          },
-        },
-      )
-      // eslint-disable-next-line no-inner-declarations
-      async function waitConnection(_provider: any) {
-        return new Promise<void>(res => {
-          if (_provider.connected) return res()
-          _provider.on('connect', res)
-        })
-      }
-      provider.connect()
-      await waitConnection(provider)
-      await new Promise(r => setTimeout(r, 1000))
-      this.node = await FullNode.new({
-        address: this.config.address as string,
-        provider,
-        db: await this.db(...args),
-      })
+      throw new Error('Node is not initialized')
     }
     this.node.start()
   }
