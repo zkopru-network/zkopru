@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { ZkAccount } from '@zkopru/account'
-import { DB, BlockCache } from '@zkopru/database'
+import { DB, BlockCache, ERC20Info } from '@zkopru/database'
 import { Grove, poseidonHasher, keccakHasher } from '@zkopru/tree'
 import { logger } from '@zkopru/utils'
+import { Layer1 } from '@zkopru/contracts'
 import { L1Contract } from '../context/layer1'
 import { L2Chain } from '../context/layer2'
 import { BootstrapHelper } from './bootstrap'
@@ -105,6 +106,43 @@ export class ZkopruNode {
     } else {
       logger.info('already stopped')
     }
+  }
+
+  async loadERC20Info(): Promise<ERC20Info[]> {
+    const registry = await this.layer2.getTokenRegistry()
+    const existingInfo = await this.db.findMany('ERC20Info', {
+      where: {
+        address: registry.erc20s.map(({ val }) => val),
+      },
+    })
+    for (const token of registry.erc20s) {
+      const address = token.val
+      // eslint-disable-next-line no-continue
+      if (existingInfo.indexOf(address) !== -1) continue
+      // otherwise load the token info
+      const contract = Layer1.getERC20(this.layer1.web3, address)
+      const [symbol, decimals] = await Promise.all([
+        contract.methods.symbol().call(),
+        contract.methods.decimals().call(),
+      ])
+      await this.db.upsert('ERC20Info', {
+        where: { address },
+        create: {
+          address,
+          symbol,
+          decimals: +decimals,
+        },
+        update: {
+          symbol,
+          decimals: +decimals,
+        },
+      })
+    }
+    return this.db.findMany('ERC20Info', {
+      where: {
+        address: registry.erc20s.map(({ val }) => val),
+      },
+    })
   }
 
   static async initLayer2(

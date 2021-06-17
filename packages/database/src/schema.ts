@@ -357,7 +357,7 @@ export default [
       ['isERC20', 'Bool'],
       ['isERC721', 'Bool'],
       ['identifier', 'Int'],
-      ['blockNumber', 'Int', { index: true, }],
+      ['blockNumber', 'Int', { index: true }],
     ],
   },
   {
@@ -367,6 +367,6 @@ export default [
       ['address', 'String'],
       ['symbol', 'String'],
       ['decimals', 'Int'],
-    ]
-  }
+    ],
+  },
 ] as TableData[]
