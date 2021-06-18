@@ -2,6 +2,7 @@
 import Web3 from 'web3'
 import { SomeDBConnector, DB, schema } from '@zkopru/database'
 import { FullNode } from '@zkopru/core'
+import { Layer1 } from '@zkopru/contracts'
 import { NodeConfig } from './types'
 
 const DEFAULT = {
@@ -117,5 +118,17 @@ export default class ZkopruNode {
       _db.delete('LightTree', { where: {} })
       _db.delete('TokenRegistry', { where: {} })
     })
+  }
+
+  async registerERC20Tx(address: string) {
+    if (!this.node) throw new Error('Zkopru node is not initialized')
+    return this.node.layer1.coordinator.methods
+      .registerERC20(address)
+      .encodeABI()
+  }
+
+  async getERC20Contract(address: string) {
+    if (!this.node) throw new Error('Zkopru node is not initialized')
+    return Layer1.getERC20(this.node.layer1.web3, address)
   }
 }
