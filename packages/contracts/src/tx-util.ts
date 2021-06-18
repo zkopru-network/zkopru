@@ -50,6 +50,7 @@ export class TxUtil {
         to: address,
         value,
         data: tx.encodeABI(),
+        nonce: option?.nonce ? +option.nonce.toString() : undefined,
       },
       account.privateKey,
     )
