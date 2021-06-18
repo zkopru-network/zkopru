@@ -73,7 +73,8 @@ export class TxUtil {
       )
       return web3.eth.sendSignedTransaction(signedTx)
     }
-    let gasPrice = option.gasPrice || (await web3.eth.getGasPrice())
+    let gasPrice =
+      option.gasPrice || Math.floor(0.8 * +(await web3.eth.getGasPrice()))
     const nonce =
       option.nonce ||
       (await web3.eth.getTransactionCount(account.address, 'pending'))
@@ -89,6 +90,8 @@ export class TxUtil {
         }
         return receipt
       } catch (err) {
+        logger.info(err)
+        logger.info('Rebroadcasting with higher gas price')
         // bump the gas price and go again
         gasPrice = Math.ceil(+gasPrice + +gasPrice * 0.15)
       }
