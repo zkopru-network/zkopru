@@ -73,8 +73,7 @@ export class TxUtil {
       )
       return web3.eth.sendSignedTransaction(signedTx)
     }
-    let gasPrice =
-      option.gasPrice || Math.floor(0.8 * +(await web3.eth.getGasPrice()))
+    let gasPrice = option.gasPrice || (await web3.eth.getGasPrice())
     const nonce =
       option.nonce ||
       (await web3.eth.getTransactionCount(account.address, 'pending'))
