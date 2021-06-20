@@ -45,7 +45,7 @@ export default class ZkopruNode {
   }
 
   private async db(...args: any[]) {
-    await this.initDB(schema, ...args)
+    await this.initDB(...args)
     return this._db as DB
   }
 
