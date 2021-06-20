@@ -147,10 +147,6 @@ export class Coordinator extends EventEmitter {
         : undefined,
     )
     this.context.node.start()
-    await Promise.all([
-      this.context.auctionMonitor.start(),
-      this.startSubscribeGasPrice(),
-    ])
     this.api.start()
     this.taskRunners.blockFinalize.start({
       task: this.finalizeTask.bind(this),
@@ -160,6 +156,10 @@ export class Coordinator extends EventEmitter {
       task: this.commitMassDepositTask.bind(this),
       interval: 10000,
     })
+    await Promise.all([
+      this.context.auctionMonitor.start(),
+      this.startSubscribeGasPrice(),
+    ])
     this.emit('start')
   }
 
