@@ -57,7 +57,7 @@ export class Coordinator extends EventEmitter {
   taskRunners: {
     blockPropose: Worker<void>
     blockFinalize: Worker<void>
-    massDepositCommit: Worker<TransactionReceipt | undefined>
+    // massDepositCommit: Worker<TransactionReceipt | undefined>
   }
 
   proposeLock: AsyncLock
@@ -86,7 +86,7 @@ export class Coordinator extends EventEmitter {
     this.taskRunners = {
       blockPropose: new Worker(),
       blockFinalize: new Worker(),
-      massDepositCommit: new Worker(),
+      // massDepositCommit: new Worker(),
     }
     this.middlewares = {
       generator: middlewares?.generator || new BlockGenerator(this.context),
@@ -152,10 +152,10 @@ export class Coordinator extends EventEmitter {
       task: this.finalizeTask.bind(this),
       interval: 10000,
     })
-    this.taskRunners.massDepositCommit.start({
-      task: this.commitMassDepositTask.bind(this),
-      interval: 10000,
-    })
+    // this.taskRunners.massDepositCommit.start({
+    //   task: this.commitMassDepositTask.bind(this),
+    //   interval: 10000,
+    // })
     await Promise.all([
       this.context.auctionMonitor.start(),
       this.startSubscribeGasPrice(),
@@ -167,7 +167,7 @@ export class Coordinator extends EventEmitter {
     await Promise.all([
       this.taskRunners.blockPropose.close(),
       this.taskRunners.blockFinalize.close(),
-      this.taskRunners.massDepositCommit.close(),
+      // this.taskRunners.massDepositCommit.close(),
       this.context.node.stop(),
       this.context.auctionMonitor.stop(),
       this.api.stop(),
