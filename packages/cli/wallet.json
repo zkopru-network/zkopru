@@ -5,7 +5,7 @@
   "websocket": "ws://192.168.1.199:9546",
   "networkId": 5,
   "chainId": 5,
-  "address": "0x877A0Efc0a70072174d5BD1eD7d872f0a951FC5b",
+  "address": "0xef300FbCD11DcA2bc764231a9555EdcE41fD98b1",
   "db": "db",
   "seedKeystore": {
     "ciphertext": "f34047785c14c5b1b87ce540c1bbd0bdb748f7ddf95fdf95d2d1e462de1dde98cf7815e280084111567fc3aac24225aa",
