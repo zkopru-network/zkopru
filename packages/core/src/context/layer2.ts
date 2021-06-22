@@ -178,7 +178,7 @@ export class L2Chain {
   async getDeposits(...massDeposits: MassDeposit[]): Promise<DepositSql[]> {
     const totalDeposits: DepositSql[] = []
     for (const massDeposit of massDeposits) {
-      const commits = await this.db.findMany('MassDeposit', {
+      const nonIncludedMassDepositCommit = await this.db.findOne('MassDeposit', {
         where: {
           merged: massDeposit.merged.toString(),
           fee: massDeposit.fee.toString(),
@@ -186,10 +186,8 @@ export class L2Chain {
         orderBy: {
           blockNumber: 'asc',
         },
-        limit: 1,
       })
       // logger.info()
-      const nonIncludedMassDepositCommit = commits.pop()
       if (!nonIncludedMassDepositCommit) {
         logger.info(massDeposit.merged.toString())
         logger.info(`fee ${massDeposit.fee.toString()}`)
