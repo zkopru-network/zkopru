@@ -30,6 +30,7 @@ import { BlockGenerator } from './middlewares/default/block-generator'
 import { BlockProposer } from './middlewares/default/block-proposer'
 import { CoordinatorApi } from './api'
 import { AuctionMonitor } from './auction-monitor'
+import { serializeBody, serializeHeader } from '@zkopru/core'
 
 export interface CoordinatorInterface {
   start: () => void
@@ -57,7 +58,7 @@ export class Coordinator extends EventEmitter {
   taskRunners: {
     blockPropose: Worker<void>
     blockFinalize: Worker<void>
-    // massDepositCommit: Worker<TransactionReceipt | undefined>
+    massDepositCommit: Worker<TransactionReceipt | undefined>
   }
 
   proposeLock: AsyncLock
@@ -86,7 +87,7 @@ export class Coordinator extends EventEmitter {
     this.taskRunners = {
       blockPropose: new Worker(),
       blockFinalize: new Worker(),
-      // massDepositCommit: new Worker(),
+      massDepositCommit: new Worker(),
     }
     this.middlewares = {
       generator: middlewares?.generator || new BlockGenerator(this.context),
@@ -152,10 +153,10 @@ export class Coordinator extends EventEmitter {
       task: this.finalizeTask.bind(this),
       interval: 10000,
     })
-    // this.taskRunners.massDepositCommit.start({
-    //   task: this.commitMassDepositTask.bind(this),
-    //   interval: 10000,
-    // })
+    this.taskRunners.massDepositCommit.start({
+      task: this.commitMassDepositsIfNeeded.bind(this),
+      interval: 10000,
+    })
     await Promise.all([
       this.context.auctionMonitor.start(),
       this.startSubscribeGasPrice(),
@@ -167,7 +168,7 @@ export class Coordinator extends EventEmitter {
     await Promise.all([
       this.taskRunners.blockPropose.close(),
       this.taskRunners.blockFinalize.close(),
-      // this.taskRunners.massDepositCommit.close(),
+      this.taskRunners.massDepositCommit.close(),
       this.context.node.stop(),
       this.context.auctionMonitor.stop(),
       this.api.stop(),
@@ -340,7 +341,34 @@ export class Coordinator extends EventEmitter {
     }
   }
 
-  async commitMassDepositTask(): Promise<TransactionReceipt | undefined> {
+  async commitMassDepositsIfNeeded(): Promise<any> {
+    // if pending deposit fee + pending mass deposit fee + pending tx fee > block proposal fee
+    // then commit the pending deposits to prepare to propose a block
+    if (!this.context.gasPrice) {
+      logger.info('Skipping deposit commit, gas price is not synced')
+      return
+    }
+    const stagedDeposits = await this.layer1()
+      .upstream.methods.stagedDeposits()
+      .call()
+    if (+stagedDeposits.fee === 0) return
+    const block = await this.middlewares.generator.genBlock()
+    const bytes = Buffer.concat([
+      serializeHeader(block.header),
+      serializeBody(block.body),
+    ])
+    const expectedGas = await this.layer1().coordinator.methods.propose(`0x${bytes.toString('hex')}`).estimateGas({
+      from: this.context.account.address,
+    })
+    const expectedCost = this.context.gasPrice.muln(expectedGas)
+    if (expectedCost.lte(block.header.fee.toBN().add(new BN(stagedDeposits.fee)))) {
+      // pending deposits will be enough for a new block, so commit
+      const tx = this.layer1().coordinator.methods.commitMassDeposit()
+      return this.layer1().sendTx(tx, this.context.account)
+    }
+  }
+
+  async commitMassDeposits(): Promise<TransactionReceipt | undefined> {
     const stagedDeposits = await this.layer1()
       .upstream.methods.stagedDeposits()
       .call()

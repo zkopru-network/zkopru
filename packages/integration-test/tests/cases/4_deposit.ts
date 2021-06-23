@@ -74,7 +74,7 @@ export const depositERC721 = (ctx: CtxProvider) => async () => {
 
 export const testMassDeposits = (ctx: CtxProvider) => async () => {
   const { coordinator } = ctx()
-  await coordinator.commitMassDepositTask()
+  await coordinator.commitMassDeposits()
   await sleep(1000)
   const pendingMassDeposits = await coordinator
     .layer2()
