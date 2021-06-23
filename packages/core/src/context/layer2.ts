@@ -178,15 +178,18 @@ export class L2Chain {
   async getDeposits(...massDeposits: MassDeposit[]): Promise<DepositSql[]> {
     const totalDeposits: DepositSql[] = []
     for (const massDeposit of massDeposits) {
-      const nonIncludedMassDepositCommit = await this.db.findOne('MassDeposit', {
-        where: {
-          merged: massDeposit.merged.toString(),
-          fee: massDeposit.fee.toString(),
+      const nonIncludedMassDepositCommit = await this.db.findOne(
+        'MassDeposit',
+        {
+          where: {
+            merged: massDeposit.merged.toString(),
+            fee: massDeposit.fee.toString(),
+          },
+          orderBy: {
+            blockNumber: 'asc',
+          },
         },
-        orderBy: {
-          blockNumber: 'asc',
-        },
-      })
+      )
       // logger.info()
       if (!nonIncludedMassDepositCommit) {
         logger.info(massDeposit.merged.toString())
@@ -231,6 +234,9 @@ export class L2Chain {
         return a.transactionIndex - b.transactionIndex
       }
       // TODO HERE!!
+      if (a.logIndex === b.logIndex) {
+        throw new Error('Deposits must be ordered')
+      }
       return a.logIndex - b.logIndex
     })
     leaves.push(...pendingDeposits.map(deposit => Fp.from(deposit.note)))
