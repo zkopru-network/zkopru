@@ -1,5 +1,5 @@
 export const DEFAULT = {
-  address: '0xef300FbCD11DcA2bc764231a9555EdcE41fD98b1',
+  address: '0xAbf06053C7814D7c62bcF387005c2fDDA8003f52',
   bootstrap: true,
   websocket: 'ws://goerli.zkopru.network:8546',
   maxBytes: 131072,
