@@ -12,6 +12,8 @@ import {
   serializeFinalization,
   L1Contract,
   L2Chain,
+  serializeBody,
+  serializeHeader,
 } from '@zkopru/core'
 import { Account, TransactionReceipt } from 'web3-core'
 import { Subscription } from 'web3-core-subscriptions'
@@ -30,7 +32,6 @@ import { BlockGenerator } from './middlewares/default/block-generator'
 import { BlockProposer } from './middlewares/default/block-proposer'
 import { CoordinatorApi } from './api'
 import { AuctionMonitor } from './auction-monitor'
-import { serializeBody, serializeHeader } from '@zkopru/core'
 
 export interface CoordinatorInterface {
   start: () => void
@@ -362,11 +363,15 @@ export class Coordinator extends EventEmitter {
       serializeHeader(block.header),
       serializeBody(block.body),
     ])
-    const expectedGas = await this.layer1().coordinator.methods.propose(`0x${bytes.toString('hex')}`).estimateGas({
-      from: this.context.account.address,
-    })
+    const expectedGas = await this.layer1()
+      .coordinator.methods.propose(`0x${bytes.toString('hex')}`)
+      .estimateGas({
+        from: this.context.account.address,
+      })
     const expectedCost = this.context.gasPrice.muln(expectedGas)
-    if (expectedCost.lte(block.header.fee.toBN().add(new BN(stagedDeposits.fee)))) {
+    if (
+      expectedCost.lte(block.header.fee.toBN().add(new BN(stagedDeposits.fee)))
+    ) {
       // pending deposits will be enough for a new block, so commit
       const tx = this.layer1().coordinator.methods.commitMassDeposit()
       return this.layer1().sendTx(tx, this.context.account)
