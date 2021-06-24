@@ -43,6 +43,13 @@ contract Coordinatable is Storage {
         stake(msg.sender);
     }
 
+    /**
+     * @dev Getter for determining if an address is staked for the rollup.
+     **/
+    function isStaked(address coordinator) public returns (bool) {
+        return Storage.chain.proposers[coordinator].stake >= MINIMUM_STAKE;
+    }
+
     function stake(address coordinator) public payable {
         require(
             coordinator != address(0),

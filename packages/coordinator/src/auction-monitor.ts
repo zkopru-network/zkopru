@@ -258,6 +258,13 @@ export class AuctionMonitor {
   async bidIfNeeded() {
     if (this.bidLock.isBusy('bidIfNeeded')) return
     await this.bidLock.acquire('bidIfNeeded', async () => {
+      const staked = await this.node.layer1.coordinator.methods
+        .isStaked(this.account.address)
+        .call()
+      if (!staked) {
+        logger.info('Skipping auction bid, not staked')
+        return
+      }
       logger.info('Examining auction state')
       const auction = this.auction()
       // TODO: calculate these locally

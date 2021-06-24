@@ -118,6 +118,11 @@ export interface Coordinatable extends BaseContract {
      */
     register(): PayableTransactionObject<void>
 
+    /**
+     * Getter for determining if an address is staked for the rollup.*
+     */
+    isStaked(coordinator: string): NonPayableTransactionObject<boolean>
+
     stake(coordinator: string): PayableTransactionObject<void>
 
     /**

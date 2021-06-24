@@ -12,6 +12,8 @@ interface ICoordinatable {
 
     function deregister() external;
 
+    function isStaked(address coordinator) external returns (bool);
+
     function stake(address coordinator) external payable;
 
     function propose(bytes calldata blockData) external;

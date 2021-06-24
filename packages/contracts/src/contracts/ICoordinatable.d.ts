@@ -60,6 +60,8 @@ export interface ICoordinatable extends BaseContract {
 
     deregister(): NonPayableTransactionObject<void>
 
+    isStaked(coordinator: string): NonPayableTransactionObject<boolean>
+
     stake(coordinator: string): PayableTransactionObject<void>
 
     propose(blockData: string | number[]): NonPayableTransactionObject<void>

@@ -289,10 +289,7 @@ export class Coordinator extends EventEmitter {
         )
         return
       }
-      const isProposable = await this.layer1()
-        .upstream.methods.isProposable(this.context.account.address)
-        .call()
-      if (isProposable) {
+      if (this.context.auctionMonitor.isProposable) {
         await this.proposeBlock()
       } else {
         await this.forwardTxs()
@@ -344,8 +341,16 @@ export class Coordinator extends EventEmitter {
   async commitMassDepositsIfNeeded(): Promise<any> {
     // if pending deposit fee + pending mass deposit fee + pending tx fee > block proposal fee
     // then commit the pending deposits to prepare to propose a block
+    if (!this.context.auctionMonitor.isProposable) {
+      logger.info('Skipping mass deposit commit, not round owner')
+      return
+    }
     if (!this.context.gasPrice) {
       logger.info('Skipping deposit commit, gas price is not synced')
+      return
+    }
+    if (!this.context.node.synchronizer.isSynced()) {
+      logger.info('Skipping deposit commit, chain is not synced')
       return
     }
     const stagedDeposits = await this.layer1()
@@ -384,6 +389,14 @@ export class Coordinator extends EventEmitter {
   }
 
   private async finalizeTask() {
+    if (!this.context.auctionMonitor.isProposable) {
+      logger.info('Skipping block finalization, not round owner')
+      return
+    }
+    if (!this.context.node.synchronizer.isSynced()) {
+      logger.info('Skipping finalization, chain is not synced')
+      return
+    }
     const finalization = await this.genFinalization()
     if (!finalization) return
     logger.info('finalization')

@@ -93,6 +93,13 @@ export const ICoordinatableABI = [
   },
   {
     inputs: [{ internalType: 'address', name: 'coordinator', type: 'address' }],
+    name: 'isStaked',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'coordinator', type: 'address' }],
     name: 'stake',
     outputs: [],
     stateMutability: 'payable',
