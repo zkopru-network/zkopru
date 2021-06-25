@@ -53,6 +53,10 @@ export type OwnershipTransferred = ContractEventLog<{
   0: string
   1: string
 }>
+export type StakeChanged = ContractEventLog<{
+  coordinator: string
+  0: string
+}>
 
 export interface Coordinatable extends BaseContract {
   constructor(
@@ -117,11 +121,6 @@ export interface Coordinatable extends BaseContract {
      * This function will be updated as the governance of Zkopru's been updated.         Currently Coordinator calls this function for the proof of stake.         Coordinator should pay more than MINIMUM_STAKE. See 'Configurated.sol'
      */
     register(): PayableTransactionObject<void>
-
-    /**
-     * Getter for determining if an address is staked for the rollup.*
-     */
-    isStaked(coordinator: string): NonPayableTransactionObject<boolean>
 
     stake(coordinator: string): PayableTransactionObject<void>
 
@@ -199,6 +198,12 @@ export interface Coordinatable extends BaseContract {
       cb?: Callback<OwnershipTransferred>,
     ): EventEmitter
 
+    StakeChanged(cb?: Callback<StakeChanged>): EventEmitter
+    StakeChanged(
+      options?: EventOptions,
+      cb?: Callback<StakeChanged>,
+    ): EventEmitter
+
     allEvents(options?: EventOptions, cb?: Callback<EventLog>): EventEmitter
   }
 
@@ -230,5 +235,12 @@ export interface Coordinatable extends BaseContract {
     event: 'OwnershipTransferred',
     options: EventOptions,
     cb: Callback<OwnershipTransferred>,
+  ): void
+
+  once(event: 'StakeChanged', cb: Callback<StakeChanged>): void
+  once(
+    event: 'StakeChanged',
+    options: EventOptions,
+    cb: Callback<StakeChanged>,
   ): void
 }

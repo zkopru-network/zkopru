@@ -319,7 +319,7 @@ export class Coordinator extends EventEmitter {
 
   private async forwardTxs() {
     const { auctionMonitor } = this.context
-    logger.info(`Skipping block proposal: Not current round owner`)
+    logger.info(`Skipping block proposal: Not proposable`)
     // get pending tx and forward to active proposer
     const pendingTx = await this.context.txPool.pickTxs(Infinity, new BN('1'))
     if (!pendingTx?.length) return
@@ -343,7 +343,7 @@ export class Coordinator extends EventEmitter {
     // if pending deposit fee + pending mass deposit fee + pending tx fee > block proposal fee
     // then commit the pending deposits to prepare to propose a block
     if (!this.context.auctionMonitor.isProposable) {
-      logger.info('Skipping mass deposit commit, not round owner')
+      logger.info('Skipping mass deposit commit, cannot propose')
       return
     }
     if (!this.context.gasPrice) {

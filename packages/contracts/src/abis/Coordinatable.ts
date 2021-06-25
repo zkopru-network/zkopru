@@ -97,6 +97,19 @@ export const CoordinatableABI = [
     type: 'event',
   },
   {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'coordinator',
+        type: 'address',
+      },
+    ],
+    name: 'StakeChanged',
+    type: 'event',
+  },
+  {
     inputs: [],
     name: 'CHALLENGE_PERIOD',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
@@ -248,13 +261,6 @@ export const CoordinatableABI = [
     name: 'register',
     outputs: [],
     stateMutability: 'payable',
-    type: 'function',
-  },
-  {
-    inputs: [{ internalType: 'address', name: 'coordinator', type: 'address' }],
-    name: 'isStaked',
-    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
-    stateMutability: 'nonpayable',
     type: 'function',
   },
   {

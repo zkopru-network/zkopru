@@ -55,7 +55,6 @@ contract Proxy is Storage {
     function _connectCoordinatable(address addr) internal {
         _connect(addr, ICoordinatable(0).register.selector);
         _connect(addr, ICoordinatable(0).stake.selector);
-        _connect(addr, ICoordinatable(0).isStaked.selector);
         _connect(addr, ICoordinatable(0).deregister.selector);
         _connect(addr, ICoordinatable(0).propose.selector);
         _connect(addr, ICoordinatable(0).finalize.selector);

@@ -47,6 +47,10 @@ export type NewProposal = ContractEventLog<{
   0: string
   1: string
 }>
+export type StakeChanged = ContractEventLog<{
+  coordinator: string
+  0: string
+}>
 
 export interface ICoordinatable extends BaseContract {
   constructor(
@@ -59,8 +63,6 @@ export interface ICoordinatable extends BaseContract {
     register(): PayableTransactionObject<void>
 
     deregister(): NonPayableTransactionObject<void>
-
-    isStaked(coordinator: string): NonPayableTransactionObject<boolean>
 
     stake(coordinator: string): PayableTransactionObject<void>
 
@@ -102,6 +104,12 @@ export interface ICoordinatable extends BaseContract {
       cb?: Callback<NewProposal>,
     ): EventEmitter
 
+    StakeChanged(cb?: Callback<StakeChanged>): EventEmitter
+    StakeChanged(
+      options?: EventOptions,
+      cb?: Callback<StakeChanged>,
+    ): EventEmitter
+
     allEvents(options?: EventOptions, cb?: Callback<EventLog>): EventEmitter
   }
 
@@ -126,5 +134,12 @@ export interface ICoordinatable extends BaseContract {
     event: 'NewProposal',
     options: EventOptions,
     cb: Callback<NewProposal>,
+  ): void
+
+  once(event: 'StakeChanged', cb: Callback<StakeChanged>): void
+  once(
+    event: 'StakeChanged',
+    options: EventOptions,
+    cb: Callback<StakeChanged>,
   ): void
 }

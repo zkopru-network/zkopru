@@ -7,12 +7,11 @@ interface ICoordinatable {
     event MassDepositCommit(uint256 index, bytes32 merged, uint256 fee);
     event NewErc20(address tokenAddr);
     event NewErc721(address tokenAddr);
+    event StakeChanged(address indexed coordinator);
 
     function register() external payable;
 
     function deregister() external;
-
-    function isStaked(address coordinator) external returns (bool);
 
     function stake(address coordinator) external payable;
 

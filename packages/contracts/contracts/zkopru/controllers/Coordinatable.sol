@@ -33,6 +33,7 @@ contract Coordinatable is Storage {
     event MassDepositCommit(uint256 index, bytes32 merged, uint256 fee);
     event NewErc20(address tokenAddr);
     event NewErc721(address tokenAddr);
+    event StakeChanged(address indexed coordinator);
 
     /**
      * @notice This function will be updated as the governance of Zkopru's been updated.
@@ -41,13 +42,6 @@ contract Coordinatable is Storage {
      */
     function register() public payable {
         stake(msg.sender);
-    }
-
-    /**
-     * @dev Getter for determining if an address is staked for the rollup.
-     **/
-    function isStaked(address coordinator) public returns (bool) {
-        return Storage.chain.proposers[coordinator].stake >= MINIMUM_STAKE;
     }
 
     function stake(address coordinator) public payable {
@@ -61,6 +55,7 @@ contract Coordinatable is Storage {
         );
         Proposer storage proposer = Storage.chain.proposers[coordinator];
         proposer.stake += msg.value;
+        emit StakeChanged(coordinator);
     }
 
     /**
@@ -77,6 +72,7 @@ contract Coordinatable is Storage {
         delete Storage.chain.proposers[proposerAddr];
         // Withdraw staked amount and reward
         payable(proposerAddr).transfer(proposer.stake.add(proposer.reward));
+        emit StakeChanged(msg.sender);
     }
 
     /**
