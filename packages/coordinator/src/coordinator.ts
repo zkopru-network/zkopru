@@ -14,6 +14,7 @@ import {
   L2Chain,
   serializeBody,
   serializeHeader,
+  MAX_MASS_DEPOSIT_COMMIT_GAS,
 } from '@zkopru/core'
 import { Account, TransactionReceipt } from 'web3-core'
 import { Subscription } from 'web3-core-subscriptions'
@@ -363,18 +364,21 @@ export class Coordinator extends EventEmitter {
       serializeHeader(block.header),
       serializeBody(block.body),
     ])
-    const expectedGas = await this.layer1()
-      .coordinator.methods.propose(`0x${bytes.toString('hex')}`)
-      .estimateGas({
-        from: this.context.account.address,
-      })
+    const expectedGas =
+      (await this.layer1()
+        .coordinator.methods.propose(`0x${bytes.toString('hex')}`)
+        .estimateGas({
+          from: this.context.account.address,
+        })) + MAX_MASS_DEPOSIT_COMMIT_GAS
     const expectedCost = this.context.gasPrice.muln(expectedGas)
     if (
       expectedCost.lte(block.header.fee.toBN().add(new BN(stagedDeposits.fee)))
     ) {
       // pending deposits will be enough for a new block, so commit
       const tx = this.layer1().coordinator.methods.commitMassDeposit()
-      return this.layer1().sendTx(tx, this.context.account)
+      return this.layer1().sendTx(tx, this.context.account, {
+        gas: MAX_MASS_DEPOSIT_COMMIT_GAS,
+      })
     }
   }
 
@@ -388,16 +392,14 @@ export class Coordinator extends EventEmitter {
         .gtn(0)
     ) {
       const tx = this.layer1().coordinator.methods.commitMassDeposit()
-      return this.layer1().sendTx(tx, this.context.account)
+      return this.layer1().sendTx(tx, this.context.account, {
+        gas: MAX_MASS_DEPOSIT_COMMIT_GAS,
+      })
     }
     return undefined
   }
 
   private async finalizeTask() {
-    if (!this.context.auctionMonitor.isProposable) {
-      logger.info('Skipping block finalization, not round owner')
-      return
-    }
     if (!this.context.node.synchronizer.isSynced()) {
       logger.info('Skipping finalization, chain is not synced')
       return

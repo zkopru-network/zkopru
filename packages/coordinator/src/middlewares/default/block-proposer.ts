@@ -1,5 +1,10 @@
 /* eslint-disable no-underscore-dangle */
-import { Block, serializeBody, serializeHeader } from '@zkopru/core'
+import {
+  Block,
+  serializeBody,
+  serializeHeader,
+  MAX_MASS_DEPOSIT_COMMIT_GAS,
+} from '@zkopru/core'
 import { TransactionReceipt } from 'web3-core'
 import { logger } from '@zkopru/utils'
 import { ProposerBase } from '../interfaces/proposer-base'
@@ -48,6 +53,7 @@ export class BlockProposer extends ProposerBase {
       expectedGas = await proposeTx.estimateGas({
         from: this.context.account.address,
       })
+      expectedGas += MAX_MASS_DEPOSIT_COMMIT_GAS
     } catch (err) {
       logger.warn(`propose() fails. Skip gen block`)
       return undefined
