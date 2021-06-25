@@ -181,7 +181,7 @@ export class AuctionMonitor {
   /**
    * TODO: Listen for slash events for this.context.account, StakeChanged
    * will not be called in this case
-   **/
+   * */
   startStakeSubscription() {
     if (this.stakeSubscription) return
     this.stakeSubscription = this.node.layer1.coordinator.events
