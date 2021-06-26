@@ -376,9 +376,7 @@ export class Coordinator extends EventEmitter {
     ) {
       // pending deposits will be enough for a new block, so commit
       const tx = this.layer1().coordinator.methods.commitMassDeposit()
-      return this.layer1().sendTx(tx, this.context.account, {
-        gas: MAX_MASS_DEPOSIT_COMMIT_GAS,
-      })
+      return this.layer1().sendTx(tx, this.context.account)
     }
   }
 
@@ -392,9 +390,7 @@ export class Coordinator extends EventEmitter {
         .gtn(0)
     ) {
       const tx = this.layer1().coordinator.methods.commitMassDeposit()
-      return this.layer1().sendTx(tx, this.context.account, {
-        gas: MAX_MASS_DEPOSIT_COMMIT_GAS,
-      })
+      return this.layer1().sendTx(tx, this.context.account)
     }
     return undefined
   }
