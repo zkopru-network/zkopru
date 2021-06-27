@@ -130,6 +130,15 @@ export interface Coordinatable extends BaseContract {
     deregister(): NonPayableTransactionObject<void>
 
     /**
+     * Propose a block only after verifying that the parentHash exists and is not slashed. Also verify that a list of mass deposit hashes exist.*
+     */
+    safePropose(
+      data: string | number[],
+      parentHash: string | number[],
+      depositHashes: (string | number[])[],
+    ): NonPayableTransactionObject<void>
+
+    /**
      * Coordinator proposes a new block using this function. propose() will freeze      the current mass deposit for the next block proposer, and will go through      CHALLENGE_PERIOD.
      * @param data Serialized newly minted block data
      */

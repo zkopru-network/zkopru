@@ -15,6 +15,12 @@ interface ICoordinatable {
 
     function stake(address coordinator) external payable;
 
+    function safePropose(
+        bytes calldata blockData,
+        bytes32 parentHash,
+        bytes32[] memory depositHashes
+    ) external;
+
     function propose(bytes calldata blockData) external;
 
     function finalize(bytes calldata finalization) external;

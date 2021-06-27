@@ -66,6 +66,12 @@ export interface ICoordinatable extends BaseContract {
 
     stake(coordinator: string): PayableTransactionObject<void>
 
+    safePropose(
+      blockData: string | number[],
+      parentHash: string | number[],
+      depositHashes: (string | number[])[],
+    ): NonPayableTransactionObject<void>
+
     propose(blockData: string | number[]): NonPayableTransactionObject<void>
 
     finalize(finalization: string | number[]): NonPayableTransactionObject<void>

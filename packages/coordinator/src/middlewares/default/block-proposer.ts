@@ -47,7 +47,11 @@ export class BlockProposer extends ProposerBase {
       serializeBody(block.body),
     ])
     const blockData = `0x${bytes.toString('hex')}`
-    const proposeTx = layer1.coordinator.methods.propose(blockData)
+    const proposeTx = layer1.coordinator.methods.safePropose(
+      blockData,
+      block.header.parentBlock.toString(),
+      block.body.massDeposits.map(({ merged }) => merged.toString()),
+    )
     let expectedGas: number
     try {
       expectedGas = await proposeTx.estimateGas({
@@ -70,7 +74,9 @@ export class BlockProposer extends ProposerBase {
       gasPrice: this.context.gasPrice.toString(),
     })
     if (receipt) {
-      logger.info(`Proposed a new block: ${block.hash.toString()}`)
+      logger.info(
+        `Sent safePropose transaction for block: ${block.hash.toString()}`,
+      )
     } else {
       logger.warn(`Failed to propose a new block: ${block.hash.toString()}`)
     }

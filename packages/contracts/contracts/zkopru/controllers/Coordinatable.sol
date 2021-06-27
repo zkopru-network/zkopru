@@ -76,6 +76,24 @@ contract Coordinatable is Storage {
     }
 
     /**
+     * @dev Propose a block only after verifying that the parentHash exists and
+     * is not slashed. Also verify that a list of mass deposit hashes exist.
+     **/
+    function safePropose(
+        bytes memory data,
+        bytes32 parentHash,
+        bytes32[] memory depositHashes
+    ) public {
+        if (Storage.chain.proposals[parentHash].headerHash == bytes32(0))
+            return;
+        if (Storage.chain.slashed[parentHash]) return;
+        for (uint8 i = 0; i < depositHashes.length; i++) {
+            if (Storage.chain.committedDeposits[depositHashes[i]] == 0) return;
+        }
+        propose(data);
+    }
+
+    /**
      * @dev Coordinator proposes a new block using this function. propose() will freeze
      *      the current mass deposit for the next block proposer, and will go through
      *      CHALLENGE_PERIOD.
