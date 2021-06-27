@@ -7,7 +7,7 @@ import { NodeConfig } from './types'
 
 const DEFAULT = {
   address:
-    process.env.ZKOPRU_ADDRESS || '0x1313F93de57F9Efa6C4207De7eE1d81633eD249b',
+    process.env.ZKOPRU_ADDRESS || '0xDF04E9A6a5A99Fc3C3E22C2231428175FF4Fd835',
   bootstrap: true,
   websocket:
     process.env.ZKOPRU_WEBSOCKET ||

@@ -5,7 +5,7 @@ import { Menu, ExampleConfigContext } from '../menu'
 
 const addressesByNetworkId = {
   '1': undefined,
-  '5': '0x1313F93de57F9Efa6C4207De7eE1d81633eD249b',
+  '5': '0xDF04E9A6a5A99Fc3C3E22C2231428175FF4Fd835',
 }
 
 export default class Wallet extends PromptApp<ExampleConfigContext, void> {
