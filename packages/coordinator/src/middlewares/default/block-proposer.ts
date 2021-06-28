@@ -45,7 +45,7 @@ export class BlockProposer extends ProposerBase {
     const parentProposal = await layer2.db.findOne('Proposal', {
       where: {
         hash: block.header.parentBlock.toString(),
-      }
+      },
     })
     if (!parentProposal) {
       throw new Error('Unable to find parent proposal')

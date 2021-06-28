@@ -42,6 +42,7 @@
     "big-integer": "^1.6.48",
     "bn.js": "^5.2.0",
     "ffjavascript": "0.2.22",
+    "keccak": "^3.0.1",
     "node-fetch": "^2.6.0",
     "node-schedule": "^1.3.2",
     "snarkjs": "0.3.33",

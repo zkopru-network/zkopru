@@ -9,6 +9,7 @@ import { soliditySha3Raw } from 'web3-utils'
 import { Bytes32, Uint256 } from 'soltypes'
 import { Transaction } from 'web3-core'
 import assert from 'assert'
+import createKeccak from 'keccak'
 import { Finalization, Header, Body } from './types'
 import {
   deserializeHeaderFrom,
@@ -19,7 +20,6 @@ import {
   serializeBody,
   serializeHeader,
 } from './utils'
-import createKeccak from 'keccak'
 
 export class Block {
   hash: Bytes32
