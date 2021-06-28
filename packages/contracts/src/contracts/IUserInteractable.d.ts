@@ -29,6 +29,22 @@ export type Deposit = ContractEventLog<{
   1: string
   2: string
 }>
+export type DepositUtxo = ContractEventLog<{
+  spendingPubKey: string
+  salt: string
+  eth: string
+  token: string
+  amount: string
+  nft: string
+  fee: string
+  0: string
+  1: string
+  2: string
+  3: string
+  4: string
+  5: string
+  6: string
+}>
 
 export interface IUserInteractable extends BaseContract {
   constructor(
@@ -85,9 +101,22 @@ export interface IUserInteractable extends BaseContract {
     Deposit(cb?: Callback<Deposit>): EventEmitter
     Deposit(options?: EventOptions, cb?: Callback<Deposit>): EventEmitter
 
+    DepositUtxo(cb?: Callback<DepositUtxo>): EventEmitter
+    DepositUtxo(
+      options?: EventOptions,
+      cb?: Callback<DepositUtxo>,
+    ): EventEmitter
+
     allEvents(options?: EventOptions, cb?: Callback<EventLog>): EventEmitter
   }
 
   once(event: 'Deposit', cb: Callback<Deposit>): void
   once(event: 'Deposit', options: EventOptions, cb: Callback<Deposit>): void
+
+  once(event: 'DepositUtxo', cb: Callback<DepositUtxo>): void
+  once(
+    event: 'DepositUtxo',
+    options: EventOptions,
+    cb: Callback<DepositUtxo>,
+  ): void
 }

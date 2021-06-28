@@ -298,6 +298,7 @@ export class ZkWalletAccount {
       eth,
       owner: to || this.account.zkAddress,
     })
+
     const tx = this.node.layer1.user.methods.deposit(
       note.owner.spendingPubKey().toString(),
       note.salt.toUint256().toString(),

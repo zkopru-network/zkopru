@@ -273,6 +273,14 @@ export default [
       ['index', 'String', { optional: true }],
       ['nullifier', 'String', { optional: true }],
       ['usedAt', 'String', { optional: true }],
+      [
+        'depositedAt',
+        'Int',
+        {
+          optional: true,
+          index: true,
+        },
+      ],
     ],
   },
   {

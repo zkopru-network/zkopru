@@ -138,6 +138,7 @@ export type Utxo = {
   index?: string | null
   nullifier?: string | null
   usedAt?: string | null
+  depositedAt?: number | null
 }
 
 export type Withdrawal = {
