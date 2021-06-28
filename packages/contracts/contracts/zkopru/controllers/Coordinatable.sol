@@ -84,11 +84,16 @@ contract Coordinatable is Storage {
         bytes32 parentHash,
         bytes32[] memory depositHashes
     ) public {
-        if (Storage.chain.proposals[parentHash].headerHash == bytes32(0))
-            return;
-        if (Storage.chain.slashed[parentHash]) return;
+        require(
+            Storage.chain.proposals[parentHash].headerHash != bytes32(0),
+            "Parent hash does not exist"
+        );
+        require(!Storage.chain.slashed[parentHash], "Parent hash is slashed");
         for (uint8 i = 0; i < depositHashes.length; i++) {
-            if (Storage.chain.committedDeposits[depositHashes[i]] == 0) return;
+            require(
+                Storage.chain.committedDeposits[depositHashes[i]] != 0,
+                "Deposit hash does not exist"
+            );
         }
         propose(data);
     }

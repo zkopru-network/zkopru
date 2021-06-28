@@ -42,6 +42,17 @@ export class BlockProposer extends ProposerBase {
       return undefined
     }
 
+    const parentProposal = await layer2.db.findOne('Proposal', {
+      where: {
+        hash: block.header.parentBlock.toString(),
+      }
+    })
+    if (!parentProposal) {
+      throw new Error('Unable to find parent proposal')
+    }
+    const parentBlock = Block.from(parentProposal.proposalData)
+    const parentChecksum = `0x${parentBlock.checksum()}`
+
     const bytes = Buffer.concat([
       serializeHeader(block.header),
       serializeBody(block.body),
@@ -49,7 +60,7 @@ export class BlockProposer extends ProposerBase {
     const blockData = `0x${bytes.toString('hex')}`
     const proposeTx = layer1.coordinator.methods.safePropose(
       blockData,
-      block.header.parentBlock.toString(),
+      parentChecksum,
       block.body.massDeposits.map(({ merged }) => merged.toString()),
     )
     let expectedGas: number

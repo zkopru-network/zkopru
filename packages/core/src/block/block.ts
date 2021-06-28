@@ -19,6 +19,7 @@ import {
   serializeBody,
   serializeHeader,
 } from './utils'
+import createKeccak from 'keccak'
 
 export class Block {
   hash: Bytes32
@@ -135,6 +136,14 @@ export class Block {
     const bodyBytes = serializeBody(this.body)
     arr.push(bodyBytes)
     return Buffer.concat(arr)
+  }
+
+  // The block checksum, not just the header hash
+  checksum() {
+    const data = this.serializeBlock()
+    return createKeccak('keccak256')
+      .update(data)
+      .digest()
   }
 
   static fromTx(tx: Transaction, verified?: boolean): Block {
