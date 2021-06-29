@@ -4,7 +4,7 @@ items:
     kind: Service
     metadata:
       annotations:
-        kompose.cmd: kompose convert -f docker-compose.localtest-kube.yml -o localtest-geth.yaml
+        kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
         kompose.service.expose: coordinator
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
@@ -27,7 +27,7 @@ items:
     kind: Service
     metadata:
       annotations:
-        kompose.cmd: kompose convert -f docker-compose.localtest-kube.yml -o localtest-geth.yaml
+        kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
         kompose.service.expose: redis
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
@@ -47,7 +47,8 @@ items:
     kind: Service
     metadata:
       annotations:
-        kompose.cmd: kompose convert -f docker-compose.localtest-kube.yml -o localtest-geth.yaml
+        kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
+        kompose.service.expose: testnet
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
       labels:
@@ -66,7 +67,7 @@ items:
     kind: Service
     metadata:
       annotations:
-        kompose.cmd: kompose convert -f docker-compose.localtest-kube.yml -o localtest-geth.yaml
+        kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
         kompose.service.expose: testnet
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
@@ -86,7 +87,7 @@ items:
     kind: Deployment
     metadata:
       annotations:
-        kompose.cmd: kompose convert -f docker-compose.localtest-kube.yml -o localtest-geth.yaml
+        kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
         kompose.service.expose: coordinator
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
@@ -102,7 +103,7 @@ items:
       template:
         metadata:
           annotations:
-            kompose.cmd: kompose convert -f docker-compose.localtest-kube.yml -o localtest-geth.yaml
+            kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
             kompose.service.expose: coordinator
             kompose.version: 1.22.0 (955b78124)
           creationTimestamp: null
@@ -126,7 +127,7 @@ items:
     kind: Ingress
     metadata:
       annotations:
-        kompose.cmd: kompose convert -f docker-compose.localtest-kube.yml -o localtest-geth.yaml
+        kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
         kompose.service.expose: coordinator
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
@@ -147,7 +148,7 @@ items:
     kind: Deployment
     metadata:
       annotations:
-        kompose.cmd: kompose convert -f docker-compose.localtest-kube.yml -o localtest-geth.yaml
+        kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
         kompose.service.expose: redis
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
@@ -163,7 +164,7 @@ items:
       template:
         metadata:
           annotations:
-            kompose.cmd: kompose convert -f docker-compose.localtest-kube.yml -o localtest-geth.yaml
+            kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
             kompose.service.expose: redis
             kompose.version: 1.22.0 (955b78124)
           creationTimestamp: null
@@ -186,7 +187,7 @@ items:
     kind: Ingress
     metadata:
       annotations:
-        kompose.cmd: kompose convert -f docker-compose.localtest-kube.yml -o localtest-geth.yaml
+        kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
         kompose.service.expose: redis
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
@@ -207,7 +208,8 @@ items:
     kind: Deployment
     metadata:
       annotations:
-        kompose.cmd: kompose convert -f docker-compose.localtest-kube.yml -o localtest-geth.yaml
+        kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
+        kompose.service.expose: testnet
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
       labels:
@@ -222,7 +224,8 @@ items:
       template:
         metadata:
           annotations:
-            kompose.cmd: kompose convert -f docker-compose.localtest-kube.yml -o localtest-geth.yaml
+            kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
+            kompose.service.expose: testnet
             kompose.version: 1.22.0 (955b78124)
           creationTimestamp: null
           labels:
@@ -236,11 +239,32 @@ items:
               resources: {}
           restartPolicy: Always
     status: {}
+  - apiVersion: extensions/v1beta1
+    kind: Ingress
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
+        kompose.service.expose: testnet
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: redis
+      name: redis
+    spec:
+      rules:
+        - host: testnet
+          http:
+            paths:
+              - backend:
+                  serviceName: redis
+                  servicePort: 6379
+    status:
+      loadBalancer: {}
   - apiVersion: apps/v1
     kind: Deployment
     metadata:
       annotations:
-        kompose.cmd: kompose convert -f docker-compose.localtest-kube.yml -o localtest-geth.yaml
+        kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
         kompose.service.expose: testnet
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
@@ -256,7 +280,7 @@ items:
       template:
         metadata:
           annotations:
-            kompose.cmd: kompose convert -f docker-compose.localtest-kube.yml -o localtest-geth.yaml
+            kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
             kompose.service.expose: testnet
             kompose.version: 1.22.0 (955b78124)
           creationTimestamp: null
@@ -278,7 +302,7 @@ items:
     kind: Ingress
     metadata:
       annotations:
-        kompose.cmd: kompose convert -f docker-compose.localtest-kube.yml -o localtest-geth.yaml
+        kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
         kompose.service.expose: testnet
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
@@ -299,7 +323,7 @@ items:
     kind: Deployment
     metadata:
       annotations:
-        kompose.cmd: kompose convert -f docker-compose.localtest-kube.yml -o localtest-geth.yaml
+        kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
       labels:
@@ -314,7 +338,7 @@ items:
       template:
         metadata:
           annotations:
-            kompose.cmd: kompose convert -f docker-compose.localtest-kube.yml -o localtest-geth.yaml
+            kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
             kompose.version: 1.22.0 (955b78124)
           creationTimestamp: null
           labels:
@@ -334,7 +358,8 @@ items:
     kind: Deployment
     metadata:
       annotations:
-        kompose.cmd: kompose convert -f docker-compose.localtest-kube.yml -o localtest-geth.yaml
+        kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
+        kompose.controller.type: deployment
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
       labels:
@@ -349,7 +374,8 @@ items:
       template:
         metadata:
           annotations:
-            kompose.cmd: kompose convert -f docker-compose.localtest-kube.yml -o localtest-geth.yaml
+            kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
+            kompose.controller.type: deployment
             kompose.version: 1.22.0 (955b78124)
           creationTimestamp: null
           labels:
