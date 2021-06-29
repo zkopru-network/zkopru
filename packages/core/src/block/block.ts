@@ -6,10 +6,10 @@ import {
 } from '@zkopru/database'
 import * as Utils from '@zkopru/utils'
 import { soliditySha3Raw } from 'web3-utils'
+import AbiCoder from 'web3-eth-abi'
 import { Bytes32, Uint256 } from 'soltypes'
 import { Transaction } from 'web3-core'
-import assert from 'assert'
-import createKeccak from 'keccak'
+// import assert from 'assert'
 import { Finalization, Header, Body } from './types'
 import {
   deserializeHeaderFrom,
@@ -68,10 +68,8 @@ export class Block {
   }
 
   getFinalization(): Finalization {
-    const data = `0x${this.serializeBlock().toString('hex')}`
-    const checksum = soliditySha3Raw(data)
     return {
-      proposalChecksum: Bytes32.from(checksum),
+      proposalChecksum: Bytes32.from(this.checksum()),
       header: this.header,
       massDeposits: this.body.massDeposits,
     }
@@ -140,21 +138,38 @@ export class Block {
 
   // The block checksum, not just the header hash
   checksum() {
-    const data = this.serializeBlock()
-    return createKeccak('keccak256')
-      .update(data)
-      .digest()
+    const data = `0x${this.serializeBlock().toString('hex')}`
+    return soliditySha3Raw(data)
   }
 
   static fromTx(tx: Transaction, verified?: boolean): Block {
     const queue = new Utils.StringifiedHexQueue(tx.input)
     // remove function selector
-    const selector = queue.dequeue(4)
-    const paramPosition = queue.dequeue(32)
-    const bytesLength = queue.dequeue(32)
-    assert([selector, paramPosition, bytesLength])
-    const rawData = queue.dequeueAll()
-    return Block.from(rawData, verified)
+    const selector = queue.dequeue(4).toString()
+    const data = queue.dequeueAll()
+    // Type issues come from the web3 typings
+    // https://github.com/ChainSafe/web3.js/pull/4100
+    const encodeFunctionSignature = (AbiCoder as any).encodeFunctionSignature.bind(
+      AbiCoder,
+    )
+    const decodeParameters = (AbiCoder as any).decodeParameters.bind(AbiCoder)
+    if (selector === encodeFunctionSignature('propose(bytes)')) {
+      return Block.from(decodeParameters(['bytes'], data)['0'], verified)
+    }
+    if (
+      selector ===
+      encodeFunctionSignature('safePropose(bytes,bytes32,bytes32[])')
+    ) {
+      return Block.from(
+        decodeParameters(['bytes', 'bytes32', 'bytes32[]'], data)['0'],
+        verified,
+      )
+    }
+    throw new Error('Unrecognized selector')
+  }
+
+  static fromJSON(data: string) {
+    return this.fromTx(JSON.parse(data))
   }
 
   static from(data: string | Buffer, verified?: boolean): Block {
@@ -176,11 +191,14 @@ export class Block {
       massDeposits,
       massMigrations,
     }
-    return new Block({
+    const block = new Block({
       hash: headerHash(header),
       verified,
       header,
       body,
     })
+    console.log('calc', block.serializeBlock().toString('hex'))
+    console.log('orig', typeof data === 'string' ? data : data.toString('hex'))
+    return block
   }
 }
