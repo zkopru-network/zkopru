@@ -1,3 +1,4 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import AsyncLock from 'async-lock'
 import express from 'express'
 import Web3 from 'web3'
@@ -171,7 +172,7 @@ export class OrganizerApi {
 
       // Exctract Data from fetched data
       blockData.transactions.forEach(txHash => {
-        for (let i = 0; i < blockData.transactions.length; i++) {
+        for (let i = 0; i < blockData.transactions.length; i += 1) {
           if (txData[i].hash === txHash) {
             const txdata = txData[i]
             const funcSig = txdata.input.slice(0, 10)
@@ -239,11 +240,11 @@ export class OrganizerApi {
       // The test wallet will update address after first deposit
       if (data.ID && data.address) {
         logger.info(`updating address ${data.ID} as ${data.address}`)
-        this.organizerData.walletData.forEach(wallet => {
-          if (wallet.registeredId === data.ID) {
-            wallet.from = data.address
+        for (let i = 0; i < this.organizerData.walletData.length; i += 1) {
+          if (this.organizerData.walletData[i].registeredId === data.ID) {
+            this.organizerData.walletData[i].from = data.address
           }
-        })
+        }
         this.lastDepositerID = data.ID
         res.send(true)
         return
