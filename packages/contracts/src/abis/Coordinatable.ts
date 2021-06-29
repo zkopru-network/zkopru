@@ -280,7 +280,7 @@ export const CoordinatableABI = [
   {
     inputs: [
       { internalType: 'bytes', name: 'data', type: 'bytes' },
-      { internalType: 'bytes32', name: 'parentHash', type: 'bytes32' },
+      { internalType: 'bytes32', name: 'parentHeaderHash', type: 'bytes32' },
       { internalType: 'bytes32[]', name: 'depositHashes', type: 'bytes32[]' },
     ],
     name: 'safePropose',

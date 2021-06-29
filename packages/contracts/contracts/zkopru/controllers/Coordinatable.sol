@@ -81,14 +81,17 @@ contract Coordinatable is Storage {
      **/
     function safePropose(
         bytes memory data,
-        bytes32 parentHash,
+        bytes32 parentHeaderHash,
         bytes32[] memory depositHashes
     ) public {
         require(
-            Storage.chain.proposals[parentHash].headerHash != bytes32(0),
+            Storage.chain.parentOf[parentHeaderHash] != bytes32(0),
             "Parent hash does not exist"
         );
-        require(!Storage.chain.slashed[parentHash], "Parent hash is slashed");
+        require(
+            !Storage.chain.slashed[parentHeaderHash],
+            "Parent hash is slashed"
+        );
         for (uint8 i = 0; i < depositHashes.length; i++) {
             require(
                 Storage.chain.committedDeposits[depositHashes[i]] != 0,

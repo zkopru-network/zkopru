@@ -134,7 +134,7 @@ export interface Coordinatable extends BaseContract {
      */
     safePropose(
       data: string | number[],
-      parentHash: string | number[],
+      parentHeaderHash: string | number[],
       depositHashes: (string | number[])[],
     ): NonPayableTransactionObject<void>
 
