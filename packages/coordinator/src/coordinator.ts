@@ -355,6 +355,7 @@ export class Coordinator extends EventEmitter {
       logger.info('Skipping deposit commit, chain is not synced')
       return
     }
+    // TODO: take staged fees from db for reorg protection
     const stagedDeposits = await this.layer1()
       .upstream.methods.stagedDeposits()
       .call()
@@ -371,6 +372,12 @@ export class Coordinator extends EventEmitter {
           from: this.context.account.address,
         })) + MAX_MASS_DEPOSIT_COMMIT_GAS
     const expectedCost = this.context.gasPrice.muln(expectedGas)
+    logger.info(
+      `Skipping mass deposit, need ${expectedCost.toString()} have ${block.header.fee
+        .toBN()
+        .add(new BN(stagedDeposits.fee))
+        .toString()}`,
+    )
     if (
       expectedCost.lte(block.header.fee.toBN().add(new BN(stagedDeposits.fee)))
     ) {

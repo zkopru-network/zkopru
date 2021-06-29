@@ -1,11 +1,7 @@
 /* eslint-disable no-underscore-dangle */
-import {
-  Block,
-  serializeBody,
-  serializeHeader,
-  MAX_MASS_DEPOSIT_COMMIT_GAS,
-} from '@zkopru/core'
+import { Block, MAX_MASS_DEPOSIT_COMMIT_GAS } from '@zkopru/core'
 import { TransactionReceipt } from 'web3-core'
+import { soliditySha3Raw } from 'web3-utils'
 import { logger } from '@zkopru/utils'
 import { ProposerBase } from '../interfaces/proposer-base'
 
@@ -50,19 +46,25 @@ export class BlockProposer extends ProposerBase {
     if (!parentProposal) {
       throw new Error('Unable to find parent proposal')
     }
-    const parentBlock = Block.from(parentProposal.proposalData)
-    const parentChecksum = `0x${parentBlock.checksum()}`
-
-    const bytes = Buffer.concat([
-      serializeHeader(block.header),
-      serializeBody(block.body),
-    ])
+    if (!parentProposal.proposalData && parentProposal.proposalNum !== 0) {
+      throw new Error('No proposal data for parent block')
+    }
+    const bytes = block.serializeBlock()
     const blockData = `0x${bytes.toString('hex')}`
-    const proposeTx = layer1.coordinator.methods.safePropose(
-      blockData,
-      parentChecksum,
-      block.body.massDeposits.map(({ merged }) => merged.toString()),
-    )
+    let proposeTx: any
+    if (parentProposal.proposalNum === 0) {
+      // don't safe propose from genesis block
+      proposeTx = layer1.coordinator.methods.propose(blockData)
+    } else {
+      const parentBlock = Block.fromJSON(parentProposal.proposalData)
+      proposeTx = layer1.coordinator.methods.safePropose(
+        blockData,
+        parentBlock.hash.toString(),
+        block.body.massDeposits.map(({ merged, fee }) => {
+          return soliditySha3Raw(merged.toString(), fee.toBN())
+        }),
+      )
+    }
     let expectedGas: number
     try {
       expectedGas = await proposeTx.estimateGas({
@@ -71,6 +73,9 @@ export class BlockProposer extends ProposerBase {
       expectedGas += MAX_MASS_DEPOSIT_COMMIT_GAS
     } catch (err) {
       logger.warn(`propose() fails. Skip gen block`)
+      if (typeof err.toString === 'function') {
+        logger.info(err.toString())
+      }
       return undefined
     }
     const expectedFee = this.context.gasPrice.muln(expectedGas)
