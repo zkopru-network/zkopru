@@ -174,7 +174,8 @@ export class TestTxBuilder extends TxBuilder {
         false,
       )
       logger.info(
-        `this.feePerByte ${this.feePerByte
+        `this.feePerByte ${
+          this.feePerByte
         } and total L2Fee : ${this.feePerByte.muln(size)}`,
       )
       return this.feePerByte.muln(size)
@@ -186,9 +187,6 @@ export class TestTxBuilder extends TxBuilder {
 
     // Spend ETH containing notes until it hits the number
     spendables.sort((a, b) => (a.eth().gt(b.eth()) ? -1 : 1))
-    logger.info(
-      `spendables ${spendables.length}, spendings ${spendings.length}`,
-    )
     while (getRequiredETH().gte(Sum.from(spendings).eth)) {
       logger.info(`required eth: ${getRequiredETH().toString()}`)
       logger.info(`spending eth: ${Sum.from(spendings).eth}`)

@@ -1,15 +1,15 @@
-# CLI Wallet
+# Transaction Generator
 
-## How to run dev mode wallet
+## Run Transaction Generator for testing
 
-1. Run docker container
+- Run with docker-compose
 
     ```shell
-    docker run -p 5000:5000 wanseob/zkopru-contract
+    docker-compose -f docker-compose.localtest-geth.yml up
     ```
 
-2. Run wallet:dev command
+- Run with kubenetes object
 
     ```shell
-    yarn wallet:dev
+    kubectl apply -f dockerfiles/kube.localtest-geth.yaml
     ```

@@ -734,6 +734,7 @@ export class ZkWalletAccount {
         .eth()
         .add(fee)
         .toString(),
+      gas: 400000, // TODO : minimum gas set inside 'sendTx' with function signature
     })
     // TODO check what web3 methods returns when it failes
     if (receipt) {
