@@ -6,8 +6,15 @@ import prettier from 'pino-pretty'
 import { Transform } from 'stream'
 import { networkInterfaces } from 'os'
 
-import { F } from '@zkopru/babyjubjub'
-import { Note, UtxoStatus } from '@zkopru/transaction'
+import { F, Fp, Point } from '@zkopru/babyjubjub'
+import {
+  Note,
+  Utxo,
+  RawTx,
+  ZkTx,
+  UtxoStatus,
+  ZkAddress,
+} from '@zkopru/transaction'
 import { HDWallet, ZkAccount } from '@zkopru/account'
 import { logStream } from '@zkopru/utils'
 import { SQLiteConnector, schema } from '@zkopru/database/dist/node'
@@ -75,7 +82,7 @@ export function logAll(Object) {
 }
 
 export function startLogger(fileName: string) {
-  const writeStream = fs.createWriteStream(`/${fileName}`)
+  const writeStream = fs.createWriteStream(`./${fileName}`)
   logStream.addStream(writeStream)
   const pretty = prettier({
     translateTime: false,
@@ -114,4 +121,73 @@ export async function getEthUtxo(wallet: ZkWallet, account: ZkAccount) {
     },
   })
   return unSpentUtxo
+}
+
+/* eslint-disable @typescript-eslint/no-use-before-define */
+export function getTx(rawTx) {
+  if (rawTx === undefined) {
+    throw Error(`rawTx is undefined, please check queue data`)
+  }
+  const owner = ZkAddress.from(
+    Fp.from(rawTx.inflow[0].owner.PubSK),
+    Point.from(rawTx.inflow[0].owner.N.x, rawTx.inflow[0].owner.N.y),
+  )
+
+  const tx: RawTx = {
+    inflow: rawTx.inflow.map(flow => {
+      return new Utxo(
+        owner,
+        Fp.from(flow.salt),
+        {
+          eth: Fp.from(flow.asset.eth),
+          tokenAddr: Fp.from(flow.asset.tokenAddr),
+          erc20Amount: Fp.from(flow.asset.erc20Amount),
+          nft: Fp.from(flow.asset.nft),
+        },
+        flow.status,
+      )
+    }),
+    outflow: rawTx.outflow.map(flow => {
+      return new Utxo(
+        owner,
+        Fp.from(flow.salt),
+        {
+          eth: Fp.from(flow.asset.eth),
+          tokenAddr: Fp.from(flow.asset.tokenAddr),
+          erc20Amount: Fp.from(flow.asset.erc20Amount),
+          nft: Fp.from(flow.asset.nft),
+        },
+        flow.status,
+      )
+    }),
+    fee: Fp.from(rawTx.fee),
+  }
+  return tx
+}
+
+export function getZkTx(tx) {
+  /* eslint-disable @typescript-eslint/camelcase */
+  const zktx = new ZkTx({
+    inflow: tx.inflow.map(({ nullifier, root }) => ({
+      nullifier: Fp.from(nullifier),
+      root: Fp.from(root),
+    })),
+    outflow: tx.outflow.map(({ note, outflowType, data }) => ({
+      note: Fp.from(note),
+      outflowType: Fp.from(outflowType),
+      data: data ? Fp.from(data) : undefined,
+    })),
+    fee: Fp.from(tx.fee),
+    proof: {
+      pi_a: tx.proof.pi_a.map((v: string) => Fp.from(v)),
+      pi_b: tx.proof.pi_b.map((a: string[]) =>
+        a.map((v: string) => Fp.from(v)),
+      ),
+      pi_c: tx.proof.pi_c.map((v: string) => Fp.from(v)),
+    },
+    swap: tx.swap ? Fp.from(tx.swap) : undefined,
+    memo: tx.memo ? Buffer.from(tx.memo, 'base64') : undefined,
+  })
+  /* eslint-enable @typescript-eslint/camelcase */
+  return zktx
 }

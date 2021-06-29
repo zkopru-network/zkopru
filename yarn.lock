@@ -3667,6 +3667,7 @@
     "@zkopru/database" "file:../../.cache/yarn/v6/npm-@zkopru-client-1.0.0-beta.2-78a658f3-4b2f-43b6-aa36-2bf301e990bc-1621597660101/node_modules/@zkopru/database"
     "@zkopru/transaction" "file:../../.cache/yarn/v6/npm-@zkopru-client-1.0.0-beta.2-78a658f3-4b2f-43b6-aa36-2bf301e990bc-1621597660101/node_modules/@zkopru/transaction"
     "@zkopru/zk-wizard" "file:../../.cache/yarn/v6/npm-@zkopru-client-1.0.0-beta.2-78a658f3-4b2f-43b6-aa36-2bf301e990bc-1621597660101/node_modules/@zkopru/zk-wizard"
+    assert "^2.0.0"
     browserify-zlib "^0.2.0"
     buffer "^6.0.3"
     constants-browserify "^1.0.0"

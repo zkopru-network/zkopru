@@ -28,7 +28,7 @@ export class HttpBootstrapHelper implements BootstrapHelper {
     if (response.ok) {
       const body: any = await response.json()
       logger.debug(`json ${response.json()}`)
-      logger.debut(`body ${response.body}`)
+      logger.debug(`body ${response.body}`)
       return {
         proposal: body.proposal,
         blockHash: body.blockHash,
@@ -46,6 +46,6 @@ export class HttpBootstrapHelper implements BootstrapHelper {
         },
       }
     }
-    throw Error(`${response.text()}`)
+    throw Error(`${await response.text()}`)
   }
 }

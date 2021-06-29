@@ -1,6 +1,7 @@
 // export { Coordinator, CoordinatorInterface } from './coordinator'
 export { TxMemPool, TxPoolInterface } from './tx-pool'
 export { ProposerBase } from './middlewares/interfaces/proposer-base'
+export { CoordinatorContext } from './context'
 export { Coordinator } from './coordinator'
 
 export enum RpcMethod {

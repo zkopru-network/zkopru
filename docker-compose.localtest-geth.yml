@@ -1,0 +1,63 @@
+version: '3'
+
+services:
+  testnet:
+    image: sifnoc/zkopru_testnet:geth
+    build:
+      context: ./packages/contracts/
+      dockerfile: ../../dockerfiles/Contract.geth.dockerfile
+    ports:
+      - '5000:5000'
+    labels:
+      kompose.service.expose: testnet
+    command: sh /proj/run_geth.sh
+  coordinator:
+    image: sifnoc/zkopru_node:latest
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/Generator.dockerfile
+    ports:
+      - '8888:8888'
+      - '5354:5354'
+    depends_on:
+      - 'testnet'
+    labels:
+      kompose.service.expose: coordinator
+    command: >
+      bash -c "nc -l -p 5354 &&
+      node /proj/packages/generator/dist/coordinator.js"
+  redis:
+    image: redis
+    ports:
+      - '6379:6379'
+  organizer:
+    image: sifnoc/zkopru_node:latest
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/Generator.dockerfile
+    ports:
+      - '8080:8080'
+    depends_on:
+      - 'redis'
+      - 'coordinator'
+    labels:
+      kompose.service.expose: redis
+    command: bash -c "node /proj/packages/generator/dist/organizer.js"
+  wallet:
+    image: sifnoc/zkopru_node:latest
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/Generator.dockerfile
+    depends_on:
+      - 'redis'
+      - 'organizer'
+    command: > 
+      bash -c "sleep 10 && node /proj/packages/generator/dist/wallet.js"
+  turner:
+    image: sifnoc/zkopru_node:latest
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/Generator.dockerfile
+    depends_on:
+      - 'wallet'
+    command: bash -c "sleep 60 && node /proj/packages/generator/dist/blockturner.js"

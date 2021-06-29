@@ -3,9 +3,10 @@ import { TransactionReceipt } from 'web3-core'
 
 import { Block, serializeBody, serializeHeader } from '@zkopru/core'
 import { logger } from '@zkopru/utils'
-import { ProposerBase } from '~coordinator'
-import { CoordinatorContext } from '~coordinator/context'
+import { ProposerBase, CoordinatorContext } from '@zkopru/coordinator'
 import { config } from './config'
+
+const organizerUrl = process.env.ORGANIZER_URL ?? 'http://organizer:8080'
 
 // TODO: implement metric
 export class TestBlockProposer extends ProposerBase {
@@ -63,8 +64,8 @@ export class TestBlockProposer extends ProposerBase {
         from: this.context.account.address,
       })
       logger.info(`Propose estimated gas ${expectedGas}`)
-      expectedGas = Math.floor(expectedGas * 1.5)
-      logger.info(`Make it 50% extra then floor gas ${expectedGas}`)
+      expectedGas = 1000000
+      logger.info(`Set Gas as ${expectedGas}`)
     } catch (err) {
       logger.warn(`propose() fails. Skip gen block`)
       return undefined
@@ -74,8 +75,11 @@ export class TestBlockProposer extends ProposerBase {
       logger.info(
         `Skip gen block. Aggregated fee is not enough yet ${block.header.fee} / ${expectedFee}`,
       )
+      logger.info(`Current collect zktx length : ${block.body.txs.length}`)
       return undefined
     }
+    logger.info(`send Propose Tx with zkTx length ${block.body.txs.length}`)
+
     const receipt = await layer1.sendTx(proposeTx, this.context.account, {
       gas: expectedGas,
       gasPrice: this.context.gasPrice.toString(),
@@ -83,7 +87,7 @@ export class TestBlockProposer extends ProposerBase {
     if (receipt) {
       // Additional code for Observattion over `BlockProposer` class
       if (this.lastProposed !== block.hash.toString()) {
-        const response = await fetch(`http://organizer:8080/propose`, {
+        const response = await fetch(`${organizerUrl}/propose`, {
           method: 'post',
           body: JSON.stringify({
             timestamp: Date.now(),
