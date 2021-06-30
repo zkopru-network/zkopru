@@ -23,7 +23,6 @@ async function runBlockTurner() {
     try {
       const registerResponse = await fetch(`${organizerUrl}/registered`, {
         method: 'get',
-        timeout: 120,
       })
       const walletData = await registerResponse.json()
       const walletStatus = walletData.map(wallet => {

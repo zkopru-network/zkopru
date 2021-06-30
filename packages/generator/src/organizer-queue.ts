@@ -11,7 +11,7 @@ then following the current rate, forwards to the 'sub' queue which has a worker 
 
 Let assume that there are 2 sub queues, one has 10 tps rate, another one has 1 tps rate.
 
-current selected 10 tps rate, the main queue is going to forward zktx to the sub queue which has 10 tps rate worker
+If select 10 tps rate, the main queue is going to forward zktx to the sub queue which has 10 tps rate worker
 
 - 10 tps rate
   [ generator ]   [            organizer            ]   [ generator ]
