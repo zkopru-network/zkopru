@@ -28,7 +28,7 @@ items:
     metadata:
       annotations:
         kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
-        kompose.service.expose: redis
+        kompose.service.expose: organizer
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
       labels:
@@ -48,7 +48,7 @@ items:
     metadata:
       annotations:
         kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
-        kompose.service.expose: testnet
+        kompose.service.expose: redis
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
       labels:
@@ -149,7 +149,7 @@ items:
     metadata:
       annotations:
         kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
-        kompose.service.expose: redis
+        kompose.service.expose: organizer
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
       labels:
@@ -165,7 +165,7 @@ items:
         metadata:
           annotations:
             kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
-            kompose.service.expose: redis
+            kompose.service.expose: organizer
             kompose.version: 1.22.0 (955b78124)
           creationTimestamp: null
           labels:
@@ -188,7 +188,7 @@ items:
     metadata:
       annotations:
         kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
-        kompose.service.expose: redis
+        kompose.service.expose: organizer
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
       labels:
@@ -196,7 +196,7 @@ items:
       name: organizer
     spec:
       rules:
-        - host: redis
+        - host: organizer
           http:
             paths:
               - backend:
@@ -209,7 +209,7 @@ items:
     metadata:
       annotations:
         kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
-        kompose.service.expose: testnet
+        kompose.service.expose: redis
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
       labels:
@@ -225,7 +225,7 @@ items:
         metadata:
           annotations:
             kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
-            kompose.service.expose: testnet
+            kompose.service.expose: redis
             kompose.version: 1.22.0 (955b78124)
           creationTimestamp: null
           labels:
@@ -244,7 +244,7 @@ items:
     metadata:
       annotations:
         kompose.cmd: kompose convert -f docker-compose.localtest-geth.yml -o ./dockerfiles/kube.localtest-geth.yaml
-        kompose.service.expose: testnet
+        kompose.service.expose: redis
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
       labels:
@@ -252,7 +252,7 @@ items:
       name: redis
     spec:
       rules:
-        - host: testnet
+        - host: redis
           http:
             paths:
               - backend:
@@ -366,7 +366,7 @@ items:
         io.kompose.service: wallet
       name: wallet
     spec:
-      replicas: 1
+      replicas: 2
       selector:
         matchLabels:
           io.kompose.service: wallet
@@ -389,8 +389,6 @@ items:
               image: sifnoc/zkopru_node:latest
               name: wallet
               resources: {}
-          restartPolicy: Always
     status: {}
 kind: List
 metadata: {}
-
