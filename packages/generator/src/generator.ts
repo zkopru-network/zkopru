@@ -163,7 +163,6 @@ export class TransferGenerator extends ZkWalletAccount {
       // get TPS from organizer... or get sum of all tx in wait active delayes...
       const response = await fetch(`${organizerUrl}/txsInQueues`, {
         method: 'get',
-        timeout: 120,
       })
       const { currentTxs } = await response.json()
 
