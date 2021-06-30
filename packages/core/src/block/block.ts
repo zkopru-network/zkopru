@@ -191,14 +191,11 @@ export class Block {
       massDeposits,
       massMigrations,
     }
-    const block = new Block({
+    return new Block({
       hash: headerHash(header),
       verified,
       header,
       body,
     })
-    console.log('calc', block.serializeBlock().toString('hex'))
-    console.log('orig', typeof data === 'string' ? data : data.toString('hex'))
-    return block
   }
 }
