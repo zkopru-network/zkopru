@@ -31,7 +31,7 @@ services:
     ports:
       - '6379:6379'
     labels:
-      kompose.service.expose: testnet
+      kompose.service.expose: redis
   organizer:
     image: sifnoc/zkopru_node:latest
     build:
@@ -43,7 +43,7 @@ services:
       - 'redis'
       - 'coordinator'
     labels:
-      kompose.service.expose: redis
+      kompose.service.expose: organizer 
     command: bash -c "node /proj/packages/generator/dist/organizer.js"
   wallet:
     image: sifnoc/zkopru_node:latest

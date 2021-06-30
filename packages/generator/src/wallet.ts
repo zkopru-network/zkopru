@@ -1,5 +1,4 @@
 /* eslint-disable no-case-declarations */
-import path from 'path'
 import { toWei } from 'web3-utils'
 import fetch from 'node-fetch'
 
@@ -70,7 +69,7 @@ async function runGenerator() {
     noteAmount: { eth: toWei('0.1'), fee: toWei('0.01') },
     erc20: [],
     erc721: [],
-    snarkKeyPath: path.join(__dirname, '../../circuits/keys'),
+    snarkKeyPath: '/proj/keys',
     ID: registered.ID,
     redis: {
       host: redisIp,
