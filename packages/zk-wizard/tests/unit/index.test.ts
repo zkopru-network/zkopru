@@ -135,13 +135,12 @@ describe('index', () => {
       zkTx1 = await zkWizard.shield({
         tx: txs.tx_1,
         from: accounts.alice,
-        encryptTo: accounts.bob.zkAddress,
       })
     }, 60000)
     it('recipient should decrypt the note', async () => {
       const note = accounts.bob.decrypt(zkTx1, tokenRegistry)
-      expect(note).toBeDefined()
-      expect(note?.owner.toString()).toBe(accounts.bob.zkAddress.toString())
+      expect(note[0]).toBeDefined()
+      expect(note[0].owner.toString()).toBe(accounts.bob.zkAddress.toString())
     }, 60000)
   })
   describe('basic tx to send ETH spending 1 input and creating 2 output', () => {
@@ -150,13 +149,12 @@ describe('index', () => {
       zkTx = await zkWizard.shield({
         tx: txs.tx_1,
         from: accounts.alice,
-        encryptTo: accounts.bob.zkAddress,
       })
     }, 60000)
     it('recipient should decrypt the note', async () => {
       const note = accounts.bob.decrypt(zkTx, tokenRegistry)
-      expect(note).toBeDefined()
-      expect(note?.owner.toString()).toBe(accounts.bob.zkAddress.toString())
+      expect(note[0]).toBeDefined()
+      expect(note[0].owner.toString()).toBe(accounts.bob.zkAddress.toString())
     }, 60000)
   })
   describe('erc20 transaction', () => {
@@ -165,13 +163,12 @@ describe('index', () => {
       zkTx = await zkWizard.shield({
         tx: txs.tx_2_1,
         from: accounts.alice,
-        encryptTo: accounts.bob.zkAddress,
       })
     }, 60000)
     it('recipient should decrypt the note', async () => {
       const note = accounts.bob.decrypt(zkTx, tokenRegistry)
-      expect(note).toBeDefined()
-      expect(note?.owner.toString()).toBe(accounts.bob.zkAddress.toString())
+      expect(note[0]).toBeDefined()
+      expect(note[0].owner.toString()).toBe(accounts.bob.zkAddress.toString())
     }, 60000)
   })
   describe('erc721 transaction', () => {
@@ -180,13 +177,12 @@ describe('index', () => {
       zkTx = await zkWizard.shield({
         tx: txs.tx_2_2,
         from: accounts.bob,
-        encryptTo: accounts.alice.zkAddress,
       })
     }, 60000)
     it('recipient should decrypt the note', async () => {
       const note = accounts.alice.decrypt(zkTx, tokenRegistry)
-      expect(note).toBeDefined()
-      expect(note?.owner.toString()).toBe(accounts.alice.zkAddress.toString())
+      expect(note[0]).toBeDefined()
+      expect(note[0].owner.toString()).toBe(accounts.alice.zkAddress.toString())
     }, 60000)
   })
   describe('note aggregation', () => {
@@ -195,12 +191,11 @@ describe('index', () => {
       zkTx = await zkWizard.shield({
         tx: txs.tx_3,
         from: accounts.alice,
-        encryptTo: accounts.alice.zkAddress,
       })
     }, 60000)
     it('cannot add memo field for mixed(eth+token) note', async () => {
       const note = accounts.alice.decrypt(zkTx, tokenRegistry)
-      expect(note).toBeUndefined()
+      expect(note[0]).toBeUndefined()
     }, 60000)
   })
   describe('migration transaction', () => {
@@ -209,12 +204,11 @@ describe('index', () => {
       zkTx = await zkWizard.shield({
         tx: txs.tx_4,
         from: accounts.alice,
-        encryptTo: accounts.alice.zkAddress,
       })
     }, 60000)
     it('cannot add memo field for mixed(eth+token) note', async () => {
       const note = accounts.alice.decrypt(zkTx, tokenRegistry)
-      expect(note).toBeUndefined()
+      expect(note[0]).toBeUndefined()
     }, 60000)
   })
 })

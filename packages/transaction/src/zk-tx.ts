@@ -4,6 +4,7 @@ import { Fp } from '@zkopru/babyjubjub'
 import * as Utils from '@zkopru/utils'
 import { Bytes32, Uint256 } from 'soltypes'
 import { OutflowType } from './note'
+import { Memo } from './memo'
 
 export interface ZkInflow {
   nullifier: Fp
@@ -29,15 +30,6 @@ export interface SNARK {
   pi_a: Fp[]
   pi_b: Fp[][]
   pi_c: Fp[]
-}
-
-export enum MemoVersion {
-  V1 = 1,
-  V2 = 2,
-}
-export interface Memo {
-  version: MemoVersion
-  data: Buffer
 }
 
 export class ZkTx {

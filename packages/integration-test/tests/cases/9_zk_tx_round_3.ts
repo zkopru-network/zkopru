@@ -32,7 +32,6 @@ export const buildZkTxAliceSendEthToBob = async (
     .build()
   const aliceZkTx = await aliceWallet.shieldTx({
     tx: aliceRawTx,
-    encryptTo: bob.zkAddress,
   })
   const aliceNewBalance = await aliceWallet.getSpendableAmount(alice)
   const aliceLockedAmount = await aliceWallet.getLockedAmount(alice)
@@ -62,7 +61,6 @@ export const buildZkTxBobSendEthToCarl = async (
     .build()
   const bobZkTx = await bobWallet.shieldTx({
     tx: bobRawTx,
-    encryptTo: carl.zkAddress,
   })
   const bobNewBalance = await bobWallet.getSpendableAmount(bob)
   const bobLockedAmount = await bobWallet.getLockedAmount(bob)
@@ -90,7 +88,6 @@ export const buildZkTxCarlSendEthToAlice = async (
     .build()
   const carlZkTx = await carlWallet.shieldTx({
     tx: carlRawTx,
-    encryptTo: alice.zkAddress,
   })
   const carlNewBalance = await carlWallet.getSpendableAmount(carl)
   const carlLockedAmount = await carlWallet.getLockedAmount(carl)

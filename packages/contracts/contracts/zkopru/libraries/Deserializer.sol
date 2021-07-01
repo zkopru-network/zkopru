@@ -532,17 +532,16 @@ library Deserializer {
         assembly {
             // Acquire the free memory pointer for the memo object
             let free_mem := mload(0x40)
-            let memo_len := memoLen
             // Point memo object to the acquired memory slot.
             memo := free_mem
             // Set memo data's length as 81 bytes(0x51 = 81)
-            mstore(memo, memo_len)
+            mstore(memo, memoLen)
             // Copy memo_len bytes from calldata fo the memory
-            calldatacopy(add(memo, 0x20), calldataPos, memo_len)
+            calldatacopy(add(memo, 0x20), cp, memoLen)
             // Move cursor 81 bytes
-            end := add(calldataPos, memo_len)
+            end := add(cp, memoLen)
             // Release the free memory
-            mstore(0x40, add(free_mem, add(memo_len, 0x20)))
+            mstore(0x40, add(free_mem, add(memoLen, 0x20)))
         }
     }
 

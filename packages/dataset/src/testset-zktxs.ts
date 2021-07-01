@@ -135,7 +135,6 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
     zk_tx_1 = await zkWizard.shield({
       tx: txs.tx_1,
       from: accounts.alice,
-      encryptTo: accounts.bob.zkAddress,
     })
     fs.writeFileSync(tx1Path, zk_tx_1.encode())
   }
@@ -146,7 +145,6 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
     zk_tx_2_1 = await zkWizard.shield({
       tx: txs.tx_2_1,
       from: accounts.alice,
-      encryptTo: accounts.bob.zkAddress,
     })
     fs.writeFileSync(tx2_1Path, zk_tx_2_1.encode())
   }
@@ -157,7 +155,6 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
     zk_tx_2_2 = await zkWizard.shield({
       tx: txs.tx_2_2,
       from: accounts.bob,
-      encryptTo: accounts.alice.zkAddress,
     })
     fs.writeFileSync(tx2_2Path, zk_tx_2_2.encode())
   }

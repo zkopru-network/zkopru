@@ -1,7 +1,16 @@
 import { poseidon } from 'circomlib'
 import { Fp, Fr, Point } from '@zkopru/babyjubjub'
-import { ZkAddress, ZkTx, Utxo, TokenRegistry } from '@zkopru/transaction'
+import {
+  ZkAddress,
+  ZkTx,
+  Utxo,
+  TokenRegistry,
+  MemoVersion,
+  V2_MEMO_DEFAULT_ABI,
+} from '@zkopru/transaction'
+import { Bytes4 } from 'soltypes'
 import { soliditySha3Raw } from 'web3-utils'
+import { logger } from '@zkopru/utils'
 
 export class ZkViewer {
   private A: Point // EdDSA Public Key
@@ -30,27 +39,62 @@ export class ZkViewer {
     return this.A
   }
 
-  decrypt(zkTx: ZkTx, tokenRegistry?: TokenRegistry): Utxo | undefined {
+  decrypt(zkTx: ZkTx, tokenRegistry?: TokenRegistry): Utxo[] {
     const { memo } = zkTx
-    if (!memo || memo.version !== 1) {
-      return
-    }
-    let note: Utxo | undefined
-    for (const outflow of zkTx.outflow) {
-      try {
-        note = Utxo.decrypt({
-          utxoHash: outflow.note,
-          memo: memo.data,
-          spendingPubKey: this.zkAddress.spendingPubKey(),
-          viewingKey: this.v,
-          tokenRegistry,
-        })
-      } catch (err) {
-        console.error(err)
+    if (!memo) return []
+    if (memo.version === MemoVersion.V1) {
+      let note: Utxo | undefined
+      for (const outflow of zkTx.outflow) {
+        try {
+          note = Utxo.decrypt({
+            utxoHash: outflow.note,
+            memo: memo.data,
+            spendingPubKey: this.zkAddress.spendingPubKey(),
+            viewingKey: this.v,
+            tokenRegistry,
+          })
+        } catch (err) {
+          console.error(err)
+        }
+        if (note) break
       }
-      if (note) break
+      return note ? [Utxo.from(note)] : []
     }
-    return note ? Utxo.from(note) : undefined
+    if (memo.version === MemoVersion.V2) {
+      const notes: Utxo[] = []
+      const sig = memo.data.slice(0, 4)
+      if (V2_MEMO_DEFAULT_ABI.eq(Bytes4.from(`0x${sig.toString('hex')}`))) {
+        const data = memo.data.slice(4)
+        if (data.length % 81 !== 0) throw Error('Invalid memo field')
+        const num = data.length / 81
+        for (let i = 0; i < num; i += 1) {
+          const encrypted = data.slice(i * 81, (i + 1) * 81)
+          let note: Utxo | undefined
+          for (const outflow of zkTx.outflow) {
+            try {
+              note = Utxo.decrypt({
+                utxoHash: outflow.note,
+                memo: encrypted,
+                spendingPubKey: this.zkAddress.spendingPubKey(),
+                viewingKey: this.v,
+                tokenRegistry,
+              })
+            } catch (err) {
+              console.error(err)
+            }
+            if (note) break
+          }
+          if (note) notes.push(note)
+        }
+        return notes
+      }
+      logger.warn('Unknown ABI')
+      throw Error('Invalid memo field')
+
+      // if (memo.data.length === )
+      // const memos = memo.data.slice()
+    }
+    return []
   }
 
   getNullifierSeed(): Fp {

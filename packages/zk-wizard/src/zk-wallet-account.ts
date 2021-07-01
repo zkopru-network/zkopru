@@ -622,7 +622,7 @@ export class ZkWalletAccount {
   }
 
   async storePendingTx(tx: ZkTx) {
-    await this.db.create('PendingTx', {
+    const pendingTx = {
       hash: tx.hash().toString(),
       fee: tx.fee.toString(),
       proof: tx.proof,
@@ -635,6 +635,13 @@ export class ZkWalletAccount {
       swap: tx.swap?.toString(),
       inflow: tx.inflow,
       outflow: tx.outflow,
+    }
+    await this.db.upsert('PendingTx', {
+      where: {
+        hash: pendingTx.hash,
+      },
+      create: pendingTx,
+      update: pendingTx,
     })
   }
 
@@ -706,7 +713,7 @@ export class ZkWalletAccount {
 
   private async saveOutflow(outflow: Outflow) {
     if (outflow instanceof Utxo) {
-      await this.db.create('Utxo', {
+      const data = {
         hash: outflow
           .hash()
           .toUint256()
@@ -729,10 +736,14 @@ export class ZkWalletAccount {
           .nft()
           .toUint256()
           .toString(),
-        status: UtxoStatus.NON_INCLUDED,
+      }
+      await this.db.upsert('Utxo', {
+        where: { hash: data.hash },
+        update: data,
+        create: { ...data, status: UtxoStatus.NON_INCLUDED },
       })
     } else if (outflow instanceof Withdrawal) {
-      await this.db.create('Withdrawal', {
+      const data = {
         hash: outflow
           .hash()
           .toUint256()
@@ -758,7 +769,11 @@ export class ZkWalletAccount {
           .toString(),
         to: outflow.publicData.to.toAddress().toString(),
         fee: outflow.publicData.fee.toAddress().toString(),
-        status: UtxoStatus.NON_INCLUDED,
+      }
+      await this.db.upsert('Withdrawal', {
+        where: { hash: data.hash },
+        update: data,
+        create: { ...data, status: WithdrawalStatus.NON_INCLUDED },
       })
     }
   }

@@ -12,7 +12,7 @@ import {
 } from '@zkopru/database'
 import { EventEmitter } from 'events'
 import { Bytes32, Address, Uint256 } from 'soltypes'
-import { ZkAddress } from '@zkopru/transaction'
+import { Note, ZkAddress } from '@zkopru/transaction'
 import { Fp } from '@zkopru/babyjubjub'
 import { L1Contract } from '../context/layer1'
 import { Block, headerHash } from '../block'
@@ -371,14 +371,36 @@ export class Synchronizer extends EventEmitter {
           Fp.from(returnValues.spendingPubKey).eq(addr.spendingPubKey()),
         )
         if (!owner) throw Error('Failed to find address')
+        const salt = Fp.from(returnValues.salt)
+        const note = new Note(owner, salt, {
+          eth: Fp.from(returnValues.eth),
+          tokenAddr: Fp.from(Address.from(returnValues.token).toBN()),
+          erc20Amount: Fp.from(returnValues.amount),
+          nft: Fp.from(returnValues.nft),
+        })
         const utxo: UtxoSql = {
-          hash: Uint256.from(returnValues.note).toString(),
-          eth: Uint256.from(returnValues.eth).toString(),
+          hash: note
+            .hash()
+            .toUint256()
+            .toString(),
+          eth: note
+            .eth()
+            .toUint256()
+            .toString(),
           owner: owner.toString(),
-          salt: Uint256.from(returnValues.salt).toString(),
-          tokenAddr: Address.from(returnValues.note).toString(),
-          erc20Amount: Uint256.from(returnValues.note).toString(),
-          nft: Uint256.from(returnValues.note).toString(),
+          salt: note.salt.toUint256().toString(),
+          tokenAddr: note
+            .tokenAddr()
+            .toUint256()
+            .toString(),
+          erc20Amount: note
+            .erc20Amount()
+            .toUint256()
+            .toString(),
+          nft: note
+            .nft()
+            .toUint256()
+            .toString(),
           depositedAt: blockNumber,
         }
         logger.info(`synchronizer.js: Found My Deposit (${utxo.hash})`)

@@ -123,8 +123,7 @@ process.env.BLOCK_CONFIRMATIONS = "0";
         })
         .build();
       const ethZkTx = await context.wallets.wallet.shieldTx({
-        tx: ethRawTx,
-        encryptTo: context.accounts.coordinator.zkAddress
+        tx: ethRawTx
       });
       zkTx.push(ethZkTx);
     }
@@ -145,8 +144,7 @@ process.env.BLOCK_CONFIRMATIONS = "0";
         })
         .build();
       const erc20ZkTx = await context.wallets.wallet.shieldTx({
-        tx: erc20RawTx,
-        encryptTo: context.accounts.coordinator.zkAddress
+        tx: erc20RawTx
       });
       zkTx.push(erc20ZkTx);
     }

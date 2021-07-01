@@ -7,6 +7,7 @@ import {
   SNARK,
   OutflowType,
   Memo,
+  MemoVersion,
 } from '@zkopru/transaction'
 import { Header as HeaderSql } from '@zkopru/database'
 import * as Utils from '@zkopru/utils'
@@ -111,8 +112,9 @@ export function serializeTxs(txs: ZkTx[]): Buffer {
     const { swap } = txs[i]
     const { memo } = txs[i]
     const swapExist = swap ? 1 : 0
-    const memoExist = memo ? 2 : 0
-    const indicator = swapExist | memoExist
+    const memoV1 = memo?.version === MemoVersion.V1 ? 2 : 0
+    const memoV2 = memo?.version === MemoVersion.V2 ? 4 : 0
+    const indicator = swapExist | memoV1 | memoV2
     arr.push(Buffer.from([indicator]))
     if (swap) {
       arr.push(swap.toBuffer('be', 32))
