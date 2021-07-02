@@ -176,42 +176,44 @@ export class L2Chain {
   }
 
   async getDeposits(...massDeposits: MassDeposit[]): Promise<DepositSql[]> {
-    const totalDeposits: DepositSql[] = []
-    for (const massDeposit of massDeposits) {
-      const nonIncludedMassDepositCommit = await this.db.findOne(
-        'MassDeposit',
-        {
-          where: {
-            merged: massDeposit.merged.toString(),
-            fee: massDeposit.fee.toString(),
-          },
-          orderBy: {
-            blockNumber: 'asc',
-          },
-        },
-      )
-      // logger.info()
-      if (!nonIncludedMassDepositCommit) {
-        logger.info(massDeposit.merged.toString())
-        logger.info(`fee ${massDeposit.fee.toString()}`)
-        throw Error('Failed to find the mass deposit')
+    const massDepositObjects = await this.db.findMany('MassDeposit', {
+      where: {
+        OR: massDeposits.map(({ merged, fee }) => ({
+          merged: merged.toString(),
+          fee: fee.toString(),
+        })),
+      },
+      orderBy: {
+        blockNumber: 'asc',
+      },
+    })
+    if (massDepositObjects.length !== massDeposits.length) {
+      for (const { merged, fee } of massDeposits) {
+        const i = massDepositObjects.findIndex(
+          massDeposit => merged.toString() === massDeposit.merged,
+        )
+        // eslint-disable-next-line no-continue
+        if (i !== -1) continue
+        logger.info(merged.toString())
+        logger.info(`fee ${fee.toString()}`)
       }
-
-      const deposits = await this.db.findMany('Deposit', {
-        where: { queuedAt: nonIncludedMassDepositCommit.index },
-      })
-      deposits.sort((a, b) => {
-        if (a.blockNumber !== b.blockNumber) {
-          return a.blockNumber - b.blockNumber
-        }
-        if (a.transactionIndex !== b.transactionIndex) {
-          return a.transactionIndex - b.transactionIndex
-        }
-        return a.logIndex - b.logIndex
-      })
-      totalDeposits.push(...deposits)
+      throw Error('Failed to find the mass deposit')
     }
-    return totalDeposits
+    const deposits = await this.db.findMany('Deposit', {
+      where: {
+        queuedAt: massDepositObjects.map(({ index }) => index),
+      },
+    })
+    deposits.sort((a, b) => {
+      if (a.blockNumber !== b.blockNumber) {
+        return a.blockNumber - b.blockNumber
+      }
+      if (a.transactionIndex !== b.transactionIndex) {
+        return a.transactionIndex - b.transactionIndex
+      }
+      return a.logIndex - b.logIndex
+    })
+    return deposits
   }
 
   async getPendingMassDeposits(): Promise<PendingMassDeposits> {
