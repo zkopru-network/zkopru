@@ -42,7 +42,7 @@ export const bobDepositsErc20 = (ctx: CtxProvider) => async () => {
       toWei('0', 'ether'),
       tokens.erc20.address,
       amount,
-      toWei('1', 'milliether'),
+      toWei('10', 'milliether'),
     ),
   ).resolves.toStrictEqual(true)
 }
@@ -67,7 +67,7 @@ export const depositERC721 = (ctx: CtxProvider) => async () => {
       toWei('0', 'ether'),
       tokens.erc721.address,
       '1',
-      toWei('1', 'milliether'),
+      toWei('10', 'milliether'),
     ),
   ).resolves.toStrictEqual(true)
 }
