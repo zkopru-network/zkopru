@@ -76,9 +76,14 @@ export class SQLiteConnector extends DB {
     if (!table) throw new Error(`Unable to find table ${collection} in schema`)
     const docs = [_doc].flat()
     const { sql, query } = createSql(table, docs)
-    const { changes } = await this.db.run(sql)
-    if (changes !== docs.length) {
-      throw new Error('Failed to create document')
+    try {
+      const { changes } = await this.db.run(sql)
+      if (changes !== docs.length) {
+        throw new Error('Failed to create document')
+      }
+    } catch (err) {
+      console.log(sql)
+      throw err
     }
     if (Array.isArray(_doc)) {
       return this._findMany(collection, {
@@ -114,7 +119,11 @@ export class SQLiteConnector extends DB {
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection}`)
     const sql = findManySql(table, options)
-    const models = await this.db.all(sql)
+    const models = await (this.db.all(sql)
+      .catch((err: any) => {
+        console.log(sql)
+        throw err
+      }))
     const objectKeys = Object.keys(table.rowsByName).filter(key => {
       return table.rowsByName[key]?.type === 'Object'
     })
@@ -166,8 +175,13 @@ export class SQLiteConnector extends DB {
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection} in schema`)
     const sql = updateSql(table, options)
-    const result = await this.db.run(sql)
-    return result.changes || 0
+    try {
+      const result = await this.db.run(sql)
+      return result.changes || 0
+    } catch (err) {
+      console.log(sql)
+      throw err
+    }
   }
 
   async upsert(collection: string, options: UpsertOptions) {
@@ -268,6 +282,7 @@ export class SQLiteConnector extends DB {
         cb()
       }
     } catch (err) {
+      console.log('SQL error', transactionSql)
       await this.db.exec('ROLLBACK;')
       for (const cb of [...onErrorCallbacks, ...onCompleteCallbacks]) {
         cb()
