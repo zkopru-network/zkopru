@@ -45,15 +45,11 @@ process.env.BLOCK_CONFIRMATIONS = "0";
     // Deposit ether, create a few notes
     console.log("Depositing ether");
     // deposit a bunch of notes so all the funds aren't locked with each pending tx
-    await Promise.all(
-      // eslint-disable-next-line prefer-spread
-      Array.apply(null, Array(10)).map(() => {
-        return context.wallets.wallet.depositEther(
-          toWei("4", "ether"),
-          toWei("10", "milliether")
-        );
-      })
-    );
+    // use 0 fee so that the deposit commit happens only once at the end,
+    // including all notes at once
+    for (let x = 0; x < 10; x += 1) {
+      await context.wallets.wallet.depositEther(toWei("3", "ether"), "0");
+    }
     // airdrop first
     console.log("Depositing erc20");
     await context.wallets.coordinator.sendLayer1Tx({
@@ -72,16 +68,18 @@ process.env.BLOCK_CONFIRMATIONS = "0";
       )
     });
     // deposit erc20
-    await Promise.all(
-      // eslint-disable-next-line prefer-spread
-      Array.apply(null, Array(10)).map(() => {
-        return context.wallets.wallet.depositERC20(
-          toWei("0", "ether"),
-          context.tokens.erc20.address,
-          amount,
-          toWei("1", "milliether")
-        );
-      })
+    for (let x = 0; x < 10; x += 1) {
+      await context.wallets.wallet.depositERC20(
+        toWei("0", "ether"),
+        context.tokens.erc20.address,
+        amount,
+        "0"
+      );
+    }
+    // Send a deposit with a large fee to push all the others through
+    await context.wallets.wallet.depositEther(
+      toWei("3", "ether"),
+      toWei("1", "ether") // the fee
     );
     // wait for coordinator to propose block
     console.log("Waiting for block proposal...");
