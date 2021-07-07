@@ -285,11 +285,11 @@ export class ZkWalletAccount {
   ):
     | boolean
     | {
-        to: string
-        data: any
-        value: string
-        onComplete: () => Promise<any>
-      } {
+      to: string
+      data: any
+      value: string
+      onComplete: () => Promise<any>
+    } {
     if (!this.account) {
       logger.error('Account is not set')
       return false
@@ -626,12 +626,8 @@ export class ZkWalletAccount {
       hash: tx.hash().toString(),
       fee: tx.fee.toString(),
       proof: tx.proof,
-      memo: tx.memo
-        ? {
-            version: tx.memo.version,
-            data: tx.memo.data.toString('base64'),
-          }
-        : undefined,
+      memoVersion: tx.memo?.version,
+      memoData: tx.memo?.data.toString('base64'),
       swap: tx.swap?.toString(),
       inflow: tx.inflow,
       outflow: tx.outflow,

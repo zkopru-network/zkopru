@@ -108,6 +108,17 @@ export type Tx = {
   slashed: boolean
 }
 
+export type PendingTx = {
+  hash: string
+  fee: string
+  proof: Object
+  memoVersion: number | null
+  memoData: string | null
+  swap: string | null
+  inflow: Object | null
+  outflow: Object | null
+}
+
 export type MassDeposit = {
   index: string
   merged: string
