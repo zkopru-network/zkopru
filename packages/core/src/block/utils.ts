@@ -120,11 +120,11 @@ export function serializeTxs(txs: ZkTx[]): Buffer {
       arr.push(swap.toBuffer('be', 32))
     }
     if (memo) {
-      if (memo.version === 1) {
+      if (memo.version === MemoVersion.V1) {
         if (memo.data.byteLength !== 81)
           throw Error('Memo field should have 81 bytes')
         arr.push(memo.data)
-      } else if (memo.version === 2) {
+      } else if (memo.version === MemoVersion.V2) {
         arr.push(Fp.from(memo.data.length).toBuffer('be', 2))
         arr.push(memo.data)
       } else {
