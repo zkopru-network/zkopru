@@ -86,21 +86,16 @@ export function whereToSql(table: SchemaTable, doc: any = {}, sqlOnly = false) {
     .filter(i => !!i)
     .join(' AND ')
   const orConditions = Array.isArray(doc.OR)
-    ? doc.OR.map((w: any) => whereToSql(table, w, true)).join(' OR ')
+    ? doc.OR.length > 0
+      ? doc.OR.map((w: any) => whereToSql(table, w, true)).join(' OR ')
+      : 'false'
     : 'true'
-  const andConditions = Array.isArray(doc.AND)
-    ? doc.AND.map((w: any) => whereToSql(table, w, true)).join(' AND ')
-    : 'true'
+  const andConditions =
+    Array.isArray(doc.AND) && doc.AND.length > 0
+      ? doc.AND.map((w: any) => whereToSql(table, w, true)).join(' AND ')
+      : 'true'
   return ` ${sqlOnly ? '' : 'WHERE'} (${sql ||
     'true'}) AND (${orConditions}) AND (${andConditions})`
-  // if (Array.isArray(doc.OR)) {
-  //   const orConditions = doc.OR.map((w: any) =>
-  //     whereToSql(table, w, true),
-  //   ).join(' OR ')
-  //   return ` ${sqlOnly ? '' : 'WHERE'}
-  //   (${sql || 'true'}) AND (${orConditions})`
-  // }
-  // return ` ${sqlOnly ? '' : 'WHERE'} ${sql} `
 }
 
 export function tableCreationSql(tableData: TableData[]) {

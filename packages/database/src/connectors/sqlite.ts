@@ -119,11 +119,10 @@ export class SQLiteConnector extends DB {
     const table = this.schema[collection]
     if (!table) throw new Error(`Unable to find table ${collection}`)
     const sql = findManySql(table, options)
-    const models = await (this.db.all(sql)
-      .catch((err: any) => {
-        console.log(sql)
-        throw err
-      }))
+    const models = await this.db.all(sql).catch((err: any) => {
+      console.log(sql)
+      throw err
+    })
     const objectKeys = Object.keys(table.rowsByName).filter(key => {
       return table.rowsByName[key]?.type === 'Object'
     })
