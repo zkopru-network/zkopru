@@ -36,6 +36,8 @@
   },
   "dependencies": {
     "@zkopru/account": "file:../account",
+    "@zkopru/babyjubjub": "file:../babyjubjub",
+    "@zkopru/contracts": "file:../contracts",
     "@zkopru/coordinator": "file:../coordinator",
     "@zkopru/core": "file:../core",
     "@zkopru/database": "file:../database",
