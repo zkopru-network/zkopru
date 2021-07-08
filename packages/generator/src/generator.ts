@@ -12,6 +12,7 @@ import { ZkWalletAccount, ZkWalletAccountConfig } from '@zkopru/zk-wizard'
 import { ZkTxData, ZkTxJob } from './organizer-queue'
 import { TestTxBuilder } from './testbuilder'
 import { logAll, getZkTx } from './generator-utils'
+import { config } from './config'
 
 export interface GeneratorConfig {
   hdWallet: HDWallet
@@ -87,14 +88,17 @@ export class TransferGenerator extends ZkWalletAccount {
     const worker = new Worker(
       `wallet${this.ID}`,
       async (job: ZkTxJob) => {
-        logger.info(`worker received data ${logAll(job.data)}`)
-        const { tx, zkTx } = job.data
-        const txSalt = tx.inflow[0].salt // TODO : use this for following the sequence as the salt
-        const response = await this.sendLayer2Tx(getZkTx(zkTx))
-        if (response.status !== 200) {
-          this.lastSalt = txSalt.toNumber()
-          await this.unlockUtxos(tx.inflow)
-          throw Error(await response.text())
+        try {
+          const { tx, zkTx } = job.data
+          const txSalt = tx.inflow[0].salt // TODO : use this for following the sequence as the salt
+          const response = await this.sendLayer2Tx(getZkTx(zkTx))
+          if (response.status !== 200) {
+            this.lastSalt = txSalt.toNumber()
+            await this.unlockUtxos(tx.inflow)
+            throw Error(await response.text())
+          }
+        } catch (error) {
+          logger.error(`Error on worker process : ${error}`)
         }
       },
       { connection: this.queueConnection },
@@ -166,13 +170,8 @@ export class TransferGenerator extends ZkWalletAccount {
       })
       const { currentTxs } = await response.json()
 
-      // const onQueue = await this.queues.mainQueue.getJobCounts(
-      //   'wait',
-      //   'active',
-      //   'delayed',
-      // )
       /* eslint-disable no-continue */
-      if (currentTxs >= 10) {
+      if (currentTxs >= config.mainQueueLimit) {
         logger.info(`queue is full wait 1 sec`)
         await sleep(1000)
         continue
