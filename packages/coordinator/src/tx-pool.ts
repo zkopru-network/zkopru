@@ -120,10 +120,6 @@ export class TxMemPool implements TxPoolInterface {
   }
 
   async storePendingTx(tx: ZkTx) {
-<<<<<<< HEAD
-=======
-    logger.debug('tx-pool: storePendingTx()')
->>>>>>> a318372... chore: dep fixes, lint
     await this.db.upsert('PendingTx', {
       where: {
         hash: tx.hash().toString(),
