@@ -107,12 +107,7 @@ export class TxMemPool implements TxPoolInterface {
           pi_c: tx.proof.pi_c.map((v: string) => Fp.from(v)),
         },
         swap: tx.swap ? Fp.from(tx.swap) : undefined,
-        memo: tx.memo
-          ? {
-              version: tx.memo.version,
-              data: Buffer.from(tx.memo, 'base64'),
-            }
-          : undefined,
+        memo: tx.memo ? Buffer.from(tx.memo, 'base64') : undefined,
       })
       /* eslint-enable @typescript-eslint/camelcase */
       this.txs[zktx.hash().toString()] = zktx
