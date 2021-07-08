@@ -10,4 +10,5 @@ export const config = {
   chainId: 1,
   genesisHash:
     '0xd1e363805bd72496bc8655758c5e3ef06482a0fa7fa64779d67663bd5f4ff73b',
+  mainQueueLimit: process.env.queueLimit ?? 100,
 }
