@@ -222,6 +222,10 @@ process.env.BLOCK_CONFIRMATIONS = "0";
         path.join(outputPath, "block-1.txt"),
         `0x${block.serializeBlock().toString("hex")}`
       );
+      if (process.env.DEBUG) {
+        console.log("block-1");
+        console.log(`0x${block.serializeBlock().toString("hex")}`);
+      }
     }
     {
       const proposal = await context.coordinator
@@ -233,6 +237,10 @@ process.env.BLOCK_CONFIRMATIONS = "0";
         path.join(outputPath, "block-2.txt"),
         `0x${block.serializeBlock().toString("hex")}`
       );
+      if (process.env.DEBUG) {
+        console.log("block-2");
+        console.log(`0x${block.serializeBlock().toString("hex")}`);
+      }
     }
     console.log("File(s) written, exiting");
     await Promise.race([
