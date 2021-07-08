@@ -79,7 +79,7 @@ describe('testnet', () => {
   let context!: Context
   const ctx = () => context
   beforeAll(async () => {
-    if (process.env.DEBUG === 'true') {
+    if (process.env.DEBUG) {
       attachConsoleLogToPino()
     }
     context = await initContext()
