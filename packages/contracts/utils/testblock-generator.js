@@ -93,7 +93,7 @@ process.env.BLOCK_CONFIRMATIONS = "0";
     console.log("Waiting for block to be processed...");
     for (;;) {
       const processed =
-        context.coordinator.node().synchronizer.latestProcessed || 0;
+        context.wallets.wallet.node.synchronizer.latestProcessed || 0;
       if (processed === 1) break;
       await new Promise(r => setTimeout(r, 1000));
     }
