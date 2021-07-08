@@ -29,7 +29,7 @@
   "dependencies": {
     "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/utils": "file:../utils",
-    "async-lock": "^1.2.8",
+    "async-lock": "^1.2.11",
     "bn.js": "^5.2.0",
     "fake-indexeddb": "^3.1.2",
     "idb": "^6.0.0",
