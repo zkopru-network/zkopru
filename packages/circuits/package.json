@@ -42,13 +42,13 @@
     "start": "ts-node index.ts"
   },
   "dependencies": {
+    "@zkopru/utils-docker": "file:../utils-docker",
     "circom": "0.5.42",
     "circomlib": "0.5.1",
     "snarkjs": "0.3.33",
     "tar": "^6.0.2"
   },
   "devDependencies": {
-    "@zkopru/utils-docker": "file:../utils-docker",
     "ffjavascript": "0.2.22",
     "node-docker-api": "^1.1.22",
     "shelljs": "^0.8.4",

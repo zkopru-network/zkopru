@@ -51,6 +51,7 @@
     "testblock:generate": "node utils/testblock-generator"
   },
   "devDependencies": {
+    "@zkopru/utils": "file:../utils",
     "@truffle/artifactor": "^4.0.54",
     "@truffle/hdwallet-provider": "1.2.2",
     "chai": "^4.2.0",

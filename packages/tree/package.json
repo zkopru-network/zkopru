@@ -33,6 +33,7 @@
     "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/database": "file:../database",
     "@zkopru/transaction": "file:../transaction",
+    "@zkopru/utils": "file:../utils",
     "async-lock": "^1.2.2",
     "big-integer": "^1.6.48",
     "bn.js": "^5.2.0",
