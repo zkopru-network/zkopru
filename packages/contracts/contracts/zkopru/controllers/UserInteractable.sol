@@ -35,6 +35,16 @@ contract UserInteractable is Storage {
 
     event Deposit(uint256 indexed queuedAt, uint256 note, uint256 fee);
 
+    event DepositUtxo(
+        uint256 indexed spendingPubKey,
+        uint256 salt,
+        uint256 eth,
+        address token,
+        uint256 amount,
+        uint256 nft,
+        uint256 fee
+    );
+
     /**
      * @notice Users can use zkopru network by submitting a new homomorphically hiden note.
      * @param spendingPubKey P = poseidon(p*G, N) https://github.com/zkopru-network/zkopru/issues/34#issuecomment-666988505
@@ -258,6 +268,7 @@ contract UserInteractable is Storage {
         Storage.chain.stagedSize = Storage.chain.stagedSize.add(1);
         // Emit event. Coordinator should subscribe this event.
         emit Deposit(Storage.chain.massDepositId, note, fee);
+        emit DepositUtxo(spendingPubKey, salt, eth, token, amount, nft, fee);
     }
 
     function _withdraw(

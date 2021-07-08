@@ -12,12 +12,12 @@ services:
       context: ../packages/contracts/
       dockerfile: ../../dockerfiles/Contract.integration.dockerfile
   circuits:
-    image: zkoprunet/circuits:fix-203
+    image: zkoprunet/circuits:feat-239
     build:
       context: ../packages/circuits/
       dockerfile: ../../dockerfiles/Circuits.light.dockerfile
   playground:
-    image: zkoprunet/playground:fix-203
+    image: zkoprunet/playground:feat-239
     build:
       context: ../
       dockerfile: dockerfiles/Playground.dockerfile

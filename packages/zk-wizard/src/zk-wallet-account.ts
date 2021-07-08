@@ -612,14 +612,22 @@ export class ZkWalletAccount {
   }
 
   async storePendingTx(tx: ZkTx) {
-    await this.db.create('PendingTx', {
+    const pendingTx = {
       hash: tx.hash().toString(),
       fee: tx.fee.toString(),
       proof: tx.proof,
-      memo: tx.memo?.toString('base64'),
+      memoVersion: tx.memo?.version,
+      memoData: tx.memo?.data.toString('base64'),
       swap: tx.swap?.toString(),
       inflow: tx.inflow,
       outflow: tx.outflow,
+    }
+    await this.db.upsert('PendingTx', {
+      where: {
+        hash: pendingTx.hash,
+      },
+      create: pendingTx,
+      update: pendingTx,
     })
   }
 
@@ -720,7 +728,9 @@ export class ZkWalletAccount {
         .nft()
         .toUint256()
         .toString(),
-      fee.toUint256().toString(),
+      Fp.strictFrom(fee)
+        .toUint256()
+        .toString(),
     )
     return {
       to: this.node.layer1.user.options.address,
@@ -729,13 +739,13 @@ export class ZkWalletAccount {
         .eth()
         .add(fee)
         .toString(16),
-      onComplete: () => this.saveOutflow(note),
+      onComplete: async () => this.saveOutflow(note),
     }
   }
 
   private async saveOutflow(outflow: Outflow) {
     if (outflow instanceof Utxo) {
-      await this.db.create('Utxo', {
+      const data = {
         hash: outflow
           .hash()
           .toUint256()
@@ -758,10 +768,14 @@ export class ZkWalletAccount {
           .nft()
           .toUint256()
           .toString(),
-        status: UtxoStatus.NON_INCLUDED,
+      }
+      await this.db.upsert('Utxo', {
+        where: { hash: data.hash },
+        update: data,
+        create: { ...data, status: UtxoStatus.NON_INCLUDED },
       })
     } else if (outflow instanceof Withdrawal) {
-      await this.db.create('Withdrawal', {
+      const data = {
         hash: outflow
           .hash()
           .toUint256()
@@ -787,7 +801,11 @@ export class ZkWalletAccount {
           .toString(),
         to: outflow.publicData.to.toAddress().toString(),
         fee: outflow.publicData.fee.toAddress().toString(),
-        status: UtxoStatus.NON_INCLUDED,
+      }
+      await this.db.upsert('Withdrawal', {
+        where: { hash: data.hash },
+        update: data,
+        create: { ...data, status: WithdrawalStatus.NON_INCLUDED },
       })
     }
   }

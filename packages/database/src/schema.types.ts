@@ -112,10 +112,11 @@ export type PendingTx = {
   hash: string
   fee: string
   proof: Object
-  memo?: string | null
-  swap?: string | null
-  inflow: Object
-  outflow: Object
+  memoVersion: number | null
+  memoData: string | null
+  swap: string | null
+  inflow: Object | null
+  outflow: Object | null
 }
 
 export type MassDeposit = {
@@ -148,6 +149,7 @@ export type Utxo = {
   index?: string | null
   nullifier?: string | null
   usedAt?: string | null
+  depositedAt?: number | null
 }
 
 export type Withdrawal = {

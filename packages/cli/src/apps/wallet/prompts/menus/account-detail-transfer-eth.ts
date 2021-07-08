@@ -98,7 +98,7 @@ export default class TransferEth extends App {
     } while (!tx)
 
     try {
-      await wallet.sendTx({ tx, from: account, encryptTo: to })
+      await wallet.sendTx({ tx, from: account })
     } catch (err) {
       logger.error(err)
       logger.error(tx)

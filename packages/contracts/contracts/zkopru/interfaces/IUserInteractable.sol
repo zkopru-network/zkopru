@@ -14,6 +14,15 @@ struct PrepayRequest {
 
 interface IUserInteractable {
     event Deposit(uint256 indexed queuedAt, uint256 note, uint256 fee);
+    event DepositUtxo(
+        uint256 indexed spendingPubKey,
+        uint256 salt,
+        uint256 eth,
+        address token,
+        uint256 amount,
+        uint256 nft,
+        uint256 fee
+    );
 
     function deposit(
         uint256 spendingPubKey,

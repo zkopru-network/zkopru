@@ -83,7 +83,9 @@ export class ZkopruNode {
     if (!this.running) {
       this.running = true
       logger.info('start sync')
-      this.synchronizer.sync()
+      this.synchronizer.sync(
+        this.tracker.transferTrackers.map(viewer => viewer.zkAddress),
+      )
       this.blockProcessor.start()
       this.blockProcessor.on('slash', async slash => {
         const result = await this.watchdog?.slash(slash.tx)

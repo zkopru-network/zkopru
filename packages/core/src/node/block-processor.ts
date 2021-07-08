@@ -256,7 +256,7 @@ export class BlockProcessor extends EventEmitter {
         const note = account.decrypt(tx, tokenRegistry)
         logger.info(`decrypt result ${note}`)
         if (note) {
-          myUtxos.push(note)
+          myUtxos.push(...note)
         }
       }
     }

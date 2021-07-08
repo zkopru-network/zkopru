@@ -168,9 +168,13 @@ library Deserializer {
             // has swap
             (transaction.swap, cp) = dequeueUint(cp);
         }
+        // check memo field
         if (indicator & 2 != 0) {
-            // has memo
-            (transaction.memo, cp) = dequeueMemo(cp);
+            // v1 memo
+            (transaction.memo, cp) = dequeueMemoV1(cp);
+        } else if (indicator & 4 != 0) {
+            // v2 memo
+            (transaction.memo, cp) = dequeueMemoV2(cp);
         }
         end = cp;
     }
@@ -385,6 +389,33 @@ library Deserializer {
     }
 
     /**
+     * @dev It dequeues a byte from the calldata and returns it.
+     * @param calldataPos The position where the byte starts in the calldata.
+     * @return val The dequeued byte value.
+     * @return end The calldata cursor position to start to read the next items.
+     */
+    function dequeueUint16(uint256 calldataPos)
+        internal
+        pure
+        returns (uint16 val, uint256 end)
+    {
+        assembly {
+            // Acquire the free memory pointer
+            let free_mem := mload(0x40)
+            // Initialize the 32 bytes size slot with zeroes
+            mstore(free_mem, 0)
+            // Copy 2 bytes from the calldata and overwrite it onto the end of the memory slot. (30 bytes zeroes + 2 bytes data)
+            calldatacopy(add(free_mem, 0x1e), calldataPos, 0x02)
+            // Point the val variable to the given memory slot
+            val := mload(free_mem)
+            // Move the cursor 1 byte
+            end := add(calldataPos, 0x02)
+            // Release the free memory pointer
+            mstore(0x40, add(free_mem, 0x20))
+        }
+    }
+
+    /**
      * @dev It dequeues a G1Point for SNARK pairing from the calldata.
      * @param calldataPos The position where the G1Point data starts in the calldata.
      * @return point The dequeued G1Point.
@@ -463,7 +494,7 @@ library Deserializer {
      * @return memo The dequeued memo data.
      * @return end The calldata cursor position to start to read the next items.
      */
-    function dequeueMemo(uint256 calldataPos)
+    function dequeueMemoV1(uint256 calldataPos)
         internal
         pure
         returns (bytes memory memo, uint256 end)
@@ -481,6 +512,36 @@ library Deserializer {
             end := add(calldataPos, 0x51)
             // Release the free memory
             mstore(0x40, add(free_mem, 0x71))
+        }
+    }
+
+    /**
+     * @dev It dequeues the memo field of an l2 transaction.
+     * @param calldataPos The position where the memo field starts in the calldata.
+     * @return memo The dequeued memo data.
+     * @return end The calldata cursor position to start to read the next items.
+     */
+    function dequeueMemoV2(uint256 calldataPos)
+        internal
+        pure
+        returns (bytes memory memo, uint256 end)
+    {
+        uint256 cp = calldataPos;
+        uint16 memoLen;
+        (memoLen, cp) = dequeueUint16(cp);
+        assembly {
+            // Acquire the free memory pointer for the memo object
+            let free_mem := mload(0x40)
+            // Point memo object to the acquired memory slot.
+            memo := free_mem
+            // Set memo data's length as 81 bytes(0x51 = 81)
+            mstore(memo, memoLen)
+            // Copy memo_len bytes from calldata fo the memory
+            calldatacopy(add(memo, 0x20), cp, memoLen)
+            // Move cursor 81 bytes
+            end := add(cp, memoLen)
+            // Release the free memory
+            mstore(0x40, add(free_mem, add(memoLen, 0x20)))
         }
     }
 
