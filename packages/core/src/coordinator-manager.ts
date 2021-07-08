@@ -39,7 +39,7 @@ export class CoordinatorManager {
     const latestBlock = await this._web3.eth.getBlockNumber()
     const currentBlock = startBlock
     const loaded: { [key: string]: boolean } = {}
-    for (;;) {
+    for (; ;) {
       const toBlock = currentBlock + blockCount
       const updates = await burnAuction.getPastEvents('UrlUpdate', {
         fromBlock: currentBlock,

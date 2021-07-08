@@ -70,11 +70,6 @@ export class SNARKVerifier {
       const registeredVk = this.vks[
         verifyingKeyIdentifier(tx.inflow.length, tx.outflow.length)
       ]
-      logger.info(
-        `verifying key: ${JSON.stringify(registeredVk, (_, v) =>
-          typeof v === 'bigint' ? v.toString() : v,
-        )}`,
-      )
       if (!registeredVk) {
         res(false)
         return
