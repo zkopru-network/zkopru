@@ -9,8 +9,11 @@ import { BootstrapData } from '@zkopru/core'
 import { TxUtil } from '@zkopru/contracts'
 import fetch from 'node-fetch'
 import { verifyProof } from '@zkopru/tree'
-import { CoordinatorContext } from './context'
+import { fork, ChildProcess } from 'child_process'
+import path from 'path'
+import uuid from 'uuid'
 import { ClientApi } from './client-api'
+import { CoordinatorContext } from './context'
 
 function catchError(fn: Function): RequestHandler {
   return async (req, res, next) => {
@@ -33,6 +36,8 @@ export class CoordinatorApi {
 
   clientApi: ClientApi
 
+  snarkProcessor?: ChildProcess
+
   constructor(context: CoordinatorContext) {
     this.context = context
     this.bootstrapCache = {}
@@ -41,6 +46,14 @@ export class CoordinatorApi {
 
   start() {
     if (!this.server) {
+      this.snarkProcessor = fork(
+        path.join(__dirname, 'api-snark-processor.js'),
+        ['-r', 'ts-node/register'],
+      )
+      this.context.node.layer1
+        .getVKs()
+        .then(vks => this.snarkProcessor?.send({ vks }))
+        .catch(err => console.log(`Error starting snark verifier: ${err}`))
       const app = express()
       app.use(express.text())
       // CORS/vhosts enforced only for RPC API
@@ -99,13 +112,11 @@ export class CoordinatorApi {
   }
 
   async stop(): Promise<void> {
-    return new Promise(res => {
-      if (this.server) {
-        this.server.close(() => res())
-      } else {
-        res()
-      }
-    })
+    await new Promise(r => (this.server ? this.server.close(r) : r()))
+    if (this.snarkProcessor) {
+      this.snarkProcessor.kill()
+      delete this.snarkProcessor
+    }
   }
 
   private clientApiHandler: RequestHandler = async (req, res) => {
@@ -161,17 +172,40 @@ export class CoordinatorApi {
     const { auctionMonitor } = this.context
     logger.info(`tx data is ${txData}`)
     logger.info(txData)
-    const zkTx = ZkTx.decode(Buffer.from(txData, 'hex'))
-    // const zkTx = ZkTx.decode(txData)
-    const { layer2 } = this.context.node
-    const result = await layer2.isValidTx(zkTx)
-    if (!result) {
+    if (!this.snarkProcessor) {
+      res.status(500).send('SNARK processor is not active')
+      return
+    }
+    const txId = uuid.v4()
+    const txValidPromise = new Promise(rs => {
+      const listener = ({ txId: _txId, isValid }) => {
+        if (_txId !== txId) return
+        rs(isValid)
+      }
+      ;(this.snarkProcessor as any).on('message', listener)
+    })
+    // TODO: don't do this every request
+    const tokens = await this.context.node.db.findMany('TokenRegistry', {
+      where: {
+        isERC20: true,
+      },
+    })
+    this.snarkProcessor.send({
+      tokenAddresses: tokens.map(t => t.address),
+    })
+    this.snarkProcessor.send({
+      txData,
+      txId,
+    })
+    const valid = await txValidPromise
+    if (!valid) {
       logger.info('Failed to verify zk snark')
       res.status(500).send('Coordinator is not running')
       return
     }
+    const zkTx = ZkTx.decode(Buffer.from(txData, 'hex'))
     await this.context.txPool.addToTxPool(zkTx)
-    res.send(result)
+    res.send(valid)
     // Immediately forward the transaction if needed
     if (!auctionMonitor.isProposable) {
       const url = await auctionMonitor.functionalCoordinatorUrl(
