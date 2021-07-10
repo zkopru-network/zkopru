@@ -12,6 +12,9 @@ import {
   serializeFinalization,
   L1Contract,
   L2Chain,
+  serializeBody,
+  serializeHeader,
+  MAX_MASS_DEPOSIT_COMMIT_GAS,
 } from '@zkopru/core'
 import { Account, TransactionReceipt } from 'web3-core'
 import { Subscription } from 'web3-core-subscriptions'
@@ -147,19 +150,19 @@ export class Coordinator extends EventEmitter {
         : undefined,
     )
     this.context.node.start()
-    await Promise.all([
-      this.context.auctionMonitor.start(),
-      this.startSubscribeGasPrice(),
-    ])
     this.api.start()
     this.taskRunners.blockFinalize.start({
       task: this.finalizeTask.bind(this),
       interval: 10000,
     })
     this.taskRunners.massDepositCommit.start({
-      task: this.commitMassDepositTask.bind(this),
+      task: this.commitMassDepositsIfNeeded.bind(this),
       interval: 10000,
     })
+    await Promise.all([
+      this.context.auctionMonitor.start(),
+      this.startSubscribeGasPrice(),
+    ])
     this.emit('start')
   }
 
@@ -288,10 +291,7 @@ export class Coordinator extends EventEmitter {
         )
         return
       }
-      const isProposable = await this.layer1()
-        .upstream.methods.isProposable(this.context.account.address)
-        .call()
-      if (isProposable) {
+      if (this.context.auctionMonitor.isProposable) {
         await this.proposeBlock()
       } else {
         await this.forwardTxs()
@@ -320,7 +320,7 @@ export class Coordinator extends EventEmitter {
 
   private async forwardTxs() {
     const { auctionMonitor } = this.context
-    logger.info(`Skipping block proposal: Not current round owner`)
+    logger.info(`Skipping block proposal: Not proposable`)
     // get pending tx and forward to active proposer
     const pendingTx = await this.context.txPool.pickTxs(Infinity, new BN('1'))
     if (!pendingTx?.length) return
@@ -340,7 +340,54 @@ export class Coordinator extends EventEmitter {
     }
   }
 
-  async commitMassDepositTask(): Promise<TransactionReceipt | undefined> {
+  async commitMassDepositsIfNeeded(): Promise<any> {
+    // if pending deposit fee + pending mass deposit fee + pending tx fee > block proposal fee
+    // then commit the pending deposits to prepare to propose a block
+    if (!this.context.auctionMonitor.isProposable) {
+      logger.info('Skipping mass deposit commit, cannot propose')
+      return
+    }
+    if (!this.context.gasPrice) {
+      logger.info('Skipping deposit commit, gas price is not synced')
+      return
+    }
+    if (!this.context.node.synchronizer.isSynced()) {
+      logger.info('Skipping deposit commit, chain is not synced')
+      return
+    }
+    // TODO: take staged fees from db for reorg protection
+    const stagedDeposits = await this.layer1()
+      .upstream.methods.stagedDeposits()
+      .call()
+    if (+stagedDeposits.fee === 0) return
+    const block = await this.middlewares.generator.genBlock()
+    const bytes = Buffer.concat([
+      serializeHeader(block.header),
+      serializeBody(block.body),
+    ])
+    const expectedGas =
+      (await this.layer1()
+        .coordinator.methods.propose(`0x${bytes.toString('hex')}`)
+        .estimateGas({
+          from: this.context.account.address,
+        })) + MAX_MASS_DEPOSIT_COMMIT_GAS
+    const expectedCost = this.context.gasPrice.muln(expectedGas)
+    logger.info(
+      `Skipping mass deposit, need ${expectedCost.toString()} have ${block.header.fee
+        .toBN()
+        .add(new BN(stagedDeposits.fee))
+        .toString()}`,
+    )
+    if (
+      expectedCost.lte(block.header.fee.toBN().add(new BN(stagedDeposits.fee)))
+    ) {
+      // pending deposits will be enough for a new block, so commit
+      const tx = this.layer1().coordinator.methods.commitMassDeposit()
+      return this.layer1().sendTx(tx, this.context.account)
+    }
+  }
+
+  async commitMassDeposits(): Promise<TransactionReceipt | undefined> {
     const stagedDeposits = await this.layer1()
       .upstream.methods.stagedDeposits()
       .call()
@@ -356,6 +403,10 @@ export class Coordinator extends EventEmitter {
   }
 
   private async finalizeTask() {
+    if (!this.context.node.synchronizer.isSynced()) {
+      logger.info('Skipping finalization, chain is not synced')
+      return
+    }
     const finalization = await this.genFinalization()
     if (!finalization) return
     logger.info('finalization')

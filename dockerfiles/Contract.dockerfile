@@ -8,6 +8,8 @@ RUN apk add --no-cache --virtual .gyp \
 RUN apk add git
 WORKDIR /proj
 COPY ./package.json /proj/package.json
+# Stub a package json for @zkopru/utils so yarn install works
+RUN mkdir /utils && echo '{"version": "0.0.0"}' > /utils/package.json
 RUN yarn install
 COPY ./contracts /proj/contracts
 COPY ./utils /proj/utils

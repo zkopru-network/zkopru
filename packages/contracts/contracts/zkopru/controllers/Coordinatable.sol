@@ -33,6 +33,7 @@ contract Coordinatable is Storage {
     event MassDepositCommit(uint256 index, bytes32 merged, uint256 fee);
     event NewErc20(address tokenAddr);
     event NewErc721(address tokenAddr);
+    event StakeChanged(address indexed coordinator);
 
     /**
      * @notice This function will be updated as the governance of Zkopru's been updated.
@@ -54,6 +55,7 @@ contract Coordinatable is Storage {
         );
         Proposer storage proposer = Storage.chain.proposers[coordinator];
         proposer.stake += msg.value;
+        emit StakeChanged(coordinator);
     }
 
     /**
@@ -70,6 +72,33 @@ contract Coordinatable is Storage {
         delete Storage.chain.proposers[proposerAddr];
         // Withdraw staked amount and reward
         payable(proposerAddr).transfer(proposer.stake.add(proposer.reward));
+        emit StakeChanged(msg.sender);
+    }
+
+    /**
+     * @dev Propose a block only after verifying that the parentHash exists and
+     * is not slashed. Also verify that a list of mass deposit hashes exist.
+     **/
+    function safePropose(
+        bytes memory data,
+        bytes32 parentHeaderHash,
+        bytes32[] memory depositHashes
+    ) public {
+        require(
+            Storage.chain.parentOf[parentHeaderHash] != bytes32(0),
+            "Parent hash does not exist"
+        );
+        require(
+            !Storage.chain.slashed[parentHeaderHash],
+            "Parent hash is slashed"
+        );
+        for (uint8 i = 0; i < depositHashes.length; i++) {
+            require(
+                Storage.chain.committedDeposits[depositHashes[i]] != 0,
+                "Deposit hash does not exist"
+            );
+        }
+        propose(data);
     }
 
     /**

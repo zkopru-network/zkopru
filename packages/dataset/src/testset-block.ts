@@ -9,8 +9,9 @@ import {
 } from '@zkopru/core'
 import { Fp } from '@zkopru/babyjubjub'
 import { Address } from 'soltypes'
-import { hexify, root } from '@zkopru/utils'
+import { root } from '@zkopru/utils'
 import { Transaction } from 'web3-core'
+import AbiCoder from 'web3-eth-abi'
 import { loadZkTxs } from './testset-zktxs'
 
 function strToFp(val: string): Fp {
@@ -71,9 +72,13 @@ export async function getDummyBlock(): Promise<Block> {
     serializeHeader(header),
     serializeBody(body),
   ])
-  const dummySelector = 'aaaaaaaa'
-  const lengthToHex = hexify(serializedBlock.length, 32).slice(2)
-  const paramPosition = hexify(32, 32).slice(2)
+  // Need a real selector or the abi decoder will fail
+  const encodeFunctionSignature = (AbiCoder as any).encodeFunctionSignature.bind(
+    AbiCoder,
+  )
+  const encodeParameters = (AbiCoder as any).encodeParameters.bind(AbiCoder)
+  const dummySelector = encodeFunctionSignature('propose(bytes)')
+  const inputData = encodeParameters(['bytes'], [serializedBlock])
   const dummyTx: Transaction = {
     hash: 'dummyhash',
     nonce: 1,
@@ -85,9 +90,7 @@ export async function getDummyBlock(): Promise<Block> {
     value: 'dummyvalue',
     gasPrice: 'dummygas',
     gas: 11,
-    input: `0x${dummySelector}${paramPosition}${lengthToHex}${serializedBlock.toString(
-      'hex',
-    )}`,
+    input: `0x${dummySelector.replace('0x', '')}${inputData.replace('0x', '')}`,
   }
   return Block.fromTx(dummyTx)
 }

@@ -226,7 +226,7 @@ export interface BurnAuction extends BaseContract {
     isRoundOpen(): NonPayableTransactionObject<boolean>
 
     /**
-     * This function will be updated as the governance of Zkopru's been updated.
+     * This function will be updated as the governance of Zkopru's been updated. This function does not take into account whether a proposer is staked! Use isProposable in Coordinatable.sol for a more accurate response.
      */
     isProposable(proposer: string): NonPayableTransactionObject<boolean>
 

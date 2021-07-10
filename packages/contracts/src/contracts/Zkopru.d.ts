@@ -114,6 +114,11 @@ export interface Zkopru extends BaseContract {
     isProposable(proposerAddr: string): NonPayableTransactionObject<boolean>
 
     /**
+     * Getter for determining if an address is staked for the rollup.*
+     */
+    isStaked(coordinator: string): NonPayableTransactionObject<boolean>
+
+    /**
      * Copy of `isValidRef()` in TxValidator.sol
      */
     isValidRef(

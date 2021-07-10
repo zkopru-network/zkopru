@@ -218,6 +218,13 @@ export const ZkopruABI = [
     type: 'function',
   },
   {
+    inputs: [{ internalType: 'address', name: 'coordinator', type: 'address' }],
+    name: 'isStaked',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
     inputs: [
       { internalType: 'bytes32', name: 'l2BlockHash', type: 'bytes32' },
       { internalType: 'uint256', name: 'ref', type: 'uint256' },

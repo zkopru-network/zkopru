@@ -53,6 +53,10 @@ export type OwnershipTransferred = ContractEventLog<{
   0: string
   1: string
 }>
+export type StakeChanged = ContractEventLog<{
+  coordinator: string
+  0: string
+}>
 
 export interface Coordinatable extends BaseContract {
   constructor(
@@ -126,6 +130,15 @@ export interface Coordinatable extends BaseContract {
     deregister(): NonPayableTransactionObject<void>
 
     /**
+     * Propose a block only after verifying that the parentHash exists and is not slashed. Also verify that a list of mass deposit hashes exist.*
+     */
+    safePropose(
+      data: string | number[],
+      parentHeaderHash: string | number[],
+      depositHashes: (string | number[])[],
+    ): NonPayableTransactionObject<void>
+
+    /**
      * Coordinator proposes a new block using this function. propose() will freeze      the current mass deposit for the next block proposer, and will go through      CHALLENGE_PERIOD.
      * @param data Serialized newly minted block data
      */
@@ -194,6 +207,12 @@ export interface Coordinatable extends BaseContract {
       cb?: Callback<OwnershipTransferred>,
     ): EventEmitter
 
+    StakeChanged(cb?: Callback<StakeChanged>): EventEmitter
+    StakeChanged(
+      options?: EventOptions,
+      cb?: Callback<StakeChanged>,
+    ): EventEmitter
+
     allEvents(options?: EventOptions, cb?: Callback<EventLog>): EventEmitter
   }
 
@@ -225,5 +244,12 @@ export interface Coordinatable extends BaseContract {
     event: 'OwnershipTransferred',
     options: EventOptions,
     cb: Callback<OwnershipTransferred>,
+  ): void
+
+  once(event: 'StakeChanged', cb: Callback<StakeChanged>): void
+  once(
+    event: 'StakeChanged',
+    options: EventOptions,
+    cb: Callback<StakeChanged>,
   ): void
 }

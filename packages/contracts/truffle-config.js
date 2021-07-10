@@ -73,13 +73,19 @@ module.exports = {
     },
     goerli_pkey: {
       provider: () =>
-        new HDWalletProvider(process.env.GOERLI_KEY, process.env.GOERLI_URL),
+        new HDWalletProvider({
+          privateKeys: [process.env.GOERLI_KEY],
+          providerOrUrl: process.env.GOERLI_URL
+        }),
       network_id: "5",
-      gasPrice: "1000000000"
+      gasPrice: "50000000000"
     },
     goerli: {
       provider: () => {
-        return new HDWalletProvider(process.env.MNEMONIC, process.env.GOERLI);
+        return new HDWalletProvider({
+          mnemonic: process.env.MNEMONIC,
+          providerOrUrl: process.env.GOERLI
+        });
       },
       skipDryRun: true,
       network_id: "5",

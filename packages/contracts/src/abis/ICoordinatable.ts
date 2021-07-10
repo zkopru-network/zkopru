@@ -78,6 +78,19 @@ export const ICoordinatableABI = [
     type: 'event',
   },
   {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'coordinator',
+        type: 'address',
+      },
+    ],
+    name: 'StakeChanged',
+    type: 'event',
+  },
+  {
     inputs: [],
     name: 'register',
     outputs: [],
@@ -96,6 +109,17 @@ export const ICoordinatableABI = [
     name: 'stake',
     outputs: [],
     stateMutability: 'payable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'bytes', name: 'blockData', type: 'bytes' },
+      { internalType: 'bytes32', name: 'parentHash', type: 'bytes32' },
+      { internalType: 'bytes32[]', name: 'depositHashes', type: 'bytes32[]' },
+    ],
+    name: 'safePropose',
+    outputs: [],
+    stateMutability: 'nonpayable',
     type: 'function',
   },
   {

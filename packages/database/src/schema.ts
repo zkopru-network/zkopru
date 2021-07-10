@@ -369,4 +369,13 @@ export default [
       ['blockNumber', 'Int', { index: true }],
     ],
   },
+  {
+    name: 'ERC20Info',
+    primaryKey: 'address',
+    rows: [
+      ['address', 'String'],
+      ['symbol', 'String'],
+      ['decimals', 'Int'],
+    ],
+  },
 ] as TableData[]
