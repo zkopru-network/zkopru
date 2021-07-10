@@ -370,7 +370,10 @@ export class Synchronizer extends EventEmitter {
         const owner = addresses.find(addr =>
           Fp.from(returnValues.spendingPubKey).eq(addr.spendingPubKey()),
         )
-        if (!owner) throw Error('Failed to find address')
+        if (!owner) {
+          // skip storing Deposit details
+          return
+        }
         const salt = Fp.from(returnValues.salt)
         const note = new Note(owner, salt, {
           eth: Fp.from(returnValues.eth),
