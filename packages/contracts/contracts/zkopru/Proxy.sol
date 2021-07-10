@@ -56,6 +56,7 @@ contract Proxy is Storage {
         _connect(addr, ICoordinatable(0).register.selector);
         _connect(addr, ICoordinatable(0).stake.selector);
         _connect(addr, ICoordinatable(0).deregister.selector);
+        _connect(addr, ICoordinatable(0).safePropose.selector);
         _connect(addr, ICoordinatable(0).propose.selector);
         _connect(addr, ICoordinatable(0).finalize.selector);
         _connect(addr, ICoordinatable(0).commitMassDeposit.selector);

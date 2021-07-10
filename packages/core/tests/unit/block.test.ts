@@ -2,9 +2,13 @@
  * @jest-environment node
  */
 import { Transaction } from 'web3-core'
-import { hexify } from '@zkopru/utils'
 import { getDummyBody, dummyHeader } from '~dataset/testset-block'
 import { serializeHeader, serializeBody, Block, headerHash } from '~core'
+import AbiCoder from 'web3-eth-abi'
+
+const encodeFunctionSignature = (AbiCoder as any).encodeFunctionSignature.bind(
+  AbiCoder,
+)
 
 describe('block.ts', () => {
   it('should be serialized and deserialized', async () => {
@@ -16,9 +20,9 @@ describe('block.ts', () => {
       serializeHeader(header),
       serializeBody(body),
     ])
-    const dummySelector = 'aaaaaaaa'
-    const lengthToHex = hexify(serializedBlock.length, 32).slice(2)
-    const paramPosition = hexify(32, 32).slice(2)
+    const dummySelector = encodeFunctionSignature('propose(bytes)')
+    const encodeParameters = (AbiCoder as any).encodeParameters.bind(AbiCoder)
+    const inputData = encodeParameters(['bytes'], [serializedBlock])
     const dummyTx: Transaction = {
       hash: 'dummyhash',
       nonce: 1,
@@ -30,9 +34,7 @@ describe('block.ts', () => {
       value: 'dummyvalue',
       gasPrice: 'dummygas',
       gas: 11,
-      input: `0x${dummySelector}${paramPosition}${lengthToHex}${serializedBlock.toString(
-        'hex',
-      )}`,
+      input: `0x${dummySelector.replace('0x', '')}${inputData.replace('0x', '')}`,
     }
     const deserializedBlock = Block.fromTx(dummyTx)
     expect(deserializedBlock).toBeDefined()

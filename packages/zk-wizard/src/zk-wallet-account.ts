@@ -282,54 +282,21 @@ export class ZkWalletAccount {
     eth: F,
     fee: F,
     to?: ZkAddress,
-  ):
-    | boolean
-    | {
-        to: string
-        data: any
-        value: string
-        onComplete: () => Promise<any>
-      } {
+  ): {
+    to: string
+    data: any
+    value: string
+    onComplete: () => Promise<any>
+  } {
     if (!this.account) {
       logger.error('Account is not set')
-      return false
+      throw new Error('Account is not set')
     }
     const note = Utxo.newEtherNote({
       eth,
       owner: to || this.account.zkAddress,
     })
-    const tx = this.node.layer1.user.methods.deposit(
-      note.owner.spendingPubKey().toString(),
-      note.salt.toUint256().toString(),
-      note
-        .eth()
-        .toUint256()
-        .toString(),
-      note
-        .tokenAddr()
-        .toAddress()
-        .toString(),
-      note
-        .erc20Amount()
-        .toUint256()
-        .toString(),
-      note
-        .nft()
-        .toUint256()
-        .toString(),
-      Fp.strictFrom(fee)
-        .toUint256()
-        .toString(),
-    )
-    return {
-      to: this.node.layer1.user.options.address,
-      data: tx.encodeABI(),
-      value: note
-        .eth()
-        .add(fee)
-        .toString(16),
-      onComplete: async () => this.saveOutflow(note),
-    }
+    return this.depositTx(note, Fp.strictFrom(fee))
   }
 
   async depositERC20(
@@ -366,6 +333,30 @@ export class ZkWalletAccount {
     })
     const result = await this.deposit(note, Fp.strictFrom(fee))
     return result
+  }
+
+  depositERC20Tx(
+    eth: F,
+    addr: string,
+    amount: F,
+    fee: F,
+    to?: ZkAddress,
+  ): {
+    to: string
+    data: any
+    value: string
+    onComplete: () => Promise<any>
+  } {
+    if (!this.account) {
+      throw new Error('Account is not set')
+    }
+    const note = Utxo.newERC20Note({
+      eth,
+      owner: to || this.account.zkAddress,
+      tokenAddr: addr,
+      erc20Amount: amount,
+    })
+    return this.depositTx(note, Fp.strictFrom(fee))
   }
 
   async depositERC721(
@@ -621,14 +612,22 @@ export class ZkWalletAccount {
   }
 
   async storePendingTx(tx: ZkTx) {
-    await this.db.create('PendingTx', {
+    const pendingTx = {
       hash: tx.hash().toString(),
       fee: tx.fee.toString(),
       proof: tx.proof,
-      memo: tx.memo?.toString('base64'),
+      memoVersion: tx.memo?.version,
+      memoData: tx.memo?.data.toString('base64'),
       swap: tx.swap?.toString(),
       inflow: tx.inflow,
       outflow: tx.outflow,
+    }
+    await this.db.upsert('PendingTx', {
+      where: {
+        hash: pendingTx.hash,
+      },
+      create: pendingTx,
+      update: pendingTx,
     })
   }
 
@@ -698,9 +697,53 @@ export class ZkWalletAccount {
     return false
   }
 
+  private depositTx(
+    note: Utxo,
+    fee: Fp,
+  ): {
+    data: string
+    onComplete: () => Promise<any>
+    to: string
+    value: string
+  } {
+    if (!this.account) {
+      throw new Error('Account is not set')
+    }
+    const tx = this.node.layer1.user.methods.deposit(
+      note.owner.spendingPubKey().toString(),
+      note.salt.toUint256().toString(),
+      note
+        .eth()
+        .toUint256()
+        .toString(),
+      note
+        .tokenAddr()
+        .toAddress()
+        .toString(),
+      note
+        .erc20Amount()
+        .toUint256()
+        .toString(),
+      note
+        .nft()
+        .toUint256()
+        .toString(),
+      fee.toUint256().toString(),
+    )
+    return {
+      to: this.node.layer1.user.options.address,
+      data: tx.encodeABI(),
+      value: note
+        .eth()
+        .add(fee)
+        .toString(16),
+      onComplete: () => this.saveOutflow(note),
+    }
+  }
+
   private async saveOutflow(outflow: Outflow) {
     if (outflow instanceof Utxo) {
-      await this.db.create('Utxo', {
+      const data = {
         hash: outflow
           .hash()
           .toUint256()
@@ -723,10 +766,14 @@ export class ZkWalletAccount {
           .nft()
           .toUint256()
           .toString(),
-        status: UtxoStatus.NON_INCLUDED,
+      }
+      await this.db.upsert('Utxo', {
+        where: { hash: data.hash },
+        update: data,
+        create: { ...data, status: UtxoStatus.NON_INCLUDED },
       })
     } else if (outflow instanceof Withdrawal) {
-      await this.db.create('Withdrawal', {
+      const data = {
         hash: outflow
           .hash()
           .toUint256()
@@ -752,7 +799,11 @@ export class ZkWalletAccount {
           .toString(),
         to: outflow.publicData.to.toAddress().toString(),
         fee: outflow.publicData.fee.toAddress().toString(),
-        status: UtxoStatus.NON_INCLUDED,
+      }
+      await this.db.upsert('Withdrawal', {
+        where: { hash: data.hash },
+        update: data,
+        create: { ...data, status: WithdrawalStatus.NON_INCLUDED },
       })
     }
   }

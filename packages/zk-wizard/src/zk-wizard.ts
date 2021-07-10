@@ -9,6 +9,9 @@ import {
   Migration,
   Utxo,
   ZkAddress,
+  Memo,
+  MemoVersion,
+  V2_MEMO_DEFAULT_ABI,
 } from '@zkopru/transaction'
 import { MerkleProof, UtxoTree } from '@zkopru/tree'
 import { logger } from '@zkopru/utils'
@@ -16,6 +19,7 @@ import path from 'path'
 import os from 'os'
 import fs from 'fs'
 import fetch from 'node-fetch'
+
 import { SNARKResult, genSNARK } from './snark'
 
 const IPFS_GATEWAY_HOST = `https://ipfs.tubby.cloud`
@@ -58,7 +62,8 @@ export class ZkWizard {
   }
 
   /**
-   * @param toMemo n-th outflow will be encrypted
+   * @param encryptTo The default memo is v2 memo that consumes more gas.
+   *   If you specify this encryptTo parameter it'll use v1 memo and save gas.
    */
   async shield({
     tx,
@@ -84,9 +89,12 @@ export class ZkWizard {
             if (isDataPrepared()) {
               const zkTx = await this.buildZkTx({
                 tx,
-                encryptTo,
                 signer: from,
                 merkleProof,
+                option: {
+                  memo: encryptTo ? MemoVersion.V1 : MemoVersion.V2,
+                  encryptTo,
+                },
               })
               resolve(zkTx)
             }
@@ -206,14 +214,14 @@ export class ZkWizard {
 
   private async buildZkTx({
     tx,
-    encryptTo,
     signer,
     merkleProof,
+    option,
   }: {
     tx: RawTx
-    encryptTo?: ZkAddress
     signer: ZkAccount
     merkleProof: { [hash: number]: MerkleProof<Fp> }
+    option?: { memo?: MemoVersion; encryptTo?: ZkAddress }
   }): Promise<ZkTx> {
     const nIn = tx.inflow.length
     const nOut = tx.outflow.length
@@ -240,12 +248,32 @@ export class ZkWizard {
         start}`,
     )
     // TODO handle genProof exception
-    let memo: Buffer | undefined
-    if (encryptTo !== undefined) {
-      const noteToEncrypt = tx.outflow.find(outflow =>
-        outflow.owner.eq(encryptTo),
-      )
-      if (noteToEncrypt instanceof Utxo) memo = noteToEncrypt.encrypt()
+    const encryptTo = option?.encryptTo
+    let memo: Memo | undefined
+    if (option?.memo === MemoVersion.V1) {
+      if (encryptTo !== undefined) {
+        const noteToEncrypt = tx.outflow.find(outflow =>
+          outflow.owner.eq(encryptTo),
+        )
+        if (noteToEncrypt instanceof Utxo) {
+          memo = {
+            version: MemoVersion.V1,
+            data: noteToEncrypt.encrypt(),
+          }
+        }
+      } else {
+        logger.warn('Failed to find note to encrypt.')
+      }
+    } else if (option?.memo === MemoVersion.V2) {
+      memo = {
+        version: MemoVersion.V2,
+        data: Buffer.concat([
+          V2_MEMO_DEFAULT_ABI.toBuffer(),
+          ...tx.outflow
+            .filter(outflow => outflow instanceof Utxo)
+            .map(utxo => (utxo as Utxo).encrypt()),
+        ]),
+      }
     }
     const zkTx: ZkTx = new ZkTx({
       inflow: tx.inflow.map((utxo, index) => {

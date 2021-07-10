@@ -4,6 +4,7 @@ import { Fp } from '@zkopru/babyjubjub'
 import * as Utils from '@zkopru/utils'
 import { Bytes32, Uint256 } from 'soltypes'
 import { OutflowType } from './note'
+import { Memo } from './memo'
 
 export interface ZkInflow {
   nullifier: Fp
@@ -42,7 +43,7 @@ export class ZkTx {
 
   swap?: Fp
 
-  memo?: Buffer
+  memo?: Memo
 
   cache: {
     hash?: Bytes32
@@ -62,7 +63,7 @@ export class ZkTx {
     fee: Fp
     proof?: SNARK
     swap?: Fp
-    memo?: Buffer
+    memo?: Memo
   }) {
     this.inflow = inflow
     this.outflow = outflow
@@ -82,12 +83,33 @@ export class ZkTx {
       fee: this.fee,
       proof: this.proof,
       swap: this.swap,
-      memo: this.memo?.toString('base64'),
+      memo: this.memo
+        ? {
+            version: this.memo.version,
+            data: this.memo.data.toString('base64'),
+          }
+        : undefined,
     }
   }
 
   encode(): Buffer {
     if (!this.proof) throw Error('SNARK does not exist')
+    let switchForSwapAndMemo = 0
+    if (this.swap) switchForSwapAndMemo += 1
+    let memo: Buffer
+    if (this.memo?.version === 1) {
+      switchForSwapAndMemo += 2
+      memo = this.memo.data
+    } else if (this.memo?.version === 2) {
+      switchForSwapAndMemo += 4
+      memo = Buffer.concat([
+        Fp.from(this.memo.data.length).toBuffer('be', 2),
+        this.memo.data,
+      ])
+    } else {
+      memo = Buffer.from([])
+    }
+
     return Buffer.concat([
       Uint8Array.from([this.inflow.length]),
       ...this.inflow.map(inflow =>
@@ -123,11 +145,9 @@ export class ZkTx {
       this.proof.pi_b[1][0].toBuffer('be', 32),
       this.proof.pi_c[0].toBuffer('be', 32),
       this.proof.pi_c[1].toBuffer('be', 32),
-      Uint8Array.from([
-        this.swap ? 1 + (this.memo ? 2 : 0) : 0 + (this.memo ? 2 : 0),
-      ]), // b'11' => tx has swap & memo, b'00' => no swap & no memo
+      Uint8Array.from([switchForSwapAndMemo]), // b'11' => tx has swap & memo, b'00' => no swap & no memo
       this.swap ? this.swap.toBuffer('be', 32) : Buffer.from([]),
-      this.memo ? this.memo.slice(0, 81) : Buffer.from([]),
+      memo,
     ])
   }
 
@@ -297,14 +317,26 @@ export class ZkTx {
         Fp.fromBuffer(queue.dequeue(32)),
       ],
     }
-    // Swap
+    // bit switch for swap and memo field: https://github.com/zkopru-network/zkopru/issues/218
     const swapAndMemo = queue.dequeue(1)[0]
+    // Swap
     if (swapAndMemo & 1) {
       zkTx.swap = Fp.fromBuffer(queue.dequeue(32))
     }
     // Memo
     if (swapAndMemo & (1 << 1)) {
-      zkTx.memo = queue.dequeue(81)
+      // v1
+      zkTx.memo = {
+        version: 1,
+        data: queue.dequeue(81),
+      }
+    } else if (swapAndMemo & (1 << 2)) {
+      // v2
+      const len = parseInt(`0x${queue.dequeue(2).toString('hex')}`, 16)
+      zkTx.memo = {
+        version: 2,
+        data: queue.dequeue(len),
+      }
     }
     zkTx.cache = {
       size: buff.length,

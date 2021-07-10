@@ -61,6 +61,8 @@ export class BlockProcessor extends EventEmitter {
 
   canonicalLock = new AsyncLock()
 
+  lastEmittedProposalNum = -1
+
   constructor({
     db,
     blockCache,
@@ -122,7 +124,10 @@ export class BlockProcessor extends EventEmitter {
           })
           const latest = latestProcessed.pop()
           await this.calcCanonicalBlockHeights(latest?.proposalNum)
-          this.emit('processed', { proposalNum: latest?.proposalNum || 0 })
+          if (this.lastEmittedProposalNum !== latest?.proposalNum) {
+            this.lastEmittedProposalNum = latest?.proposalNum
+            this.emit('processed', { proposalNum: latest?.proposalNum || 0 })
+          }
           // this.synchronizer.setLatestProcessed(latest?.proposalNum || 0)
           break
         }
@@ -251,7 +256,7 @@ export class BlockProcessor extends EventEmitter {
         const note = account.decrypt(tx, tokenRegistry)
         logger.info(`decrypt result ${note}`)
         if (note) {
-          myUtxos.push(note)
+          myUtxos.push(...note)
         }
       }
     }

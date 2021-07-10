@@ -50,6 +50,7 @@ export class TxUtil {
         to: address,
         value,
         data: tx.encodeABI(),
+        nonce: option?.nonce ? +option.nonce.toString() : undefined,
       },
       account.privateKey,
     )
@@ -61,19 +62,49 @@ export class TxUtil {
     address: string,
     web3: Web3,
     account: Account,
-    option?: Tx,
+    option: Tx = {},
   ): Promise<TransactionReceipt | undefined> {
-    const signedTx = await this.getSignedTransaction(
-      tx,
-      address,
-      web3,
-      account,
-      option,
-    )
-    const receipt = await web3.eth.sendSignedTransaction(signedTx)
-    if (option?.gas && !receipt?.status) {
-      logger.info('Check gas amount for this transaction revert')
+    const sendTx = async (options: Tx = {}) => {
+      const signedTx = await this.getSignedTransaction(
+        tx,
+        address,
+        web3,
+        account,
+        options,
+      )
+      return web3.eth.sendSignedTransaction(signedTx)
     }
-    return receipt
+    let gasPrice = option.gasPrice || (await web3.eth.getGasPrice())
+    const nonce =
+      option.nonce ||
+      (await web3.eth.getTransactionCount(account.address, 'pending'))
+    const timeoutError = new Error('Timed out')
+    for (;;) {
+      try {
+        const receipt = (await Promise.race([
+          sendTx({
+            nonce,
+            gasPrice,
+            ...option,
+          }),
+          // Timeout after ~10 blocks to avoid losing slots in burn auction
+          new Promise((_, rj) =>
+            setTimeout(() => rj(timeoutError), 200 * 1000),
+          ),
+        ])) as TransactionReceipt
+        if (option?.gas && !receipt?.status) {
+          logger.info('Check gas amount for this transaction revert')
+        }
+        return receipt
+      } catch (err) {
+        if (err.toString() !== timeoutError.toString()) {
+          // It's not a timeout, throw
+          throw err
+        }
+        logger.info('Rebroadcasting with higher gas price')
+        // bump the gas price and go again
+        gasPrice = Math.ceil(+gasPrice + +gasPrice * 0.15)
+      }
+    }
   }
 }

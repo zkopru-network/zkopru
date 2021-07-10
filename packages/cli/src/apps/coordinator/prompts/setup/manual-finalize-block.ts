@@ -9,7 +9,7 @@ export default class CommitDeposits extends App {
     logger.info('Mannual finalization')
     let receipt: TransactionReceipt | undefined
     try {
-      receipt = await this.base.commitMassDepositTask()
+      receipt = await this.base.commitMassDeposits()
     } catch (err) {
       logger.error(err)
     } finally {

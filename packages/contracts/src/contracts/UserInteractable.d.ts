@@ -29,6 +29,22 @@ export type Deposit = ContractEventLog<{
   1: string
   2: string
 }>
+export type DepositUtxo = ContractEventLog<{
+  spendingPubKey: string
+  salt: string
+  eth: string
+  token: string
+  amount: string
+  nft: string
+  fee: string
+  0: string
+  1: string
+  2: string
+  3: string
+  4: string
+  5: string
+  6: string
+}>
 export type OwnershipTransferred = ContractEventLog<{
   previousOwner: string
   newOwner: string
@@ -179,6 +195,12 @@ export interface UserInteractable extends BaseContract {
     Deposit(cb?: Callback<Deposit>): EventEmitter
     Deposit(options?: EventOptions, cb?: Callback<Deposit>): EventEmitter
 
+    DepositUtxo(cb?: Callback<DepositUtxo>): EventEmitter
+    DepositUtxo(
+      options?: EventOptions,
+      cb?: Callback<DepositUtxo>,
+    ): EventEmitter
+
     OwnershipTransferred(cb?: Callback<OwnershipTransferred>): EventEmitter
     OwnershipTransferred(
       options?: EventOptions,
@@ -190,6 +212,13 @@ export interface UserInteractable extends BaseContract {
 
   once(event: 'Deposit', cb: Callback<Deposit>): void
   once(event: 'Deposit', options: EventOptions, cb: Callback<Deposit>): void
+
+  once(event: 'DepositUtxo', cb: Callback<DepositUtxo>): void
+  once(
+    event: 'DepositUtxo',
+    options: EventOptions,
+    cb: Callback<DepositUtxo>,
+  ): void
 
   once(event: 'OwnershipTransferred', cb: Callback<OwnershipTransferred>): void
   once(

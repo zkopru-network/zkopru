@@ -37,8 +37,16 @@ export class ZkAddress {
     return this.address
   }
 
+  toBuffer(): Buffer {
+    return base58.decode(this.address)
+  }
+
   eq(addr: ZkAddress): boolean {
     return this.toString() === addr.toString()
+  }
+
+  static fromBuffer(data: Buffer): ZkAddress {
+    return new ZkAddress(base58.encode(data))
   }
 
   static from(PubSK: Fp, N: Point): ZkAddress {

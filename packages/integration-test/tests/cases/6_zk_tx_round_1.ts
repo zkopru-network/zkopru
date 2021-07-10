@@ -31,7 +31,6 @@ export const buildZkTxAliceSendEthToBob = async (
     .build()
   const aliceZkTx = await aliceWallet.shieldTx({
     tx: aliceRawTx,
-    encryptTo: bob.zkAddress,
   })
   const aliceNewBalance = await aliceWallet.getSpendableAmount(alice)
   const aliceLockedAmount = await aliceWallet.getLockedAmount(alice)
@@ -67,7 +66,6 @@ export const buildZkTxBobSendERC20ToCarl = async (
     .build()
   const bobZkTx = await bobWallet.shieldTx({
     tx: bobRawTx,
-    encryptTo: carl.zkAddress,
   })
   // const response = await bobWallet.sendTx(bobRawTx)
   const bobNewBalance = (await bobWallet.getSpendableAmount(bob)).getERC20(
@@ -104,7 +102,6 @@ export const buildZkTxCarlSendNftToAlice = async (
     .build()
   const carlZkTxal = await carlWallet.shieldTx({
     tx: carlRawTx,
-    encryptTo: alice.zkAddress,
   })
   const carlNewNFTs = (await carlWallet.getSpendableAmount(carl)).getNFTs(
     tokenAddr,

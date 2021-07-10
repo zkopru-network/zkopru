@@ -16,8 +16,8 @@ describe('index', () => {
       const zktxs = await loadZkTxs()
       const tx1 = zktxs[0]
       const note = accounts.bob.decrypt(tx1)
-      expect(note).toBeDefined()
-      expect(note?.owner.toString()).toBe(accounts.bob.zkAddress.toString())
+      expect(note[0]).toBeDefined()
+      expect(note[0].owner.toString()).toBe(accounts.bob.zkAddress.toString())
     }, 60000)
   })
 })

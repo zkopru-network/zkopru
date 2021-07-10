@@ -2,11 +2,12 @@
 import Web3 from 'web3'
 import { SomeDBConnector, DB, schema } from '@zkopru/database'
 import { FullNode } from '@zkopru/core'
+import { Layer1 } from '@zkopru/contracts'
 import { NodeConfig } from './types'
 
 const DEFAULT = {
   address:
-    process.env.ZKOPRU_ADDRESS || '0xdadF77fdc462900B98458eA310a18d60946161a6',
+    process.env.ZKOPRU_ADDRESS || '0x0f7072b0d2d6CeA699CC52f02e6d7fA3bE5D4F17',
   bootstrap: true,
   websocket:
     process.env.ZKOPRU_WEBSOCKET ||
@@ -44,41 +45,47 @@ export default class ZkopruNode {
   }
 
   private async db(...args: any[]) {
-    await this.initDB(schema, ...args)
+    await this.initDB(...args)
     return this._db as DB
+  }
+
+  async initNode(...args: any[]) {
+    if (this.node) return
+    const provider = new Web3.providers.WebsocketProvider(
+      this.config.websocket as string,
+      {
+        reconnect: {
+          delay: 2000,
+          auto: true,
+        },
+        clientConfig: {
+          keepalive: true,
+          keepaliveInterval: 30000,
+        },
+      },
+    )
+    // eslint-disable-next-line no-inner-declarations
+    async function waitConnection(_provider: any) {
+      return new Promise<void>(res => {
+        if (_provider.connected) return res()
+        _provider.on('connect', res)
+      })
+    }
+    provider.connect()
+    await waitConnection(provider)
+    await new Promise(r => setTimeout(r, 1000))
+    this.node = await FullNode.new({
+      address: this.config.address as string,
+      provider,
+      db: await this.db(...args),
+    })
   }
 
   // Accept database configuration here
   async start(...args: any[]) {
+    await this.initNode(...args)
     if (!this.node) {
-      const provider = new Web3.providers.WebsocketProvider(
-        this.config.websocket as string,
-        {
-          reconnect: {
-            delay: 2000,
-            auto: true,
-          },
-          clientConfig: {
-            keepalive: true,
-            keepaliveInterval: 30000,
-          },
-        },
-      )
-      // eslint-disable-next-line no-inner-declarations
-      async function waitConnection(_provider: any) {
-        return new Promise<void>(res => {
-          if (_provider.connected) return res()
-          _provider.on('connect', res)
-        })
-      }
-      provider.connect()
-      await waitConnection(provider)
-      await new Promise(r => setTimeout(r, 1000))
-      this.node = await FullNode.new({
-        address: this.config.address as string,
-        provider,
-        db: await this.db(...args),
-      })
+      throw new Error('Node is not initialized')
     }
     this.node.start()
   }
@@ -111,5 +118,17 @@ export default class ZkopruNode {
       _db.delete('LightTree', { where: {} })
       _db.delete('TokenRegistry', { where: {} })
     })
+  }
+
+  async registerERC20Tx(address: string) {
+    if (!this.node) throw new Error('Zkopru node is not initialized')
+    return this.node.layer1.coordinator.methods
+      .registerERC20(address)
+      .encodeABI()
+  }
+
+  async getERC20Contract(address: string) {
+    if (!this.node) throw new Error('Zkopru node is not initialized')
+    return Layer1.getERC20(this.node.layer1.web3, address)
   }
 }

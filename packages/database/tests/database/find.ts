@@ -356,6 +356,42 @@ export default function(this: { db: DB }) {
     }
   })
 
+  test('should return nothing for empty OR statement', async () => {
+    const table = 'TableTwo'
+    for (let x = 0; x < 10; x++) {
+      await this.db.create(table, {
+        counterField: x,
+      })
+      await new Promise(r => setTimeout(r, 10))
+    }
+    {
+      const docs = await this.db.findMany(table, {
+        where: {
+          OR: [],
+        },
+      })
+      assert.equal(docs.length, 0)
+    }
+  })
+
+  test('should return everything for empty AND statement', async () => {
+    const table = 'TableTwo'
+    for (let x = 0; x < 10; x++) {
+      await this.db.create(table, {
+        counterField: x,
+      })
+      await new Promise(r => setTimeout(r, 10))
+    }
+    {
+      const docs = await this.db.findMany(table, {
+        where: {
+          AND: [],
+        },
+      })
+      assert.equal(docs.length, 10)
+    }
+  })
+
   test('should use nested OR and AND logic', async () => {
     const table = 'TableTwo'
     for (let x = 0; x < 10; x++) {

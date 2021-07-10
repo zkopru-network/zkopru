@@ -9,6 +9,12 @@
 /* eslint-disable jest/no-hooks */
 import { ZkTx } from '@zkopru/transaction'
 import { Bytes32 } from 'soltypes'
+import {
+  jestExtendToCompareBigNumber,
+  sleep,
+  attachConsoleLogToPino,
+} from '~utils'
+import { attachConsoleErrorToPino } from '~utils/logger'
 import { Context, initContext, terminate } from './cases/context'
 import {
   testAliceAccount,
@@ -29,12 +35,6 @@ import {
   depositERC721,
   testMassDeposits,
 } from './cases/4_deposit'
-import {
-  jestExtendToCompareBigNumber,
-  sleep,
-  attachConsoleLogToPino,
-} from '~utils'
-import { attachConsoleErrorToPino } from '~utils/logger'
 import {
   waitCoordinatorToProposeANewBlock,
   waitCoordinatorToProcessTheNewBlock,
@@ -77,7 +77,6 @@ process.env.BLOCK_CONFIRMATIONS = '0'
 jestExtendToCompareBigNumber(expect)
 
 describe('testnet', () => {
-  // attachConsoleLogToPino()
   let context!: Context
   const ctx = () => context
   beforeAll(async () => {

@@ -224,7 +224,8 @@ export default [
       ['hash', 'String'],
       ['fee', 'String'],
       ['proof', 'Object'],
-      ['memo', 'String', { optional: true }],
+      ['memoVersion', 'Int', { optional: true }],
+      ['memoData', 'String', { optional: true }],
       ['swap', 'String', { optional: true }],
       ['inflow', 'Object'],
       ['outflow', 'Object'],
@@ -273,6 +274,14 @@ export default [
       ['index', 'String', { optional: true }],
       ['nullifier', 'String', { optional: true }],
       ['usedAt', 'String', { optional: true }],
+      [
+        'depositedAt',
+        'Int',
+        {
+          optional: true,
+          index: true,
+        },
+      ],
     ],
   },
   {
@@ -358,6 +367,15 @@ export default [
       ['isERC721', 'Bool'],
       ['identifier', 'Int'],
       ['blockNumber', 'Int', { index: true }],
+    ],
+  },
+  {
+    name: 'ERC20Info',
+    primaryKey: 'address',
+    rows: [
+      ['address', 'String'],
+      ['symbol', 'String'],
+      ['decimals', 'Int'],
     ],
   },
 ] as TableData[]

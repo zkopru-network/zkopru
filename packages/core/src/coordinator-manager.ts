@@ -22,7 +22,7 @@ export class CoordinatorManager {
 
   urlsByAddress: { [addr: string]: string } = {}
 
-  functionalUrlByAddress: { [addr: string]: string } = {}
+  functionalUrlByAddress: { [addr: string]: string | undefined } = {}
 
   constructor(address: string, web3: Web3) {
     // address is the Zkopru contract address, NOT the burn auction address
@@ -32,34 +32,34 @@ export class CoordinatorManager {
 
   // find some number of reachable coordinator urls
   async loadUrls(count = 1) {
+    const urlPromises = [] as Promise<string | void>[]
     const urls = [] as string[]
     const burnAuction = await this.burnAuction()
     const startBlock = await burnAuction.methods.startBlock().call()
     const blockCount = 500
     const latestBlock = await this._web3.eth.getBlockNumber()
-    const currentBlock = startBlock
+    let currentBlock = startBlock
     const loaded: { [key: string]: boolean } = {}
     for (;;) {
-      const toBlock = currentBlock + blockCount
+      const toBlock = +currentBlock + +blockCount
       const updates = await burnAuction.getPastEvents('UrlUpdate', {
         fromBlock: currentBlock,
         toBlock: toBlock > latestBlock ? 'latest' : toBlock,
       })
-      const promises = [] as Promise<any>[]
+      currentBlock = toBlock > latestBlock ? latestBlock : toBlock
       for (const { returnValues } of updates) {
-        if (
-          this.urlsByAddress[returnValues.coordinator] ||
-          loaded[returnValues.coordinator]
-        )
-          continue
+        if (loaded[returnValues.coordinator]) continue
         loaded[returnValues.coordinator] = true
-        promises.push(this.coordinatorUrl(returnValues.coordinator))
+        urlPromises.push(this.coordinatorUrl(returnValues.coordinator))
       }
-      urls.push(...(await Promise.all(promises)).filter(u => !!u))
-      if (urls.length > count) break
-      if (toBlock >= latestBlock) break
+      if (urlPromises.length >= count || +toBlock >= +latestBlock) {
+        urls.push(
+          ...((await Promise.all(urlPromises)).filter(u => !!u) as string[]),
+        )
+      }
+      if (urls.length >= count) return urls
+      if (+toBlock >= +latestBlock) return urls
     }
-    return urls
   }
 
   async updateUrl(addr: string) {
@@ -86,7 +86,9 @@ export class CoordinatorManager {
     if (activeCoord) {
       return (await this.coordinatorUrl(activeCoord)) || DEFAULT_COORDINATOR
     }
-    if (!activeCoord) return DEFAULT_COORDINATOR
+    if (!activeCoord && !DEFAULT_COORDINATOR)
+      throw new Error('Unable to determine coordinator url')
+    return DEFAULT_COORDINATOR
   }
 
   async coordinatorUrl(addr: string): Promise<string | void> {

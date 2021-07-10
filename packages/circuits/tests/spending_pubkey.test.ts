@@ -5,6 +5,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable jest/no-hooks */
 
+import fs from 'fs'
 import { genSNARK, SNARKResult } from '~zk-wizard/snark'
 import {
   checkPhase1Setup,
@@ -17,9 +18,10 @@ import { accounts } from '~dataset/testset-predefined'
 
 const fileName = 'spending_pubkey.test.circom'
 const artifacts = getArtifacts(fileName)
-const { wasm, finalZkey, vk } = artifacts
+const { wasm, finalZkey, vKeyPath } = artifacts
 
 describe('spending_pubkey.test.circom', () => {
+  let vk
   beforeAll(() => {
     checkPhase1Setup()
     prepareArtifactsDirectory()
@@ -29,6 +31,7 @@ describe('spending_pubkey.test.circom', () => {
   })
   it('should setup phase 2 for the circuit', () => {
     phase2Setup(fileName)
+    vk = JSON.parse(fs.readFileSync(vKeyPath).toString())
   })
   it('should create SNARK proof', async () => {
     const account = accounts.bob

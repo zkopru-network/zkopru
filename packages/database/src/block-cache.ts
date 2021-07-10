@@ -10,7 +10,7 @@ import {
 
 // process block in memory, write to DB when confirmed by enough blocks
 
-const DEFAULT_BLOCK_CONFIRMATIONS = 15
+const DEFAULT_BLOCK_CONFIRMATIONS = 8
 
 enum OperationType {
   UPSERT,

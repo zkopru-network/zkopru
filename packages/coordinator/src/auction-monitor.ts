@@ -26,6 +26,8 @@ export class AuctionMonitor {
 
   newHighBidSubscription?: EventEmitter
 
+  stakeSubscription?: EventEmitter
+
   currentProposer: string
 
   consensusAddress: string
@@ -119,6 +121,7 @@ export class AuctionMonitor {
 
     this.startBlockSubscription()
     this.startNewHighBidSubscription()
+    this.startStakeSubscription()
     this.coordinatorManager.start()
 
     const balance = await layer1.web3.eth.getBalance(this.account.address)
@@ -175,6 +178,25 @@ export class AuctionMonitor {
       })
   }
 
+  /**
+   * TODO: Listen for slash events for this.context.account, StakeChanged
+   * will not be called in this case
+   * */
+  startStakeSubscription() {
+    if (this.stakeSubscription) return
+    this.stakeSubscription = this.node.layer1.coordinator.events
+      .StakeChanged({
+        filter: {
+          coordinator: this.account.address,
+        },
+      })
+      .on('data', this.updateIsProposable.bind(this))
+      .on('changed', this.updateIsProposable.bind(this))
+      .on('error', async err => {
+        logger.error(`Coordinator, stake subscription error: ${err}`)
+      })
+  }
+
   async stop() {
     if (this.blockSubscription) {
       try {
@@ -188,6 +210,10 @@ export class AuctionMonitor {
     if (this.newHighBidSubscription) {
       this.newHighBidSubscription.removeAllListeners()
       this.newHighBidSubscription = undefined
+    }
+    if (this.stakeSubscription) {
+      this.stakeSubscription.removeAllListeners()
+      this.stakeSubscription = undefined
     }
     await this.coordinatorManager.stop()
   }
@@ -210,8 +236,8 @@ export class AuctionMonitor {
 
   async updateIsProposable() {
     const [isProposable, blockNumber] = await Promise.all([
-      this.consensus()
-        .methods.isProposable(this.account.address)
+      this.node.layer1.coordinator.methods
+        .isProposable(this.account.address)
         .call(),
       this.node.layer1.web3.eth.getBlockNumber(),
     ])
@@ -258,6 +284,13 @@ export class AuctionMonitor {
   async bidIfNeeded() {
     if (this.bidLock.isBusy('bidIfNeeded')) return
     await this.bidLock.acquire('bidIfNeeded', async () => {
+      const staked = await this.node.layer1.upstream.methods
+        .isStaked(this.account.address)
+        .call()
+      if (!staked) {
+        logger.info('Skipping auction bid, not staked')
+        return
+      }
       logger.info('Examining auction state')
       const auction = this.auction()
       // TODO: calculate these locally

@@ -5,12 +5,15 @@ import {
   DB,
   Header as HeaderSql,
   Deposit as DepositSql,
+  Utxo as UtxoSql,
   MassDeposit as MassDepositSql,
   TokenRegistry as TokenRegistrySql,
   BlockCache,
 } from '@zkopru/database'
 import { EventEmitter } from 'events'
 import { Bytes32, Address, Uint256 } from 'soltypes'
+import { Note, ZkAddress } from '@zkopru/transaction'
+import { Fp } from '@zkopru/babyjubjub'
 import { L1Contract } from '../context/layer1'
 import { Block, headerHash } from '../block'
 import { genesis } from '../block/genesis'
@@ -33,6 +36,8 @@ export class Synchronizer extends EventEmitter {
   l1Contract!: L1Contract
 
   depositSubscriber?: EventEmitter
+
+  depositUtxoSubscriber?: EventEmitter
 
   massDepositCommitSubscriber?: EventEmitter
 
@@ -76,6 +81,7 @@ export class Synchronizer extends EventEmitter {
   }
 
   sync(
+    accounts?: ZkAddress[],
     proposalCB?: (hash: string) => void,
     finalizationCB?: (hash: string) => void,
   ) {
@@ -88,6 +94,9 @@ export class Synchronizer extends EventEmitter {
       this.listenMassDepositCommit()
       this.listenNewProposals(proposalCB)
       this.listenFinalization(finalizationCB)
+      if (accounts) {
+        this.listenDepositUtxos(accounts)
+      }
       this.isListening = true
     }
     this.workers.statusUpdater.start({
@@ -108,6 +117,7 @@ export class Synchronizer extends EventEmitter {
       this.erc20RegistrationSubscriber,
       this.erc721RegistrationSubscriber,
       this.depositSubscriber,
+      this.depositUtxoSubscriber,
       this.massDepositCommitSubscriber,
       this.finalizationSubscriber,
     ]
@@ -321,6 +331,93 @@ export class Synchronizer extends EventEmitter {
           event.blockHash,
         )
         if (cb) cb(deposit)
+      })
+      .on('changed', event => {
+        this.blockCache.clearChangesForBlockHash(event.blockHash)
+        logger.info(`synchronizer.js: Deposit Event changed`, event)
+      })
+      .on('error', event => {
+        // TODO
+        logger.info(`synchronizer.js: Deposit Event Error occured`, event)
+      })
+  }
+
+  async listenDepositUtxos(
+    addresses: ZkAddress[],
+    cb?: (utxo: UtxoSql) => void,
+  ) {
+    const lastDeposits = await this.db.findMany('Utxo', {
+      where: {},
+      orderBy: { depositedAt: 'desc' },
+      limit: 1,
+    })
+    const fromBlock = lastDeposits[0]?.blockNumber || 0
+    logger.info('found my deposit from block', fromBlock)
+    this.depositUtxoSubscriber = this.l1Contract.user.events
+      .DepositUtxo({
+        fromBlock,
+        filter: {
+          spendingPubKey: addresses.map(address => address.spendingPubKey()),
+        },
+      })
+      .on('connected', subId => {
+        logger.info(
+          `synchronizer.js: DepositUtxo listener is connected. Id: ${subId}`,
+        )
+      })
+      .on('data', async event => {
+        const { returnValues, blockNumber } = event
+        const owner = addresses.find(addr =>
+          Fp.from(returnValues.spendingPubKey).eq(addr.spendingPubKey()),
+        )
+        if (!owner) {
+          // skip storing Deposit details
+          return
+        }
+        const salt = Fp.from(returnValues.salt)
+        const note = new Note(owner, salt, {
+          eth: Fp.from(returnValues.eth),
+          tokenAddr: Fp.from(Address.from(returnValues.token).toBN()),
+          erc20Amount: Fp.from(returnValues.amount),
+          nft: Fp.from(returnValues.nft),
+        })
+        const utxo: UtxoSql = {
+          hash: note
+            .hash()
+            .toUint256()
+            .toString(),
+          eth: note
+            .eth()
+            .toUint256()
+            .toString(),
+          owner: owner.toString(),
+          salt: note.salt.toUint256().toString(),
+          tokenAddr: note
+            .tokenAddr()
+            .toUint256()
+            .toString(),
+          erc20Amount: note
+            .erc20Amount()
+            .toUint256()
+            .toString(),
+          nft: note
+            .nft()
+            .toUint256()
+            .toString(),
+          depositedAt: blockNumber,
+        }
+        logger.info(`synchronizer.js: Found My Deposit (${utxo.hash})`)
+        await this.blockCache.upsertCache(
+          'Utxo',
+          {
+            where: { hash: utxo.hash },
+            update: utxo,
+            create: utxo,
+          },
+          blockNumber,
+          event.blockHash,
+        )
+        if (cb) cb(utxo)
       })
       .on('changed', event => {
         this.blockCache.clearChangesForBlockHash(event.blockHash)

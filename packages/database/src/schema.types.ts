@@ -108,6 +108,17 @@ export type Tx = {
   slashed: boolean
 }
 
+export type PendingTx = {
+  hash: string
+  fee: string
+  proof: Object
+  memoVersion?: number | null
+  memoData?: string | null
+  swap?: string | null
+  inflow: Object | null
+  outflow: Object | null
+}
+
 export type MassDeposit = {
   index: string
   merged: string
@@ -138,6 +149,7 @@ export type Utxo = {
   index?: string | null
   nullifier?: string | null
   usedAt?: string | null
+  depositedAt?: number | null
 }
 
 export type Withdrawal = {
@@ -198,4 +210,10 @@ export type TokenRegistry = {
   isERC721: boolean
   identifier: number
   blockNumber: number
+}
+
+export type ERC20Info = {
+  address: string
+  symbol: string
+  decimals: number
 }

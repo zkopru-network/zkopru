@@ -24,6 +24,40 @@ export const UserInteractableABI = [
     inputs: [
       {
         indexed: true,
+        internalType: 'uint256',
+        name: 'spendingPubKey',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'salt',
+        type: 'uint256',
+      },
+      { indexed: false, internalType: 'uint256', name: 'eth', type: 'uint256' },
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'token',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'amount',
+        type: 'uint256',
+      },
+      { indexed: false, internalType: 'uint256', name: 'nft', type: 'uint256' },
+      { indexed: false, internalType: 'uint256', name: 'fee', type: 'uint256' },
+    ],
+    name: 'DepositUtxo',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
         internalType: 'address',
         name: 'previousOwner',
         type: 'address',

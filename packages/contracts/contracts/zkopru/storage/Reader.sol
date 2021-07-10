@@ -182,6 +182,13 @@ contract Reader is Storage {
     }
 
     /**
+     * @dev Getter for determining if an address is staked for the rollup.
+     **/
+    function isStaked(address coordinator) public view returns (bool) {
+        return Storage.chain.proposers[coordinator].stake >= MINIMUM_STAKE;
+    }
+
+    /**
      * @dev Copy of `isValidRef()` in TxValidator.sol
      */
     function isValidRef(bytes32 l2BlockHash, uint256 ref)

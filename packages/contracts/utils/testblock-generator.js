@@ -44,22 +44,12 @@ process.env.BLOCK_CONFIRMATIONS = "0";
     // Now deposit some funds so we can generate a transfer
     // Deposit ether, create a few notes
     console.log("Depositing ether");
-    await context.wallets.wallet.depositEther(
-      toWei("1", "ether"),
-      toWei("10", "milliether")
-    );
-    await context.wallets.wallet.depositEther(
-      toWei("1", "ether"),
-      toWei("10", "milliether")
-    );
-    await context.wallets.wallet.depositEther(
-      toWei("1", "ether"),
-      toWei("10", "milliether")
-    );
-    await context.wallets.wallet.depositEther(
-      toWei("1", "ether"),
-      toWei("10", "milliether")
-    );
+    // deposit a bunch of notes so all the funds aren't locked with each pending tx
+    // use 0 fee so that the deposit commit happens only once at the end,
+    // including all notes at once
+    for (let x = 0; x < 10; x += 1) {
+      await context.wallets.wallet.depositEther(toWei("3", "ether"), "0");
+    }
     // airdrop first
     console.log("Depositing erc20");
     await context.wallets.coordinator.sendLayer1Tx({
@@ -78,17 +68,18 @@ process.env.BLOCK_CONFIRMATIONS = "0";
       )
     });
     // deposit erc20
-    await context.wallets.wallet.depositERC20(
-      toWei("0", "ether"),
-      context.tokens.erc20.address,
-      amount,
-      toWei("1", "milliether")
-    );
-    await context.wallets.wallet.depositERC20(
-      toWei("0", "ether"),
-      context.tokens.erc20.address,
-      amount,
-      toWei("1", "milliether")
+    for (let x = 0; x < 10; x += 1) {
+      await context.wallets.wallet.depositERC20(
+        toWei("0", "ether"),
+        context.tokens.erc20.address,
+        amount,
+        "0"
+      );
+    }
+    // Send a deposit with a large fee to push all the others through
+    await context.wallets.wallet.depositEther(
+      toWei("3", "ether"),
+      toWei("1", "ether") // the fee
     );
     // wait for coordinator to propose block
     console.log("Waiting for block proposal...");
@@ -102,7 +93,7 @@ process.env.BLOCK_CONFIRMATIONS = "0";
     console.log("Waiting for block to be processed...");
     for (;;) {
       const processed =
-        context.coordinator.node().synchronizer.latestProcessed || 0;
+        context.wallets.wallet.node.synchronizer.latestProcessed || 0;
       if (processed === 1) break;
       await new Promise(r => setTimeout(r, 1000));
     }
@@ -123,8 +114,7 @@ process.env.BLOCK_CONFIRMATIONS = "0";
         })
         .build();
       const ethZkTx = await context.wallets.wallet.shieldTx({
-        tx: ethRawTx,
-        encryptTo: context.accounts.coordinator.zkAddress
+        tx: ethRawTx
       });
       zkTx.push(ethZkTx);
     }
@@ -145,8 +135,7 @@ process.env.BLOCK_CONFIRMATIONS = "0";
         })
         .build();
       const erc20ZkTx = await context.wallets.wallet.shieldTx({
-        tx: erc20RawTx,
-        encryptTo: context.accounts.coordinator.zkAddress
+        tx: erc20RawTx
       });
       zkTx.push(erc20ZkTx);
     }
@@ -231,6 +220,10 @@ process.env.BLOCK_CONFIRMATIONS = "0";
         path.join(outputPath, "block-1.txt"),
         `0x${block.serializeBlock().toString("hex")}`
       );
+      if (process.env.DEBUG) {
+        console.log("block-1");
+        console.log(`0x${block.serializeBlock().toString("hex")}`);
+      }
     }
     {
       const proposal = await context.coordinator
@@ -242,6 +235,10 @@ process.env.BLOCK_CONFIRMATIONS = "0";
         path.join(outputPath, "block-2.txt"),
         `0x${block.serializeBlock().toString("hex")}`
       );
+      if (process.env.DEBUG) {
+        console.log("block-2");
+        console.log(`0x${block.serializeBlock().toString("hex")}`);
+      }
     }
     console.log("File(s) written, exiting");
     await Promise.race([

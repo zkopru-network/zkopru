@@ -343,6 +343,8 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
 
     /**
      * @notice This function will be updated as the governance of Zkopru's been updated.
+     * This function does not take into account whether a proposer is staked!
+     * Use isProposable in Coordinatable.sol for a more accurate response.
      */
     function isProposable(address proposer)
         public
