@@ -109,9 +109,9 @@ export class TxMemPool implements TxPoolInterface {
         swap: tx.swap ? Fp.from(tx.swap) : undefined,
         memo: tx.memo
           ? {
-            version: tx.memo.version,
-            data: Buffer.from(tx.memo, 'base64'),
-          }
+              version: tx.memo.version,
+              data: Buffer.from(tx.memo, 'base64'),
+            }
           : undefined,
       })
       /* eslint-enable @typescript-eslint/camelcase */
@@ -120,7 +120,7 @@ export class TxMemPool implements TxPoolInterface {
   }
 
   async storePendingTx(tx: ZkTx) {
-    logger.debug("tx-pool: storePendingTx()")
+    logger.debug('tx-pool: storePendingTx()')
     await this.db.upsert('PendingTx', {
       where: {
         hash: tx.hash().toString(),
