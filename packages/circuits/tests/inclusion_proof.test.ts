@@ -5,6 +5,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable jest/no-hooks */
 
+import fs from 'fs'
 import { v4 } from 'uuid'
 import { Fp } from '~babyjubjub'
 import { DB, TreeSpecies, schema, SQLiteMemoryConnector } from '~database/node'
@@ -20,7 +21,7 @@ import { UtxoTree, TreeConfig, poseidonHasher, genesisRoot } from '~tree'
 
 const fileName = 'inclusion_proof.test.circom'
 const artifacts = getArtifacts(fileName)
-const { wasm, finalZkey, vk } = artifacts
+const { wasm, finalZkey, vKeyPath } = artifacts
 
 describe('inclusion_proof.test.circom', () => {
   let utxoTree: UtxoTree
@@ -44,6 +45,7 @@ describe('inclusion_proof.test.circom', () => {
     siblings: preHashes.slice(0, -1),
   }
   let mockup: DB
+  let vk
   beforeAll(async () => {
     checkPhase1Setup()
     prepareArtifactsDirectory()
@@ -76,6 +78,7 @@ describe('inclusion_proof.test.circom', () => {
   })
   it('should setup phase 2 for the circuit', () => {
     phase2Setup(fileName)
+    vk = JSON.parse(fs.readFileSync(vKeyPath).toString())
   })
   it('should create SNARK proof', async () => {
     const merkleProof = await utxoTree.merkleProof({

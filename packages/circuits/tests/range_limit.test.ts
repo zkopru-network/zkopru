@@ -6,6 +6,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable jest/no-hooks */
 
+import fs from 'fs'
 import { genSNARK, SNARKResult } from '~zk-wizard/snark'
 import {
   checkPhase1Setup,
@@ -17,9 +18,10 @@ import {
 
 const fileName = 'range_limit.test.circom'
 const artifacts = getArtifacts(fileName)
-const { wasm, finalZkey, vk } = artifacts
+const { wasm, finalZkey, vKeyPath } = artifacts
 
 describe('multiplier.test.circom', () => {
+  let vk
   beforeAll(() => {
     checkPhase1Setup()
     prepareArtifactsDirectory()
@@ -29,6 +31,7 @@ describe('multiplier.test.circom', () => {
   })
   it('should setup phase 2 for the circuit', () => {
     phase2Setup(fileName)
+    vk = JSON.parse(fs.readFileSync(vKeyPath).toString())
   })
   it('should create SNARK proof', async () => {
     const result: SNARKResult = await genSNARK({ in: 7 }, wasm, finalZkey, vk)

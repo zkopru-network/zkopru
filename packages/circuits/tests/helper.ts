@@ -1,6 +1,6 @@
-import fs from 'fs'
 // eslint-disable-next-line import/no-extraneous-dependencies
 import shell from 'shelljs'
+import fs from 'fs'
 
 const BUILD = './build/test'
 const POWERS_OF_TAU_PHASE_1 = './build/ptau/pot17_final.ptau'
@@ -13,7 +13,6 @@ export const getArtifacts = (filename: string) => {
   const zkey = `${BUILD}/zkeys/${filename}.zkey`
   const finalZkey = `${BUILD}/zkeys/${filename}.final.zkey`
   const vKeyPath = `${BUILD}/vks/${filename}.vk.json`
-  const vk = JSON.parse(fs.readFileSync(vKeyPath).toString())
   const phase1 = POWERS_OF_TAU_PHASE_1
   return {
     circuit,
@@ -23,7 +22,6 @@ export const getArtifacts = (filename: string) => {
     phase1,
     zkey,
     finalZkey,
-    vk,
     vKeyPath,
   }
 }
