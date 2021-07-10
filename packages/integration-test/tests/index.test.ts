@@ -8,12 +8,13 @@
 /* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable jest/no-hooks */
 import { ZkTx } from '@zkopru/transaction'
+import { Bytes32 } from 'soltypes'
 import {
   jestExtendToCompareBigNumber,
   sleep,
   attachConsoleLogToPino,
-} from '@zkopru/utils'
-import { Bytes32 } from 'soltypes'
+} from '~utils'
+import { attachConsoleErrorToPino } from '~utils/logger'
 import { Context, initContext, terminate } from './cases/context'
 import {
   testAliceAccount,
@@ -79,9 +80,8 @@ describe('testnet', () => {
   let context!: Context
   const ctx = () => context
   beforeAll(async () => {
-    if (process.env.DEBUG === 'true') {
-      attachConsoleLogToPino()
-    }
+    if (process.env.DEBUG) attachConsoleLogToPino()
+    attachConsoleErrorToPino()
     context = await initContext()
   }, 90000)
   afterAll(async () => {

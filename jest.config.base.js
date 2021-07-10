@@ -3,7 +3,6 @@ module.exports = {
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
-  setupFiles: ['dotenv/config'],
   testRegex: '(/tests/.*.(test|spec)).(jsx?|tsx?)$',
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   collectCoverage: true,
