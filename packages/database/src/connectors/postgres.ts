@@ -32,7 +32,7 @@ export class PostgresConnector extends DB {
 
   schema: Schema = {}
 
-  lock = new AsyncLock()
+  lock = new AsyncLock({ maxPending: 100000 })
 
   constructor(config: any | string) {
     super()
