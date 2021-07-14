@@ -218,7 +218,7 @@ export class BlockProcessor extends EventEmitter {
     await this.db.transaction(
       async db => {
         enableTreeCache()
-        // Progressively apply the patch in a way that can roll back on error
+        clearTreeCache()
         this.saveTransactions(block, db)
         await this.decryptMyUtxos(
           block.body.txs,
