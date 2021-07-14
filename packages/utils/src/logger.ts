@@ -72,3 +72,7 @@ export const attachConsoleErrorToPino = () => {
     }),
   )
 }
+
+if (process.env.PRINT_LOG) {
+  attachConsoleLogToPino()
+}
