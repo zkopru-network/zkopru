@@ -7,7 +7,7 @@ import { NodeConfig } from './types'
 
 const DEFAULT = {
   address:
-    process.env.ZKOPRU_ADDRESS || '0xfD1788744a618bDCFA241BD0Ff346d15d8Cf5501',
+    process.env.ZKOPRU_ADDRESS || '0xb09aa7452592C67f8EF1289978Fc7d5ebcF74A0c',
   bootstrap: true,
   websocket:
     process.env.ZKOPRU_WEBSOCKET ||
@@ -78,6 +78,7 @@ export default class ZkopruNode {
       address: this.config.address as string,
       provider,
       db: await this.db(...args),
+      accounts: this.config.accounts,
     })
   }
 
