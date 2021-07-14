@@ -104,6 +104,7 @@ export class BlockCache {
         await this.writeChange(op)
         docsToRemove.push(op)
       } catch (err) {
+        console.log(err)
         console.log(`Error writing document`)
       }
     }
