@@ -129,7 +129,7 @@ export class TxMemPool implements TxPoolInterface {
   }
 
   async storePendingTx(tx: ZkTx) {
-    logger.debug('tx-pool: storePendingTx()')
+    logger.trace('coordinator/tx-pool.ts - TxMemPool::storePendingTx()')
     await this.db.upsert('PendingTx', {
       where: {
         hash: tx.hash().toString(),
@@ -221,8 +221,10 @@ export class TxMemPool implements TxPoolInterface {
         // Normal transactions
         const size = tx.size()
         const expectedFee = minPricePerByte.muln(size)
-        logger.info(`expected fee: ${expectedFee.toString()}`)
-        logger.info(`tx.fee: ${tx.fee.toString()}`)
+        logger.info(
+          `coordinator/tx-pool.ts - expected fee: ${expectedFee.toString()}`,
+        )
+        logger.info(`coordinator/tx-pool.ts - tx.fee: ${tx.fee.toString()}`)
         if (available >= size && tx.fee.gte(expectedFee)) {
           available -= size
           fee = fee.add(tx.fee)
@@ -235,8 +237,10 @@ export class TxMemPool implements TxPoolInterface {
         const size = tx[0].size() + tx[1].size()
         const expectedFee = minPricePerByte.muln(size)
         const swapFee = tx[0].fee.add(tx[1].fee)
-        logger.info(`expected fee: ${expectedFee.toString()}`)
-        logger.info(`tx.fee: ${swapFee.toString()}`)
+        logger.info(
+          `coordinator/tx-pool.ts - expected fee: ${expectedFee.toString()}`,
+        )
+        logger.info(`coordinator/tx-pool.ts - tx.fee: ${swapFee.toString()}`)
         if (available >= size && swapFee.gte(expectedFee)) {
           available -= size
           fee = fee.add(swapFee)
@@ -244,7 +248,7 @@ export class TxMemPool implements TxPoolInterface {
         }
       }
     }
-    logger.info(`fee: ${fee}`)
+    logger.info(`coordinator/tx-pool.ts - fee: ${fee}`)
     return picked
   }
 

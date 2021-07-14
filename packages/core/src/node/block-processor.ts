@@ -77,6 +77,7 @@ export class BlockProcessor extends EventEmitter {
     validator: Validator
   }) {
     super()
+    logger.trace(`core/block-processor - BlockProcessor::constructor()`)
     this.db = db
     this.blockCache = blockCache
     this.layer2 = l2Chain
@@ -90,29 +91,34 @@ export class BlockProcessor extends EventEmitter {
   }
 
   start() {
+    logger.trace(`core/block-processor - BlockProcessor::start()`)
     if (!this.isRunning()) {
       this.worker.start({
         task: this.processBlocks.bind(this),
         interval: 5000,
       })
     } else {
-      logger.info('already on syncing')
+      logger.info(`core/block-processor - a processor is already running`)
     }
   }
 
   async stop() {
+    logger.trace(`core/block-processor - BlockProcessor::stop()`)
     if (this.isRunning()) {
       await this.worker.close()
     } else {
-      logger.info('already stopped')
+      logger.info(`core/block-processor - the processor is already stopped`)
     }
   }
 
   private async processBlocks() {
+    logger.trace(`core/block-processor - BlockProcessor::processBlocks()`)
     while (this.isRunning()) {
       try {
         const unprocessed = await this.layer2.getOldestUnprocessedBlock()
-        logger.trace(`unprocessed: ${unprocessed}`)
+        logger.trace(
+          `core/block-processor - unprocessed: #${unprocessed?.proposal.proposalNum}`,
+        )
         if (!unprocessed) {
           const latestProcessed = await this.db.findMany('Proposal', {
             where: {
@@ -142,7 +148,11 @@ export class BlockProcessor extends EventEmitter {
         // TODO needs to provide roll back & resync option
         // sync & process error
         console.error(err)
-        logger.warn(`Failed process a block - ${err}`)
+        logger.warn(
+          `core/block-processor - Failed to process a block - ${JSON.stringify(
+            err,
+          )}`,
+        )
         break
       }
       // eslint-disable-next-line no-constant-condition
@@ -159,6 +169,9 @@ export class BlockProcessor extends EventEmitter {
     proposal: Proposal
   }): Promise<number> {
     const { parent, block, proposal } = unprocessed
+    logger.trace(
+      `core/block-processor - BlockProcessor::processBlock(${proposal.hash})`,
+    )
 
     if (!proposal.proposalNum || !proposal.proposedAt)
       throw Error('Invalid proposal data')
@@ -184,7 +197,9 @@ export class BlockProcessor extends EventEmitter {
       return proposal.proposalNum
     }
 
-    logger.info(`Processing block ${block.hash.toString()}`)
+    logger.info(
+      `core/block-processor - Processing proposal #${proposal.proposalNum}()`,
+    )
     // validate the block details and get challenge if it has any invalid data.
     const challengeTx = await this.validator.validate(parent, block)
     if (challengeTx) {
@@ -201,7 +216,7 @@ export class BlockProcessor extends EventEmitter {
         // save transactions and mark them as challenged
         this.saveTransactions(block, db, true)
       })
-      logger.warn('challenge')
+      logger.warn(`core/block-processor - challenge`)
       // TODO slasher option
       this.emit('slash', {
         tx: challengeTx,
@@ -255,22 +270,34 @@ export class BlockProcessor extends EventEmitter {
     tokenRegistry: TokenRegistry,
     db: TransactionDB,
   ) {
+    logger.trace(`core/block-processor - BlockProcessor::decryptMyUtxos()`)
     const txsWithMemo = txs.filter(tx => tx.memo)
-    logger.info(`saveMyUtxos`)
     const myUtxos: Utxo[] = []
     // Try to decrypt
     for (const tx of txsWithMemo) {
       for (const account of accounts) {
-        const note = account.decrypt(tx, tokenRegistry)
-        logger.info(`decrypt result ${note}`)
-        if (note && note.length) {
-          myUtxos.push(...note)
+        const decrypted = account.decrypt(tx, tokenRegistry)
+        logger.info(
+          `core/block-processor - decrypt result [${decrypted.map(utxo =>
+            utxo
+              .hash()
+              .toBytes32()
+              .toString(),
+          )}]`,
+        )
+        if (decrypted && decrypted.length) {
+          myUtxos.push(...decrypted)
           // store some known info about the transaction
-          await this.determineTxOwnership(tx, account, note, db)
+          await this.determineTxOwnership(tx, account, decrypted, db)
         }
       }
     }
     const startingUtxoIndex = patch.prevHeader.utxoIndex.toBN()
+    if (myUtxos.length > 0) {
+      logger.info(
+        `core/block-processor - found ${myUtxos.length} UTXO(s) from transactions`,
+      )
+    }
     const inputs = myUtxos.map(note => {
       // need to generate a nullifier
       const orderInArr = patch.treePatch.utxos.findIndex(utxo =>
@@ -348,15 +375,19 @@ export class BlockProcessor extends EventEmitter {
       if (outflow.nft) nft = true
     }
     if (nft) {
-      logger.warn('NFT outflow not supported')
+      logger.warn('core/block-processor - NFT outflow not supported')
       return
     }
     if (Object.keys(outflowTokenAddresses).length !== 1) {
-      logger.warn('Multiple outflow tokens not supported')
+      logger.warn(
+        'core/block-processor - Multiple outflow tokens not supported',
+      )
       return
     }
     if (Object.keys(outflowOwners).length > 1) {
-      logger.warn('Multiple outflow owners not supported')
+      logger.warn(
+        'core/block-processor - Multiple outflow owners not supported',
+      )
       return
     }
     if (outflows.length !== tx.outflow.length) {
@@ -418,6 +449,7 @@ export class BlockProcessor extends EventEmitter {
     db: TransactionDB,
     challenged = false,
   ) {
+    logger.trace(`core/block-processor - BlockProcessor::saveTransactions()`)
     block.body.txs.forEach(tx => {
       db.create('Tx', {
         hash: tx.hash().toString(),
@@ -440,7 +472,7 @@ export class BlockProcessor extends EventEmitter {
     accounts: Address[],
     db: TransactionDB,
   ) {
-    logger.info(`saveMyWithdrawals`)
+    logger.trace(`core/block-processor - BlockProcessor::saveMyWithdrawals()`)
     const outflows = txs.reduce(
       (acc, tx) => [
         ...acc,
@@ -451,10 +483,15 @@ export class BlockProcessor extends EventEmitter {
       [] as ZkOutflow[],
     )
     logger.debug(
-      `withdrawal address =>
-      ${outflows.map(outflow => outflow.data?.to.toAddress().toString())}`,
+      `core/block-processor - withdrawals: [${outflows.map(outflow =>
+        outflow.data?.to.toAddress().toString(),
+      )}]`,
     )
-    logger.debug(`my address =>${accounts.map(account => account.toString())}`)
+    logger.debug(
+      `core/block-processor - my addresses: ${accounts.map(account =>
+        account.toString(),
+      )}`,
+    )
     const myWithdrawalOutputs: ZkOutflow[] = outflows.filter(
       outflow =>
         outflow.data &&
@@ -477,7 +514,9 @@ export class BlockProcessor extends EventEmitter {
         nft: output.data.nft.toUint256().toString(),
         fee: output.data.fee.toUint256().toString(),
       }
-      logger.info(`found my withdrawal: ${withdrawalSql.hash}`)
+      logger.info(
+        `core/block-processor - found withdrawal: ${withdrawalSql.hash}`,
+      )
       db.upsert('Withdrawal', {
         where: { hash: withdrawalSql.hash },
         create: withdrawalSql,
@@ -487,6 +526,7 @@ export class BlockProcessor extends EventEmitter {
   }
 
   private async makePatch(parent: Header, block: Block): Promise<Patch> {
+    logger.trace(`core/block-processor - BlockProcessor::makePatch()`)
     // grove patch verification
     const treePatch = await this.layer2.getGrovePatch(block)
     const patch: Patch = {
@@ -506,47 +546,32 @@ export class BlockProcessor extends EventEmitter {
   }
 
   private async applyPatch(patch: Patch, db: TransactionDB) {
-    logger.trace('layer2.ts: applyPatch()')
+    logger.trace(`core/block-processor - BlockProcessor::applyPatch()`)
     const { block, treePatch, massDeposits } = patch
-    db.update('Utxo', {
-      where: { nullifier: treePatch.nullifiers.map(v => v.toString()) },
-      update: {
-        status: UtxoStatus.SPENT,
-        usedAt: block.toString(),
-      },
-    })
-    logger.trace('nullify used utxos')
+    await BlockProcessor.markUsedUtxosAsNullified(
+      patch.treePatch.nullifiers,
+      block,
+      db,
+    )
     // Update mass deposits inclusion status
     if (massDeposits) {
       await this.markMassDepositsAsIncludedIn(massDeposits, block, db)
     }
-    logger.trace('mark mass deposits included in the given block')
-
-    db.update('Utxo', {
-      where: {
-        hash: (patch.treePatch?.utxos || []).map(utxo =>
-          utxo.hash.toUint256().toString(),
-        ),
-      },
-      update: { status: UtxoStatus.UNSPENT },
-    })
-    logger.trace('mark utxos as unspent')
-    db.update('Withdrawal', {
-      where: {
-        hash: (patch.treePatch?.withdrawals || []).map(withdrawal => {
-          assert(withdrawal.noteHash)
-          return withdrawal.noteHash.toString()
-        }),
-      },
-      update: { status: WithdrawalStatus.UNFINALIZED },
-    })
-    logger.trace('mark withdrawals as unfinalized')
+    await BlockProcessor.markNewUtxosAsUnspent(
+      (patch.treePatch?.utxos || []).map(utxo => utxo.hash),
+      db,
+    )
+    await BlockProcessor.markNewWithdrawalsAsUnfinalized(
+      (patch.treePatch?.withdrawals || []).map(withdrawal => {
+        assert(withdrawal.noteHash)
+        return withdrawal.noteHash
+      }),
+      db,
+    )
     // Apply tree patch
     await this.layer2.grove.applyGrovePatch(treePatch, db)
     await this.updateMyUtxos(this.tracker.transferTrackers, patch, db)
-    logger.trace('update my utxos')
     await this.updateMyWithdrawals(this.tracker.withdrawalTrackers, patch, db)
-    logger.trace('update my withdrawals')
   }
 
   private async markMassDepositsAsIncludedIn(
@@ -554,6 +579,9 @@ export class BlockProcessor extends EventEmitter {
     block: Bytes32,
     db: TransactionDB,
   ) {
+    logger.trace(
+      `core/block-processor - BlockProcessor::markMassDepositsAsIncludedIn()`,
+    )
     const nonIncluded = await this.db.findMany('MassDeposit', {
       where: {
         includedIn: null,
@@ -604,11 +632,56 @@ export class BlockProcessor extends EventEmitter {
     })
   }
 
+  private static async markUsedUtxosAsNullified(
+    nullifiers: Fp[],
+    block: Bytes32,
+    db: TransactionDB,
+  ) {
+    logger.trace(
+      `core/block-processor - BlockProcessor::markUsedUtxosAsNullified()`,
+    )
+    db.update('Utxo', {
+      where: { nullifier: nullifiers.map(v => v.toString()) },
+      update: {
+        status: UtxoStatus.SPENT,
+        usedAt: block.toString(),
+      },
+    })
+  }
+
+  private static async markNewUtxosAsUnspent(utxos: Fp[], db: TransactionDB) {
+    logger.trace(
+      `core/block-processor - BlockProcessor::markNewUtxosAsUnspent()`,
+    )
+    db.update('Utxo', {
+      where: {
+        hash: utxos.map(utxo => utxo.toUint256().toString()),
+      },
+      update: { status: UtxoStatus.UNSPENT },
+    })
+  }
+
+  private static async markNewWithdrawalsAsUnfinalized(
+    withdrawalNoteHashes: Fp[],
+    db: TransactionDB,
+  ) {
+    logger.trace(
+      `core/block-processor - BlockProcessor::markNewWithdrawalsAsUnfinalized()`,
+    )
+    db.update('Withdrawal', {
+      where: {
+        hash: withdrawalNoteHashes.map(noteHash => noteHash.toString()),
+      },
+      update: { status: WithdrawalStatus.UNFINALIZED },
+    })
+  }
+
   private async updateMyUtxos(
     accounts: ZkViewer[],
     patch: Patch,
     db: TransactionDB,
   ) {
+    logger.trace(`core/block-processor - BlockProcessor::updateMyUtxos()`)
     // Find utxos that I've created
     const myStoredUtxos = await this.db.findMany('Utxo', {
       where: {
@@ -655,6 +728,7 @@ export class BlockProcessor extends EventEmitter {
     patch: Patch,
     db: TransactionDB,
   ) {
+    logger.trace(`core/block-processor - BlockProcessor::updateMyWithdrawals()`)
     const myStoredWithdrawals = await this.db.findMany('Withdrawal', {
       where: {
         hash: patch.treePatch.withdrawals.map(leaf => {

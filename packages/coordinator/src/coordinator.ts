@@ -110,7 +110,7 @@ export class Coordinator extends EventEmitter {
   }
 
   async start() {
-    logger.info('Starting coordinator')
+    logger.info('coordinator/coordinator.ts - Starting coordinator')
     await this.context.txPool.loadPendingTx()
     this.context.node.synchronizer.on(
       'status',
@@ -118,7 +118,7 @@ export class Coordinator extends EventEmitter {
         // udpate the txpool using the newly proposed hash
         // if the hash does not exist in the tx pool's block list
         // create an observer to fetch the block data from database
-        logger.info(`current status: ${status}`)
+        logger.info(`coordinator/coordinator.ts - current status: ${status}`)
         switch (status) {
           case NetworkStatus.SYNCED:
           case NetworkStatus.FULLY_SYNCED:
@@ -130,7 +130,9 @@ export class Coordinator extends EventEmitter {
             }
             break
           case NetworkStatus.ON_ERROR:
-            logger.error(`on error, stop generating new blocks`)
+            logger.error(
+              `coordinator/coordinator.ts - on error, stop generating new blocks`,
+            )
             this.taskRunners.blockPropose.stop()
             break
           default:
@@ -218,7 +220,9 @@ export class Coordinator extends EventEmitter {
     ])
     if (+currentRound !== this.currentRound) {
       this.currentRound = +currentRound
-      logger.info(`Current auction round: ${currentRound}`)
+      logger.info(
+        `coordinator/coordinator.ts - Current auction round: ${currentRound}`,
+      )
     }
     if (!url) {
       // Set a url
@@ -247,7 +251,7 @@ export class Coordinator extends EventEmitter {
         // eslint-disable-next-line no-continue
         continue
       }
-      logger.info(`Bidding on round ${x}`)
+      logger.info(`coordinator/coordinator.ts - Bidding on round ${x}`)
       const tx = auction.methods['bid(uint256)'](x)
       promises.push(
         this.layer1().sendExternalTx(tx, this.context.account, consensus, {
@@ -280,14 +284,16 @@ export class Coordinator extends EventEmitter {
   private async proposeTask() {
     if (this.proposeLock.isBusy('propose')) return
     await this.proposeLock.acquire('propose', async () => {
-      logger.trace(`try to propose a new block`)
+      logger.trace(`coordinator/coordinator.ts - try to propose a new block`)
       if (!this.context.gasPrice) {
-        logger.trace('Skip gen block. Gas price is not synced yet')
+        logger.trace(
+          'coordinator/coordinator.ts - Skip gen block. Gas price is not synced yet',
+        )
         return
       }
       if (!this.context.node.synchronizer.isSynced()) {
         logger.trace(
-          `Skip gen block. Syncing layer 2 with the layer 1 - status: ${this.context.node.synchronizer.status}`,
+          `coordinator/coordinator.ts - Skip gen block. Syncing layer 2 with the layer 1 - status: ${this.context.node.synchronizer.status}`,
         )
         return
       }
@@ -304,7 +310,7 @@ export class Coordinator extends EventEmitter {
     try {
       block = await this.middlewares.generator.genBlock()
     } catch (err) {
-      logger.warn(`Failed to gen block: ${err}`)
+      logger.warn(`coordinator/coordinator.ts - Failed to gen block: ${err}`)
       return
     }
     try {
@@ -313,14 +319,17 @@ export class Coordinator extends EventEmitter {
         await this.context.node.synchronizer.updateStatus()
       }
     } catch (err) {
-      logger.error(`Error occurred during block proposing.`)
-      logger.error(err)
+      logger.error(
+        `coordinator/coordinator.ts - Error occurred during block proposing: ${err.toString()}`,
+      )
     }
   }
 
   private async forwardTxs() {
     const { auctionMonitor } = this.context
-    logger.info(`Skipping block proposal: Not proposable`)
+    logger.info(
+      `coordinator/coordinator.ts - Skipping block proposal: Not proposable`,
+    )
     // get pending tx and forward to active proposer
     const pendingTx = await this.context.txPool.pickTxs(Infinity, new BN('1'))
     if (!pendingTx?.length) return
@@ -328,7 +337,9 @@ export class Coordinator extends EventEmitter {
       auctionMonitor.currentProposer,
     )
     if (!url) {
-      logger.warn('No functional url to forward pending tx!')
+      logger.warn(
+        'coordinator/coordinator.ts - No functional url to forward pending tx!',
+      )
       return
     }
     for (const tx of pendingTx) {
@@ -344,15 +355,21 @@ export class Coordinator extends EventEmitter {
     // if pending deposit fee + pending mass deposit fee + pending tx fee > block proposal fee
     // then commit the pending deposits to prepare to propose a block
     if (!this.context.auctionMonitor.isProposable) {
-      logger.info('Skipping mass deposit commit, cannot propose')
+      logger.info(
+        'coordinator/coordinator.ts - Skipping mass deposit commit, cannot propose',
+      )
       return
     }
     if (!this.context.gasPrice) {
-      logger.info('Skipping deposit commit, gas price is not synced')
+      logger.info(
+        'coordinator/coordinator.ts - Skipping deposit commit, gas price is not synced',
+      )
       return
     }
     if (!this.context.node.synchronizer.isSynced()) {
-      logger.info('Skipping deposit commit, chain is not synced')
+      logger.info(
+        'coordinator/coordinator.ts - Skipping deposit commit, chain is not synced',
+      )
       return
     }
     // TODO: take staged fees from db for reorg protection
@@ -373,7 +390,7 @@ export class Coordinator extends EventEmitter {
         })) + MAX_MASS_DEPOSIT_COMMIT_GAS
     const expectedCost = this.context.gasPrice.muln(expectedGas)
     logger.info(
-      `Skipping mass deposit, need ${expectedCost.toString()} have ${block.header.fee
+      `coordinator/coordinator.ts - Skipping mass deposit, need ${expectedCost.toString()} have ${block.header.fee
         .toBN()
         .add(new BN(stagedDeposits.fee))
         .toString()}`,
@@ -404,12 +421,14 @@ export class Coordinator extends EventEmitter {
 
   private async finalizeTask() {
     if (!this.context.node.synchronizer.isSynced()) {
-      logger.info('Skipping finalization, chain is not synced')
+      logger.info(
+        'coordinator/coordinator.ts - Skipping finalization, chain is not synced',
+      )
       return
     }
     const finalization = await this.genFinalization()
     if (!finalization) return
-    logger.info('finalization')
+    logger.info('coordinator/coordinator.ts - finalization')
     const blockHash = headerHash(finalization.header).toString()
     const tx = this.layer1().coordinator.methods.finalize(
       `0x${serializeFinalization(finalization).toString('hex')}`,
@@ -419,7 +438,9 @@ export class Coordinator extends EventEmitter {
       await tx.call({ from: this.context.account.address })
       finalizable = true
     } catch (err) {
-      logger.error(err)
+      logger.error(
+        `coordinator/coordinator.ts - error occured during finalizeTask(): ${err.toString()}`,
+      )
       return
     }
     if (finalizable) {
@@ -430,9 +451,13 @@ export class Coordinator extends EventEmitter {
             where: { hash: blockHash },
             update: { finalized: true },
           })
-          logger.info(`finalized block ${blockHash}`)
+          logger.info(
+            `coordinator/coordinator.ts - finalized block ${blockHash}`,
+          )
         } else {
-          logger.warn(`Failed to finalize the block ${blockHash}`)
+          logger.warn(
+            `coordinator/coordinator.ts - Failed to finalize the block ${blockHash}`,
+          )
         }
       } catch (err) {
         logger.error(err)
@@ -473,13 +498,15 @@ export class Coordinator extends EventEmitter {
     const block = Block.fromTx(tx, true)
 
     const finalization: Finalization = block.getFinalization()
-    logger.trace(`latest: ${latest}`)
-    logger.trace(`finalization block: ${block.hash.toString()}`)
+    logger.trace(`coordinator/coordinator.ts - latest: ${latest}`)
     logger.trace(
-      `header deposit root: ${finalization.header.depositRoot.toString()}`,
+      `coordinator/coordinator.ts - finalization block: ${block.hash.toString()}`,
     )
     logger.trace(
-      `calculated root: ${root(
+      `coordinator/coordinator.ts - header deposit root: ${finalization.header.depositRoot.toString()}`,
+    )
+    logger.trace(
+      `coordinator/coordinator.ts - calculated root: ${root(
         finalization.massDeposits.map(massDepositHash),
       )}`,
     )

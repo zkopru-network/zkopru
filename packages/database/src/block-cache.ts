@@ -60,8 +60,9 @@ export class BlockCache {
     this.blockHeaderSubscription = this.web3.eth
       .subscribe('newBlockHeaders', err => {
         if (err) {
-          logger.info('Error subscribing to block headers')
-          logger.info(err)
+          logger.info(
+            `database/block-cache - Error subscribing to block headers: ${err.toString()}`,
+          )
         }
       })
       .on('data', async blockHeader => {
@@ -70,8 +71,9 @@ export class BlockCache {
         try {
           await this.writeChangesIfNeeded()
         } catch (err) {
-          logger.info('Error writing block cache changes')
-          logger.info(err)
+          logger.info(
+            `database/block-cache - Error writing block cache changes: ${err.toString()}`,
+          )
         }
       })
   }

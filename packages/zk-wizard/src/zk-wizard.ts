@@ -230,8 +230,9 @@ export class ZkWizard {
     const result: SNARKResult = await genSNARK(inputs, wasmPath, zkeyPath, vKey)
     const end = Date.now()
     logger.debug(
-      `Shielded (${tx.inflow.length} => ${tx.outflow.length}): proof: ${end -
-        start}`,
+      `zk-wizard/zk-wizard.ts - Shielded (${tx.inflow.length} => ${
+        tx.outflow.length
+      }) gen proof: ${end - start} ms`,
     )
     // TODO handle genProof exception
     const encryptTo = option?.encryptTo

@@ -59,7 +59,9 @@ export class FullValidator extends Validator {
       }),
     )
     for (const result of offchainResult.filter(result => result.slashable)) {
-      logger.warn(`challenge: ${result.reason}`)
+      logger.warn(
+        `core/fullnode-validator - offchain validation failed: ${result.reason}`,
+      )
     }
     const onchainResult: OnchainValidation[] = await Promise.all(
       fnCalls.map(fnCall => {
@@ -78,7 +80,17 @@ export class FullValidator extends Validator {
       onchainResult.forEach((result, index) => {
         if (result.slashable !== offchainResult[index].slashable) {
           logger.error(
-            `onchain(${onchainResult[index].slashable})/offchain(${offchainResult[index].slashable}) - ${offchainResult[index].reason}`,
+            `core/fullnode-validator - onchain validation & offchain validation have different result`,
+          )
+          logger.error(
+            `core/fullnode-validator - onchain: ${!onchainResult[index]
+              .slashable}`,
+          )
+          logger.error(
+            `core/fullnode-validator - offchain: ${offchainResult[index].slashable}`,
+          )
+          logger.error(
+            `core/fullnode-validator - slash reason: - ${offchainResult[index].reason}`,
           )
         }
       })

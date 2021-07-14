@@ -68,6 +68,9 @@ export class Synchronizer extends EventEmitter {
 
   constructor(db: DB, l1Contract: L1Contract, blockCache: BlockCache) {
     super()
+    logger.trace(
+      `core/synchronizer - Synchronizer::constructor(${l1Contract.address})`,
+    )
     this.db = db
     this.blockCache = blockCache
     this.l1Contract = l1Contract
@@ -85,6 +88,11 @@ export class Synchronizer extends EventEmitter {
     proposalCB?: (hash: string) => void,
     finalizationCB?: (hash: string) => void,
   ) {
+    logger.trace(
+      `core/synchronizer - Synchronizer::sync(${accounts?.map(acc =>
+        acc.toString(),
+      )})`,
+    )
     this.setStatus(NetworkStatus.ON_SYNCING)
     if (!this.isListening) {
       this.listenGenesis()
@@ -110,6 +118,7 @@ export class Synchronizer extends EventEmitter {
   }
 
   async stop() {
+    logger.trace(`core/synchronizer - Synchronizer::stop()`)
     this.setStatus(NetworkStatus.STOPPED)
     const subscribers = [
       this.proposalSubscriber,
@@ -134,6 +143,7 @@ export class Synchronizer extends EventEmitter {
   }
 
   async updateStatus() {
+    logger.trace(`core/synchronizer - Synchronizer::updateStatus()`)
     const unfetched = await this.db.count('Proposal', {
       proposalData: null,
     })
@@ -153,8 +163,11 @@ export class Synchronizer extends EventEmitter {
       )
         .toBN()
         .subn(1) // proposal num starts from 0
-      logger.trace(`total proposed: ${layer1ProposedBlocks.toString(10)}`)
-      logger.trace(`total processed: ${this.latestProcessed}`)
+      logger.info(
+        `core/syncrhonizer - processing ${
+          this.latestProcessed
+        }/${layer1ProposedBlocks.toString(10)}`,
+      )
       if (layer1ProposedBlocks.eqn(this.latestProcessed || 0)) {
         this.setStatus(NetworkStatus.FULLY_SYNCED)
       } else if (layer1ProposedBlocks.ltn((this.latestProcessed || 0) + 2)) {
@@ -166,9 +179,23 @@ export class Synchronizer extends EventEmitter {
   }
 
   setLatestProcessed(proposalNum: number) {
+    logger.trace(
+      `core/synchronizer - Synchronizer::setLatestProcessed(${proposalNum})`,
+    )
     if ((this.latestProcessed || 0) < proposalNum) {
-      logger.info(`Latest processed: ${proposalNum}`)
       this.latestProcessed = proposalNum
+      this.l1Contract.upstream.methods
+        .proposedBlocks()
+        .call()
+        .then(num => {
+          const layer1ProposedBlocks = Uint256.from(num)
+            .toBN()
+            .subn(1) // proposal num starts from 0
+            .toString(10)
+          logger.info(
+            `core/syncrhonizer - processed ${proposalNum}/${layer1ProposedBlocks}`,
+          )
+        })
     }
   }
 
@@ -176,17 +203,18 @@ export class Synchronizer extends EventEmitter {
     if (this.status !== status) {
       this.status = status
       // this.emit('status', status, this.latestProposedHash)
-      logger.info(`sync status: ${status}`)
+      logger.info(`core/synchronizer - Sync status: ${status}`)
       this.emit('status', status)
     }
   }
 
   async listenGenesis() {
+    logger.trace(`core/synchronizer - Synchronizer::listenGenesis()`)
     const numOfGenesisBlock = await this.db.count('Proposal', {
       proposalNum: 0,
     })
     if (numOfGenesisBlock === 0) {
-      logger.info('No genesis block. Trying to fetch')
+      logger.info('core/synchronizer - No genesis block. Trying to fetch')
       const genesisListener = this.l1Contract.upstream.events
         .GenesisBlock({ fromBlock: 0 })
         .on('data', async event => {
@@ -196,8 +224,9 @@ export class Synchronizer extends EventEmitter {
           )
           // WRITE DATABASE
           const { blockHash, proposer, parentBlock } = returnValues
-          logger.info(`genesis hash: ${blockHash}`)
-          logger.info(`genesis data: ${returnValues}`)
+          logger.info(
+            `core/synchronizer - Genesis block ${blockHash} is proposed by ${proposer}`,
+          )
 
           // GENESIS BLOCK
           const config = await this.l1Contract.getConfig()
@@ -245,6 +274,7 @@ export class Synchronizer extends EventEmitter {
   }
 
   async listenTokenRegistry() {
+    logger.trace(`core/synchronizer - Synchronizer::listenTokenRegistry()`)
     const lastRegistration = await this.db.findMany('TokenRegistry', {
       where: {},
       orderBy: { blockNumber: 'desc' },
@@ -257,7 +287,7 @@ export class Synchronizer extends EventEmitter {
         const { returnValues, blockNumber } = event
         // WRITE DATABASE
         const { tokenAddr } = (returnValues as unknown) as { tokenAddr: string }
-        logger.info(`ERC20 token registered: ${tokenAddr}`)
+        logger.info(`core/synchronizer - ERC20 token registered: ${tokenAddr}`)
         const tokenRegistry: TokenRegistrySql = {
           address: tokenAddr,
           isERC20: true,
@@ -280,7 +310,7 @@ export class Synchronizer extends EventEmitter {
         const { returnValues, blockNumber } = event
         // WRITE DATABASE
         const { tokenAddr } = (returnValues as unknown) as { tokenAddr: string }
-        logger.info(`ERC721 token registered: ${tokenAddr}`)
+        logger.info(`core/synchronizer - ERC721 token registered: ${tokenAddr}`)
         const tokenRegistry: TokenRegistrySql = {
           address: tokenAddr,
           isERC20: false,
@@ -299,18 +329,21 @@ export class Synchronizer extends EventEmitter {
   }
 
   async listenDeposits(cb?: (deposit: DepositSql) => void) {
+    logger.trace(`core/synchronizer - Synchronizer::listenDeposits()`)
     const lastDeposits = await this.db.findMany('Deposit', {
       where: {},
       orderBy: { blockNumber: 'desc' },
       limit: 1,
     })
     const fromBlock = lastDeposits[0]?.blockNumber || 0
-    logger.info('new deposit from block', fromBlock)
+    logger.info(
+      `core/synchronizer - Scan deposit hashes from block number ${fromBlock}`,
+    )
     this.depositSubscriber = this.l1Contract.user.events
       .Deposit({ fromBlock })
       .on('connected', subId => {
         logger.info(
-          `synchronizer.js: Deposit listener is connected. Id: ${subId}`,
+          `core/synchronizer - Deposit listener is connected. Id: ${subId}`,
         )
       })
       .on('data', async event => {
@@ -323,7 +356,7 @@ export class Synchronizer extends EventEmitter {
           logIndex,
           blockNumber,
         }
-        logger.info(`synchronizer.js: NewDeposit(${deposit.note})`)
+        logger.info(`core/synchronizer - NewDeposit(${deposit.note})`)
         await this.blockCache.upsertCache(
           'Deposit',
           {
@@ -338,11 +371,11 @@ export class Synchronizer extends EventEmitter {
       })
       .on('changed', event => {
         this.blockCache.clearChangesForBlockHash(event.blockHash)
-        logger.info(`synchronizer.js: Deposit Event changed`, event)
+        logger.info(`core/synchronizer - Deposit Event changed`, event)
       })
       .on('error', event => {
         // TODO
-        logger.info(`synchronizer.js: Deposit Event Error occured`, event)
+        logger.info(`core/synchronizer - Deposit Event Error occured`, event)
       })
   }
 
@@ -350,13 +383,16 @@ export class Synchronizer extends EventEmitter {
     addresses: ZkAddress[],
     cb?: (utxo: UtxoSql) => void,
   ) {
+    logger.trace(`core/synchronizer - Synchronizer::listenDepositUtxos()`)
     const lastDeposits = await this.db.findMany('Utxo', {
       where: {},
       orderBy: { depositedAt: 'desc' },
       limit: 1,
     })
     const fromBlock = lastDeposits[0]?.blockNumber || 0
-    logger.info('found my deposit from block', fromBlock)
+    logger.info(
+      `core/synchronizer - Scan deposit details from block number ${fromBlock}`,
+    )
     this.depositUtxoSubscriber = this.l1Contract.user.events
       .DepositUtxo({
         fromBlock,
@@ -366,7 +402,7 @@ export class Synchronizer extends EventEmitter {
       })
       .on('connected', subId => {
         logger.info(
-          `synchronizer.js: DepositUtxo listener is connected. Id: ${subId}`,
+          `core/synchronizer - DepositUtxo listener is connected. Id: ${subId}`,
         )
       })
       .on('data', async event => {
@@ -410,7 +446,7 @@ export class Synchronizer extends EventEmitter {
             .toString(),
           depositedAt: blockNumber,
         }
-        logger.info(`synchronizer.js: Found My Deposit (${utxo.hash})`)
+        logger.info(`core/synchronizer - Discovered my deposit (${utxo.hash})`)
         await this.blockCache.upsertCache(
           'Utxo',
           {
@@ -441,36 +477,36 @@ export class Synchronizer extends EventEmitter {
       })
       .on('changed', event => {
         this.blockCache.clearChangesForBlockHash(event.blockHash)
-        logger.info(`synchronizer.js: Deposit Event changed`, event)
+        logger.info(`core/synchronizer - Deposit Event changed`, event)
       })
       .on('error', event => {
         // TODO
-        logger.info(`synchronizer.js: Deposit Event Error occured`, event)
+        logger.info(`core/synchronizer - Deposit Event Error occured`, event)
       })
   }
 
   async listenMassDepositCommit(cb?: (commit: MassDepositSql) => void) {
+    logger.trace(`core/synchronizer - Synchronizer::listenMassDepositCommit()`)
     const lastMassDeposit = await this.db.findMany('MassDeposit', {
       where: {},
       orderBy: { blockNumber: 'desc' },
       limit: 1,
     })
     const fromBlock = lastMassDeposit[0]?.blockNumber || 0
-    logger.info('sync mass deposits from block', fromBlock)
+    logger.info(
+      `core/synchronizer - Scan mass deposits from block number ${fromBlock}`,
+    )
     this.massDepositCommitSubscriber = this.l1Contract.coordinator.events
       .MassDepositCommit({ fromBlock })
       .on('connected', subId => {
         logger.info(
-          `synchronizer.js: MassDepositCommit listener is connected. Id: ${subId}`,
+          `core/synchronizer - MassDepositCommit listener is connected. Id: ${subId}`,
         )
       })
       .on('data', async event => {
         const { returnValues, blockNumber } = event
         logger.info(
-          `MassDepositCommit
-          ${returnValues.index}
-          ${returnValues.merged}
-          ${returnValues.fee}`,
+          `core/synchronizer - Total fee for MassDepositCommit #${returnValues.index}(${returnValues.merged}) is ${returnValues.fee} gwei`,
         )
         const massDeposit: MassDepositSql = {
           index: Uint256.from(returnValues.index).toString(),
@@ -479,10 +515,6 @@ export class Synchronizer extends EventEmitter {
           blockNumber,
           includedIn: null,
         }
-        logger.debug(
-          `Massdeposit: index ${massDeposit.index} / merged: ${massDeposit.merged} / fee: ${massDeposit.fee}`,
-        )
-        logger.info('massdeposit commit is', massDeposit)
         await this.blockCache.upsertCache(
           'MassDeposit',
           {
@@ -494,31 +526,36 @@ export class Synchronizer extends EventEmitter {
           event.blockHash,
         )
         if (cb) cb(massDeposit)
-        logger.info('massdeposit commit succeeded')
       })
       .on('changed', event => {
         this.blockCache.clearChangesForBlockHash(event.blockHash)
-        logger.info(`synchronizer.js: MassDeposit Event changed`, event)
+        logger.info(`core/synchronizer - MassDeposit Event changed`, event)
       })
       .on('error', event => {
         // TODO
-        logger.info(`synchronizer.js: MassDeposit Event error changed`, event)
+        logger.info(
+          `core/synchronizer - MassDeposit Event error changed`,
+          event,
+        )
       })
   }
 
   async listenNewProposals(cb?: (hash: string) => void) {
+    logger.trace(`core/synchronizer - Synchronizer::listenNewProposals()`)
     const lastProposal = await this.db.findMany('Proposal', {
       where: {},
       orderBy: { proposedAt: 'desc' },
       limit: 1,
     })
     const fromBlock = lastProposal[0]?.proposedAt || 0
-    logger.info('listenNewProposal fromBlock: ', fromBlock)
+    logger.info(
+      `core/synchronizer - Scan new proposals from block number ${fromBlock}`,
+    )
     this.proposalSubscriber = this.l1Contract.coordinator.events
       .NewProposal({ fromBlock })
       .on('connected', subId => {
         logger.info(
-          `synchronizer.js: NewProposal listener is connected. Id: ${subId}`,
+          `core/synchronizer - NewProposal listener is connected. Id: ${subId}`,
         )
       })
       .on('data', async event => {
@@ -526,7 +563,7 @@ export class Synchronizer extends EventEmitter {
         // WRITE DATABASE
         const { proposalNum, blockHash } = returnValues
         logger.info(
-          `newProposal: ${proposalNum} - ${blockHash} @ ${blockNumber}`,
+          `core/synchronizer - NewProposal: #${proposalNum}(${blockHash}) @ L1 #${blockNumber}`,
         )
         const { timestamp } = await this.l1Contract.web3.eth.getBlock(
           blockNumber,
@@ -552,15 +589,16 @@ export class Synchronizer extends EventEmitter {
       })
       .on('changed', event => {
         this.blockCache.clearChangesForBlockHash(event.blockHash)
-        logger.info(`synchronizer.js: NewProposal Event changed`, event)
+        logger.info(`core/synchronizer - NewProposal Event changed`, event)
       })
       .on('error', err => {
         // TODO
-        logger.info(`synchronizer.js: NewProposal Event error occured`, err)
+        logger.info(`core/synchronizer - NewProposal Event error occured`, err)
       })
   }
 
   async listenSlash(cb?: (hash: string) => void) {
+    logger.trace(`core/synchronizer - Synchronizer::listenSlash()`)
     const lastSlash = await this.db.findMany('Slash', {
       where: {},
       orderBy: { slashedAt: 'desc' },
@@ -571,7 +609,7 @@ export class Synchronizer extends EventEmitter {
       .Slash({ fromBlock })
       .on('connected', subId => {
         logger.info(
-          `synchronizer.js: Slash listener is connected. Id: ${subId}`,
+          `core/synchronizer - Slash listener is connected. Id: ${subId}`,
         )
       })
       .on('data', async event => {
@@ -580,8 +618,9 @@ export class Synchronizer extends EventEmitter {
         const proposer = Address.from(returnValues.proposer).toString()
         const { reason } = returnValues
 
-        logger.debug(`slashed hash@!${hash}`)
-        logger.debug(`${JSON.stringify(event.returnValues)}`)
+        logger.info(
+          `core/synchronizer - Slash: ${proposer} proposed invalid block ${hash}(${reason}).`,
+        )
         await this.blockCache.transactionCache(
           db => {
             db.upsert('Slash', {
@@ -613,15 +652,16 @@ export class Synchronizer extends EventEmitter {
       })
       .on('changed', event => {
         this.blockCache.clearChangesForBlockHash(event.blockHash)
-        logger.info(`synchronizer.js: Slash Event changed`, event)
+        logger.info(`core/synchronizer - Slash Event changed`, event)
       })
       .on('error', err => {
         // TODO removed
-        logger.info(`synchronizer.js: Slash Event error occured`, err)
+        logger.info(`core/synchronizer - Slash Event error occured`, err)
       })
   }
 
   async listenFinalization(cb?: (hash: string) => void) {
+    logger.trace(`core/synchronizer - Synchronizer::listenFinalization()`)
     const lastFinalized = await this.db.findMany('Proposal', {
       where: { finalized: true },
       orderBy: { proposedAt: 'desc' },
@@ -632,7 +672,7 @@ export class Synchronizer extends EventEmitter {
       .Finalized({ fromBlock })
       .on('connected', subId => {
         logger.info(
-          `synchronizer.js: Finalization listener is connected. Id: ${subId}`,
+          `core/synchronizer - Finalization listener is connected. Id: ${subId}`,
         )
       })
       .on('data', async event => {
@@ -641,8 +681,7 @@ export class Synchronizer extends EventEmitter {
           blockHash = event.returnValues
         else blockHash = (event.returnValues as any).blockHash
         const hash = Bytes32.from(blockHash).toString()
-        logger.debug(`finalization hash@!${hash}`)
-        logger.debug(`${JSON.stringify(event.returnValues)}`)
+        logger.info(`core/synchronizer - Finalized ${hash}`)
         await this.blockCache.upsertCache(
           'Proposal',
           {
@@ -657,15 +696,16 @@ export class Synchronizer extends EventEmitter {
       })
       .on('changed', event => {
         this.blockCache.clearChangesForBlockHash(event.blockHash)
-        logger.info(`synchronizer.js: Finalization Event changed`, event)
+        logger.info(`core/synchronizer - Finalized Event changed`, event)
       })
       .on('error', err => {
         // TODO removed
-        logger.info(`synchronizer.js: Finalization Event error occured`, err)
+        logger.info(`core/synchronizer - Finalized Event error occured`, err)
       })
   }
 
   async fetchUnfetchedProposals() {
+    logger.trace(`core/synchronizer - Synchronizer::fetchUnfetchedProposals()`)
     const MAX_FETCH_JOB = 10
     const availableFetchJob = Math.max(
       MAX_FETCH_JOB - Object.keys(this.fetching).length,
@@ -690,17 +730,22 @@ export class Synchronizer extends EventEmitter {
   }
 
   async fetch(proposalTx: string) {
-    logger.info('fetched block proposal')
+    logger.trace(`core/synchronizer - Synchronizer::fetch()`)
     if (this.fetching[proposalTx]) return
     const proposalData = await this.l1Contract.web3.eth.getTransaction(
       proposalTx,
     )
     if (!proposalData.blockHash) {
-      logger.trace(`pended proposal tx: ${proposalTx}`)
+      logger.debug(
+        `core/synchronizer - waiting proposal transaction ${proposalTx} is confirmed`,
+      )
       return
     }
     this.fetching[proposalTx] = true
     const block = Block.fromTx(proposalData)
+    logger.info(
+      `core/synchronizer - Fetched tx ${proposalTx} for block ${block.hash.toString()}`,
+    )
     const header = block.getHeaderSql()
     try {
       await this.db.upsert('Block', {
