@@ -10,8 +10,19 @@ import { DB } from './types'
 // before a database transaction is finished (see block-processor.ts)
 const cachedTreeNodes = {} as { [key: string]: any }
 
+let cacheEnabled = false
+
 export function cacheTreeNode(treeId: string, nodeIndex: string, node: any) {
+  if (!cacheEnabled) return
   cachedTreeNodes[`${treeId}-${nodeIndex}`] = node
+}
+
+export function enableTreeCache() {
+  cacheEnabled = true
+}
+
+export function disableTreeCache() {
+  cacheEnabled = true
 }
 
 export function clearTreeCache() {
@@ -36,10 +47,13 @@ export async function getCachedSiblings(
     const siblingIndex = new BN(1).xor(pathIndex)
     siblingIndexes[level] = hexify(siblingIndex)
   }
-  const inMemoryNodes = siblingIndexes
-    .map(index => cachedTreeNodes[`${treeId}-${index}`])
-    .filter(node => !!node)
+  const inMemoryNodes = cacheEnabled
+    ? siblingIndexes
+        .map(index => cachedTreeNodes[`${treeId}-${index}`])
+        .filter(node => !!node)
+    : []
   const uncachedSiblingIndexes = siblingIndexes.filter(index => {
+    if (!cacheEnabled) return true
     return !cachedTreeNodes[`${treeId}-${index}`]
   })
   const cachedSiblings = await db.findMany('TreeNode', {
