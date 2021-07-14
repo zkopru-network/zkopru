@@ -31,7 +31,7 @@ export class SQLiteMemoryConnector extends DB {
 
   schema: Schema = {}
 
-  lock = new AsyncLock()
+  lock = new AsyncLock({ maxPending: 100000 })
 
   constructor() {
     super()

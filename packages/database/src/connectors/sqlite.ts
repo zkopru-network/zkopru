@@ -36,7 +36,7 @@ export class SQLiteConnector extends DB {
 
   schema: Schema = {}
 
-  lock = new AsyncLock()
+  lock = new AsyncLock({ maxPending: 100000 })
 
   constructor(config: any /* ISqlite.Config */) {
     super()

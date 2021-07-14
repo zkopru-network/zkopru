@@ -24,7 +24,7 @@ export class IndexedDBConnector extends DB {
 
   schema: Schema = {}
 
-  lock = new AsyncLock()
+  lock = new AsyncLock({ maxPending: 100000 })
 
   constructor(schema: Schema) {
     super()
