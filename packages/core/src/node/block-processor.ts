@@ -442,12 +442,14 @@ export class BlockProcessor extends EventEmitter {
         includedIn: null,
       },
     })
-    const candidates: { [index: string]: MassDepositSql } = {}
-    nonIncluded.forEach(md => {
-      candidates[md.index] = md
-    })
+    const candidates = nonIncluded.reduce((acc, val) => {
+      return {
+        ...acc,
+        [val.index]: val,
+      }
+    }, {})
+    const foundCandidates: { [index: string]: boolean } = {}
 
-    // TODO need batch query
     const indexes: string[] = []
     for (const hash of massDepositHashes) {
       for (const index of Object.keys(candidates).sort()) {
@@ -458,10 +460,11 @@ export class BlockProcessor extends EventEmitter {
               merged: Bytes32.from(md.merged),
               fee: Uint256.from(md.fee),
             }),
-          )
+          ) &&
+          !foundCandidates[index]
         ) {
           indexes.push(index)
-          delete candidates[index]
+          foundCandidates[index] = true
           break
         }
       }
@@ -534,12 +537,6 @@ export class BlockProcessor extends EventEmitter {
       },
     })
     const startingWithdrawalIndex = patch.prevHeader.withdrawalIndex.toBN()
-    const withdrawalsToUpdate: {
-      hash: string
-      index: string
-      includedIn: string
-      siblings: string
-    }[] = []
     for (const withdrawalData of myStoredWithdrawals) {
       const orderInArr = patch.treePatch.withdrawals.findIndex(withdrawal =>
         new BN(withdrawalData.withdrawalHash).eq(withdrawal.hash),
@@ -552,25 +549,17 @@ export class BlockProcessor extends EventEmitter {
         noteHash,
         index,
       )
-      withdrawalsToUpdate.push({
-        hash: withdrawalData.hash,
-        index: index.toString(),
-        includedIn: patch.block.toString(),
-        siblings: JSON.stringify(
-          merkleProof.siblings.map(sib => sib.toString(10)),
-        ),
+      db.update('Withdrawal', {
+        where: { hash: withdrawalData.hash },
+        update: {
+          index: index.toString(),
+          includedIn: patch.block.toString(),
+          siblings: JSON.stringify(
+            merkleProof.siblings.map(sib => sib.toString(10)),
+          ),
+        },
       })
     }
-    withdrawalsToUpdate.forEach(withdrawal =>
-      db.update('Withdrawal', {
-        where: { hash: withdrawal.hash },
-        update: {
-          index: withdrawal.index,
-          includedIn: withdrawal.includedIn,
-          siblings: withdrawal.siblings,
-        },
-      }),
-    )
   }
 
   // idempotently calculate canonical numbers
