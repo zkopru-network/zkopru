@@ -17,6 +17,7 @@
     "build": "tsc --build tsconfig.build.json",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "test": "jest",
+    "test:trace": "LOG_LEVEL=trace PRINT_LOG=true jest",
     "link-modules": "link-module-alias",
     "test:unit": "jest test/unit",
     "test:integration": "jest test/unit",

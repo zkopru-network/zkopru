@@ -37,7 +37,8 @@ export const logStream = new StreamConcatenator()
 export const logger = pino(
   {
     level:
-      process.env.LOG_LEVEL || process.env.DEBUG === 'true' ? 'debug' : 'info',
+      process.env.LOG_LEVEL ||
+      (process.env.DEBUG === 'true' ? 'debug' : 'info'),
   },
   logStream,
 )
@@ -71,4 +72,8 @@ export const attachConsoleErrorToPino = () => {
       },
     }),
   )
+}
+
+if (process.env.PRINT_LOG) {
+  attachConsoleLogToPino()
 }

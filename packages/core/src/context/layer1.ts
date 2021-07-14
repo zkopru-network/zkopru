@@ -7,7 +7,7 @@ import {
 } from '@zkopru/contracts'
 import { Config } from '@zkopru/database'
 import { Account, TransactionReceipt } from 'web3-core'
-import { hexify } from '@zkopru/utils'
+import { hexify, logger } from '@zkopru/utils'
 import Web3 from 'web3'
 import { ContractOptions } from 'web3-eth-contract'
 import * as ffjs from 'ffjavascript'
@@ -29,12 +29,16 @@ export class L1Contract extends ZkopruContract {
 
   constructor(web3: Web3, address: string, option?: ContractOptions) {
     super(web3, address, option)
+    logger.trace(
+      `core/layer1.ts - L1Contract::constructor(${address.slice(0, 6)}...)`,
+    )
     this.web3 = web3
     this.address = address
     this.sendTxLock = new AsyncLock()
   }
 
   async getVKs(): Promise<{ [txSig: string]: VerifyingKey }> {
+    logger.trace(`core/layer1.ts - L1Contract::getVKs()`)
     const NUM_OF_INPUTS = 4
     const NUM_OF_OUTPUTS = 4
     const vks: { [txSig: string]: VerifyingKey } = {}
@@ -92,6 +96,7 @@ export class L1Contract extends ZkopruContract {
   }
 
   async getConfig(): Promise<Config> {
+    logger.trace(`core/layer1.ts - L1Contract::getConfig()`)
     if (this.config) return this.config
     let networkId!: number
     let chainId!: number
@@ -215,6 +220,11 @@ export class L1Contract extends ZkopruContract {
     option?: Tx,
   ): Promise<TransactionReceipt | undefined> {
     const receipt = await TxUtil.sendTx(tx, to, this.web3, account, option)
+    logger.trace(
+      `core/layer1.ts - L1Contract::sendExternalTx(${receipt?.transactionHash
+        .toString()
+        .slice(0, 6)}...)`,
+    )
     return receipt
   }
 
@@ -225,6 +235,11 @@ export class L1Contract extends ZkopruContract {
   ): Promise<TransactionReceipt | undefined> {
     const result = await this.sendTxLock.acquire(account.address, () =>
       TxUtil.sendTx(tx, this.address, this.web3, account, option),
+    )
+    logger.trace(
+      `core/layer1.ts - L1Contract::sendTx(${result?.transactionHash
+        .toString()
+        .slice(0, 6)}...)`,
     )
     return result
   }

@@ -20,6 +20,7 @@ import {
 import { Block, Header, MassDeposit } from '../block'
 import { BootstrapData } from '../node/bootstrap'
 import { SNARKVerifier, VerifyingKey } from '../snark/snark-verifier'
+import { massDepositHash } from '../block/utils'
 
 export interface Patch {
   block: Bytes32
@@ -55,6 +56,7 @@ export class L2Chain {
     config: Config,
     vks: { [txType: string]: VerifyingKey },
   ) {
+    logger.trace(`core/layer2.ts - L2Chain::constructor()`)
     this.db = db
     this.grove = grove
     this.config = config
@@ -64,6 +66,7 @@ export class L2Chain {
   }
 
   async latestBlock(): Promise<Bytes32> {
+    logger.trace(`core/layer2.ts - L2Chain::latestBlock()`)
     const lastVerifiedProposal = await this.db.findOne('Proposal', {
       where: {
         verified: true,
@@ -77,6 +80,7 @@ export class L2Chain {
   }
 
   async getBlockByNumber(blockNum: number): Promise<Block | null> {
+    logger.trace(`core/layer2.ts - L2Chain::getBlockByNumber(${blockNum})`)
     const proposals = await this.db.findMany('Proposal', {
       where: {
         proposalNum: blockNum,
@@ -109,6 +113,9 @@ export class L2Chain {
   }
 
   async getBlock(hash: Bytes32): Promise<Block | null> {
+    logger.trace(
+      `core/layer2.ts - L2Chain::getBlock(${hash.toString().slice(0, 6)}...)`,
+    )
     const proposal = await this.db.findOne('Proposal', {
       where: {
         hash: hash.toString(),
@@ -139,6 +146,9 @@ export class L2Chain {
   }
 
   async getProposalByNumber(proposalNum: number, includeBlock = true) {
+    logger.trace(
+      `core/layer2.ts - L2Chain::getProposalByNumber(${proposalNum})`,
+    )
     const proposals = await this.db.findMany('Proposal', {
       where: { proposalNum },
       include: { block: includeBlock },
@@ -152,6 +162,9 @@ export class L2Chain {
     canonicalNum: number,
     includeBlock = true,
   ) {
+    logger.trace(
+      `core/layer2.ts - L2Chain::getProposalByCanonicalNumber(${canonicalNum})`,
+    )
     const proposals = await this.db.findMany('Proposal', {
       where: { canonicalNum },
       include: { block: includeBlock },
@@ -162,6 +175,11 @@ export class L2Chain {
   }
 
   async getProposal(hash: Bytes32, includeBlock = true) {
+    logger.trace(
+      `core/layer2.ts - L2Chain::getProposal(${hash
+        .toString()
+        .slice(0, 6)}...)`,
+    )
     const proposal = await this.db.findOne('Proposal', {
       where: { hash: hash.toString() },
       include: { block: includeBlock },
@@ -170,12 +188,24 @@ export class L2Chain {
   }
 
   async getTxByHash(hash: string | Bytes32) {
+    logger.trace(
+      `core/layer2.ts - L2Chain::getTxByHash(${hash
+        .toString()
+        .slice(0, 6)}...)`,
+    )
     return this.db.findOne('Tx', {
       where: { hash: hash.toString() },
     })
   }
 
   async getDeposits(...massDeposits: MassDeposit[]): Promise<DepositSql[]> {
+    logger.trace(
+      `core/layer2.ts - L2Chain::getDeposits(${massDeposits.map(md =>
+        massDepositHash(md)
+          .toString()
+          .slice(0, 6),
+      )}})`,
+    )
     const massDepositObjects = await this.db.findMany('MassDeposit', {
       where: {
         OR: massDeposits.map(({ merged, fee }) => ({

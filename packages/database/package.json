@@ -24,6 +24,7 @@
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "link-modules": "link-module-alias",
     "test": "sh scripts/test.sh",
+    "test:trace": "LOG_LEVEL=trace PRINT_LOG=true yarn test",
     "coverage": "jest --coverage"
   },
   "dependencies": {
