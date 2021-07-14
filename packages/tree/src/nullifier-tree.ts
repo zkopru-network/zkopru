@@ -97,7 +97,7 @@ export class NullifierTree implements SMT<BN> {
 
   private async getRootNode(): Promise<BN> {
     if (this.rootNode) return new BN(this.rootNode)
-    logger.trace('try to get root node from database')
+    logger.trace('tree/nullifier-tree.ts - try to get root node from database')
     const rootNode = await this.db.findOne('TreeNode', {
       // select: { value: true },
       where: {
@@ -274,7 +274,7 @@ export class NullifierTree implements SMT<BN> {
       })
     }
     const newRoot = updatedNodes[hexify(new BN(1))]
-    logger.trace(`setting new root - ${newRoot}`)
+    logger.trace(`tree/nullifier-tree.ts - setting new root - ${newRoot}`)
     const oldRoot = new BN(this.rootNode)
     db.onError(async () => {
       await this.lock.acquire('root', () => {

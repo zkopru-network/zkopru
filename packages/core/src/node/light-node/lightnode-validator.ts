@@ -56,7 +56,7 @@ export class LightValidator extends Validator {
     const fnCall = fnCalls[slashableCallIndex]
     const result = await onchainValidator[fnCall.name](...fnCall.args)
     if (result) {
-      logger.warn('Challenge exists')
+      logger.warn(`core/lightnode-validator - Challenge exists`)
       // Do not send challenge tx to save gas.
       // TODO give option to send challenge tx also in the light node.
       // return result.tx

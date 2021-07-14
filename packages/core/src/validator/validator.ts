@@ -317,7 +317,7 @@ export abstract class ValidatorBase {
             ),
           )
         } else {
-          logger.trace('This node does not have nullifier tree.')
+          logger.trace('core/validator.ts - This node does not have nullifier tree.')
         }
       }
       validateOutflowCalls.push(

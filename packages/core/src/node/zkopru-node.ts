@@ -80,37 +80,42 @@ export class ZkopruNode {
   }
 
   start() {
+    logger.trace('core/zkopru-node - ZkopruNode::start()')
     if (!this.running) {
       this.running = true
-      logger.info('start sync')
+      logger.info('core/zkopru-node - Node starts')
       this.synchronizer.sync(
         this.tracker.transferTrackers.map(viewer => viewer.zkAddress),
       )
       this.blockProcessor.start()
       this.blockProcessor.on('slash', async slash => {
         const result = await this.watchdog?.slash(slash.tx)
-        logger.info(`slash result: ${result}`)
+        logger.info(
+          `core/zkopru-node - Found a slashable proposal. Execution result is ${result}`,
+        )
       })
       this.blockProcessor.on('processed', async proposal => {
         this.synchronizer.setLatestProcessed(proposal.proposalNum)
       })
     } else {
-      logger.info('already on syncing')
+      logger.info(`core/zkopru-node - Node is already running`)
     }
   }
 
   async stop() {
+    logger.trace('core/zkopru-node - ZkopruNode::stop()')
     if (this.running) {
-      logger.info('stop sync')
+      logger.info('core/zkopru-node - Node stops')
       this.running = false
       this.blockProcessor.removeAllListeners()
       await Promise.all([this.synchronizer.stop(), this.blockProcessor.stop()])
     } else {
-      logger.info('already stopped')
+      logger.info(`core/zkopru-node - Node is already stopped`)
     }
   }
 
   async loadERC20Info(): Promise<ERC20Info[]> {
+    logger.trace('core/zkopru-node - ZkopruNode::loadERC20Info()')
     const registry = await this.layer2.getTokenRegistry()
     const existingInfo = await this.db.findMany('ERC20Info', {
       where: {
@@ -127,6 +132,7 @@ export class ZkopruNode {
         contract.methods.symbol().call(),
         contract.methods.decimals().call(),
       ])
+      logger.info(`core/zkopru-node - Register ${symbol} to the token registry`)
       await this.db.upsert('ERC20Info', {
         where: { address },
         create: {
@@ -155,7 +161,7 @@ export class ZkopruNode {
     address: string,
     accounts?: ZkAccount[],
   ): Promise<L2Chain> {
-    logger.info('Get or init chain')
+    logger.trace('core/zkopru-node - ZkopruNode::initLayer2()')
     const zkAddressesToObserve = accounts
       ? accounts.map(account => account.zkAddress)
       : []
@@ -189,6 +195,7 @@ export class ZkopruNode {
       addressesToObserve,
     })
     await grove.init()
+    logger.info(`core/zkopru-node - Layer2 blockchain is ready`)
     return new L2Chain(db, grove, config, vks)
   }
 }

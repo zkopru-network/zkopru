@@ -34,7 +34,9 @@ export class BlockProposer extends ProposerBase {
       },
     })
     if (siblingProposals.length > 0) {
-      logger.info(`Already proposed for the given parent block`)
+      logger.info(
+        `core/block-proposer.ts - Proposal exists for the given height`,
+      )
       return undefined
     }
 
@@ -72,16 +74,16 @@ export class BlockProposer extends ProposerBase {
       })
       expectedGas += MAX_MASS_DEPOSIT_COMMIT_GAS
     } catch (err) {
-      logger.warn(`propose() fails. Skip gen block`)
+      logger.warn(`core/block-proposer.ts - propose() fails. Skip gen block`)
       if (typeof err.toString === 'function') {
-        logger.info(err.toString())
+        logger.info(`core/block-proposer - ${err.toString()}`)
       }
       return undefined
     }
     const expectedFee = this.context.gasPrice.muln(expectedGas)
     if (block.header.fee.toBN().lte(expectedFee)) {
       logger.info(
-        `Skip gen block. Aggregated fee is not enough yet ${block.header.fee} / ${expectedFee}`,
+        `core/block-proposer.ts - Aggregated fee: ${block.header.fee} / ${expectedFee}`,
       )
       return undefined
     }
@@ -91,10 +93,12 @@ export class BlockProposer extends ProposerBase {
     })
     if (receipt) {
       logger.info(
-        `Sent safePropose transaction for block: ${block.hash.toString()}`,
+        `core/block-proposer.ts - safePropose(${block.hash.toString()}) completed`,
       )
     } else {
-      logger.warn(`Failed to propose a new block: ${block.hash.toString()}`)
+      logger.warn(
+        `core/block-proposer.ts - safePropose(${block.hash.toString()}) failed`,
+      )
     }
     return receipt
   }

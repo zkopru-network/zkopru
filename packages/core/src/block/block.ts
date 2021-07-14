@@ -5,6 +5,7 @@ import {
   // BootstrapCreateInput,
 } from '@zkopru/database'
 import * as Utils from '@zkopru/utils'
+import { logger } from '@zkopru/utils'
 import { soliditySha3Raw } from 'web3-utils'
 import AbiCoder from 'web3-eth-abi'
 import { Bytes32, Uint256 } from 'soltypes'
@@ -59,6 +60,9 @@ export class Block {
       withdrawalBootstrap: Bytes32[]
     }
   }) {
+    logger.trace(
+      `core/block.ts - Block::constructor(${hash.toString().slice(0, 6)}...)`,
+    )
     this.hash = hash
     this.slashed = slashed
     this.verified = verified
@@ -68,6 +72,11 @@ export class Block {
   }
 
   getFinalization(): Finalization {
+    logger.trace(
+      `core/block.ts - Block(${this.hash
+        .toString()
+        .slice(0, 6)}...)::getFinalization()`,
+    )
     return {
       proposalChecksum: Bytes32.from(this.checksum()),
       header: this.header,
@@ -76,6 +85,11 @@ export class Block {
   }
 
   toSqlObj(): BlockSql {
+    logger.trace(
+      `core/block.ts - Block(${this.hash
+        .toString()
+        .slice(0, 6)}...)::toSqlObj()`,
+    )
     return {
       hash: this.hash.toString(),
       proposal: {},
@@ -83,6 +97,11 @@ export class Block {
   }
 
   getHeaderSql(): HeaderSql {
+    logger.trace(
+      `core/block.ts - Block(${this.hash
+        .toString()
+        .slice(0, 6)}...)::toHeaderSql()`,
+    )
     return {
       hash: this.hash.toString(),
       proposer: this.header.proposer.toString(),
@@ -104,6 +123,11 @@ export class Block {
     header: HeaderSql
     bootstrap: any | undefined
   } {
+    logger.trace(
+      `core/block.ts - Block(${this.hash
+        .toString()
+        .slice(0, 6)}...)::getSqlObjs()`,
+    )
     const hash = this.hash.toString()
     const block = this.toSqlObj()
     const header = this.getHeaderSql()
@@ -127,6 +151,11 @@ export class Block {
   }
 
   serializeBlock(): Buffer {
+    logger.trace(
+      `core/block.ts - Block(${this.hash
+        .toString()
+        .slice(0, 6)}...)::serializeBlock()`,
+    )
     const arr: Buffer[] = []
     // Header
     const headerBytes = serializeHeader(this.header)
@@ -138,11 +167,17 @@ export class Block {
 
   // The block checksum, not just the header hash
   checksum() {
+    logger.trace(
+      `core/block.ts - Block(${this.hash
+        .toString()
+        .slice(0, 6)}...)::checksum()`,
+    )
     const data = `0x${this.serializeBlock().toString('hex')}`
     return soliditySha3Raw(data)
   }
 
   static fromTx(tx: Transaction, verified?: boolean): Block {
+    logger.trace(`core/block.ts - Block::fromTx(${tx.hash.slice(0, 6)}...)`)
     const queue = new Utils.StringifiedHexQueue(tx.input)
     // remove function selector
     const selector = queue.dequeue(4).toString()
@@ -169,10 +204,12 @@ export class Block {
   }
 
   static fromJSON(data: string) {
+    logger.trace(`core/block.ts - Block::fromJSON(...)`)
     return this.fromTx(JSON.parse(data))
   }
 
   static from(data: string | Buffer, verified?: boolean): Block {
+    logger.trace(`core/block.ts - Block::from(...)`)
     const rawData = Utils.hexify(data)
     const deserializedHeader = deserializeHeaderFrom(rawData)
     const deserializedTxs = deserializeTxsFrom(deserializedHeader.rest)
