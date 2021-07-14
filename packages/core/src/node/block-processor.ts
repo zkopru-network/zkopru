@@ -8,6 +8,8 @@ import {
   MassDeposit as MassDepositSql,
   TransactionDB,
   clearTreeCache,
+  enableTreeCache,
+  disableTreeCache,
 } from '@zkopru/database'
 import { logger, Worker } from '@zkopru/utils'
 import assert from 'assert'
@@ -213,30 +215,37 @@ export class BlockProcessor extends EventEmitter {
     const tokenRegistry = await this.layer2.getTokenRegistry()
     // generate a patch to current db
     const patch = await this.makePatch(parent, block)
-    await this.db.transaction(async db => {
-      // Progressively apply the patch in a way that can roll back on error
-      this.saveTransactions(block, db)
-      await this.decryptMyUtxos(
-        block.body.txs,
-        this.tracker.transferTrackers,
-        tokenRegistry,
-        db,
-      )
-      this.saveMyWithdrawals(
-        block.body.txs,
-        this.tracker.withdrawalTrackers,
-        db,
-      )
-      await this.applyPatch(patch, db)
-      // Mark as verified
-      db.update('Proposal', {
-        where: { hash: block.hash.toString() },
-        update: {
-          verified: true,
-          isUncle: isUncle ? true : null,
-        },
-      })
-    }, clearTreeCache)
+    await this.db.transaction(
+      async db => {
+        enableTreeCache()
+        // Progressively apply the patch in a way that can roll back on error
+        this.saveTransactions(block, db)
+        await this.decryptMyUtxos(
+          block.body.txs,
+          this.tracker.transferTrackers,
+          tokenRegistry,
+          db,
+        )
+        this.saveMyWithdrawals(
+          block.body.txs,
+          this.tracker.withdrawalTrackers,
+          db,
+        )
+        await this.applyPatch(patch, db)
+        // Mark as verified
+        db.update('Proposal', {
+          where: { hash: block.hash.toString() },
+          update: {
+            verified: true,
+            isUncle: isUncle ? true : null,
+          },
+        })
+      },
+      () => {
+        disableTreeCache()
+        clearTreeCache()
+      },
+    )
     // TODO remove proposal data if it completes verification or if the block is finalized
     return proposal.proposalNum
   }
