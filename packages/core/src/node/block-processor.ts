@@ -5,7 +5,6 @@ import {
   DB,
   BlockCache,
   Proposal,
-  MassDeposit as MassDepositSql,
   TransactionDB,
 } from '@zkopru/database'
 import { logger, Worker } from '@zkopru/utils'
