@@ -28,6 +28,7 @@
     "test": "yarn test:parallel",
     "test:parallel": "yarn test:serial --parallel",
     "test:serial": "lerna run test --stream",
+    "test:trace": "LOG_LEVEL=trace PRINT_LOG=true yarn test:serial",
     "posttest:all": "yarn clean:db",
     "pretest:integrate": "docker-compose up -d --build",
     "test:integrate": "lerna run test:integrate --parallel || true",
