@@ -216,12 +216,17 @@ export class SQLiteConnector extends DB {
     return changes || 0
   }
 
-  async transaction(operation: (db: TransactionDB) => void) {
-    return this.lock.acquire('write', async () => this._transaction(operation))
+  async transaction(operation: (db: TransactionDB) => void, cb?: () => void) {
+    return this.lock.acquire('write', async () =>
+      this._transaction(operation, cb),
+    )
   }
 
   // Allow only updates, upserts, deletes, and creates
-  private async _transaction(operation: (db: TransactionDB) => void) {
+  private async _transaction(
+    operation: (db: TransactionDB) => void,
+    onComplete?: () => void,
+  ) {
     if (typeof operation !== 'function') throw new Error('Invalid operation')
     const sqlOperations = [] as string[]
     const onCommitCallbacks = [] as Function[]
@@ -270,7 +275,15 @@ export class SQLiteConnector extends DB {
         onCompleteCallbacks.push(cb)
       },
     }
-    await Promise.resolve(operation(transactionDB))
+    try {
+      await Promise.resolve(operation(transactionDB))
+    } catch (err) {
+      for (const cb of [...onErrorCallbacks, ...onCompleteCallbacks]) {
+        cb()
+      }
+      if (onComplete) onComplete()
+      throw err
+    }
     // now apply the transaction
     const transactionSql = `BEGIN TRANSACTION;
     ${sqlOperations.join('\n')}
@@ -280,12 +293,14 @@ export class SQLiteConnector extends DB {
       for (const cb of [...onCommitCallbacks, ...onCompleteCallbacks]) {
         cb()
       }
+      if (onComplete) onComplete()
     } catch (err) {
       console.log('SQL error', transactionSql)
       await this.db.exec('ROLLBACK;')
       for (const cb of [...onErrorCallbacks, ...onCompleteCallbacks]) {
         cb()
       }
+      if (onComplete) onComplete()
       throw err
     }
   }

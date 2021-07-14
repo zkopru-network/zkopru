@@ -7,6 +7,7 @@ import {
   Proposal,
   MassDeposit as MassDepositSql,
   TransactionDB,
+  clearTreeCache,
 } from '@zkopru/database'
 import { logger, Worker } from '@zkopru/utils'
 import assert from 'assert'
@@ -235,7 +236,7 @@ export class BlockProcessor extends EventEmitter {
           isUncle: isUncle ? true : null,
         },
       })
-    })
+    }, clearTreeCache)
     // TODO remove proposal data if it completes verification or if the block is finalized
     return proposal.proposalNum
   }
