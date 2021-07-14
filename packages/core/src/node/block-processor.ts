@@ -231,6 +231,7 @@ export class BlockProcessor extends EventEmitter {
     await this.db.transaction(
       async db => {
         enableTreeCache()
+        clearTreeCache()
         // Performs creations, start tx here
         this.saveTransactions(block, db)
         await this.applyPatch(patch, db)
