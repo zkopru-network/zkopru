@@ -110,7 +110,7 @@ export class TxMemPool implements TxPoolInterface {
         memo: tx.memo
           ? {
               version: tx.memo.version,
-              data: Buffer.from(tx.memo, 'base64'),
+              data: Buffer.from(tx.memo.data, 'base64'),
             }
           : undefined,
       })

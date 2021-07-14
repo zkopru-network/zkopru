@@ -7,6 +7,9 @@ import {
   Proposal,
   MassDeposit as MassDepositSql,
   TransactionDB,
+  clearTreeCache,
+  enableTreeCache,
+  disableTreeCache,
 } from '@zkopru/database'
 import { logger, Worker } from '@zkopru/utils'
 import assert from 'assert'
@@ -225,19 +228,27 @@ export class BlockProcessor extends EventEmitter {
     )
     // generate a patch, performs only reads
     const patch = await this.makePatch(parent, block)
-    await this.db.transaction(async db => {
-      // Performs creations, start tx here
-      this.saveTransactions(block, db)
-      await this.applyPatch(patch, db)
-      // Mark as verified
-      db.update('Proposal', {
-        where: { hash: block.hash.toString() },
-        update: {
-          verified: true,
-          isUncle: isUncle ? true : null,
-        },
-      })
-    })
+    await this.db.transaction(
+      async db => {
+        enableTreeCache()
+        clearTreeCache()
+        // Performs creations, start tx here
+        this.saveTransactions(block, db)
+        await this.applyPatch(patch, db)
+        // Mark as verified
+        db.update('Proposal', {
+          where: { hash: block.hash.toString() },
+          update: {
+            verified: true,
+            isUncle: isUncle ? true : null,
+          },
+        })
+      },
+      () => {
+        disableTreeCache()
+        clearTreeCache()
+      },
+    )
     // TODO remove proposal data if it completes verification or if the block is finalized
     return proposal.proposalNum
   }

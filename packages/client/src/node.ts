@@ -22,3 +22,5 @@ export default {
   },
   Wallet: ZkopruWallet,
 }
+
+export { ZkAccount } from '@zkopru/account'

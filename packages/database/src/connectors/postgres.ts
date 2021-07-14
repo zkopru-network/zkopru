@@ -32,7 +32,7 @@ export class PostgresConnector extends DB {
 
   schema: Schema = {}
 
-  lock = new AsyncLock()
+  lock = new AsyncLock({ maxPending: 100000 })
 
   constructor(config: any | string) {
     super()
@@ -194,11 +194,16 @@ export class PostgresConnector extends DB {
     await this.db.query(createTablesCommand)
   }
 
-  async transaction(operation: (db: TransactionDB) => void) {
-    return this.lock.acquire('write', async () => this._transaction(operation))
+  async transaction(operation: (db: TransactionDB) => void, cb?: () => void) {
+    return this.lock.acquire('write', async () =>
+      this._transaction(operation, cb),
+    )
   }
 
-  private async _transaction(operation: (db: TransactionDB) => void) {
+  private async _transaction(
+    operation: (db: TransactionDB) => void,
+    onComplete?: () => void,
+  ) {
     if (typeof operation !== 'function') throw new Error('Invalid operation')
     const sqlOperations = [] as string[]
     const onCommitCallbacks = [] as Function[]
@@ -247,21 +252,31 @@ export class PostgresConnector extends DB {
         onCompleteCallbacks.push(cb)
       },
     }
-    await Promise.resolve(operation(transactionDB))
-    // now apply the transaction
-    const transactionSql = `BEGIN TRANSACTION;
-    ${sqlOperations.join('\n')}
-    COMMIT;`
     try {
+      await Promise.resolve(operation(transactionDB))
+    } catch (err) {
+      for (const cb of [...onErrorCallbacks, ...onCompleteCallbacks]) {
+        cb()
+      }
+      if (onComplete) onComplete()
+      throw err
+    }
+    try {
+      // now apply the transaction
+      const transactionSql = `BEGIN TRANSACTION;
+      ${sqlOperations.join('\n')}
+      COMMIT;`
       await this.db.query(transactionSql)
       for (const cb of [...onCommitCallbacks, ...onCompleteCallbacks]) {
         cb()
       }
+      if (onComplete) onComplete()
     } catch (err) {
       await this.db.query('ROLLBACK;')
       for (const cb of [...onErrorCallbacks, ...onCompleteCallbacks]) {
         cb()
       }
+      if (onComplete) onComplete()
       throw err
     }
   }

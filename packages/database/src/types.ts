@@ -110,7 +110,10 @@ export abstract class DB {
     options: DeleteManyOptions,
   ): Promise<number>
 
-  abstract transaction(operation: (db: TransactionDB) => void): Promise<void>
+  abstract transaction(
+    operation: (db: TransactionDB) => void,
+    onComplete?: () => void,
+  ): Promise<void>
 
   // close the db and cleanup
   abstract close(): Promise<void>

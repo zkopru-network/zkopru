@@ -139,6 +139,86 @@ export default function(this: { db: DB }) {
     assert(errored)
   })
 
+  test('should throw operation error before executing', async () => {
+    const table = 'TableThree'
+    let committed = false
+    let completed = false
+    let errored = false
+    const transactionPromise = this.db.transaction(async db => {
+      db.create(table, {
+        id: 'test',
+      })
+      db.onCommit(() => {
+        committed = true
+      })
+      db.onComplete(() => {
+        completed = true
+      })
+      db.onError(() => {
+        errored = true
+      })
+      await new Promise(r => setTimeout(r, 100))
+      throw new Error('test error')
+    })
+    assert(!committed)
+    assert(!completed)
+    assert(!errored)
+    try {
+      await transactionPromise
+    } catch (err) {
+      assert.equal(err.toString(), 'Error: test error')
+    }
+    assert(!committed)
+    assert(completed)
+    assert(errored)
+  })
+
+  test('should execute onComplete callback on error', async () => {
+    const table = 'TableThree'
+    let completed = false
+    const transactionPromise = this.db.transaction(
+      async db => {
+        db.create(table, {
+          id: 'test',
+        })
+        await new Promise(r => setTimeout(r, 100))
+        throw new Error('test error')
+      },
+      () => {
+        completed = true
+      },
+    )
+    try {
+      await transactionPromise
+    } catch (err) {
+      assert.equal(err.toString(), 'Error: test error')
+    }
+    assert(completed)
+  })
+
+  test('should execute onComplete callback', async () => {
+    const table = 'TableThree'
+    let completed = false
+    const transactionPromise = this.db.transaction(
+      async db => {
+        db.create(table, {
+          id: null,
+        })
+        await new Promise(r => setTimeout(r, 100))
+      },
+      () => {
+        completed = true
+      },
+    )
+    assert(!completed)
+    try {
+      await transactionPromise
+    } catch (err) {
+      // eslint-disable-next-line no-empty
+    }
+    assert(completed)
+  })
+
   test('should fail to register non-function callbacks', async () => {
     const table = 'TableThree'
     const transactionPromise = this.db.transaction(db => {

@@ -259,9 +259,9 @@ export function splitToSubTrees<T extends Fp | BN>(
 ): T[][] {
   const subTreeSize = 1 << subTreeDepth
   const numOfSubTrees = Math.ceil(leaves.length / subTreeSize)
-  const subTrees: T[][] = Array(numOfSubTrees).fill(
-    Array(subTreeSize).fill(hasher.preHash[0]),
-  )
+  const subTrees: T[][] = Array(numOfSubTrees)
+    .fill([])
+    .map(() => new Array(subTreeSize).fill(hasher.preHash[0]))
   let index = 0
   let subTreeIndex = 0
   for (let i = 0; i < leaves.length; i += 1) {
