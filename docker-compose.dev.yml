@@ -17,6 +17,7 @@ services:
     environment:
       POSTGRES_PASSWORD: helloworld
       POSTGRES_URL: postgresql://postgres:helloworld@localhost:5432/zkopru
+      POSTGRES_DB: zkopru
   coordinator:
     build:
       context: ./
