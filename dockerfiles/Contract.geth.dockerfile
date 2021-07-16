@@ -11,9 +11,9 @@ RUN apk add --no-cache --virtual .gyp \
     && apk del .gyp
 RUN apk add git curl
 WORKDIR /proj
-COPY genesis.json /proj/genesis.json
-
 COPY ./package.json /proj/package.json
+# Stub a package json for @zkopru/utils so yarn install works
+RUN mkdir /utils && echo '{"version": "0.0.0"}' > /utils/package.json
 RUN yarn install
 COPY ./contracts /proj/contracts
 COPY ./utils /proj/utils
@@ -22,6 +22,7 @@ COPY ./truffle-config.js /proj/truffle-config.js
 RUN truffle compile 
 EXPOSE 5000
 COPY ./keys /proj/keys
+COPY ./genesis.json /proj/genesis.json
 COPY ./testnet-key /proj/testnet-key
 COPY ./testnet-pass /proj/testnet-pass
 COPY ./run_geth.sh /proj/run_geth.sh
