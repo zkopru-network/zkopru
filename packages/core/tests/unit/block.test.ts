@@ -2,9 +2,9 @@
  * @jest-environment node
  */
 import { Transaction } from 'web3-core'
+import AbiCoder from 'web3-eth-abi'
 import { getDummyBody, dummyHeader } from '~dataset/testset-block'
 import { serializeHeader, serializeBody, Block, headerHash } from '~core'
-import AbiCoder from 'web3-eth-abi'
 
 const encodeFunctionSignature = (AbiCoder as any).encodeFunctionSignature.bind(
   AbiCoder,
@@ -34,7 +34,10 @@ describe('block.ts', () => {
       value: 'dummyvalue',
       gasPrice: 'dummygas',
       gas: 11,
-      input: `0x${dummySelector.replace('0x', '')}${inputData.replace('0x', '')}`,
+      input: `0x${dummySelector.replace('0x', '')}${inputData.replace(
+        '0x',
+        '',
+      )}`,
     }
     const deserializedBlock = Block.fromTx(dummyTx)
     expect(deserializedBlock).toBeDefined()
