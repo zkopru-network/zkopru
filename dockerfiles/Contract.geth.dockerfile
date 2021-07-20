@@ -1,7 +1,7 @@
 FROM ethereum/client-go:v1.10.3 AS base
 
 # Deploy contract on geth private network
-FROM node:12-alpine AS stage
+FROM node:12-alpine
 COPY --from=base /usr/local/bin/geth /usr/local/bin/geth
 RUN apk add --no-cache --virtual .gyp \
     python \

@@ -23,6 +23,7 @@ services:
       kompose.service.expose: coordinator
     command: >
       bash -c "nc -l -p 5354 &&
+      sleep 10 &&
       node /proj/packages/generator/dist/coordinator.js"
   redis:
     image: redis
