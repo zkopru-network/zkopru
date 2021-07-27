@@ -215,6 +215,25 @@ export default [
       ['fee', 'String'],
       ['challenged', 'Bool'],
       ['slashed', 'Bool'],
+      /**
+       * The fields below are problematic. If the memo is decryptable by our
+       * address we know that we received at least one of the UTXOs.
+       * However, there are possibly up to 3 other recipients. senderAddress
+       * should be an array, but for simplicity we are storing a string.
+       * This should only become a problem if an advanced type of
+       * transaction is used e.g. me sending 4 outflows from 4 different
+       * accounts I control to a single note owned by one account.
+       * */
+      ['senderAddress', 'String', { optional: true }],
+      ['receiverAddress', 'String', { optional: true }],
+      {
+        name: 'proposal',
+        relation: {
+          localField: 'blockHash',
+          foreignField: 'hash',
+          foreignTable: 'Proposal',
+        },
+      },
     ],
   },
   {
