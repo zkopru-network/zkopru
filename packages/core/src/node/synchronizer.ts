@@ -427,7 +427,7 @@ export class Synchronizer extends EventEmitter {
                 .toString(),
             },
             update: {
-              owner: owner.toString(),
+              ownerAddress: owner.toString(),
             },
           },
           blockNumber,
