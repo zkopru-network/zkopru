@@ -599,11 +599,11 @@ export class ZkWalletAccount {
       if (!snarkValid) {
         throw new Error('Generated snark proof is invalid')
       }
+      await this.storePendingTx(zkTx, fromAccount)
       for (const outflow of tx.outflow) {
         await this.saveOutflow(outflow)
       }
       await this.lockUtxos(tx.inflow)
-      await this.storePendingTx(zkTx)
       return zkTx
     } catch (err) {
       logger.error(err)
@@ -611,7 +611,38 @@ export class ZkWalletAccount {
     }
   }
 
-  async storePendingTx(tx: ZkTx) {
+  async storePendingTx(tx: ZkTx, from: ZkAccount) {
+    // calculate the amount of the tx for the ui
+    const notes = from.decrypt(tx)
+    const tokenAddress = `0x${notes[0].asset.tokenAddr.toString('hex')}`
+    const myOutflowTotal = notes.reduce((total, note: Utxo) => {
+      if (+tokenAddress === 0) {
+        return total.add(new Fp(note.asset.eth))
+      }
+      if (note.asset.tokenAddr.eq(Fp.from(tokenAddress))) {
+        return total.add(note.asset.erc20Amount)
+      }
+      return total
+    }, new Fp('0'))
+    const knownInflow = await this.db.findMany('Utxo', {
+      where: {
+        owner: from.zkAddress,
+        nullifier: null,
+      },
+    })
+    if (knownInflow.length !== tx.inflow.length) {
+      throw new Error(`Unknown inflow in send transaction`)
+    }
+    const sentAmount = Fp.from(0)
+    for (const inflow of knownInflow) {
+      if (+tokenAddress === 0 && inflow.eth) {
+        sentAmount.iadd(Fp.from(inflow.eth))
+      } else if (Fp.from(inflow.tokenAddr).eq(Fp.from(tokenAddress))) {
+        sentAmount.iadd(Fp.from(inflow.erc20Amount))
+      }
+    }
+    // sentAmount = totalInflow - myOutflow - fee
+    const totalSent = sentAmount.sub(myOutflowTotal).sub(tx.fee)
     const pendingTx = {
       hash: tx.hash().toString(),
       fee: tx.fee.toString(),
@@ -621,6 +652,9 @@ export class ZkWalletAccount {
       swap: tx.swap?.toString(),
       inflow: tx.inflow,
       outflow: tx.outflow,
+      senderAddress: from.zkAddress.toString(),
+      tokenAddress,
+      amount: totalSent.toString(),
     }
     await this.db.upsert('PendingTx', {
       where: {

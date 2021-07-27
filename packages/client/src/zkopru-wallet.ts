@@ -183,7 +183,13 @@ export default class ZkopruWallet {
         proposal: true,
       },
     })
+    const pending = await this.wallet.db.findMany('PendingTx', {
+      where: {
+        senderAddress: zkAddress,
+      },
+    })
     return {
+      pending,
       sent,
       received,
       deposits,

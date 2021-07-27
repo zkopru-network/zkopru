@@ -109,7 +109,7 @@ export type Tx = {
   slashed: boolean
   senderAddress?: string | null
   receiverAddress?: string | null
-  asset?: string | null
+  tokenAddress?: string | null
   amount?: string | null
   proposal?: undefined | null
 }
@@ -123,6 +123,10 @@ export type PendingTx = {
   swap?: string | null
   inflow: Object
   outflow: Object
+  senderAddress?: string | null
+  receiverAddress?: string | null
+  tokenAddress?: string | null
+  amount?: string | null
 }
 
 export type MassDeposit = {
