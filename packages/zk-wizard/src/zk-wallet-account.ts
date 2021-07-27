@@ -1,6 +1,10 @@
 import { ZkopruNode, CoordinatorManager } from '@zkopru/core'
 import { ZkAccount } from '@zkopru/account'
-import { DB, Withdrawal as WithdrawalSql } from '@zkopru/database'
+import {
+  DB,
+  Withdrawal as WithdrawalSql,
+  TransactionDB,
+} from '@zkopru/database'
 import { Address, Uint256, Bytes32 } from 'soltypes'
 import {
   UtxoStatus,
@@ -544,8 +548,8 @@ export class ZkWalletAccount {
     return result
   }
 
-  async lockUtxos(utxos: Utxo[]): Promise<void> {
-    await this.db.update('Utxo', {
+  async lockUtxos(utxos: Utxo[], db?: TransactionDB): Promise<void> {
+    await (db || this.db).update('Utxo', {
       where: {
         hash: utxos.map(utxo =>
           utxo
@@ -599,11 +603,13 @@ export class ZkWalletAccount {
       if (!snarkValid) {
         throw new Error('Generated snark proof is invalid')
       }
-      await this.storePendingTx(zkTx, fromAccount)
-      for (const outflow of tx.outflow) {
-        await this.saveOutflow(outflow)
-      }
-      await this.lockUtxos(tx.inflow)
+      await this.db.transaction(async db => {
+        await this.storePendingTx(zkTx, fromAccount, tx.inflow, db)
+        for (const outflow of tx.outflow) {
+          await this.saveOutflow(outflow, db)
+        }
+        await this.lockUtxos(tx.inflow, db)
+      })
       return zkTx
     } catch (err) {
       logger.error(err)
@@ -611,7 +617,12 @@ export class ZkWalletAccount {
     }
   }
 
-  async storePendingTx(tx: ZkTx, from: ZkAccount) {
+  async storePendingTx(
+    tx: ZkTx,
+    from: ZkAccount,
+    inflow: Utxo[],
+    db?: TransactionDB,
+  ) {
     // calculate the amount of the tx for the ui
     const notes = from.decrypt(tx)
     const tokenAddress = `0x${notes[0].asset.tokenAddr.toString('hex')}`
@@ -624,21 +635,12 @@ export class ZkWalletAccount {
       }
       return total
     }, new Fp('0'))
-    const knownInflow = await this.db.findMany('Utxo', {
-      where: {
-        owner: from.zkAddress,
-        nullifier: null,
-      },
-    })
-    if (knownInflow.length !== tx.inflow.length) {
-      throw new Error(`Unknown inflow in send transaction`)
-    }
     const sentAmount = Fp.from(0)
-    for (const inflow of knownInflow) {
-      if (+tokenAddress === 0 && inflow.eth) {
-        sentAmount.iadd(Fp.from(inflow.eth))
-      } else if (Fp.from(inflow.tokenAddr).eq(Fp.from(tokenAddress))) {
-        sentAmount.iadd(Fp.from(inflow.erc20Amount))
+    for (const i of inflow) {
+      if (+tokenAddress === 0 && i.asset.eth.gt(Fp.from(0))) {
+        sentAmount.iadd(i.asset.eth)
+      } else if (i.asset.tokenAddr.eq(Fp.from(tokenAddress))) {
+        sentAmount.iadd(i.asset.erc20Amount)
       }
     }
     // sentAmount = totalInflow - myOutflow - fee
@@ -656,7 +658,7 @@ export class ZkWalletAccount {
       tokenAddress,
       amount: totalSent.toString(),
     }
-    await this.db.upsert('PendingTx', {
+    await (db || this.db).upsert('PendingTx', {
       where: {
         hash: pendingTx.hash,
       },
@@ -775,7 +777,7 @@ export class ZkWalletAccount {
     }
   }
 
-  private async saveOutflow(outflow: Outflow) {
+  private async saveOutflow(outflow: Outflow, db?: TransactionDB) {
     if (outflow instanceof Utxo) {
       const data = {
         hash: outflow
@@ -801,7 +803,7 @@ export class ZkWalletAccount {
           .toUint256()
           .toString(),
       }
-      await this.db.upsert('Utxo', {
+      await (db || this.db).upsert('Utxo', {
         where: { hash: data.hash },
         update: data,
         create: { ...data, status: UtxoStatus.NON_INCLUDED },
@@ -834,7 +836,7 @@ export class ZkWalletAccount {
         to: outflow.publicData.to.toAddress().toString(),
         fee: outflow.publicData.fee.toAddress().toString(),
       }
-      await this.db.upsert('Withdrawal', {
+      await (db || this.db).upsert('Withdrawal', {
         where: { hash: data.hash },
         update: data,
         create: { ...data, status: WithdrawalStatus.NON_INCLUDED },
