@@ -109,6 +109,8 @@ export type Tx = {
   slashed: boolean
   senderAddress?: string | null
   receiverAddress?: string | null
+  asset?: string | null
+  amount?: string | null
   proposal?: undefined | null
 }
 

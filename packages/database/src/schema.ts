@@ -227,6 +227,8 @@ export default [
        * */
       ['senderAddress', 'String', { optional: true }],
       ['receiverAddress', 'String', { optional: true }],
+      ['tokenAddress', 'String', { optional: true }],
+      ['amount', 'String', { optional: true }],
       {
         name: 'proposal',
         relation: {

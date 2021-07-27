@@ -254,10 +254,10 @@ export class BlockProcessor extends EventEmitter {
       for (const account of accounts) {
         const note = account.decrypt(tx, tokenRegistry)
         logger.info(`decrypt result ${note}`)
-        if (note) {
+        if (note && note.length) {
           myUtxos.push(...note)
           // store some known info about the transaction
-          await this.determineTxOwnership(tx, account, db)
+          await this.determineTxOwnership(tx, account, note, db)
         }
       }
     }
@@ -308,16 +308,44 @@ export class BlockProcessor extends EventEmitter {
   private async determineTxOwnership(
     tx: ZkTx,
     knownReceiver: ZkViewer,
+    decryptedNotes: Utxo[],
     db: TransactionDB,
   ) {
-    const knownInflow = await this.db.findOne('Utxo', {
+    const knownInflow = await this.db.findMany('Utxo', {
       where: {
         nullifier: tx.inflow.map(inflow => inflow.nullifier.toString()),
       },
     })
+    // let's use the trivial approach of assuming the first asset encountered is
+    // the only asset being transacted
+    const tokenAddress = `0x${decryptedNotes[0].asset.tokenAddr.toString(
+      'hex',
+    )}`
+    const myOutflowTotal = decryptedNotes.reduce((total, note: Utxo) => {
+      if (+tokenAddress === 0) {
+        return total.add(new Fp(note.asset.eth))
+      }
+      if (note.asset.tokenAddr.eq(Fp.from(tokenAddress))) {
+        return total.add(note.asset.erc20Amount)
+      }
+      return total
+    }, new Fp('0'))
     // if we know a nullifier before the block is processed we must be the
     // sender
-    if (knownInflow) {
+    if (knownInflow.length) {
+      if (knownInflow.length !== tx.inflow.length) {
+        throw new Error(`Unknown inflow in send transaction`)
+      }
+      const sentAmount = Fp.from(0)
+      for (const inflow of knownInflow) {
+        if (+tokenAddress === 0 && inflow.eth) {
+          sentAmount.iadd(Fp.from(inflow.eth))
+        } else if (Fp.from(inflow.tokenAddr).eq(Fp.from(tokenAddress))) {
+          sentAmount.iadd(Fp.from(inflow.erc20Amount))
+        }
+      }
+      // sentAmount = totalInflow - myOutflow - fee
+      const totalSent = sentAmount.sub(myOutflowTotal).sub(tx.fee)
       // we're likely the sender
       db.update('Tx', {
         where: {
@@ -325,6 +353,8 @@ export class BlockProcessor extends EventEmitter {
         },
         update: {
           senderAddress: knownReceiver.zkAddress.toString(),
+          tokenAddress,
+          amount: totalSent.toString(),
         },
       })
     } else {
@@ -335,6 +365,8 @@ export class BlockProcessor extends EventEmitter {
         },
         update: {
           receiverAddress: knownReceiver.zkAddress.toString(),
+          tokenAddress,
+          amount: myOutflowTotal.toString(),
         },
       })
     }
