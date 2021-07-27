@@ -74,6 +74,7 @@ export type Proposal = {
   proposedAt?: number | null
   proposalTx?: string | null
   proposalData?: string | null
+  timestamp?: number | null
   fetched?: string | null
   finalized?: boolean | null
   verified?: boolean | null

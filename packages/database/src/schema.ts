@@ -141,6 +141,7 @@ export default [
       ['proposedAt', 'Int', { index: true, optional: true }],
       ['proposalTx', 'String', { optional: true }],
       ['proposalData', 'String', { optional: true }],
+      ['timestamp', 'Int', { optional: true }],
       ['fetched', 'String', { optional: true }],
       ['finalized', 'Bool', { optional: true }],
       ['verified', 'Bool', { optional: true }],

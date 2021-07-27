@@ -191,6 +191,9 @@ export class Synchronizer extends EventEmitter {
         .GenesisBlock({ fromBlock: 0 })
         .on('data', async event => {
           const { returnValues, blockNumber, transactionHash } = event
+          const { timestamp } = await this.l1Contract.web3.eth.getBlock(
+            blockNumber,
+          )
           // WRITE DATABASE
           const { blockHash, proposer, parentBlock } = returnValues
           logger.info(`genesis hash: ${blockHash}`)
@@ -230,6 +233,7 @@ export class Synchronizer extends EventEmitter {
             finalized: true,
             verified: true,
             proposalData: '',
+            timestamp,
           })
           await this.db.create('Block', {
             hash: blockHash,
@@ -524,11 +528,15 @@ export class Synchronizer extends EventEmitter {
         logger.info(
           `newProposal: ${proposalNum} - ${blockHash} @ ${blockNumber}`,
         )
+        const { timestamp } = await this.l1Contract.web3.eth.getBlock(
+          blockNumber,
+        )
         const newProposal = {
           hash: Bytes32.from(blockHash).toString(),
           proposalNum: parseInt(proposalNum, 10),
           proposedAt: blockNumber,
           proposalTx: transactionHash,
+          timestamp,
         }
         await this.blockCache.upsertCache(
           'Proposal',
