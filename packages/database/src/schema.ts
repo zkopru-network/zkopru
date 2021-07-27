@@ -275,6 +275,16 @@ export default [
       ['logIndex', 'Int'],
       ['blockNumber', 'Int', { index: true }],
       ['queuedAt', 'String'],
+      ['ownerAddress', 'String', { optional: true }],
+      ['includedIn', 'String', { optional: true }],
+      {
+        name: 'proposal',
+        relation: {
+          localField: 'includedIn',
+          foreignField: 'hash',
+          foreignTable: 'Proposal',
+        },
+      },
     ],
   },
   {
@@ -324,6 +334,14 @@ export default [
       ['prepayer', 'String', { optional: true }],
       ['expiration', 'Int', { optional: true }],
       ['siblings', 'String', { optional: true }],
+      {
+        name: 'proposal',
+        relation: {
+          localField: 'includedIn',
+          foreignField: 'hash',
+          foreignTable: 'Proposal',
+        },
+      },
     ],
   },
   {

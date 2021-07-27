@@ -149,4 +149,45 @@ export default class ZkopruWallet {
     const { weiPerByte } = await r.json()
     return weiPerByte
   }
+
+  async transactionsFor(zkAddress: string) {
+    const sent = await this.wallet.db.findMany('Tx', {
+      where: {
+        senderAddress: zkAddress,
+      },
+      include: {
+        proposal: true,
+      },
+    })
+    const received = await this.wallet.db.findMany('Tx', {
+      where: {
+        receiverAddress: zkAddress,
+      },
+      include: {
+        proposal: true,
+      },
+    })
+    const deposits = await this.wallet.db.findMany('Deposit', {
+      where: {
+        ownerAddress: zkAddress,
+      },
+      include: {
+        proposal: true,
+      },
+    })
+    const withdrawals = await this.wallet.db.findMany('Withdrawal', {
+      where: {
+        owner: zkAddress,
+      },
+      include: {
+        proposal: true,
+      },
+    })
+    return {
+      sent,
+      received,
+      deposits,
+      withdrawals,
+    }
+  }
 }

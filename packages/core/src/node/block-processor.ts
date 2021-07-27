@@ -491,11 +491,12 @@ export class BlockProcessor extends EventEmitter {
     nonIncluded.forEach(md => {
       candidates[md.index] = md
     })
+    const sortedCandidateKeys = Object.keys(candidates).sort()
 
     // TODO need batch query
     const indexes: string[] = []
     for (const hash of massDepositHashes) {
-      for (const index of Object.keys(candidates).sort()) {
+      for (const index of sortedCandidateKeys) {
         const md = candidates[index]
         if (
           hash.eq(
@@ -506,7 +507,6 @@ export class BlockProcessor extends EventEmitter {
           )
         ) {
           indexes.push(index)
-          delete candidates[index]
           break
         }
       }
@@ -515,6 +515,20 @@ export class BlockProcessor extends EventEmitter {
     db.update('MassDeposit', {
       where: { index: indexes },
       update: { includedIn: block.toString() },
+    })
+    const deposits = await this.layer2.getDeposits(
+      ...indexes.map(index => ({
+        merged: Bytes32.from(candidates[index].merged),
+        fee: Uint256.from(candidates[index].fee),
+      })),
+    )
+    db.update('Deposit', {
+      where: {
+        note: deposits.map(deposit => deposit.note),
+      },
+      update: {
+        includedIn: block.toString(),
+      },
     })
   }
 
