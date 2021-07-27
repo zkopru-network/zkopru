@@ -417,6 +417,22 @@ export class Synchronizer extends EventEmitter {
           blockNumber,
           event.blockHash,
         )
+        await this.blockCache.updateCache(
+          'Deposit',
+          {
+            where: {
+              note: note
+                .hash()
+                .toUint256()
+                .toString(),
+            },
+            update: {
+              owner: owner.toString(),
+            },
+          },
+          blockNumber,
+          event.blockHash,
+        )
         if (cb) cb(utxo)
       })
       .on('changed', event => {
