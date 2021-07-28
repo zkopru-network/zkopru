@@ -353,7 +353,7 @@ export class BlockProcessor extends EventEmitter {
         },
         update: {
           senderAddress: knownReceiver.zkAddress.toString(),
-          tokenAddress,
+          tokenAddr: tokenAddress,
           amount: totalSent.toString(),
         },
       })
@@ -365,7 +365,7 @@ export class BlockProcessor extends EventEmitter {
         },
         update: {
           receiverAddress: knownReceiver.zkAddress.toString(),
-          tokenAddress,
+          tokenAddr: tokenAddress,
           amount: myOutflowTotal.toString(),
         },
       })

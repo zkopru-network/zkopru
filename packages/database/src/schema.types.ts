@@ -109,7 +109,7 @@ export type Tx = {
   slashed: boolean
   senderAddress?: string | null
   receiverAddress?: string | null
-  tokenAddress?: string | null
+  tokenAddr?: string | null
   amount?: string | null
   proposal?: undefined | null
 }
@@ -125,7 +125,7 @@ export type PendingTx = {
   outflow: Object
   senderAddress?: string | null
   receiverAddress?: string | null
-  tokenAddress?: string | null
+  tokenAddr?: string | null
   amount?: string | null
 }
 

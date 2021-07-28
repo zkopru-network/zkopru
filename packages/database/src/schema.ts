@@ -227,7 +227,7 @@ export default [
        * */
       ['senderAddress', 'String', { optional: true }],
       ['receiverAddress', 'String', { optional: true }],
-      ['tokenAddress', 'String', { optional: true }],
+      ['tokenAddr', 'String', { optional: true }],
       ['amount', 'String', { optional: true }],
       {
         name: 'proposal',
@@ -253,7 +253,7 @@ export default [
       ['outflow', 'Object'],
       ['senderAddress', 'String', { optional: true }],
       ['receiverAddress', 'String', { optional: true }],
-      ['tokenAddress', 'String', { optional: true }],
+      ['tokenAddr', 'String', { optional: true }],
       ['amount', 'String', { optional: true }],
     ],
   },

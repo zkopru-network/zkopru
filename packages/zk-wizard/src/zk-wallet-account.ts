@@ -655,7 +655,7 @@ export class ZkWalletAccount {
       inflow: tx.inflow,
       outflow: tx.outflow,
       senderAddress: from.zkAddress.toString(),
-      tokenAddress,
+      tokenAddr: tokenAddress,
       amount: totalSent.toString(),
     }
     await (db || this.db).upsert('PendingTx', {
