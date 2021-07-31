@@ -2,7 +2,8 @@ import Web3 from 'web3'
 import { logger } from '@zkopru/utils'
 import { startLogger } from './generator-utils'
 import { config } from './config'
-import { OrganizerApi, OrganizerConfig } from './organizer-api'
+import { OrganizerConfig } from './types'
+import { OrganizerApi } from './organizer-api'
 
 startLogger('ORGANIZER_LOG')
 
