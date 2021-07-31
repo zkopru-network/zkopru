@@ -1,66 +1,19 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import AsyncLock from 'async-lock'
 import express from 'express'
-import Web3 from 'web3'
 import { Transaction, TransactionReceipt } from 'web3-core'
 import { logger, sleep } from '@zkopru/utils'
 import { Layer1 } from '@zkopru/contracts'
-import { OrganizerQueue, OrganizerQueueConfig } from './organizer-queue'
+import { OrganizerQueue } from './organizer-queue'
 import { logAll } from './generator-utils'
+import {
+  TxSummary,
+  OrganizerConfig,
+  OrganizerContext,
+  OrganizerData,
+  ProposeData,
+} from './types'
 import { config } from './config'
-
-interface TxSummary {
-  [txHash: string]: {
-    from: string
-    funcSig: string
-    inputSize: number
-    gas: number
-    gasUsed?: number
-    success?: boolean
-  }
-}
-
-interface CoordinatorUrls {
-  [account: string]: string
-}
-
-interface CoordinatorData {
-  from: string
-  timestamp: number
-  proposeNum: number
-  txcount: number
-  finalized?: boolean
-}
-
-interface WalletData {
-  registeredId: number
-  from?: string
-}
-
-interface GasData {
-  from: string
-  inputSize: number
-  gasUsed?: number
-}
-
-interface OrganizerData {
-  layer1: {
-    txSummaries: TxSummary[]
-    gasTable: { [sig: string]: GasData[] }
-  }
-  coordinatorData: CoordinatorData[]
-  walletData: WalletData[]
-}
-
-interface OrganizerContext {
-  // Web3 and Coordinator L2?
-  web3: Web3
-  coordinators: CoordinatorUrls
-}
-
-export interface OrganizerConfig extends OrganizerQueueConfig {
-  organizerPort?: number
-}
 
 export class OrganizerApi {
   config: OrganizerConfig
@@ -228,6 +181,10 @@ export class OrganizerApi {
       res.send(this.organizerData.walletData)
     })
 
+    app.get(`/proposedBlocks`, async (_, res) => {
+      res.send(this.organizerData.coordinatorData)
+    })
+
     app.post('/register', async (req, res) => {
       let data
       try {
@@ -284,13 +241,26 @@ export class OrganizerApi {
 
     app.post('/propose', async (req, res) => {
       try {
-        const data = JSON.parse(req.body)
-        const { from, timestamp, proposed, txcount } = data
-        this.organizerData.coordinatorData.push({
+        const data = JSON.parse(req.body) as ProposeData
+        const {
           from,
           timestamp,
-          proposeNum: proposed,
+          blockHash,
+          parentsBlockHash,
+          proposeNum,
           txcount,
+          layer1TxHash,
+          layer1BlockNumber,
+        } = data
+        this.organizerData.coordinatorData.push({
+          timestamp,
+          proposeNum,
+          blockHash,
+          parentsBlockHash,
+          txcount,
+          from,
+          layer1TxHash,
+          layer1BlockNumber,
         })
         res.sendStatus(200)
       } catch (err) {
@@ -303,6 +273,7 @@ export class OrganizerApi {
     })
 
     app.get('/tps', (_, res) => {
+      // TODO : consider might happen uncle block for calculation of tps
       let previousProposeTime: number
       if (this.organizerData.coordinatorData !== []) {
         const response = this.organizerData.coordinatorData.map(data => {
