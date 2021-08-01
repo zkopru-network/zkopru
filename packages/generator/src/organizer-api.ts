@@ -10,6 +10,7 @@ import {
   TxSummary,
   OrganizerConfig,
   OrganizerContext,
+  RegisterData,
   OrganizerData,
   ProposeData,
 } from './types'
@@ -181,27 +182,34 @@ export class OrganizerApi {
       res.send(this.organizerData.walletData)
     })
 
-    app.get(`/proposedBlocks`, async (_, res) => {
-      res.send(this.organizerData.coordinatorData)
+    app.get(`/proposedBlocks`, async (req, res) => {
+      let limit = 100 // about 44kb
+      if (req.query.limit) {
+        limit = parseInt(req.query.limit as string, 10)
+      }
+      res.send(this.organizerData.coordinatorData.slice(-1 * limit))
     })
 
     app.post('/register', async (req, res) => {
-      let data
+      let data: RegisterData
       try {
-        data = JSON.parse(req.body)
+        data = JSON.parse(req.body) as RegisterData
         logger.info(`register received data ${logAll(data)}`)
       } catch (err) {
-        logger.error(err)
+        logger.error(`registration error ${err}`)
+        return
       }
 
-      // The test wallet will update address after first deposit
-      if (data.ID && data.address) {
-        logger.info(`updating address ${data.ID} as ${data.address}`)
+      // The test wallet's address will be updated after first deposit
+      if (data.ID && data.from) {
+        logger.info(`updating address ${data.ID} as ${data.from}`)
         for (let i = 0; i < this.organizerData.walletData.length; i += 1) {
           if (this.organizerData.walletData[i].registeredId === data.ID) {
-            this.organizerData.walletData[i].from = data.address
+            this.organizerData.walletData[i].from = data.from
           }
         }
+        // Does not worry about racing condition
+        // wallet watching blocks then follow the sequence
         this.lastDepositerID = data.ID
         res.send(true)
         return
@@ -209,14 +217,14 @@ export class OrganizerApi {
 
       if (data.role === 'wallet') {
         const walletId = await this.registerLock.acquire('wallet', () => {
-          return this.registerWallet(data.account ?? '')
+          return this.registerWallet(data.from ?? '')
         })
         res.send({ ID: walletId })
       } else if (data.role === 'coordinator') {
         const coordinatorCount = await this.registerLock.acquire(
           'coordinator',
           () => {
-            return this.registerCoordinator(data.account, data.url)
+            return this.registerCoordinator(data.from, data.url)
           },
         )
         res.send({ coordinatorCount })
@@ -272,26 +280,32 @@ export class OrganizerApi {
       res.send(this.organizerData.layer1.gasTable)
     })
 
-    app.get('/tps', (_, res) => {
+    app.get('/tps', (req, res) => {
       // TODO : consider might happen uncle block for calculation of tps
       let previousProposeTime: number
+      let limit = 1000
+      if (req.query.limit) {
+        limit = parseInt(req.query.limit as string, 10)
+      }
       if (this.organizerData.coordinatorData !== []) {
-        const response = this.organizerData.coordinatorData.map(data => {
-          if (data.proposeNum === 0) {
+        const response = this.organizerData.coordinatorData
+          .slice(-1 * (limit + 1))
+          .map(data => {
+            if (data.proposeNum === 0) {
+              previousProposeTime = data.timestamp
+            }
+            const duration = Math.floor(
+              (data.timestamp - previousProposeTime) / 1000,
+            )
             previousProposeTime = data.timestamp
-          }
-          const duration = Math.floor(
-            (data.timestamp - previousProposeTime) / 1000,
-          )
-          previousProposeTime = data.timestamp
-          return {
-            proposalNum: data.proposeNum,
-            duration,
-            txcount: data.txcount,
-            tps: data.txcount / duration,
-          }
-        })
-        res.send(response)
+            return {
+              proposalNum: data.proposeNum,
+              duration,
+              txcount: data.txcount,
+              tps: data.txcount / duration,
+            }
+          })
+        res.send(response.slice(-1 * limit))
       } else {
         res.send(`Not yet proposed on Layer2`)
       }
