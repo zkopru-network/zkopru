@@ -20,6 +20,7 @@ interface CoordinatorUrls {
 }
 
 export interface OrganizerConfig extends OrganizerQueueConfig {
+  dev?: boolean
   organizerPort?: number
 }
 

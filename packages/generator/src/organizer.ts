@@ -10,26 +10,28 @@ startLogger('ORGANIZER_LOG')
 logger.info('Organizer Initializing')
 
 const coordinatorUrl = process.env.COORDINATOR_URL ?? `http://coordinator:8888`
+const isDevelopment = process.env.DEVELOPMENT
 
 const webSocketProvider = new Web3.providers.WebsocketProvider(
-  config.testnetUrl,
+  isDevelopment ? 'localhost:8545' : config.testnetUrl,
   {
     reconnect: { auto: true },
     timeout: 600,
   },
 )
-
 const web3 = new Web3(webSocketProvider)
 
 const organierContext = {
   web3,
+  dev: isDevelopment,
   coordinators: {
     [config.zkopruContract]: coordinatorUrl,
   },
 } // Test Coordinator
 
 const organizerConfig: OrganizerConfig = {
-  connection: { host: 'redis', port: 6379 },
+  connection: { host: isDevelopment ? 'localhost' : 'redis', port: 6379 },
+  dev: !!isDevelopment,
   rates: [
     { name: '0.1', max: 1, duration: 10000 },
     { name: '1', max: 1, duration: 1000 },
