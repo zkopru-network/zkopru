@@ -353,23 +353,29 @@ export class OrganizerApi {
       logger.info(`Server is running`)
     })
 
-    const readySubscribtion = await this.checkReady()
+    // for development
+    if (this.config.dev) {
+      this.contractsReady = true
+      logger.info(`Development : zkopru contract are ready`)
+    } else {
+      const readySubscribtion = await this.checkReady()
 
-    logger.info(`Waiting zkopru contracts are ready`)
-    while (this.contractsReady === false) {
-      await sleep(5000)
+      logger.info(`Waiting zkopru contracts are ready`)
+      while (this.contractsReady === false) {
+        await sleep(5000)
+      }
+
+      await readySubscribtion.unsubscribe((error, success) => {
+        if (success) {
+          logger.info('successfully unsubscribe "ready", run block watcher')
+        }
+        if (error) {
+          logger.error(`failed to unsubscribe "ready" `)
+        }
+      })
+
+      // Start Layer1 block watcher
+      this.watchLayer1()
     }
-
-    await readySubscribtion.unsubscribe((error, success) => {
-      if (success) {
-        logger.info('successfully unsubscribe "ready", run block watcher')
-      }
-      if (error) {
-        logger.error(`failed to unsubscribe "ready" `)
-      }
-    })
-
-    // Start Layer1 block watcher
-    this.watchLayer1()
   }
 }
