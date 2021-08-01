@@ -151,7 +151,7 @@ export class TransferGenerator extends ZkWalletAccount {
           method: 'post',
           body: JSON.stringify({
             ID: this.ID,
-            address: this.account?.ethAddress,
+            from: this.account?.ethAddress,
           }),
         })
         logger.info(

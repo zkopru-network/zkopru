@@ -28,6 +28,13 @@ export interface OrganizerContext {
   coordinators: CoordinatorUrls
 }
 
+export interface RegisterData {
+  ID: number
+  from: string
+  role: 'wallet' | 'coordinator'
+  url: string
+}
+
 export interface TxSummary {
   [txHash: string]: {
     from: string
@@ -42,8 +49,8 @@ export interface TxSummary {
 export interface ProposeData {
   timestamp: number
   proposeNum: number
-  blockHash: string
   parentsBlockHash: string
+  blockHash: string
   txcount: number
   from?: string
   layer1TxHash?: string
