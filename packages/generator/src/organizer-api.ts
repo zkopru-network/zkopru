@@ -1,7 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import AsyncLock from 'async-lock'
 import express from 'express'
-import { Transaction, TransactionReceipt } from 'web3-core'
+// import { Transaction, TransactionReceipt } from 'web3-core'18gg
 import { logger, sleep } from '@zkopru/utils'
 import { Layer1 } from '@zkopru/contracts'
 import { OrganizerQueue } from './organizer-queue'
@@ -108,65 +108,49 @@ export class OrganizerApi {
     const { web3 } = this.context
     const { gasTable } = this.organizerData.layer1 // Initialized by constructor
 
-    web3.eth.subscribe('newBlockHeaders').on('data', async function(data) {
-      const blockData = await web3.eth.getBlock(data.hash)
-      const txs: Promise<Transaction>[] = []
-      const receipts: Promise<TransactionReceipt>[] = []
-      if (blockData.transactions) {
-        blockData.transactions.forEach(txHash => {
-          txs.push(web3.eth.getTransaction(txHash))
-          receipts.push(web3.eth.getTransactionReceipt(txHash))
-        })
-      }
-      const txData = await Promise.all(txs)
-      const receiptData = await Promise.all(receipts)
+    const watchTargetContracts = [config.zkopruContract, config.auctionContract]
 
-      // TODO : check necessary all tx should container this class
+    web3.eth.subscribe('newBlockHeaders').on('data', async function(data) {
       const txSummary: TxSummary = {} as TxSummary
 
-      // Exctract Data from fetched data
-      blockData.transactions.forEach(txHash => {
-        for (let i = 0; i < blockData.transactions.length; i += 1) {
-          if (txData[i].hash === txHash) {
-            const txdata = txData[i]
-            const funcSig = txdata.input.slice(0, 10)
+      const blockData = await web3.eth.getBlock(data.hash)
+      logger.info(`blockData.transactions is ${blockData.transactions}`)
+      if (blockData.transactions) {
+        blockData.transactions.forEach(async txHash => {
+          const tx = await web3.eth.getTransaction(txHash)
+
+          if (tx.to && watchTargetContracts.includes(tx.to)) {
+            const funcSig = tx.input.slice(0, 10)
+            const inputSize = tx.input.length
+            const receipt = await web3.eth.getTransactionReceipt(txHash)
             txSummary[txHash] = {
-              from: txdata.from,
+              from: tx.from,
               funcSig,
-              inputSize: txdata.input.length,
-              gas: txdata.gas,
-            }
-          }
-          if (receiptData[i].transactionHash === txHash) {
-            const receipt = receiptData[i]
-            txSummary[txHash] = {
-              ...txSummary[txHash],
+              inputSize,
+              gas: tx.gas,
               gasUsed: receipt.gasUsed,
               success: receipt.status,
             }
-          }
-        }
-      })
 
-      // Update Gas Table
-      Object.keys(txSummary).forEach(txHash => {
-        const data = txSummary[txHash]
-        if (gasTable[data.funcSig] === undefined) {
-          gasTable[data.funcSig] = [
-            {
-              from: data.from,
-              inputSize: data.inputSize,
-              gasUsed: data.gasUsed ?? 0,
-            },
-          ]
-        } else {
-          gasTable[data.funcSig].push({
-            from: data.from,
-            inputSize: data.inputSize,
-            gasUsed: data.gasUsed ?? 0,
-          })
-        }
-      })
+            // Update gasTable
+            if (gasTable[funcSig] === undefined) {
+              gasTable[funcSig] = [
+                {
+                  from: tx.from,
+                  inputSize,
+                  gasUsed: receipt.gasUsed ?? 0,
+                },
+              ]
+            } else {
+              gasTable[funcSig].push({
+                from: tx.from,
+                inputSize,
+                gasUsed: receipt.gasUsed ?? 0,
+              })
+            }
+          }
+        })
+      }
     })
   }
 
