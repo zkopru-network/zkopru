@@ -51,7 +51,7 @@ export class BlockCache {
   blockHeaderSubscription: any
 
   BLOCK_CONFIRMATIONS = +(
-    process.env.BLOCK_CONFIRMATIONS || DEFAULT_BLOCK_CONFIRMATIONS
+    process.env.BLOCK_CONFIRMATIONS ?? DEFAULT_BLOCK_CONFIRMATIONS
   )
 
   constructor(web3: Web3, db: DB) {
@@ -179,11 +179,14 @@ export class BlockCache {
       type: OperationType.UPSERT,
       ...options,
     }
-    if (currentBlockNumber - blockNumber < this.BLOCK_CONFIRMATIONS) {
+    if (
+      this.BLOCK_CONFIRMATIONS === 0 ||
+      currentBlockNumber - blockNumber >= this.BLOCK_CONFIRMATIONS
+    ) {
+      await this.writeChange(pendingOperation)
+    } else {
       // store in memory
       this.pendingOperations.push(pendingOperation)
-    } else {
-      await this.writeChange(pendingOperation)
     }
   }
 
@@ -203,11 +206,14 @@ export class BlockCache {
       type: OperationType.UPDATE,
       ...options,
     }
-    if (currentBlockNumber - blockNumber < this.BLOCK_CONFIRMATIONS) {
+    if (
+      this.BLOCK_CONFIRMATIONS === 0 ||
+      currentBlockNumber - blockNumber >= this.BLOCK_CONFIRMATIONS
+    ) {
+      await this.writeChange(pendingOperation)
+    } else {
       // store in memory
       this.pendingOperations.push(pendingOperation)
-    } else {
-      await this.writeChange(pendingOperation)
     }
   }
 
@@ -268,7 +274,10 @@ export class BlockCache {
       type: OperationType.TRANSACTION,
       transactionOperations: operations,
     }
-    if (currentBlockNumber - blockNumber < this.BLOCK_CONFIRMATIONS) {
+    if (
+      this.BLOCK_CONFIRMATIONS === 0 ||
+      currentBlockNumber - blockNumber >= this.BLOCK_CONFIRMATIONS
+    ) {
       await this.writeChange(pendingOperation)
     } else {
       this.pendingOperations.push(pendingOperation)
