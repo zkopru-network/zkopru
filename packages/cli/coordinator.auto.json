@@ -5,7 +5,6 @@
   "n": true,
   "ws": "ws://testnet:5000",
   "websocket": "ws://testnet:5000",
-  "postgres": "postgresql://postgres:helloworld@postgres:5432/zkopru",
   "address": "0x970e8f18ebfEa0B08810f33a5A40438b9530FBCF",
   "a": "0x970e8f18ebfEa0B08810f33a5A40438b9530FBCF",
   "db": "db",
