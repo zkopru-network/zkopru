@@ -110,7 +110,7 @@ describe('rollup tree unit test', () => {
       const leaves = Array(100)
         .fill(null)
         .map((_, index) => ({
-          hash: Fp.from(index),
+          hash: Fp.from(index + 1),
         }))
       await mockup.transaction(db => {
         testTree.append(leaves, db)
@@ -119,6 +119,70 @@ describe('rollup tree unit test', () => {
       assert.equal(
         tree.root().toString(),
         testTree.root().toString(),
+        `Roots do not match`,
+      )
+    })
+
+    it('should match external for single dry append', async () => {
+      const { parentOf, preHash } = poseidonHasher(depth)
+      const tree = new SparseTree<Fp>({
+        depth: depth + 1,
+        hashFn: (item1, item2) => {
+          const hash = parentOf(item1, item2)
+          return hash
+        },
+        preHashFn: (_, level) => {
+          return preHash[depth - level]
+        },
+        rightToLeft: true,
+      })
+      assert.equal(
+        tree.root().toString(),
+        testTree.root().toString(),
+        'Starting roots do not match',
+      )
+      const leaves = Array(1)
+        .fill(null)
+        .map((_, index) => ({
+          hash: Fp.from(index + 1),
+        }))
+      const { root } = await testTree.dryAppend(leaves)
+      tree.appendMany(leaves.map(l => l.hash))
+      assert.equal(
+        root.toString(),
+        tree.root().toString(),
+        `Roots do not match`,
+      )
+    })
+
+    it('should match external for batch dry append', async () => {
+      const { parentOf, preHash } = poseidonHasher(depth)
+      const tree = new SparseTree<Fp>({
+        depth: depth + 1,
+        hashFn: (item1, item2) => {
+          const hash = parentOf(item1, item2)
+          return hash
+        },
+        preHashFn: (_, level) => {
+          return preHash[depth - level]
+        },
+        rightToLeft: true,
+      })
+      assert.equal(
+        tree.root().toString(),
+        testTree.root().toString(),
+        'Starting roots do not match',
+      )
+      const leaves = Array(100)
+        .fill(null)
+        .map((_, index) => ({
+          hash: Fp.from(index + 1),
+        }))
+      const { root } = await testTree.dryAppend(leaves)
+      tree.appendMany(leaves.map(l => l.hash))
+      assert.equal(
+        root.toString(),
+        tree.root().toString(),
         `Roots do not match`,
       )
     })
