@@ -257,9 +257,11 @@ export class Grove {
       this.config.utxoSubTreeSize *
       Math.ceil(utxos.length / this.config.utxoSubTreeSize)
 
-    const fixedSizeUtxos: Leaf<Fp>[] = Array(totalItemLen).fill({
-      hash: Fp.zero,
-    })
+    const fixedSizeUtxos: Leaf<Fp>[] = Array(totalItemLen)
+      .fill(null)
+      .map(() => ({
+        hash: Fp.zero,
+      }))
     utxos.forEach((item: Leaf<Fp>, index: number) => {
       fixedSizeUtxos[index] = item
     })
