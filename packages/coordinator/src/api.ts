@@ -84,6 +84,7 @@ export class CoordinatorApi {
       }
       app.use(corsMiddleware)
       app.post('/tx', catchError(this.txHandler))
+      app.post('/txs', express.json(), catchError(this.multiTxHandler))
       app.post('/instant-withdraw', catchError(this.instantWithdrawHandler))
       if (this.context.config.bootstrap) {
         app.get('/bootstrap', catchError(this.bootstrapHandler))
@@ -152,6 +153,48 @@ export class CoordinatorApi {
         jsonrpc,
         message: err.message,
       })
+    }
+  }
+
+  private multiTxHandler: RequestHandler = async (req, res) => {
+    const txs = req.body
+    const zkTxs = [] as ZkTx[]
+    for (const tx of txs) {
+      const zkTx = ZkTx.decode(Buffer.from(tx, 'hex'))
+      // const zkTx = ZkTx.decode(txData)
+      const { layer2 } = this.context.node
+      const result = await layer2.isValidTx(zkTx)
+      if (!result) {
+        logger.info('Failed to verify zk snark')
+        res.status(500).send('Coordinator is not running')
+        return
+      }
+      zkTxs.push(zkTx)
+    }
+    await Promise.all(zkTxs.map(tx => this.context.txPool.addToTxPool(tx)))
+    res.send(true)
+    const { auctionMonitor } = this.context
+    if (!auctionMonitor.isProposable) {
+      const url = await auctionMonitor.functionalCoordinatorUrl(
+        auctionMonitor.currentProposer,
+      )
+      if (!url) {
+        logger.error(`No url to forward to!`)
+        return
+      }
+      logger.info(`forwarding tx data to "${url}"`)
+      try {
+        const r = await fetch(`${url}/txs`, {
+          method: 'post',
+          body: txs,
+        })
+        if (!r.ok) {
+          throw new Error(await r.text())
+        }
+      } catch (err) {
+        logger.error(err)
+        logger.error('Error forwarding transaction')
+      }
     }
   }
 
