@@ -1,3 +1,5 @@
+/* eslint-disable jest/no-disabled-tests */
+/* eslint-disable jest/no-hooks */
 import SparseTree from 'simple-smt'
 import { Fp } from '@zkopru/babyjubjub'
 import * as uuid from 'uuid'
@@ -8,6 +10,7 @@ import sample from '~tree/sample'
 import { DB } from '~database'
 
 class TestTree extends LightRollUpTree<Fp> {
+  // eslint-disable-next-line class-methods-use-this
   async indexesOfTrackingLeaves() {
     return []
   }
@@ -65,7 +68,8 @@ describe('rollup tree unit test', () => {
         testTree.root().toString(),
         'Starting roots do not match',
       )
-      for (let x = 1; x < 100; x++) {
+      for (let x = 1; x < 100; x += 1) {
+        // eslint-disable-next-line no-loop-func
         await mockup.transaction(db => {
           testTree.append(
             [
