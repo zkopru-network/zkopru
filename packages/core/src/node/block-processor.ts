@@ -210,24 +210,22 @@ export class BlockProcessor extends EventEmitter {
       return proposal.proposalNum
     }
     const tokenRegistry = await this.layer2.getTokenRegistry()
-    // Find decryptable Utxos
-    // Performs only upserts
-    await this.decryptMyUtxos(
-      block.body.txs,
-      this.tracker.transferTrackers,
-      tokenRegistry,
-    )
-    // Find withdrawals to track
-    // Performs only upserts
-    await this.saveMyWithdrawals(
-      block.body.txs,
-      this.tracker.withdrawalTrackers,
-    )
-    // generate a patch, performs only reads
+    // generate a patch to current db
     const patch = await this.makePatch(parent, block)
     await this.db.transaction(async db => {
-      // Performs creations, start tx here
+      // Progressively apply the patch in a way that can roll back on error
       this.saveTransactions(block, db)
+      await this.decryptMyUtxos(
+        block.body.txs,
+        this.tracker.transferTrackers,
+        tokenRegistry,
+        db,
+      )
+      this.saveMyWithdrawals(
+        block.body.txs,
+        this.tracker.withdrawalTrackers,
+        db,
+      )
       await this.applyPatch(patch, db)
       // Mark as verified
       db.update('Proposal', {
@@ -246,6 +244,7 @@ export class BlockProcessor extends EventEmitter {
     txs: ZkTx[],
     accounts: ZkViewer[],
     tokenRegistry: TokenRegistry,
+    db: TransactionDB,
   ) {
     const txsWithMemo = txs.filter(tx => tx.memo)
     logger.info(`saveMyUtxos`)
@@ -255,8 +254,10 @@ export class BlockProcessor extends EventEmitter {
       for (const account of accounts) {
         const note = account.decrypt(tx, tokenRegistry)
         logger.info(`decrypt result ${note}`)
-        if (note) {
+        if (note && note.length) {
           myUtxos.push(...note)
+          // store some known info about the transaction
+          await this.determineTxOwnership(tx, account, note, db)
         }
       }
     }
@@ -288,15 +289,87 @@ export class BlockProcessor extends EventEmitter {
         usedAt: null,
       }
     })
-    await this.db.transaction(db => {
-      inputs.map(input =>
-        db.upsert('Utxo', {
-          where: { hash: input.hash },
-          create: input,
-          update: input,
-        }),
-      )
+    inputs.map(input =>
+      db.upsert('Utxo', {
+        where: { hash: input.hash },
+        create: input,
+        update: input,
+      }),
+    )
+  }
+
+  /**
+   * Determines and stores inferred tx ownership based on ability to decrypt memo
+   * and knowledge of nullifier secrets.
+   *
+   * If I own only an inflow utxo I am likely the receiver. If I own both an
+   * inflow and outflow utxo I am likely the sender.
+   * */
+  private async determineTxOwnership(
+    tx: ZkTx,
+    knownReceiver: ZkViewer,
+    decryptedNotes: Utxo[],
+    db: TransactionDB,
+  ) {
+    const knownInflow = await this.db.findMany('Utxo', {
+      where: {
+        nullifier: tx.inflow.map(inflow => inflow.nullifier.toString()),
+      },
     })
+    // let's use the trivial approach of assuming the first asset encountered is
+    // the only asset being transacted
+    const tokenAddress = `0x${decryptedNotes[0].asset.tokenAddr.toString(
+      'hex',
+    )}`
+    const myOutflowTotal = decryptedNotes.reduce((total, note: Utxo) => {
+      if (+tokenAddress === 0) {
+        return total.add(new Fp(note.asset.eth))
+      }
+      if (note.asset.tokenAddr.eq(Fp.from(tokenAddress))) {
+        return total.add(note.asset.erc20Amount)
+      }
+      return total
+    }, new Fp('0'))
+    // if we know a nullifier before the block is processed we must be the
+    // sender
+    if (knownInflow.length) {
+      if (knownInflow.length !== tx.inflow.length) {
+        throw new Error(`Unknown inflow in send transaction`)
+      }
+      const sentAmount = Fp.from(0)
+      for (const inflow of knownInflow) {
+        if (+tokenAddress === 0 && inflow.eth) {
+          sentAmount.iadd(Fp.from(inflow.eth))
+        } else if (Fp.from(inflow.tokenAddr).eq(Fp.from(tokenAddress))) {
+          sentAmount.iadd(Fp.from(inflow.erc20Amount))
+        }
+      }
+      // sentAmount = totalInflow - myOutflow - fee
+      const totalSent = sentAmount.sub(myOutflowTotal).sub(tx.fee)
+      // we're likely the sender
+      db.update('Tx', {
+        where: {
+          hash: tx.hash().toString(),
+        },
+        update: {
+          senderAddress: knownReceiver.zkAddress.toString(),
+          tokenAddr: tokenAddress,
+          amount: totalSent.toString(),
+        },
+      })
+    } else {
+      // we're likely the receiver
+      db.update('Tx', {
+        where: {
+          hash: tx.hash().toString(),
+        },
+        update: {
+          receiverAddress: knownReceiver.zkAddress.toString(),
+          tokenAddr: tokenAddress,
+          amount: myOutflowTotal.toString(),
+        },
+      })
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -321,7 +394,12 @@ export class BlockProcessor extends EventEmitter {
     })
   }
 
-  private async saveMyWithdrawals(txs: ZkTx[], accounts: Address[]) {
+  // eslint-disable-next-line class-methods-use-this
+  private saveMyWithdrawals(
+    txs: ZkTx[],
+    accounts: Address[],
+    db: TransactionDB,
+  ) {
     logger.info(`saveMyWithdrawals`)
     const outflows = txs.reduce(
       (acc, tx) => [
@@ -344,7 +422,6 @@ export class BlockProcessor extends EventEmitter {
           .map(account => account.toString())
           .includes(outflow.data?.to.toAddress().toString()),
     )
-    // TODO needs batch transaction
     for (const output of myWithdrawalOutputs) {
       if (!output.data) throw Error('Withdrawal does not have public data')
       const withdrawalSql = {
@@ -361,7 +438,7 @@ export class BlockProcessor extends EventEmitter {
         fee: output.data.fee.toUint256().toString(),
       }
       logger.info(`found my withdrawal: ${withdrawalSql.hash}`)
-      await this.db.upsert('Withdrawal', {
+      db.upsert('Withdrawal', {
         where: { hash: withdrawalSql.hash },
         create: withdrawalSql,
         update: withdrawalSql,
@@ -446,11 +523,12 @@ export class BlockProcessor extends EventEmitter {
     nonIncluded.forEach(md => {
       candidates[md.index] = md
     })
+    const sortedCandidateKeys = Object.keys(candidates).sort()
 
     // TODO need batch query
     const indexes: string[] = []
     for (const hash of massDepositHashes) {
-      for (const index of Object.keys(candidates).sort()) {
+      for (const index of sortedCandidateKeys) {
         const md = candidates[index]
         if (
           hash.eq(
@@ -461,7 +539,6 @@ export class BlockProcessor extends EventEmitter {
           )
         ) {
           indexes.push(index)
-          delete candidates[index]
           break
         }
       }
@@ -470,6 +547,20 @@ export class BlockProcessor extends EventEmitter {
     db.update('MassDeposit', {
       where: { index: indexes },
       update: { includedIn: block.toString() },
+    })
+    const deposits = await this.layer2.getDeposits(
+      ...indexes.map(index => ({
+        merged: Bytes32.from(candidates[index].merged),
+        fee: Uint256.from(candidates[index].fee),
+      })),
+    )
+    db.update('Deposit', {
+      where: {
+        note: deposits.map(deposit => deposit.note),
+      },
+      update: {
+        includedIn: block.toString(),
+      },
     })
   }
 
