@@ -179,43 +179,34 @@ export class Grove {
   }
 
   async dryPatch(patch: GrovePatch): Promise<GroveSnapshot> {
-    return new Promise<GroveSnapshot>((res, rej) => {
-      let result!: GroveSnapshot
-      this.lock
-        .acquire('grove', async () => {
-          const utxoResult = await this.utxoTree.dryAppend(
-            patch.utxos.map(leaf => ({ ...leaf, shouldTrack: false })),
-          )
-          const withdrawalResult = await this.withdrawalTree.dryAppend(
-            patch.withdrawals.map(leaf => ({ ...leaf, shouldTrack: false })),
-          )
-          const nullifierRoot = await this.nullifierTree?.dryRunNullify(
-            ...patch.nullifiers,
-          )
-          const utxoFixedSizeLen =
-            this.config.utxoSubTreeSize *
-            Math.ceil(patch.utxos.length / this.config.utxoSubTreeSize)
-          const withdrawalFixedSizeLen =
-            this.config.withdrawalSubTreeSize *
-            Math.ceil(
-              patch.withdrawals.length / this.config.withdrawalSubTreeSize,
-            )
+    return this.lock.acquire('grove', async () => {
+      const utxoResult = await this.utxoTree.dryAppend(
+        patch.utxos.map(leaf => ({ ...leaf, shouldTrack: false })),
+      )
+      const withdrawalResult = await this.withdrawalTree.dryAppend(
+        patch.withdrawals.map(leaf => ({ ...leaf, shouldTrack: false })),
+      )
+      const nullifierRoot = await this.nullifierTree?.dryRunNullify(
+        ...patch.nullifiers,
+      )
+      const utxoFixedSizeLen =
+        this.config.utxoSubTreeSize *
+        Math.ceil(patch.utxos.length / this.config.utxoSubTreeSize)
+      const withdrawalFixedSizeLen =
+        this.config.withdrawalSubTreeSize *
+        Math.ceil(patch.withdrawals.length / this.config.withdrawalSubTreeSize)
 
-          result = {
-            utxoTreeIndex: utxoResult.index
-              .addn(utxoFixedSizeLen)
-              .subn(patch.utxos.length),
-            utxoTreeRoot: utxoResult.root,
-            withdrawalTreeIndex: withdrawalResult.index
-              .addn(withdrawalFixedSizeLen)
-              .subn(patch.withdrawals.length),
-            withdrawalTreeRoot: withdrawalResult.root,
-            nullifierTreeRoot: nullifierRoot,
-          }
-          return result
-        })
-        .then(res)
-        .catch(rej)
+      return {
+        utxoTreeIndex: utxoResult.index
+          .addn(utxoFixedSizeLen)
+          .subn(patch.utxos.length),
+        utxoTreeRoot: utxoResult.root,
+        withdrawalTreeIndex: withdrawalResult.index
+          .addn(withdrawalFixedSizeLen)
+          .subn(patch.withdrawals.length),
+        withdrawalTreeRoot: withdrawalResult.root,
+        nullifierTreeRoot: nullifierRoot,
+      }
     })
   }
 
@@ -257,12 +248,12 @@ export class Grove {
       this.config.utxoSubTreeSize *
       Math.ceil(utxos.length / this.config.utxoSubTreeSize)
 
-    const fixedSizeUtxos: Leaf<Fp>[] = Array(totalItemLen).fill({
-      hash: Fp.zero,
-    })
-    utxos.forEach((item: Leaf<Fp>, index: number) => {
-      fixedSizeUtxos[index] = item
-    })
+    const padding: Leaf<Fp>[] = Array(totalItemLen - utxos.length)
+      .fill(null)
+      .map(() => ({
+        hash: Fp.zero,
+      }))
+    const paddedUtxos = [...utxos, ...padding]
     if (!this.utxoTree) throw Error('Grove is not initialized')
     if (
       this.utxoTree
@@ -270,7 +261,7 @@ export class Grove {
         .add(totalItemLen)
         .lte(this.utxoTree.maxSize())
     ) {
-      await this.utxoTree.append(fixedSizeUtxos, db)
+      await this.utxoTree.append(paddedUtxos, db)
     } else {
       throw Error('utxo tree flushes.')
     }
@@ -285,12 +276,12 @@ export class Grove {
       this.config.withdrawalSubTreeSize *
       Math.ceil(withdrawals.length / this.config.withdrawalSubTreeSize)
 
-    const fixedSizeWithdrawals: Leaf<BN>[] = Array(totalItemLen).fill({
-      hash: new BN(0),
-    })
-    withdrawals.forEach((withdrawal: Leaf<BN>, index: number) => {
-      fixedSizeWithdrawals[index] = withdrawal
-    })
+    const padding: Leaf<Fp>[] = Array(totalItemLen - withdrawals.length)
+      .fill(null)
+      .map(() => ({
+        hash: Fp.zero,
+      }))
+    const paddedWithdrawals = [...withdrawals, ...padding]
     if (!this.withdrawalTree) throw Error('Grove is not initialized')
     if (
       this.withdrawalTree
@@ -298,7 +289,7 @@ export class Grove {
         .addn(totalItemLen)
         .lte(this.withdrawalTree.maxSize())
     ) {
-      await this.withdrawalTree.append(fixedSizeWithdrawals, db)
+      await this.withdrawalTree.append(paddedWithdrawals, db)
     } else {
       throw Error('withdrawal tree flushes')
     }

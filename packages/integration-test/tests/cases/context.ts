@@ -134,7 +134,14 @@ async function getWeb3(
   ws: string,
 ): Promise<{ web3: Web3; provider: WebsocketProvider }> {
   const provider = new Web3.providers.WebsocketProvider(ws, {
-    reconnect: { auto: true },
+    reconnect: {
+      delay: 2000,
+      auto: true,
+    },
+    clientConfig: {
+      keepalive: true,
+      keepaliveInterval: 30000,
+    },
   })
   async function waitConnection() {
     return new Promise<void>(res => {

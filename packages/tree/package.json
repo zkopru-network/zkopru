@@ -38,6 +38,7 @@
     "big-integer": "^1.6.48",
     "bn.js": "^5.2.0",
     "circomlib": "0.5.1",
+    "simple-smt": "^0.0.6",
     "soltypes": "^1.3.5",
     "uuid": "^8.1.0",
     "web3-utils": "1.2.11"

@@ -667,11 +667,15 @@ export class ZkWalletAccount {
     })
   }
 
-  async sendLayer2Tx(zkTx: ZkTx): Promise<Response> {
+  async sendLayer2Tx(zkTx: ZkTx | ZkTx[]): Promise<Response> {
+    const txs = [zkTx].flat()
     const coordinatorUrl = await this.coordinatorManager.activeCoordinatorUrl()
-    const response = await fetch(`${coordinatorUrl}/tx`, {
+    const response = await fetch(`${coordinatorUrl}/txs`, {
       method: 'post',
-      body: zkTx.encode().toString('hex'),
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(txs.map(tx => tx.encode().toString('hex'))),
     })
     return response
   }

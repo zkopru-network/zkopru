@@ -145,53 +145,51 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     index: T
     siblings: T[]
   }> {
-    let start!: T
-    let latestSiblings!: T[]
-    await this.lock.acquire('root', async () => {
-      start = this.latestLeafIndex()
-      latestSiblings = this.siblings()
-    })
-    let root: T = this.root()
+    return this.lock.acquire('root', async () => {
+      const start = this.latestLeafIndex()
+      const latestSiblings = this.siblings()
+      let root: T = this.root()
 
-    let index = start
-    for (let i = 0; i < items.length; i += 1) {
-      const item = items[i]
-      // if note exists, save the data and mark as an item to keep tracking
-      // udpate the latest siblings and save the intermediate value if it needs to be tracked
-      const leafIndex = new BN(1).shln(this.depth).or(index)
-      let node = item.hash
-      let hasRightSibling!: boolean
-      for (let level = 0; level < this.depth; level += 1) {
-        const pathIndex = leafIndex.shrn(level)
-        hasRightSibling = pathIndex.and(new BN(1)).isZero()
-        if (hasRightSibling) {
-          // right empty sibling
-          latestSiblings[level] = node // current node will be the next merkle proof's left sibling
-          node = this.config.hasher.parentOf(
-            node,
-            this.config.hasher.preHash[level],
-          )
+      let index = start
+      for (let i = 0; i < items.length; i += 1) {
+        const item = items[i]
+        // if note exists, save the data and mark as an item to keep tracking
+        // udpate the latest siblings and save the intermediate value if it needs to be tracked
+        const leafIndex = new BN(1).shln(this.depth).or(index)
+        let node = item.hash
+        let hasRightSibling!: boolean
+        for (let level = 0; level < this.depth; level += 1) {
+          const pathIndex = leafIndex.shrn(level)
+          hasRightSibling = pathIndex.and(new BN(1)).isZero()
+          if (hasRightSibling) {
+            // right empty sibling
+            latestSiblings[level] = node // current node will be the next merkle proof's left sibling
+            node = this.config.hasher.parentOf(
+              node,
+              this.config.hasher.preHash[level],
+            )
+          } else {
+            // left sibling
+            // keep current sibling
+            node = this.config.hasher.parentOf(latestSiblings[level], node)
+          }
+        }
+        // update root
+        root = node
+        // update index
+        if (this.zero instanceof Fp) {
+          index = Fp.from(index.addn(1)) as T
         } else {
-          // left sibling
-          // keep current sibling
-          node = this.config.hasher.parentOf(latestSiblings[level], node)
+          index = index.addn(1) as T
         }
       }
-      // update root
-      root = node
-      // update index
-      if (this.zero instanceof Fp) {
-        index = Fp.from(index.addn(1)) as T
-      } else {
-        index = index.addn(1) as T
+      // update the latest siblings
+      return {
+        root,
+        index,
+        siblings: latestSiblings,
       }
-    }
-    // update the latest siblings
-    return {
-      root,
-      index,
-      siblings: latestSiblings,
-    }
+    })
   }
 
   getStartingLeafProof(): {

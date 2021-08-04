@@ -4,7 +4,11 @@
 /* eslint-disable jest/consistent-test-it */
 const chai = require("chai");
 const { UtxoTree, poseidonHasher } = require("~tree");
-const { append, appendAsSubTrees } = require("~tree/utils/merkle-tree-sol");
+const {
+  append,
+  appendAsSubTrees,
+  splitToSubTrees
+} = require("~tree/utils/merkle-tree-sol");
 const sample = require("~tree/sample").default;
 const { Fp } = require("~babyjubjub");
 
@@ -78,7 +82,7 @@ contract("Utxo tree update tests", async accounts => {
     });
   });
   describe("appendSubTree", () => {
-    it("should show same result", async () => {
+    it("should show same result for small subtree", async () => {
       const { root, index, siblings } = tsTree.data;
       const prevIndex = tsTree.latestLeafIndex();
       const leaves = [Fp.from("1"), Fp.from("2")];
@@ -113,6 +117,32 @@ contract("Utxo tree update tests", async accounts => {
       compare(solidityAppendAsSubTreesResult, utxoTreeResult.root);
       compare(solidityAppendResult, utxoTreeResult.root);
       compare(tsAppendAsSubTreeResult, utxoTreeResult.root);
+    });
+
+    it("should show same result for large subtree", async () => {
+      const { root, index, siblings } = tsTree.data;
+      const prevIndex = tsTree.latestLeafIndex();
+      const subTreeDepth = 5;
+      const subTreeSize = 1 << subTreeDepth;
+      const leaves = Array(Math.floor(subTreeSize * 1.4))
+        .fill()
+        .map((_, index) => Fp.from(index + 1));
+      const solidityAppendAsSubTreesResult = await solTree.appendSubTree(
+        root.toString(),
+        index.toString(),
+        subTreeDepth,
+        leaves.map(f => f.toString()),
+        siblings.slice(subTreeDepth).map(sib => sib.toString())
+      );
+      const tsAppendAsSubTreeResult = appendAsSubTrees(
+        poseidonHasher(depth),
+        root,
+        index,
+        subTreeDepth,
+        leaves,
+        siblings.slice(subTreeDepth)
+      );
+      compare(solidityAppendAsSubTreesResult, tsAppendAsSubTreeResult);
     });
   });
 });

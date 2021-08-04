@@ -122,7 +122,7 @@ export class BlockGenerator extends GeneratorBase {
           return [
             ...arr,
             ...tx.outflow
-              .filter(outflow => outflow.outflowType.isZero())
+              .filter(outflow => outflow.outflowType.eqn(OutflowType.UTXO))
               .map(outflow => outflow.note),
           ]
         }, pendingMassDeposits.leaves)
