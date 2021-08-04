@@ -1,3 +1,5 @@
+import { ZkAccount } from '@zkopru/account'
+
 export enum RpcType {
   http = 0,
 }
@@ -59,4 +61,5 @@ export type NodeConfig = {
   bootstrap?: boolean
   websocket?: string
   rpcUrl?: string
+  accounts?: ZkAccount[]
 }

@@ -141,6 +141,7 @@ export default [
       ['proposedAt', 'Int', { index: true, optional: true }],
       ['proposalTx', 'String', { optional: true }],
       ['proposalData', 'String', { optional: true }],
+      ['timestamp', 'Int', { optional: true }],
       ['fetched', 'String', { optional: true }],
       ['finalized', 'Bool', { optional: true }],
       ['verified', 'Bool', { optional: true }],
@@ -215,6 +216,27 @@ export default [
       ['fee', 'String'],
       ['challenged', 'Bool'],
       ['slashed', 'Bool'],
+      /**
+       * The fields below are problematic. If the memo is decryptable by our
+       * address we know that we received at least one of the UTXOs.
+       * However, there are possibly up to 3 other recipients. senderAddress
+       * should be an array, but for simplicity we are storing a string.
+       * This should only become a problem if an advanced type of
+       * transaction is used e.g. me sending 4 outflows from 4 different
+       * accounts I control to a single note owned by one account.
+       * */
+      ['senderAddress', 'String', { optional: true }],
+      ['receiverAddress', 'String', { optional: true }],
+      ['tokenAddr', 'String', { optional: true }],
+      ['amount', 'String', { optional: true }],
+      {
+        name: 'proposal',
+        relation: {
+          localField: 'blockHash',
+          foreignField: 'hash',
+          foreignTable: 'Proposal',
+        },
+      },
     ],
   },
   {
@@ -229,6 +251,10 @@ export default [
       ['swap', 'String', { optional: true }],
       ['inflow', 'Object'],
       ['outflow', 'Object'],
+      ['senderAddress', 'String', { optional: true }],
+      ['receiverAddress', 'String', { optional: true }],
+      ['tokenAddr', 'String', { optional: true }],
+      ['amount', 'String', { optional: true }],
     ],
   },
   {
@@ -256,6 +282,16 @@ export default [
       ['logIndex', 'Int'],
       ['blockNumber', 'Int', { index: true }],
       ['queuedAt', 'String'],
+      ['ownerAddress', 'String', { optional: true }],
+      ['includedIn', 'String', { optional: true }],
+      {
+        name: 'proposal',
+        relation: {
+          localField: 'includedIn',
+          foreignField: 'hash',
+          foreignTable: 'Proposal',
+        },
+      },
     ],
   },
   {
@@ -305,6 +341,14 @@ export default [
       ['prepayer', 'String', { optional: true }],
       ['expiration', 'Int', { optional: true }],
       ['siblings', 'String', { optional: true }],
+      {
+        name: 'proposal',
+        relation: {
+          localField: 'includedIn',
+          foreignField: 'hash',
+          foreignTable: 'Proposal',
+        },
+      },
     ],
   },
   {

@@ -74,6 +74,7 @@ export type Proposal = {
   proposedAt?: number | null
   proposalTx?: string | null
   proposalData?: string | null
+  timestamp?: number | null
   fetched?: string | null
   finalized?: boolean | null
   verified?: boolean | null
@@ -106,6 +107,11 @@ export type Tx = {
   fee: string
   challenged: boolean
   slashed: boolean
+  senderAddress?: string | null
+  receiverAddress?: string | null
+  tokenAddr?: string | null
+  amount?: string | null
+  proposal?: undefined | null
 }
 
 export type PendingTx = {
@@ -115,8 +121,12 @@ export type PendingTx = {
   memoVersion?: number | null
   memoData?: string | null
   swap?: string | null
-  inflow: Object | null
-  outflow: Object | null
+  inflow: Object
+  outflow: Object
+  senderAddress?: string | null
+  receiverAddress?: string | null
+  tokenAddr?: string | null
+  amount?: string | null
 }
 
 export type MassDeposit = {
@@ -134,6 +144,9 @@ export type Deposit = {
   logIndex: number
   blockNumber: number
   queuedAt: string
+  ownerAddress?: string | null
+  includedIn?: string | null
+  proposal?: undefined | null
 }
 
 export type Utxo = {
@@ -170,6 +183,7 @@ export type Withdrawal = {
   prepayer?: string | null
   expiration?: number | null
   siblings?: string | null
+  proposal?: undefined | null
 }
 
 export type Migration = {
