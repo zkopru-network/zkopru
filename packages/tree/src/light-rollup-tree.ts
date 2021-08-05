@@ -391,6 +391,13 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     }
     const end: T = start.addn(leaves.length) as T
     // update the latest siblings
+    const backupData = { ...this.data }
+    const backupMetadata = { ...this.metadata }
+    db.onError(() => {
+      // be careful of deep properties that are not copied
+      this.data = backupData
+      this.metadata = backupMetadata
+    })
     this.data = {
       root,
       index: end,
