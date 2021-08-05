@@ -316,9 +316,6 @@ export class BlockProcessor extends EventEmitter {
         hash: tx.outflow.map(outflow => outflow.note.toString())
       }
     })
-    if (outflows.length !== tx.outflow.length) {
-      throw new Error('Not all outflows are known')
-    }
     const outflowTokenAddresses = {}
     const outflowOwners = {}
     let nft = false
@@ -338,6 +335,9 @@ export class BlockProcessor extends EventEmitter {
     if (Object.keys(outflowOwners).length > 1) {
       logger.warn('Multiple outflow owners not supported')
       return
+    }
+    if (outflows.length !== tx.outflow.length) {
+      throw new Error('Not all outflows are known')
     }
     const tokenAddress = `0x${decryptedNotes[0].asset.tokenAddr.toString(
       'hex',
