@@ -105,14 +105,12 @@ export const testRound3SendZkTxsToCoordinator = (
 ) => async () => {
   const { wallets } = ctx()
   const { aliceTransfer, bobTransfer, carlTransfer } = txs()
-  const [response1, response2, response3] = await Promise.all([
-    wallets.alice.sendLayer2Tx(aliceTransfer),
-    wallets.bob.sendLayer2Tx(bobTransfer),
-    wallets.carl.sendLayer2Tx(carlTransfer),
+  const r = await wallets.alice.sendLayer2Tx([
+    aliceTransfer,
+    bobTransfer,
+    carlTransfer,
   ])
-  expect(response1.status).toStrictEqual(200)
-  expect(response2.status).toStrictEqual(200)
-  expect(response3.status).toStrictEqual(200)
+  expect(r.status).toStrictEqual(200)
 }
 
 export const testRound3NewBlockProposalAndSlashing = (
