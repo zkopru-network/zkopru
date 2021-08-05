@@ -721,10 +721,10 @@ export class BlockProcessor extends EventEmitter {
       )
       assert(orderInArr >= 0)
       const index = startingWithdrawalIndex.addn(orderInArr)
-      const { noteHash } = patch.treePatch.withdrawals[orderInArr]
-      if (!noteHash) throw Error('Withdrawal does not have note hash')
+      const { hash } = patch.treePatch.withdrawals[orderInArr]
+      if (!hash) throw Error('Withdrawal does not have note hash')
       const merkleProof = await this.layer2.grove.withdrawalMerkleProof(
-        noteHash,
+        hash,
         index,
       )
       withdrawalsToUpdate.push({
