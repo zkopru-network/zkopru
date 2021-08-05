@@ -145,11 +145,11 @@ describe('grove full sync grove()', () => {
       const { withdrawalTree } = fullSyncGrove
       const bootstrapData = {
         utxoStartingLeafProof: {
-          ...utxoTree.getStartingLeafProof(),
+          ...(await utxoTree.getStartingLeafProof()),
           leaf: Fp.zero,
         },
         withdrawalStartingLeafProof: {
-          ...withdrawalTree.getStartingLeafProof(),
+          ...(await withdrawalTree.getStartingLeafProof()),
           leaf: toBN(0),
         },
       }

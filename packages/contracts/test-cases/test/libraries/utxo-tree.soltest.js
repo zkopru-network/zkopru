@@ -68,7 +68,7 @@ contract("Utxo tree update tests", async accounts => {
       // const { root, index, siblings } = tsTree.data
       // const prevIndex = tsTree.latestLeafIndex()
       const leaves = [Fp.from("1"), Fp.from("2")];
-      const prevTree = tsTree.getStartingLeafProof();
+      const prevTree = await tsTree.getStartingLeafProof();
       const utxoTreeResult = await tsTree.dryAppend(leaves.map(toLeaf));
       // console.log(utxoTreeResult)
       // console.log(siblings)

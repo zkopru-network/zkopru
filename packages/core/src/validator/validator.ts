@@ -205,7 +205,7 @@ export abstract class ValidatorBase {
     const deposits = retrievedDeposits.map(deposit =>
       Fp.from(deposit.note).toUint256(),
     )
-    const startingLeafProof = this.layer2.grove.utxoTree.getStartingLeafProof()
+    const startingLeafProof = await this.layer2.grove.utxoTree.getStartingLeafProof()
     if (
       !parent.utxoRoot.toBN().eq(startingLeafProof.root) ||
       !parent.utxoIndex.toBN().eq(startingLeafProof.index)
@@ -237,7 +237,7 @@ export abstract class ValidatorBase {
   ): Promise<ValidateFnCalls> {
     const onchainValidator = this.onchain.withdrawalTree
     const offchainValidator = this.offchain.withdrawalTree
-    const startingLeafProof = this.layer2.grove.withdrawalTree.getStartingLeafProof()
+    const startingLeafProof = await this.layer2.grove.withdrawalTree.getStartingLeafProof()
     if (
       !parent.withdrawalRoot.toBN().eq(startingLeafProof.root) ||
       !parent.withdrawalIndex.toBN().eq(startingLeafProof.index)

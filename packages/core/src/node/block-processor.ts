@@ -313,8 +313,8 @@ export class BlockProcessor extends EventEmitter {
   ) {
     const outflows = await this.db.findMany('Utxo', {
       where: {
-        hash: tx.outflow.map(outflow => outflow.note.toString())
-      }
+        hash: tx.outflow.map(outflow => outflow.note.toString()),
+      },
     })
     const outflowTokenAddresses = {}
     const outflowOwners = {}
@@ -367,15 +367,16 @@ export class BlockProcessor extends EventEmitter {
     }
     // otherwise we're the sender
     const totalSent = outflows
-      .filter((outflow) => outflow.owner === knownReceiver.zkAddress)
+      .filter(outflow => outflow.owner === knownReceiver.zkAddress)
       .reduce((total, outflow) => {
         if (+tokenAddress === 0 && tokenAddress === outflow.tokenAddr) {
           return total.add(Fp.from(outflow.erc20Amount))
-        } else {
-          return total.add(Fp.from(outflow.eth))
         }
+        return total.add(Fp.from(outflow.eth))
       }, Fp.from(0))
-    const netSent = totalSent.sub(myInflowTotal).sub(+tokenAddress === 0 ? tx.fee : Fp.from(0))
+    const netSent = totalSent
+      .sub(myInflowTotal)
+      .sub(+tokenAddress === 0 ? tx.fee : Fp.from(0))
     db.update('Tx', {
       where: {
         hash: tx.hash().toString(),

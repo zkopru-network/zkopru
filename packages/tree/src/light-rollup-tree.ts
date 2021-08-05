@@ -192,25 +192,27 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     })
   }
 
-  getStartingLeafProof(): {
+  async getStartingLeafProof(): Promise<{
     root: T
     index: T
     siblings: T[]
-  } {
-    const index = this.latestLeafIndex()
-    const siblings: T[] = [...this.data.siblings]
-    let path: BN = index
-    for (let i = 0; i < this.depth; i += 1) {
-      if (path.isEven()) {
-        siblings[i] = this.config.hasher.preHash[i]
+  }> {
+    return this.lock.acquire('root', async () => {
+      const index = this.latestLeafIndex()
+      const siblings: T[] = [...this.data.siblings]
+      let path: BN = index
+      for (let i = 0; i < this.depth; i += 1) {
+        if (path.isEven()) {
+          siblings[i] = this.config.hasher.preHash[i]
+        }
+        path = path.shrn(1)
       }
-      path = path.shrn(1)
-    }
-    return {
-      root: this.root(),
-      index,
-      siblings,
-    }
+      return {
+        root: this.root(),
+        index,
+        siblings,
+      }
+    })
   }
 
   private async _merkleProof({
