@@ -311,17 +311,38 @@ export class BlockProcessor extends EventEmitter {
     decryptedNotes: Utxo[],
     db: TransactionDB,
   ) {
-    const knownInflow = await this.db.findMany('Utxo', {
+    const outflows = await this.db.findMany('Utxo', {
       where: {
-        nullifier: tx.inflow.map(inflow => inflow.nullifier.toString()),
-      },
+        hash: tx.outflow.map(outflow => outflow.note.toString())
+      }
     })
-    // let's use the trivial approach of assuming the first asset encountered is
-    // the only asset being transacted
+    if (outflows.length !== tx.outflow.length) {
+      throw new Error('Not all outflows are known')
+    }
+    const outflowTokenAddresses = {}
+    const outflowOwners = {}
+    let nft = false
+    for (const outflow of outflows) {
+      outflowOwners[outflow.owner] = true
+      outflowTokenAddresses[outflow.tokenAddr] = true
+      if (outflow.nft) nft = true
+    }
+    if (nft) {
+      logger.warn('NFT outflow not supported')
+      return
+    }
+    if (Object.keys(outflowTokenAddresses).length !== 1) {
+      logger.warn('Multiple outflow tokens not supported')
+      return
+    }
+    if (Object.keys(outflowOwners).length > 1) {
+      logger.warn('Multiple outflow owners not supported')
+      return
+    }
     const tokenAddress = `0x${decryptedNotes[0].asset.tokenAddr.toString(
       'hex',
     )}`
-    const myOutflowTotal = decryptedNotes.reduce((total, note: Utxo) => {
+    const myInflowTotal = decryptedNotes.reduce((total, note: Utxo) => {
       if (+tokenAddress === 0) {
         return total.add(new Fp(note.asset.eth))
       }
@@ -330,34 +351,8 @@ export class BlockProcessor extends EventEmitter {
       }
       return total
     }, new Fp('0'))
-    // if we know a nullifier before the block is processed we must be the
-    // sender
-    if (knownInflow.length) {
-      if (knownInflow.length !== tx.inflow.length) {
-        throw new Error(`Unknown inflow in send transaction`)
-      }
-      const sentAmount = Fp.from(0)
-      for (const inflow of knownInflow) {
-        if (+tokenAddress === 0 && inflow.eth) {
-          sentAmount.iadd(Fp.from(inflow.eth))
-        } else if (Fp.from(inflow.tokenAddr).eq(Fp.from(tokenAddress))) {
-          sentAmount.iadd(Fp.from(inflow.erc20Amount))
-        }
-      }
-      // sentAmount = totalInflow - myOutflow - fee
-      const totalSent = sentAmount.sub(myOutflowTotal).sub(tx.fee)
-      // we're likely the sender
-      db.update('Tx', {
-        where: {
-          hash: tx.hash().toString(),
-        },
-        update: {
-          senderAddress: knownReceiver.zkAddress.toString(),
-          tokenAddr: tokenAddress,
-          amount: totalSent.toString(),
-        },
-      })
-    } else {
+    if (Object.keys(outflowOwners).length === 0) {
+      // we don't know who the transaction is from
       // we're likely the receiver
       db.update('Tx', {
         where: {
@@ -366,10 +361,88 @@ export class BlockProcessor extends EventEmitter {
         update: {
           receiverAddress: knownReceiver.zkAddress.toString(),
           tokenAddr: tokenAddress,
-          amount: myOutflowTotal.toString(),
+          amount: myInflowTotal.toString(),
         },
       })
     }
+    // otherwise we're the sender
+    const totalSent = outflows
+      .filter((outflow) => outflow.owner === knownReceiver.zkAddress)
+      .reduce((total, outflow) => {
+        if (+tokenAddress === 0 && tokenAddress === outflow.tokenAddr) {
+          return total.add(Fp.from(outflow.erc20Amount))
+        } else {
+          return total.add(Fp.from(outflow.eth))
+        }
+      }, Fp.from(0))
+    const netSent = totalSent.sub(myInflowTotal).sub(+tokenAddress === 0 ? tx.fee : Fp.from(0))
+    db.update('Tx', {
+      where: {
+        hash: tx.hash().toString(),
+      },
+      update: {
+        senderAddress: knownReceiver.zkAddress.toString(),
+        tokenAddr: tokenAddress,
+        amount: netSent.toString(),
+      },
+    })
+    // // if we have decrypted all notes we're the sender and receiver
+    // const knownInflow = await this.db.findMany('Utxo', {
+    //   where: {
+    //     nullifier: tx.inflow.map(inflow => inflow.nullifier.toString()),
+    //   },
+    // })
+    // // let's use the trivial approach of assuming the first asset encountered is
+    // // the only asset being transacted
+    // const myOutflowTotal = decryptedNotes.reduce((total, note: Utxo) => {
+    //   if (+tokenAddress === 0) {
+    //     return total.add(new Fp(note.asset.eth))
+    //   }
+    //   if (note.asset.tokenAddr.eq(Fp.from(tokenAddress))) {
+    //     return total.add(note.asset.erc20Amount)
+    //   }
+    //   return total
+    // }, new Fp('0'))
+    // // if we know a nullifier before the block is processed we must be the
+    // // sender
+    // if (knownInflow.length) {
+    //   if (knownInflow.length !== tx.inflow.length) {
+    //     throw new Error(`Unknown inflow in send transaction`)
+    //   }
+    //   const sentAmount = Fp.from(0)
+    //   for (const inflow of knownInflow) {
+    //     if (+tokenAddress === 0 && inflow.eth) {
+    //       sentAmount.iadd(Fp.from(inflow.eth))
+    //     } else if (Fp.from(inflow.tokenAddr).eq(Fp.from(tokenAddress))) {
+    //       sentAmount.iadd(Fp.from(inflow.erc20Amount))
+    //     }
+    //   }
+    //   // sentAmount = totalInflow - myOutflow - fee
+    //   const totalSent = sentAmount.sub(myOutflowTotal).sub(tx.fee)
+    //   // we're likely the sender
+    //   db.update('Tx', {
+    //     where: {
+    //       hash: tx.hash().toString(),
+    //     },
+    //     update: {
+    //       senderAddress: knownReceiver.zkAddress.toString(),
+    //       tokenAddr: tokenAddress,
+    //       amount: totalSent.toString(),
+    //     },
+    //   })
+    // } else {
+    //   // we're likely the receiver
+    //   db.update('Tx', {
+    //     where: {
+    //       hash: tx.hash().toString(),
+    //     },
+    //     update: {
+    //       receiverAddress: knownReceiver.zkAddress.toString(),
+    //       tokenAddr: tokenAddress,
+    //       amount: myOutflowTotal.toString(),
+    //     },
+    //   })
+    // }
   }
 
   // eslint-disable-next-line class-methods-use-this
