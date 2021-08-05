@@ -393,10 +393,12 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     // update the latest siblings
     const backupData = { ...this.data }
     const backupMetadata = { ...this.metadata }
-    db.onError(() => {
-      // be careful of deep properties that are not copied
-      this.data = backupData
-      this.metadata = backupMetadata
+    db.onError(async () => {
+      await this.lock.acquire('root', () => {
+        // be careful of deep properties that are not copied
+        this.data = backupData
+        this.metadata = backupMetadata
+      })
     })
     this.data = {
       root,

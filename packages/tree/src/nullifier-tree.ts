@@ -271,6 +271,12 @@ export class NullifierTree implements SMT<BN> {
     }
     const newRoot = updatedNodes[hexify(new BN(1))]
     logger.trace(`setting new root - ${newRoot}`)
+    const oldRoot = new BN(this.rootNode)
+    db.onError(async () => {
+      await this.lock.acquire('root', () => {
+        this.rootNode = oldRoot
+      })
+    })
     this.rootNode = newRoot
     return this.rootNode
   }
