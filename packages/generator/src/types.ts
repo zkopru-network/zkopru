@@ -36,11 +36,9 @@ export interface RegisterData {
   url: string
 }
 
-export interface TxSummary {
+export interface TxData {
   [txHash: string]: {
     from: string
-    funcSig: string
-    inputSize: number
     gas: number
     gasUsed?: number
     success?: boolean
@@ -61,7 +59,7 @@ export interface ProposeData {
 
 export interface OrganizerData {
   layer1: {
-    txSummaries: TxSummary[]
+    txData: TxData[]
     gasTable: { [sig: string]: GasData[] }
   }
   coordinatorData: ProposeData[]
