@@ -7,7 +7,6 @@ import { Layer1 } from '@zkopru/contracts'
 import { OrganizerQueue } from './organizer-queue'
 import { logAll } from './generator-utils'
 import {
-  TxSummary,
   OrganizerConfig,
   OrganizerContext,
   RegisterData,
@@ -35,7 +34,7 @@ export class OrganizerApi {
     this.context = context
     this.organizerData = {
       layer1: {
-        txSummaries: [],
+        txData: [],
         gasTable: {},
       },
       coordinatorData: [],
@@ -106,15 +105,12 @@ export class OrganizerApi {
 
   private async watchLayer1() {
     const { web3 } = this.context
-    const { gasTable } = this.organizerData.layer1 // Initialized by constructor
+    const { txData, gasTable } = this.organizerData.layer1 // Initialized by constructor
 
     const watchTargetContracts = [config.zkopruContract, config.auctionContract]
 
     web3.eth.subscribe('newBlockHeaders').on('data', async function(data) {
-      const txSummary: TxSummary = {} as TxSummary
-
       const blockData = await web3.eth.getBlock(data.hash)
-      logger.info(`blockData.transactions is ${blockData.transactions}`)
       if (blockData.transactions) {
         blockData.transactions.forEach(async txHash => {
           const tx = await web3.eth.getTransaction(txHash)
@@ -123,14 +119,6 @@ export class OrganizerApi {
             const funcSig = tx.input.slice(0, 10)
             const inputSize = tx.input.length
             const receipt = await web3.eth.getTransactionReceipt(txHash)
-            txSummary[txHash] = {
-              from: tx.from,
-              funcSig,
-              inputSize,
-              gas: tx.gas,
-              gasUsed: receipt.gasUsed,
-              success: receipt.status,
-            }
 
             // Update gasTable
             if (gasTable[funcSig] === undefined) {
@@ -148,6 +136,7 @@ export class OrganizerApi {
                 gasUsed: receipt.gasUsed ?? 0,
               })
             }
+            txData.push({ [txHash]: { ...tx, ...receipt } })
           }
         })
       }
@@ -160,6 +149,10 @@ export class OrganizerApi {
 
     app.get(`/ready`, async (_, res) => {
       res.send(this.contractsReady)
+    })
+
+    app.get(`/txData`, async (_, res) => {
+      res.send(this.organizerData.layer1.txData)
     })
 
     app.get('/registered', async (_, res) => {
