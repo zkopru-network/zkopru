@@ -137,7 +137,7 @@ export function hexify(
       hex = n.substr(2)
     } else {
       try {
-        hex = new BN(n, 16).toString(16)
+        hex = new BN(n).toString(16)
       } catch (e) {
         hex = Buffer.from(n).toString('hex')
       }
