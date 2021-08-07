@@ -153,6 +153,24 @@ export function hexify(
   return `0x${hex}`
 }
 
+export function trimHexToLength(
+  hexstring: string | Buffer,
+  targetLength: number,
+) {
+  const rawString = (typeof hexstring === 'string'
+    ? hexstring
+    : hexstring.toString('hex')
+  ).replace('0x', '')
+  const reducedString = rawString.slice(0, targetLength)
+  const filledString = [
+    reducedString,
+    ...Array(targetLength - reducedString.length)
+      .fill(null)
+      .map(() => '0'),
+  ].join('')
+  return `0x${filledString}`
+}
+
 export function numToBuffer(
   decimal: BN | string | number,
   len?: number,

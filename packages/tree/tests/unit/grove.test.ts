@@ -49,7 +49,7 @@ describe('grove full sync grove()', () => {
     })
   })
   describe('dryPatch', () => {
-    it.skip('should not update the grove', async () => {
+    it('should not update the grove', async () => {
       const prevResult = {
         utxoRoot: fullSyncGrove.utxoTree.root(),
         utxoIndex: fullSyncGrove.utxoTree.latestLeafIndex(),
@@ -100,7 +100,7 @@ describe('grove full sync grove()', () => {
     }, 60000)
   })
   describe('applyPatch()', () => {
-    it.skip('should update the grove and have same result with the dry patch result', async () => {
+    it('should update the grove and have same result with the dry patch result', async () => {
       const utxosToAppend: Leaf<Fp>[] = [
         utxos.utxo1_out_1,
         utxos.utxo2_1_in_1,
@@ -141,7 +141,7 @@ describe('grove full sync grove()', () => {
     }, 300000)
   })
   describe('light sync grove - applyBootstrap()', () => {
-    it.skip('should update the grove using bootstrap data', async () => {
+    it('should update the grove using bootstrap data', async () => {
       const { utxoTree } = fullSyncGrove
       const { withdrawalTree } = fullSyncGrove
       const bootstrapData = {

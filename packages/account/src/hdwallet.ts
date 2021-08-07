@@ -9,7 +9,6 @@ import crypto from 'crypto'
 import HDNode from 'hdkey'
 import Web3 from 'web3'
 import { Fp } from '@zkopru/babyjubjub'
-import { hexify } from '@zkopru/utils'
 import { DB, EncryptedWallet, Keystore } from '@zkopru/database'
 import { ZkAccount } from './account'
 
@@ -110,13 +109,14 @@ export class HDWallet {
     if (!this.seed || !this.password) throw Error('Not initialized')
     const masterNode = HDNode.fromMasterSeed(this.seed)
     const derivedKey = masterNode.derive(PATH(deriveIndex))
+    const { privateKey } = derivedKey
     try {
-      Fp.fromBuffer(derivedKey.privateKey)
+      Fp.fromBuffer(privateKey)
     } catch (err) {
       throw Error('Jubjub does not support the derived key. Use another index')
     }
     const ethAccount = this.web3.eth.accounts.privateKeyToAccount(
-      hexify(derivedKey.privateKey, 32),
+      typeof privateKey === 'string' ? privateKey : privateKey.toString('hex'),
     )
     const account = ZkAccount.fromEthAccount(ethAccount)
     await this.db.create('Keystore', account.toKeystoreSqlObj(this.password))
