@@ -21,6 +21,7 @@ export const buildZkTxAliceSendEthToBob = async (
   const { bob } = accounts
 
   const alicePrevBalance = await aliceWallet.getSpendableAmount(alice)
+  const alicePrevLocked = await aliceWallet.getLockedAmount(alice)
   const aliceSpendables: Utxo[] = await aliceWallet.getSpendables(alice)
   const aliceRawTx = TxBuilder.from(alice.zkAddress)
     .provide(...aliceSpendables.map(note => Utxo.from(note)))
@@ -36,7 +37,7 @@ export const buildZkTxAliceSendEthToBob = async (
   const aliceNewBalance = await aliceWallet.getSpendableAmount(alice)
   const aliceLockedAmount = await aliceWallet.getLockedAmount(alice)
   expect(aliceNewBalance.eth.add(aliceLockedAmount.eth)).toBe(
-    alicePrevBalance.eth,
+    alicePrevBalance.eth.add(alicePrevLocked.eth),
   )
   return aliceZkTx
 }
@@ -80,6 +81,7 @@ export const buildZkTxCarlSendEthToAlice = async (
   const { alice } = accounts
 
   const carlPrevBalance = await carlWallet.getSpendableAmount(carl)
+  const carlPrevLocked = await carlWallet.getLockedAmount(carl)
   const carlSpendables: Utxo[] = await carlWallet.getSpendables(carl)
   const carlRawTx = TxBuilder.from(carl.zkAddress)
     .provide(...carlSpendables.map(note => Utxo.from(note)))
@@ -94,7 +96,9 @@ export const buildZkTxCarlSendEthToAlice = async (
   })
   const carlNewBalance = await carlWallet.getSpendableAmount(carl)
   const carlLockedAmount = await carlWallet.getLockedAmount(carl)
-  expect(carlNewBalance.eth.add(carlLockedAmount.eth)).toBe(carlPrevBalance.eth)
+  expect(carlNewBalance.eth.add(carlLockedAmount.eth)).toBe(
+    carlPrevBalance.eth.add(carlPrevLocked.eth),
+  )
   return carlZkTx
 }
 
