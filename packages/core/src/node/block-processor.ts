@@ -397,63 +397,6 @@ export class BlockProcessor extends EventEmitter {
         amount: netSent.toString(),
       },
     })
-    // // if we have decrypted all notes we're the sender and receiver
-    // const knownInflow = await this.db.findMany('Utxo', {
-    //   where: {
-    //     nullifier: tx.inflow.map(inflow => inflow.nullifier.toString()),
-    //   },
-    // })
-    // // let's use the trivial approach of assuming the first asset encountered is
-    // // the only asset being transacted
-    // const myOutflowTotal = decryptedNotes.reduce((total, note: Utxo) => {
-    //   if (+tokenAddress === 0) {
-    //     return total.add(new Fp(note.asset.eth))
-    //   }
-    //   if (note.asset.tokenAddr.eq(Fp.from(tokenAddress))) {
-    //     return total.add(note.asset.erc20Amount)
-    //   }
-    //   return total
-    // }, new Fp('0'))
-    // // if we know a nullifier before the block is processed we must be the
-    // // sender
-    // if (knownInflow.length) {
-    //   if (knownInflow.length !== tx.inflow.length) {
-    //     throw new Error(`Unknown inflow in send transaction`)
-    //   }
-    //   const sentAmount = Fp.from(0)
-    //   for (const inflow of knownInflow) {
-    //     if (+tokenAddress === 0 && inflow.eth) {
-    //       sentAmount.iadd(Fp.from(inflow.eth))
-    //     } else if (Fp.from(inflow.tokenAddr).eq(Fp.from(tokenAddress))) {
-    //       sentAmount.iadd(Fp.from(inflow.erc20Amount))
-    //     }
-    //   }
-    //   // sentAmount = totalInflow - myOutflow - fee
-    //   const totalSent = sentAmount.sub(myOutflowTotal).sub(tx.fee)
-    //   // we're likely the sender
-    //   db.update('Tx', {
-    //     where: {
-    //       hash: tx.hash().toString(),
-    //     },
-    //     update: {
-    //       senderAddress: knownReceiver.zkAddress.toString(),
-    //       tokenAddr: tokenAddress,
-    //       amount: totalSent.toString(),
-    //     },
-    //   })
-    // } else {
-    //   // we're likely the receiver
-    //   db.update('Tx', {
-    //     where: {
-    //       hash: tx.hash().toString(),
-    //     },
-    //     update: {
-    //       receiverAddress: knownReceiver.zkAddress.toString(),
-    //       tokenAddr: tokenAddress,
-    //       amount: myOutflowTotal.toString(),
-    //     },
-    //   })
-    // }
   }
 
   // eslint-disable-next-line class-methods-use-this
