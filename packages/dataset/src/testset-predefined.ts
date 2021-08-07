@@ -3,7 +3,10 @@ import { ZkAccount } from '@zkopru/account'
 import { TokenUtils } from '@zkopru/transaction'
 import { trimHexToLength } from '@zkopru/utils'
 
-const alicePrivKey = trimHexToLength(Buffer.from("I am Alice's private key"), 64)
+const alicePrivKey = trimHexToLength(
+  Buffer.from("I am Alice's private key"),
+  64,
+)
 const bobPrivKey = trimHexToLength(
   Buffer.from("I am Bob's private key").toString('hex'),
   64,
