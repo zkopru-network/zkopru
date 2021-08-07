@@ -51,6 +51,7 @@ export const buildZkTxBobSendEthToCarl = async (
 
   const bobPrevBalance = await bobWallet.getSpendableAmount(bob)
   const bobSpendables: Utxo[] = await bobWallet.getSpendables(bob)
+  const bobPrevLocked = await bobWallet.getLockedAmount(bob)
   const bobRawTx = TxBuilder.from(bob.zkAddress)
     .provide(...bobSpendables.map(note => Utxo.from(note)))
     .weiPerByte(toWei('100000', 'gwei'))
@@ -64,7 +65,9 @@ export const buildZkTxBobSendEthToCarl = async (
   })
   const bobNewBalance = await bobWallet.getSpendableAmount(bob)
   const bobLockedAmount = await bobWallet.getLockedAmount(bob)
-  expect(bobNewBalance.eth.add(bobLockedAmount.eth)).toBe(bobPrevBalance.eth)
+  expect(bobNewBalance.eth.add(bobLockedAmount.eth)).toBe(
+    bobPrevBalance.eth.add(bobPrevLocked.eth),
+  )
   return bobZkTx
 }
 
