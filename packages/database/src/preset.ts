@@ -37,7 +37,7 @@ export async function getCachedSiblings(
   treeId: string,
   leafIndex: F,
 ): Promise<TreeNode[]> {
-  const siblingIndexes = Array(depth).fill('')
+  const siblingIndexes = Array(depth).fill(null)
   const leafPath = new BN(1).shln(depth).or(Fp.toBN(leafIndex))
   if (leafPath.lte(Fp.toBN(leafIndex)))
     throw Error('Leaf index is out of range')

@@ -136,11 +136,10 @@ export function hexify(
     if (n.startsWith('0x')) {
       hex = n.substr(2)
     } else {
-      try {
-        hex = new BN(n).toString(16)
-      } catch (e) {
-        hex = Buffer.from(n).toString('hex')
+      if (/[a-fA-F]/.test(n)) {
+        throw new Error('Detected hex value in expected decimal string')
       }
+      hex = new BN(n).toString(16)
     }
   } else {
     hex = n.toString('hex')
