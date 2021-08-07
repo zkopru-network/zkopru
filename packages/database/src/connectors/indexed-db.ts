@@ -16,6 +16,7 @@ import {
 } from '../types'
 import { validateDocuments, matchDocument } from '../helpers/memory'
 import { loadIncluded } from '../helpers/shared'
+import { execAndCallback } from '../helpers/callbacks'
 
 const DB_NAME = 'zkopru'
 
@@ -365,6 +366,7 @@ export class IndexedDBConnector extends DB {
     const onCommitCallbacks = [] as Function[]
     const onErrorCallbacks = [] as Function[]
     const onCompleteCallbacks = [] as Function[]
+    if (onComplete) onCompleteCallbacks.push(onComplete)
     const db = {
       delete: (collection: string, options: DeleteManyOptions) => {
         stores.push(collection)
@@ -398,44 +400,35 @@ export class IndexedDBConnector extends DB {
         onCompleteCallbacks.push(cb)
       },
     } as TransactionDB
-    try {
-      // Call the `operation` function to get a list of the stores that are going
-      // to be accessed. Once that is done create the transaction and call the
-      // start function to begin executing the transaction operations
-      await Promise.resolve(operation(db))
-      // no operations to commit
-      if (!stores.length) {
-        ;(start as Function)()
-        for (const cb of [...onCommitCallbacks, ...onCompleteCallbacks]) {
-          cb()
+    await execAndCallback(
+      async function(this: any) {
+        // Call the `operation` function to get a list of the stores that are going
+        // to be accessed. Once that is done create the transaction and call the
+        // start function to begin executing the transaction operations
+        await Promise.resolve(operation(db))
+        if (!stores.length) {
+          ;(start as Function)()
+          return
         }
-        if (onComplete) onComplete()
-        return
-      }
-      // get a unique list of stores
-      const storeNames = {}
-      const storesUnique = stores.filter(store => {
-        if (storeNames[store]) return false
-        storeNames[store] = true
-        return true
-      })
-      tx = this.db.transaction(storesUnique, 'readwrite')
-      // explicitly cast the start function because TS cannot determine that it's
-      // set above. The body of a promise is executed sychronously so start will
-      // be assigned at this point
-      ;(start as Function)()
-      await Promise.all([promise, tx.done])
-      for (const cb of [...onCommitCallbacks, ...onCompleteCallbacks]) {
-        cb()
-      }
-      if (onComplete) onComplete()
-    } catch (err) {
-      for (const cb of [...onErrorCallbacks, ...onCompleteCallbacks]) {
-        cb()
-      }
-      if (onComplete) onComplete()
-      throw err
-    }
+        const storeNames = {}
+        const storesUnique = stores.filter(store => {
+          if (storeNames[store]) return false
+          storeNames[store] = true
+          return true
+        })
+        tx = this.db.transaction(storesUnique, 'readwrite')
+        // explicitly cast the start function because TS cannot determine that it's
+        // set above. The body of a promise is executed sychronously so start will
+        // be assigned at this point
+        ;(start as Function)()
+        await Promise.all([promise, tx.done])
+      }.bind(this),
+      {
+        onError: onErrorCallbacks,
+        onSuccess: onCommitCallbacks,
+        onComplete: onCompleteCallbacks,
+      },
+    )
   }
 
   async close() {

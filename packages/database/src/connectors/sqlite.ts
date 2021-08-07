@@ -26,6 +26,7 @@ import {
   upsertSql,
 } from '../helpers/sql'
 import { loadIncluded } from '../helpers/shared'
+import { execAndCallback } from '../helpers/callbacks'
 
 export class SQLiteConnector extends DB {
   db: any // Database<sqlite3.Database, sqlite3.Statement>
@@ -232,6 +233,7 @@ export class SQLiteConnector extends DB {
     const onCommitCallbacks = [] as Function[]
     const onErrorCallbacks = [] as Function[]
     const onCompleteCallbacks = [] as Function[]
+    if (onComplete) onCompleteCallbacks.push(onComplete)
     const transactionDB = {
       create: (collection: string, _doc: any) => {
         const table = this.schema[collection]
@@ -275,34 +277,25 @@ export class SQLiteConnector extends DB {
         onCompleteCallbacks.push(cb)
       },
     }
-    try {
-      await Promise.resolve(operation(transactionDB))
-    } catch (err) {
-      for (const cb of [...onErrorCallbacks, ...onCompleteCallbacks]) {
-        cb()
-      }
-      if (onComplete) onComplete()
-      throw err
-    }
-    // now apply the transaction
-    const transactionSql = `BEGIN TRANSACTION;
-    ${sqlOperations.join('\n')}
-    COMMIT;`
-    try {
-      await this.db.exec(transactionSql)
-      for (const cb of [...onCommitCallbacks, ...onCompleteCallbacks]) {
-        cb()
-      }
-      if (onComplete) onComplete()
-    } catch (err) {
-      console.log('SQL error', transactionSql)
-      await this.db.exec('ROLLBACK;')
-      for (const cb of [...onErrorCallbacks, ...onCompleteCallbacks]) {
-        cb()
-      }
-      if (onComplete) onComplete()
-      throw err
-    }
+    await execAndCallback(
+      async function(this: any) {
+        await Promise.resolve(operation(transactionDB))
+        try {
+          const transactionSql = `BEGIN TRANSACTION;
+        ${sqlOperations.join('\n')}
+        COMMIT;`
+          await this.db.exec(transactionSql)
+        } catch (err) {
+          await this.db.exec('ROLLBACK;')
+          throw err
+        }
+      }.bind(this),
+      {
+        onSuccess: onCommitCallbacks,
+        onError: onErrorCallbacks,
+        onComplete: onCompleteCallbacks,
+      },
+    )
   }
 
   async close() {
