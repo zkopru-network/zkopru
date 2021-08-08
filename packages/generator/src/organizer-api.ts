@@ -1,20 +1,21 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import AsyncLock from 'async-lock'
 import express from 'express'
-// import { Transaction, TransactionReceipt } from 'web3-core'18gg
 import { logger, sleep } from '@zkopru/utils'
-import { Layer1 } from '@zkopru/contracts'
+import { Layer1, IBurnAuction } from '@zkopru/contracts'
 import { OrganizerQueue } from './organizer-queue'
 import { logAll } from './generator-utils'
 import {
   OrganizerConfig,
   OrganizerContext,
+  BidData,
   RegisterData,
   OrganizerData,
   ProposeData,
 } from './types'
 import { config } from './config'
 
+// To avoid syncronization with coordinator node, only use web3 for listening events.
 export class OrganizerApi {
   config: OrganizerConfig
 
@@ -30,23 +31,29 @@ export class OrganizerApi {
 
   lastDepositerID: number
 
-  constructor(context: OrganizerContext, config: OrganizerConfig) {
+  auction: IBurnAuction
+
+  constructor(context: OrganizerContext, organizerConfig: OrganizerConfig) {
     this.context = context
     this.organizerData = {
       layer1: {
         txData: [],
+        auctionData: {},
         gasTable: {},
       },
       coordinatorData: [],
       walletData: [],
     } // Initialize
 
-    this.organizerQueue = new OrganizerQueue(config)
+    this.organizerQueue = new OrganizerQueue(organizerConfig)
     this.registerLock = new AsyncLock()
     this.lastDepositerID = 0
     this.contractsReady = false
 
-    this.config = config
+    this.config = organizerConfig
+    this.auction = Layer1.getIBurnAuction(context.web3, config.auctionContract)
+
+    this.updateAuctionData()
   }
 
   // TODO: check this method purpose
@@ -79,6 +86,35 @@ export class OrganizerApi {
     return this.organizerData.walletData.length
   }
 
+  updateAuctionData() {
+    this.auction.events.NewHighBid().on(`data`, data => {
+      const { roundIndex, bidder, amount } = data.returnValues
+      const { auctionData } = this.organizerData.layer1
+      const indexedRound = Object.keys(auctionData)
+
+      logger.info(` >> bidData ${logAll(data)}`)
+      const bidAmount = parseInt(amount, 10)
+      const bidData: BidData = {
+        bidder,
+        bidAmount,
+        txHash: data.transactionHash as string,
+        blockNumber: data.blockNumber as number,
+      }
+      if (!indexedRound.includes(roundIndex)) {
+        auctionData[roundIndex] = {
+          highestBid: bidData,
+          bidHistory: [],
+        }
+      } else if (
+        auctionData[roundIndex].highestBid.bidAmount < bidData.bidAmount
+      ) {
+        auctionData[roundIndex].highestBid = bidData
+      }
+      // store bidData to history
+      auctionData[roundIndex].bidHistory.push(bidData)
+    })
+  }
+
   private async checkReady() {
     const { web3 } = this.context
 
@@ -92,9 +128,8 @@ export class OrganizerApi {
       }
     }
 
-    const burnAuction = Layer1.getIBurnAuction(web3, config.auctionContract)
     return web3.eth.subscribe('newBlockHeaders').on('data', async () => {
-      const activeCoordinator = await burnAuction.methods
+      const activeCoordinator = await this.auction.methods
         .activeCoordinator()
         .call()
       if (+activeCoordinator) {
@@ -107,15 +142,19 @@ export class OrganizerApi {
     const { web3 } = this.context
     const { txData, gasTable } = this.organizerData.layer1 // Initialized by constructor
 
-    const watchTargetContracts = [config.zkopruContract, config.auctionContract]
+    const watchTargetContracts = {
+      zkopru: config.zkopruContract,
+      burnAuction: config.auctionContract,
+    }
 
+    // TODO : consider reorg for data store, It might need extra fields
     web3.eth.subscribe('newBlockHeaders').on('data', async function(data) {
       const blockData = await web3.eth.getBlock(data.hash)
       if (blockData.transactions) {
         blockData.transactions.forEach(async txHash => {
           const tx = await web3.eth.getTransaction(txHash)
 
-          if (tx.to && watchTargetContracts.includes(tx.to)) {
+          if (tx.to && watchTargetContracts[tx.to]) {
             const funcSig = tx.input.slice(0, 10)
             const inputSize = tx.input.length
             const receipt = await web3.eth.getTransactionReceipt(txHash)
@@ -157,6 +196,10 @@ export class OrganizerApi {
 
     app.get('/registered', async (_, res) => {
       res.send(this.organizerData.walletData)
+    })
+
+    app.get(`/auctionStatus`, async (_, res) => {
+      res.send(this.organizerData.layer1.auctionData)
     })
 
     app.get(`/proposedBlocks`, async (req, res) => {
@@ -298,7 +341,6 @@ export class OrganizerApi {
     })
 
     // TODO : create metric with prom-client
-    // TODO: accept name or rate
     app.post('/selectRate', async (req, res) => {
       try {
         const data = JSON.parse(req.body)
