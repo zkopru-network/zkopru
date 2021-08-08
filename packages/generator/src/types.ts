@@ -45,6 +45,20 @@ export interface TxData {
   }
 }
 
+export interface BidData {
+  bidder: string
+  bidAmount: number
+  txHash: string
+  blockNumber: number
+}
+
+export interface AuctionData {
+  [roundIndex: number]: {
+    highestBid: BidData
+    bidHistory: BidData[]
+  }
+}
+
 export interface ProposeData {
   timestamp: number
   proposeNum: number
@@ -60,6 +74,7 @@ export interface ProposeData {
 export interface OrganizerData {
   layer1: {
     txData: TxData[]
+    auctionData: AuctionData
     gasTable: { [sig: string]: GasData[] }
   }
   coordinatorData: ProposeData[]
