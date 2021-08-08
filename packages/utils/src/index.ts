@@ -136,11 +136,10 @@ export function hexify(
     if (n.startsWith('0x')) {
       hex = n.substr(2)
     } else {
-      try {
-        hex = new BN(n, 16).toString(16)
-      } catch (e) {
-        hex = Buffer.from(n).toString('hex')
+      if (/[a-fA-F]/.test(n)) {
+        throw new Error('Detected hex value in expected decimal string')
       }
+      hex = new BN(n).toString(16)
     }
   } else {
     hex = n.toString('hex')
@@ -152,6 +151,24 @@ export function hexify(
     hex = '0'.repeat(byteLength * 2 - hex.length) + hex
   }
   return `0x${hex}`
+}
+
+export function trimHexToLength(
+  hexstring: string | Buffer,
+  targetLength: number,
+) {
+  const rawString = (typeof hexstring === 'string'
+    ? hexstring
+    : hexstring.toString('hex')
+  ).replace('0x', '')
+  const reducedString = rawString.slice(0, targetLength)
+  const filledString = [
+    reducedString,
+    ...Array(targetLength - reducedString.length)
+      .fill(null)
+      .map(() => '0'),
+  ].join('')
+  return `0x${filledString}`
 }
 
 export function numToBuffer(

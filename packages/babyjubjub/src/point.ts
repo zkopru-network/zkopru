@@ -1,4 +1,4 @@
-import { hexToBuffer, hexify } from '@zkopru/utils'
+import { hexToBuffer } from '@zkopru/utils'
 import * as ffjs from 'ffjavascript'
 import * as circomlib from 'circomlib'
 import createBlakeHash from 'blake-hash'
@@ -106,7 +106,9 @@ export class Point {
   }
 
   toHex(): string {
-    return hexify(this.encode(), 32)
+    const encoded = this.encode()
+    if (encoded.length !== 32) throw new Error('Expected 32 bytes')
+    return encoded.toString('hex')
   }
 
   toBigIntArr(): bigint[] {

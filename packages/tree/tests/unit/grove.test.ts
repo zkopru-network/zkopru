@@ -2,7 +2,8 @@
 
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
-import { DB, SQLiteConnector, schema } from '~database/node'
+import SparseTree from 'simple-smt'
+import { DB, SQLiteConnector, schema, enableTreeCache } from '~database/node'
 import { Fp } from '~babyjubjub'
 import { Grove, poseidonHasher, keccakHasher, Leaf } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
@@ -145,17 +146,17 @@ describe('grove full sync grove()', () => {
       const { withdrawalTree } = fullSyncGrove
       const bootstrapData = {
         utxoStartingLeafProof: {
-          ...utxoTree.getStartingLeafProof(),
+          ...(await utxoTree.getStartingLeafProof()),
           leaf: Fp.zero,
         },
         withdrawalStartingLeafProof: {
-          ...withdrawalTree.getStartingLeafProof(),
+          ...(await withdrawalTree.getStartingLeafProof()),
           leaf: toBN(0),
         },
       }
 
-      const mockup = await SQLiteConnector.create(schema, ':memory:')
-      lightSyncGrove = new Grove(mockup, {
+      const testDB = await SQLiteConnector.create(schema, ':memory:')
+      lightSyncGrove = new Grove(testDB, {
         utxoTreeDepth: 31,
         withdrawalTreeDepth: 31,
         utxoSubTreeSize: 32,
@@ -190,6 +191,76 @@ describe('grove full sync grove()', () => {
           .eq(fullSyncGrove.withdrawalTree.latestLeafIndex()),
       ).toBe(true)
       await mockup.close()
+    })
+  })
+  describe('merkle proof', () => {
+    it('should generate valid merkle proof', async () => {
+      const depth = 31
+      const { parentOf, preHash } = keccakHasher(depth)
+      const testTree = new SparseTree<BN>({
+        depth: depth + 1,
+        rightToLeft: true,
+        hashFn: (item1, item2) => {
+          const hash = parentOf(item1, item2)
+          return hash
+        },
+        preHashFn: (_, level) => {
+          return preHash[depth - level]
+        },
+      })
+      const testDB = await SQLiteConnector.create(schema, ':memory:')
+      const testGrove = new Grove(testDB, {
+        utxoTreeDepth: 31,
+        withdrawalTreeDepth: 31,
+        utxoSubTreeSize: 32,
+        withdrawalSubTreeSize: 32,
+        nullifierTreeDepth: 254,
+        utxoHasher: poseidonHasher(31),
+        withdrawalHasher: keccakHasher(31),
+        nullifierHasher: keccakHasher(254),
+        fullSync: true,
+        forceUpdate: !false,
+        zkAddressesToObserve: [accounts.alice.zkAddress],
+        addressesToObserve: [address.USER_A],
+      })
+      await testGrove.init()
+      const withdrawals = [] as any[]
+      for (let x = 1; x < 7; x += 1) {
+        const hash = new BN(`${x}`)
+        const withdrawalHash = new BN(`${x * 100}`)
+        const withdrawal = {
+          hash: hash.toString(10),
+          withdrawalHash: withdrawalHash.toString(10),
+          eth: '0',
+          tokenAddr: '0',
+          erc20Amount: '0',
+          nft: '0',
+          to: '0',
+          fee: '0',
+        }
+        await testDB.create('Withdrawal', withdrawal)
+        withdrawals.push(withdrawal)
+      }
+      testTree.appendMany(withdrawals.map(w => Fp.from(w.withdrawalHash)))
+      enableTreeCache()
+      const fill = Array(32 - withdrawals.length)
+        .fill(null)
+        .map(() => ({ hash: new BN('0') }))
+      await testDB.transaction(async db => {
+        await testGrove.withdrawalTree.append(
+          [
+            ...withdrawals.map(w => ({ hash: new BN(w.withdrawalHash) })),
+            ...fill,
+          ],
+          db,
+        )
+        for (let x = 0; x < withdrawals.length; x += 1) {
+          await testGrove.withdrawalMerkleProof(
+            withdrawals[x].withdrawalHash,
+            new BN(x),
+          )
+        }
+      })
     })
   })
 })

@@ -26,6 +26,7 @@ import {
   upsertSql,
 } from '../helpers/sql'
 import { loadIncluded } from '../helpers/shared'
+import { execAndCallback } from '../helpers/callbacks'
 
 export class SQLiteConnector extends DB {
   db: any // Database<sqlite3.Database, sqlite3.Statement>
@@ -36,7 +37,7 @@ export class SQLiteConnector extends DB {
 
   schema: Schema = {}
 
-  lock = new AsyncLock()
+  lock = new AsyncLock({ maxPending: 100000 })
 
   constructor(config: any /* ISqlite.Config */) {
     super()
@@ -216,17 +217,23 @@ export class SQLiteConnector extends DB {
     return changes || 0
   }
 
-  async transaction(operation: (db: TransactionDB) => void) {
-    return this.lock.acquire('write', async () => this._transaction(operation))
+  async transaction(operation: (db: TransactionDB) => void, cb?: () => void) {
+    return this.lock.acquire('write', async () =>
+      this._transaction(operation, cb),
+    )
   }
 
   // Allow only updates, upserts, deletes, and creates
-  private async _transaction(operation: (db: TransactionDB) => void) {
+  private async _transaction(
+    operation: (db: TransactionDB) => void,
+    onComplete?: () => void,
+  ) {
     if (typeof operation !== 'function') throw new Error('Invalid operation')
     const sqlOperations = [] as string[]
     const onCommitCallbacks = [] as Function[]
     const onErrorCallbacks = [] as Function[]
     const onCompleteCallbacks = [] as Function[]
+    if (onComplete) onCompleteCallbacks.push(onComplete)
     const transactionDB = {
       create: (collection: string, _doc: any) => {
         const table = this.schema[collection]
@@ -270,24 +277,25 @@ export class SQLiteConnector extends DB {
         onCompleteCallbacks.push(cb)
       },
     }
-    await Promise.resolve(operation(transactionDB))
-    // now apply the transaction
-    const transactionSql = `BEGIN TRANSACTION;
-    ${sqlOperations.join('\n')}
-    COMMIT;`
-    try {
-      await this.db.exec(transactionSql)
-      for (const cb of [...onCommitCallbacks, ...onCompleteCallbacks]) {
-        cb()
-      }
-    } catch (err) {
-      console.log('SQL error', transactionSql)
-      await this.db.exec('ROLLBACK;')
-      for (const cb of [...onErrorCallbacks, ...onCompleteCallbacks]) {
-        cb()
-      }
-      throw err
-    }
+    await execAndCallback(
+      async function(this: any) {
+        await Promise.resolve(operation(transactionDB))
+        try {
+          const transactionSql = `BEGIN TRANSACTION;
+        ${sqlOperations.join('\n')}
+        COMMIT;`
+          await this.db.exec(transactionSql)
+        } catch (err) {
+          await this.db.exec('ROLLBACK;')
+          throw err
+        }
+      }.bind(this),
+      {
+        onSuccess: onCommitCallbacks,
+        onError: onErrorCallbacks,
+        onComplete: onCompleteCallbacks,
+      },
+    )
   }
 
   async close() {

@@ -16,6 +16,7 @@ import {
 } from '../types'
 import { validateDocuments, matchDocument } from '../helpers/memory'
 import { loadIncluded } from '../helpers/shared'
+import { execAndCallback } from '../helpers/callbacks'
 
 const DB_NAME = 'zkopru'
 
@@ -24,7 +25,7 @@ export class IndexedDBConnector extends DB {
 
   schema: Schema = {}
 
-  lock = new AsyncLock()
+  lock = new AsyncLock({ maxPending: 100000 })
 
   constructor(schema: Schema) {
     super()
@@ -342,11 +343,16 @@ export class IndexedDBConnector extends DB {
     return items.length
   }
 
-  async transaction(operation: (db: TransactionDB) => void) {
-    return this.lock.acquire('write', async () => this._transaction(operation))
+  async transaction(operation: (db: TransactionDB) => void, cb?: () => void) {
+    return this.lock.acquire('write', async () =>
+      this._transaction(operation, cb),
+    )
   }
 
-  async _transaction(operation: (db: TransactionDB) => void | Promise<void>) {
+  async _transaction(
+    operation: (db: TransactionDB) => void | Promise<void>,
+    onComplete?: () => void,
+  ) {
     if (!this.db) throw new Error('DB is not initialized')
     // create an array of stores that the operation will mutate
     const stores = [] as string[]
@@ -360,6 +366,7 @@ export class IndexedDBConnector extends DB {
     const onCommitCallbacks = [] as Function[]
     const onErrorCallbacks = [] as Function[]
     const onCompleteCallbacks = [] as Function[]
+    if (onComplete) onCompleteCallbacks.push(onComplete)
     const db = {
       delete: (collection: string, options: DeleteManyOptions) => {
         stores.push(collection)
@@ -393,35 +400,35 @@ export class IndexedDBConnector extends DB {
         onCompleteCallbacks.push(cb)
       },
     } as TransactionDB
-    // Call the `operation` function to get a list of the stores that are going
-    // to be accessed. Once that is done create the transaction and call the
-    // start function to begin executing the transaction operations
-    await Promise.resolve(operation(db))
-    // no operations to commit
-    if (!stores.length) return (start as Function)()
-    // get a unique list of stores
-    const storeNames = {}
-    const storesUnique = stores.filter(store => {
-      if (storeNames[store]) return false
-      storeNames[store] = true
-      return true
-    })
-    tx = this.db.transaction(storesUnique, 'readwrite')
-    // explicitly cast the start function because TS cannot determine that it's
-    // set above. The body of a promise is executed sychronously so start will
-    // be assigned at this point
-    try {
-      ;(start as Function)()
-      await Promise.all([promise, tx.done])
-      for (const cb of [...onCommitCallbacks, ...onCompleteCallbacks]) {
-        cb()
-      }
-    } catch (err) {
-      for (const cb of [...onErrorCallbacks, ...onCompleteCallbacks]) {
-        cb()
-      }
-      throw err
-    }
+    await execAndCallback(
+      async function(this: any) {
+        // Call the `operation` function to get a list of the stores that are going
+        // to be accessed. Once that is done create the transaction and call the
+        // start function to begin executing the transaction operations
+        await Promise.resolve(operation(db))
+        if (!stores.length) {
+          ;(start as Function)()
+          return
+        }
+        const storeNames = {}
+        const storesUnique = stores.filter(store => {
+          if (storeNames[store]) return false
+          storeNames[store] = true
+          return true
+        })
+        tx = this.db.transaction(storesUnique, 'readwrite')
+        // explicitly cast the start function because TS cannot determine that it's
+        // set above. The body of a promise is executed sychronously so start will
+        // be assigned at this point
+        ;(start as Function)()
+        await Promise.all([promise, tx.done])
+      }.bind(this),
+      {
+        onError: onErrorCallbacks,
+        onSuccess: onCommitCallbacks,
+        onComplete: onCompleteCallbacks,
+      },
+    )
   }
 
   async close() {

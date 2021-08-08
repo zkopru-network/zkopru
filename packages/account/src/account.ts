@@ -9,23 +9,25 @@ import {
   verifyEdDSA,
 } from '@zkopru/babyjubjub'
 import { Keystore } from '@zkopru/database'
-import { hexify } from '@zkopru/utils'
 import createKeccak from 'keccak'
 import assert from 'assert'
 import { ZkViewer } from './viewer'
 
 export class ZkAccount extends ZkViewer {
-  private privateKey: Buffer | string // ECDSA private key
+  private privateKey: string // ECDSA private key
 
   ethAddress: string
 
   ethAccount: Account
 
-  constructor(privateKey: Buffer | string) {
+  constructor(_privateKey: Buffer | string) {
     const web3 = new Web3()
-    const ethAccount = web3.eth.accounts.privateKeyToAccount(
-      hexify(privateKey, 32),
-    )
+    const privateKey =
+      typeof _privateKey === 'string'
+        ? _privateKey
+        : _privateKey.toString('hex')
+
+    const ethAccount = web3.eth.accounts.privateKeyToAccount(privateKey)
 
     const A = Point.fromPrivKey(privateKey)
     // https://github.com/zkopru-network/zkopru/issues/34#issuecomment-666988505
@@ -64,7 +66,7 @@ export class ZkAccount extends ZkViewer {
   toAddAccount(): AddAccount {
     return {
       address: this.ethAddress,
-      privateKey: hexify(this.privateKey, 32),
+      privateKey: this.privateKey,
     }
   }
 

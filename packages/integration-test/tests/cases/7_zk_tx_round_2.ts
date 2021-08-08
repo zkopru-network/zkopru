@@ -58,6 +58,7 @@ export const buildZkTxBobWithdrawEth = async (
   const bobWallet = wallets.bob
   const { bob } = accounts
   const bobPrevBalance = (await bobWallet.getSpendableAmount(bob)).eth
+  const bobPrevLocked = await bobWallet.getLockedAmount(bob)
   const bobSpendables: Utxo[] = await bobWallet.getSpendables(bob)
   const bobRawTx = TxBuilder.from(bob.zkAddress)
     .provide(...bobSpendables.map(note => Utxo.from(note)))
@@ -78,7 +79,9 @@ export const buildZkTxBobWithdrawEth = async (
   const bobNewBalance = (await bobWallet.getSpendableAmount(bob)).eth
   const bobLockedAmount = (await bobWallet.getLockedAmount(bob)).eth
   // expect(response.status).toStrictEqual(200)
-  expect(bobNewBalance.add(bobLockedAmount)).toBe(bobPrevBalance)
+  expect(bobNewBalance.add(bobLockedAmount)).toBe(
+    bobPrevBalance.add(bobPrevLocked.eth),
+  )
   return bobWithdrawal
 }
 
@@ -90,6 +93,9 @@ export const buildZkTxCarlWithdrawErc20 = async (
   const { carl } = accounts
   const tokenAddr = tokens.erc20.address
   const carlPrevBalance = (await carlWallet.getSpendableAmount(carl)).getERC20(
+    tokenAddr,
+  )
+  const carlPrevLocked = (await carlWallet.getLockedAmount(carl)).getERC20(
     tokenAddr,
   )
   const carlSpendables: Utxo[] = await carlWallet.getSpendables(carl)
@@ -118,7 +124,9 @@ export const buildZkTxCarlWithdrawErc20 = async (
     tokenAddr,
   )
   // expect(response.status).toStrictEqual(200)
-  expect(carlNewBalance.add(carlLockedAmount)).toBe(carlPrevBalance)
+  expect(carlNewBalance.add(carlLockedAmount)).toBe(
+    carlPrevBalance.add(carlPrevLocked),
+  )
   return carlWithdrawal
 }
 

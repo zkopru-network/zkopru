@@ -7,13 +7,13 @@ import { FullNode } from '@zkopru/core'
 import Zkopru from '../src'
 import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
-import { sleep } from '~utils'
+import { sleep, trimHexToLength } from '~utils'
 import { readFromContainer, pullOrBuildAndGetContainer } from '~utils-docker'
 import { DB, SQLiteConnector, schema } from '~database-node'
 
 describe('rPC tests', () => {
   const accounts: ZkAccount[] = [
-    new ZkAccount(Buffer.from('sample private key')),
+    new ZkAccount(trimHexToLength(Buffer.from('sample private key'), 64)),
   ]
   let address
   let container: Container

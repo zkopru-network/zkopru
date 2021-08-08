@@ -349,7 +349,7 @@ export class Grove {
     index?: BN,
   ): Promise<MerkleProof<BN>> {
     const withdrawal = await this.db.findOne('Withdrawal', {
-      where: { hash: noteHash.toString(10) },
+      where: { withdrawalHash: noteHash.toString(10) },
     })
     if (!withdrawal) throw Error('Failed to find the withdrawal')
     const leafIndex = index?.toString() || withdrawal.index
@@ -377,7 +377,7 @@ export class Grove {
     const proof = {
       root,
       index: toBN(leafIndex),
-      leaf: toBN(withdrawal.withdrawalHash),
+      leaf: noteHash,
       siblings,
     }
     const isValid = verifyProof(this.config.withdrawalHasher, proof)

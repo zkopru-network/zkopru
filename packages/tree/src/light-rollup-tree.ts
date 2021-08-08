@@ -10,7 +10,6 @@ import {
   TreeSpecies,
   getCachedSiblings,
   cacheTreeNode,
-  clearTreeCache,
   TransactionDB,
 } from '@zkopru/database'
 import { Hasher } from './hasher'
@@ -192,25 +191,27 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     })
   }
 
-  getStartingLeafProof(): {
+  async getStartingLeafProof(): Promise<{
     root: T
     index: T
     siblings: T[]
-  } {
-    const index = this.latestLeafIndex()
-    const siblings: T[] = [...this.data.siblings]
-    let path: BN = index
-    for (let i = 0; i < this.depth; i += 1) {
-      if (path.isEven()) {
-        siblings[i] = this.config.hasher.preHash[i]
+  }> {
+    return this.lock.acquire('root', async () => {
+      const index = this.latestLeafIndex()
+      const siblings: T[] = [...this.data.siblings]
+      let path: BN = index
+      for (let i = 0; i < this.depth; i += 1) {
+        if (path.isEven()) {
+          siblings[i] = this.config.hasher.preHash[i]
+        }
+        path = path.shrn(1)
       }
-      path = path.shrn(1)
-    }
-    return {
-      root: this.root(),
-      index,
-      siblings,
-    }
+      return {
+        root: this.root(),
+        index,
+        siblings,
+      }
+    })
   }
 
   private async _merkleProof({
@@ -390,6 +391,15 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     }
     const end: T = start.addn(leaves.length) as T
     // update the latest siblings
+    const backupData = { ...this.data }
+    const backupMetadata = { ...this.metadata }
+    db.onError(async () => {
+      await this.lock.acquire('root', () => {
+        // be careful of deep properties that are not copied
+        this.data = backupData
+        this.metadata = backupMetadata
+      })
+    })
     this.data = {
       root,
       index: end,
@@ -446,7 +456,6 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
         },
       })
     }
-    db.onComplete(() => clearTreeCache())
     return {
       root,
       index: end,

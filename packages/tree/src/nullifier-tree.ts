@@ -10,7 +10,6 @@ import {
   NULLIFIER_TREE_ID,
   getCachedSiblings,
   cacheTreeNode,
-  clearTreeCache,
   TransactionDB,
 } from '@zkopru/database'
 import { Hasher, genesisRoot } from './hasher'
@@ -270,9 +269,14 @@ export class NullifierTree implements SMT<BN> {
         },
       })
     }
-    db.onComplete(() => clearTreeCache())
     const newRoot = updatedNodes[hexify(new BN(1))]
     logger.trace(`setting new root - ${newRoot}`)
+    const oldRoot = new BN(this.rootNode)
+    db.onError(async () => {
+      await this.lock.acquire('root', () => {
+        this.rootNode = oldRoot
+      })
+    })
     this.rootNode = newRoot
     return this.rootNode
   }

@@ -21,6 +21,7 @@ export const buildZkTxAliceSendEthToBob = async (
 
   const alicePrevBalance = await aliceWallet.getSpendableAmount(alice)
   const aliceSpendables: Utxo[] = await aliceWallet.getSpendables(alice)
+  const alicePrevLocked = await aliceWallet.getLockedAmount(alice)
   const aliceRawTx = TxBuilder.from(alice.zkAddress)
     .provide(...aliceSpendables.map(note => Utxo.from(note)))
     .weiPerByte(toWei('100000', 'gwei'))
@@ -35,7 +36,7 @@ export const buildZkTxAliceSendEthToBob = async (
   const aliceNewBalance = await aliceWallet.getSpendableAmount(alice)
   const aliceLockedAmount = await aliceWallet.getLockedAmount(alice)
   expect(aliceNewBalance.eth.add(aliceLockedAmount.eth)).toBe(
-    alicePrevBalance.eth,
+    alicePrevBalance.eth.add(alicePrevLocked.eth),
   )
   // const aliceResponse = await aliceWallet.sendLayer2Tx(aliceZkTx)
   // expect(aliceResponse.status).toStrictEqual(200)
@@ -51,6 +52,9 @@ export const buildZkTxBobSendERC20ToCarl = async (
   const { carl } = accounts
   const tokenAddr = tokens.erc20.address
   const bobPrevBalance = (await bobWallet.getSpendableAmount(bob)).getERC20(
+    tokenAddr,
+  )
+  const bobPrevLocked = (await bobWallet.getLockedAmount(bob)).getERC20(
     tokenAddr,
   )
   const bobSpendables: Utxo[] = await bobWallet.getSpendables(bob)
@@ -75,7 +79,9 @@ export const buildZkTxBobSendERC20ToCarl = async (
     tokenAddr,
   )
   // expect(response.status).toStrictEqual(200)
-  expect(bobNewBalance.add(bobLockedAmount)).toBe(bobPrevBalance)
+  expect(bobNewBalance.add(bobLockedAmount)).toBe(
+    bobPrevBalance.add(bobPrevLocked),
+  )
   return bobZkTx
 }
 
