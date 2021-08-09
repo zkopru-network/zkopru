@@ -30,7 +30,7 @@ describe('rPC tests', () => {
     // It may take about few minutes. If you want to skip building image,
     // run `yarn pull:images` on the root directory
     container = await pullOrBuildAndGetContainer({
-      compose: [__dirname, '../../../dockerfiles'],
+      compose: [__dirname, '../../../compose'],
       service: 'contracts',
     })
     await container.start()

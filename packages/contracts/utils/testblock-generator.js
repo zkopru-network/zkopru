@@ -381,11 +381,11 @@ async function finishSetup({ accounts, contract, wallets, coordinator }) {
 
 async function getContainers() {
   const layer1Container = await pullAndGetContainer({
-    compose: [__dirname, "../../../dockerfiles"],
+    compose: [__dirname, "../../../compose"],
     service: "contracts-for-integration-test"
   });
   const circuitArtifactContainer = await pullAndGetContainer({
-    compose: [__dirname, "../../../dockerfiles"],
+    compose: [__dirname, "../../../compose"],
     service: "circuits"
   });
   return { layer1Container, circuitArtifactContainer };

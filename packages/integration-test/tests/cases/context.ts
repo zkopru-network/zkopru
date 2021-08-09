@@ -87,11 +87,11 @@ async function getContainers(): Promise<{
   circuitArtifactContainer: Container
 }> {
   const layer1Container = await pullAndGetContainer({
-    compose: [__dirname, '../../../../dockerfiles'],
+    compose: [__dirname, '../../../../compose'],
     service: 'contracts-for-integration-test',
   })
   const circuitArtifactContainer = await pullAndGetContainer({
-    compose: [__dirname, '../../../../dockerfiles'],
+    compose: [__dirname, '../../../../compose'],
     service: 'circuits',
   })
   return { layer1Container, circuitArtifactContainer }

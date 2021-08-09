@@ -8,7 +8,7 @@ async function loadArtifacts(build?: boolean) {
   // run `yarn pull:images` on the root directory
   const loader = build ? utils.buildAndGetContainer : utils.pullAndGetContainer
   const container = await loader({
-    compose: [__dirname, '../../../dockerfiles'],
+    compose: [__dirname, '../../../compose'],
     service: 'circuits',
   })
   const nIn = [1, 2, 3, 4]

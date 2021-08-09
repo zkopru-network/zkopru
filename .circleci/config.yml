@@ -75,7 +75,7 @@ jobs:
       - run:
           name: Coordinator Tests
           command: |
-            docker-compose -f dockerfiles/docker-compose.yml build contracts
+            docker-compose -f compose/docker-compose.yml build contracts
             yarn test --scope=@zkopru/coordinator
   test_contracts:
     machine:

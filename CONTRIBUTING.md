@@ -182,7 +182,7 @@ Or you can test specific package by just going into the sub package and running 
 
 Currently, Zkopru is using prebuilt docker images for local testing to reduce the SNARK circuit building time consumption. Therefore, if you're trying to make any changes on smart contract or circuits you need to follow this steps.
 
-1. Go to `dockerfiles/docker-compose.yml`.
+1. Go to `compose/docker-compose.yml`.
 2. Modify the tag of the service what you want to make some modifications. Tag name convention is the branch name with issue number just like `feat-6`, `refactor-913`.
 3. And then run `yarn images build <service_name>` on the root directory. If you make changes on the 'circuit' image, this command will take about a day on common laptops.
 4. After you built the image, run `yarn test` in the sub package directory or in the root directory.
@@ -219,7 +219,7 @@ Currently, Zkopru is using prebuilt docker images for local testing to reduce th
 
     ```shell
     yarn images build
-    docker-compose -f dockerfiles/docker-compose.yml push
+    docker-compose -f compose/docker-compose.yml push
     ```
 
 ### How to make changes of the prisma package
