@@ -6,7 +6,7 @@ async function loadArtifacts() {
   // It may take about an hour. If you want to skip building image,
   // run `yarn pull:images` on the root directory
   const container = await utils.pullOrBuildAndGetContainer({
-    compose: [__dirname, '../../../dockerfiles'],
+    compose: [__dirname, '../../../compose'],
     service: 'circuits',
   })
   const ptauDir = path.join(path.dirname(__filename), '../build/ptau')
