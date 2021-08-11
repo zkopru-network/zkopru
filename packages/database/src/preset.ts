@@ -15,7 +15,7 @@ export class TreeCache {
   cachedTreeNodes = {} as { [key: string]: any }
 
   cacheNode(treeId: string, nodeIndex: string, node: any) {
-    if (this.enabled) return
+    if (!this.enabled) return
     this.cachedTreeNodes[`${treeId}-${nodeIndex}`] = node
   }
 
