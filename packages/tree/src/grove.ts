@@ -10,8 +10,8 @@ import {
   TreeSpecies,
   LightTree,
   TreeNode,
-  getCachedSiblings,
   TransactionDB,
+  TreeCache,
 } from '@zkopru/database'
 import { ZkAddress } from '@zkopru/transaction'
 import { Hasher, genesisRoot } from './hasher'
@@ -64,10 +64,13 @@ export class Grove {
 
   nullifierTree?: NullifierTree
 
+  treeCache: TreeCache
+
   constructor(db: DB, config: GroveConfig) {
     this.lock = new AsyncLock()
     this.config = config
     this.db = db
+    this.treeCache = new TreeCache()
   }
 
   async applyBootstrap({
@@ -105,11 +108,16 @@ export class Grove {
       }
       assert(utxoTreeData)
 
-      this.utxoTree = UtxoTree.from(this.db, utxoTreeData, {
-        hasher: this.config.utxoHasher,
-        forceUpdate: this.config.forceUpdate,
-        fullSync: this.config.fullSync,
-      })
+      this.utxoTree = UtxoTree.from(
+        this.db,
+        utxoTreeData,
+        {
+          hasher: this.config.utxoHasher,
+          forceUpdate: this.config.forceUpdate,
+          fullSync: this.config.fullSync,
+        },
+        this.treeCache,
+      )
 
       let withdrawalTreeData = await this.db.findOne('LightTree', {
         where: { species: TreeSpecies.WITHDRAWAL },
@@ -122,16 +130,22 @@ export class Grove {
       }
       assert(withdrawalTreeData)
 
-      this.withdrawalTree = WithdrawalTree.from(this.db, withdrawalTreeData, {
-        hasher: this.config.withdrawalHasher,
-        forceUpdate: this.config.forceUpdate,
-        fullSync: this.config.fullSync,
-      })
+      this.withdrawalTree = WithdrawalTree.from(
+        this.db,
+        withdrawalTreeData,
+        {
+          hasher: this.config.withdrawalHasher,
+          forceUpdate: this.config.forceUpdate,
+          fullSync: this.config.fullSync,
+        },
+        this.treeCache,
+      )
 
       this.nullifierTree = new NullifierTree({
         db: this.db,
         hasher: this.config.nullifierHasher,
         depth: this.config.nullifierTreeDepth,
+        treeCache: this.treeCache,
       })
     })
   }
@@ -314,7 +328,7 @@ export class Grove {
     if (!utxo) throw Error('Failed to find the utxo')
     if (!utxo.index) throw Error('It is not included in a block yet')
 
-    const cachedSiblings = await getCachedSiblings(
+    const cachedSiblings = await this.treeCache.getCachedSiblings(
       this.db,
       this.config.utxoTreeDepth,
       this.utxoTree.metadata.id,
@@ -355,7 +369,7 @@ export class Grove {
     const leafIndex = index?.toString() || withdrawal.index
     if (!leafIndex) throw Error('It is not included in a block yet')
 
-    const cachedSiblings = await getCachedSiblings(
+    const cachedSiblings = await this.treeCache.getCachedSiblings(
       this.db,
       this.config.withdrawalTreeDepth,
       this.withdrawalTree.metadata.id,
@@ -423,11 +437,16 @@ export class Grove {
         species: TreeSpecies.UTXO,
       },
     })
-    const tree = UtxoTree.from(this.db, treeSql, {
-      hasher: this.config.utxoHasher,
-      forceUpdate: this.config.forceUpdate,
-      fullSync: this.config.fullSync,
-    })
+    const tree = UtxoTree.from(
+      this.db,
+      treeSql,
+      {
+        hasher: this.config.utxoHasher,
+        forceUpdate: this.config.forceUpdate,
+        fullSync: this.config.fullSync,
+      },
+      this.treeCache,
+    )
     return { treeSql, tree }
   }
 
@@ -470,11 +489,16 @@ export class Grove {
         species: TreeSpecies.WITHDRAWAL,
       },
     })
-    const tree = WithdrawalTree.from(this.db, treeSql, {
-      hasher: this.config.withdrawalHasher,
-      forceUpdate: this.config.forceUpdate,
-      fullSync: this.config.fullSync,
-    })
+    const tree = WithdrawalTree.from(
+      this.db,
+      treeSql,
+      {
+        hasher: this.config.withdrawalHasher,
+        forceUpdate: this.config.forceUpdate,
+        fullSync: this.config.fullSync,
+      },
+      this.treeCache,
+    )
     return { treeSql, tree }
   }
 }

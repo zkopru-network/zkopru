@@ -3,6 +3,7 @@ import {
   SQLiteMemoryConnector,
   TreeSpecies,
   schema,
+  TreeCache,
 } from '@zkopru/database/dist/node'
 import { Fp } from '@zkopru/babyjubjub'
 import { v4 } from 'uuid'
@@ -32,11 +33,13 @@ export default async function sample(
     siblings: preHashes.slice(0, -1),
   }
   const mockupDB = await SQLiteMemoryConnector.create(schema)
+  const treeCache = new TreeCache()
   const utxoTree = new UtxoTree({
     db: mockupDB,
     metadata: utxoTreeMetadata,
     data: utxoTreeInitialData,
     config: utxoTreeConfig,
+    treeCache,
   })
   await utxoTree.init()
   return {

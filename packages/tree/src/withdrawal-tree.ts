@@ -1,4 +1,4 @@
-import { DB, LightTree, TreeSpecies } from '@zkopru/database'
+import { DB, LightTree, TreeSpecies, TreeCache } from '@zkopru/database'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import {
@@ -18,6 +18,7 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
     metadata: TreeMetadata<BN>
     data: TreeData<BN>
     config: TreeConfig<BN>
+    treeCache: TreeCache
   }) {
     super({ ...conf, species: TreeSpecies.WITHDRAWAL })
   }
@@ -45,11 +46,13 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
     metadata,
     data,
     config,
+    treeCache,
   }: {
     db: DB
     metadata: TreeMetadata<BN>
     data: TreeData<BN>
     config: TreeConfig<BN>
+    treeCache: TreeCache
   }): Promise<WithdrawalTree> {
     const initialData = await LightRollUpTree.initTreeFromDatabase({
       db,
@@ -58,10 +61,15 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
       data,
       config,
     })
-    return new WithdrawalTree({ ...initialData })
+    return new WithdrawalTree({ ...initialData, treeCache })
   }
 
-  static from(db: DB, obj: LightTree, config: TreeConfig<BN>): WithdrawalTree {
+  static from(
+    db: DB,
+    obj: LightTree,
+    config: TreeConfig<BN>,
+    treeCache: TreeCache,
+  ): WithdrawalTree {
     return new WithdrawalTree({
       db,
       metadata: {
@@ -76,6 +84,7 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
         siblings: JSON.parse(obj.siblings).map(toBN),
       },
       config,
+      treeCache,
     })
   }
 }

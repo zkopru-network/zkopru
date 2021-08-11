@@ -8,9 +8,8 @@ import {
   DB,
   TreeNode,
   NULLIFIER_TREE_ID,
-  getCachedSiblings,
-  cacheTreeNode,
   TransactionDB,
+  TreeCache,
 } from '@zkopru/database'
 import { Hasher, genesisRoot } from './hasher'
 import { verifyProof, MerkleProof } from './merkle-proof'
@@ -49,19 +48,24 @@ export class NullifierTree implements SMT<BN> {
 
   private rootNode!: BN
 
+  treeCache: TreeCache
+
   constructor({
     db,
     hasher,
     depth,
+    treeCache,
   }: {
     db: DB
     hasher: Hasher<BN>
     depth: number
+    treeCache: TreeCache
   }) {
     this.lock = new AsyncLock()
     this.db = db
     this.hasher = hasher
     this.depth = depth
+    this.treeCache = treeCache
     if (hasher.preHash.length <= depth)
       throw Error('Hasher should have enough prehashed values')
   }
@@ -191,7 +195,7 @@ export class NullifierTree implements SMT<BN> {
 
   private async getSiblings(index: BN): Promise<BN[]> {
     const { depth } = this
-    const cachedSiblings = await getCachedSiblings(
+    const cachedSiblings = await this.treeCache.getCachedSiblings(
       this.db,
       depth,
       NULLIFIER_TREE_ID,
@@ -251,7 +255,7 @@ export class NullifierTree implements SMT<BN> {
     const { updatedNodes } = await this.dryRun(leaves, option)
     // need batch query here..
     for (const nodeIndex of Object.keys(updatedNodes)) {
-      cacheTreeNode(NULLIFIER_TREE_ID, nodeIndex, {
+      this.treeCache.cacheNode(NULLIFIER_TREE_ID, nodeIndex, {
         treeId: NULLIFIER_TREE_ID,
         nodeIndex,
         value: hexify(updatedNodes[nodeIndex]),

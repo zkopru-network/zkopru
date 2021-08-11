@@ -1,5 +1,5 @@
 import { Fp } from '@zkopru/babyjubjub'
-import { DB, LightTree, TreeSpecies } from '@zkopru/database'
+import { DB, LightTree, TreeSpecies, TreeCache } from '@zkopru/database'
 import { ZkAddress } from '@zkopru/transaction'
 import {
   LightRollUpTree,
@@ -14,6 +14,7 @@ export class UtxoTree extends LightRollUpTree<Fp> {
     metadata: TreeMetadata<Fp>
     data: TreeData<Fp>
     config: TreeConfig<Fp>
+    treeCache: TreeCache
   }) {
     super({ ...conf, species: TreeSpecies.UTXO })
   }
@@ -47,11 +48,13 @@ export class UtxoTree extends LightRollUpTree<Fp> {
     metadata,
     data,
     config,
+    treeCache,
   }: {
     db: DB
     metadata: TreeMetadata<Fp>
     data: TreeData<Fp>
     config: TreeConfig<Fp>
+    treeCache: TreeCache
   }): Promise<UtxoTree> {
     const initialData = await LightRollUpTree.initTreeFromDatabase({
       db,
@@ -60,10 +63,15 @@ export class UtxoTree extends LightRollUpTree<Fp> {
       data,
       config,
     })
-    return new UtxoTree({ ...initialData })
+    return new UtxoTree({ ...initialData, treeCache })
   }
 
-  static from(db: DB, obj: LightTree, config: TreeConfig<Fp>): UtxoTree {
+  static from(
+    db: DB,
+    obj: LightTree,
+    config: TreeConfig<Fp>,
+    treeCache: TreeCache,
+  ): UtxoTree {
     return new UtxoTree({
       db,
       metadata: {
@@ -78,6 +86,7 @@ export class UtxoTree extends LightRollUpTree<Fp> {
         siblings: JSON.parse(obj.siblings).map(sib => Fp.from(sib)),
       },
       config,
+      treeCache,
     })
   }
 }
