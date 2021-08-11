@@ -3,7 +3,7 @@
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import SparseTree from 'simple-smt'
-import { DB, SQLiteConnector, schema, enableTreeCache } from '~database/node'
+import { DB, SQLiteConnector, schema } from '~database/node'
 import { Fp } from '~babyjubjub'
 import { Grove, poseidonHasher, keccakHasher, Leaf } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
@@ -242,7 +242,8 @@ describe('grove full sync grove()', () => {
         withdrawals.push(withdrawal)
       }
       testTree.appendMany(withdrawals.map(w => Fp.from(w.withdrawalHash)))
-      enableTreeCache()
+      testGrove.treeCache.enable()
+      testGrove.treeCache.clear()
       const fill = Array(32 - withdrawals.length)
         .fill(null)
         .map(() => ({ hash: new BN('0') }))

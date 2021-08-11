@@ -3,7 +3,13 @@
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { Fp } from '~babyjubjub'
-import { DB, TreeSpecies, SQLiteConnector, schema } from '~database/node'
+import {
+  DB,
+  TreeSpecies,
+  SQLiteConnector,
+  schema,
+  TreeCache,
+} from '~database/node'
 import {
   WithdrawalTree,
   TreeConfig,
@@ -44,6 +50,7 @@ describe('withdrawal tree unit test', () => {
       metadata: withdrawalTreeMetadata,
       data: withdrawalTreeInitialData,
       config: withdrawalTreeConfig,
+      treeCache: new TreeCache(),
     })
     await withdrawalTree.init()
   })

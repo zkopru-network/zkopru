@@ -3,7 +3,7 @@
 /* eslint-disable jest/no-hooks */
 import { toBN } from 'web3-utils'
 import BN from 'bn.js'
-import { DB, SQLiteConnector, schema } from '~database/node'
+import { DB, SQLiteConnector, schema, TreeCache } from '~database/node'
 import { NullifierTree, keccakHasher, genesisRoot } from '../../src'
 
 describe('nullifier tree unit test', () => {
@@ -17,6 +17,7 @@ describe('nullifier tree unit test', () => {
       db: mockup,
       hasher,
       depth,
+      treeCache: new TreeCache(),
     })
   })
   afterAll(async () => {

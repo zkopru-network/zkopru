@@ -7,7 +7,7 @@ import assert from 'assert'
 import { LightRollUpTree } from '../../src/light-rollup-tree'
 import { genesisRoot, poseidonHasher } from '../../src/hasher'
 import sample from '~tree/sample'
-import { DB } from '~database'
+import { DB, TreeCache } from '~database'
 
 class TestTree extends LightRollUpTree<Fp> {
   // eslint-disable-next-line class-methods-use-this
@@ -43,6 +43,7 @@ describe('rollup tree unit test', () => {
         forceUpdate: true,
         fullSync: true,
       },
+      treeCache: new TreeCache(),
     })
   })
   afterEach(async () => {
