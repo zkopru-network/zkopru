@@ -3,13 +3,13 @@ import {
   SQLiteMemoryConnector,
   TreeSpecies,
   schema,
-  TreeCache,
 } from '@zkopru/database/dist/node'
 import { Fp } from '@zkopru/babyjubjub'
 import { v4 } from 'uuid'
 import { TreeConfig } from './light-rollup-tree'
 import { UtxoTree } from './utxo-tree'
 import { genesisRoot, poseidonHasher } from './hasher'
+import { TreeCache } from './utils'
 
 export default async function sample(
   depth: number,

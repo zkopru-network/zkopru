@@ -1,4 +1,4 @@
-import { DB, LightTree, TreeSpecies, TreeCache } from '@zkopru/database'
+import { DB, LightTree, TreeSpecies } from '@zkopru/database'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import {
@@ -7,6 +7,7 @@ import {
   TreeData,
   TreeConfig,
 } from './light-rollup-tree'
+import { TreeCache } from './utils'
 
 export class WithdrawalTree extends LightRollUpTree<BN> {
   zero = toBN(0)

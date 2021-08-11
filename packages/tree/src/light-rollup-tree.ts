@@ -5,9 +5,10 @@ import AsyncLock from 'async-lock'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { hexify } from '@zkopru/utils'
-import { DB, TreeSpecies, TransactionDB, TreeCache } from '@zkopru/database'
+import { DB, TreeSpecies, TransactionDB } from '@zkopru/database'
 import { Hasher } from './hasher'
 import { MerkleProof, startingLeafProof, verifyProof } from './merkle-proof'
+import { TreeCache } from './utils'
 
 export interface Leaf<T extends Fp | BN> {
   hash: T

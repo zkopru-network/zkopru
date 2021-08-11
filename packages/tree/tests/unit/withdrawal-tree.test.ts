@@ -3,13 +3,7 @@
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { Fp } from '~babyjubjub'
-import {
-  DB,
-  TreeSpecies,
-  SQLiteConnector,
-  schema,
-  TreeCache,
-} from '~database/node'
+import { DB, TreeSpecies, SQLiteConnector, schema } from '~database/node'
 import {
   WithdrawalTree,
   TreeConfig,
@@ -17,6 +11,7 @@ import {
   Leaf,
   genesisRoot,
   verifyProof,
+  TreeCache,
 } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
 import { address } from '~dataset/testset-predefined'

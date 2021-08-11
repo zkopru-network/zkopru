@@ -9,10 +9,10 @@ import {
   TreeNode,
   NULLIFIER_TREE_ID,
   TransactionDB,
-  TreeCache,
 } from '@zkopru/database'
 import { Hasher, genesisRoot } from './hasher'
 import { verifyProof, MerkleProof } from './merkle-proof'
+import { TreeCache } from './utils'
 
 export interface SMT<T extends Fp | BN> {
   depth: number

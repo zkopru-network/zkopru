@@ -1,5 +1,5 @@
 import { Fp } from '@zkopru/babyjubjub'
-import { DB, LightTree, TreeSpecies, TreeCache } from '@zkopru/database'
+import { DB, LightTree, TreeSpecies } from '@zkopru/database'
 import { ZkAddress } from '@zkopru/transaction'
 import {
   LightRollUpTree,
@@ -7,6 +7,7 @@ import {
   TreeData,
   TreeConfig,
 } from './light-rollup-tree'
+import { TreeCache } from './utils'
 
 export class UtxoTree extends LightRollUpTree<Fp> {
   constructor(conf: {

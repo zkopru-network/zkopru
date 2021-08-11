@@ -7,7 +7,8 @@ import assert from 'assert'
 import { LightRollUpTree } from '../../src/light-rollup-tree'
 import { genesisRoot, poseidonHasher } from '../../src/hasher'
 import sample from '~tree/sample'
-import { DB, TreeCache } from '~database'
+import { DB } from '~database'
+import { TreeCache } from '../../src/utils'
 
 class TestTree extends LightRollUpTree<Fp> {
   // eslint-disable-next-line class-methods-use-this

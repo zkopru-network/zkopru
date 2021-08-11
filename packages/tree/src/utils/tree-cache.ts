@@ -1,8 +1,7 @@
 import BN from 'bn.js'
 import { Fp, F } from '@zkopru/babyjubjub'
 import { hexify } from '@zkopru/utils'
-import { TreeNode } from './schema.types'
-import { DB } from './types'
+import { DB, TreeNode } from '@zkopru/database'
 
 // An in memory cache for loading tree indexes in a database transaction
 //

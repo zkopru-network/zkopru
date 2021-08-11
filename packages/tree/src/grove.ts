@@ -11,7 +11,6 @@ import {
   LightTree,
   TreeNode,
   TransactionDB,
-  TreeCache,
 } from '@zkopru/database'
 import { ZkAddress } from '@zkopru/transaction'
 import { Hasher, genesisRoot } from './hasher'
@@ -20,6 +19,7 @@ import { Leaf } from './light-rollup-tree'
 import { UtxoTree } from './utxo-tree'
 import { WithdrawalTree } from './withdrawal-tree'
 import { NullifierTree } from './nullifier-tree'
+import { TreeCache } from './utils'
 
 export interface GroveConfig {
   utxoTreeDepth: number

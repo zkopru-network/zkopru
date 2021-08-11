@@ -3,8 +3,8 @@
 /* eslint-disable jest/no-hooks */
 import { toBN } from 'web3-utils'
 import BN from 'bn.js'
-import { DB, SQLiteConnector, schema, TreeCache } from '~database/node'
-import { NullifierTree, keccakHasher, genesisRoot } from '../../src'
+import { DB, SQLiteConnector, schema } from '~database/node'
+import { TreeCache, NullifierTree, keccakHasher, genesisRoot } from '../../src'
 
 describe('nullifier tree unit test', () => {
   let nullifierTree: NullifierTree
