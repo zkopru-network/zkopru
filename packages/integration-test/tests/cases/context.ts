@@ -63,7 +63,6 @@ export async function terminate(ctx: CtxProvider) {
     wallets,
     provider,
   } = ctx()
-  provider.disconnect(0, 'exit')
   await Promise.all([
     coordinator.stop(),
     wallets.alice.node.stop(),
@@ -71,7 +70,9 @@ export async function terminate(ctx: CtxProvider) {
     wallets.carl.node.stop(),
     wallets.coordinator.node.stop(),
   ])
-  await Promise.all([dbs.map(db => db.close())])
+  await new Promise(r => setTimeout(r, 20000))
+  await Promise.all(dbs.map(db => db.close()))
+  provider.disconnect(0, 'exit')
   await Promise.all([
     await layer1Container.stop(),
     await circuitArtifactContainer.stop(),

@@ -7,6 +7,7 @@ import {
   TreeData,
   TreeConfig,
 } from './light-rollup-tree'
+import { TreeCache } from './utils'
 
 export class WithdrawalTree extends LightRollUpTree<BN> {
   zero = toBN(0)
@@ -18,6 +19,7 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
     metadata: TreeMetadata<BN>
     data: TreeData<BN>
     config: TreeConfig<BN>
+    treeCache: TreeCache
   }) {
     super({ ...conf, species: TreeSpecies.WITHDRAWAL })
   }
@@ -45,11 +47,13 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
     metadata,
     data,
     config,
+    treeCache,
   }: {
     db: DB
     metadata: TreeMetadata<BN>
     data: TreeData<BN>
     config: TreeConfig<BN>
+    treeCache: TreeCache
   }): Promise<WithdrawalTree> {
     const initialData = await LightRollUpTree.initTreeFromDatabase({
       db,
@@ -58,10 +62,15 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
       data,
       config,
     })
-    return new WithdrawalTree({ ...initialData })
+    return new WithdrawalTree({ ...initialData, treeCache })
   }
 
-  static from(db: DB, obj: LightTree, config: TreeConfig<BN>): WithdrawalTree {
+  static from(
+    db: DB,
+    obj: LightTree,
+    config: TreeConfig<BN>,
+    treeCache: TreeCache,
+  ): WithdrawalTree {
     return new WithdrawalTree({
       db,
       metadata: {
@@ -76,6 +85,7 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
         siblings: JSON.parse(obj.siblings).map(toBN),
       },
       config,
+      treeCache,
     })
   }
 }

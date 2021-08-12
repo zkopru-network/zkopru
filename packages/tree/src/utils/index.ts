@@ -33,3 +33,5 @@ export const SMT = {
   merkleProof: smtMerkleProof,
   calculateRoot,
 }
+
+export * from './tree-cache'

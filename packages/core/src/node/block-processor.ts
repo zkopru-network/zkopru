@@ -7,9 +7,6 @@ import {
   Proposal,
   MassDeposit as MassDepositSql,
   TransactionDB,
-  clearTreeCache,
-  enableTreeCache,
-  disableTreeCache,
 } from '@zkopru/database'
 import { logger, Worker } from '@zkopru/utils'
 import assert from 'assert'
@@ -217,8 +214,8 @@ export class BlockProcessor extends EventEmitter {
     const patch = await this.makePatch(parent, block)
     await this.db.transaction(
       async db => {
-        enableTreeCache()
-        clearTreeCache()
+        this.layer2.grove.treeCache.enable()
+        this.layer2.grove.treeCache.clear()
         this.saveTransactions(block, db)
         await this.decryptMyUtxos(
           block.body.txs,
@@ -242,8 +239,8 @@ export class BlockProcessor extends EventEmitter {
         })
       },
       () => {
-        disableTreeCache()
-        clearTreeCache()
+        this.layer2.grove.treeCache.disable()
+        this.layer2.grove.treeCache.clear()
       },
     )
     // TODO remove proposal data if it completes verification or if the block is finalized

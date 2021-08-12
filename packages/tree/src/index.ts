@@ -28,4 +28,4 @@ export {
   GroveSnapshot as DryPatchResult,
 } from './grove'
 
-export { MerkleTreeLib, SubTreeLib, SMT } from './utils'
+export { TreeCache, MerkleTreeLib, SubTreeLib, SMT } from './utils'

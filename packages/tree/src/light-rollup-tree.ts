@@ -5,15 +5,10 @@ import AsyncLock from 'async-lock'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { hexify } from '@zkopru/utils'
-import {
-  DB,
-  TreeSpecies,
-  getCachedSiblings,
-  cacheTreeNode,
-  TransactionDB,
-} from '@zkopru/database'
+import { DB, TreeSpecies, TransactionDB } from '@zkopru/database'
 import { Hasher } from './hasher'
 import { MerkleProof, startingLeafProof, verifyProof } from './merkle-proof'
+import { TreeCache } from './utils'
 
 export interface Leaf<T extends Fp | BN> {
   hash: T
@@ -57,18 +52,22 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
 
   lock: AsyncLock
 
+  treeCache: TreeCache
+
   constructor({
     db,
     species,
     metadata,
     data,
     config,
+    treeCache,
   }: {
     db: DB
     species: TreeSpecies
     metadata: TreeMetadata<T>
     data: TreeData<T>
     config: TreeConfig<T>
+    treeCache: TreeCache
   }) {
     this.lock = new AsyncLock()
     this.species = species
@@ -77,6 +76,7 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     this.data = data
     this.config = config
     this.depth = data.siblings.length
+    this.treeCache = treeCache
   }
 
   root(): T {
@@ -295,7 +295,7 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
   private async _getCachedSiblings(
     leafIndex: T,
   ): Promise<{ [index: string]: string }> {
-    const cachedSiblings = await getCachedSiblings(
+    const cachedSiblings = await this.treeCache.getCachedSiblings(
       this.db,
       this.depth,
       this.metadata.id,
@@ -436,7 +436,7 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     })
     // update cached nodes
     for (const nodeIndex of Object.keys(cached)) {
-      cacheTreeNode(this.metadata.id, nodeIndex, {
+      this.treeCache.cacheNode(this.metadata.id, nodeIndex, {
         treeId: this.metadata.id,
         nodeIndex,
         value: cached[nodeIndex],

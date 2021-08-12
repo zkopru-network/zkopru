@@ -9,6 +9,7 @@ import { v4 } from 'uuid'
 import { TreeConfig } from './light-rollup-tree'
 import { UtxoTree } from './utxo-tree'
 import { genesisRoot, poseidonHasher } from './hasher'
+import { TreeCache } from './utils'
 
 export default async function sample(
   depth: number,
@@ -32,11 +33,13 @@ export default async function sample(
     siblings: preHashes.slice(0, -1),
   }
   const mockupDB = await SQLiteMemoryConnector.create(schema)
+  const treeCache = new TreeCache()
   const utxoTree = new UtxoTree({
     db: mockupDB,
     metadata: utxoTreeMetadata,
     data: utxoTreeInitialData,
     config: utxoTreeConfig,
+    treeCache,
   })
   await utxoTree.init()
   return {

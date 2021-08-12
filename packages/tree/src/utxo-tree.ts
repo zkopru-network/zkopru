@@ -7,6 +7,7 @@ import {
   TreeData,
   TreeConfig,
 } from './light-rollup-tree'
+import { TreeCache } from './utils'
 
 export class UtxoTree extends LightRollUpTree<Fp> {
   constructor(conf: {
@@ -14,6 +15,7 @@ export class UtxoTree extends LightRollUpTree<Fp> {
     metadata: TreeMetadata<Fp>
     data: TreeData<Fp>
     config: TreeConfig<Fp>
+    treeCache: TreeCache
   }) {
     super({ ...conf, species: TreeSpecies.UTXO })
   }
@@ -47,11 +49,13 @@ export class UtxoTree extends LightRollUpTree<Fp> {
     metadata,
     data,
     config,
+    treeCache,
   }: {
     db: DB
     metadata: TreeMetadata<Fp>
     data: TreeData<Fp>
     config: TreeConfig<Fp>
+    treeCache: TreeCache
   }): Promise<UtxoTree> {
     const initialData = await LightRollUpTree.initTreeFromDatabase({
       db,
@@ -60,10 +64,15 @@ export class UtxoTree extends LightRollUpTree<Fp> {
       data,
       config,
     })
-    return new UtxoTree({ ...initialData })
+    return new UtxoTree({ ...initialData, treeCache })
   }
 
-  static from(db: DB, obj: LightTree, config: TreeConfig<Fp>): UtxoTree {
+  static from(
+    db: DB,
+    obj: LightTree,
+    config: TreeConfig<Fp>,
+    treeCache: TreeCache,
+  ): UtxoTree {
     return new UtxoTree({
       db,
       metadata: {
@@ -78,6 +87,7 @@ export class UtxoTree extends LightRollUpTree<Fp> {
         siblings: JSON.parse(obj.siblings).map(sib => Fp.from(sib)),
       },
       config,
+      treeCache,
     })
   }
 }

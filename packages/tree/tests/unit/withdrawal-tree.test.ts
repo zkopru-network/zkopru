@@ -11,6 +11,7 @@ import {
   Leaf,
   genesisRoot,
   verifyProof,
+  TreeCache,
 } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
 import { address } from '~dataset/testset-predefined'
@@ -44,6 +45,7 @@ describe('withdrawal tree unit test', () => {
       metadata: withdrawalTreeMetadata,
       data: withdrawalTreeInitialData,
       config: withdrawalTreeConfig,
+      treeCache: new TreeCache(),
     })
     await withdrawalTree.init()
   })
