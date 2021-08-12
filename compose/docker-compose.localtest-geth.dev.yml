@@ -2,8 +2,9 @@ version: '3'
 
 services:
   testnet:
+    image: zkopru_testnet_geth:latest
     build:
-      context: ./packages/contracts/
+      context: ../packages/contracts/
       dockerfile: ../../dockerfiles/Contract.geth.dockerfile
     ports:
       - '5000:5000'
@@ -11,8 +12,9 @@ services:
       kompose.service.expose: testnet
     command: sh /proj/run_geth.sh
   coordinator:
+    image: zkopru_node:latest
     build:
-      context: ./
+      context: ../
       dockerfile: ./dockerfiles/Generator.dockerfile
     ports:
       - '8888:8888'
@@ -21,9 +23,10 @@ services:
       - 'testnet'
     labels:
       kompose.service.expose: coordinator
+    volumes:
+      - '../packages:/proj/packages'
     command: >
       bash -c "nc -l -p 5354 &&
-      sleep 10 &&
       node /proj/packages/generator/dist/coordinator.js"
   redis:
     image: redis
@@ -32,32 +35,41 @@ services:
     labels:
       kompose.service.expose: redis
   organizer:
+    image: zkopru_node:latest
     build:
-      context: ./
+      context: ../
       dockerfile: ./dockerfiles/Generator.dockerfile
     ports:
       - '8080:8080'
     depends_on:
       - 'redis'
       - 'coordinator'
+    volumes:
+      - '../packages:/proj/packages'
     labels:
-      kompose.service.expose: organizer 
+      kompose.service.expose: organizer
     command: bash -c "node /proj/packages/generator/dist/organizer.js"
   wallet:
+    image: zkopru_node:latest
     build:
-      context: ./
+      context: ../
       dockerfile: ./dockerfiles/Generator.dockerfile
     depends_on:
       - 'redis'
       - 'organizer'
+    volumes:
+      - '../packages:/proj/packages'
     labels:
       kompose.controller.type: deployment
-    command: > 
+    command: >
       bash -c "sleep 10 && node /proj/packages/generator/dist/wallet.js"
   turner:
+    image: zkopru_node:latest
     build:
-      context: ./
+      context: ../
       dockerfile: ./dockerfiles/Generator.dockerfile
+    volumes:
+      - '../packages:/proj/packages'
     depends_on:
       - 'wallet'
     command: bash -c "sleep 60 && node /proj/packages/generator/dist/blockturner.js"
@@ -68,4 +80,3 @@ networks:
     ipam:
       config:
         - subnet: 172.33.0.0/24
-
