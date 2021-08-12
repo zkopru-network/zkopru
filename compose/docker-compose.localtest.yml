@@ -4,7 +4,7 @@ services:
   testnet:
     image: zkopru_testnet_ganache:latest
     build:
-      context: ./packages/contracts/
+      context: ../packages/contracts/
       dockerfile: ../../dockerfiles/Contract.dockerfile
     ports:
       - '5000:5000'
@@ -12,7 +12,7 @@ services:
   coordinator:
     image: zkopru_node
     build:
-      context: ./
+      context: ../
       dockerfile: ./dockerfiles/Generator.dockerfile
     ports:
       - '8888:8888'
@@ -28,7 +28,7 @@ services:
   organizer:
     image: zkopru_node
     build:
-      context: ./
+      context: ../
       dockerfile: ./dockerfiles/Generator.dockerfile
     links:
       - 'testnet'
@@ -42,7 +42,7 @@ services:
   wallet:
     image: zkopru_node
     build:
-      context: ./
+      context: ../
       dockerfile: ./dockerfiles/Generator.dockerfile
     links:
       - 'testnet'
