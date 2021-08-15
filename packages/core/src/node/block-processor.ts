@@ -359,7 +359,12 @@ export class BlockProcessor extends EventEmitter {
       logger.warn('Multiple outflow owners not supported')
       return
     }
-    if (outflows.length !== tx.outflow.length) {
+    if (
+      outflows.length !==
+      tx.outflow.filter(
+        utxo => utxo.outflowType.toNumber() === OutflowType.UTXO,
+      ).length
+    ) {
       throw new Error('Not all outflows are known')
     }
     const tokenAddress = `0x${decryptedNotes[0].asset.tokenAddr.toString(
