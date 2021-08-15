@@ -92,7 +92,6 @@ export class OrganizerApi {
       const { auctionData } = this.organizerData.layer1
       const indexedRound = Object.keys(auctionData)
 
-      logger.info(` >> bidData ${logAll(data)}`)
       const bidAmount = parseInt(amount, 10)
       const bidData: BidData = {
         bidder,
@@ -142,10 +141,7 @@ export class OrganizerApi {
     const { web3 } = this.context
     const { txData, gasTable } = this.organizerData.layer1 // Initialized by constructor
 
-    const watchTargetContracts = {
-      zkopru: config.zkopruContract,
-      burnAuction: config.auctionContract,
-    }
+    const watchTargetContracts = [config.zkopruContract, config.auctionContract]
 
     // TODO : consider reorg for data store, It might need extra fields
     web3.eth.subscribe('newBlockHeaders').on('data', async function(data) {
@@ -154,7 +150,7 @@ export class OrganizerApi {
         blockData.transactions.forEach(async txHash => {
           const tx = await web3.eth.getTransaction(txHash)
 
-          if (tx.to && watchTargetContracts[tx.to]) {
+          if (tx.to && watchTargetContracts.includes(tx.to)) {
             const funcSig = tx.input.slice(0, 10)
             const inputSize = tx.input.length
             const receipt = await web3.eth.getTransactionReceipt(txHash)
