@@ -18,7 +18,13 @@ import {
   phase2Setup,
   prepareArtifactsDirectory,
 } from './helper'
-import { UtxoTree, TreeConfig, poseidonHasher, genesisRoot } from '~tree'
+import {
+  UtxoTree,
+  TreeConfig,
+  poseidonHasher,
+  genesisRoot,
+  TreeCache,
+} from '~tree'
 import { utxos } from '~dataset/testset-utxos'
 import { txs } from '~dataset/testset-txs'
 import { accounts } from '~dataset/testset-predefined'
@@ -60,6 +66,7 @@ describe('zk_transaction_1_2.test.circom', () => {
       metadata: utxoTreeMetadata,
       data: utxoTreeInitialData,
       config: utxoTreeConfig,
+      treeCache: new TreeCache(),
     })
     await utxoTree.init()
     await mockup.transaction(db => {

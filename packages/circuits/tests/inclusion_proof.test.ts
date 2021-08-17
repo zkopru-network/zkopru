@@ -17,7 +17,13 @@ import {
   phase2Setup,
   prepareArtifactsDirectory,
 } from './helper'
-import { UtxoTree, TreeConfig, poseidonHasher, genesisRoot } from '~tree'
+import {
+  UtxoTree,
+  TreeConfig,
+  poseidonHasher,
+  genesisRoot,
+  TreeCache,
+} from '~tree'
 
 const fileName = 'inclusion_proof.test.circom'
 const artifacts = getArtifacts(fileName)
@@ -55,6 +61,7 @@ describe('inclusion_proof.test.circom', () => {
       metadata: utxoTreeMetadata,
       data: utxoTreeInitialData,
       config: utxoTreeConfig,
+      treeCache: new TreeCache(),
     })
     await utxoTree.init()
     await mockup.transaction(db => {
