@@ -96,7 +96,16 @@ export class TxMemPool implements TxPoolInterface {
         outflow: tx.outflow.map(({ note, outflowType, data }) => ({
           note: Fp.from(note),
           outflowType: Fp.from(outflowType),
-          data: data ? Fp.from(data) : undefined,
+          data: data
+            ? {
+                to: Fp.from(data.to),
+                eth: Fp.from(data.eth),
+                tokenAddr: Fp.from(data.tokenAddr),
+                erc20Amount: Fp.from(data.erc20Amount),
+                nft: Fp.from(data.nft),
+                fee: Fp.from(data.fee),
+              }
+            : undefined,
         })),
         fee: Fp.from(tx.fee),
         proof: {
