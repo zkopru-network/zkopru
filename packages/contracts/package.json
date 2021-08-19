@@ -37,7 +37,7 @@
     "pregenTS": "shx mkdir -p dist",
     "precommit": "#lint-staged",
     "compile": "truffle compile",
-    "build:contract": "yarn compile && yarn genTS && tsc --build tsconfig.build.json && yarn prettier --write src/**/*",
+    "build:contract": "yarn compile && yarn genTS && tsc --build tsconfig.build.json && yarn prettier --write src/**/* && shx cp -r src/contracts dist",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist build && jest --clearCache",
     "link-modules": "link-module-alias",
     "tsc": "tsc --build tsconfig.build.json && link-module-alias",
