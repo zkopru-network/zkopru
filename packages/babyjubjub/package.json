@@ -12,7 +12,7 @@
   },
   "scripts": {
     "prebuild": "shx mkdir -p dist",
-    "build": "tsc --build tsconfig.build.json",
+    "build": "tsc --build tsconfig.build.json && shx cp -r src/types dist",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "link-modules": "link-module-alias",
     "test": "jest",
