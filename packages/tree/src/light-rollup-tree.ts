@@ -409,6 +409,7 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     // Update database
     // update rollup snapshot
     const rollUpSync = {
+      start: '0',
       end: end.toString(10),
     }
     const rollUpSnapshot = {
