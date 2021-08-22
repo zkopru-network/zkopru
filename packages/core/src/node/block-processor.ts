@@ -218,6 +218,7 @@ export class BlockProcessor extends EventEmitter {
         this.layer2.grove.treeCache.clear()
         this.saveTransactions(block, db)
         await this.decryptMyUtxos(
+          patch,
           block.body.txs,
           this.tracker.transferTrackers,
           tokenRegistry,
@@ -248,6 +249,7 @@ export class BlockProcessor extends EventEmitter {
   }
 
   private async decryptMyUtxos(
+    patch: Patch,
     txs: ZkTx[],
     accounts: ZkViewer[],
     tokenRegistry: TokenRegistry,
@@ -268,7 +270,19 @@ export class BlockProcessor extends EventEmitter {
         }
       }
     }
+    const startingUtxoIndex = patch.prevHeader.utxoIndex.toBN()
     const inputs = myUtxos.map(note => {
+      // need to generate a nullifier
+      const orderInArr = patch.treePatch.utxos.findIndex(utxo =>
+        utxo.hash.eq(Fp.from(note.hash()))
+      )
+      assert(orderInArr >= 0)
+      const index = Fp.from(startingUtxoIndex.addn(orderInArr).toString())
+      const viewer = this.tracker.transferTrackers.find((t) => {
+        return t.zkAddress.viewingPubKey().eq(note.owner.viewingPubKey())
+      })
+      if (!viewer) throw new Error('Cannot create nullifier')
+      const nullifier = Utxo.nullifier(viewer.getNullifierSeed(), index)
       return {
         hash: note
           .hash()
@@ -294,6 +308,8 @@ export class BlockProcessor extends EventEmitter {
           .toString(),
         status: UtxoStatus.UNSPENT,
         usedAt: null,
+        index: index.toString(),
+        nullifier: nullifier.toString(),
       }
     })
     inputs.map(input =>
