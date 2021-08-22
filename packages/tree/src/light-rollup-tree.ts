@@ -408,10 +408,6 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     this.metadata.end = end
     // Update database
     // update rollup snapshot
-    const rollUpSync = {
-      start: '0',
-      end: end.toString(10),
-    }
     const rollUpSnapshot = {
       root: root instanceof Fp ? root.toUint256().toString() : hexify(root),
       index: end.toString(10),
@@ -420,17 +416,15 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
           sib instanceof Fp ? sib.toUint256().toString() : hexify(sib),
         ),
       ),
+      end: end.toString(10),
     }
     db.upsert('LightTree', {
       where: { species: this.species },
-      update: {
-        ...rollUpSync,
-        ...rollUpSnapshot,
-      },
+      update: rollUpSnapshot,
       create: {
-        ...rollUpSync,
         ...rollUpSnapshot,
         species: this.species,
+        start: '0',
       },
       constraintKey: 'species',
     })
