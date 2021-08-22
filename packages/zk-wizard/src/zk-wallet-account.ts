@@ -141,7 +141,10 @@ export class ZkWalletAccount {
     return withdrawals
   }
 
-  async getUtxos(account?: ZkAccount, status?: UtxoStatus | UtxoStatus[]): Promise<Utxo[]> {
+  async getUtxos(
+    account?: ZkAccount,
+    status?: UtxoStatus | UtxoStatus[],
+  ): Promise<Utxo[]> {
     const targetAccount = account || this.account
     if (!targetAccount)
       throw Error('Provide account parameter or set default account')
@@ -165,7 +168,8 @@ export class ZkWalletAccount {
           owner: targetAccount.zkAddress,
           salt: obj.salt,
         })
-      } else if (obj.erc20Amount && Fp.from(obj.erc20Amount || 0).gtn(0)) {
+      }
+      if (obj.erc20Amount && Fp.from(obj.erc20Amount || 0).gtn(0)) {
         return Utxo.newERC20Note({
           eth: obj.eth,
           owner: targetAccount.zkAddress,
@@ -173,7 +177,8 @@ export class ZkWalletAccount {
           tokenAddr: obj.tokenAddr,
           erc20Amount: obj.erc20Amount,
         })
-      } else if (obj.nft) {
+      }
+      if (obj.nft) {
         return Utxo.newNFTNote({
           eth: obj.eth,
           owner: targetAccount.zkAddress,
@@ -181,9 +186,8 @@ export class ZkWalletAccount {
           tokenAddr: obj.tokenAddr,
           nft: obj.nft,
         })
-      } else {
-        throw Error('Not enough data to recover utxo')
       }
+      throw Error('Not enough data to recover utxo')
     })
   }
 

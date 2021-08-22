@@ -274,11 +274,11 @@ export class BlockProcessor extends EventEmitter {
     const inputs = myUtxos.map(note => {
       // need to generate a nullifier
       const orderInArr = patch.treePatch.utxos.findIndex(utxo =>
-        utxo.hash.eq(Fp.from(note.hash()))
+        utxo.hash.eq(Fp.from(note.hash())),
       )
       assert(orderInArr >= 0)
       const index = Fp.from(startingUtxoIndex.addn(orderInArr).toString())
-      const viewer = this.tracker.transferTrackers.find((t) => {
+      const viewer = this.tracker.transferTrackers.find(t => {
         return t.zkAddress.viewingPubKey().eq(note.owner.viewingPubKey())
       })
       if (!viewer) throw new Error('Cannot create nullifier')

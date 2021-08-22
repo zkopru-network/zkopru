@@ -74,9 +74,11 @@ export class ZkWizard {
     from: ZkAccount
     encryptTo?: ZkAddress
   }): Promise<ZkTx> {
-    const merkleProof = await Promise.all(tx.inflow.map((utxo) => {
-      return this.utxoTree.merkleProof({ hash: utxo.hash() })
-    }))
+    const merkleProof = await Promise.all(
+      tx.inflow.map(utxo => {
+        return this.utxoTree.merkleProof({ hash: utxo.hash() })
+      }),
+    )
     return this.buildZkTx({
       tx,
       signer: from,
