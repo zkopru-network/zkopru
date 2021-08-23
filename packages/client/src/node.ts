@@ -24,3 +24,4 @@ export default {
 }
 
 export { ZkAccount } from '@zkopru/account'
+export { UtxoStatus } from '@zkopru/transaction'

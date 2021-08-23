@@ -141,54 +141,54 @@ export class ZkWalletAccount {
     return withdrawals
   }
 
-  async getUtxos(account?: ZkAccount, status?: UtxoStatus): Promise<Utxo[]> {
+  async getUtxos(
+    account?: ZkAccount,
+    status?: UtxoStatus | UtxoStatus[],
+  ): Promise<Utxo[]> {
     const targetAccount = account || this.account
     if (!targetAccount)
       throw Error('Provide account parameter or set default account')
-    const noteSqls = await this.db.findMany('Utxo', {
+    const notes = await this.db.findMany('Utxo', {
       where: {
         owner: [targetAccount.zkAddress.toString()],
-        status,
+        status: status ? [status].flat() : undefined,
         usedAt: null,
       },
     })
-    const notes: Utxo[] = []
-    noteSqls.forEach(obj => {
+    return notes.map(obj => {
       if (!obj.eth) throw Error('should have Ether data')
       if (!obj.owner) throw Error('should have pubkey data')
       if (!(targetAccount.zkAddress.toString() === obj.owner))
         throw Error('should have same pubkey')
       if (!obj.salt) throw Error('should have salt data')
 
-      let note!: Utxo
-      if (!obj.tokenAddr) {
-        note = Utxo.newEtherNote({
+      if (!obj.tokenAddr || +obj.tokenAddr === 0) {
+        return Utxo.newEtherNote({
           eth: obj.eth,
           owner: targetAccount.zkAddress,
           salt: obj.salt,
         })
-      } else if (obj.erc20Amount && Fp.from(obj.erc20Amount || 0).gtn(0)) {
-        note = Utxo.newERC20Note({
+      }
+      if (obj.erc20Amount && Fp.from(obj.erc20Amount || 0).gtn(0)) {
+        return Utxo.newERC20Note({
           eth: obj.eth,
           owner: targetAccount.zkAddress,
           salt: obj.salt,
           tokenAddr: obj.tokenAddr,
           erc20Amount: obj.erc20Amount,
         })
-      } else if (obj.nft) {
-        note = Utxo.newNFTNote({
+      }
+      if (obj.nft) {
+        return Utxo.newNFTNote({
           eth: obj.eth,
           owner: targetAccount.zkAddress,
           salt: obj.salt,
           tokenAddr: obj.tokenAddr,
           nft: obj.nft,
         })
-      } else {
-        throw Error('Not enough data to recover utxo')
       }
-      notes.push(note)
+      throw Error('Not enough data to recover utxo')
     })
-    return notes
   }
 
   async fetchLayer1Assets(account?: ZkAccount): Promise<Balance> {

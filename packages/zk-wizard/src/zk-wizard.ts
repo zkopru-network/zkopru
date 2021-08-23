@@ -74,33 +74,19 @@ export class ZkWizard {
     from: ZkAccount
     encryptTo?: ZkAddress
   }): Promise<ZkTx> {
-    return new Promise<ZkTx>((resolve, reject) => {
-      const merkleProof: { [hash: number]: MerkleProof<Fp> } = {}
-
-      function isDataPrepared(): boolean {
-        return Object.keys(merkleProof).length === tx.inflow.length
-      }
-
-      tx.inflow.forEach(async (utxo, index) => {
-        this.utxoTree
-          .merkleProof({ hash: utxo.hash() })
-          .then(async proof => {
-            merkleProof[index] = proof
-            if (isDataPrepared()) {
-              const zkTx = await this.buildZkTx({
-                tx,
-                signer: from,
-                merkleProof,
-                option: {
-                  memo: encryptTo ? MemoVersion.V1 : MemoVersion.V2,
-                  encryptTo,
-                },
-              })
-              resolve(zkTx)
-            }
-          })
-          .catch(reject)
-      })
+    const merkleProof = await Promise.all(
+      tx.inflow.map(utxo => {
+        return this.utxoTree.merkleProof({ hash: utxo.hash() })
+      }),
+    )
+    return this.buildZkTx({
+      tx,
+      signer: from,
+      merkleProof,
+      option: {
+        memo: encryptTo ? MemoVersion.V1 : MemoVersion.V2,
+        encryptTo,
+      },
     })
   }
 
