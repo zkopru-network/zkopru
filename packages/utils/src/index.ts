@@ -264,6 +264,10 @@ export class StringifiedHexQueue {
     return Buffer.from(dequeued, 'hex')
   }
 
+  dequeueAllToBuffer() {
+    return Buffer.from(this.str.slice(this.cursor), 'hex')
+  }
+
   dequeueAll(): string {
     return `0x${this.str.slice(this.cursor)}`
   }
