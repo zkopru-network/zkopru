@@ -171,7 +171,7 @@ export class CoordinatorApi {
       }
       zkTxs.push(zkTx)
     }
-    await Promise.all(zkTxs.map(tx => this.context.txPool.addToTxPool(tx)))
+    await this.context.txPool.addToTxPool(zkTxs)
     res.send(true)
     const { auctionMonitor } = this.context
     if (!auctionMonitor.isProposable) {
