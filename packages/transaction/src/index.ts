@@ -8,12 +8,7 @@ export { TxBuilder } from './tx-builder'
 export { SwapTxBuilder } from './swap-tx-builder'
 export { RawTx } from './raw-tx'
 export { ZkTx, ZkInflow, ZkOutflow, PublicData, SNARK } from './zk-tx'
-export {
-  Memo,
-  MemoVersion,
-  V2_MEMO_DEFAULT_ABI,
-  V2_MEMO_WITHDRAW_SIG_ABI,
-} from './memo'
+export * from './memo'
 export { ZkAddress } from './zk-address'
 export { Sum } from './note-sum'
 export { Outflow } from './outflow'

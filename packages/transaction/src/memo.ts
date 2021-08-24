@@ -29,6 +29,9 @@ export const V2_MEMO_WITHDRAW_SIG_ABI = Bytes4.from(
   }),
 )
 
+export const V2_MEMO_DEFAULT_ABI_ZERO = Bytes4.from('0x00000000')
+export const V2_MEMO_WITHDRAW_SIG_ABI_ZERO = Bytes4.from('0x00000001')
+
 export enum MemoVersion {
   V1 = 1,
   V2 = 2,

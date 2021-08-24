@@ -9,6 +9,8 @@ import {
   MemoVersion,
   V2_MEMO_DEFAULT_ABI,
   V2_MEMO_WITHDRAW_SIG_ABI,
+  V2_MEMO_DEFAULT_ABI_ZERO,
+  V2_MEMO_WITHDRAW_SIG_ABI_ZERO,
 } from './memo'
 
 export interface ZkInflow {
@@ -393,7 +395,10 @@ export class ZkTx {
     const memoSig = Bytes4.from(
       `0x${this.memo.data.slice(0, 4).toString('hex')}`,
     )
-    if (V2_MEMO_DEFAULT_ABI.eq(memoSig)) {
+    if (
+      V2_MEMO_DEFAULT_ABI.eq(memoSig) ||
+      V2_MEMO_DEFAULT_ABI_ZERO.eq(memoSig)
+    ) {
       return {
         encryptedNotes: Array((this.memo.data.length - 4) / 81)
           .fill(null)
@@ -403,7 +408,10 @@ export class ZkTx {
           }),
       }
     }
-    if (V2_MEMO_WITHDRAW_SIG_ABI.eq(memoSig)) {
+    if (
+      V2_MEMO_WITHDRAW_SIG_ABI.eq(memoSig) ||
+      V2_MEMO_WITHDRAW_SIG_ABI_ZERO.eq(memoSig)
+    ) {
       const queue = new Utils.StringifiedHexQueue(
         `0x${this.memo.data.toString('hex')}`,
       )
