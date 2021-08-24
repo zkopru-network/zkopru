@@ -46,13 +46,14 @@ export class ZkViewer {
       }
       for (const outflow of outflows) {
         try {
-          return Utxo.decrypt({
+          const note = Utxo.decrypt({
             utxoHash: outflow.note,
             memo: bytes,
             spendingPubKey: this.zkAddress.spendingPubKey(),
             viewingKey: this.v,
             tokenRegistry,
           })
+          if (note) return note
         } catch (err) {
           // console.error(err)
         }
