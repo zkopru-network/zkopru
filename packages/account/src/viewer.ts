@@ -7,10 +7,11 @@ import {
   TokenRegistry,
   MemoVersion,
   V2_MEMO_DEFAULT_ABI,
+  V2_MEMO_WITHDRAW_SIG_ABI,
+  ZkOutflow,
 } from '@zkopru/transaction'
 import { Bytes4 } from 'soltypes'
 import { soliditySha3Raw } from 'web3-utils'
-import { logger } from '@zkopru/utils'
 
 export class ZkViewer {
   private A: Point // EdDSA Public Key
@@ -40,15 +41,15 @@ export class ZkViewer {
   }
 
   decrypt(zkTx: ZkTx, tokenRegistry?: TokenRegistry): Utxo[] {
-    const { memo } = zkTx
-    if (!memo) return []
-    if (memo.version === MemoVersion.V1) {
-      let note: Utxo | undefined
-      for (const outflow of zkTx.outflow) {
+    const decodeNote = (bytes: Buffer, outflows: ZkOutflow[]): Utxo | void => {
+      if (bytes.length !== 81) {
+        throw new Error('Expected a single encrypted note with 81 bytes')
+      }
+      for (const outflow of outflows) {
         try {
-          note = Utxo.decrypt({
+          return Utxo.decrypt({
             utxoHash: outflow.note,
-            memo: memo.data,
+            memo: bytes,
             spendingPubKey: this.zkAddress.spendingPubKey(),
             viewingKey: this.v,
             tokenRegistry,
@@ -56,43 +57,42 @@ export class ZkViewer {
         } catch (err) {
           console.error(err)
         }
-        if (note) break
       }
-      return note ? [Utxo.from(note)] : []
+    }
+    const { memo } = zkTx
+    if (!memo) return []
+    if (memo.version === MemoVersion.V1) {
+      const note = decodeNote(memo.data, zkTx.outflow)
+      return note ? [note] : []
     }
     if (memo.version === MemoVersion.V2) {
       const notes: Utxo[] = []
       const sig = memo.data.slice(0, 4)
-      if (V2_MEMO_DEFAULT_ABI.eq(Bytes4.from(`0x${sig.toString('hex')}`))) {
-        const data = memo.data.slice(4)
-        if (data.length % 81 !== 0) throw Error('Invalid memo field')
-        const num = data.length / 81
-        for (let i = 0; i < num; i += 1) {
-          const encrypted = data.slice(i * 81, (i + 1) * 81)
-          let note: Utxo | undefined
-          for (const outflow of zkTx.outflow) {
-            try {
-              note = Utxo.decrypt({
-                utxoHash: outflow.note,
-                memo: encrypted,
-                spendingPubKey: this.zkAddress.spendingPubKey(),
-                viewingKey: this.v,
-                tokenRegistry,
-              })
-            } catch (err) {
-              console.error(err)
-            }
-            if (note) break
-          }
-          if (note) notes.push(note)
-        }
-        return notes
+      const memoSig = Bytes4.from(`0x${sig.toString('hex')}`)
+      let noteData: Buffer
+      const memoData = `0x${memo.data.toString('hex').slice(8)}`
+      if (V2_MEMO_DEFAULT_ABI.eq(memoSig)) {
+        noteData = Buffer.from(memoData.replace('0x', ''), 'hex')
+      } else if (V2_MEMO_WITHDRAW_SIG_ABI.eq(memoSig)) {
+        // Assume the first field is the prepay sig
+        // 1 byte padding
+        // 32 bytes eth prepay fee
+        // 32 bytes token prepay fee
+        // 8 byte expiration date (seconds)
+        // 8 bytes length of signature sections (number of 81 byte sections following)
+        // after the final signature section there will possibly be utxo notes to decode
+        throw new Error('Withdraw sig parsing not implemented')
+      } else {
+        throw new Error(`Unrecognized memo signature: ${memoSig}`)
       }
-      logger.warn('Unknown ABI')
-      throw Error('Invalid memo field')
-
-      // if (memo.data.length === )
-      // const memos = memo.data.slice()
+      if (noteData.length % 81 !== 0) throw Error('Invalid memo field')
+      const num = noteData.length / 81
+      for (let i = 0; i < num; i += 1) {
+        const encrypted = noteData.slice(i * 81, (i + 1) * 81)
+        const note = decodeNote(encrypted, zkTx.outflow)
+        if (note) notes.push(note)
+      }
+      return notes
     }
     return []
   }
