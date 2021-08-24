@@ -11,8 +11,8 @@ import {
   ZkAddress,
   Memo,
   MemoVersion,
-  V2_MEMO_DEFAULT_ABI,
-  V2_MEMO_WITHDRAW_SIG_ABI,
+  V2_MEMO_DEFAULT_ABI_ZERO,
+  V2_MEMO_WITHDRAW_SIG_ABI_ZERO,
 } from '@zkopru/transaction'
 import { MerkleProof, UtxoTree } from '@zkopru/tree'
 import { logger } from '@zkopru/utils'
@@ -277,7 +277,7 @@ export class ZkWizard {
       memo = {
         version: MemoVersion.V2,
         data: Buffer.concat([
-          V2_MEMO_DEFAULT_ABI.toBuffer(),
+          V2_MEMO_DEFAULT_ABI_ZERO.toBuffer(),
           ...tx.outflow
             .filter(outflow => outflow instanceof Utxo)
             .map(utxo => (utxo as Utxo).encrypt()),
@@ -302,7 +302,7 @@ export class ZkWizard {
       memo = {
         version: MemoVersion.V2,
         data: Buffer.concat([
-          V2_MEMO_WITHDRAW_SIG_ABI.toBuffer(),
+          V2_MEMO_WITHDRAW_SIG_ABI_ZERO.toBuffer(),
           prepayData,
           ...tx.outflow
             .filter(outflow => outflow instanceof Utxo)
