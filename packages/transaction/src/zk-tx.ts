@@ -404,7 +404,7 @@ export class ZkTx {
           .fill(null)
           .map((_, index) => {
             if (!this.memo) throw new Error('Expected memo to exist')
-            return this.memo.data.subarray(index * 81, (index + 1) * 81)
+            return this.memo.data.subarray(4 + index * 81, 4 + (index + 1) * 81)
           }),
       }
     }
