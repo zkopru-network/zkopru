@@ -8,6 +8,8 @@ import axios from 'axios'
 
 export { logger, logStream, attachConsoleLogToPino } from './logger'
 
+export { prepayHash } from './eip712'
+
 export { PromptApp } from './prompt'
 
 export { Worker } from './worker'
