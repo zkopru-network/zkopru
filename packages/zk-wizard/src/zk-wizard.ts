@@ -12,6 +12,7 @@ import {
   Memo,
   MemoVersion,
   V2_MEMO_DEFAULT_ABI,
+  V2_MEMO_WITHDRAW_SIG_ABI,
 } from '@zkopru/transaction'
 import { MerkleProof, UtxoTree } from '@zkopru/tree'
 import { logger } from '@zkopru/utils'
@@ -69,11 +70,21 @@ export class ZkWizard {
     tx,
     from,
     encryptTo,
+    prepayInfo,
   }: {
     tx: RawTx
     from: ZkAccount
     encryptTo?: ZkAddress
+    prepayInfo?: {
+      etherFee?: Fp
+      tokenFee?: Fp
+      expiration: number | Fp
+      signature: Buffer
+    }
   }): Promise<ZkTx> {
+    if (encryptTo && prepayInfo) {
+      throw new Error('Cannot specify both encryptTo and instantWithdrawSig')
+    }
     const merkleProof = await Promise.all(
       tx.inflow.map(utxo => {
         return this.utxoTree.merkleProof({ hash: utxo.hash() })
@@ -86,6 +97,7 @@ export class ZkWizard {
       option: {
         memo: encryptTo ? MemoVersion.V1 : MemoVersion.V2,
         encryptTo,
+        prepayInfo,
       },
     })
   }
@@ -207,7 +219,16 @@ export class ZkWizard {
     tx: RawTx
     signer: ZkAccount
     merkleProof: { [hash: number]: MerkleProof<Fp> }
-    option?: { memo?: MemoVersion; encryptTo?: ZkAddress }
+    option?: {
+      memo?: MemoVersion
+      encryptTo?: ZkAddress
+      prepayInfo?: {
+        etherFee?: Fp
+        tokenFee?: Fp
+        expiration: number | Fp
+        signature: Buffer
+      }
+    }
   }): Promise<ZkTx> {
     const nIn = tx.inflow.length
     const nOut = tx.outflow.length
@@ -236,6 +257,7 @@ export class ZkWizard {
     )
     // TODO handle genProof exception
     const encryptTo = option?.encryptTo
+    const prepayInfo = option?.prepayInfo
     let memo: Memo | undefined
     if (option?.memo === MemoVersion.V1) {
       if (encryptTo !== undefined) {
@@ -251,11 +273,37 @@ export class ZkWizard {
       } else {
         logger.warn('Failed to find note to encrypt.')
       }
-    } else if (option?.memo === MemoVersion.V2) {
+    } else if (option?.memo === MemoVersion.V2 && !prepayInfo) {
       memo = {
         version: MemoVersion.V2,
         data: Buffer.concat([
           V2_MEMO_DEFAULT_ABI.toBuffer(),
+          ...tx.outflow
+            .filter(outflow => outflow instanceof Utxo)
+            .map(utxo => (utxo as Utxo).encrypt()),
+        ]),
+      }
+    } else if (option?.memo === MemoVersion.V2 && prepayInfo) {
+      const prepayData = Buffer.concat([
+        Fp.from(prepayInfo.etherFee || 0).toBuffer('be', 32),
+        Fp.from(prepayInfo.tokenFee || 0).toBuffer('be', 32),
+        Fp.from(prepayInfo.expiration).toBuffer('be', 8),
+        Fp.from(prepayInfo.signature.length).toBuffer('be', 9),
+        prepayInfo.signature,
+        Buffer.alloc(81 - (prepayInfo.signature.length % 81)),
+      ])
+      // Assume the first 81 byte chunk is the prepay info
+      // 32 bytes eth prepay fee
+      // 32 bytes token prepay fee
+      // 8 byte expiration date (seconds)
+      // 9 bytes length of signature
+      // signature is stored and padded to 81 byte chunks
+      // after the final signature section there will possibly be utxo notes to decode
+      memo = {
+        version: MemoVersion.V2,
+        data: Buffer.concat([
+          V2_MEMO_WITHDRAW_SIG_ABI.toBuffer(),
+          prepayData,
           ...tx.outflow
             .filter(outflow => outflow instanceof Utxo)
             .map(utxo => (utxo as Utxo).encrypt()),
