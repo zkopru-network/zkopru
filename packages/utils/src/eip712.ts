@@ -13,16 +13,16 @@ export const EIP712_DOMAIN_TYPEHASH = soliditySha3Raw(
 export function prepayHash({
   prepayer,
   withdrawalHash,
-  etherFee,
-  tokenFee,
+  prepayFeeInEth,
+  prepayFeeInToken,
   expiration,
   chainId,
   verifyingContract,
 }: {
   prepayer: string
   withdrawalHash: string | Bytes32
-  etherFee: BN
-  tokenFee: BN
+  prepayFeeInEth: BN
+  prepayFeeInToken: BN
   expiration: number
   chainId: number | string
   verifyingContract: string
@@ -36,8 +36,8 @@ export function prepayHash({
       typeof withdrawalHash === 'string'
         ? withdrawalHash
         : withdrawalHash.toString(),
-      etherFee,
-      tokenFee,
+      prepayFeeInEth,
+      prepayFeeInToken,
       expiration,
     ],
   )

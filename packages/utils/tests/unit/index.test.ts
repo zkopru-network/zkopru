@@ -28,8 +28,8 @@ describe('eip712', () => {
     const hash = prepayHash({
       prepayer: '0x0000000000000000000000000000000000000000',
       withdrawalHash,
-      etherFee: new BN('100'),
-      tokenFee: new BN('200'),
+      prepayFeeInEth: new BN('100'),
+      prepayFeeInToken: new BN('200'),
       expiration: 500,
       chainId: '100',
       verifyingContract: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',

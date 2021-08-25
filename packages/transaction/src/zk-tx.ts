@@ -374,8 +374,8 @@ export class ZkTx {
   parseMemo(): {
     encryptedNotes: Buffer[]
     prepayInfo?: {
-      etherFee: Fp
-      tokenFee: Fp
+      prepayFeeInEth: Fp
+      prepayFeeInToken: Fp
       expiration: number
       signature: Buffer
     }
@@ -432,8 +432,8 @@ export class ZkTx {
             return noteData.subarray(index * 81, (index + 1) * 81)
           }),
         prepayInfo: {
-          etherFee: prepayEthFee,
-          tokenFee: prepayTokenFee,
+          prepayFeeInEth: prepayEthFee,
+          prepayFeeInToken: prepayTokenFee,
           expiration,
           signature,
         },

@@ -15,11 +15,17 @@ import {
   V2_MEMO_WITHDRAW_SIG_ABI_ZERO,
 } from '@zkopru/transaction'
 import { MerkleProof, UtxoTree } from '@zkopru/tree'
-import { logger } from '@zkopru/utils'
+import { logger, prepayHash } from '@zkopru/utils'
 import path from 'path'
 import os from 'os'
 import fs from 'fs'
 import fetch from 'node-fetch'
+import {
+  fromRpcSig,
+  ecrecover,
+  isValidSignature,
+  pubToAddress,
+} from 'ethereumjs-util'
 
 import { SNARKResult, genSNARK } from './snark'
 
@@ -76,10 +82,12 @@ export class ZkWizard {
     from: ZkAccount
     encryptTo?: ZkAddress
     prepayInfo?: {
-      etherFee?: Fp
-      tokenFee?: Fp
-      expiration: number | Fp
-      signature: Buffer
+      prepayFeeInEth?: Fp
+      prepayFeeInToken?: Fp
+      expiration: number
+      signature: Buffer | string
+      data: any
+      signer?: string
     }
   }): Promise<ZkTx> {
     if (encryptTo && prepayInfo) {
@@ -223,10 +231,12 @@ export class ZkWizard {
       memo?: MemoVersion
       encryptTo?: ZkAddress
       prepayInfo?: {
-        etherFee?: Fp
-        tokenFee?: Fp
-        expiration: number | Fp
-        signature: Buffer
+        prepayFeeInEth?: Fp
+        prepayFeeInToken?: Fp
+        expiration: number
+        signature: Buffer | string
+        data: any
+        signer?: string
       }
     }
   }): Promise<ZkTx> {
@@ -284,13 +294,41 @@ export class ZkWizard {
         ]),
       }
     } else if (option?.memo === MemoVersion.V2 && prepayInfo) {
+      // verify prepay field
+      const hash = prepayHash({
+        ...prepayInfo.data.message,
+        ...prepayInfo.data.domain,
+      })
+      const signature =
+        typeof prepayInfo.signature === 'string'
+          ? Buffer.from(prepayInfo.signature.replace('0x', ''), 'hex')
+          : prepayInfo.signature
+      const sig = fromRpcSig(`0x${signature.toString('hex')}`)
+      if (!isValidSignature(sig.v, sig.r, sig.s)) {
+        throw new Error('Invalid prepay signature provided')
+      }
+      if (prepayInfo.signer) {
+        const pubKey = ecrecover(
+          Buffer.from(hash.replace('0x', ''), 'hex'),
+          sig.v,
+          sig.r,
+          sig.s,
+        )
+        if (
+          `0x${pubToAddress(pubKey)
+            .toString('hex')
+            .toLowerCase()}` !== prepayInfo.signer.toLowerCase()
+        ) {
+          throw new Error('Incorrect signing key')
+        }
+      }
       const prepayData = Buffer.concat([
-        Fp.from(prepayInfo.etherFee || 0).toBuffer('be', 32),
-        Fp.from(prepayInfo.tokenFee || 0).toBuffer('be', 32),
+        Fp.from(prepayInfo.prepayFeeInEth || 0).toBuffer('be', 32),
+        Fp.from(prepayInfo.prepayFeeInToken || 0).toBuffer('be', 32),
         Fp.from(prepayInfo.expiration).toBuffer('be', 8),
-        Fp.from(prepayInfo.signature.length).toBuffer('be', 9),
-        prepayInfo.signature,
-        Buffer.alloc(81 - (prepayInfo.signature.length % 81)),
+        Fp.from(signature.length).toBuffer('be', 9),
+        signature,
+        Buffer.alloc(81 - (signature.length % 81)),
       ])
       // Assume the first 81 byte chunk is the prepay info
       // 32 bytes eth prepay fee
