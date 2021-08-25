@@ -141,7 +141,7 @@ export class TxBuilder {
     return this
   }
 
-  build(): RawTx {
+  build(): RawTx & { withdrawals: Withdrawal[] } {
     const spendables: Utxo[] = [...this.spendables]
     const spendings: Utxo[] = []
     const sendingAmount = Sum.from(this.sendings)
@@ -336,6 +336,9 @@ export class TxBuilder {
       outflow,
       swap: this.swap,
       fee: finalFee,
+      withdrawals: this.sendings.filter(
+        sending => sending instanceof Withdrawal,
+      ) as Withdrawal[],
     }
   }
 
