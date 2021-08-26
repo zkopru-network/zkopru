@@ -8,6 +8,8 @@ RUN apk add --no-cache --virtual .gyp \
 RUN apk add git
 WORKDIR /proj
 COPY ./package.json /proj/package.json
+# Stub a package json for @zkopru/utils so yarn install works
+RUN mkdir /utils && echo '{"version": "0.0.0"}' > /utils/package.json
 RUN yarn install
 COPY ./contracts /proj/contracts
 COPY ./utils /proj/utils
@@ -17,4 +19,4 @@ RUN truffle compile
 EXPOSE 5000
 COPY ./keys /proj/keys
 RUN ganache-cli --db=/data -i 20200406 --chainId 1337 -p 5000 --gasLimit 12000000 --deterministic --host 0.0.0.0 & sleep 5 && truffle migrate --network integrationtest
-CMD ganache-cli --db=/data -i 20200406 --chainId 1337 -p 5000 --gasLimit 12000000 --deterministic --host 0.0.0.0
+CMD ganache-cli --db=/data -i 20200406 --chainId 1337 -p 5000 --gasLimit 12000000 --deterministic --host 0.0.0.0 --gasPrice 2000000000
