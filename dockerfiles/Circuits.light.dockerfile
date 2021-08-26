@@ -2,6 +2,7 @@ FROM node:13-alpine
 WORKDIR /proj
 RUN apk update && apk add bash git curl
 COPY package.json /proj/package.json
+RUN mkdir /utils-docker && echo '{"version": "0.0.0"}' > /utils-docker/package.json
 RUN npm install --only=prod
 RUN npm install -g circom ./node_modules/circom
 RUN npm install -g snarkjs ./node_modules/snarkjs
