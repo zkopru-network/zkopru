@@ -26,12 +26,14 @@ export interface Context {
     alice: ZkAccount
     bob: ZkAccount
     carl: ZkAccount
+    users: ZkAccount[]
   }
   wallets: {
+    coordinator: ZkWallet
     alice: ZkWallet
     bob: ZkWallet
     carl: ZkWallet
-    coordinator: ZkWallet
+    users: ZkWallet[]
   }
   coordinator: Coordinator
   vks: VKs
@@ -69,6 +71,7 @@ export async function terminate(ctx: CtxProvider) {
     wallets.bob.node.stop(),
     wallets.carl.node.stop(),
     wallets.coordinator.node.stop(),
+    ...wallets.users.map(wallet => wallet.node.stop()),
   ])
   await new Promise(r => setTimeout(r, 20000))
   await Promise.all(dbs.map(db => db.close()))
@@ -155,24 +158,17 @@ async function getWeb3(
   return { web3, provider }
 }
 
-async function getAccounts(
-  web3: Web3,
-): Promise<{
-  alice: ZkAccount
-  bob: ZkAccount
-  carl: ZkAccount
-  coordinator: ZkAccount
-}> {
+async function getAccounts(web3: Web3, n: number): Promise<ZkAccount[]> {
   const mockup = await SQLiteConnector.create(schema, ':memory:')
   const hdWallet = new HDWallet(web3, mockup)
   const mnemonic =
     'myth like bonus scare over problem client lizard pioneer submit female collect'
   await hdWallet.init(mnemonic, 'samplepassword')
-  const coordinator = await hdWallet.createAccount(0)
-  const alice = await hdWallet.createAccount(1)
-  const bob = await hdWallet.createAccount(2)
-  const carl = await hdWallet.createAccount(3)
-  const accounts = { coordinator, alice, bob, carl }
+  const accounts = await Promise.all(
+    Array(n)
+      .fill(undefined)
+      .map((_, i) => hdWallet.createAccount(i)),
+  )
   await mockup.close()
   return accounts
 }
@@ -270,12 +266,7 @@ async function getWallets({
   accounts,
   config,
 }: {
-  accounts: {
-    alice: ZkAccount
-    bob: ZkAccount
-    carl: ZkAccount
-    coordinator: ZkAccount
-  }
+  accounts: ZkAccount[]
   config: {
     provider: WebsocketProvider
     address: string
@@ -283,33 +274,15 @@ async function getWallets({
     erc721s: string[]
   }
 }): Promise<{
-  wallets: {
-    alice: ZkWallet
-    bob: ZkWallet
-    carl: ZkWallet
-    coordinator: ZkWallet
-  }
+  wallets: ZkWallet[]
   dbs: DB[]
 }> {
-  const { zkWallet: alice, mockupDB: aliceDB } = await getWallet({
-    account: accounts.alice,
-    ...config,
-  })
-  const { zkWallet: bob, mockupDB: bobDB } = await getWallet({
-    account: accounts.bob,
-    ...config,
-  })
-  const { zkWallet: carl, mockupDB: carlDB } = await getWallet({
-    account: accounts.carl,
-    ...config,
-  })
-  const { zkWallet: coordinator, mockupDB: coordinatorDB } = await getWallet({
-    account: accounts.coordinator,
-    ...config,
-  })
+  const results = await Promise.all(
+    accounts.map(account => getWallet({ account, ...config })),
+  )
   return {
-    wallets: { alice, bob, carl, coordinator },
-    dbs: [aliceDB, bobDB, carlDB, coordinatorDB],
+    wallets: results.map(result => result.zkWallet),
+    dbs: results.map(result => result.mockupDB),
   }
 }
 
@@ -325,13 +298,14 @@ export async function initContext(): Promise<Context> {
   const contract = new L1Contract(web3, zkopruAddress)
   const erc20 = Layer1.getERC20(web3, erc20Address)
   const erc721 = Layer1.getERC721(web3, erc721Address)
-  const accounts = await getAccounts(web3)
+  const accounts = await getAccounts(web3, 36)
   const vks = await getVKs(circuitArtifactContainer)
   // await getCircuitArtifacts(circuitArtifactContainer)
+  const [coordinatorAccount] = accounts
   const { coordinator, mockupDB: coordinatorDB } = await getCoordinator(
     provider,
     zkopruAddress,
-    accounts.coordinator.ethAccount,
+    coordinatorAccount.ethAccount,
   )
   await coordinator.start()
   const { wallets, dbs } = await getWallets({
@@ -343,22 +317,35 @@ export async function initContext(): Promise<Context> {
       erc721s: [erc721Address],
     },
   })
-  wallets.alice.node.start()
-  wallets.bob.node.start()
-  wallets.carl.node.start()
-  wallets.coordinator.node.start()
+  const [coordinatorWallet, aliceWallet, bobWallet, carlWallet] = wallets
+  coordinatorWallet.node.start()
+  aliceWallet.node.start()
+  bobWallet.node.start()
+  carlWallet.node.start()
 
   return {
     layer1Container,
     circuitArtifactContainer,
-    accounts,
+    accounts: {
+      coordinator: accounts[0],
+      alice: accounts[1],
+      bob: accounts[2],
+      carl: accounts[3],
+      users: accounts.slice(4),
+    },
     web3,
     provider,
     zkopruAddress,
     dbs: [...dbs, coordinatorDB],
     contract,
     coordinator,
-    wallets,
+    wallets: {
+      coordinator: coordinatorWallet,
+      alice: aliceWallet,
+      bob: bobWallet,
+      carl: carlWallet,
+      users: wallets.slice(4),
+    },
     vks,
     tokens: {
       erc20: { contract: erc20, address: erc20Address },
