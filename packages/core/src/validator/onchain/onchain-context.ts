@@ -1,3 +1,4 @@
+/* eslint dot-notation: ["error", { "allowPattern": "^(_[a-z]+)+$" }] */
 import { TransactionObject } from '@zkopru/contracts'
 import { logger } from '@zkopru/utils'
 import { TransactionConfig } from 'web3-core'

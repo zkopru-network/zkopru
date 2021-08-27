@@ -321,7 +321,9 @@ export class L2Chain {
     const parentHeader = await this.db.findOne('Header', {
       where: { hash: parentHash },
     })
-    logger.trace(`core/validator.ts - last verified header: ${parentHeader?.hash}`)
+    logger.trace(
+      `core/validator.ts - last verified header: ${parentHeader?.hash}`,
+    )
     if (!parentHeader) throw Error('Parent header does not exist.')
 
     const tx = JSON.parse(unprocessedProposal.proposalData)
