@@ -64,12 +64,18 @@ import {
   payForEthWithdrawalInAdvance,
 } from './cases/8_instant_withdrawals'
 import {
+  aliceDepositEthers33Times,
+  commitMassDeposit,
+  waitCoordinatorToProcessTheNewBlockFor33Deposits,
+  waitCoordinatorToProposeANewBlockFor33Deposits,
+} from './cases/9_massive_deposits'
+import {
   buildZkTxAliceSendEthToBob as round3Tx1,
   buildZkTxBobSendEthToCarl as round3Tx2,
   buildZkTxCarlSendEthToAlice as round3Tx3,
   testRound3SendZkTxsToCoordinator,
   testRound3NewBlockProposalAndSlashing,
-} from './cases/9_zk_tx_round_3'
+} from './cases/10_zk_tx_round_3'
 
 process.env.DEFAULT_COORDINATOR = 'http://localhost:8888'
 process.env.BLOCK_CONFIRMATIONS = '0'
@@ -297,7 +303,25 @@ describe('testnet', () => {
       )
     })
   })
-  describe('9: Zk Transactions round 3', () => {
+  describe('10: Mass Tx', () => {
+    it('alice deposit ether 33 times', aliceDepositEthers33Times(ctx), 60000)
+    it(
+      'commit mass deposit and wait for the block proposal',
+      commitMassDeposit(ctx),
+      60000,
+    )
+    it(
+      'wait coordinator propose a new block with 33 deposits',
+      waitCoordinatorToProposeANewBlockFor33Deposits(ctx),
+      300000,
+    )
+    it(
+      'wait coordinator process the block',
+      waitCoordinatorToProcessTheNewBlockFor33Deposits(ctx),
+      300000,
+    )
+  })
+  describe.skip('9: Zk Transactions round 3', () => {
     let aliceTransfer: ZkTx
     let bobTransfer: ZkTx
     let carlTransfer: ZkTx
@@ -336,7 +360,7 @@ describe('testnet', () => {
       )
     })
   })
-  describe('10: Migration', () => {
+  describe('11: Migration', () => {
     it.todo('please add test scenarios here')
   })
 })
