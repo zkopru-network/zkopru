@@ -1,0 +1,109 @@
+/* eslint-disable jest/no-truthy-falsy */
+/* eslint-disable jest/no-expect-resolves */
+/* eslint-disable jest/require-tothrow-message */
+/* eslint-disable jest/no-export */
+/* eslint-disable jest/require-top-level-describe */
+
+import { toWei } from 'web3-utils'
+import { TxBuilder, Utxo, ZkTx } from '@zkopru/transaction'
+import { Fp } from '@zkopru/babyjubjub'
+import { sleep } from '@zkopru/utils'
+import { Bytes32, Uint256 } from 'soltypes'
+import { Block } from '@zkopru/core'
+import { CtxProvider } from './context'
+
+export const sendETH = (ctx: CtxProvider) => async () => {
+  const { wallets, accounts } = ctx()
+
+  const aliceNonce = await wallets.alice.node.layer1.web3.eth.getTransactionCount(
+    accounts.alice.ethAddress,
+  )
+  await Promise.all(
+    accounts.users.map((account, i) =>
+      wallets.alice.node.layer1.web3.eth.sendTransaction({
+        to: account.ethAddress,
+        value: toWei('2', 'ether'),
+        nonce: aliceNonce + i,
+        from: accounts.alice.ethAddress,
+      }),
+    ),
+  )
+}
+
+export const aliceDepositEthers33Times = (ctx: CtxProvider) => async () => {
+  const { wallets } = ctx()
+
+  for (let i = 0; i < 33; i += 1) {
+    await expect(
+      wallets.alice.depositEther(toWei('1', 'ether'), toWei('1', 'milliether')),
+    ).resolves.toStrictEqual(true)
+  }
+}
+
+export const commitMassDeposit = (ctx: CtxProvider) => async () => {
+  console.log('commit mass deposit')
+  const { coordinator } = ctx()
+  await coordinator.commitMassDeposits()
+  await sleep(1000)
+  const pendingMassDeposits = await coordinator
+    .layer2()
+    .getPendingMassDeposits()
+  expect(pendingMassDeposits.leaves).toHaveLength(33)
+}
+
+export const waitCoordinatorToProposeANewBlockFor33Deposits = (
+  ctx: CtxProvider,
+) => async () => {
+  const { contract } = ctx()
+  console.log(
+    'proposed block is...',
+    await contract.upstream.methods.proposedBlocks().call(),
+  )
+  let msToWait = 60000
+  let proposedBlocks!: string
+  while (msToWait > 0) {
+    proposedBlocks = await contract.upstream.methods.proposedBlocks().call()
+    if (proposedBlocks === '5') break
+    msToWait -= 1000
+    await sleep(1000)
+  }
+  console.log(
+    'updated proposed block is...',
+    await contract.upstream.methods.proposedBlocks().call(),
+  )
+  expect(proposedBlocks).toStrictEqual('5')
+}
+
+// TODO Fix that processed block does not count the genesis block (proposed: 2 / processed: 1)
+export const waitCoordinatorToProcessTheNewBlockFor33Deposits = (
+  ctx: CtxProvider,
+) => async () => {
+  const { wallets } = ctx()
+  let msToWait = 60000
+  let latestUtxoIndex!: number
+  while (msToWait > 0) {
+    const aliceLatestBlock = await wallets.alice.node.layer2.latestBlock()
+    const newBlock = await wallets.alice.node.layer2.getBlock(aliceLatestBlock)
+    if (newBlock) {
+      const prevBlock = await wallets.alice.node.layer2.getBlock(
+        newBlock?.header.parentBlock,
+      )
+      console.log(newBlock?.header.utxoIndex.toString())
+      console.log(prevBlock?.header.utxoIndex.toString())
+
+      if (
+        prevBlock &&
+        newBlock.header.utxoIndex
+          .toBN()
+          .sub(prevBlock.header.utxoIndex.toBN())
+          .eqn(64)
+      ) {
+        latestUtxoIndex = newBlock.header.utxoIndex.toBN().toNumber()
+        break
+      }
+    }
+    msToWait -= 1000
+    await sleep(1000)
+  }
+  expect(latestUtxoIndex).toStrictEqual(96)
+}
