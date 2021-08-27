@@ -90,9 +90,6 @@ export class SNARKVerifier {
       process.on('message', message => {
         const { result } = message as { result: boolean }
         logger.info(
-          `core/snark-verifier.ts - message${JSON.stringify(message)}`,
-        )
-        logger.info(
           `core/snark-verifier.ts - verifyTx(${tx
             .hash()
             .toString()}) => ${JSON.stringify(result)}`,
