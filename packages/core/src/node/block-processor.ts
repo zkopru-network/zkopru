@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
+/* eslint dot-notation: ["error", { "allowPattern": "^(_[a-z]+)+$" }] */
 import { ZkViewer } from '@zkopru/account'
 import { Fp } from '@zkopru/babyjubjub'
 import {
