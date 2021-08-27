@@ -15,7 +15,6 @@
       "~wallet/*": ["wallet/src/*"],
       "~contracts/*": ["contracts/src/*"],
       "~coordinator/*": ["coordinator/src/*"],
-      "~generator/*": ["generator/src/*"],
       "~core/*": ["core/src/*"],
       "~dataset/*": ["dataset/src/*"],
       "~transaction/*": ["transaction/src/*"],
