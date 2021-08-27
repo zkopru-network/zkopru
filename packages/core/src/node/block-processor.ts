@@ -216,7 +216,9 @@ export class BlockProcessor extends EventEmitter {
         // save transactions and mark them as challenged
         this.saveTransactions(block, db, true)
       })
-      logger.warn(`core/block-processor - challenge`)
+      logger.warn(
+        `core/block-processor - challenge: ${challengeTx['_method']?.name}`,
+      )
       // TODO slasher option
       this.emit('slash', {
         tx: challengeTx,
