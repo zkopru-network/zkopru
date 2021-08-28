@@ -5,7 +5,7 @@ import createBlakeHash from 'blake-hash'
 import BN from 'bn.js'
 import { Fp } from './fp'
 import { Fr } from './fr'
-import { F } from './types/ff'
+import { F } from '../src/types/ff'
 
 export class Point {
   x: Fp
