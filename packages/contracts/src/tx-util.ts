@@ -8,7 +8,7 @@ import {
   NonPayableTransactionObject,
   PayableTx,
   NonPayableTx,
-} from './contracts/types'
+} from '../src/contracts/types'
 
 export type TransactionObject<T> =
   | PayableTransactionObject<T>
