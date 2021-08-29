@@ -1,3 +1,4 @@
+/* eslint-disable import/no-useless-path-segments */
 import { hexToBuffer } from '@zkopru/utils'
 import * as ffjs from 'ffjavascript'
 import * as circomlib from 'circomlib'

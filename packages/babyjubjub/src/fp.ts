@@ -1,3 +1,4 @@
+/* eslint-disable import/no-useless-path-segments */
 import BN from 'bn.js'
 import { Bytes32, Uint256, Address } from 'soltypes'
 import RedBN from '../src/types/redbn'
