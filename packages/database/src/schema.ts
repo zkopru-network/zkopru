@@ -359,7 +359,7 @@ export default [
       ['withdrawalHash', 'String'],
       ['prepayFeeInEth', 'String'],
       ['prepayFeeInToken', 'String'],
-      ['expiration', 'Number'],
+      ['expiration', 'Int'],
       ['prepayer', 'String'],
     ],
   },
