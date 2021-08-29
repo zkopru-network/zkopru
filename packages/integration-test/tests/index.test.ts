@@ -303,7 +303,7 @@ describe('testnet', () => {
       )
     })
   })
-  describe('10: Mass Tx', () => {
+  describe('9: Mass Tx', () => {
     it('alice deposit ether 33 times', aliceDepositEthers33Times(ctx), 60000)
     it(
       'commit mass deposit and wait for the block proposal',
@@ -321,7 +321,7 @@ describe('testnet', () => {
       300000,
     )
   })
-  describe.skip('9: Zk Transactions round 3', () => {
+  describe.skip('10: Zk Transactions round 3', () => {
     let aliceTransfer: ZkTx
     let bobTransfer: ZkTx
     let carlTransfer: ZkTx

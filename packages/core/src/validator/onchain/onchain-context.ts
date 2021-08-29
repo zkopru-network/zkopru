@@ -35,22 +35,18 @@ export class OnchainValidatorContext {
           data: tx.encodeABI(),
         },
         (_, gas) => {
-          logger.trace(
+          logger.warn(
             `core/onchain-context.ts - slashable ${tx['_method']?.name}`,
           )
-          logger.trace(
+          logger.warn(
             `core/onchain-context.ts - estimated gas ${tx['_method']?.name}: ${gas}`,
           )
-          // console.log(err)
-          // // eslint-disable-next-line dot-notation
-          // console.log(`estimated gas-${tx['_method'].name}:`, gas)
         },
       )
     } catch (err) {
       logger.trace(
-        `core/onchain-context.ts - onchain validation: ${tx['_method']?.name}`,
+        `core/onchain-context.ts - onchain validation: ${tx['_method']?.name}(valid)`,
       )
-      // logger.debug('slash call reverted', err)
       slashable = false
     }
     return {
