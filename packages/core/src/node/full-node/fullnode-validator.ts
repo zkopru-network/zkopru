@@ -87,7 +87,8 @@ export class FullValidator extends Validator {
               .slashable}`,
           )
           logger.error(
-            `core/fullnode-validator - offchain: ${offchainResult[index].slashable}`,
+            `core/fullnode-validator - offchain: ${!offchainResult[index]
+              .slashable}`,
           )
           logger.error(
             `core/fullnode-validator - slash reason: - ${offchainResult[index].reason}`,
