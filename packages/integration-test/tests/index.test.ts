@@ -7,7 +7,7 @@
 /* eslint-disable jest/require-tothrow-message */
 /* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable jest/no-hooks */
-import { ZkTx } from '@zkopru/transaction'
+import { ZkTx } from '~transaction'
 import { Bytes32 } from 'soltypes'
 import {
   jestExtendToCompareBigNumber,
