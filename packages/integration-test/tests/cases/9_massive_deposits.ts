@@ -5,11 +5,7 @@
 /* eslint-disable jest/require-top-level-describe */
 
 import { toWei } from 'web3-utils'
-import { TxBuilder, Utxo, ZkTx } from '@zkopru/transaction'
-import { Fp } from '@zkopru/babyjubjub'
 import { sleep } from '@zkopru/utils'
-import { Bytes32, Uint256 } from 'soltypes'
-import { Block } from '@zkopru/core'
 import { CtxProvider } from './context'
 
 export const sendETH = (ctx: CtxProvider) => async () => {
@@ -31,13 +27,15 @@ export const sendETH = (ctx: CtxProvider) => async () => {
 }
 
 export const aliceDepositEthers33Times = (ctx: CtxProvider) => async () => {
-  const { wallets } = ctx()
+  const { wallets, coordinator } = ctx()
 
+  await coordinator.stop()
   for (let i = 0; i < 33; i += 1) {
     await expect(
       wallets.alice.depositEther(toWei('1', 'ether'), toWei('1', 'milliether')),
     ).resolves.toStrictEqual(true)
   }
+  await coordinator.start()
 }
 
 export const commitMassDeposit = (ctx: CtxProvider) => async () => {
