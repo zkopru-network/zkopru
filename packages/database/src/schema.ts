@@ -361,6 +361,14 @@ export default [
       ['prepayFeeInToken', 'String'],
       ['expiration', 'Int'],
       ['prepayer', 'String'],
+      {
+        name: 'withdrawal',
+        relation: {
+          localField: 'withdrawalHash',
+          foreignField: 'withdrawalHash',
+          foreignTable: 'Withdrawal',
+        },
+      },
     ],
   },
   {

@@ -167,6 +167,7 @@ export class CoordinatorApi {
       {
         where: {},
         orderBy: { expiration: 'desc' },
+        include: { withdrawal: true },
       },
     )
     res.json(instantWithdrawals)

@@ -503,6 +503,24 @@ export class BlockProcessor extends EventEmitter {
           outflow.note,
           outflow.data,
         ).toString()
+        const withdrawalSql = {
+          hash: outflow.note.toUint256().toString(),
+          withdrawalHash: Withdrawal.withdrawalHash(
+            outflow.note,
+            outflow.data,
+          ).toString(),
+          to: outflow.data.to.toAddress().toString(),
+          eth: outflow.data.eth.toUint256().toString(),
+          tokenAddr: outflow.data.tokenAddr.toAddress().toString(),
+          erc20Amount: outflow.data.erc20Amount.toUint256().toString(),
+          nft: outflow.data.nft.toUint256().toString(),
+          fee: outflow.data.fee.toUint256().toString(),
+        }
+        db.upsert('Withdrawal', {
+          where: { hash: withdrawalSql.hash },
+          create: withdrawalSql,
+          update: withdrawalSql,
+        })
         db.create('InstantWithdrawal', {
           signature: `0x${prepayInfo.signature.toString('hex')}`,
           withdrawalHash,
