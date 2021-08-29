@@ -186,6 +186,15 @@ export type Withdrawal = {
   proposal?: undefined | null
 }
 
+export type InstantWithdrawal = {
+  signature: string
+  withdrawalHash: string
+  prepayFeeInEth: string
+  prepayFeeInToken: string
+  expiration: undefined
+  prepayer: string
+}
+
 export type Migration = {
   hash: string
   eth?: string | null

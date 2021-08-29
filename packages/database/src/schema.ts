@@ -352,6 +352,18 @@ export default [
     ],
   },
   {
+    name: 'InstantWithdrawal',
+    primaryKey: 'signature',
+    rows: [
+      ['signature', 'String'],
+      ['withdrawalHash', 'String'],
+      ['prepayFeeInEth', 'String'],
+      ['prepayFeeInToken', 'String'],
+      ['expiration', 'Number'],
+      ['prepayer', 'String'],
+    ],
+  },
+  {
     name: 'Migration',
     primaryKey: 'hash',
     rows: [
