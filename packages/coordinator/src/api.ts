@@ -86,6 +86,11 @@ export class CoordinatorApi {
       app.post('/tx', catchError(this.txHandler))
       app.post('/txs', express.json(), catchError(this.multiTxHandler))
       app.post('/instant-withdraw', catchError(this.instantWithdrawHandler))
+      app.get(
+        '/instant-withdraw',
+        express.json(),
+        catchError(this.loadInstantWithdrawHandler),
+      )
       if (this.context.config.bootstrap) {
         app.get('/bootstrap', catchError(this.bootstrapHandler))
       }
@@ -154,6 +159,17 @@ export class CoordinatorApi {
         message: err.message,
       })
     }
+  }
+
+  private loadInstantWithdrawHandler: RequestHandler = async (_, res) => {
+    const instantWithdrawals = await this.context.node.db.findMany(
+      'InstantWithdrawal',
+      {
+        where: {},
+        orderBy: { expiration: 'desc' },
+      },
+    )
+    res.json(instantWithdrawals)
   }
 
   private multiTxHandler: RequestHandler = async (req, res) => {
