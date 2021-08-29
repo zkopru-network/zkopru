@@ -39,7 +39,6 @@ export const aliceDepositEthers33Times = (ctx: CtxProvider) => async () => {
 }
 
 export const commitMassDeposit = (ctx: CtxProvider) => async () => {
-  console.log('commit mass deposit')
   const { coordinator } = ctx()
   await coordinator.commitMassDeposits()
   await sleep(1000)
@@ -53,10 +52,6 @@ export const waitCoordinatorToProposeANewBlockFor33Deposits = (
   ctx: CtxProvider,
 ) => async () => {
   const { contract } = ctx()
-  console.log(
-    'proposed block is...',
-    await contract.upstream.methods.proposedBlocks().call(),
-  )
   let msToWait = 60000
   let proposedBlocks!: string
   while (msToWait > 0) {
@@ -65,10 +60,6 @@ export const waitCoordinatorToProposeANewBlockFor33Deposits = (
     msToWait -= 1000
     await sleep(1000)
   }
-  console.log(
-    'updated proposed block is...',
-    await contract.upstream.methods.proposedBlocks().call(),
-  )
   expect(proposedBlocks).toStrictEqual('5')
 }
 
@@ -78,7 +69,7 @@ export const waitCoordinatorToProcessTheNewBlockFor33Deposits = (
 ) => async () => {
   const { wallets } = ctx()
   let msToWait = 60000
-  let latestUtxoIndex!: number
+  let success: boolean = false
   while (msToWait > 0) {
     const aliceLatestBlock = await wallets.alice.node.layer2.latestBlock()
     const newBlock = await wallets.alice.node.layer2.getBlock(aliceLatestBlock)
@@ -86,9 +77,6 @@ export const waitCoordinatorToProcessTheNewBlockFor33Deposits = (
       const prevBlock = await wallets.alice.node.layer2.getBlock(
         newBlock?.header.parentBlock,
       )
-      console.log(newBlock?.header.utxoIndex.toString())
-      console.log(prevBlock?.header.utxoIndex.toString())
-
       if (
         prevBlock &&
         newBlock.header.utxoIndex
@@ -96,12 +84,12 @@ export const waitCoordinatorToProcessTheNewBlockFor33Deposits = (
           .sub(prevBlock.header.utxoIndex.toBN())
           .eqn(64)
       ) {
-        latestUtxoIndex = newBlock.header.utxoIndex.toBN().toNumber()
+        success = true
         break
       }
     }
     msToWait -= 1000
     await sleep(1000)
   }
-  expect(latestUtxoIndex).toStrictEqual(96)
+  expect(success).toBeTruthy()
 }
