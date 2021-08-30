@@ -521,13 +521,20 @@ export class BlockProcessor extends EventEmitter {
           create: withdrawalSql,
           update: withdrawalSql,
         })
-        db.create('InstantWithdrawal', {
+        const instantWithdrawDoc = {
           signature: `0x${prepayInfo.signature.toString('hex')}`,
           withdrawalHash,
           prepayFeeInEth: prepayInfo.prepayFeeInEth.toString(),
           prepayFeeInToken: prepayInfo.prepayFeeInToken.toString(),
           expiration: prepayInfo.expiration,
           prepayer: '0x0000000000000000000000000000000000000000',
+        }
+        db.upsert('InstantWithdrawal', {
+          where: {
+            signature: instantWithdrawDoc.signature,
+          },
+          create: instantWithdrawDoc,
+          update: instantWithdrawDoc,
         })
       }
     }
