@@ -170,7 +170,37 @@ export class CoordinatorApi {
         include: { withdrawal: true },
       },
     )
-    res.json(instantWithdrawals)
+    const tokenAddresses = instantWithdrawals
+      .filter(instant => !!instant.withdrawal)
+      .map(({ withdrawal }) => withdrawal.tokenAddr)
+      .filter(addr => +addr !== 0)
+      .filter(addr => !!addr)
+    const uniqTokenAddresses = [...new Set(tokenAddresses)]
+    const tokenInfo = await this.context.node.loadERC20InfoByAddress(
+      uniqTokenAddresses,
+    )
+    const tokenInfoByAddress = tokenInfo.reduce((acc, info) => {
+      return {
+        ...acc,
+        [info.address.toLowerCase()]: info,
+      }
+    }, {})
+    res.json(
+      instantWithdrawals.map(instant => {
+        if (!instant.withdrawal) return instant
+        const { tokenAddr } = instant.withdrawal
+        if (+tokenAddr === 0) return instant
+        const info = tokenInfoByAddress[tokenAddr.toLowerCase()]
+        if (!info) throw new Error('Unable to find info for token')
+        return {
+          ...instant,
+          withdrawal: {
+            ...instant.withdrawal,
+            tokenInfo: info,
+          },
+        }
+      }),
+    )
   }
 
   private multiTxHandler: RequestHandler = async (req, res) => {

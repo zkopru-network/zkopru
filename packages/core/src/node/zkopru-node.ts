@@ -4,6 +4,7 @@ import { DB, BlockCache, ERC20Info } from '@zkopru/database'
 import { Grove, poseidonHasher, keccakHasher } from '@zkopru/tree'
 import { logger } from '@zkopru/utils'
 import { Layer1 } from '@zkopru/contracts'
+import { Bytes20 } from 'soltypes'
 import { L1Contract } from '../context/layer1'
 import { L2Chain } from '../context/layer2'
 import { BootstrapHelper } from './bootstrap'
@@ -112,6 +113,53 @@ export class ZkopruNode {
     } else {
       logger.info(`core/zkopru-node - Node is already stopped`)
     }
+  }
+
+  async loadERC20InfoByAddress(addresses: string[]): Promise<ERC20Info[]> {
+    if (!addresses.length) return []
+    const registry = await this.layer2.getTokenRegistry()
+    // this is going to thrash the lock a bit, ideally batch the queries
+    // probably not worth rewriting until performance becomes a problem
+    const promises = [addresses].flat().map(async address => {
+      const index = registry.erc20s.findIndex(addr => {
+        return addr.eq(Bytes20.from(address))
+      })
+      if (index === -1) {
+        throw new Error(`Unregisterd ERC20 address: ${address}`)
+      }
+      const info = await this.db.findOne('ERC20Info', {
+        where: {
+          address,
+        },
+      })
+      if (!info) {
+        // load the data and store it
+        const contract = Layer1.getERC20(this.layer1.web3, address)
+        const [symbol, decimals] = await Promise.all([
+          contract.methods.symbol().call(),
+          contract.methods.decimals().call(),
+        ])
+        await this.db.upsert('ERC20Info', {
+          where: { address },
+          create: {
+            address,
+            symbol,
+            decimals: +decimals,
+          },
+          update: {
+            symbol,
+            decimals: +decimals,
+          },
+        })
+        return {
+          address,
+          symbol,
+          decimals: +decimals,
+        }
+      }
+      return info
+    })
+    return Promise.all(promises)
   }
 
   async loadERC20Info(): Promise<ERC20Info[]> {
