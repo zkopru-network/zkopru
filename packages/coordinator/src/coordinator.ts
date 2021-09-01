@@ -1,7 +1,7 @@
 import { Fp } from '@zkopru/babyjubjub'
 import { EventEmitter } from 'events'
 import { ZkTx } from '@zkopru/transaction'
-import { logger, root, Worker } from '@zkopru/utils'
+import { logger, root, Worker, dnsLookup } from '@zkopru/utils'
 import {
   FullNode,
   NetworkStatus,
@@ -322,11 +322,18 @@ export class Coordinator extends EventEmitter {
     const { auctionMonitor } = this.context
     logger.info(`Skipping block proposal: Not proposable`)
     // get pending tx and forward to active proposer
-    const pendingTx = await this.context.txPool.pickTxs(Infinity, new BN('1'))
-    if (!pendingTx?.length) return
+    const coordinatorIp = await dnsLookup(
+      process.env.COORDINAOR_URL ?? 'coordinator',
+    )
+    const coordinatorUrl = `${coordinatorIp}:${process.env.COORDINATOR_PORT ??
+      8888}`
     const url = await auctionMonitor.functionalCoordinatorUrl(
       auctionMonitor.currentProposer,
     )
+    logger.info(`set coordinator url is ${coordinatorUrl}`)
+    if (url === `http://${coordinatorUrl}`) return
+    const pendingTx = await this.context.txPool.pickTxs(Infinity, new BN('1'))
+    if (!pendingTx?.length) return
     if (!url) {
       logger.warn('No functional url to forward pending tx!')
       return

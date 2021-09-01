@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable max-classes-per-file */
+import dns from 'dns'
 import path from 'path'
 import { Unit, soliditySha3Raw } from 'web3-utils'
 import { Bytes32, Uint256, Address } from 'soltypes'
@@ -329,4 +330,13 @@ export async function externalIp() {
     data: { ip },
   } = await axios.get('https://external-ip.now.sh')
   return ip
+}
+
+export async function dnsLookup(hostname: string) {
+  return new Promise((resolve, reject) => {
+    dns.lookup(hostname, (err, address) => {
+      if (err) reject(err)
+      resolve(address)
+    })
+  })
 }
