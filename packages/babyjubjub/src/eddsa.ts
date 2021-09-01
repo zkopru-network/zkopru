@@ -1,7 +1,6 @@
-/* eslint-disable import/no-useless-path-segments */
 import { hexToBuffer } from '@zkopru/utils'
 import * as circomlib from 'circomlib'
-import { F } from '../src/types/ff'
+import { F } from './types/ff'
 import { Fp } from './fp'
 import { Point } from './point'
 

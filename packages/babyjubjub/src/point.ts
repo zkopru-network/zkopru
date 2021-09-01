@@ -1,4 +1,3 @@
-/* eslint-disable import/no-useless-path-segments */
 import { hexToBuffer } from '@zkopru/utils'
 import * as ffjs from 'ffjavascript'
 import * as circomlib from 'circomlib'
@@ -6,7 +5,7 @@ import createBlakeHash from 'blake-hash'
 import BN from 'bn.js'
 import { Fp } from './fp'
 import { Fr } from './fr'
-import { F } from '../src/types/ff'
+import { F } from './types/ff'
 
 export class Point {
   x: Fp

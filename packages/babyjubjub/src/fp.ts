@@ -1,7 +1,6 @@
-/* eslint-disable import/no-useless-path-segments */
 import BN from 'bn.js'
 import { Bytes32, Uint256, Address } from 'soltypes'
-import RedBN from '../src/types/redbn'
+import RedBN from './types/redbn'
 
 export type F = number | string | number[] | Uint8Array | Buffer | BN
 
