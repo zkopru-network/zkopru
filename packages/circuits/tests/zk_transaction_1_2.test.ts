@@ -69,7 +69,7 @@ describe('zk_transaction_1_2.test.circom', () => {
       treeCache: new TreeCache(),
     })
     await utxoTree.init()
-    await mockup.transaction(db => {
+    await mockup.transaction(db =>
       utxoTree.append(
         [
           { hash: utxos.utxo1_in_1.hash() },
@@ -83,8 +83,8 @@ describe('zk_transaction_1_2.test.circom', () => {
           { hash: utxos.utxo4_in_3.hash() },
         ],
         db,
-      )
-    })
+      ),
+    )
   })
   afterAll(async () => {
     await mockup.close()
