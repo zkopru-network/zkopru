@@ -64,7 +64,7 @@ describe('inclusion_proof.test.circom', () => {
       treeCache: new TreeCache(),
     })
     await utxoTree.init()
-    await mockup.transaction(db => {
+    await mockup.transaction(db =>
       utxoTree.append(
         [
           { hash: Fp.from(10) },
@@ -74,8 +74,8 @@ describe('inclusion_proof.test.circom', () => {
           { hash: Fp.from(14) },
         ],
         db,
-      )
-    })
+      ),
+    )
   })
   afterAll(async () => {
     await mockup.close()
