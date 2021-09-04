@@ -5,6 +5,7 @@
 import Web3 from 'web3'
 import { WebsocketProvider } from 'web3-core'
 import { Container } from 'node-docker-api/lib/container'
+import { soliditySha3Raw } from 'web3-utils'
 import { DB, SQLiteConnector, schema } from '~database/node'
 import { ZkAccount } from '~account'
 import { sleep } from '~utils'
@@ -59,7 +60,7 @@ describe('integration test to run testnet', () => {
   describe('light node', () => {
     it('should be defined', async () => {
       const accounts: ZkAccount[] = [
-        new ZkAccount(Buffer.from('sample private key')),
+        new ZkAccount(soliditySha3Raw('sample private key')),
       ]
       lightNode = await LightNode.new({
         provider: wsProvider,
