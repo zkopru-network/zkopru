@@ -59,7 +59,7 @@ export class SNARKVerifier {
       const vk = ffjs.utils.stringifyBigInts(registeredVk)
       let result!: boolean
       try {
-        result = snarkjs.groth16.verify(vk, signals, proof)
+        result = await snarkjs.groth16.verify(vk, signals, proof)
       } catch (e) {
         logger.error(e)
         result = false
