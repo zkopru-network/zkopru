@@ -14,7 +14,7 @@ const abis = fs
 const importContracts = list =>
   `${ts.reduce((prev, name) => {
     if (!list.includes(name)) return prev;
-    return `${prev}import { ${name} } from '../src/contracts/${name}'\n`;
+    return `${prev}import { ${name} } from './contracts/${name}'\n`;
   }, "")}`;
 
 const zkopruTS = `import Web3 from 'web3'
