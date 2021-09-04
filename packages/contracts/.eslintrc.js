@@ -22,7 +22,6 @@ module.exports = {
     "import/no-extraneous-dependencies": ["error", { devDependencies: true }],
     "@typescript-eslint/camelcase": "warn",
     "@typescript-eslint/ban-ts-ignore": "warn",
-    "import/no-useless-path-segments": "warn",
     "import/no-unresolved": "warn",
     "import/export": "warn"
   }
