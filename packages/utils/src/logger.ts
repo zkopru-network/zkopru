@@ -72,6 +72,6 @@ export const attachConsoleErrorToPino = () => {
   )
 }
 
-if (process.env.PRINT_LOG) {
+if (process.env.DEBUG || process.env.LOG_LEVEL) {
   attachConsoleLogToPino()
 }
