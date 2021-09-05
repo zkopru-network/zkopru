@@ -118,6 +118,7 @@ jobs:
       - run:
           name: Circuit Tests
           command: yarn test --scope=@zkopru/circuits
+          no_output_timeout: 30m
   test_coordinator:
     machine:
       image: ubuntu-2004:202010-01
