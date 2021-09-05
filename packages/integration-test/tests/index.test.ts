@@ -7,8 +7,8 @@
 /* eslint-disable jest/require-tothrow-message */
 /* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable jest/no-hooks */
-import { ZkTx } from '~transaction'
 import { Bytes32 } from 'soltypes'
+import { ZkTx } from '~transaction'
 import {
   jestExtendToCompareBigNumber,
   sleep,
