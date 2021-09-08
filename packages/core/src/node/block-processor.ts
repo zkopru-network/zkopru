@@ -242,11 +242,7 @@ export class BlockProcessor extends EventEmitter {
           tokenRegistry,
           db,
         )
-        this.saveWithdrawals(
-          block.body.txs,
-          this.tracker.withdrawalTrackers,
-          db,
-        )
+        this.saveWithdrawals(block, this.tracker.withdrawalTrackers, db)
         await this.applyPatch(patch, db)
         // Mark as verified
         db.update('Proposal', {
@@ -470,10 +466,14 @@ export class BlockProcessor extends EventEmitter {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  private saveWithdrawals(txs: ZkTx[], accounts: Address[], db: TransactionDB) {
+  private saveWithdrawals(
+    block: Block,
+    accounts: Address[],
+    db: TransactionDB,
+  ) {
     // Save instant withdrawals from memo field
     {
-      const withdrawalTxs = txs.filter(tx => {
+      const withdrawalTxs = block.body.txs.filter(tx => {
         return (
           tx.outflow.findIndex(outflow =>
             outflow.outflowType.eqn(OutflowType.WITHDRAWAL),
@@ -515,6 +515,7 @@ export class BlockProcessor extends EventEmitter {
           erc20Amount: outflow.data.erc20Amount.toUint256().toString(),
           nft: outflow.data.nft.toUint256().toString(),
           fee: outflow.data.fee.toUint256().toString(),
+          includedIn: block.hash.toString(),
         }
         db.upsert('Withdrawal', {
           where: { hash: withdrawalSql.hash },
@@ -541,7 +542,7 @@ export class BlockProcessor extends EventEmitter {
     // save my withdrawals
     {
       logger.trace(`core/block-processor - BlockProcessor::saveMyWithdrawals()`)
-      const outflows = txs.reduce(
+      const outflows = block.body.txs.reduce(
         (acc, tx) => [
           ...acc,
           ...tx.outflow.filter(outflow =>
@@ -581,6 +582,7 @@ export class BlockProcessor extends EventEmitter {
           erc20Amount: output.data.erc20Amount.toUint256().toString(),
           nft: output.data.nft.toUint256().toString(),
           fee: output.data.fee.toUint256().toString(),
+          includedIn: block.hash.toString(),
         }
         logger.info(
           `core/block-processor - found withdrawal: ${withdrawalSql.hash}`,
