@@ -88,7 +88,7 @@ export type Slash = {
   reason: string
   executionTx: string
   slashedAt: number
-  block?: undefined | null
+  block?: Object | null
 }
 
 export type Bootstrap = {
@@ -111,7 +111,7 @@ export type Tx = {
   receiverAddress?: string | null
   tokenAddr?: string | null
   amount?: string | null
-  proposal?: undefined | null
+  proposal?: Object | null
 }
 
 export type PendingTx = {
@@ -146,7 +146,7 @@ export type Deposit = {
   queuedAt: string
   ownerAddress?: string | null
   includedIn?: string | null
-  proposal?: undefined | null
+  proposal?: Object | null
 }
 
 export type Utxo = {
@@ -183,7 +183,7 @@ export type Withdrawal = {
   prepayer?: string | null
   expiration?: number | null
   siblings?: string | null
-  proposal?: undefined | null
+  proposal?: Object | null
 }
 
 export type InstantWithdrawal = {
@@ -191,8 +191,9 @@ export type InstantWithdrawal = {
   withdrawalHash: string
   prepayFeeInEth: string
   prepayFeeInToken: string
-  expiration: undefined
+  expiration: number
   prepayer: string
+  withdrawal?: Object | null
 }
 
 export type Migration = {
