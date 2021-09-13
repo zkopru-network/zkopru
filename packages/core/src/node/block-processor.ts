@@ -242,11 +242,7 @@ export class BlockProcessor extends EventEmitter {
           tokenRegistry,
           db,
         )
-        this.saveMyWithdrawals(
-          block.body.txs,
-          this.tracker.withdrawalTrackers,
-          db,
-        )
+        this.saveWithdrawals(block, this.tracker.withdrawalTrackers, db)
         await this.applyPatch(patch, db)
         // Mark as verified
         db.update('Proposal', {
@@ -470,61 +466,133 @@ export class BlockProcessor extends EventEmitter {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  private saveMyWithdrawals(
-    txs: ZkTx[],
+  private saveWithdrawals(
+    block: Block,
     accounts: Address[],
     db: TransactionDB,
   ) {
-    logger.trace(`core/block-processor - BlockProcessor::saveMyWithdrawals()`)
-    const outflows = txs.reduce(
-      (acc, tx) => [
-        ...acc,
-        ...tx.outflow.filter(outflow =>
-          outflow.outflowType.eqn(OutflowType.WITHDRAWAL),
-        ),
-      ],
-      [] as ZkOutflow[],
-    )
-    logger.debug(
-      `core/block-processor - withdrawals: [${outflows.map(outflow =>
-        outflow.data?.to.toAddress().toString(),
-      )}]`,
-    )
-    logger.debug(
-      `core/block-processor - my addresses: ${accounts.map(account =>
-        account.toString(),
-      )}`,
-    )
-    const myWithdrawalOutputs: ZkOutflow[] = outflows.filter(
-      outflow =>
-        outflow.data &&
-        accounts
-          .map(account => account.toString())
-          .includes(outflow.data?.to.toAddress().toString()),
-    )
-    for (const output of myWithdrawalOutputs) {
-      if (!output.data) throw Error('Withdrawal does not have public data')
-      const withdrawalSql = {
-        hash: output.note.toUint256().toString(),
-        withdrawalHash: Withdrawal.withdrawalHash(
-          output.note,
-          output.data,
-        ).toString(),
-        to: output.data.to.toAddress().toString(),
-        eth: output.data.eth.toUint256().toString(),
-        tokenAddr: output.data.tokenAddr.toAddress().toString(),
-        erc20Amount: output.data.erc20Amount.toUint256().toString(),
-        nft: output.data.nft.toUint256().toString(),
-        fee: output.data.fee.toUint256().toString(),
-      }
-      logger.info(
-        `core/block-processor - found withdrawal: ${withdrawalSql.hash}`,
-      )
-      db.upsert('Withdrawal', {
-        where: { hash: withdrawalSql.hash },
-        create: withdrawalSql,
-        update: withdrawalSql,
+    // Save instant withdrawals from memo field
+    {
+      const withdrawalTxs = block.body.txs.filter(tx => {
+        return (
+          tx.outflow.findIndex(outflow =>
+            outflow.outflowType.eqn(OutflowType.WITHDRAWAL),
+          ) !== -1
+        )
       })
+      for (const tx of withdrawalTxs) {
+        const { prepayInfo } = tx.parseMemo()
+        // eslint-disable-next-line no-continue
+        if (!prepayInfo) continue
+        const outflows = tx.outflow.filter(o =>
+          o.outflowType.eqn(OutflowType.WITHDRAWAL),
+        )
+        if (outflows.length === 0) {
+          logger.warn('Unable to find withdrawal outflow for memo')
+          // eslint-disable-next-line no-continue
+          continue
+        }
+        if (outflows.length > 1) {
+          logger.warn('Mutliple withdrawal outflows for memo not supported')
+          // eslint-disable-next-line no-continue
+          continue
+        }
+        const outflow = outflows[0] as ZkOutflow
+        if (!outflow.data) throw Error('Withdrawal does not have public data')
+        const withdrawalHash = Withdrawal.withdrawalHash(
+          outflow.note,
+          outflow.data,
+        ).toString()
+        const withdrawalSql = {
+          hash: outflow.note.toUint256().toString(),
+          withdrawalHash: Withdrawal.withdrawalHash(
+            outflow.note,
+            outflow.data,
+          ).toString(),
+          to: outflow.data.to.toAddress().toString(),
+          eth: outflow.data.eth.toUint256().toString(),
+          tokenAddr: outflow.data.tokenAddr.toAddress().toString(),
+          erc20Amount: outflow.data.erc20Amount.toUint256().toString(),
+          nft: outflow.data.nft.toUint256().toString(),
+          fee: outflow.data.fee.toUint256().toString(),
+          includedIn: block.hash.toString(),
+        }
+        db.upsert('Withdrawal', {
+          where: { hash: withdrawalSql.hash },
+          create: withdrawalSql,
+          update: withdrawalSql,
+        })
+        const instantWithdrawDoc = {
+          signature: `0x${prepayInfo.signature.toString('hex')}`,
+          withdrawalHash,
+          prepayFeeInEth: prepayInfo.prepayFeeInEth.toString(),
+          prepayFeeInToken: prepayInfo.prepayFeeInToken.toString(),
+          expiration: prepayInfo.expiration,
+          prepayer: '0x0000000000000000000000000000000000000000',
+        }
+        db.upsert('InstantWithdrawal', {
+          where: {
+            signature: instantWithdrawDoc.signature,
+          },
+          create: instantWithdrawDoc,
+          update: instantWithdrawDoc,
+        })
+      }
+    }
+    // save my withdrawals
+    {
+      logger.trace(`core/block-processor - BlockProcessor::saveMyWithdrawals()`)
+      const outflows = block.body.txs.reduce(
+        (acc, tx) => [
+          ...acc,
+          ...tx.outflow.filter(outflow =>
+            outflow.outflowType.eqn(OutflowType.WITHDRAWAL),
+          ),
+        ],
+        [] as ZkOutflow[],
+      )
+      logger.debug(
+        `core/block-processor - withdrawals: [${outflows.map(outflow =>
+          outflow.data?.to.toAddress().toString(),
+        )}]`,
+      )
+      logger.debug(
+        `core/block-processor - my addresses: ${accounts.map(account =>
+          account.toString(),
+        )}`,
+      )
+      const myWithdrawalOutputs: ZkOutflow[] = outflows.filter(
+        outflow =>
+          outflow.data &&
+          accounts
+            .map(account => account.toString())
+            .includes(outflow.data?.to.toAddress().toString()),
+      )
+      for (const output of myWithdrawalOutputs) {
+        if (!output.data) throw Error('Withdrawal does not have public data')
+        const withdrawalSql = {
+          hash: output.note.toUint256().toString(),
+          withdrawalHash: Withdrawal.withdrawalHash(
+            output.note,
+            output.data,
+          ).toString(),
+          to: output.data.to.toAddress().toString(),
+          eth: output.data.eth.toUint256().toString(),
+          tokenAddr: output.data.tokenAddr.toAddress().toString(),
+          erc20Amount: output.data.erc20Amount.toUint256().toString(),
+          nft: output.data.nft.toUint256().toString(),
+          fee: output.data.fee.toUint256().toString(),
+          includedIn: block.hash.toString(),
+        }
+        logger.info(
+          `core/block-processor - found withdrawal: ${withdrawalSql.hash}`,
+        )
+        db.upsert('Withdrawal', {
+          where: { hash: withdrawalSql.hash },
+          create: withdrawalSql,
+          update: withdrawalSql,
+        })
+      }
     }
   }
 

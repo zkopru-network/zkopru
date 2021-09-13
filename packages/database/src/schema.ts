@@ -352,6 +352,26 @@ export default [
     ],
   },
   {
+    name: 'InstantWithdrawal',
+    primaryKey: 'signature',
+    rows: [
+      ['signature', 'String'],
+      ['withdrawalHash', 'String'],
+      ['prepayFeeInEth', 'String'],
+      ['prepayFeeInToken', 'String'],
+      ['expiration', 'Int'],
+      ['prepayer', 'String'],
+      {
+        name: 'withdrawal',
+        relation: {
+          localField: 'withdrawalHash',
+          foreignField: 'withdrawalHash',
+          foreignTable: 'Withdrawal',
+        },
+      },
+    ],
+  },
+  {
     name: 'Migration',
     primaryKey: 'hash',
     rows: [

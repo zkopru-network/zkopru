@@ -86,6 +86,11 @@ export class CoordinatorApi {
       app.post('/tx', catchError(this.txHandler))
       app.post('/txs', express.json(), catchError(this.multiTxHandler))
       app.post('/instant-withdraw', catchError(this.instantWithdrawHandler))
+      app.get(
+        '/instant-withdraw',
+        express.json(),
+        catchError(this.loadInstantWithdrawHandler),
+      )
       if (this.context.config.bootstrap) {
         app.get('/bootstrap', catchError(this.bootstrapHandler))
       }
@@ -156,6 +161,48 @@ export class CoordinatorApi {
     }
   }
 
+  private loadInstantWithdrawHandler: RequestHandler = async (_, res) => {
+    const instantWithdrawals = await this.context.node.db.findMany(
+      'InstantWithdrawal',
+      {
+        where: {},
+        orderBy: { expiration: 'desc' },
+        include: { withdrawal: { proposal: true } },
+      },
+    )
+    const tokenAddresses = instantWithdrawals
+      .filter(instant => !!instant.withdrawal)
+      .map(({ withdrawal }) => withdrawal.tokenAddr)
+      .filter(addr => +addr !== 0)
+      .filter(addr => !!addr)
+    const uniqTokenAddresses = [...new Set(tokenAddresses)]
+    const tokenInfo = await this.context.node.loadERC20InfoByAddress(
+      uniqTokenAddresses,
+    )
+    const tokenInfoByAddress = tokenInfo.reduce((acc, info) => {
+      return {
+        ...acc,
+        [info.address.toLowerCase()]: info,
+      }
+    }, {})
+    res.json(
+      instantWithdrawals.map(instant => {
+        if (!instant.withdrawal) return instant
+        const { tokenAddr } = instant.withdrawal
+        if (+tokenAddr === 0) return instant
+        const info = tokenInfoByAddress[tokenAddr.toLowerCase()]
+        if (!info) throw new Error('Unable to find info for token')
+        return {
+          ...instant,
+          withdrawal: {
+            ...instant.withdrawal,
+            tokenInfo: info,
+          },
+        }
+      }),
+    )
+  }
+
   private multiTxHandler: RequestHandler = async (req, res) => {
     const txs = req.body
     const zkTxs = [] as ZkTx[]
@@ -171,7 +218,7 @@ export class CoordinatorApi {
       }
       zkTxs.push(zkTx)
     }
-    await Promise.all(zkTxs.map(tx => this.context.txPool.addToTxPool(tx)))
+    await this.context.txPool.addToTxPool(zkTxs)
     res.send(true)
     const { auctionMonitor } = this.context
     if (!auctionMonitor.isProposable) {

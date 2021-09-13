@@ -36,6 +36,9 @@ workflows:
       - test_integration:
           requires:
             - build
+      - test_utils:
+          requires:
+            - build
 jobs:
   build:
     machine:
@@ -191,6 +194,15 @@ jobs:
       - run:
           name: BabyJubJub Tests
           command: yarn test --scope=@zkopru/babyjubjub
+  test_utils:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Utils Tests
+          command: yarn test --scope=@zkopru/utils
   test_integration:
     machine:
       image: ubuntu-2004:202010-01

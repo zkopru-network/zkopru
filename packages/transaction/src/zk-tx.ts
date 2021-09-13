@@ -2,9 +2,16 @@
 import { soliditySha3Raw } from 'web3-utils'
 import { Fp } from '@zkopru/babyjubjub'
 import * as Utils from '@zkopru/utils'
-import { Bytes32, Uint256 } from 'soltypes'
+import { Bytes4, Bytes32, Uint256 } from 'soltypes'
 import { OutflowType } from './note'
-import { Memo } from './memo'
+import {
+  Memo,
+  MemoVersion,
+  V2_MEMO_DEFAULT_ABI,
+  V2_MEMO_WITHDRAW_SIG_ABI,
+  V2_MEMO_DEFAULT_ABI_ZERO,
+  V2_MEMO_WITHDRAW_SIG_ABI_ZERO,
+} from './memo'
 
 export interface ZkInflow {
   nullifier: Fp
@@ -362,5 +369,76 @@ export class ZkTx {
       pi_c: [...this.proof.pi_c.map(f => f.toBigInt()), bigOne],
       protocol: 'groth16',
     }
+  }
+
+  parseMemo(): {
+    encryptedNotes: Buffer[]
+    prepayInfo?: {
+      prepayFeeInEth: Fp
+      prepayFeeInToken: Fp
+      expiration: number
+      signature: Buffer
+    }
+  } {
+    if (!this.memo)
+      return {
+        encryptedNotes: [],
+      }
+    if (this.memo.version === MemoVersion.V1) {
+      return {
+        encryptedNotes: [this.memo.data],
+      }
+    }
+    if (this.memo.version !== MemoVersion.V2) {
+      throw new Error(`Unrecognized memo version: ${this.memo.version}`)
+    }
+    const memoSig = Bytes4.from(
+      `0x${this.memo.data.slice(0, 4).toString('hex')}`,
+    )
+    if (
+      V2_MEMO_DEFAULT_ABI.eq(memoSig) ||
+      V2_MEMO_DEFAULT_ABI_ZERO.eq(memoSig)
+    ) {
+      return {
+        encryptedNotes: Array((this.memo.data.length - 4) / 81)
+          .fill(null)
+          .map((_, index) => {
+            if (!this.memo) throw new Error('Expected memo to exist')
+            return this.memo.data.subarray(4 + index * 81, 4 + (index + 1) * 81)
+          }),
+      }
+    }
+    if (
+      V2_MEMO_WITHDRAW_SIG_ABI.eq(memoSig) ||
+      V2_MEMO_WITHDRAW_SIG_ABI_ZERO.eq(memoSig)
+    ) {
+      const queue = new Utils.StringifiedHexQueue(
+        `0x${this.memo.data.toString('hex')}`,
+      )
+      // dequeue the abi sig
+      queue.dequeue(4)
+      const prepayEthFee = Fp.from(queue.dequeue(32))
+      const prepayTokenFee = Fp.from(queue.dequeue(32))
+      const expiration = queue.dequeueToNumber(8)
+      const sigLength = queue.dequeueToNumber(9)
+      const signature = queue.dequeueToBuffer(sigLength)
+      // dequeue the signature padding
+      queue.dequeue(81 - (sigLength % 81))
+      const noteData = queue.dequeueAllToBuffer()
+      return {
+        encryptedNotes: Array(noteData.length / 81)
+          .fill(null)
+          .map((_, index) => {
+            return noteData.subarray(index * 81, (index + 1) * 81)
+          }),
+        prepayInfo: {
+          prepayFeeInEth: prepayEthFee,
+          prepayFeeInToken: prepayTokenFee,
+          expiration,
+          signature,
+        },
+      }
+    }
+    throw new Error(`Unrecognized v2 memo signature: ${memoSig.toString()}`)
   }
 }
