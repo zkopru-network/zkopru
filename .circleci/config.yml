@@ -12,9 +12,9 @@ workflows:
       - build_keys:
           requires:
             - load_keys
-      - test_circuits:
-          requires:
-            - build_keys
+      # - test_circuits:
+      #     requires:
+      #       - build_keys
       - test_coordinator:
           requires:
             - build
@@ -118,7 +118,7 @@ jobs:
       - run:
           name: Circuit Tests
           command: yarn test --scope=@zkopru/circuits
-          no_output_timeout: 30m
+          no_output_timeout: 120m
   test_coordinator:
     machine:
       image: ubuntu-2004:202010-01
