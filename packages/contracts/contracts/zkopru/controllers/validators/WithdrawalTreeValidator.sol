@@ -85,7 +85,7 @@ contract WithdrawalTreeValidator is Storage, IWithdrawalTreeValidator {
         uint256[] memory withdrawals = _getWithdrawalHashes(l2Block.body.txs);
         // Check validity of the roll up using the storage based Poseidon sub-tree roll up
         uint256 computedRoot =
-            SubTreeLib.appendSubTree(
+            SubTreeLib.append(
                 Hash.keccak(),
                 parentHeader.withdrawalRoot,
                 parentHeader.withdrawalIndex,

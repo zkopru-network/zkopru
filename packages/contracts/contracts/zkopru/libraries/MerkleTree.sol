@@ -24,13 +24,13 @@ library MerkleTreeLib {
             "Submitted invalid length of siblings"
         );
         require(
-            _startingLeafProof(self, startingRoot, index, initialSiblings),
+            startingLeafProof(self, startingRoot, index, initialSiblings),
             "Invalid merkle proof of starting leaf node"
         );
         uint256 nextIndex = index;
         uint256[] memory nextSiblings = initialSiblings;
         for (uint256 i = 0; i < leaves.length; i++) {
-            (newRoot, nextIndex, nextSiblings) = _append(
+            (newRoot, nextIndex, nextSiblings) = _appendLeaf(
                 self,
                 nextIndex,
                 leaves[i],
@@ -70,7 +70,7 @@ library MerkleTreeLib {
         return node;
     }
 
-    function _startingLeafProof(
+    function startingLeafProof(
         Hasher memory self,
         uint256 root,
         uint256 index,
@@ -97,13 +97,13 @@ library MerkleTreeLib {
         return node == root;
     }
 
-    function _append(
+    function _appendLeaf(
         Hasher memory self,
         uint256 index,
         uint256 leaf,
         uint256[] memory siblings
     )
-        internal
+        private
         pure
         returns (
             uint256 nextRoot,
@@ -135,7 +135,7 @@ library SubTreeLib {
     using MerkleTreeLib for Hasher;
     using MerkleTreeLib for bytes32;
 
-    function appendSubTree(
+    function append(
         Hasher memory self,
         uint256 startingRoot,
         uint256 index,
@@ -151,7 +151,7 @@ library SubTreeLib {
             "Should submit subtree's siblings"
         );
         require(
-            _emptySubTreeProof(
+            emptySubTreeProof(
                 self,
                 startingRoot,
                 index,
@@ -164,7 +164,7 @@ library SubTreeLib {
         uint256[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
         uint256[] memory nextSiblings = subTreeSiblings;
         for (uint256 i = 0; i < subTrees.length; i++) {
-            (newRoot, nextIndex, nextSiblings) = _appendSubTree(
+            (newRoot, nextIndex, nextSiblings) = appendSubTree(
                 self,
                 nextIndex,
                 subTreeDepth,
@@ -181,9 +181,8 @@ library SubTreeLib {
         returns (uint256[][] memory subTrees)
     {
         uint256 subTreeSize = 1 << subTreeDepth;
-        uint256 numOfSubTrees =
-            (leaves.length / subTreeSize) +
-                (leaves.length % subTreeSize == 0 ? 0 : 1);
+        uint256 numOfSubTrees = (leaves.length / subTreeSize) +
+            (leaves.length % subTreeSize == 0 ? 0 : 1);
         subTrees = new uint256[][](numOfSubTrees);
         for (uint256 i = 0; i < numOfSubTrees; i++) {
             subTrees[i] = new uint256[](subTreeSize);
@@ -205,7 +204,7 @@ library SubTreeLib {
      * @param siblings If the merkle tree depth is "D" and the subTree's
      *          depth is "d", the length of the siblings should be "D - d".
      */
-    function _emptySubTreeProof(
+    function emptySubTreeProof(
         Hasher memory self,
         uint256 root,
         uint256 index,
@@ -235,7 +234,7 @@ library SubTreeLib {
             );
     }
 
-    function _appendSubTree(
+    function appendSubTree(
         Hasher memory self,
         uint256 index,
         uint256 subTreeDepth,
@@ -279,7 +278,7 @@ library SubTreeLib {
         Hasher memory self,
         uint256 subTreeDepth,
         uint256[] memory leaves
-    ) internal pure returns (uint256) {
+    ) private pure returns (uint256) {
         // Example of a sub tree with depth 3
         //                      1
         //          10                       11
