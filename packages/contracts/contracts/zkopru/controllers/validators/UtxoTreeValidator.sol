@@ -99,7 +99,7 @@ contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
         uint256[] memory utxos = _getUTXOs(_deposits, _block.body.txs);
         // Check validity of the roll up using the storage based Poseidon sub-tree roll up
         uint256 computedRoot =
-            SubTreeLib.appendSubTree(
+            SubTreeLib.append(
                 Hash.poseidon(),
                 parentHeader.utxoRoot,
                 parentHeader.utxoIndex,
