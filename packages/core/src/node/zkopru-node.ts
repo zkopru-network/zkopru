@@ -172,8 +172,9 @@ export class ZkopruNode {
     })
     for (const token of registry.erc20s) {
       const address = token.val
-      // eslint-disable-next-line no-continue
-      if (existingInfo.indexOf(address) !== -1) continue
+      if (existingInfo.findIndex(({ address: a }) => a === address) !== -1)
+        // eslint-disable-next-line no-continue
+        continue
       // otherwise load the token info
       const contract = Layer1.getERC20(this.layer1.web3, address)
       const [symbol, decimals] = await Promise.all([
