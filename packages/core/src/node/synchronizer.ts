@@ -434,7 +434,7 @@ export class Synchronizer extends EventEmitter {
           salt: note.salt.toUint256().toString(),
           tokenAddr: note
             .tokenAddr()
-            .toUint256()
+            .toHex()
             .toString(),
           erc20Amount: note
             .erc20Amount()
