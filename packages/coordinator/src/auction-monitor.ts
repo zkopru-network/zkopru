@@ -98,8 +98,9 @@ export class AuctionMonitor {
       )
       await this.coordinatorManager.updateUrl(this.account.address)
     } catch (err) {
-      logger.error(err.toString())
-      logger.error('Error updating url')
+      logger.error(
+        `coordinator/auction-monitor.ts - Error updating url ${err.toString()}`,
+      )
     }
   }
 
@@ -126,7 +127,9 @@ export class AuctionMonitor {
 
     const balance = await layer1.web3.eth.getBalance(this.account.address)
     if (new BN(balance).eq(new BN('0'))) {
-      logger.info('Empty wallet, skipping auction participation')
+      logger.info(
+        `coordinator/auction-monitor.ts - Empty wallet, skipping auction participation`,
+      )
       return
     }
     const myUrl = await auction.methods
@@ -136,7 +139,9 @@ export class AuctionMonitor {
       const newUrl = this.nodeUrl || `${await externalIp()}:${this.port}`
       // This will throw if invalid
       validatePublicUrls(newUrl)
-      logger.info(`Setting public urls: ${newUrl}`)
+      logger.info(
+        `coordinator/auction-monitor.ts - Setting public urls: ${newUrl}`,
+      )
       await this.updateUrl(newUrl)
     }
     await this.bidIfNeeded()
@@ -156,7 +161,7 @@ export class AuctionMonitor {
       .events.NewHighBid()
       .on('connected', subId => {
         logger.info(
-          `auction-monitor.js: NewHighBid listener is connected. Id: ${subId}`,
+          `coordinator/auction-monitor.ts - NewHighBid listener is connected. Id: ${subId}`,
         )
       })
       .on('data', async data => {
@@ -174,7 +179,9 @@ export class AuctionMonitor {
           // update our bid if we're close enough to trigger a bid
           await this.bidIfNeeded()
         }
-        logger.info(`New high bid for round ${currentRound}`)
+        logger.info(
+          `coordinator/auction-monitor.ts - New high bid for round ${currentRound}`,
+        )
       })
   }
 
@@ -193,7 +200,9 @@ export class AuctionMonitor {
       .on('data', this.updateIsProposable.bind(this))
       .on('changed', this.updateIsProposable.bind(this))
       .on('error', async err => {
-        logger.error(`Coordinator, stake subscription error: ${err}`)
+        logger.error(
+          `coordinator/auction-monitor.ts - Coordinator, stake subscription error: ${err.toString()}`,
+        )
       })
   }
 
@@ -202,7 +211,7 @@ export class AuctionMonitor {
       try {
         await this.blockSubscription.unsubscribe()
       } catch (e) {
-        logger.error(e.toString())
+        logger.error(`coordinator/auction-monitor.ts - ${e.toString()}`)
       } finally {
         this.blockSubscription = undefined
       }
@@ -241,7 +250,9 @@ export class AuctionMonitor {
         .call(),
       this.node.layer1.web3.eth.getBlockNumber(),
     ])
-    logger.info(`Updated isProposable at block ${blockNumber}: ${isProposable}`)
+    logger.info(
+      `coordinator/auction-monitor.ts - Updated isProposable at block ${blockNumber}: ${isProposable}`,
+    )
     this.isProposable = isProposable
     this.isProposableLastUpdated = blockNumber
   }
@@ -288,10 +299,12 @@ export class AuctionMonitor {
         .isStaked(this.account.address)
         .call()
       if (!staked) {
-        logger.info('Skipping auction bid, not staked')
+        logger.info(
+          'coordinator/auction-monitor.ts - Skipping auction bid, not staked',
+        )
         return
       }
-      logger.info('Examining auction state')
+      logger.info('coordinator/auction-monitor.ts - Examining auction state')
       const auction = this.auction()
       // TODO: calculate these locally
       const [earliestRound, latestRound] = await Promise.all([
@@ -334,10 +347,12 @@ export class AuctionMonitor {
       if (+earliestBidRound - this.currentRound > this.roundBidThreshold) {
         // Wait until as late as possible to start bidding
         // preferably call this function again
-        logger.info('Waiting to bid...')
+        logger.info('coordinator/auction-monitor.ts - Waiting to bid...')
         return
       }
-      logger.info(`Bidding on ${roundsToBid.length} auctions`)
+      logger.info(
+        `coordinator/auction-monitor.ts - Bidding on ${roundsToBid.length} auctions`,
+      )
       // estimate the cost of bidding
       let weiCost = new BN('0')
       for (let x = 0; x < roundsToBid.length; x += 1) {
@@ -350,10 +365,16 @@ export class AuctionMonitor {
         weiCost = weiCost.clone().add(nextBidAmount)
       }
       logger.info(
-        `estimated cost: ${this.node.layer1.web3.utils.fromWei(weiCost)} eth`,
+        `coordinator/auction-monitor.ts - estimated cost: ${this.node.layer1.web3.utils.fromWei(
+          weiCost,
+        )} eth`,
       )
-      logger.info(`start round: ${earliestBidRound}`)
-      logger.info(`end round: ${latestBidRound}`)
+      logger.info(
+        `coordinator/auction-monitor.ts - start round: ${earliestBidRound}`,
+      )
+      logger.info(
+        `coordinator/auction-monitor.ts - end round: ${latestBidRound}`,
+      )
       try {
         const tx = auction.methods.multiBid(
           0,
@@ -369,10 +390,13 @@ export class AuctionMonitor {
             value: weiCost.toString(),
           },
         )
-        logger.info(`Successfully bid on transactions`)
+        logger.info(
+          `coordinator/auction-monitor.ts - Successfully bid on transactions`,
+        )
       } catch (err) {
-        logger.error(err)
-        logger.error(`Error bidding on auctions`)
+        logger.error(
+          `coordinator/auction-monitor.ts - Error bidding on auctions ${err.toString()}`,
+        )
       }
     })
   }

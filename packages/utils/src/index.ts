@@ -8,6 +8,8 @@ import axios from 'axios'
 
 export { logger, logStream, attachConsoleLogToPino } from './logger'
 
+export { prepayHash } from './eip712'
+
 export { PromptApp } from './prompt'
 
 export { Worker } from './worker'
@@ -262,6 +264,10 @@ export class StringifiedHexQueue {
     const dequeued = this.str.slice(this.cursor, this.cursor + n * 2)
     this.cursor += n * 2
     return Buffer.from(dequeued, 'hex')
+  }
+
+  dequeueAllToBuffer() {
+    return Buffer.from(this.str.slice(this.cursor), 'hex')
   }
 
   dequeueAll(): string {

@@ -36,8 +36,7 @@ export class StreamConcatenator extends Writable {
 export const logStream = new StreamConcatenator()
 export const logger = pino(
   {
-    level:
-      process.env.LOG_LEVEL || process.env.DEBUG === 'true' ? 'debug' : 'info',
+    level: process.env.LOG_LEVEL || (process.env.DEBUG ? 'debug' : 'info'),
   },
   logStream,
 )
@@ -71,4 +70,8 @@ export const attachConsoleErrorToPino = () => {
       },
     }),
   )
+}
+
+if (process.env.DEBUG || process.env.LOG_LEVEL) {
+  attachConsoleLogToPino()
 }

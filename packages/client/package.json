@@ -22,7 +22,8 @@
     "webpack": "webpack",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "link-modules": "link-module-alias",
-    "test": "jest"
+    "test": "jest",
+    "test:trace": "LOG_LEVEL=trace PRINT_LOG=true jest"
   },
   "license": "GPL-3.0-or-later",
   "devDependencies": {
@@ -51,7 +52,7 @@
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.1.1",
     "url": "^0.11.0",
-    "web3": "^1.3.4",
+    "web3": "^1.2.11",
     "webpack": "^5.26.2",
     "webpack-cli": "^4.5.0"
   },

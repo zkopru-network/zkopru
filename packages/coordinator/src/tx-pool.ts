@@ -7,7 +7,7 @@ import BN from 'bn.js'
 
 export interface TxPoolInterface {
   pendingNum(): number
-  addToTxPool(zkTx: ZkTx): Promise<void>
+  addToTxPool(zkTx: ZkTx | ZkTx[]): Promise<void>
   pickTxs(maxBytes: number, minPricePerByte: BN): Promise<ZkTx[]>
   markAsIncluded(txs: ZkTx[]): void
   pendingTxs(): ZkTx[]
@@ -128,23 +128,27 @@ export class TxMemPool implements TxPoolInterface {
     }
   }
 
-  async storePendingTx(tx: ZkTx) {
-    logger.debug('tx-pool: storePendingTx()')
-    await this.db.upsert('PendingTx', {
-      where: {
-        hash: tx.hash().toString(),
-      },
-      update: {},
-      create: {
-        hash: tx.hash().toString(),
-        fee: tx.fee.toString(),
-        proof: tx.proof,
-        memoVersion: tx.memo?.version,
-        memoData: tx.memo?.data.toString('base64'),
-        swap: tx.swap?.toString(),
-        inflow: tx.inflow,
-        outflow: tx.outflow,
-      },
+  async storePendingTx(txs: ZkTx | ZkTx[]) {
+    logger.trace('coordinator/tx-pool.ts - TxMemPool::storePendingTx()')
+    await this.db.transaction(db => {
+      for (const tx of [txs].flat()) {
+        db.upsert('PendingTx', {
+          where: {
+            hash: tx.hash().toString(),
+          },
+          update: {},
+          create: {
+            hash: tx.hash().toString(),
+            fee: tx.fee.toString(),
+            proof: tx.proof,
+            memoVersion: tx.memo?.version,
+            memoData: tx.memo?.data.toString('base64'),
+            swap: tx.swap?.toString(),
+            inflow: tx.inflow,
+            outflow: tx.outflow,
+          },
+        })
+      }
     })
   }
 
@@ -156,10 +160,12 @@ export class TxMemPool implements TxPoolInterface {
     return Object.values(this.txs)
   }
 
-  async addToTxPool(zkTx: ZkTx): Promise<void> {
-    const txHash = zkTx.hash()
-    this.txs[txHash.toString()] = zkTx
-    await this.storePendingTx(zkTx)
+  async addToTxPool(txs: ZkTx | ZkTx[]): Promise<void> {
+    for (const tx of [txs].flat()) {
+      const txHash = tx.hash()
+      this.txs[txHash.toString()] = tx
+    }
+    await this.storePendingTx(txs)
   }
 
   private async prunePendingTx() {
@@ -221,8 +227,10 @@ export class TxMemPool implements TxPoolInterface {
         // Normal transactions
         const size = tx.size()
         const expectedFee = minPricePerByte.muln(size)
-        logger.info(`expected fee: ${expectedFee.toString()}`)
-        logger.info(`tx.fee: ${tx.fee.toString()}`)
+        logger.info(
+          `coordinator/tx-pool.ts - expected fee: ${expectedFee.toString()}`,
+        )
+        logger.info(`coordinator/tx-pool.ts - tx.fee: ${tx.fee.toString()}`)
         if (available >= size && tx.fee.gte(expectedFee)) {
           available -= size
           fee = fee.add(tx.fee)
@@ -235,8 +243,10 @@ export class TxMemPool implements TxPoolInterface {
         const size = tx[0].size() + tx[1].size()
         const expectedFee = minPricePerByte.muln(size)
         const swapFee = tx[0].fee.add(tx[1].fee)
-        logger.info(`expected fee: ${expectedFee.toString()}`)
-        logger.info(`tx.fee: ${swapFee.toString()}`)
+        logger.info(
+          `coordinator/tx-pool.ts - expected fee: ${expectedFee.toString()}`,
+        )
+        logger.info(`coordinator/tx-pool.ts - tx.fee: ${swapFee.toString()}`)
         if (available >= size && swapFee.gte(expectedFee)) {
           available -= size
           fee = fee.add(swapFee)
@@ -244,7 +254,7 @@ export class TxMemPool implements TxPoolInterface {
         }
       }
     }
-    logger.info(`fee: ${fee}`)
+    logger.info(`coordinator/tx-pool.ts - fee: ${fee}`)
     return picked
   }
 

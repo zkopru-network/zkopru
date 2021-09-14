@@ -1,3 +1,4 @@
+/* eslint dot-notation: ["error", { "allowPattern": "^(_[a-z]+)+$" }] */
 import { TransactionObject } from '@zkopru/contracts'
 import { logger } from '@zkopru/utils'
 import { TransactionConfig } from 'web3-core'
@@ -28,21 +29,28 @@ export class OnchainValidatorContext {
         data: tx.encodeABI(),
       })
       slashable = true
-      // const estimatedGas = await this.layer1.web3.eth.estimateGas(
-      //   {
-      //     to: this.layer1.address,
-      //     data: tx.encodeABI(),
-      //   },
-      //   (err, gas) => {
-      //     console.log(err)
-      //     // eslint-disable-next-line dot-notation
-      //     console.log(`estimated gas-${tx['_method'].name}:`, gas)
-      //   },
-      // )
-      // // eslint-disable-next-line dot-notation
-      // console.log(`estimated gas-${tx['_method'].name}:`, estimatedGas)
+      await this.layer1.web3.eth.estimateGas(
+        {
+          to: this.layer1.address,
+          data: tx.encodeABI(),
+        },
+        (_, gas) => {
+          logger.trace(
+            `core/onchain-context.ts - slashable ${tx['_method']?.name}`,
+          )
+          logger.trace(
+            `core/onchain-context.ts - estimated gas ${tx['_method']?.name}: ${gas}`,
+          )
+          // console.log(err)
+          // // eslint-disable-next-line dot-notation
+          // console.log(`estimated gas-${tx['_method'].name}:`, gas)
+        },
+      )
     } catch (err) {
-      logger.debug('slash call reverted', err)
+      logger.trace(
+        `core/onchain-context.ts - onchain validation: ${tx['_method']?.name}`,
+      )
+      // logger.debug('slash call reverted', err)
       slashable = false
     }
     return {

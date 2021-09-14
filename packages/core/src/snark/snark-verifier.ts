@@ -59,7 +59,7 @@ export class SNARKVerifier {
       const vk = ffjs.utils.stringifyBigInts(registeredVk)
       let result!: boolean
       try {
-        result = snarkjs.groth16.verify(vk, signals, proof)
+        result = await snarkjs.groth16.verify(vk, signals, proof)
       } catch (e) {
         logger.error(e)
         result = false
@@ -70,6 +70,14 @@ export class SNARKVerifier {
       const registeredVk = this.vks[
         verifyingKeyIdentifier(tx.inflow.length, tx.outflow.length)
       ]
+      /**
+      logger.trace(
+        `core/snark-verifier: verifying key: ${JSON.stringify(
+          registeredVk,
+          (_, v) => (typeof v === 'bigint' ? v.toString() : v),
+        )}`,
+      )
+      */
       if (!registeredVk) {
         res(false)
         return
@@ -81,7 +89,11 @@ export class SNARKVerifier {
       // const process = fork('snark-child-process.js')
       process.on('message', message => {
         const { result } = message as { result: boolean }
-        logger.info(`snark result: ${result}`)
+        logger.info(
+          `core/snark-verifier.ts - verifyTx(${tx
+            .hash()
+            .toString()}) => ${JSON.stringify(result)}`,
+        )
         res(result)
         process.kill()
       })

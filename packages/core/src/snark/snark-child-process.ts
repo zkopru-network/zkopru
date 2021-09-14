@@ -8,7 +8,7 @@ process.on(
     const { vk, proof, signals } = message
     let result!: boolean
     try {
-      result = snarkjs.groth16.verify(
+      result = await snarkjs.groth16.verify(
         ffjs.utils.unstringifyBigInts(vk),
         ffjs.utils.unstringifyBigInts(signals),
         ffjs.utils.unstringifyBigInts(proof),

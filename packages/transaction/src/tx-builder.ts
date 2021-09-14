@@ -141,7 +141,7 @@ export class TxBuilder {
     return this
   }
 
-  build(): RawTx {
+  build(): RawTx & { withdrawals: Withdrawal[] } {
     const spendables: Utxo[] = [...this.spendables]
     const spendings: Utxo[] = []
     const sendingAmount = Sum.from(this.sendings)
@@ -269,10 +269,21 @@ export class TxBuilder {
     // Spend ETH containing notes until it hits the number
     spendables.sort((a, b) => (a.eth().gt(b.eth()) ? 1 : -1))
     while (getRequiredETH().gte(Sum.from(spendings).eth)) {
-      logger.info(`required eth: ${getRequiredETH().toString()}`)
-      logger.info(`spending eth: ${Sum.from(spendings).eth}`)
+      logger.info(
+        `transaction/tx-builder.ts - required eth: ${getRequiredETH().toString()}`,
+      )
+      logger.info(
+        `transaction/tx-builder.ts - spending eth: ${Sum.from(spendings).eth}`,
+      )
       const spending = spendables.pop()
-      logger.info(`spending: ${spendings.toString()}`)
+      logger.info(
+        `transaction/tx-builder.ts - spending utxos: [${spendings.map(utxo =>
+          utxo
+            .hash()
+            .toBytes32()
+            .toString(),
+        )}]`,
+      )
       if (spending === undefined) {
         const owned = Sum.from(spendings).eth
         const target = getRequiredETH()
@@ -325,6 +336,9 @@ export class TxBuilder {
       outflow,
       swap: this.swap,
       fee: finalFee,
+      withdrawals: this.sendings.filter(
+        sending => sending instanceof Withdrawal,
+      ) as Withdrawal[],
     }
   }
 

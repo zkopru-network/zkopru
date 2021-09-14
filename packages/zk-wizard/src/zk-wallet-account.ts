@@ -586,10 +586,12 @@ export class ZkWalletAccount {
     tx,
     from,
     encryptTo,
+    prepayInfo,
   }: {
     tx: RawTx
     from?: ZkAccount
     encryptTo?: ZkAddress
+    prepayInfo?: any
   }): Promise<ZkTx> {
     if (
       encryptTo &&
@@ -604,6 +606,7 @@ export class ZkWalletAccount {
         tx,
         from: fromAccount,
         encryptTo,
+        prepayInfo,
       })
       const snarkValid = await this.node.layer2.snarkVerifier.verifyTx(zkTx)
       if (!snarkValid) {
