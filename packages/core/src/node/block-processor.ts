@@ -371,7 +371,7 @@ export class BlockProcessor extends EventEmitter {
     for (const outflow of outflows) {
       outflowOwners[outflow.owner] = true
       outflowTokenAddresses[outflow.tokenAddr] = true
-      if (outflow.nft) nft = true
+      if (outflow.nft && outflow.nft !== '0') nft = true
     }
     if (nft) {
       logger.warn('core/block-processor - NFT outflow not supported')
@@ -389,7 +389,12 @@ export class BlockProcessor extends EventEmitter {
       )
       return
     }
-    if (outflows.length !== tx.outflow.length) {
+    if (
+      outflows.length !==
+      tx.outflow.filter(
+        utxo => utxo.outflowType.toNumber() === OutflowType.UTXO,
+      ).length
+    ) {
       throw new Error('Not all outflows are known')
     }
     const tokenAddress = `0x${decryptedNotes[0].asset.tokenAddr.toString(
