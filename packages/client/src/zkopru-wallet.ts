@@ -150,13 +150,13 @@ export default class ZkopruWallet {
     return weiPerByte
   }
 
-  async transactionsFor(zkAddress: string) {
+  async transactionsFor(zkAddress: string, ethAddress: string) {
     const sent = await this.wallet.db.findMany('Tx', {
       where: {
         senderAddress: zkAddress,
       },
       include: {
-        proposal: true,
+        proposal: { header: true },
       },
     })
     const received = await this.wallet.db.findMany('Tx', {
@@ -164,23 +164,35 @@ export default class ZkopruWallet {
         receiverAddress: zkAddress,
       },
       include: {
-        proposal: true,
+        proposal: { header: true },
       },
     })
-    const deposits = await this.wallet.db.findMany('Deposit', {
+    const completeDeposits = await this.wallet.db.findMany('Deposit', {
       where: {
         ownerAddress: zkAddress,
+        includedIn: { neq: null },
       },
       include: {
-        proposal: true,
+        proposal: { header: true },
+        utxo: true,
+      },
+    })
+    const incompleteDeposits = await this.wallet.db.findMany('Deposit', {
+      where: {
+        ownerAddress: zkAddress,
+        includedIn: { eq: null },
+      },
+      include: {
+        proposal: { header: true },
+        utxo: true,
       },
     })
     const withdrawals = await this.wallet.db.findMany('Withdrawal', {
       where: {
-        owner: zkAddress,
+        to: this.node.node?.layer1.web3.utils.toChecksumAddress(ethAddress),
       },
       include: {
-        proposal: true,
+        proposal: { header: true },
       },
     })
     const pending = await this.wallet.db.findMany('PendingTx', {
@@ -189,11 +201,20 @@ export default class ZkopruWallet {
       },
     })
     return {
-      pending,
-      sent,
-      received,
-      deposits,
-      withdrawals,
+      pending: [
+        ...pending.map(obj => Object.assign(obj, { type: 'Send' })),
+        ...incompleteDeposits.map(obj =>
+          Object.assign(obj, { type: 'Deposit', ...obj.utxo }),
+        ),
+      ],
+      history: [
+        ...sent.map(obj => Object.assign(obj, { type: 'Send' })),
+        ...received.map(obj => Object.assign(obj, { type: 'Receive' })),
+        ...completeDeposits
+          .filter(deposit => !!deposit.proposal)
+          .map(obj => Object.assign(obj, { type: 'Deposit', ...obj.utxo })),
+        ...withdrawals.map(obj => Object.assign(obj, { type: 'Withdraw' })),
+      ],
     }
   }
 }

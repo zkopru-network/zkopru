@@ -79,6 +79,7 @@ export type Proposal = {
   finalized?: boolean | null
   verified?: boolean | null
   isUncle?: boolean | null
+  header?: Object | null
   block?: Object | null
 }
 
@@ -110,7 +111,8 @@ export type Tx = {
   senderAddress?: string | null
   receiverAddress?: string | null
   tokenAddr?: string | null
-  amount?: string | null
+  erc20Amount?: string | null
+  eth?: string | null
   proposal?: Object | null
 }
 
@@ -146,6 +148,8 @@ export type Deposit = {
   queuedAt: string
   ownerAddress?: string | null
   includedIn?: string | null
+  from?: string | null
+  utxo?: Object | null
   proposal?: Object | null
 }
 

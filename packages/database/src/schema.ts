@@ -147,6 +147,15 @@ export default [
       ['verified', 'Bool', { optional: true }],
       ['isUncle', 'Bool', { optional: true }],
       {
+        name: 'header',
+        type: 'Object',
+        relation: {
+          localField: 'hash',
+          foreignField: 'hash',
+          foreignTable: 'Header',
+        },
+      },
+      {
         name: 'block',
         type: 'Object',
         optional: true,
@@ -228,7 +237,8 @@ export default [
       ['senderAddress', 'String', { optional: true }],
       ['receiverAddress', 'String', { optional: true }],
       ['tokenAddr', 'String', { optional: true }],
-      ['amount', 'String', { optional: true }],
+      ['erc20Amount', 'String', { optional: true }],
+      ['eth', 'String', { optional: true }],
       {
         name: 'proposal',
         relation: {
@@ -284,6 +294,15 @@ export default [
       ['queuedAt', 'String'],
       ['ownerAddress', 'String', { optional: true }],
       ['includedIn', 'String', { optional: true }],
+      ['from', 'String', { optional: true }],
+      {
+        name: 'utxo',
+        relation: {
+          localField: 'note',
+          foreignField: 'hash',
+          foreignTable: 'Utxo',
+        },
+      },
       {
         name: 'proposal',
         relation: {

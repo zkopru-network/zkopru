@@ -360,27 +360,48 @@ export class BlockProcessor extends EventEmitter {
     decryptedNotes: Utxo[],
     db: TransactionDB,
   ) {
-    const outflows = await this.db.findMany('Utxo', {
+    const inflows = await this.db.findMany('Utxo', {
       where: {
-        hash: tx.outflow.map(outflow => outflow.note.toString()),
+        nullifier: tx.inflow.map(inflow => inflow.nullifier.toString()),
       },
     })
-    const outflowTokenAddresses = {}
+    // my outflow amounts
+    let tokenAddress: Fp | undefined
+    let ethAmount = new BN('0')
+    let tokenAmount = new BN('0')
+    for (const note of decryptedNotes) {
+      if (!tokenAddress && !note.tokenAddr().eq(new BN('0'))) {
+        tokenAddress = note.tokenAddr()
+      }
+      if (tokenAddress && tokenAddress.eq(note.tokenAddr())) {
+        tokenAmount = tokenAmount.add(note.erc20Amount())
+      }
+      ethAmount = ethAmount.add(note.eth())
+    }
+    if (inflows.length !== tx.inflow.length) {
+      // it's a receive transaction
+      db.update('Tx', {
+        where: {
+          hash: tx.hash().toString(),
+        },
+        update: {
+          receiverAddress: knownReceiver.zkAddress.toString(),
+          tokenAddr: tokenAddress ? tokenAddress.toHex().toString() : '0x0',
+          eth: ethAmount.toString(),
+          erc20Amount: tokenAmount.toString(),
+        },
+      })
+      return
+    }
+    // otherwise assume it's a send
     const outflowOwners = {}
     let nft = false
-    for (const outflow of outflows) {
-      outflowOwners[outflow.owner] = true
-      outflowTokenAddresses[outflow.tokenAddr] = true
-      if (outflow.nft && outflow.nft !== '0') nft = true
+    for (const outflow of decryptedNotes) {
+      outflowOwners[outflow.owner.toString()] = true
+      if (outflow.nft() && +outflow.nft() !== 0) nft = true
     }
     if (nft) {
       logger.warn('core/block-processor - NFT outflow not supported')
-      return
-    }
-    if (Object.keys(outflowTokenAddresses).length !== 1) {
-      logger.warn(
-        'core/block-processor - Multiple outflow tokens not supported',
-      )
       return
     }
     if (Object.keys(outflowOwners).length > 1) {
@@ -389,60 +410,27 @@ export class BlockProcessor extends EventEmitter {
       )
       return
     }
-    if (
-      outflows.length !==
-      tx.outflow.filter(
-        utxo => utxo.outflowType.toNumber() === OutflowType.UTXO,
-      ).length
-    ) {
-      throw new Error('Not all outflows are known')
-    }
-    const tokenAddress = `0x${decryptedNotes[0].asset.tokenAddr.toString(
-      'hex',
-    )}`
-    const myInflowTotal = decryptedNotes.reduce((total, note: Utxo) => {
-      if (+tokenAddress === 0) {
-        return total.add(new Fp(note.asset.eth))
-      }
-      if (note.asset.tokenAddr.eq(Fp.from(tokenAddress))) {
-        return total.add(note.asset.erc20Amount)
-      }
-      return total
-    }, new Fp('0'))
-    if (Object.keys(outflowOwners).length === 0) {
-      // we don't know who the transaction is from
-      // we're likely the receiver
-      db.update('Tx', {
-        where: {
-          hash: tx.hash().toString(),
-        },
-        update: {
-          receiverAddress: knownReceiver.zkAddress.toString(),
-          tokenAddr: tokenAddress,
-          amount: myInflowTotal.toString(),
-        },
-      })
-    }
     // otherwise we're the sender
-    const totalSent = outflows
-      .filter(outflow => outflow.owner === knownReceiver.zkAddress)
-      .reduce((total, outflow) => {
-        if (+tokenAddress === 0 && tokenAddress === outflow.tokenAddr) {
-          return total.add(Fp.from(outflow.erc20Amount))
-        }
-        return total.add(Fp.from(outflow.eth))
-      }, Fp.from(0))
-    const netSent = totalSent
-      .sub(myInflowTotal)
-      .sub(+tokenAddress === 0 ? tx.fee : Fp.from(0))
+    let tokenAmountSent = new BN('0')
+    let ethAmountSent = new BN('0')
+    for (const inflow of inflows) {
+      if (tokenAddress && tokenAddress.eq(Fp.from(inflow.tokenAddr))) {
+        tokenAmountSent = tokenAmountSent.add(Fp.from(inflow.erc20Amount))
+      }
+      ethAmountSent = ethAmountSent.add(Fp.from(inflow.eth))
+    }
     db.update('Tx', {
       where: {
         hash: tx.hash().toString(),
       },
       update: {
         senderAddress: knownReceiver.zkAddress.toString(),
-        tokenAddr: tokenAddress,
-        amount: netSent.toString(),
+        tokenAddr: tokenAddress ? tokenAddress.toHex().toString() : '0x0',
+        erc20Amount: tokenAmountSent.sub(tokenAmount).toString(),
+        eth: ethAmountSent
+          .sub(Fp.from(tx.fee))
+          .sub(ethAmount)
+          .toString(),
       },
     })
   }
