@@ -11,17 +11,58 @@ const path = require("path");
 const { Fp } = require("~babyjubjub/fp");
 const { Block } = require("~core/block");
 const { ZkTx } = require("~transaction/zk-tx");
+const { UtxoTree, poseidonHasher } = require("~tree");
+const {
+  append,
+  appendAsSubTrees,
+  splitToSubTrees
+} = require("~tree/utils/merkle-tree-sol");
+const sample = require("~tree/sample").default;
 const { compare, sampleBlock } = require("../../helper");
 
 const { expect } = chai;
 
 const UtxoTreeValidatorTester = artifacts.require("UtxoTreeValidatorTester");
-
+const Poseidon2 = artifacts.require("Poseidon2");
 const block = Block.from(sampleBlock);
+const toLeaf = val => ({
+  hash: val
+});
 
+const appendSubTree = async (tree, subtreeSize, leaves) => {
+  const totalItemLen = subtreeSize * Math.ceil(leaves.length / subtreeSize);
+
+  const fixedSizeUtxos = Array(totalItemLen).fill({
+    hash: Fp.zero
+  });
+  leaves.forEach((item, index) => {
+    fixedSizeUtxos[index] = item;
+  });
+  if (
+    tree
+      .latestLeafIndex()
+      .add(totalItemLen)
+      .lte(tree.maxSize())
+  ) {
+    const result = await tree.dryAppend(fixedSizeUtxos);
+    return result;
+  }
+  throw Error("utxo tree flushes.");
+};
 contract("UtxoTreeValidator test", async accounts => {
+  let header;
+  let body;
+  let rawData;
   let utxoTreeValidatorTester;
+  let tsTree;
+  const validTreeUpdate = {};
+  const invalidTreeUpdate = {};
+  const depth = 48;
   before(async () => {
+    const { tree } = await sample(depth);
+    tsTree = tree;
+    const deployedPoseidon = await Poseidon2.deployed();
+    UtxoTreeValidatorTester.link("Poseidon2", deployedPoseidon.address);
     utxoTreeValidatorTester = await UtxoTreeValidatorTester.new();
   });
   describe("utxo append list test", () => {
@@ -58,6 +99,55 @@ contract("UtxoTreeValidator test", async accounts => {
       );
       onchainUtxoItems.forEach((val, i) => {
         compare(val, offchainUtxoItems[i]);
+      });
+    });
+  });
+  describe("invalid OPRU should be reverted by the challenge", () => {
+    const subTreeDepth = 5;
+    const subTreeSize = 1 << subTreeDepth;
+    let startSnapshot;
+    let resultSnapshot;
+    let utxos;
+    let parentBlock;
+    let fakeBlock;
+    let validBlock;
+    let proofId;
+    before(async () => {
+      const { root, index, siblings } = tsTree.data;
+      const prevIndex = tsTree.latestLeafIndex();
+      utxos = Array(Math.floor(subTreeSize * 33))
+        .fill()
+        .map((_, index) => Fp.from(index + 1));
+      console.log("tstree index", prevIndex);
+      startSnapshot = await tsTree.dryAppend([]);
+      resultSnapshot = await tsTree.dryAppend(utxos.map(toLeaf));
+    });
+    describe("prepare a proof", () => {
+      it("should create a proof", async () => {
+        const receipt = await utxoTreeValidatorTester.newProof(
+          startSnapshot.root.toString(),
+          startSnapshot.index.toString(),
+          startSnapshot.siblings.slice(subTreeDepth).map(sib => sib.toString())
+        );
+        proofId = receipt.logs[0].args.id;
+      });
+      it("should update the proof and store them.", async () => {
+        let i = 0;
+        while (i < utxos.length) {
+          console.log(`appending ${i} ~ ${Math.min(i + 32, utxos.length)}`);
+          await utxoTreeValidatorTester.updateProof(
+            proofId,
+            utxos.slice(i, Math.min(i + 32, utxos.length))
+          );
+          i += 32;
+        }
+      });
+      it("should return a correct proof", async () => {
+        const storedProof = await utxoTreeValidatorTester.getProof(proofId);
+        compare(storedProof.startRoot, startSnapshot.root);
+        compare(storedProof.startIndex, startSnapshot.index);
+        compare(storedProof.resultRoot, resultSnapshot.root);
+        compare(storedProof.resultIndex, resultSnapshot.index);
       });
     });
   });

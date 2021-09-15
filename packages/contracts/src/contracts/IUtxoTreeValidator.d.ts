@@ -29,6 +29,17 @@ export interface IUtxoTreeValidator extends BaseContract {
   ): IUtxoTreeValidator
   clone(): IUtxoTreeValidator
   methods: {
+    newProof(
+      startingRoot: number | string | BN,
+      startingIndex: number | string | BN,
+      initialSiblings: (number | string | BN)[],
+    ): NonPayableTransactionObject<void>
+
+    updateProof(
+      proofId: number | string | BN,
+      leaves: (number | string | BN)[],
+    ): NonPayableTransactionObject<void>
+
     validateUTXOIndex(
       blockData: string | number[],
       parentHeader: string | number[],
@@ -50,6 +61,37 @@ export interface IUtxoTreeValidator extends BaseContract {
       reason: string
       0: boolean
       1: string
+    }>
+
+    validateUTXORootWithProof(
+      blockData: string | number[],
+      parentHeader: string | number[],
+      _deposits: (number | string | BN)[],
+      proofId: number | string | BN,
+    ): NonPayableTransactionObject<{
+      slash: boolean
+      reason: string
+      0: boolean
+      1: string
+    }>
+
+    getProof(
+      proofId: number | string | BN,
+    ): NonPayableTransactionObject<{
+      owner: string
+      startRoot: string
+      startIndex: string
+      resultRoot: string
+      resultIndex: string
+      mergedLeaves: string
+      cachedSiblings: string[]
+      0: string
+      1: string
+      2: string
+      3: string
+      4: string
+      5: string
+      6: string[]
     }>
   }
   events: {

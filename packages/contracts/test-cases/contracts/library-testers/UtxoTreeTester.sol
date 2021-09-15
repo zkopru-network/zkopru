@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.7.4;
 
-import { Hasher, MerkleTreeLib, SubTreeLib } from "../../../contracts/zkopru/libraries/MerkleTree.sol";
+import {
+    Hasher,
+    MerkleTreeLib,
+    SubTreeLib
+} from "../../../contracts/zkopru/libraries/MerkleTree.sol";
 
 import { Hash } from "../../../contracts/zkopru/libraries/Hash.sol";
 

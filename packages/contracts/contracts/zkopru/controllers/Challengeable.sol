@@ -4,6 +4,9 @@ pragma solidity =0.7.4;
 import { Storage } from "../storage/Storage.sol";
 import { Deserializer } from "../libraries/Deserializer.sol";
 import { Proposer, Proposal } from "../libraries/Types.sol";
+import {
+    UtxoTreeValidator
+} from "../controllers/validators/UtxoTreeValidator.sol";
 
 contract Challengeable is Storage {
     event Slash(bytes32 blockHash, address proposer, string reason);
@@ -36,7 +39,9 @@ contract Challengeable is Storage {
             (slash, reason) = abi.decode(result, (bool, string));
         }
         // Check validation gas limit
-        bool gasExceeds = usedGasForValidation > MAX_VALIDATION_GAS;
+        bool gasExceeds =
+            usedGasForValidation > MAX_VALIDATION_GAS &&
+                !_skipGasLimitCheck(msg.sig);
         if (gasExceeds) {
             (slash, reason) = (
                 true,
@@ -96,5 +101,13 @@ contract Challengeable is Storage {
         // Delete proposer
         delete Storage.chain.proposers[proposerAddr];
         payable(challenger).transfer(challengeReward);
+    }
+
+    function _skipGasLimitCheck(bytes4 sig) internal pure returns (bool) {
+        if (sig == UtxoTreeValidator(0).validateUTXORoot.selector) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }

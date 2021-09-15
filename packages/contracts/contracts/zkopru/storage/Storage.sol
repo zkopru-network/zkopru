@@ -7,6 +7,7 @@ import { SNARK } from "../libraries/SNARK.sol";
 import { Config } from "./Config.sol";
 
 import { SMT254 } from "../libraries/SMT.sol";
+import { TreeUpdateProof } from "../libraries/MerkleTree.sol";
 
 contract Storage is Config {
     // State of the layer2 blockchain is maintained by the optimistic roll up
@@ -23,4 +24,7 @@ contract Storage is Config {
 
     // Addresses allowed to migrate from. Setup wizard manages the list
     mapping(address => bool) public allowedMigrants;
+
+    // UTXO Rollup Proofs
+    TreeUpdateProof[] utxoTreeProofs;
 }
