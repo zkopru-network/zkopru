@@ -473,6 +473,31 @@ export class Synchronizer extends EventEmitter {
           blockNumber,
           event.blockHash,
         )
+        try {
+          // try to load the transaction sender
+          const tx = await this.l1Contract.web3.eth.getTransaction(
+            event.transactionHash,
+          )
+          await this.blockCache.updateCache(
+            'Deposit',
+            {
+              where: {
+                note: note
+                  .hash()
+                  .toUint256()
+                  .toString(),
+              },
+              update: {
+                from: tx.from,
+              },
+            },
+            blockNumber,
+            event.blockHash,
+          )
+        } catch (err) {
+          logger.info(err)
+          logger.erro('core/synchronizer - Error loading deposit transaction')
+        }
         if (cb) cb(utxo)
       })
       .on('changed', event => {
