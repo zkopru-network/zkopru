@@ -228,7 +228,8 @@ export default [
       ['senderAddress', 'String', { optional: true }],
       ['receiverAddress', 'String', { optional: true }],
       ['tokenAddr', 'String', { optional: true }],
-      ['amount', 'String', { optional: true }],
+      ['erc20Amount', 'String', { optional: true }],
+      ['eth', 'String', { optional: true }],
       {
         name: 'proposal',
         relation: {

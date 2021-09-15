@@ -110,7 +110,8 @@ export type Tx = {
   senderAddress?: string | null
   receiverAddress?: string | null
   tokenAddr?: string | null
-  amount?: string | null
+  erc20Amount?: string | null
+  eth?: string | null
   proposal?: Object | null
 }
 
