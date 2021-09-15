@@ -147,6 +147,15 @@ export default [
       ['verified', 'Bool', { optional: true }],
       ['isUncle', 'Bool', { optional: true }],
       {
+        name: 'header',
+        type: 'Object',
+        relation: {
+          localField: 'hash',
+          foreignField: 'hash',
+          foreignTable: 'Header',
+        },
+      },
+      {
         name: 'block',
         type: 'Object',
         optional: true,
@@ -285,6 +294,15 @@ export default [
       ['queuedAt', 'String'],
       ['ownerAddress', 'String', { optional: true }],
       ['includedIn', 'String', { optional: true }],
+      ['from', 'String', { optional: true }],
+      {
+        name: 'utxo',
+        relation: {
+          localField: 'note',
+          foreignField: 'hash',
+          foreignTable: 'Utxo',
+        },
+      },
       {
         name: 'proposal',
         relation: {
