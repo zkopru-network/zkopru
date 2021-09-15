@@ -8,6 +8,23 @@ struct Hasher {
     uint256[] preHashedZero;
 }
 
+struct TreeSnapshot {
+    uint256 root;
+    uint256 index;
+}
+
+struct OPRU {
+    TreeSnapshot start;
+    TreeSnapshot result;
+    bytes32 mergedLeaves;
+}
+
+struct TreeUpdateProof {
+    address owner;
+    OPRU opru;
+    uint256[] cachedSiblings;
+}
+
 library MerkleTreeLib {
     using SafeMath for uint256;
 
@@ -181,8 +198,9 @@ library SubTreeLib {
         returns (uint256[][] memory subTrees)
     {
         uint256 subTreeSize = 1 << subTreeDepth;
-        uint256 numOfSubTrees = (leaves.length / subTreeSize) +
-            (leaves.length % subTreeSize == 0 ? 0 : 1);
+        uint256 numOfSubTrees =
+            (leaves.length / subTreeSize) +
+                (leaves.length % subTreeSize == 0 ? 0 : 1);
         subTrees = new uint256[][](numOfSubTrees);
         for (uint256 i = 0; i < numOfSubTrees; i++) {
             subTrees[i] = new uint256[](subTreeSize);
@@ -198,6 +216,43 @@ library SubTreeLib {
                 subTreeIndex += 1;
             }
         }
+    }
+
+    function merge(
+        bytes32 base,
+        uint256 subTreeDepth,
+        bytes32[] memory leaves
+    ) internal pure returns (bytes32) {
+        uint256[] memory uintLeaves;
+        assembly {
+            uintLeaves := leaves
+        }
+        return merge(base, subTreeDepth, uintLeaves);
+    }
+
+    function merge(
+        bytes32 base,
+        uint256 subTreeDepth,
+        uint256[] memory leaves
+    ) internal pure returns (bytes32) {
+        uint256[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
+        return merge(base, subTrees);
+    }
+
+    function merge(bytes32 base, uint256[][] memory subTrees)
+        internal
+        pure
+        returns (bytes32)
+    {
+        bytes32[] memory subTreeHashes = new bytes32[](subTrees.length);
+        for (uint256 i = 0; i < subTrees.length; i++) {
+            subTreeHashes[i] = keccak256(abi.encodePacked(subTrees[i]));
+        }
+        bytes32 merged = base;
+        for (uint256 i = 0; i < subTreeHashes.length; i++) {
+            merged = keccak256(abi.encodePacked(merged, subTreeHashes[i]));
+        }
+        return merged;
     }
 
     /**
@@ -333,5 +388,142 @@ library SubTreeLib {
             emptyNode >>= 1;
         }
         return nodes[1];
+    }
+}
+
+library OPRUVerifier {
+    using MerkleTreeLib for bytes32;
+    using SubTreeLib for Hasher;
+    using SubTreeLib for uint256[];
+    using SubTreeLib for bytes32;
+
+    /**
+     * @dev It verifies the initial sibling only once and then store the data on chain.
+     *      This is usually appropriate for expensive hash functions like MiMC or Poseidon.
+     */
+    function initWithSiblings(
+        TreeUpdateProof storage self,
+        Hasher memory hasher,
+        uint256 startingRoot,
+        uint256 index,
+        uint256 subTreeDepth,
+        uint256[] memory subTreeSiblings
+    ) internal {
+        require(
+            hasher.emptySubTreeProof(
+                startingRoot,
+                index,
+                subTreeDepth,
+                subTreeSiblings
+            ),
+            "Can't merge a subTree"
+        );
+        self.opru.start.root = startingRoot;
+        self.opru.result.root = startingRoot;
+        self.opru.start.index = index;
+        self.opru.result.index = index;
+        self.opru.mergedLeaves = bytes32(0);
+        self.cachedSiblings = subTreeSiblings;
+    }
+
+    /**
+     * @dev Construct a sub tree and insert into the merkle tree using the
+     *      calldata provided sibling data. This is usually appropriate for
+     *      keccak or other cheap hash functions.
+     * @param self The TreeUpdateProof to update
+     * @param leaves Items to append to the tree.
+     */
+    function update(
+        TreeUpdateProof storage self,
+        Hasher memory hasher,
+        uint256 subTreeDepth,
+        uint256[] memory subTreeSiblings,
+        uint256[] memory leaves
+    ) internal {
+        require(
+            hasher.emptySubTreeProof(
+                self.opru.result.root,
+                self.opru.result.index,
+                subTreeDepth,
+                subTreeSiblings
+            ),
+            "Can't merge a subTree"
+        );
+        uint256[] memory nextSiblings = subTreeSiblings;
+        uint256 nextIndex = self.opru.result.index;
+        uint256[][] memory subTrees = leaves.splitToSubTrees(subTreeDepth);
+        uint256 newRoot;
+        for (uint256 i = 0; i < subTrees.length; i++) {
+            (newRoot, nextIndex, nextSiblings) = hasher.appendSubTree(
+                nextIndex,
+                subTreeDepth,
+                subTrees[i],
+                nextSiblings
+            );
+        }
+        self.opru.result.root = newRoot;
+        self.opru.result.index = nextIndex;
+        self.opru.mergedLeaves = self.opru.mergedLeaves.merge(subTrees);
+    }
+
+    /**
+     * @dev Construct a sub tree and insert into the merkle tree using the on-chain sibling data.
+     *      You can use this function when only you started the TreeUpdateProof using
+     *      initSubTreeRollUpWithSiblings()
+     * @param self The TreeUpdateProof to update
+     * @param leaves Items to append to the tree.
+     */
+    function update(
+        TreeUpdateProof storage self,
+        Hasher memory hasher,
+        uint256 subTreeDepth,
+        uint256[] memory leaves
+    ) internal {
+        uint256 nextIndex = self.opru.result.index;
+        uint256[] memory nextSiblings = self.cachedSiblings;
+        uint256[][] memory subTrees = leaves.splitToSubTrees(subTreeDepth);
+        uint256 newRoot;
+        for (uint256 i = 0; i < subTrees.length; i++) {
+            (newRoot, nextIndex, nextSiblings) = hasher.appendSubTree(
+                nextIndex,
+                subTreeDepth,
+                subTrees[i],
+                nextSiblings
+            );
+        }
+        self.opru.result.root = newRoot;
+        self.opru.result.index = nextIndex;
+        self.opru.mergedLeaves = self.opru.mergedLeaves.merge(subTrees);
+        for (uint256 i = 0; i < nextSiblings.length; i++) {
+            self.cachedSiblings[i] = nextSiblings[i];
+        }
+    }
+
+    /**
+     * @dev Check that the given optimistic roll up is valid using the
+     *      on-chain calculated roll up.
+     */
+    function verify(TreeUpdateProof memory self, OPRU memory opru)
+        internal
+        pure
+        returns (bool)
+    {
+        require(
+            self.opru.start.root == opru.start.root,
+            "Starting root is different"
+        );
+        require(
+            self.opru.start.index == opru.start.index,
+            "Starting index is different"
+        );
+        require(
+            self.opru.mergedLeaves == opru.mergedLeaves,
+            "Appended leaves are different"
+        );
+        require(
+            self.opru.result.index == opru.result.index,
+            "Result index is different"
+        );
+        return self.opru.result.root == opru.result.root;
     }
 }

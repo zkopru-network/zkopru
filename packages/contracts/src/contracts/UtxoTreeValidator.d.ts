@@ -21,11 +21,31 @@ interface EventOptions {
   topics?: string[]
 }
 
+export type NewProof = ContractEventLog<{
+  id: string
+  root: string
+  index: string
+  0: string
+  1: string
+  2: string
+}>
 export type OwnershipTransferred = ContractEventLog<{
   previousOwner: string
   newOwner: string
   0: string
   1: string
+}>
+export type ProofUpdated = ContractEventLog<{
+  id: string
+  startRoot: string
+  startIndex: string
+  resultRoot: string
+  resultIndex: string
+  0: string
+  1: string
+  2: string
+  3: string
+  4: string
 }>
 
 export interface UtxoTreeValidator extends BaseContract {
@@ -87,6 +107,20 @@ export interface UtxoTreeValidator extends BaseContract {
 
     validators(arg0: string | number[]): NonPayableTransactionObject<string>
 
+    newProof(
+      startingRoot: number | string | BN,
+      startingIndex: number | string | BN,
+      initialSiblings: (number | string | BN)[],
+    ): NonPayableTransactionObject<void>
+
+    /**
+     * Update the stored intermediate update result by appending given leaves.      Only the creator is allowed to append new leaves.
+     */
+    updateProof(
+      proofId: number | string | BN,
+      leaves: (number | string | BN)[],
+    ): NonPayableTransactionObject<void>
+
     /**
      * Challenge when the submitted block's updated utxo tree index is invalid.
      * @param  // parentHeader Serialized details of its parent header
@@ -120,21 +154,76 @@ export interface UtxoTreeValidator extends BaseContract {
       0: boolean
       1: string
     }>
+
+    /**
+     * Challenge when the submitted block's updated utxo tree root is invalid.
+     * @param  // parentHeader Serialized details of its parent header
+     * @param _deposits Submit all deposit leaves to be merged.
+     */
+    validateUTXORootWithProof(
+      arg0: string | number[],
+      arg1: string | number[],
+      _deposits: (number | string | BN)[],
+      proofId: number | string | BN,
+    ): NonPayableTransactionObject<{
+      slash: boolean
+      reason: string
+      0: boolean
+      1: string
+    }>
+
+    getProof(
+      proofId: number | string | BN,
+    ): NonPayableTransactionObject<{
+      owner: string
+      startRoot: string
+      startIndex: string
+      resultRoot: string
+      resultIndex: string
+      mergedLeaves: string
+      cachedSiblings: string[]
+      0: string
+      1: string
+      2: string
+      3: string
+      4: string
+      5: string
+      6: string[]
+    }>
   }
   events: {
+    NewProof(cb?: Callback<NewProof>): EventEmitter
+    NewProof(options?: EventOptions, cb?: Callback<NewProof>): EventEmitter
+
     OwnershipTransferred(cb?: Callback<OwnershipTransferred>): EventEmitter
     OwnershipTransferred(
       options?: EventOptions,
       cb?: Callback<OwnershipTransferred>,
     ): EventEmitter
 
+    ProofUpdated(cb?: Callback<ProofUpdated>): EventEmitter
+    ProofUpdated(
+      options?: EventOptions,
+      cb?: Callback<ProofUpdated>,
+    ): EventEmitter
+
     allEvents(options?: EventOptions, cb?: Callback<EventLog>): EventEmitter
   }
+
+  once(event: 'NewProof', cb: Callback<NewProof>): void
+  once(event: 'NewProof', options: EventOptions, cb: Callback<NewProof>): void
 
   once(event: 'OwnershipTransferred', cb: Callback<OwnershipTransferred>): void
   once(
     event: 'OwnershipTransferred',
     options: EventOptions,
     cb: Callback<OwnershipTransferred>,
+  ): void
+
+  once(event: 'ProofUpdated', cb: Callback<ProofUpdated>): void
+  once(
+    event: 'ProofUpdated',
+    options: EventOptions,
+    cb: Callback<ProofUpdated>,
   ): void
 }

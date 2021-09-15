@@ -2,7 +2,13 @@
 pragma solidity =0.7.4;
 
 import { Storage } from "../../storage/Storage.sol";
-import { SubTreeLib } from "../../libraries/MerkleTree.sol";
+import {
+    SubTreeLib,
+    OPRU,
+    TreeSnapshot,
+    TreeUpdateProof,
+    OPRUVerifier
+} from "../../libraries/MerkleTree.sol";
 import { Hash } from "../../libraries/Hash.sol";
 import {
     Block,
@@ -21,6 +27,57 @@ import {
 contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
     using Types for Outflow;
     using Types for Header;
+    using OPRUVerifier for TreeUpdateProof;
+
+    event NewProof(uint256 id, uint256 root, uint256 index);
+    event ProofUpdated(
+        uint256 id,
+        uint256 startRoot,
+        uint256 startIndex,
+        uint256 resultRoot,
+        uint256 resultIndex
+    );
+
+    function newProof(
+        uint256 startingRoot,
+        uint256 startingIndex,
+        uint256[] memory initialSiblings
+    ) external override {
+        TreeUpdateProof storage proof = Storage.utxoTreeProofs.push();
+        uint256 proofId = Storage.utxoTreeProofs.length - 1;
+        proof.initWithSiblings(
+            Hash.poseidon(),
+            startingRoot,
+            startingIndex,
+            UTXO_SUB_TREE_DEPTH,
+            initialSiblings
+        );
+        proof.owner = msg.sender;
+        emit NewProof(proofId, startingRoot, startingIndex);
+    }
+
+    /**
+     * @dev Update the stored intermediate update result by appending given leaves.
+     *      Only the creator is allowed to append new leaves.
+     */
+    function updateProof(uint256 proofId, uint256[] memory leaves)
+        external
+        override
+    {
+        TreeUpdateProof storage proof = Storage.utxoTreeProofs[proofId];
+        require(
+            proof.owner == msg.sender,
+            "Not permitted to update the given proof"
+        );
+        proof.update(Hash.poseidon(), UTXO_SUB_TREE_DEPTH, leaves);
+        emit ProofUpdated(
+            proofId,
+            proof.opru.start.root,
+            proof.opru.start.index,
+            proof.opru.result.root,
+            proof.opru.result.index
+        );
+    }
 
     /**
      * @dev Challenge when the submitted block's updated utxo tree index is invalid.
@@ -112,6 +169,72 @@ contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
         return (computedRoot != _block.header.utxoRoot, "U3");
     }
 
+    /**
+     * @dev Challenge when the submitted block's updated utxo tree root is invalid.
+     * @param // block Serialized block data
+     * @param // parentHeader Serialized details of its parent header
+     * @param _deposits Submit all deposit leaves to be merged.
+     */
+    function validateUTXORootWithProof(
+        bytes calldata, // blockData
+        bytes calldata, // parentHeader
+        uint256[] calldata _deposits,
+        uint256 proofId
+    ) external view override returns (bool slash, string memory reason) {
+        Block memory _block = Deserializer.blockFromCalldataAt(0);
+        // This will revert when the submitted deposit data does not match with the block
+        require(
+            _checkSubmittedDeposits(_block, _deposits),
+            "Submitted invalid deposits"
+        );
+        // This will revert when the submitted header data does not match with the block
+        Header memory parentHeader = Deserializer.headerFromCalldataAt(1);
+        require(
+            _block.header.parentBlock == parentHeader.hash(),
+            "Invalid prev header"
+        );
+        // Get utxos
+        uint256[] memory utxos = _getUTXOs(_deposits, _block.body.txs);
+
+        OPRU memory opru =
+            OPRU(
+                TreeSnapshot(parentHeader.utxoRoot, parentHeader.utxoIndex),
+                TreeSnapshot(_block.header.utxoRoot, _block.header.utxoIndex),
+                SubTreeLib.merge(bytes32(0), UTXO_SUB_TREE_DEPTH, utxos)
+            );
+
+        TreeUpdateProof storage proof = Storage.utxoTreeProofs[proofId];
+
+        bool verifyResult = proof.verify(opru);
+        // Computed new utxo root is different with the submitted
+        // code U3: The updated utxo tree root is not correct.
+        return (!verifyResult, "U3");
+    }
+
+    function getProof(uint256 proofId)
+        external
+        view
+        override
+        returns (
+            address owner,
+            uint256 startRoot,
+            uint256 startIndex,
+            uint256 resultRoot,
+            uint256 resultIndex,
+            bytes32 mergedLeaves,
+            uint256[] memory cachedSiblings
+        )
+    {
+        TreeUpdateProof storage proof = Storage.utxoTreeProofs[proofId];
+        owner = proof.owner;
+        startRoot = proof.opru.start.root;
+        startIndex = proof.opru.start.index;
+        resultRoot = proof.opru.result.root;
+        resultIndex = proof.opru.result.index;
+        mergedLeaves = proof.opru.mergedLeaves;
+        cachedSiblings = proof.cachedSiblings;
+    }
+
     function _checkSubmittedDeposits(
         Block memory _block,
         uint256[] memory deposits
@@ -133,7 +256,7 @@ contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
     }
 
     function _getUTXOs(uint256[] memory deposits, Transaction[] memory txs)
-        private
+        internal
         pure
         returns (uint256[] memory utxos)
     {
