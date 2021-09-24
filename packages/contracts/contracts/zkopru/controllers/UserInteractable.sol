@@ -152,7 +152,8 @@ contract UserInteractable is Storage {
             "Prepay data is different with the given withdrawal note."
         );
         require(
-            prepayRequest.prepayer == address(0) || prepayRequest.prepayer == msg.sender,
+            prepayRequest.prepayer == address(0) ||
+                prepayRequest.prepayer == msg.sender,
             "This tx should be from the prepayer."
         );
 
