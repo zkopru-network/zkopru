@@ -310,7 +310,7 @@ export function makePathAbsolute(filepath: string) {
   return path.join(process.cwd(), filepath)
 }
 
-const HostRegex = /(?=^.{4,253}$)(^((?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+[a-zA-Z]{2,63}$)/
+const HostRegex = /(?=^.{4,253}$)(^((?!-)[a-zA-Z0-9-]{0,62}[a-zA-Z0-9]\.)+[a-zA-Z]{2,63}$)/
 const IP4Regex = /^((25[0-5]|(2[0-4]|1[0-9]|[1-9]|)[0-9])(\.(?!$)|$)){4}$/
 const PortRegex = /^[0-9]+$/
 export function validatePublicUrls(publicUrls: string) {
