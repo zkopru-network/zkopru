@@ -39,12 +39,13 @@ contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
     );
 
     function newProof(
+        uint256 proofId,
         uint256 startingRoot,
         uint256 startingIndex,
         uint256[] memory initialSiblings
     ) external override {
-        TreeUpdateProof storage proof = Storage.utxoTreeProofs.push();
-        uint256 proofId = Storage.utxoTreeProofs.length - 1;
+        TreeUpdateProof storage proof = Storage.utxoTreeProofs[proofId];
+        require(proof.owner == address(0), "Already exists");
         proof.initWithSiblings(
             Hash.poseidon(),
             startingRoot,
@@ -204,7 +205,7 @@ contract UtxoTreeValidator is Storage, IUtxoTreeValidator {
             );
 
         TreeUpdateProof storage proof = Storage.utxoTreeProofs[proofId];
-
+        require(proof.owner == msg.sender, "Proof owner already spent gas.");
         bool verifyResult = proof.verify(opru);
         // Computed new utxo root is different with the submitted
         // code U3: The updated utxo tree root is not correct.

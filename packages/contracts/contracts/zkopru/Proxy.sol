@@ -100,6 +100,9 @@ contract Proxy is Storage {
         _connect(challengeable, IMigrationValidator(0).validateMissedMassMigration.selector);
         _connect(challengeable, IUtxoTreeValidator(0).validateUTXOIndex.selector);
         _connect(challengeable, IUtxoTreeValidator(0).validateUTXORoot.selector);
+        _connect(challengeable, IUtxoTreeValidator(0).newProof.selector);
+        _connect(challengeable, IUtxoTreeValidator(0).updateProof.selector);
+        _connect(challengeable, IUtxoTreeValidator(0).validateUTXORootWithProof.selector);
         _connect(challengeable, IWithdrawalTreeValidator(0).validateWithdrawalIndex.selector);
         _connect(challengeable, IWithdrawalTreeValidator(0).validateWithdrawalRoot.selector);
         _connect(challengeable, INullifierTreeValidator(0).validateNullifierRollUp.selector);
@@ -123,6 +126,9 @@ contract Proxy is Storage {
         _connectValidator(migrationValidator, IMigrationValidator(0).validateMissedMassMigration.selector);
         _connectValidator(utxoTreeValidator, IUtxoTreeValidator(0).validateUTXOIndex.selector);
         _connectValidator(utxoTreeValidator, IUtxoTreeValidator(0).validateUTXORoot.selector);
+        _connectValidator(utxoTreeValidator, IUtxoTreeValidator(0).newProof.selector);
+        _connectValidator(utxoTreeValidator, IUtxoTreeValidator(0).updateProof.selector);
+        _connectValidator(utxoTreeValidator, IUtxoTreeValidator(0).validateUTXORootWithProof.selector);
         _connectValidator(withdrawalTreeValidator, IWithdrawalTreeValidator(0).validateWithdrawalIndex.selector);
         _connectValidator(withdrawalTreeValidator, IWithdrawalTreeValidator(0).validateWithdrawalRoot.selector);
         _connectValidator(nullifierTreeValidator, INullifierTreeValidator(0).validateNullifierRollUp.selector);

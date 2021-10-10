@@ -30,6 +30,7 @@ export interface IUtxoTreeValidator extends BaseContract {
   clone(): IUtxoTreeValidator
   methods: {
     newProof(
+      proofId: number | string | BN,
       startingRoot: number | string | BN,
       startingIndex: number | string | BN,
       initialSiblings: (number | string | BN)[],

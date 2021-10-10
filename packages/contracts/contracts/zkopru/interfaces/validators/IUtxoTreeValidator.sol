@@ -3,6 +3,7 @@ pragma solidity =0.7.4;
 
 interface IUtxoTreeValidator {
     function newProof(
+        uint256 proofId,
         uint256 startingRoot,
         uint256 startingIndex,
         uint256[] memory initialSiblings

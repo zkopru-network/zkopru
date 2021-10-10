@@ -1,6 +1,7 @@
 export const IUtxoTreeValidatorABI = [
   {
     inputs: [
+      { internalType: 'uint256', name: 'proofId', type: 'uint256' },
       { internalType: 'uint256', name: 'startingRoot', type: 'uint256' },
       { internalType: 'uint256', name: 'startingIndex', type: 'uint256' },
       { internalType: 'uint256[]', name: 'initialSiblings', type: 'uint256[]' },
