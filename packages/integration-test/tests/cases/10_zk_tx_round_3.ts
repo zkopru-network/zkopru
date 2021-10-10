@@ -110,7 +110,15 @@ export const testRound3SendZkTxsToCoordinator = (
     carlTransfer: ZkTx
   },
 ) => async () => {
-  const { wallets } = ctx()
+  const { wallets, coordinator } = ctx()
+  // stack 33 deposits for a bigger size block testing
+  await coordinator.stop()
+  for (let i = 0; i < 33; i += 1) {
+    await expect(
+      wallets.alice.depositEther(toWei('1', 'ether'), toWei('1', 'milliether')),
+    ).resolves.toStrictEqual(true)
+  }
+  await coordinator.start()
   const { aliceTransfer, bobTransfer, carlTransfer } = txs()
   const r = await wallets.alice.sendLayer2Tx([
     aliceTransfer,
