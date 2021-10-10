@@ -108,6 +108,7 @@ export interface UtxoTreeValidator extends BaseContract {
     validators(arg0: string | number[]): NonPayableTransactionObject<string>
 
     newProof(
+      proofId: number | string | BN,
       startingRoot: number | string | BN,
       startingIndex: number | string | BN,
       initialSiblings: (number | string | BN)[],

@@ -26,5 +26,5 @@ contract Storage is Config {
     mapping(address => bool) public allowedMigrants;
 
     // UTXO Rollup Proofs
-    TreeUpdateProof[] utxoTreeProofs;
+    mapping(uint256 => TreeUpdateProof) utxoTreeProofs;
 }

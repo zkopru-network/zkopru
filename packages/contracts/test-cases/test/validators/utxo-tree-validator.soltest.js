@@ -8,6 +8,7 @@ const chai = require("chai");
 const { reverse } = require("dns");
 const fs = require("fs");
 const path = require("path");
+const { randomHex } = require("web3-utils");
 const { Fp } = require("~babyjubjub/fp");
 const { Block } = require("~core/block");
 const { ZkTx } = require("~transaction/zk-tx");
@@ -123,13 +124,17 @@ contract("UtxoTreeValidator test", async accounts => {
       resultSnapshot = await tsTree.dryAppend(utxos.map(toLeaf));
     });
     describe("prepare a proof", () => {
+      let proofId;
+      before(() => {
+        proofId = randomHex(32);
+      });
       it("should create a proof", async () => {
         const receipt = await utxoTreeValidatorTester.newProof(
+          proofId,
           startSnapshot.root.toString(),
           startSnapshot.index.toString(),
           startSnapshot.siblings.slice(subTreeDepth).map(sib => sib.toString())
         );
-        proofId = receipt.logs[0].args.id;
       });
       it("should update the proof and store them.", async () => {
         let i = 0;
