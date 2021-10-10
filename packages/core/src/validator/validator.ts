@@ -8,7 +8,7 @@ import { Block, Header, headerHash } from '../block'
 import { L2Chain } from '../context/layer2'
 import { OffchainValidator } from './offchain'
 import { OnchainValidator } from './onchain'
-import { ChallengeTx, FnCall, ValidateFnCalls } from './types'
+import { FnCall, ValidateFnCalls, Validation } from './types'
 import { toFnCall } from './utils'
 
 export abstract class ValidatorBase {
@@ -21,7 +21,7 @@ export abstract class ValidatorBase {
   constructor(layer1: L1Contract, layer2: L2Chain) {
     this.layer2 = layer2
     this.onchain = new OnchainValidator(layer1)
-    this.offchain = new OffchainValidator(layer2)
+    this.offchain = new OffchainValidator(layer1, layer2)
   }
 
   protected async validateHeader(block: Block): Promise<ValidateFnCalls> {
@@ -355,12 +355,9 @@ export abstract class ValidatorBase {
     }
   }
 
-  abstract validate(
-    parent: Header,
-    block: Block,
-  ): Promise<ChallengeTx | undefined>
+  abstract validate(parent: Header, block: Block): Promise<Validation>
 
   protected abstract executeValidateFnCalls(
     calls: ValidateFnCalls,
-  ): Promise<ChallengeTx | undefined>
+  ): Promise<Validation>
 }

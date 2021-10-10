@@ -2,18 +2,26 @@ import { Fp } from '@zkopru/babyjubjub'
 import { Hasher, poseidonHasher, SubTreeLib } from '@zkopru/tree'
 import assert from 'assert'
 import { Bytes32, Uint256 } from 'soltypes'
-import { soliditySha3Raw } from 'web3-utils'
+import { randomHex, soliditySha3Raw } from 'web3-utils'
 import { OutflowType, ZkOutflow } from '@zkopru/transaction'
 import BN from 'bn.js'
+import { L1Contract } from '../../context/layer1'
 import { L2Chain } from '../../context/layer2'
 import { Block, headerHash } from '../../block'
 import { BlockData, HeaderData, Validation, UtxoTreeValidator } from '../types'
-import { blockDataToBlock, headerDataToHeader } from '../utils'
+import {
+  blockDataToBlock,
+  blockDataToHexString,
+  headerDataToHeader,
+  headerDataToHexString,
+} from '../utils'
 import { OffchainValidatorContext } from './offchain-context'
 import { CODE } from '../code'
 
 export class OffchainUtxoTreeValidator extends OffchainValidatorContext
   implements UtxoTreeValidator {
+  layer1: L1Contract
+
   hasher: Hasher<Fp>
 
   MAX_UTXO: BN
@@ -22,8 +30,9 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
 
   SUB_TREE_SIZE: number
 
-  constructor(layer2: L2Chain) {
+  constructor(layer1: L1Contract, layer2: L2Chain) {
     super(layer2)
+    this.layer1 = layer1
     this.hasher = poseidonHasher(layer2.config.utxoTreeDepth)
     this.MAX_UTXO = new BN(1).shln(layer2.config.utxoTreeDepth)
     this.SUB_TREE_DEPTH = layer2.config.utxoSubTreeDepth
@@ -126,6 +135,34 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
       newUtxos,
       subTreeSiblings.map(sib => Fp.from(sib.toString())),
     )
+    if (!computedRoot.eq(block.header.utxoRoot.toBN())) {
+      // slashable
+      const proofId = randomHex(32)
+      const startTx = this.layer1.validators.utxoTree.methods.newProof(
+        proofId,
+        Fp.from(parentHeader.utxoRoot.toString()),
+        Fp.from(parentHeader.utxoIndex.toString()),
+        subTreeSiblings.map(sib => Fp.from(sib.toString())),
+      )
+      const subTrees: Fp[][] = []
+      for (let i = 0; i < newUtxos.length; i += this.SUB_TREE_SIZE) {
+        subTrees.push(newUtxos.slice(i, i + this.SUB_TREE_SIZE))
+      }
+      const subtreeAppendingTxs = subTrees.map(subTree =>
+        this.layer1.validators.utxoTree.methods.updateProof(proofId, subTree),
+      )
+      return {
+        slashable: !computedRoot.eq(block.header.utxoRoot.toBN()),
+        reason: CODE.U3,
+        tx: this.layer1.validators.utxoTree.methods.validateUTXORootWithProof(
+          blockDataToHexString(block),
+          headerDataToHexString(parentHeader),
+          deposits.map(d => d.toString()),
+          proofId,
+        ),
+        prerequesites: [startTx, ...subtreeAppendingTxs],
+      }
+    }
     return {
       slashable: !computedRoot.eq(block.header.utxoRoot.toBN()),
       reason: CODE.U3,

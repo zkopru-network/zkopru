@@ -3,7 +3,7 @@ import { TransactionObject } from '@zkopru/contracts'
 import { logger } from '@zkopru/utils'
 import { TransactionConfig } from 'web3-core'
 import { L1Contract } from '../../context/layer1'
-import { OnchainValidation } from '../types'
+import { Validation } from '../types'
 
 export class OnchainValidatorContext {
   layer1: L1Contract
@@ -20,7 +20,7 @@ export class OnchainValidatorContext {
       1: string
     }>,
     config?: TransactionConfig,
-  ): Promise<OnchainValidation> {
+  ): Promise<Validation> {
     let slashable = false
     try {
       await this.layer1.web3.eth.call({

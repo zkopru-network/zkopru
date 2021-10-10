@@ -1,10 +1,10 @@
-import { BlockData, HeaderValidator, OnchainValidation } from '../types'
+import { BlockData, HeaderValidator, Validation } from '../types'
 import { blockDataToHexString } from '../utils'
 import { OnchainValidatorContext } from './onchain-context'
 
 export class OnchainHeaderValidator extends OnchainValidatorContext
   implements HeaderValidator {
-  async validateDepositRoot(block: BlockData): Promise<OnchainValidation> {
+  async validateDepositRoot(block: BlockData): Promise<Validation> {
     const tx = this.layer1.validators.header.methods.validateDepositRoot(
       blockDataToHexString(block),
     )
@@ -12,7 +12,7 @@ export class OnchainHeaderValidator extends OnchainValidatorContext
     return result
   }
 
-  async validateTxRoot(block: BlockData): Promise<OnchainValidation> {
+  async validateTxRoot(block: BlockData): Promise<Validation> {
     const tx = this.layer1.validators.header.methods.validateTxRoot(
       blockDataToHexString(block),
     )
@@ -20,7 +20,7 @@ export class OnchainHeaderValidator extends OnchainValidatorContext
     return result
   }
 
-  async validateMigrationRoot(block: BlockData): Promise<OnchainValidation> {
+  async validateMigrationRoot(block: BlockData): Promise<Validation> {
     const tx = this.layer1.validators.header.methods.validateMigrationRoot(
       blockDataToHexString(block),
     )
@@ -28,7 +28,7 @@ export class OnchainHeaderValidator extends OnchainValidatorContext
     return result
   }
 
-  async validateTotalFee(block: BlockData): Promise<OnchainValidation> {
+  async validateTotalFee(block: BlockData): Promise<Validation> {
     const tx = this.layer1.validators.header.methods.validateTotalFee(
       blockDataToHexString(block),
     )
@@ -36,7 +36,7 @@ export class OnchainHeaderValidator extends OnchainValidatorContext
     return result
   }
 
-  async validateParentBlock(block: BlockData): Promise<OnchainValidation> {
+  async validateParentBlock(block: BlockData): Promise<Validation> {
     const tx = this.layer1.validators.header.methods.validateParentBlock(
       blockDataToHexString(block),
     )

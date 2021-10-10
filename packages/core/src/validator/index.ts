@@ -4,7 +4,6 @@ export { OffchainValidator } from './offchain'
 export { ValidatorBase } from './validator'
 export {
   Validation,
-  OnchainValidation,
   BlockData,
   HeaderData,
   BlockValidator,

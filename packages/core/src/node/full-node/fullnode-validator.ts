@@ -1,18 +1,10 @@
 import { logger } from '@zkopru/utils'
-import {
-  OnchainValidation,
-  Validation,
-  ChallengeTx,
-  ValidateFnCalls,
-} from '../../validator/types'
+import { Validation, ValidateFnCalls } from '../../validator/types'
 import { ValidatorBase as Validator } from '../../validator'
 import { Block, Header } from '../../block'
 
 export class FullValidator extends Validator {
-  async validate(
-    parent: Header,
-    block: Block,
-  ): Promise<ChallengeTx | undefined> {
+  async validate(parent: Header, block: Block): Promise<Validation> {
     const validateFns = [
       this.validateHeader,
       this.validateMassDeposit,
@@ -32,15 +24,15 @@ export class FullValidator extends Validator {
     if (logTime) console.time(`validate`)
     const validationResults = await Promise.all(
       validationCalls.map(async calls => {
-        const challengeTx = await this.executeValidateFnCalls(calls)
-        if (challengeTx !== undefined) {
-          return challengeTx
-        }
-        return undefined
+        const result = await this.executeValidateFnCalls(calls)
+        return result
       }),
     )
     if (logTime) console.timeEnd(`validate`)
-    return validationResults.find(result => result !== undefined)
+    const validationFailure = validationResults.find(
+      result => result.slashable === true,
+    )
+    return validationFailure || { slashable: false }
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -48,7 +40,7 @@ export class FullValidator extends Validator {
     onchainValidator,
     offchainValidator,
     fnCalls,
-  }: ValidateFnCalls): Promise<ChallengeTx | undefined> {
+  }: ValidateFnCalls): Promise<Validation> {
     const offchainResult: Validation[] = await Promise.all(
       fnCalls.map(fnCall => {
         const result = offchainValidator[fnCall.name].call(
@@ -63,7 +55,7 @@ export class FullValidator extends Validator {
         `core/fullnode-validator - offchain validation failed: ${result.reason}`,
       )
     }
-    const onchainResult: OnchainValidation[] = await Promise.all(
+    const onchainResult: Validation[] = await Promise.all(
       fnCalls.map(fnCall => {
         const result = onchainValidator[fnCall.name].call(
           onchainValidator,
@@ -73,29 +65,24 @@ export class FullValidator extends Validator {
       }),
     )
     if (
-      !offchainResult.every(
-        (result, index) => result.slashable === onchainResult[index].slashable,
+      offchainResult.every(
+        (result, index) =>
+          result.slashable === onchainResult[index].slashable &&
+          result.slashable === false,
       )
     ) {
-      onchainResult.forEach((result, index) => {
-        if (result.slashable !== offchainResult[index].slashable) {
-          logger.error(
-            `core/fullnode-validator - onchain validation & offchain validation have different result`,
-          )
-          logger.error(
-            `core/fullnode-validator - onchain: ${!onchainResult[index]
-              .slashable}`,
-          )
-          logger.error(
-            `core/fullnode-validator - offchain: ${!offchainResult[index]
-              .slashable}`,
-          )
-          logger.error(
-            `core/fullnode-validator - slash reason: - ${offchainResult[index].reason}`,
-          )
-        }
-      })
+      // every result says the block is a valid one.
+      return { slashable: false }
+    } else {
+      const onchainFailure = onchainResult.find(res => res.slashable === true)
+      if (onchainFailure) {
+        return onchainFailure
+      }
+      const offchainFailure = offchainResult.find(res => res.slashable === true)
+      if (offchainFailure) {
+        return offchainFailure
+      }
+      throw Error('Unknown validation error')
     }
-    return onchainResult.find(res => res.slashable)?.tx
   }
 }
