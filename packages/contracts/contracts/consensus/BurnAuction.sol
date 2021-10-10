@@ -5,11 +5,12 @@ import "../zkopru/Zkopru.sol";
 import "../zkopru/interfaces/ICoordinatable.sol";
 import "./interfaces/IConsensusProvider.sol";
 import "./interfaces/IBurnAuction.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @dev Burn auction for coordination consensus.
  */
-contract BurnAuction is IConsensusProvider, IBurnAuction {
+contract BurnAuction is IConsensusProvider, IBurnAuction, Ownable {
     Zkopru public zkopru;
 
     struct Bid {
@@ -45,7 +46,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     mapping(uint256 => Bid) public highestBidPerRound;
     mapping(address => string) public override coordinatorUrls;
 
-    constructor(address payable networkAddress) {
+    constructor(address payable networkAddress) Ownable() {
         zkopru = Zkopru(networkAddress);
         startBlock = uint32(block.number);
     }
@@ -270,7 +271,11 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
      * @dev Send the available contract balance to a recipient.
      * @param recipient The receiving address for the funds.
      **/
-    function transferBalance(address payable recipient) public override {
+    function transferBalance(address payable recipient)
+        public
+        override
+        onlyOwner
+    {
         updateBalance();
         uint256 withdrawAmount = balance;
         balance = 0;

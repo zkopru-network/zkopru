@@ -29,6 +29,12 @@ export type NewHighBid = ContractEventLog<{
   1: string
   2: string
 }>
+export type OwnershipTransferred = ContractEventLog<{
+  previousOwner: string
+  newOwner: string
+  0: string
+  1: string
+}>
 export type UrlUpdate = ContractEventLog<{
   coordinator: string
   0: string
@@ -65,11 +71,26 @@ export interface BurnAuction extends BaseContract {
 
     minBid(): NonPayableTransactionObject<string>
 
+    /**
+     * Returns the address of the current owner.
+     */
+    owner(): NonPayableTransactionObject<string>
+
     pendingBalances(arg0: string): NonPayableTransactionObject<string>
+
+    /**
+     * Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner.
+     */
+    renounceOwnership(): NonPayableTransactionObject<void>
 
     roundLength(): NonPayableTransactionObject<string>
 
     startBlock(): NonPayableTransactionObject<string>
+
+    /**
+     * Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner.
+     */
+    transferOwnership(newOwner: string): NonPayableTransactionObject<void>
 
     zkopru(): NonPayableTransactionObject<string>
 
@@ -241,6 +262,12 @@ export interface BurnAuction extends BaseContract {
     NewHighBid(cb?: Callback<NewHighBid>): EventEmitter
     NewHighBid(options?: EventOptions, cb?: Callback<NewHighBid>): EventEmitter
 
+    OwnershipTransferred(cb?: Callback<OwnershipTransferred>): EventEmitter
+    OwnershipTransferred(
+      options?: EventOptions,
+      cb?: Callback<OwnershipTransferred>,
+    ): EventEmitter
+
     UrlUpdate(cb?: Callback<UrlUpdate>): EventEmitter
     UrlUpdate(options?: EventOptions, cb?: Callback<UrlUpdate>): EventEmitter
 
@@ -252,6 +279,13 @@ export interface BurnAuction extends BaseContract {
     event: 'NewHighBid',
     options: EventOptions,
     cb: Callback<NewHighBid>,
+  ): void
+
+  once(event: 'OwnershipTransferred', cb: Callback<OwnershipTransferred>): void
+  once(
+    event: 'OwnershipTransferred',
+    options: EventOptions,
+    cb: Callback<OwnershipTransferred>,
   ): void
 
   once(event: 'UrlUpdate', cb: Callback<UrlUpdate>): void
