@@ -8,14 +8,11 @@ export type ChallengeTx = TransactionObject<{
   0: boolean
   1: string
 }>
-
 export interface Validation {
   slashable: boolean
   reason?: string
-}
-
-export interface OnchainValidation extends Validation {
-  tx: ChallengeTx
+  tx?: ChallengeTx
+  prerequesites?: TransactionObject<any>[]
 }
 
 export type BlockData = Block | string | Buffer
@@ -142,7 +139,7 @@ export type FnCall = {
 
 export type OnchainValidateFn =
   | {
-      [x: string]: (...arg0: any[]) => Promise<OnchainValidation>
+      [x: string]: (...arg0: any[]) => Promise<Validation>
     }
   | any
 

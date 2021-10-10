@@ -8,7 +8,6 @@ import {
   HeaderData,
   OffchainValidateFn,
   OnchainValidateFn,
-  OnchainValidation,
   Validation,
 } from './types'
 
@@ -75,7 +74,7 @@ export async function validateBothOnAndOff(
   const offchainResult: Validation[] = await Promise.all(
     fnCalls.map(funcs => offchainValidator[funcs.name](...funcs.args)),
   )
-  const onchainResult: OnchainValidation[] = await Promise.all(
+  const onchainResult: Validation[] = await Promise.all(
     fnCalls.map(funcs => onchainValidator[funcs.name](...funcs.args)),
   )
   if (
@@ -94,7 +93,7 @@ export async function validateOnchain(
   onchainValidator: OnchainValidateFn,
   fnCalls: FnCall[],
 ): Promise<ChallengeTx | undefined> {
-  const onchainResult: OnchainValidation[] = await Promise.all(
+  const onchainResult: Validation[] = await Promise.all(
     fnCalls.map(funcs => onchainValidator[funcs.name](...funcs.args)),
   )
   return onchainResult.find(res => res.slashable)?.tx

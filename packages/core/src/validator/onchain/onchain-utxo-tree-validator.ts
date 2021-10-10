@@ -2,7 +2,7 @@ import { Uint256 } from 'soltypes'
 import {
   BlockData,
   HeaderData,
-  OnchainValidation,
+  Validation,
   UtxoTreeValidator,
 } from '../types'
 import { blockDataToHexString, headerDataToHexString } from '../utils'
@@ -14,7 +14,7 @@ export class OnchainUtxoTreeValidator extends OnchainValidatorContext
     block: BlockData,
     parentHeader: HeaderData,
     deposits: Uint256[],
-  ): Promise<OnchainValidation> {
+  ): Promise<Validation> {
     const tx = this.layer1.validators.utxoTree.methods.validateUTXOIndex(
       blockDataToHexString(block),
       headerDataToHexString(parentHeader),
@@ -29,7 +29,7 @@ export class OnchainUtxoTreeValidator extends OnchainValidatorContext
     parentHeader: HeaderData,
     deposits: Uint256[],
     subtreeSiblings: Uint256[],
-  ): Promise<OnchainValidation> {
+  ): Promise<Validation> {
     const tx = this.layer1.validators.utxoTree.methods.validateUTXORoot(
       blockDataToHexString(block),
       headerDataToHexString(parentHeader),

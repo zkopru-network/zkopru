@@ -1,5 +1,5 @@
 import { Bytes32, Uint256 } from 'soltypes'
-import { BlockData, HeaderData, OnchainValidation, TxValidator } from '../types'
+import { BlockData, HeaderData, Validation, TxValidator } from '../types'
 import { blockDataToHexString, headerDataToHexString } from '../utils'
 import { OnchainValidatorContext } from './onchain-context'
 
@@ -9,7 +9,7 @@ export class OnchainTxValidator extends OnchainValidatorContext
     block: BlockData,
     txIndex: Uint256,
     inflowIndex: Uint256,
-  ): Promise<OnchainValidation> {
+  ): Promise<Validation> {
     const tx = this.layer1.validators.tx.methods.validateInclusion(
       blockDataToHexString(block),
       txIndex.toString(),
@@ -22,7 +22,7 @@ export class OnchainTxValidator extends OnchainValidatorContext
   async validateOutflow(
     block: BlockData,
     txIndex: Uint256,
-  ): Promise<OnchainValidation> {
+  ): Promise<Validation> {
     const tx = this.layer1.validators.tx.methods.validateOutflow(
       blockDataToHexString(block),
       txIndex.toString(),
@@ -34,7 +34,7 @@ export class OnchainTxValidator extends OnchainValidatorContext
   async validateAtomicSwap(
     block: BlockData,
     txIndex: Uint256,
-  ): Promise<OnchainValidation> {
+  ): Promise<Validation> {
     const tx = this.layer1.validators.tx.methods.validateAtomicSwap(
       blockDataToHexString(block),
       txIndex.toString(),
@@ -49,7 +49,7 @@ export class OnchainTxValidator extends OnchainValidatorContext
     txIndex: Uint256,
     inflowIndex: Uint256,
     siblings: Bytes32[],
-  ): Promise<OnchainValidation> {
+  ): Promise<Validation> {
     const tx = this.layer1.validators.tx.methods.validateUsedNullifier(
       blockDataToHexString(block),
       headerDataToHexString(parentHeader),
@@ -64,7 +64,7 @@ export class OnchainTxValidator extends OnchainValidatorContext
   async validateDuplicatedNullifier(
     block: BlockData,
     txIndex: Bytes32,
-  ): Promise<OnchainValidation> {
+  ): Promise<Validation> {
     const tx = this.layer1.validators.tx.methods.validateDuplicatedNullifier(
       blockDataToHexString(block),
       txIndex.toString(),
@@ -76,7 +76,7 @@ export class OnchainTxValidator extends OnchainValidatorContext
   async validateSNARK(
     block: BlockData,
     txIndex: Uint256,
-  ): Promise<OnchainValidation> {
+  ): Promise<Validation> {
     const tx = this.layer1.validators.tx.methods.validateSNARK(
       blockDataToHexString(block),
       txIndex.toString(),

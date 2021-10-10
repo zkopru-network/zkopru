@@ -1,3 +1,4 @@
+import { L1Contract } from '../../context/layer1'
 import { L2Chain } from '../../context/layer2'
 import {
   BlockValidator,
@@ -32,11 +33,11 @@ export class OffchainValidator implements BlockValidator {
 
   tx: TxValidator
 
-  constructor(layer2: L2Chain) {
+  constructor(layer1: L1Contract, layer2: L2Chain) {
     this.deposit = new OffchainDepositValidator(layer2)
     this.header = new OffchainHeaderValidator(layer2)
     this.migration = new OffchainMigrationValidator(layer2)
-    this.utxoTree = new OffchainUtxoTreeValidator(layer2)
+    this.utxoTree = new OffchainUtxoTreeValidator(layer1, layer2)
     this.nullifierTree = new OffchainNullifierTreeValidator(layer2)
     this.withdrawalTree = new OffchainWithdrawalTreeValidator(layer2)
     this.tx = new OffchainTxValidator(layer2)

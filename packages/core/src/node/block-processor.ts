@@ -27,11 +27,12 @@ import { Bytes32, Address, Uint256 } from 'soltypes'
 import AsyncLock from 'async-lock'
 import { L2Chain, Patch } from '../context/layer2'
 import { Block, Header, massDepositHash } from '../block'
-import { ChallengeTx, ValidatorBase as Validator } from '../validator'
+import { ValidatorBase as Validator } from '../validator'
 import { Tracker } from './tracker'
+import { Validation } from '../validator/types'
 
 interface BlockProcessorEvents {
-  slash: (challenge: { tx: ChallengeTx; block: Block }) => void
+  slash: (challenge: Validation & { block: Block }) => void
   processed: (proposal: { proposalNum: number; block?: Block }) => void
 }
 
@@ -202,8 +203,8 @@ export class BlockProcessor extends EventEmitter {
       `core/block-processor - Processing proposal #${proposal.proposalNum}()`,
     )
     // validate the block details and get challenge if it has any invalid data.
-    const challengeTx = await this.validator.validate(parent, block)
-    if (challengeTx) {
+    const validationResult = await this.validator.validate(parent, block)
+    if (validationResult.slashable) {
       // implement challenge here & mark as invalidated
       await this.db.transaction(db => {
         db.update('Proposal', {
@@ -218,11 +219,11 @@ export class BlockProcessor extends EventEmitter {
         this.saveTransactions(block, db, true)
       })
       logger.warn(
-        `core/block-processor - challenge: ${challengeTx['_method']?.name}`,
+        `core/block-processor - challenge: ${validationResult['_method']?.name}`,
       )
       // TODO slasher option
       this.emit('slash', {
-        tx: challengeTx,
+        ...validationResult,
         block,
       })
       return proposal.proposalNum

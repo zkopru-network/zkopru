@@ -3,7 +3,7 @@ import {
   BlockData,
   HeaderData,
   NullifierTreeValidator,
-  OnchainValidation,
+  Validation,
 } from '../types'
 import { blockDataToHexString, headerDataToHexString } from '../utils'
 import { OnchainValidatorContext } from './onchain-context'
@@ -15,7 +15,7 @@ export class OnchainNullifierTreeValidator extends OnchainValidatorContext
     parentHeader: HeaderData,
     numOfNullifiers: Uint256,
     siblings: Bytes32[][],
-  ): Promise<OnchainValidation> {
+  ): Promise<Validation> {
     const tx = this.layer1.validators.nullifierTree.methods.validateNullifierRollUp(
       blockDataToHexString(block),
       headerDataToHexString(parentHeader),

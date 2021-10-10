@@ -89,11 +89,17 @@ export class ZkopruNode {
         this.tracker.transferTrackers.map(viewer => viewer.zkAddress),
       )
       this.blockProcessor.start()
-      this.blockProcessor.on('slash', async slash => {
-        const result = await this.watchdog?.slash(slash.tx)
-        logger.info(
-          `core/zkopru-node - Found a slashable proposal. Execution result is ${result}`,
-        )
+      this.blockProcessor.on('slash', async validation => {
+        if (validation.tx) {
+          const result = await this.watchdog?.slash(validation.tx, validation.prerequesites)
+          logger.info(
+            `core/zkopru-node - Found a slashable proposal. Execution result is ${result}`,
+          )
+        } else {
+          logger.info(
+            `core/zkopru-node - Found a slashable proposal. Didn't execute the slash tx.`,
+          )
+        }
       })
       this.blockProcessor.on('processed', async proposal => {
         this.synchronizer.setLatestProcessed(proposal.proposalNum)

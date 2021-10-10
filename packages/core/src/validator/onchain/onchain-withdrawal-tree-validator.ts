@@ -2,7 +2,7 @@ import { Bytes32, Uint256 } from 'soltypes'
 import {
   BlockData,
   HeaderData,
-  OnchainValidation,
+  Validation,
   WithdrawalTreeValidator,
 } from '../types'
 import { blockDataToHexString, headerDataToHexString } from '../utils'
@@ -13,7 +13,7 @@ export class OnchainWithdrawalTreeValidator extends OnchainValidatorContext
   async validateWithdrawalIndex(
     block: BlockData,
     parentHeader: HeaderData,
-  ): Promise<OnchainValidation> {
+  ): Promise<Validation> {
     const tx = this.layer1.validators.withdrawalTree.methods.validateWithdrawalIndex(
       blockDataToHexString(block),
       headerDataToHexString(parentHeader),
@@ -26,7 +26,7 @@ export class OnchainWithdrawalTreeValidator extends OnchainValidatorContext
     block: BlockData,
     parentHeader: HeaderData,
     subtreeSiblings: Uint256[],
-  ): Promise<OnchainValidation> {
+  ): Promise<Validation> {
     const tx = this.layer1.validators.withdrawalTree.methods.validateWithdrawalRoot(
       blockDataToHexString(block),
       headerDataToHexString(parentHeader),
@@ -41,7 +41,7 @@ export class OnchainWithdrawalTreeValidator extends OnchainValidatorContext
     parentHeader: HeaderData,
     numOfNullifiers: Uint256,
     siblings: Bytes32[][],
-  ): Promise<OnchainValidation> {
+  ): Promise<Validation> {
     const tx = this.layer1.validators.nullifierTree.methods.validateNullifierRollUp(
       blockDataToHexString(block),
       headerDataToHexString(parentHeader),

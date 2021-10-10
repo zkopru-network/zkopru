@@ -1,13 +1,10 @@
 import { logger } from '@zkopru/utils'
-import { Validation, ChallengeTx, ValidateFnCalls } from '../../validator/types'
+import { Validation, ValidateFnCalls } from '../../validator/types'
 import { ValidatorBase as Validator } from '../../validator'
 import { Block, Header } from '../../block'
 
 export class LightValidator extends Validator {
-  async validate(
-    parent: Header,
-    block: Block,
-  ): Promise<ChallengeTx | undefined> {
+  async validate(parent: Header, block: Block): Promise<Validation> {
     const validateFns = [
       this.validateHeader,
       this.validateMassDeposit,
@@ -26,15 +23,15 @@ export class LightValidator extends Validator {
     if (logTime) console.time(`validate`)
     const validationResults = await Promise.all(
       validationCalls.map(async calls => {
-        const challengeTx = await this.executeValidateFnCalls(calls)
-        if (challengeTx !== undefined) {
-          return challengeTx
-        }
-        return undefined
+        const result = await this.executeValidateFnCalls(calls)
+        return result
       }),
     )
     if (logTime) console.timeEnd(`validate`)
-    return validationResults.find(result => result !== undefined)
+    const validationFailure = validationResults.find(
+      result => result.slashable === true,
+    )
+    return validationFailure || { slashable: false }
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -42,7 +39,7 @@ export class LightValidator extends Validator {
     onchainValidator,
     offchainValidator,
     fnCalls,
-  }: ValidateFnCalls): Promise<ChallengeTx | undefined> {
+  }: ValidateFnCalls): Promise<Validation> {
     const offchainResult: Validation[] = await Promise.all(
       fnCalls.map(fnCall => offchainValidator[fnCall.name](...fnCall.args)),
     )
@@ -51,7 +48,9 @@ export class LightValidator extends Validator {
     )
     if (slashableCallIndex < 0) {
       // not exists
-      return undefined
+      return {
+        slashable: false,
+      }
     }
     const fnCall = fnCalls[slashableCallIndex]
     const result = await onchainValidator[fnCall.name](...fnCall.args)
@@ -61,6 +60,8 @@ export class LightValidator extends Validator {
       // TODO give option to send challenge tx also in the light node.
       // return result.tx
     }
-    return undefined
+    return {
+      slashable: true,
+    }
   }
 }
