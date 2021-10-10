@@ -10,18 +10,13 @@ import { EIP712, EIP712Domain } from "../libraries/EIP712.sol";
 import { MerkleTreeLib } from "../libraries/MerkleTree.sol";
 import { Storage } from "../storage/Storage.sol";
 import { Hash, Poseidon3, Poseidon4 } from "../libraries/Hash.sol";
-import {
-    WithdrawalTree,
-    Blockchain,
-    PublicData,
-    Types
-} from "../libraries/Types.sol";
+import { WithdrawalTree, Blockchain, PublicData, Types } from "../libraries/Types.sol";
 import { PrepayRequest } from "../interfaces/IUserInteractable.sol";
 
 contract UserInteractable is Storage {
     uint256 public constant SNARK_FIELD =
         21888242871839275222246405745257275088548364400416034343698204186575808495617;
-    uint256 public constant RANGE_LIMIT = SNARK_FIELD >> 32;
+    uint256 public constant RANGE_LIMIT = 1 << 245;
     bytes32 private constant PREPAY_TYPEHASH =
         keccak256(
             "PrepayRequest(address prepayer,bytes32 withdrawalHash,uint256 prepayFeeInEth,uint256 prepayFeeInToken,uint256 expiration)"
@@ -136,16 +131,15 @@ contract UserInteractable is Storage {
             block.timestamp < prepayRequest.expiration,
             "Signature expired"
         );
-        bytes32 withdrawalHash =
-            _withdrawalHash(
-                note,
-                publicData.to,
-                publicData.eth,
-                publicData.token,
-                publicData.amount,
-                publicData.nft,
-                publicData.fee
-            );
+        bytes32 withdrawalHash = _withdrawalHash(
+            note,
+            publicData.to,
+            publicData.eth,
+            publicData.token,
+            publicData.amount,
+            publicData.nft,
+            publicData.fee
+        );
         require(!Storage.chain.withdrawn[withdrawalHash], "Already withdrawn");
         require(
             prepayRequest.withdrawalHash == withdrawalHash,
@@ -157,24 +151,24 @@ contract UserInteractable is Storage {
             "This tx should be from the prepayer."
         );
 
-        address currentOwner =
-            Storage.chain.newWithdrawalOwner[withdrawalHash] != address(0)
-                ? Storage.chain.newWithdrawalOwner[withdrawalHash]
-                : publicData.to;
+        address currentOwner = Storage.chain.newWithdrawalOwner[
+            withdrawalHash
+        ] != address(0)
+            ? Storage.chain.newWithdrawalOwner[withdrawalHash]
+            : publicData.to;
         address prepayer = msg.sender;
 
         // verify original owner's signature
-        bytes32 structHash =
-            keccak256(
-                abi.encode(
-                    PREPAY_TYPEHASH,
-                    prepayRequest.prepayer,
-                    prepayRequest.withdrawalHash,
-                    prepayRequest.prepayFeeInEth,
-                    prepayRequest.prepayFeeInToken,
-                    prepayRequest.expiration
-                )
-            );
+        bytes32 structHash = keccak256(
+            abi.encode(
+                PREPAY_TYPEHASH,
+                prepayRequest.prepayer,
+                prepayRequest.withdrawalHash,
+                prepayRequest.prepayFeeInEth,
+                prepayRequest.prepayFeeInToken,
+                prepayRequest.expiration
+            )
+        );
         uint256 chainId;
         assembly {
             chainId := chainid()
@@ -303,26 +297,32 @@ contract UserInteractable is Storage {
         // check the reference block is finalized
         require(Storage.chain.finalized[blockHash], "Not a finalized block");
         uint256 root = Storage.chain.withdrawalRootOf[blockHash];
-        bytes32 withdrawalHash =
-            _withdrawalHash(note, owner, eth, token, amount, nft, callerFee);
+        bytes32 withdrawalHash = _withdrawalHash(
+            note,
+            owner,
+            eth,
+            token,
+            amount,
+            nft,
+            callerFee
+        );
         // Should not allow double-withdrawing
         require(!Storage.chain.withdrawn[withdrawalHash], "Already withdrawn");
         // Mark as withdrawn
         Storage.chain.withdrawn[withdrawalHash] = true;
         // Check whether new owner exists
-        address to =
-            Storage.chain.newWithdrawalOwner[withdrawalHash] != address(0)
-                ? Storage.chain.newWithdrawalOwner[withdrawalHash]
-                : owner;
+        address to = Storage.chain.newWithdrawalOwner[withdrawalHash] !=
+            address(0)
+            ? Storage.chain.newWithdrawalOwner[withdrawalHash]
+            : owner;
 
         // inclusion proof
-        bool inclusion =
-            Hash.keccak().merkleProof(
-                root,
-                uint256(withdrawalHash),
-                leafIndex,
-                siblings
-            );
+        bool inclusion = Hash.keccak().merkleProof(
+            root,
+            uint256(withdrawalHash),
+            leafIndex,
+            siblings
+        );
         require(inclusion, "The given withdrawal note does not exist");
         // Withdraw ETH & get fee
         if (to == msg.sender) {
