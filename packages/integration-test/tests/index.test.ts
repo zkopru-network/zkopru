@@ -321,7 +321,7 @@ describe('testnet', () => {
       300000,
     )
   })
-  describe.skip('10: Zk Transactions round 3', () => {
+  describe('10: Zk Transactions round 3', () => {
     let aliceTransfer: ZkTx
     let bobTransfer: ZkTx
     let carlTransfer: ZkTx

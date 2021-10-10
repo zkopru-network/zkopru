@@ -2,27 +2,27 @@ version: '3.4'
 
 services:
   contracts:
-    image: zkoprunet/contracts:289
+    image: zkoprunet/contracts:289-1
     build:
       context: ../packages/contracts/
       dockerfile: ../../dockerfiles/Contract.dockerfile
   contracts-for-integration-test:
-    image: zkoprunet/contracts-integration-test:289
+    image: zkoprunet/contracts-integration-test:289-1
     build:
       context: ../packages/contracts/
       dockerfile: ../../dockerfiles/Contract.integration.dockerfile
   circuits:
-    image: zkoprunet/circuits:289
+    image: zkoprunet/circuits:289-1
     build:
       context: ../packages/circuits/
       dockerfile: ../../dockerfiles/Circuits.light.dockerfile
   playground:
-    image: zkoprunet/playground:289
+    image: zkoprunet/playground:289-1
     build:
       context: ../
       dockerfile: dockerfiles/Playground.dockerfile
   coordinator:
-    image: zkoprunet/coordinator:289
+    image: zkoprunet/coordinator:289-1
     build:
       context: ../
       dockerfile: dockerfiles/Coordinator.dockerfile
