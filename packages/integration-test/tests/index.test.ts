@@ -325,24 +325,12 @@ describe('testnet', () => {
     let aliceTransfer: ZkTx
     let bobTransfer: ZkTx
     let carlTransfer: ZkTx
-    let prevLatestBlock: Bytes32
     const subCtx = () => ({
       aliceTransfer,
       bobTransfer,
       carlTransfer,
-      prevLatestBlock,
     })
     describe('users send zk txs to the coordinator', () => {
-      beforeAll(async () => {
-        do {
-          const latest = await context.coordinator.node().layer2.latestBlock()
-          if (latest !== null) {
-            prevLatestBlock = latest
-            break
-          }
-          await sleep(1000)
-        } while (!prevLatestBlock)
-      }, 30000)
       it('create 3 transactions: alice transfer 1 Ether to Bob. Bob transfer 1 Ether to Carl, and Carl transfer 1 Ether to Alice', async () => {
         aliceTransfer = await round3Tx1(ctx)
         bobTransfer = await round3Tx2(ctx)
@@ -355,7 +343,7 @@ describe('testnet', () => {
       )
       it(
         'coordinator proposes an invalid block and gets slashed',
-        testRound3NewBlockProposalAndSlashing(ctx, subCtx),
+        testRound3NewBlockProposalAndSlashing(ctx),
         600000,
       )
     })

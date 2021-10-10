@@ -4,11 +4,11 @@
 /* eslint-disable jest/no-export */
 /* eslint-disable jest/require-top-level-describe */
 
-import { toWei } from 'web3-utils'
+import { toBN, toWei } from 'web3-utils'
 import { TxBuilder, Utxo, ZkTx } from '@zkopru/transaction'
 import { Fp } from '@zkopru/babyjubjub'
 import { sleep } from '@zkopru/utils'
-import { Bytes32, Uint256 } from 'soltypes'
+import { Uint256 } from 'soltypes'
 import { Block } from '@zkopru/core'
 import { CtxProvider } from './context'
 
@@ -111,14 +111,7 @@ export const testRound3SendZkTxsToCoordinator = (
   },
 ) => async () => {
   const { wallets, coordinator } = ctx()
-  // stack 33 deposits for a bigger size block testing
-  await coordinator.stop()
-  for (let i = 0; i < 33; i += 1) {
-    await expect(
-      wallets.alice.depositEther(toWei('1', 'ether'), toWei('1', 'milliether')),
-    ).resolves.toStrictEqual(true)
-  }
-  await coordinator.start()
+  coordinator.middlewares.proposer.setPreProcessor(_ => undefined)
   const { aliceTransfer, bobTransfer, carlTransfer } = txs()
   const r = await wallets.alice.sendLayer2Tx([
     aliceTransfer,
@@ -130,22 +123,39 @@ export const testRound3SendZkTxsToCoordinator = (
 
 export const testRound3NewBlockProposalAndSlashing = (
   ctx: CtxProvider,
-  subCtx: () => { prevLatestBlock: Bytes32 },
 ) => async () => {
   const { wallets, coordinator } = ctx()
-  const { prevLatestBlock } = subCtx()
+  const prevLatestBlock = await coordinator.layer2().latestBlock()
+  // prepare 33 deposits
+  for (let i = 0; i < 33; i += 1) {
+    await expect(
+      wallets.alice.depositEther(toWei('1', 'ether'), toWei('1', 'milliether')),
+    ).resolves.toStrictEqual(true)
+  }
+  // commit the mass deposit
+  await coordinator.commitMassDeposits()
   let slashed = !(await coordinator.context.node.layer1.upstream.methods
     .isProposable(coordinator.context.account.address)
     .call())
+  const latestBlock = await coordinator.layer2().latestBlock()
+  const currentUtxoIndex = (await coordinator.layer2().getBlock(latestBlock))
+    ?.header.utxoIndex
   coordinator.middlewares.proposer.setPreProcessor(block => {
-    const cloned = Block.from(block.serializeBlock())
-    cloned.header.utxoRoot = Uint256.from(
-      block.header.utxoRoot
-        .toBN()
-        .addn(1)
-        .toString(),
-    )
-    return cloned
+    const numOfNewUtxos = block.header.utxoIndex
+      .toBN()
+      .sub(currentUtxoIndex?.toBN() || toBN(0))
+    if (numOfNewUtxos.gtn(32)) {
+      const cloned = Block.from(block.serializeBlock())
+      cloned.header.utxoRoot = Uint256.from(
+        block.header.utxoRoot
+          .toBN()
+          .addn(1)
+          .toString(),
+      )
+      return cloned
+    } else {
+      return undefined
+    }
   })
   let wait = 600000
   do {
@@ -156,12 +166,12 @@ export const testRound3NewBlockProposalAndSlashing = (
     wait -= 1000
   } while (!slashed && wait > 0)
   // Should be slashed
-  expect(slashed).toBeTruthy()
   const aliceLatestBlock = await wallets.alice.node.layer2.latestBlock()
   const bobLatestBlock = await wallets.bob.node.layer2.latestBlock()
   const carlLatestBlock = await wallets.carl.node.layer2.latestBlock()
   const coordinatorLatestBlock = await coordinator.node().layer2.latestBlock()
   // Nodes should throw away the slashed block
+  expect(slashed).toBeTruthy()
   expect(aliceLatestBlock.eq(prevLatestBlock)).toBeTruthy()
   expect(bobLatestBlock.eq(prevLatestBlock)).toBeTruthy()
   expect(carlLatestBlock.eq(prevLatestBlock)).toBeTruthy()

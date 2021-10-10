@@ -29,13 +29,15 @@ export const sendETH = (ctx: CtxProvider) => async () => {
 export const aliceDepositEthers33Times = (ctx: CtxProvider) => async () => {
   const { wallets, coordinator } = ctx()
 
-  await coordinator.stop()
+  coordinator.middlewares.proposer.setPreProcessor(_ => undefined)
   for (let i = 0; i < 33; i += 1) {
     await expect(
-      wallets.alice.depositEther(toWei('1', 'ether'), toWei('1', 'milliether')),
+      wallets.alice.depositEther(
+        toWei('100', 'milliether'),
+        toWei('1', 'milliether'),
+      ),
     ).resolves.toStrictEqual(true)
   }
-  await coordinator.start()
 }
 
 export const commitMassDeposit = (ctx: CtxProvider) => async () => {
@@ -51,7 +53,8 @@ export const commitMassDeposit = (ctx: CtxProvider) => async () => {
 export const waitCoordinatorToProposeANewBlockFor33Deposits = (
   ctx: CtxProvider,
 ) => async () => {
-  const { contract } = ctx()
+  const { contract, coordinator } = ctx()
+  coordinator.middlewares.proposer.removePreProcessor()
   let msToWait = 60000
   let proposedBlocks!: string
   while (msToWait > 0) {
