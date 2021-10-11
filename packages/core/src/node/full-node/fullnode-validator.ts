@@ -73,16 +73,15 @@ export class FullValidator extends Validator {
     ) {
       // every result says the block is a valid one.
       return { slashable: false }
-    } else {
-      const onchainFailure = onchainResult.find(res => res.slashable === true)
-      if (onchainFailure) {
-        return onchainFailure
-      }
-      const offchainFailure = offchainResult.find(res => res.slashable === true)
-      if (offchainFailure) {
-        return offchainFailure
-      }
-      throw Error('Unknown validation error')
     }
+    const onchainFailure = onchainResult.find(res => res.slashable === true)
+    if (onchainFailure) {
+      return onchainFailure
+    }
+    const offchainFailure = offchainResult.find(res => res.slashable === true)
+    if (offchainFailure) {
+      return offchainFailure
+    }
+    throw Error('Unknown validation error')
   }
 }
