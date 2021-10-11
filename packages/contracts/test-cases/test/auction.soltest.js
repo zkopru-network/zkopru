@@ -766,8 +766,9 @@ contract("BurnAuction tests", async accounts => {
         from: accounts[8]
       });
       const contractBalance = await burnAuction.balance();
+      // only the owner can transfer balance
       await burnAuction.transferBalance(receiver, {
-        from: accounts[8]
+        from: accounts[0]
       });
       const balance = new BN(await web3.eth.getBalance(receiver, "latest"));
       chai.assert(
