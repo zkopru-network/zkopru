@@ -37,6 +37,7 @@ export const aliceDepositEthers33Times = (ctx: CtxProvider) => async () => {
         toWei('1', 'milliether'),
       ),
     ).resolves.toStrictEqual(true)
+    await sleep(500)
   }
 }
 
