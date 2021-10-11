@@ -73,10 +73,7 @@ export class OnchainTxValidator extends OnchainValidatorContext
     return result
   }
 
-  async validateSNARK(
-    block: BlockData,
-    txIndex: Uint256,
-  ): Promise<Validation> {
+  async validateSNARK(block: BlockData, txIndex: Uint256): Promise<Validation> {
     const tx = this.layer1.validators.tx.methods.validateSNARK(
       blockDataToHexString(block),
       txIndex.toString(),

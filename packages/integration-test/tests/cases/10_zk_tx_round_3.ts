@@ -153,9 +153,8 @@ export const testRound3NewBlockProposalAndSlashing = (
           .toString(),
       )
       return cloned
-    } else {
-      return undefined
     }
+    return undefined
   })
   let wait = 600000
   do {

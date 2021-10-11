@@ -91,7 +91,10 @@ export class ZkopruNode {
       this.blockProcessor.start()
       this.blockProcessor.on('slash', async validation => {
         if (validation.tx) {
-          const result = await this.watchdog?.slash(validation.tx, validation.prerequesites)
+          const result = await this.watchdog?.slash(
+            validation.tx,
+            validation.prerequesites,
+          )
           logger.info(
             `core/zkopru-node - Found a slashable proposal. Execution result is ${result}`,
           )

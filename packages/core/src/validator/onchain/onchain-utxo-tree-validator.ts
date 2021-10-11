@@ -1,10 +1,5 @@
 import { Uint256 } from 'soltypes'
-import {
-  BlockData,
-  HeaderData,
-  Validation,
-  UtxoTreeValidator,
-} from '../types'
+import { BlockData, HeaderData, Validation, UtxoTreeValidator } from '../types'
 import { blockDataToHexString, headerDataToHexString } from '../utils'
 import { OnchainValidatorContext } from './onchain-context'
 
