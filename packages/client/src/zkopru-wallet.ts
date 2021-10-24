@@ -1,11 +1,18 @@
 import { ZkWalletAccount } from '@zkopru/zk-wizard'
-import { TxBuilder, RawTx, Utxo, ZkAddress } from '@zkopru/transaction'
-import { Fp } from '@zkopru/babyjubjub'
+import {
+  TxBuilder,
+  RawTx,
+  Utxo,
+  ZkAddress,
+  SwapTxBuilder,
+} from '@zkopru/transaction'
+import { Fp, F } from '@zkopru/babyjubjub'
 import ZkopruNode from './zkopru-node'
 import fetch from './fetch'
 
 // The ipfs path for the latest proving keys
 const DEFAULT_KEY_CID = '/ipfs/QmWdQnPVdbS61ERWJY76xfkbzrLDiQptE81LRTQUupSP7G'
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 export default class ZkopruWallet {
   node: ZkopruNode
@@ -137,6 +144,71 @@ export default class ZkopruWallet {
           },
         })
         .build()
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
+  }
+
+  async generateSwapTransaction(
+    to: string,
+    sendTokenAddress: string,
+    sendAmount: string,
+    receiveTokenAddress: string,
+    receiveAmount: string,
+    weiPerByte: number | string,
+    salt: F,
+  ): Promise<RawTx> {
+    if (!this.wallet.account) {
+      throw new Error('Account is not set')
+    }
+    const spendables = await this.wallet.getSpendables(this.wallet.account)
+    let txBuilder = SwapTxBuilder.from(this.wallet.account.zkAddress)
+
+    try {
+      txBuilder = txBuilder
+        .provide(...spendables.map(note => Utxo.from(note)))
+        .weiPerByte(weiPerByte)
+      if (sendTokenAddress === ZERO_ADDRESS) {
+        // send ETH receive ERC20
+        txBuilder = txBuilder
+          .sendEther({
+            eth: Fp.from(sendAmount),
+            to: new ZkAddress(to),
+            salt,
+          })
+          .receiveERC20({
+            tokenAddr: receiveTokenAddress,
+            erc20Amount: receiveAmount,
+            salt,
+          })
+      } else if (receiveTokenAddress === ZERO_ADDRESS) {
+        // send ERC20 receive ETH
+        txBuilder = txBuilder
+          .sendERC20({
+            tokenAddr: sendTokenAddress,
+            erc20Amount: sendAmount,
+            to: new ZkAddress(to),
+            salt,
+          })
+          .receiveEther(Fp.from(receiveAmount), salt)
+      } else {
+        // send ERC20 receive ERC20
+        txBuilder = txBuilder
+          .sendERC20({
+            tokenAddr: sendTokenAddress,
+            erc20Amount: sendAmount,
+            to: new ZkAddress(to),
+            salt,
+          })
+          .receiveERC20({
+            tokenAddr: receiveTokenAddress,
+            erc20Amount: receiveAmount,
+            salt,
+          })
+      }
+
+      return txBuilder.build()
     } catch (err) {
       console.log(err)
       throw err
