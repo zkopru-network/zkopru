@@ -11,7 +11,7 @@ import ZkopruNode from './zkopru-node'
 import fetch from './fetch'
 
 // The ipfs path for the latest proving keys
-const DEFAULT_KEY_CID = '/ipfs/QmWdQnPVdbS61ERWJY76xfkbzrLDiQptE81LRTQUupSP7G'
+const DEFAULT_KEY_CID = '/ipfs/QmSQtbTnt5RWrP8uWJ3S5xUKntTx2DqcM7mM5vUg9uJGxq'
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 export default class ZkopruWallet {

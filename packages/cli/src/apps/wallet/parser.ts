@@ -59,7 +59,7 @@ export const { argv } = yargs
     },
     snarkKeyCid: {
       type: 'string',
-      default: '/ipfs/QmWdQnPVdbS61ERWJY76xfkbzrLDiQptE81LRTQUupSP7G',
+      default: '/ipfs/QmSQtbTnt5RWrP8uWJ3S5xUKntTx2DqcM7mM5vUg9uJGxq',
       describe: 'An IPFS content identifier storing the proving keys',
     },
   })
