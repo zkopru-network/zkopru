@@ -27,6 +27,11 @@ zkopru-wallet
 
 - [Document](https://docs.zkopru.network) [(edit)](https://github.com/wanseob/docs.zkopru.network)
 
+## Trusted Setup
+
+- [Trusted Setup Result](https://storage.googleapis.com/zkopru-mpc-files/index.html)
+- [Keys](https://ipfs.io/ipfs/QmSQtbTnt5RWrP8uWJ3S5xUKntTx2DqcM7mM5vUg9uJGxq)(ipfs cid: QmSQtbTnt5RWrP8uWJ3S5xUKntTx2DqcM7mM5vUg9uJGxq)
+
 ## Contribution
 
 - [Code of conduct](./CODE_OF_CONDUCT.md)
