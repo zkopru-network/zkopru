@@ -100,16 +100,20 @@ jobs:
       - attach_workspace:
           at: ~/
       - run:
+          name: Build Testnet
+          command: docker-compose -f compose/docker-compose.yml build contracts
+      - run:
           name: Coordinator Tests
-          command: |
-            docker-compose -f compose/docker-compose.yml build contracts
-            yarn test --scope=@zkopru/coordinator
+          command: yarn test --scope=@zkopru/coordinator
   test_contracts:
     machine:
       image: ubuntu-2004:202010-01
     steps:
       - attach_workspace:
           at: ~/
+      - run:
+          name: Build Testnet
+          command: docker-compose -f compose/docker-compose.yml build contracts-for-integration-test
       - run:
           name: Generate Block Data
           command: |
@@ -144,8 +148,7 @@ jobs:
           at: ~/
       - run:
           name: ZK Wizard Tests
-          command: |
-            yarn test --scope=@zkopru/zk-wizard
+          command: yarn test --scope=@zkopru/zk-wizard
   test_client:
     machine:
       image: ubuntu-2004:202010-01
@@ -189,6 +192,8 @@ jobs:
       - attach_workspace:
           at: ~/
       - run:
+          name: Build Testnet
+          command: docker-compose -f compose/docker-compose.yml build contracts-for-integration-test
+      - run:
           name: Integration Tests
-          no_output_timeout: 45m
           command: DEBUG=1 yarn test --scope=@zkopru/integration-test

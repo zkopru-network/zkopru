@@ -138,7 +138,8 @@ export const testRound2SendZkTxsToCoordinator = (
     carlWithdrawal: ZkTx
   },
 ) => async () => {
-  const { wallets } = ctx()
+  const { wallets, coordinator } = ctx()
+  coordinator.middlewares.proposer.setPreProcessor(_ => undefined)
   const { aliceWithdrawal, bobWithdrawal, carlWithdrawal } = txs()
   const [response1, response2, response3] = await Promise.all([
     wallets.alice.sendLayer2Tx(aliceWithdrawal),
@@ -158,6 +159,7 @@ export const testRound2NewBlockProposal = (
   const { prevLatestBlock } = subCtx()
   let updated = false
   let newBlockHash!: Bytes32
+  coordinator.middlewares.proposer.removePreProcessor()
   do {
     const aliceLatestBlock = await wallets.alice.node.layer2.latestBlock()
     const bobLatestBlock = await wallets.bob.node.layer2.latestBlock()

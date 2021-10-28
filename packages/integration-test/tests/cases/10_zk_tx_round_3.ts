@@ -126,11 +126,18 @@ export const testRound3NewBlockProposalAndSlashing = (
 ) => async () => {
   const { wallets, coordinator } = ctx()
   const prevLatestBlock = await coordinator.layer2().latestBlock()
-  // prepare 33 deposits
-  for (let i = 0; i < 33; i += 1) {
-    await expect(
-      wallets.alice.depositEther(toWei('1', 'ether'), toWei('1', 'milliether')),
-    ).resolves.toStrictEqual(true)
+  // prepare deposits more than 32
+  let count = 0
+  while (count < 33) {
+    try {
+      const result = await wallets.alice.depositEther(
+        toWei('100', 'milliether'),
+        toWei('1', 'milliether'),
+      )
+      if (result) count += 1
+    } catch {
+      await sleep(1000)
+    }
   }
   // commit the mass deposit
   await coordinator.commitMassDeposits()
