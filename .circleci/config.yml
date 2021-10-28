@@ -189,10 +189,6 @@ jobs:
       - attach_workspace:
           at: ~/
       - run:
-          name: Pull Preset Images
-          command: |
-            yarn images pull contracts-for-integration-test
-      - run:
           name: Integration Tests
           no_output_timeout: 45m
           command: DEBUG=1 yarn test --scope=@zkopru/integration-test
