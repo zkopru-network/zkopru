@@ -7,7 +7,7 @@ import { Address } from 'soltypes'
 import { DB, SQLiteConnector, schema } from '~database/node'
 import { ZkAccount, HDWallet } from '~account'
 import { sleep } from '~utils'
-import { readFromContainer, pullAndGetContainer } from '~utils-docker'
+import { readFromContainer, buildAndGetContainer } from '~utils-docker'
 import { DEFAULT } from '~cli/apps/coordinator/config'
 import { L1Contract, FullNode } from '~core'
 import { Coordinator } from '~coordinator'
@@ -21,7 +21,6 @@ type VKs = { [nIn: number]: { [nOut: number]: VerifyingKey } }
 
 export interface Context {
   layer1Container: Container
-  circuitArtifactContainer: Container
   accounts: {
     coordinator: ZkAccount
     alice: ZkAccount
@@ -58,14 +57,7 @@ export interface Context {
 export type CtxProvider = () => Context
 
 export async function terminate(ctx: CtxProvider) {
-  const {
-    layer1Container,
-    circuitArtifactContainer,
-    dbs,
-    coordinator,
-    wallets,
-    provider,
-  } = ctx()
+  const { layer1Container, dbs, coordinator, wallets, provider } = ctx()
   await Promise.all([
     coordinator.stop(),
     wallets.alice.node.stop(),
@@ -77,29 +69,8 @@ export async function terminate(ctx: CtxProvider) {
   await new Promise(r => setTimeout(r, 20000))
   await Promise.all(dbs.map(db => db.close()))
   provider.disconnect(0, 'exit')
-  await Promise.all([
-    await layer1Container.stop(),
-    await circuitArtifactContainer.stop(),
-  ])
-  await Promise.all([
-    await layer1Container.delete(),
-    await circuitArtifactContainer.delete(),
-  ])
-}
-
-async function getContainers(): Promise<{
-  layer1Container: Container
-  circuitArtifactContainer: Container
-}> {
-  const layer1Container = await pullAndGetContainer({
-    compose: [__dirname, '../../../../compose'],
-    service: 'contracts-for-integration-test',
-  })
-  const circuitArtifactContainer = await pullAndGetContainer({
-    compose: [__dirname, '../../../../compose'],
-    service: 'circuits',
-  })
-  return { layer1Container, circuitArtifactContainer }
+  await layer1Container.stop()
+  await layer1Container.delete()
 }
 
 async function getAddresses(
@@ -286,8 +257,11 @@ async function getWallets({
 }
 
 export async function initContext(): Promise<Context> {
-  const { layer1Container, circuitArtifactContainer } = await getContainers()
-  await Promise.all([layer1Container.start(), circuitArtifactContainer.start()])
+  const layer1Container = await buildAndGetContainer({
+    compose: [__dirname, '../../../../compose'],
+    service: 'contracts-for-integration-test',
+  })
+  await layer1Container.start()
   const { zkopruAddress, erc20Address, erc721Address } = await getAddresses(
     layer1Container,
   )
@@ -323,7 +297,6 @@ export async function initContext(): Promise<Context> {
 
   return {
     layer1Container,
-    circuitArtifactContainer,
     accounts: {
       coordinator: accounts[0],
       alice: accounts[1],
