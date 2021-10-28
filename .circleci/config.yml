@@ -9,18 +9,12 @@ workflows:
       - load_keys:
           requires:
             - build
-      - build_keys:
-          requires:
-            - load_keys
       # - test_circuits:
       #     requires:
       #       - build_keys
       - test_coordinator:
           requires:
             - build
-      - test_contracts:
-          requires:
-            - build_keys
       - test_accounts:
           requires:
             - build
@@ -30,9 +24,6 @@ workflows:
       - test_babyjubjub:
           requires:
             - build
-      - test_dataset:
-          requires:
-            - load_keys
       - test_client:
           requires:
             - build
@@ -41,7 +32,7 @@ workflows:
             - build
       - test_zkwizard:
           requires:
-            - build_keys
+            - load_keys
       - test_integration:
           requires:
             - load_keys
@@ -87,25 +78,8 @@ jobs:
       - run:
           name: Load Keys
           command: |
-            yarn images pull circuits
-            cd packages/dataset
-            yarn load-keys
-      - persist_to_workspace:
-          root: ~/
-          paths: project
-  build_keys:
-    machine:
-      image: ubuntu-2004:202010-01
-    steps:
-      - attach_workspace:
-          at: ~/
-      - run:
-          name: Build Keys
-          command: |
             cd packages/circuits
-            yarn setup
-            yarn build-keys
-            yarn postbuild-keys
+            yarn download-keys
       - persist_to_workspace:
           root: ~/
           paths: project
@@ -144,15 +118,6 @@ jobs:
       - run:
           name: Contract Tests
           command: yarn test --scope=@zkopru/contracts
-  test_dataset:
-    machine:
-      image: ubuntu-2004:202010-01
-    steps:
-      - attach_workspace:
-          at: ~/
-      - run:
-          name: Dataset Tests
-          command: yarn test --scope=@zkopru/dataset
   test_accounts:
     machine:
       image: ubuntu-2004:202010-01
@@ -180,12 +145,6 @@ jobs:
       - run:
           name: ZK Wizard Tests
           command: |
-            docker pull zkoprunet/circuits:dev
-            cd packages/circuits
-            yarn setup
-            yarn build-keys
-            yarn postbuild-keys
-            cd ../..
             yarn test --scope=@zkopru/zk-wizard
   test_client:
     machine:
@@ -232,10 +191,6 @@ jobs:
       - run:
           name: Pull Preset Images
           command: |
-            cd packages/circuits
-            yarn setup:pull
-            yarn update-contracts
-            cd ../..
             yarn images pull contracts-for-integration-test
       - run:
           name: Integration Tests

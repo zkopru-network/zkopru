@@ -17,12 +17,13 @@
     "lib"
   ],
   "scripts": {
+    "download-keys": "ts-node utils/download-keys.ts",
     "prebuild": "shx mkdir -p dist",
-    "phase1:pull": "ts-node src/pull-phase1.ts",
+    "phase1:pull": "ts-node utils/pull-phase1.ts",
     "phase1:build": "./script/powers_of_tau_phase_1.sh",
-    "phase2:pull": "ts-node src/pull-keys.ts",
+    "phase2:pull": "ts-node utils/pull-keys.ts",
     "phase2:build": "./script/powers_of_tau_phase_2.sh",
-    "build-keys": "ts-node src/build-keys.ts",
+    "build-keys": "ts-node utils/build-keys.ts",
     "postbuild-keys": "yarn update-contracts",
     "update-contracts": "copyfiles -f keys/vks/* ../contracts/keys/vks",
     "compile": "./script/compile_circuits.sh",
@@ -39,7 +40,6 @@
     "test:ci": "jest --coverage --ci --reporters='jest-junit'",
     "coverage": "jest --coverage",
     "coverage:show": "live-server coverage",
-    "dev": "ts-node-dev -r tsconfig-paths/register src/index.ts",
     "start": "ts-node index.ts"
   },
   "dependencies": {
@@ -50,11 +50,15 @@
     "tar": "^6.0.2"
   },
   "devDependencies": {
+    "@types/cli-progress": "^3.9.2",
+    "@types/follow-redirects": "^1.13.1",
+    "cli-progress": "^3.9.1",
     "ffjavascript": "0.2.22",
+    "follow-redirects": "^1.14.4",
     "node-docker-api": "^1.1.22",
     "shelljs": "^0.8.4",
-    "wasmsnark": "^0.0.10",
-    "uuid": "^8.1.0"
+    "uuid": "^8.1.0",
+    "wasmsnark": "^0.0.10"
   },
   "publishConfig": {
     "access": "public"

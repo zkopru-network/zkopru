@@ -14,8 +14,7 @@
   "scripts": {
     "prebuild": "shx mkdir -p dist",
     "build": "tsc --build tsconfig.build.json",
-    "load-keys": "node dist/load-keys.js",
-    "pregendata": "shx rm -rf keys && yarn load-keys",
+    "pregendata": "cd ../circuits && yarn download-keys",
     "gendata": "node dist/gen-testdata.js",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "link-modules": "link-module-alias",
