@@ -258,14 +258,7 @@ process.env.BLOCK_CONFIRMATIONS = "0";
 })();
 
 async function terminate(context) {
-  const {
-    layer1Container,
-    circuitArtifactContainer,
-    dbs,
-    coordinator,
-    wallets,
-    provider
-  } = context;
+  const { layer1Container, dbs, coordinator, wallets, provider } = context;
   provider.disconnect(0, "exit");
   await Promise.all([
     coordinator.stop(),
@@ -273,14 +266,8 @@ async function terminate(context) {
     wallets.coordinator.node.stop()
   ]);
   await Promise.all([dbs.map(db => db.close())]);
-  await Promise.all([
-    await layer1Container.stop(),
-    await circuitArtifactContainer.stop()
-  ]);
-  await Promise.all([
-    await layer1Container.delete(),
-    await circuitArtifactContainer.delete()
-  ]);
+  await layer1Container.stop();
+  await layer1Container.delete();
 }
 
 async function registerCoordinator({ wallets, web3, contract }) {
@@ -384,11 +371,7 @@ async function getContainers() {
     compose: [__dirname, "../../../compose"],
     service: "contracts-for-integration-test"
   });
-  const circuitArtifactContainer = await pullAndGetContainer({
-    compose: [__dirname, "../../../compose"],
-    service: "circuits"
-  });
-  return { layer1Container, circuitArtifactContainer };
+  return { layer1Container };
 }
 
 async function getAddresses(layer1Container) {
@@ -444,7 +427,7 @@ async function getAccounts(web3) {
   return accounts;
 }
 
-async function getVKs(circuitArtifactContainer) {
+async function loadKeys(keyPath) {
   const vks = {
     1: {},
     2: {},
@@ -458,12 +441,11 @@ async function getVKs(circuitArtifactContainer) {
     nOut.forEach(j => {
       const readVK = async () => {
         const vk = JSON.parse(
-          (
-            await readFromContainer(
-              circuitArtifactContainer,
-              `/proj/build/vks/zk_transaction_${i}_${j}.vk.json`
+          fs
+            .readFileSync(
+              path.join(keyPath, `zk_transaction_${i}_${j}.vk.json`)
             )
-          ).toString("utf8")
+            .toString("utf8")
         );
         vks[i][j] = vk;
       };
@@ -533,11 +515,8 @@ async function getWallets({ accounts, config }) {
 }
 
 async function initContext() {
-  const { layer1Container, circuitArtifactContainer } = await getContainers();
-  await Promise.all([
-    layer1Container.start(),
-    circuitArtifactContainer.start()
-  ]);
+  const { layer1Container } = await getContainers();
+  await layer1Container.start();
   const { zkopruAddress, erc20Address, erc721Address } = await getAddresses(
     layer1Container
   );
@@ -548,8 +527,9 @@ async function initContext() {
   const erc20 = Layer1.getERC20(web3, erc20Address);
   const erc721 = Layer1.getERC721(web3, erc721Address);
   const accounts = await getAccounts(web3);
-  const vks = await getVKs(circuitArtifactContainer);
-  // await getCircuitArtifacts(circuitArtifactContainer)
+  const vks = await loadKeys(
+    path.join(__dirname, "../../../circuits/keys/vks")
+  );
   const { coordinator, mockupDB: coordinatorDB } = await getCoordinator(
     provider,
     zkopruAddress,
@@ -570,7 +550,6 @@ async function initContext() {
 
   return {
     layer1Container,
-    circuitArtifactContainer,
     accounts,
     web3,
     provider,
