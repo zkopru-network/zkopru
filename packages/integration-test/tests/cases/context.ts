@@ -1,5 +1,6 @@
 import { Container } from 'node-docker-api/lib/container'
 import Web3 from 'web3'
+import fs from 'fs'
 import path from 'path'
 import { WebsocketProvider, Account } from 'web3-core'
 import { Address } from 'soltypes'
@@ -172,8 +173,7 @@ async function getAccounts(web3: Web3, n: number): Promise<ZkAccount[]> {
   await mockup.close()
   return accounts
 }
-
-async function getVKs(circuitArtifactContainer: Container): Promise<VKs> {
+async function loadKeys(keyPath: string): Promise<VKs> {
   const vks: VKs = {
     1: {},
     2: {},
@@ -187,12 +187,11 @@ async function getVKs(circuitArtifactContainer: Container): Promise<VKs> {
     nOut.forEach(j => {
       const readVK = async () => {
         const vk = JSON.parse(
-          (
-            await readFromContainer(
-              circuitArtifactContainer,
-              `/proj/build/vks/zk_transaction_${i}_${j}.vk.json`,
+          fs
+            .readFileSync(
+              path.join(keyPath, `zk_transaction_${i}_${j}.vk.json`),
             )
-          ).toString('utf8'),
+            .toString('utf8'),
         )
         vks[i][j] = vk
       }
@@ -299,8 +298,7 @@ export async function initContext(): Promise<Context> {
   const erc20 = Layer1.getERC20(web3, erc20Address)
   const erc721 = Layer1.getERC721(web3, erc721Address)
   const accounts = await getAccounts(web3, 36)
-  const vks = await getVKs(circuitArtifactContainer)
-  // await getCircuitArtifacts(circuitArtifactContainer)
+  const vks = await loadKeys(path.join(__dirname, '../../../circuits/keys/vks'))
   const [coordinatorAccount] = accounts
   const { coordinator, mockupDB: coordinatorDB } = await getCoordinator(
     provider,

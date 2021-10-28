@@ -14,7 +14,6 @@ import {
 import { accounts, address } from './testset-predefined'
 import { utxos } from './testset-utxos'
 import { txs } from './testset-txs'
-import { loadKeys } from './testset-keys'
 
 export async function loadGrove(db: DB): Promise<{ grove: Grove }> {
   const grove = new Grove(db, {
@@ -112,12 +111,11 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
     utxos.utxo4_in_2,
     utxos.utxo4_in_3,
   ])
-  const keyPath = path.join(path.dirname(__filename), '../keys')
+  const keyPath = path.join(path.dirname(__filename), '../../circuits/keys')
   const txsPath = path.join(path.dirname(__filename), '../txs')
   if (!fs.existsSync(txsPath)) {
     fs.mkdirSync(txsPath)
   }
-  await loadKeys(keyPath)
 
   const zkWizard = new ZkWizard({
     utxoTree: grove.utxoTree,

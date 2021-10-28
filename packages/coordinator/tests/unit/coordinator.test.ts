@@ -11,7 +11,7 @@ import fetch from 'node-fetch'
 import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
 import { sleep, trimHexToLength } from '~utils'
-import { readFromContainer, pullOrBuildAndGetContainer } from '~utils-docker'
+import { readFromContainer, buildAndGetContainer } from '~utils-docker'
 import { DB, SQLiteConnector, schema } from '~database/node'
 
 async function callMethod(
@@ -72,7 +72,7 @@ describe('coordinator test to run testnet', () => {
     mockup = await SQLiteConnector.create(schema, ':memory:')
     // It may take about few minutes. If you want to skip building image,
     // run `yarn pull:images` on the root directory
-    container = await pullOrBuildAndGetContainer({
+    container = await buildAndGetContainer({
       compose: [__dirname, '../../../../compose'],
       service: 'contracts',
     })
