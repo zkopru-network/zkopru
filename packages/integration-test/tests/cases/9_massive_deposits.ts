@@ -72,7 +72,7 @@ export const waitCoordinatorToProcessTheNewBlockFor33Deposits = (
   ctx: CtxProvider,
 ) => async () => {
   const { wallets } = ctx()
-  let msToWait = 60000
+  let msToWait = 600000
   let success = false
   while (msToWait > 0) {
     const aliceLatestBlock = await wallets.alice.node.layer2.latestBlock()

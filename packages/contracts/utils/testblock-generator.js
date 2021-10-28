@@ -14,7 +14,7 @@ const { ZkAccount } = require("~account");
 const { DB, schema } = require("~database");
 const { SQLiteConnector } = require("~database/node");
 const { ZKWalletAccount, ZkWallet } = require("~zk-wizard");
-const { readFromContainer, pullAndGetContainer } = require("~utils-docker");
+const { readFromContainer, buildAndGetContainer } = require("~utils-docker");
 const { sleep, attachConsoleLogToPino } = require("~utils");
 const { ZKAccount, HDWallet } = require("~account");
 const { DEFAULT } = require("~cli-config");
@@ -367,7 +367,7 @@ async function finishSetup({ accounts, contract, wallets, coordinator }) {
 }
 
 async function getContainers() {
-  const layer1Container = await pullAndGetContainer({
+  const layer1Container = await buildAndGetContainer({
     compose: [__dirname, "../../../compose"],
     service: "contracts-for-integration-test"
   });
