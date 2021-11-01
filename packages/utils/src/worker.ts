@@ -42,7 +42,9 @@ export class Worker<T> extends EventEmitter {
 
   async stop() {
     this.keepRunning = false
-    if (this.job) {
+    const currentTask = this.job
+    if (currentTask) {
+      await currentTask
       this.job = null
     }
   }
@@ -66,7 +68,7 @@ export class Worker<T> extends EventEmitter {
         await Promise.all([this.runTask(task.task), sleep(task.interval)])
       } catch (err) {
         logger.error('Uncaught error in task')
-        logger.error(err)
+        logger.error(err as string)
       }
     }
   }
