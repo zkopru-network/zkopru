@@ -9,12 +9,7 @@
 /* eslint-disable jest/no-hooks */
 import { Bytes32 } from 'soltypes'
 import { ZkTx } from '~transaction'
-import {
-  jestExtendToCompareBigNumber,
-  sleep,
-  attachConsoleLogToPino,
-} from '~utils'
-import { attachConsoleErrorToPino } from '~utils/logger'
+import { jestExtendToCompareBigNumber, sleep } from '~utils'
 import { Context, initContext, terminate } from './cases/context'
 import {
   testAliceAccount,
@@ -86,8 +81,6 @@ describe('testnet', () => {
   let context!: Context
   const ctx = () => context
   beforeAll(async () => {
-    if (process.env.DEBUG) attachConsoleLogToPino()
-    attachConsoleErrorToPino()
     context = await initContext()
   }, 90000)
   afterAll(async () => {
