@@ -30,14 +30,17 @@ export const aliceDepositEthers33Times = (ctx: CtxProvider) => async () => {
   const { wallets, coordinator } = ctx()
 
   coordinator.middlewares.proposer.setPreProcessor(_ => undefined)
-  for (let i = 0; i < 33; i += 1) {
-    await expect(
-      wallets.alice.depositEther(
+  let count = 0
+  while (count < 33) {
+    try {
+      const result = await wallets.alice.depositEther(
         toWei('100', 'milliether'),
         toWei('1', 'milliether'),
-      ),
-    ).resolves.toStrictEqual(true)
-    await sleep(500)
+      )
+      if (result) count += 1
+    } catch {
+      await sleep(1000)
+    }
   }
 }
 
