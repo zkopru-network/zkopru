@@ -163,11 +163,6 @@ export class Synchronizer extends EventEmitter {
       )
         .toBN()
         .subn(1) // proposal num starts from 0
-      logger.info(
-        `core/syncrhonizer - processing ${
-          this.latestProcessed
-        }/${layer1ProposedBlocks.toString(10)}`,
-      )
       if (layer1ProposedBlocks.eqn(this.latestProcessed || 0)) {
         this.setStatus(NetworkStatus.FULLY_SYNCED)
       } else if (layer1ProposedBlocks.ltn((this.latestProcessed || 0) + 2)) {
