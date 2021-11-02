@@ -1,2 +1,7 @@
 export { ZkWizard } from './zk-wizard'
-export { ZkWallet, Balance } from './zk-wallet'
+export { ZkWallet } from './zk-wallet'
+export {
+  ZkWalletAccount,
+  ZkWalletAccountConfig,
+  Balance,
+} from './zk-wallet-account'

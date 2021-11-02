@@ -1,8 +1,9 @@
-import { Field, Point, F } from '@zkopru/babyjubjub'
+import { Fp, F } from '@zkopru/babyjubjub'
 import { Uint256, Bytes32 } from 'soltypes'
 import { soliditySha3 } from 'web3-utils'
-import { ZkOutflow, PublicData } from './zk_tx'
-import { Note, OutflowType, NoteStatus } from './note'
+import { ZkAddress } from './zk-address'
+import { ZkOutflow, PublicData } from './zk-tx'
+import { Note, OutflowType, NoteStatus, Asset } from './note'
 
 export enum WithdrawalStatus {
   NON_INCLUDED = NoteStatus.NON_INCLUDED,
@@ -16,23 +17,20 @@ export class Withdrawal extends Note {
   status: WithdrawalStatus
 
   publicData: {
-    to: Field
-    fee: Field
+    to: Fp
+    fee: Fp
   }
 
   constructor(
-    eth: Field,
-    salt: Field,
-    tokenAddr: Field,
-    erc20Amount: Field,
-    nft: Field,
-    pubKey: Point,
+    owner: ZkAddress,
+    salt: Fp,
+    asset: Asset,
     publicData: {
-      to: Field
-      fee: Field
+      to: Fp
+      fee: Fp
     },
   ) {
-    super(eth, salt, tokenAddr, erc20Amount, nft, pubKey)
+    super(owner, salt, asset)
     this.publicData = publicData
     this.outflowType = OutflowType.WITHDRAWAL
     this.status = WithdrawalStatus.NON_INCLUDED
@@ -41,13 +39,13 @@ export class Withdrawal extends Note {
   toZkOutflow(): ZkOutflow {
     const outflow = {
       note: this.hash(),
-      outflowType: Field.from(OutflowType.WITHDRAWAL),
+      outflowType: Fp.from(OutflowType.WITHDRAWAL),
       data: {
         to: this.publicData.to,
-        eth: this.eth,
-        tokenAddr: this.tokenAddr,
-        erc20Amount: this.erc20Amount,
-        nft: this.nft,
+        eth: this.asset.eth,
+        tokenAddr: this.asset.tokenAddr,
+        erc20Amount: this.asset.erc20Amount,
+        nft: this.asset.nft,
         fee: this.publicData.fee,
       },
     }
@@ -57,17 +55,17 @@ export class Withdrawal extends Note {
   withdrawalHash(): Uint256 {
     return Withdrawal.withdrawalHash(this.hash(), {
       to: this.publicData.to,
-      eth: this.eth,
-      tokenAddr: this.tokenAddr,
-      erc20Amount: this.erc20Amount,
-      nft: this.nft,
+      eth: this.asset.eth,
+      tokenAddr: this.asset.tokenAddr,
+      erc20Amount: this.asset.erc20Amount,
+      nft: this.asset.nft,
       fee: this.publicData.fee,
     })
   }
 
-  static withdrawalHash(note: Field, publicData: PublicData): Uint256 {
+  static withdrawalHash(note: Fp, publicData: PublicData): Uint256 {
     const concatenated = Buffer.concat([
-      note.toBuffer(),
+      note.toBytes32().toBuffer(),
       publicData.to.toAddress().toBuffer(),
       publicData.eth.toBytes32().toBuffer(),
       publicData.tokenAddr.toAddress().toBuffer(),
@@ -82,17 +80,9 @@ export class Withdrawal extends Note {
   }
 
   static from(note: Note, to: F, fee: F): Withdrawal {
-    return new Withdrawal(
-      note.eth,
-      note.salt,
-      note.tokenAddr,
-      note.erc20Amount,
-      note.nft,
-      note.pubKey,
-      {
-        to: Field.from(to),
-        fee: Field.from(fee),
-      },
-    )
+    return new Withdrawal(note.owner, note.salt, note.asset, {
+      to: Fp.from(to),
+      fee: Fp.from(fee),
+    })
   }
 }

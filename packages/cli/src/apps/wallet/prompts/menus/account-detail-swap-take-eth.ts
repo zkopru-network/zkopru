@@ -10,7 +10,7 @@ export default class AtomicSwapTakeEth extends App {
   async run(context: Context): Promise<{ context: Context; next: number }> {
     const wallet = this.base
     const { account } = context
-    if (!account) throw Error('Acocunt is not set')
+    if (!account) throw Error('Account is not set')
     const messages: string[] = []
     this.print(messages.join('\n'))
 
@@ -37,7 +37,7 @@ export default class AtomicSwapTakeEth extends App {
       this.print(`Failed to build transaction \n${err.toString()}`)
     }
     try {
-      await wallet.sendTx(tx, account)
+      await wallet.sendTx({ tx, from: account })
     } catch (err) {
       logger.error(err)
       logger.error(tx)

@@ -1,6 +1,7 @@
-import { Field, Point, F } from '@zkopru/babyjubjub'
-import { ZkOutflow } from './zk_tx'
-import { Note, OutflowType } from './note'
+import { Fp, F } from '@zkopru/babyjubjub'
+import { ZkAddress } from './zk-address'
+import { ZkOutflow } from './zk-tx'
+import { Note, OutflowType, Asset } from './note'
 
 export enum MigrationStatus {
   NON_INCLUDED = 0,
@@ -11,25 +12,22 @@ export class Migration extends Note {
   status: MigrationStatus
 
   publicData: {
-    to: Field
-    fee: Field
+    to: Fp
+    fee: Fp
   }
 
-  static outflowType: Field = Field.from(2)
+  static outflowType: Fp = Fp.from(2)
 
   constructor(
-    eth: Field,
-    salt: Field,
-    tokenAddr: Field,
-    erc20Amount: Field,
-    nft: Field,
-    pubKey: Point,
+    owner: ZkAddress,
+    salt: Fp,
+    asset: Asset,
     publicData: {
-      to: Field
-      fee: Field
+      to: Fp
+      fee: Fp
     },
   ) {
-    super(eth, salt, tokenAddr, erc20Amount, nft, pubKey)
+    super(owner, salt, asset)
     this.publicData = publicData
     this.outflowType = OutflowType.MIGRATION
     this.status = MigrationStatus.NON_INCLUDED
@@ -41,10 +39,10 @@ export class Migration extends Note {
       outflowType: Migration.outflowType,
       data: {
         to: this.publicData.to,
-        eth: this.eth,
-        tokenAddr: this.tokenAddr,
-        erc20Amount: this.erc20Amount,
-        nft: this.nft,
+        eth: this.asset.eth,
+        tokenAddr: this.asset.tokenAddr,
+        erc20Amount: this.asset.erc20Amount,
+        nft: this.asset.nft,
         fee: this.publicData.fee,
       },
     }
@@ -52,17 +50,9 @@ export class Migration extends Note {
   }
 
   static from(note: Note, to: F, fee: F): Migration {
-    return new Migration(
-      note.eth,
-      note.salt,
-      note.tokenAddr,
-      note.erc20Amount,
-      note.nft,
-      note.pubKey,
-      {
-        to: Field.from(to),
-        fee: Field.from(fee),
-      },
-    )
+    return new Migration(note.owner, note.salt, note.asset, {
+      to: Fp.from(to),
+      fee: Fp.from(fee),
+    })
   }
 }

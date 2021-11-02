@@ -3,7 +3,7 @@
  */
 
 import { getDummyBody } from '../src/testset-block'
-import { accounts } from '../src/testset-keys'
+import { accounts } from '../src/testset-predefined'
 import { loadZkTxs } from '../src/testset-zktxs'
 
 describe('index', () => {
@@ -16,8 +16,8 @@ describe('index', () => {
       const zktxs = await loadZkTxs()
       const tx1 = zktxs[0]
       const note = accounts.bob.decrypt(tx1)
-      expect(note).toBeDefined()
-      expect(note?.pubKey.toHex()).toBe(accounts.bob.pubKey.toHex())
-    }, 600000)
+      expect(note[0]).toBeDefined()
+      expect(note[0].owner.toString()).toBe(accounts.bob.zkAddress.toString())
+    }, 60000)
   })
 })

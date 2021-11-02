@@ -6,6 +6,7 @@ import { PromptApp } from '@zkopru/utils'
 import { ZkWallet } from '@zkopru/zk-wizard'
 import { Writable } from 'stream'
 import assert from 'assert'
+import { Address } from 'soltypes'
 import { Menu, Context, Config } from './configurator'
 import Splash from './menus/splash'
 import ConnectWeb3 from './menus/connect-web3'
@@ -34,8 +35,7 @@ export async function getZkWallet(
     base: config,
     onCancel,
     infoStream: new Writable({
-      write: (chunk, _, cb) => {
-        console.log(chunk.toString())
+      write: (_chunk, _enc, cb) => {
         cb()
       },
     }),
@@ -61,7 +61,7 @@ export async function getZkWallet(
   }
   if (context.menu === Menu.EXIT) return undefined
   const { db, wallet, node, accounts } = context
-  const { erc20, erc721, coordinator, keys } = config
+  const { erc20, erc721, snarkKeyPath, snarkKeyCid } = config
   assert(db, 'db')
   assert(wallet, 'wallet')
   assert(accounts, 'accounts')
@@ -71,10 +71,10 @@ export async function getZkWallet(
     wallet,
     node,
     accounts,
-    erc20: erc20 || [],
-    erc721: erc721 || [],
-    coordinator,
-    snarkKeyPath: keys,
+    erc20: erc20?.map(Address.from) || [],
+    erc721: erc721?.map(Address.from) || [],
+    snarkKeyPath,
+    snarkKeyCid,
   })
   return zkWallet
 }

@@ -1,7 +1,7 @@
 import Web3 from 'web3'
 import { Coordinator } from '@zkopru/coordinator'
 import { NetworkStatus } from '@zkopru/core'
-import { DB } from '@zkopru/prisma'
+import { DB } from '@zkopru/database'
 import { PromptApp } from '@zkopru/utils'
 import { Account, WebsocketProvider, EncryptedKeystoreV3Json } from 'web3-core'
 
@@ -16,8 +16,14 @@ export interface Config {
   port: number
   config?: string
   keystore?: EncryptedKeystoreV3Json
+  keystoreFile?: string
   password?: string
-  nonInteractive?: boolean
+  passwordFile?: string
+  daemon?: boolean
+  maxBid: number
+  publicUrls?: string
+  vhosts: string
+  corsdomain?: string
 }
 
 export enum Menu {

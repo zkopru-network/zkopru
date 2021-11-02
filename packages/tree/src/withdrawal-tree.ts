@@ -1,4 +1,4 @@
-import { DB, LightTree, TreeSpecies } from '@zkopru/prisma'
+import { DB, LightTree, TreeSpecies } from '@zkopru/database'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import {
@@ -7,6 +7,7 @@ import {
   TreeData,
   TreeConfig,
 } from './light-rollup-tree'
+import { TreeCache } from './utils'
 
 export class WithdrawalTree extends LightRollUpTree<BN> {
   zero = toBN(0)
@@ -18,6 +19,7 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
     metadata: TreeMetadata<BN>
     data: TreeData<BN>
     config: TreeConfig<BN>
+    treeCache: TreeCache
   }) {
     super({ ...conf, species: TreeSpecies.WITHDRAWAL })
   }
@@ -29,16 +31,12 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
   async indexesOfTrackingLeaves(): Promise<BN[]> {
     const keys: string[] = this.addressesToObserve || []
 
-    const trackingLeaves = await this.db.read(prisma =>
-      prisma.withdrawal.findMany({
-        where: {
-          AND: [
-            { treeId: this.metadata.id },
-            { OR: [{ to: { in: keys } }, { prepayer: { in: keys } }] },
-          ],
-        },
-      }),
-    )
+    const trackingLeaves = await this.db.findMany('Withdrawal', {
+      where: {
+        treeId: this.metadata.id,
+        OR: [{ to: keys }, { prepayer: keys }],
+      },
+    })
     return trackingLeaves
       .filter(leaf => leaf.index !== null)
       .map(leaf => toBN(leaf.index as string))
@@ -49,11 +47,13 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
     metadata,
     data,
     config,
+    treeCache,
   }: {
     db: DB
     metadata: TreeMetadata<BN>
     data: TreeData<BN>
     config: TreeConfig<BN>
+    treeCache: TreeCache
   }): Promise<WithdrawalTree> {
     const initialData = await LightRollUpTree.initTreeFromDatabase({
       db,
@@ -62,16 +62,20 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
       data,
       config,
     })
-    return new WithdrawalTree({ ...initialData })
+    return new WithdrawalTree({ ...initialData, treeCache })
   }
 
-  static from(db: DB, obj: LightTree, config: TreeConfig<BN>): WithdrawalTree {
+  static from(
+    db: DB,
+    obj: LightTree,
+    config: TreeConfig<BN>,
+    treeCache: TreeCache,
+  ): WithdrawalTree {
     return new WithdrawalTree({
       db,
       metadata: {
         id: obj.id,
         species: obj.species,
-        index: obj.treeIndex,
         start: toBN(obj.start),
         end: toBN(obj.end),
       },
@@ -81,6 +85,7 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
         siblings: JSON.parse(obj.siblings).map(toBN),
       },
       config,
+      treeCache,
     })
   }
 }

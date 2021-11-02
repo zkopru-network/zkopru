@@ -2,8 +2,8 @@
 /* eslint-disable jest/no-hooks */
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
-import { Field } from '~babyjubjub'
-import { DB, TreeSpecies, MockupDB } from '~prisma'
+import { Fp } from '~babyjubjub'
+import { DB, TreeSpecies, SQLiteConnector, schema } from '~database/node'
 import {
   WithdrawalTree,
   TreeConfig,
@@ -11,9 +11,10 @@ import {
   Leaf,
   genesisRoot,
   verifyProof,
+  TreeCache,
 } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
-import { address } from '~dataset/testset-keys'
+import { address } from '~dataset/testset-predefined'
 
 describe('withdrawal tree unit test', () => {
   let withdrawalTree: WithdrawalTree
@@ -21,8 +22,8 @@ describe('withdrawal tree unit test', () => {
     id: '2',
     index: 1,
     species: TreeSpecies.WITHDRAWAL,
-    start: Field.from(0),
-    end: Field.from(0),
+    start: Fp.from(0),
+    end: Fp.from(0),
   }
   const depth = 31
   const withdrawalTreeConfig: TreeConfig<BN> = {
@@ -33,22 +34,23 @@ describe('withdrawal tree unit test', () => {
   const preHashes = keccakHasher(depth).preHash
   const withdrawalTreeInitialData = {
     root: genesisRoot(keccakHasher(depth)),
-    index: Field.zero,
-    siblings: preHashes,
+    index: Fp.zero,
+    siblings: preHashes.slice(0, -1),
   }
-  let mockup: MockupDB
+  let mockup: DB
   beforeAll(async () => {
-    mockup = await DB.mockup()
+    mockup = await SQLiteConnector.create(schema, ':memory:')
     withdrawalTree = new WithdrawalTree({
-      db: mockup.db,
+      db: mockup,
       metadata: withdrawalTreeMetadata,
       data: withdrawalTreeInitialData,
       config: withdrawalTreeConfig,
+      treeCache: new TreeCache(),
     })
     await withdrawalTree.init()
   })
   afterAll(async () => {
-    await mockup.terminate()
+    await mockup.close()
   })
   describe('root()', () => {
     it('should return the genesis root value for its initial root', () => {
@@ -67,7 +69,7 @@ describe('withdrawal tree unit test', () => {
     beforeAll(async () => {
       prevRoot = withdrawalTree.root()
       const items: Leaf<BN>[] = [{ hash: toBN(1) }, { hash: toBN(2) }]
-      result = await withdrawalTree.dryAppend(...items)
+      result = await withdrawalTree.dryAppend(items)
     })
     it('should not update its root', () => {
       expect(withdrawalTree.root().eq(prevRoot)).toBe(true)
@@ -93,8 +95,10 @@ describe('withdrawal tree unit test', () => {
     it('should update its root and its value should equal to the dry run', async () => {
       prevRoot = withdrawalTree.root()
       const items: Leaf<BN>[] = [{ hash: toBN(1) }, { hash: toBN(2) }]
-      dryResult = await withdrawalTree.dryAppend(...items)
-      result = await withdrawalTree.append(...items)
+      dryResult = await withdrawalTree.dryAppend(items)
+      await mockup.transaction(async db => {
+        result = await withdrawalTree.append(items, db)
+      })
       expect(result.root.eq(prevRoot)).toBe(false)
       expect(result.root.eq(dryResult.root)).toBe(true)
       expect(result.index.eq(dryResult.index)).toBe(true)
@@ -117,7 +121,7 @@ describe('withdrawal tree unit test', () => {
     }))
     it("should track Alice's utxos while not tracking Bob's", async () => {
       withdrawalTree.updateAddresses(addresses)
-      await withdrawalTree.append(...items)
+      await mockup.transaction(async db => withdrawalTree.append(items, db))
       const proof = await withdrawalTree.merkleProof({
         hash: items[0].hash,
       })

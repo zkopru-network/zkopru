@@ -1,3 +1,3 @@
 include "../lib/zk_transaction.circom";
 
-component main = ZkTransaction(31, 2, 1);
+component main = ZkTransaction(48, 2, 1);

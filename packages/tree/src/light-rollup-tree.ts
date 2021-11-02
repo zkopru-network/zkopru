@@ -1,41 +1,41 @@
 /* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable no-underscore-dangle */
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import AsyncLock from 'async-lock'
 import BN from 'bn.js'
 import { toBN } from 'web3-utils'
 import { hexify } from '@zkopru/utils'
-import { DB, TreeSpecies } from '@zkopru/prisma'
+import { DB, TreeSpecies, TransactionDB } from '@zkopru/database'
 import { Hasher } from './hasher'
-import { MerkleProof, startingLeafProof } from './merkle-proof'
+import { MerkleProof, startingLeafProof, verifyProof } from './merkle-proof'
+import { TreeCache } from './utils'
 
-export interface Leaf<T extends Field | BN> {
+export interface Leaf<T extends Fp | BN> {
   hash: T
-  noteHash?: Field
+  noteHash?: Fp
   shouldTrack?: boolean
 }
 
-export interface TreeMetadata<T extends Field | BN> {
+export interface TreeMetadata<T extends Fp | BN> {
   id: string
   species: number
-  index: number
   start: T
   end: T
 }
 
-export interface TreeData<T extends Field | BN> {
+export interface TreeData<T extends Fp | BN> {
   root: T
   index: T
   siblings: T[]
 }
 
-export interface TreeConfig<T extends Field | BN> {
+export interface TreeConfig<T extends Fp | BN> {
   hasher: Hasher<T>
   forceUpdate?: boolean
   fullSync?: boolean
 }
 
-export abstract class LightRollUpTree<T extends Field | BN> {
+export abstract class LightRollUpTree<T extends Fp | BN> {
   zero?: T
 
   species: TreeSpecies
@@ -52,18 +52,22 @@ export abstract class LightRollUpTree<T extends Field | BN> {
 
   lock: AsyncLock
 
+  treeCache: TreeCache
+
   constructor({
     db,
     species,
     metadata,
     data,
     config,
+    treeCache,
   }: {
     db: DB
     species: TreeSpecies
     metadata: TreeMetadata<T>
     data: TreeData<T>
     config: TreeConfig<T>
+    treeCache: TreeCache
   }) {
     this.lock = new AsyncLock()
     this.species = species
@@ -72,6 +76,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     this.data = data
     this.config = config
     this.depth = data.siblings.length
+    this.treeCache = treeCache
   }
 
   root(): T {
@@ -90,43 +95,22 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     return [...this.data.siblings].slice(0, this.depth)
   }
 
-  async includedInBlock(hash: string) {
-    await this.db.write(prisma =>
-      prisma.lightTree.update({
-        where: {
-          species_treeIndex: {
-            species: this.species,
-            treeIndex: this.metadata.index,
-          },
-        },
-        data: {
-          block: hash,
-        },
-      }),
-    )
-  }
-
   async init() {
-    const saveResult = await this.db.write(prisma =>
-      prisma.lightTree.create({
-        data: {
-          species: this.species,
-          treeIndex: this.metadata.index,
-          start: this.metadata.start.toString(10),
-          end: this.metadata.end.toString(10),
-          root:
-            this.data.root instanceof Field
-              ? this.data.root.toString(10)
-              : hexify(this.data.root),
-          index: this.data.index.toString(10),
-          siblings: JSON.stringify(
-            this.data.siblings.map(sib =>
-              sib instanceof Field ? sib.toString(10) : hexify(sib),
-            ),
-          ),
-        },
-      }),
-    )
+    const saveResult = await this.db.create('LightTree', {
+      species: this.species,
+      start: this.metadata.start.toString(10),
+      end: this.metadata.end.toString(10),
+      root:
+        this.data.root instanceof Fp
+          ? this.data.root.toString(10)
+          : hexify(this.data.root),
+      index: this.data.index.toString(10),
+      siblings: JSON.stringify(
+        this.data.siblings.map(sib =>
+          sib instanceof Fp ? sib.toString(10) : hexify(sib),
+        ),
+      ),
+    })
     this.metadata.id = saveResult.id
   }
 
@@ -137,106 +121,97 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     hash: T
     index?: T
   }): Promise<MerkleProof<T>> {
-    let proof!: MerkleProof<T>
-    await this.lock.acquire('root', async () => {
-      proof = await this._merkleProof({ hash, index })
-    })
-    return proof
+    return this.lock.acquire('root', async () =>
+      this._merkleProof({ hash, index }),
+    )
   }
 
   async append(
-    ...items: Leaf<T>[]
+    items: Leaf<T>[],
+    db: TransactionDB,
   ): Promise<{
     root: T
     index: T
     siblings: T[]
   }> {
-    let result!: {
-      root: T
-      index: T
-      siblings: T[]
-    }
-    await this.lock.acquire('root', async () => {
-      result = await this._append(...items)
-    })
-    return result
+    return this.lock.acquire('root', async () => this._append(items, db))
   }
 
   async dryAppend(
-    ...items: Leaf<T>[]
+    items: Leaf<T>[],
   ): Promise<{
     root: T
     index: T
     siblings: T[]
   }> {
-    let start!: T
-    let latestSiblings!: T[]
-    await this.lock.acquire('root', async () => {
-      start = this.latestLeafIndex()
-      latestSiblings = this.siblings()
-    })
-    let root: T = this.root()
+    return this.lock.acquire('root', async () => {
+      const start = this.latestLeafIndex()
+      const latestSiblings = this.siblings()
+      let root: T = this.root()
 
-    let index = start
-    for (let i = 0; i < items.length; i += 1) {
-      const item = items[i]
-      // if note exists, save the data and mark as an item to keep tracking
-      // udpate the latest siblings and save the intermediate value if it needs to be tracked
-      const leafIndex = new BN(1).shln(this.depth).or(index)
-      let node = item.hash
-      let hasRightSibling!: boolean
-      for (let level = 0; level < this.depth; level += 1) {
-        const pathIndex = leafIndex.shrn(level)
-        hasRightSibling = pathIndex.and(new BN(1)).isZero()
-        if (hasRightSibling) {
-          // right empty sibling
-          latestSiblings[level] = node // current node will be the next merkle proof's left sibling
-          node = this.config.hasher.parentOf(
-            node,
-            this.config.hasher.preHash[level],
-          )
+      let index = start
+      for (let i = 0; i < items.length; i += 1) {
+        const item = items[i]
+        // if note exists, save the data and mark as an item to keep tracking
+        // udpate the latest siblings and save the intermediate value if it needs to be tracked
+        const leafIndex = new BN(1).shln(this.depth).or(index)
+        let node = item.hash
+        let hasRightSibling!: boolean
+        for (let level = 0; level < this.depth; level += 1) {
+          const pathIndex = leafIndex.shrn(level)
+          hasRightSibling = pathIndex.and(new BN(1)).isZero()
+          if (hasRightSibling) {
+            // right empty sibling
+            latestSiblings[level] = node // current node will be the next merkle proof's left sibling
+            node = this.config.hasher.parentOf(
+              node,
+              this.config.hasher.preHash[level],
+            )
+          } else {
+            // left sibling
+            // keep current sibling
+            node = this.config.hasher.parentOf(latestSiblings[level], node)
+          }
+        }
+        // update root
+        root = node
+        // update index
+        if (this.zero instanceof Fp) {
+          index = Fp.from(index.addn(1)) as T
         } else {
-          // left sibling
-          // keep current sibling
-          node = this.config.hasher.parentOf(latestSiblings[level], node)
+          index = index.addn(1) as T
         }
       }
-      // update root
-      root = node
-      // update index
-      if (this.zero instanceof Field) {
-        index = Field.from(index.addn(1)) as T
-      } else {
-        index = index.addn(1) as T
+      // update the latest siblings
+      return {
+        root,
+        index,
+        siblings: latestSiblings,
       }
-    }
-    // update the latest siblings
-    return {
-      root,
-      index,
-      siblings: latestSiblings,
-    }
+    })
   }
 
-  getStartingLeafProof(): {
+  async getStartingLeafProof(): Promise<{
     root: T
     index: T
     siblings: T[]
-  } {
-    const index = this.latestLeafIndex()
-    const siblings: T[] = [...this.data.siblings]
-    let path: BN = index
-    for (let i = 0; i < this.depth; i += 1) {
-      if (path.isEven()) {
-        siblings[i] = this.config.hasher.preHash[i]
+  }> {
+    return this.lock.acquire('root', async () => {
+      const index = this.latestLeafIndex()
+      const siblings: T[] = [...this.data.siblings]
+      let path: BN = index
+      for (let i = 0; i < this.depth; i += 1) {
+        if (path.isEven()) {
+          siblings[i] = this.config.hasher.preHash[i]
+        }
+        path = path.shrn(1)
       }
-      path = path.shrn(1)
-    }
-    return {
-      root: this.root(),
-      index,
-      siblings,
-    }
+      return {
+        root: this.root(),
+        index,
+        siblings,
+      }
+    })
   }
 
   private async _merkleProof({
@@ -250,22 +225,21 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     if (index) {
       leafIndex = index
     } else {
-      const leafCandidates = await this.db.read(prisma =>
-        prisma.treeNode.findMany({
-          where: {
-            AND: [{ value: hexify(hash) }, { treeId: this.metadata.id }],
-          },
-          take: 1,
-        }),
-      )
+      const leafCandidates = await this.db.findMany('TreeNode', {
+        where: {
+          value: hexify(hash),
+          treeId: this.metadata.id,
+        },
+        limit: 1,
+      })
       if (leafCandidates.length === 0) throw Error('Leaf does not exist.')
       else if (leafCandidates.length > 1)
         throw Error('Multiple leaves exist for same hash.')
       else {
         const leafNodeIndex: BN = toBN(leafCandidates[0].nodeIndex)
         const prefix = new BN(1).shln(this.depth)
-        if (this.zero instanceof Field) {
-          leafIndex = Field.from(leafNodeIndex.xor(prefix)) as T
+        if (this.zero instanceof Fp) {
+          leafIndex = Fp.from(leafNodeIndex.xor(prefix)) as T
         } else {
           leafIndex = leafNodeIndex.xor(prefix) as T
         }
@@ -273,12 +247,16 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     }
     const siblings = await this._getSiblings(leafIndex)
     const root = this.root()
-    return {
+    const proof = {
       root,
       index: leafIndex,
       leaf: hash,
       siblings,
     }
+    if (!verifyProof(this.config.hasher, proof)) {
+      throw Error('Created invalid merkle proof')
+    }
+    return proof
   }
 
   private async _getSiblings(leafIndex: T): Promise<T[]> {
@@ -302,15 +280,13 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       } else {
         // should find the node value
         const cached = cachedSiblings[hexify(siblingNodeIndex)]
-        if (this.zero instanceof Field) {
-          siblings[level] = Field.from(cached)
+        if (!cached) {
+          siblings[level] = this.config.hasher.preHash[level]
+        } else if (this.zero instanceof Fp) {
+          siblings[level] = Fp.from(cached)
         } else {
           siblings[level] = toBN(cached)
         }
-        if (siblings[level] === undefined)
-          throw Error(
-            'Sibling was not cached. Make sure you added your public key before scanning',
-          )
       }
     }
     return siblings
@@ -319,7 +295,8 @@ export abstract class LightRollUpTree<T extends Field | BN> {
   private async _getCachedSiblings(
     leafIndex: T,
   ): Promise<{ [index: string]: string }> {
-    const cachedSiblings = await this.db.preset.getCachedSiblings(
+    const cachedSiblings = await this.treeCache.getCachedSiblings(
+      this.db,
       this.depth,
       this.metadata.id,
       leafIndex,
@@ -338,7 +315,8 @@ export abstract class LightRollUpTree<T extends Field | BN> {
   }
 
   private async _append(
-    ...leaves: Leaf<T>[]
+    leaves: Leaf<T>[],
+    db: TransactionDB,
   ): Promise<{
     root: T
     index: T
@@ -356,10 +334,9 @@ export abstract class LightRollUpTree<T extends Field | BN> {
 
     for (let i = 0; i < leaves.length; i += 1) {
       const leaf = leaves[i]
-      const index = (leaf.hash instanceof Field
-        ? Field.from(i).add(start)
+      const index = (leaf.hash instanceof Fp
+        ? Fp.from(i).add(start)
         : new BN(i).add(start)) as T
-      // TODO batch transaction
       if (leaf.shouldTrack) {
         trackingLeaves.push(index)
       }
@@ -414,6 +391,15 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     }
     const end: T = start.addn(leaves.length) as T
     // update the latest siblings
+    const backupData = { ...this.data }
+    const backupMetadata = { ...this.metadata }
+    db.onError(async () => {
+      await this.lock.acquire('root', () => {
+        // be careful of deep properties that are not copied
+        this.data = backupData
+        this.metadata = backupMetadata
+      })
+    })
     this.data = {
       root,
       index: end,
@@ -422,60 +408,47 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     this.metadata.end = end
     // Update database
     // update rollup snapshot
-    const rollUpSync = {
-      start: start.toString(10),
-      end: end.toString(10),
-    }
     const rollUpSnapshot = {
-      root: root instanceof Field ? root.toUint256().toString() : hexify(root),
+      root: root instanceof Fp ? root.toUint256().toString() : hexify(root),
       index: end.toString(10),
       siblings: JSON.stringify(
         latestSiblings.map(sib =>
-          sib instanceof Field ? sib.toUint256().toString() : hexify(sib),
+          sib instanceof Fp ? sib.toUint256().toString() : hexify(sib),
         ),
       ),
+      end: end.toString(10),
     }
-    await this.db.write(prisma =>
-      prisma.lightTree.upsert({
+    db.upsert('LightTree', {
+      where: { species: this.species },
+      update: rollUpSnapshot,
+      create: {
+        ...rollUpSnapshot,
+        species: this.species,
+        start: '0',
+      },
+      constraintKey: 'species',
+    })
+    // update cached nodes
+    for (const nodeIndex of Object.keys(cached)) {
+      this.treeCache.cacheNode(this.metadata.id, nodeIndex, {
+        treeId: this.metadata.id,
+        nodeIndex,
+        value: cached[nodeIndex],
+      })
+      db.upsert('TreeNode', {
         where: {
-          species_treeIndex: {
-            species: this.species,
-            treeIndex: this.metadata.index,
-          },
+          treeId: this.metadata.id,
+          nodeIndex,
         },
         update: {
-          ...rollUpSync,
-          ...rollUpSnapshot,
+          value: cached[nodeIndex],
         },
         create: {
-          ...rollUpSync,
-          ...rollUpSnapshot,
-          species: this.species,
-          treeIndex: this.metadata.index,
+          treeId: this.metadata.id,
+          nodeIndex,
+          value: cached[nodeIndex],
         },
-      }),
-    )
-    // update cached nodes
-    // TODO prisma batch transaction
-    for (const nodeIndex of Object.keys(cached)) {
-      await this.db.write(prisma =>
-        prisma.treeNode.upsert({
-          where: {
-            treeId_nodeIndex: {
-              treeId: this.metadata.id,
-              nodeIndex,
-            },
-          },
-          update: {
-            value: cached[nodeIndex],
-          },
-          create: {
-            treeId: this.metadata.id,
-            nodeIndex,
-            value: cached[nodeIndex],
-          },
-        }),
-      )
+      })
     }
     return {
       root,
@@ -484,7 +457,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     }
   }
 
-  static async initTreeFromDatabase<T extends Field | BN>({
+  static async initTreeFromDatabase<T extends Fp | BN>({
     db,
     species,
     metadata,
@@ -510,56 +483,51 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       throw Error('bootstrapped with invalid merkle proof')
     }
     // If it does not have force update config, check existing merkle tree
-    const where = {
-      species_treeIndex: {
-        species,
-        treeIndex: metadata.index,
-      },
-    }
-    const exisingTree = await db.read(prisma =>
-      prisma.lightTree.findOne({
-        where,
-      }),
-    )
+    const existingTree = await db.findOne('LightTree', {
+      where: { species },
+    })
     if (
       !config.forceUpdate &&
-      data.index.lte(toBN(exisingTree?.index || '0'))
+      data.index.lte(toBN(existingTree?.index || '0'))
     ) {
       throw Error('Bootstrap is behind the database. Use forceUpdate config')
     }
     // Create or update the merkle tree using the "bootstrapTree" preset query
     const tree = {
       species,
-      treeIndex: metadata.index,
       // rollup sync data
       start: data.index.toString(10),
       end: data.index.toString(10),
       // rollup snapshot data
       root:
-        data.root instanceof Field ? data.root.toString(10) : hexify(data.root),
+        data.root instanceof Fp ? data.root.toString(10) : hexify(data.root),
       index: data.index.toString(10),
       siblings: JSON.stringify(
         data.siblings.map(sib =>
-          sib instanceof Field ? sib.toString(10) : hexify(sib),
+          sib instanceof Fp ? sib.toString(10) : hexify(sib),
         ),
       ),
     }
-    const newTree = await db.write(prisma =>
-      prisma.lightTree.upsert({
-        where,
-        update: tree,
-        create: {
-          ...tree,
-        },
-      }),
-    )
-    const { start, end, treeIndex } = newTree
+    await db.upsert('LightTree', {
+      where: { species },
+      update: tree,
+      create: {
+        ...tree,
+      },
+      constraintKey: 'species',
+    })
+    const newTree = await db.findOne('LightTree', {
+      where: {
+        species,
+      },
+    })
+    const { start, end } = newTree
     // Return tree object
     let _start: T
     let _end: T
-    if (metadata.start instanceof Field) {
-      _start = Field.from(start) as T
-      _end = Field.from(end) as T
+    if (metadata.start instanceof Fp) {
+      _start = Fp.from(start) as T
+      _end = Fp.from(end) as T
     } else {
       _start = toBN(start) as T
       _end = toBN(end) as T
@@ -569,7 +537,6 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       species,
       metadata: {
         ...metadata,
-        index: treeIndex,
         start: _start,
         end: _end,
       },
@@ -594,5 +561,5 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     return false
   }
 
-  abstract async indexesOfTrackingLeaves(): Promise<T[]>
+  abstract indexesOfTrackingLeaves(): Promise<T[]>
 }

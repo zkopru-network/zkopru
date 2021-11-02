@@ -1,4 +1,4 @@
-import { ZkOPRUNode } from '@zkopru/core'
+import { ZkopruNode } from '@zkopru/core'
 import { ZkWallet } from '@zkopru/zk-wizard'
 import { Dashboard } from '../../dashboard'
 import { AppMenu, Context } from './prompts'
@@ -10,7 +10,7 @@ import DepositEther from './prompts/menus/account-detail-deposit-eth'
 import TransferEth from './prompts/menus/account-detail-transfer-eth'
 import TransferMenu from './prompts/menus/account-detail-transfer-menu'
 import WithdrawRequest from './prompts/menus/account-detail-withdraw-request-menu'
-import WithdrawRequestEth from './prompts/menus/account-detail-withraw-request-eth'
+import WithdrawRequestEth from './prompts/menus/account-detail-withdraw-request-eth'
 import WithdrawableList from './prompts/menus/account-detail-withdrawable-list'
 import Withdraw from './prompts/menus/account-detail-withdraw'
 import AtomicSwap from './prompts/menus/account-detail-swap'
@@ -19,7 +19,7 @@ import AtomicSwapTake from './prompts/menus/account-detail-swap-take'
 import AtomicSwapTakeEth from './prompts/menus/account-detail-swap-take-eth'
 
 export class WalletDashboard extends Dashboard<Context, ZkWallet> {
-  node: ZkOPRUNode
+  node: ZkopruNode
 
   constructor(zkWallet: ZkWallet, onCancel: () => Promise<void>) {
     super({ isReady: true }, zkWallet)
@@ -29,7 +29,7 @@ export class WalletDashboard extends Dashboard<Context, ZkWallet> {
     }
     const { node } = zkWallet
     this.node = node
-    this.node.startSync()
+    this.node.start()
     this.addPromptApp(AppMenu.TOP_MENU, new TopMenu(option))
     this.addPromptApp(AppMenu.ON_SYNCING, new OnSyncing(option))
     this.addPromptApp(AppMenu.ACCOUNT_DETAIL, new AccountDetail(option))

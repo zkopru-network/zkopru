@@ -13,7 +13,17 @@ export default class LoadCoordinator extends Configurator {
     if (!context.provider.connected)
       throw Error('Websocket provider is not connected')
 
-    const { address, maxBytes, bootstrap, priceMultiplier, port } = this.base
+    const {
+      address,
+      maxBytes,
+      bootstrap,
+      priceMultiplier,
+      port,
+      maxBid,
+      publicUrls,
+      vhosts,
+      corsdomain,
+    } = this.base
     const { provider, db } = context
     const fullNode: FullNode = await FullNode.new({
       address,
@@ -25,6 +35,10 @@ export default class LoadCoordinator extends Configurator {
       bootstrap,
       priceMultiplier, // 32 gas is the current default price for 1 byte
       port,
+      maxBid,
+      publicUrls,
+      vhosts,
+      corsdomain,
     })
     return { context: { ...context, coordinator }, next: Menu.COMPLETE_SETUP }
   }

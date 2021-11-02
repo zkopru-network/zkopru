@@ -1,162 +1,106 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { Docker } from 'node-docker-api'
 import fs from 'fs-extra'
 import path from 'path'
-import { Field } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { ZkTx, Utxo, UtxoStatus } from '@zkopru/transaction'
 import { ZkWizard } from '@zkopru/zk-wizard'
 import { keccakHasher, poseidonHasher, Grove } from '@zkopru/tree'
-import * as utils from '@zkopru/utils'
-import { Container } from 'node-docker-api/lib/container'
-import tar from 'tar'
-import { DB, TreeSpecies } from '@zkopru/prisma'
-import { accounts, address } from './testset-keys'
+import {
+  DB,
+  SQLiteConnector,
+  TreeSpecies,
+  schema,
+} from '@zkopru/database/dist/node'
+import { accounts, address } from './testset-predefined'
 import { utxos } from './testset-utxos'
 import { txs } from './testset-txs'
 
-export async function loadCircuits() {
-  const docker = new Docker({ socketPath: '/var/run/docker.sock' })
-  const containerName = Math.random()
-    .toString(36)
-    .substring(2, 16)
-  let container: Container
-  try {
-    container = await docker.container.create({
-      Image: 'wanseob/zkopru-circuits:0.0.1',
-      name: containerName,
-      rm: true,
-    })
-  } catch {
-    container = docker.container.get(containerName)
-  }
-  await container.start()
-  const nIn = [1, 2, 3, 4]
-  const nOut = [1, 2, 3, 4]
-  const keyPath = path.join(path.dirname(__filename), '../keys')
-  const txPath = path.join(keyPath, 'txs')
-  const pkPath = path.join(keyPath, 'pks')
-  const vkPath = path.join(keyPath, 'vks')
-  const ccPath = path.join(keyPath, 'circuits')
-  if (!fs.existsSync(txPath)) await fs.mkdirp(txPath)
-  if (!fs.existsSync(pkPath)) await fs.mkdirp(pkPath)
-  if (!fs.existsSync(vkPath)) await fs.mkdirp(vkPath)
-  if (!fs.existsSync(ccPath)) await fs.mkdirp(ccPath)
-  for (const i of nIn) {
-    for (const o of nOut) {
-      const circuit = await utils.readFromContainer(
-        container,
-        `/proj/build/circuits/zk_transaction_${i}_${o}.wasm`,
-      )
-      const pk = await utils.readFromContainer(
-        container,
-        `/proj/build/pks/zk_transaction_${i}_${o}.pk.bin`,
-      )
-      const vk = await utils.readFromContainer(
-        container,
-        `/proj/build/vks/zk_transaction_${i}_${o}.vk.json`,
-      )
-      fs.writeFileSync(
-        path.join(ccPath, `zk_transaction_${i}_${o}.wasm`),
-        circuit,
-      )
-      fs.writeFileSync(path.join(pkPath, `zk_transaction_${i}_${o}.pk.bin`), pk)
-      fs.writeFileSync(
-        path.join(vkPath, `zk_transaction_${i}_${o}.vk.json`),
-        vk,
-      )
-    }
-  }
-  await container.stop()
-  await container.delete()
-}
-
-export async function buildKeys(keyPath: string) {
-  if (!fs.existsSync(keyPath)) {
-    loadCircuits()
-      .then(() => {
-        tar
-          .c({}, ['keys/pks', 'keys/vks', 'keys/circuits'])
-          .pipe(fs.createWriteStream('keys.tgz'))
-      })
-      .catch(console.error)
-  }
-}
-
 export async function loadGrove(db: DB): Promise<{ grove: Grove }> {
   const grove = new Grove(db, {
-    utxoTreeDepth: 31,
-    withdrawalTreeDepth: 31,
+    utxoTreeDepth: 48,
+    withdrawalTreeDepth: 48,
     nullifierTreeDepth: 254,
     utxoSubTreeSize: 32,
     withdrawalSubTreeSize: 32,
-    utxoHasher: poseidonHasher(31),
-    withdrawalHasher: keccakHasher(31),
+    utxoHasher: poseidonHasher(48),
+    withdrawalHasher: keccakHasher(48),
     nullifierHasher: keccakHasher(254),
     fullSync: true,
     forceUpdate: true,
-    pubKeysToObserve: [accounts.alice.pubKey, accounts.bob.pubKey],
+    zkAddressesToObserve: [accounts.alice.zkAddress, accounts.bob.zkAddress],
     addressesToObserve: [address.USER_A],
   })
   await grove.init()
-  const latestTree = grove.latestUTXOTree()
-  const size = latestTree ? latestTree.latestLeafIndex() : Field.zero
+  const latestTree = grove.utxoTree
+  const size = latestTree ? latestTree.latestLeafIndex() : Fp.zero
   if (size.eqn(0)) {
-    await grove.applyGrovePatch({
-      utxos: [
-        utxos.utxo1_in_1,
-        utxos.utxo2_1_in_1,
-        utxos.utxo2_2_in_1,
-        utxos.utxo3_in_1,
-        utxos.utxo3_in_2,
-        utxos.utxo3_in_3,
-        utxos.utxo4_in_1,
-        utxos.utxo4_in_2,
-        utxos.utxo4_in_3,
-      ].map(utxo => ({ hash: utxo.hash(), note: utxo })),
-      withdrawals: [],
-      nullifiers: [],
+    await db.transaction(async db => {
+      await grove.applyGrovePatch(
+        {
+          utxos: [
+            utxos.utxo1_in_1,
+            utxos.utxo2_1_in_1,
+            utxos.utxo2_2_in_1,
+            utxos.utxo3_in_1,
+            utxos.utxo3_in_2,
+            utxos.utxo3_in_3,
+            utxos.utxo4_in_1,
+            utxos.utxo4_in_2,
+            utxos.utxo4_in_3,
+          ].map(utxo => ({ hash: utxo.hash(), note: utxo })),
+          withdrawals: [],
+          nullifiers: [],
+        },
+        db,
+      )
     })
   }
   return { grove }
 }
 
 export async function saveUtxos(db: DB, utxos: Utxo[]): Promise<DB> {
-  const utxoTree = await db.read(prisma =>
-    prisma.lightTree.findOne({
-      where: { species_treeIndex: { species: TreeSpecies.UTXO, treeIndex: 0 } },
-    }),
-  )
+  const utxoTree = await db.findOne('LightTree', {
+    where: {
+      species: TreeSpecies.UTXO,
+    },
+  })
   if (!utxoTree) throw Error('Failed to get utxo gree from grove')
-  const utxoTreeId = utxoTree.id
   for (let i = 0; i < utxos.length; i += 1) {
     const utxo = utxos[i]
-    await db.write(prisma =>
-      prisma.utxo.create({
-        data: {
-          hash: utxo
-            .hash()
-            .toUint256()
-            .toString(),
-          pubKey: utxo.pubKey.toString(),
-          salt: utxo.salt.toUint256().toString(),
-          eth: utxo.eth.toUint256().toString(),
-          tokenAddr: utxo.tokenAddr.toAddress().toString(),
-          erc20Amount: utxo.erc20Amount.toUint256().toString(),
-          nft: utxo.nft.toUint256().toString(),
-          status: UtxoStatus.NON_INCLUDED,
-          index: i.toString(),
-          tree: { connect: { id: utxoTreeId } },
-        },
-      }),
-    )
+    await db.create('Utxo', {
+      hash: utxo
+        .hash()
+        .toUint256()
+        .toString(),
+      owner: utxo.owner.toString(),
+      salt: utxo.salt.toUint256().toString(),
+      eth: utxo
+        .eth()
+        .toUint256()
+        .toString(),
+      tokenAddr: utxo
+        .tokenAddr()
+        .toAddress()
+        .toString(),
+      erc20Amount: utxo
+        .erc20Amount()
+        .toUint256()
+        .toString(),
+      nft: utxo
+        .nft()
+        .toUint256()
+        .toString(),
+      status: UtxoStatus.NON_INCLUDED,
+      index: i.toString(),
+    })
   }
   return db
 }
 
 export async function loadZkTxs(): Promise<ZkTx[]> {
-  const mockupDB = await DB.mockup()
-  const { grove } = await loadGrove(mockupDB.db)
-  await saveUtxos(mockupDB.db, [
+  const mockupDB = await SQLiteConnector.create(schema, ':memory:')
+  const { grove } = await loadGrove(mockupDB)
+  await saveUtxos(mockupDB, [
     utxos.utxo1_in_1,
     utxos.utxo2_1_in_1,
     utxos.utxo2_2_in_1,
@@ -167,26 +111,28 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
     utxos.utxo4_in_2,
     utxos.utxo4_in_3,
   ])
-  const keyPath = path.join(path.dirname(__filename), '../keys')
-  await buildKeys(keyPath)
+  const keyPath = path.join(path.dirname(__filename), '../../circuits/keys')
+  const txsPath = path.join(path.dirname(__filename), '../txs')
+  if (!fs.existsSync(txsPath)) {
+    fs.mkdirSync(txsPath)
+  }
 
   const zkWizard = new ZkWizard({
-    grove,
+    utxoTree: grove.utxoTree,
     path: keyPath,
   })
-  const tx1Path = path.join(keyPath, 'txs/zk_tx_1.tx')
-  const tx2_1Path = path.join(keyPath, 'txs/zk_tx_2_1.tx')
-  const tx2_2Path = path.join(keyPath, 'txs/zk_tx_2_2.tx')
-  const tx3Path = path.join(keyPath, 'txs/zk_tx_3.tx')
-  const tx4Path = path.join(keyPath, 'txs/zk_tx_4.tx')
+  const tx1Path = path.join(txsPath, 'zk_tx_1.tx')
+  const tx2_1Path = path.join(txsPath, 'zk_tx_2_1.tx')
+  const tx2_2Path = path.join(txsPath, 'zk_tx_2_2.tx')
+  const tx3Path = path.join(txsPath, 'zk_tx_3.tx')
+  const tx4Path = path.join(txsPath, 'zk_tx_4.tx')
   let zk_tx_1: ZkTx
   try {
     zk_tx_1 = ZkTx.decode(fs.readFileSync(tx1Path))
   } catch (err) {
     zk_tx_1 = await zkWizard.shield({
       tx: txs.tx_1,
-      account: accounts.alice,
-      encryptTo: accounts.bob.pubKey,
+      from: accounts.alice,
     })
     fs.writeFileSync(tx1Path, zk_tx_1.encode())
   }
@@ -196,8 +142,7 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
   } catch (err) {
     zk_tx_2_1 = await zkWizard.shield({
       tx: txs.tx_2_1,
-      account: accounts.alice,
-      encryptTo: accounts.bob.pubKey,
+      from: accounts.alice,
     })
     fs.writeFileSync(tx2_1Path, zk_tx_2_1.encode())
   }
@@ -207,8 +152,7 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
   } catch (err) {
     zk_tx_2_2 = await zkWizard.shield({
       tx: txs.tx_2_2,
-      account: accounts.bob,
-      encryptTo: accounts.alice.pubKey,
+      from: accounts.bob,
     })
     fs.writeFileSync(tx2_2Path, zk_tx_2_2.encode())
   }
@@ -216,17 +160,16 @@ export async function loadZkTxs(): Promise<ZkTx[]> {
   try {
     zk_tx_3 = ZkTx.decode(fs.readFileSync(tx3Path))
   } catch (err) {
-    zk_tx_3 = await zkWizard.shield({ tx: txs.tx_3, account: accounts.alice })
+    zk_tx_3 = await zkWizard.shield({ tx: txs.tx_3, from: accounts.alice })
     fs.writeFileSync(tx3Path, zk_tx_3.encode())
   }
   let zk_tx_4: ZkTx
   try {
     zk_tx_4 = ZkTx.decode(fs.readFileSync(tx4Path))
   } catch (err) {
-    zk_tx_4 = await zkWizard.shield({ tx: txs.tx_4, account: accounts.alice })
+    zk_tx_4 = await zkWizard.shield({ tx: txs.tx_4, from: accounts.alice })
     fs.writeFileSync(tx4Path, zk_tx_4.encode())
   }
-  await zkWizard.terminate()
-  await mockupDB.terminate()
+  await mockupDB.close()
   return [zk_tx_1, zk_tx_2_1, zk_tx_2_2, zk_tx_3, zk_tx_4]
 }

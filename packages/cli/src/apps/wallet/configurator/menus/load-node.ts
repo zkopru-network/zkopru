@@ -1,10 +1,12 @@
 import chalk from 'chalk'
 import {
   FullNode,
-  ZkOPRUNode,
+  ZkopruNode,
   LightNode,
   HttpBootstrapHelper,
+  CoordinatorManager,
 } from '@zkopru/core'
+import Web3 from 'web3'
 import Configurator, { Context, Menu } from '../configurator'
 
 export default class LoadNode extends Configurator {
@@ -17,9 +19,9 @@ export default class LoadNode extends Configurator {
     if (!context.accounts) throw Error('Wallet is not set')
     if (!context.provider.connected)
       throw Error('Websocket provider is not connected')
-    let node: ZkOPRUNode
+    let node: ZkopruNode
     const { provider, db, accounts } = context
-    const { address, coordinator: bootstrap } = this.base
+    const { address } = this.base
     if (this.base.fullnode) {
       node = await FullNode.new({
         provider,
@@ -28,23 +30,20 @@ export default class LoadNode extends Configurator {
         accounts,
       })
     } else {
+      const manager = new CoordinatorManager(address, new Web3(provider))
+      const coordinator = await manager.activeCoordinatorUrl()
+      if (!coordinator) {
+        this.print(`Unable to find coordinator to sync from`)
+        process.exit(1)
+      }
       node = await LightNode.new({
         provider,
         address,
         db,
         accounts,
-        bootstrapHelper: new HttpBootstrapHelper(bootstrap),
-        option: {
-          header: true,
-          deposit: true,
-          migration: true,
-          outputRollUp: true,
-          withdrawalRollUp: true,
-          nullifierRollUp: false, // Only for FULL NODE
-          snark: false,
-        },
+        bootstrapHelper: new HttpBootstrapHelper(coordinator),
       })
-      this.print(chalk.blue(`Bootstrap light node from ${bootstrap}`))
+      this.print(chalk.blue(`Bootstrap light node from ${coordinator}`))
       await (node as LightNode).bootstrap()
     }
     return {

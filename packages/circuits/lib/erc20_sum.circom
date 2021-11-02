@@ -1,11 +1,17 @@
 include "../node_modules/circomlib/circuits/babyjub.circom";
-include "./utils.circom";
+include "./if_else_then.circom";
 
 template ERC20Sum(n) {
     signal input addr;
     signal input note_addr[n];
     signal input note_amount[n];
     signal output out;
+    // Filter with the given address and compute the sum of amount.
+    // If we write the same logic in JS, that should be like below
+    // 
+    // out = notes
+    //   .filter(note => note.addr == addr)
+    //   .reduce((acc, note) => acc + note.amount)
 
     component sum[n];
     signal intermediates[n+1];

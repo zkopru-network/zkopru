@@ -1,14 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable max-classes-per-file */
+import path from 'path'
 import { Unit, soliditySha3Raw } from 'web3-utils'
 import { Bytes32, Uint256, Address } from 'soltypes'
 import BN from 'bn.js'
+import axios from 'axios'
 
-export { logger, logStream } from './logger'
+export { logger, logStream, attachConsoleLogToPino } from './logger'
+
+export { prepayHash } from './eip712'
 
 export { PromptApp } from './prompt'
 
-export { readFromContainer, getContainer } from './docker'
+export { Worker } from './worker'
 
 const units: Unit[] = [
   'noether',
@@ -45,6 +49,7 @@ export function parseStringToUnit(
   defaultUnit?: Unit,
 ): { val: string; unit: Unit } {
   const val = parseFloat(str).toString()
+  // eslint-disable-next-line no-useless-escape
   const unitParser = str.match(/[\d.\-\+]*\s*(.*)/)
   const parsedUnit = (unitParser ? unitParser[1] : '') as Unit
   let unit = defaultUnit || 'ether'
@@ -100,7 +105,7 @@ export function root(hashes: Bytes32[]): Bytes32 {
   for (let i = 0; i < numOfParentNodes; i += 1) {
     if (hasEmptyLeaf && i === numOfParentNodes - 1) {
       parents[i] = Bytes32.from(
-        soliditySha3Raw(hashes[i * 2].toString(), zeroBytes.toString()),
+        soliditySha3Raw(hashes[i * 2].toString(), hashes[i * 2].toString()),
       )
     } else {
       parents[i] = Bytes32.from(
@@ -122,10 +127,6 @@ export function hexToBuffer(hex: string, len?: number): Buffer {
   return Buffer.concat([Buffer.alloc(len - buff.length).fill(0), buff])
 }
 
-export function verifyingKeyIdentifier(nI: number, nO: number): string {
-  return soliditySha3Raw(nI, nO)
-}
-
 export function hexify(
   n: BN | Buffer | string | number,
   byteLength?: number,
@@ -137,11 +138,10 @@ export function hexify(
     if (n.startsWith('0x')) {
       hex = n.substr(2)
     } else {
-      try {
-        hex = new BN(n, 16).toString(16)
-      } catch (e) {
-        hex = Buffer.from(n).toString('hex')
+      if (/[a-fA-F]/.test(n)) {
+        throw new Error('Detected hex value in expected decimal string')
       }
+      hex = new BN(n).toString(16)
     }
   } else {
     hex = n.toString('hex')
@@ -153,6 +153,24 @@ export function hexify(
     hex = '0'.repeat(byteLength * 2 - hex.length) + hex
   }
   return `0x${hex}`
+}
+
+export function trimHexToLength(
+  hexstring: string | Buffer,
+  targetLength: number,
+) {
+  const rawString = (typeof hexstring === 'string'
+    ? hexstring
+    : hexstring.toString('hex')
+  ).replace('0x', '')
+  const reducedString = rawString.slice(0, targetLength)
+  const filledString = [
+    reducedString,
+    ...Array(targetLength - reducedString.length)
+      .fill(null)
+      .map(() => '0'),
+  ].join('')
+  return `0x${filledString}`
 }
 
 export function numToBuffer(
@@ -248,6 +266,10 @@ export class StringifiedHexQueue {
     return Buffer.from(dequeued, 'hex')
   }
 
+  dequeueAllToBuffer() {
+    return Buffer.from(this.str.slice(this.cursor), 'hex')
+  }
+
   dequeueAll(): string {
     return `0x${this.str.slice(this.cursor)}`
   }
@@ -266,4 +288,51 @@ export function sleep(ms: number) {
   return new Promise(res => {
     setTimeout(res, ms)
   })
+}
+
+export function jestExtendToCompareBigNumber(expect: jest.Expect) {
+  expect.extend({
+    toBe(received: BN, expected: BN) {
+      const pass = received.eq(expected)
+      const message = pass
+        ? `expected ${received.toString()} not to be equal to ${expected.toString()}`
+        : `expected ${received.toString()} to be equal to ${expected.toString()}`
+      return {
+        message: () => message,
+        pass,
+      }
+    },
+  })
+}
+
+export function makePathAbsolute(filepath: string) {
+  if (path.isAbsolute(filepath)) return filepath
+  return path.join(process.cwd(), filepath)
+}
+
+const HostRegex = /(?=^.{4,253}$)(^((?!-)[a-zA-Z0-9-]{0,62}[a-zA-Z0-9]\.)+[a-zA-Z]{2,63}$)/
+const IP4Regex = /^((25[0-5]|(2[0-4]|1[0-9]|[1-9]|)[0-9])(\.(?!$)|$)){4}$/
+const PortRegex = /^[0-9]+$/
+export function validatePublicUrls(publicUrls: string) {
+  if (!publicUrls)
+    throw new Error('Public urls cannot be empty for a coordinator')
+  for (const url of publicUrls.split(',')) {
+    const [host, port] = url.split(':')
+    if (!host || !port) {
+      throw new Error(`Missing host or port in public url: ${url}`)
+    }
+    if (!HostRegex.test(host) && !IP4Regex.test(host) && host !== 'localhost') {
+      throw new Error(`Invalid public url host or ip supplied: ${url}`)
+    }
+    if (!PortRegex.test(port)) {
+      throw new Error(`Invalid public url port supplied: ${url}`)
+    }
+  }
+}
+
+export async function externalIp() {
+  const {
+    data: { ip },
+  } = await axios.get('https://external-ip.now.sh')
+  return ip
 }

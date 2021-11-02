@@ -1,4 +1,5 @@
 import yargs from 'yargs'
+import { DEFAULT } from './config'
 
 export const { argv } = yargs
   .scriptName('zkopru-coordinator')
@@ -7,17 +8,17 @@ export const { argv } = yargs
     address: {
       type: 'string',
       alias: 'a',
-      default: '0x98a9b814B423B4D17Cd612cD7943986aB9BF8c41',
+      describe: `[${DEFAULT.address}]`,
     },
     bootstrap: {
       type: 'boolean',
       alias: 'b',
-      default: true,
+      describe: `[${DEFAULT.bootstrap}]`,
     },
     websocket: {
       type: 'string',
       alias: 'ws',
-      default: 'ws://goerli.zkopru.network:8546',
+      describe: `[${DEFAULT.websocket}]`,
     },
     sqlite: {
       type: 'string',
@@ -27,27 +28,57 @@ export const { argv } = yargs
     },
     maxBytes: {
       type: 'number',
-      default: 131072,
+      describe: `[${DEFAULT.maxBytes}]`,
     },
     priceMultiplier: {
       type: 'number',
-      default: 48,
+      describe: `[${DEFAULT.priceMultiplier}]`,
     },
     port: {
       type: 'number',
-      default: 8888,
+      describe: `[${DEFAULT.port}]`,
     },
     config: {
       type: 'string',
       describe:
         'You can skip interactive booting up process with JSON configuration file',
     },
-    nonInteractive: {
+    generateConfig: {
+      type: 'string',
+      describe: 'Generate a sample config file',
+    },
+    daemon: {
       type: 'boolean',
-      alias: 'n',
+      alias: 'd',
+      describe: 'Start as a daemon',
     },
     password: {
       type: 'string',
+    },
+    passwordFile: {
+      type: 'string',
+      describe: 'Path to a plaintext file to be used as the keystore password',
+    },
+    keystoreFile: {
+      type: 'string',
+      describe: 'Path to an Ethereum keystore file',
+    },
+    maxBid: {
+      type: 'number',
+      describe: `Maximum bid allowed in the burn auction (Gwei) [${DEFAULT.maxBid}]`,
+    },
+    publicUrls: {
+      type: 'string',
+      describe:
+        'Comma separated list of host:port combinations this node is accessible at',
+    },
+    vhosts: {
+      type: 'string',
+      describe: `Comma separated list of hostnames from which to accept API requests (server enforced). Accepts '*' wildcard. [${DEFAULT.vhosts}]`,
+    },
+    corsdomain: {
+      type: 'string',
+      describe: `Comma separated list of domains from which to accept cross origin API requests (browser enforced). Accepts '*' wildcard.`,
     },
   })
   .help()

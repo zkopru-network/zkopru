@@ -1,83 +1,73 @@
 import Web3 from 'web3'
-// import { Accounts } from 'web3-eth-accounts'
 import { Account, EncryptedKeystoreV3Json, AddAccount } from 'web3-core'
-import { Field, Point, EdDSA, signEdDSA, verifyEdDSA } from '@zkopru/babyjubjub'
-import { Keystore } from '@zkopru/prisma'
-import { ZkTx, Utxo } from '@zkopru/transaction'
-import { hexify } from '@zkopru/utils'
+import {
+  Fr,
+  Fp,
+  Point,
+  EdDSA,
+  signEdDSA,
+  verifyEdDSA,
+} from '@zkopru/babyjubjub'
+import { Keystore } from '@zkopru/database'
+import createKeccak from 'keccak'
 import assert from 'assert'
+import { ZkViewer } from './viewer'
 
-export class ZkAccount {
-  private snarkPK: Field
+export class ZkAccount extends ZkViewer {
+  private privateKey: string // ECDSA private key
 
-  private ethPK: string
-
-  address: string
-
-  pubKey: Point
+  ethAddress: string
 
   ethAccount: Account
 
-  constructor(pk: Buffer | string | Account) {
-    if (pk instanceof Buffer || typeof pk === 'string') {
-      if (pk instanceof Buffer) {
-        this.ethPK = hexify(pk, 32)
-        this.snarkPK = Field.fromBuffer(pk)
-      } else {
-        this.ethPK = hexify(pk, 32)
-        this.snarkPK = Field.from(pk)
-      }
-      const web3 = new Web3()
-      this.ethAccount = web3.eth.accounts.privateKeyToAccount(this.ethPK)
-    } else {
-      this.ethPK = hexify(pk.privateKey, 32)
-      this.snarkPK = Field.from(pk.privateKey)
-      this.ethAccount = pk
-    }
-    this.address = this.ethAccount.address.toLowerCase()
-    this.pubKey = Point.fromPrivKey(this.snarkPK.toHex(32))
+  constructor(_privateKey: Buffer | string) {
+    const web3 = new Web3()
+    const privateKey =
+      typeof _privateKey === 'string'
+        ? _privateKey
+        : _privateKey.toString('hex')
+
+    const ethAccount = web3.eth.accounts.privateKeyToAccount(privateKey)
+
+    const A = Point.fromPrivKey(privateKey)
+    // https://github.com/zkopru-network/zkopru/issues/34#issuecomment-666988505
+    // Note: viewing key can be derived using another method. This is just for the convenience
+    // to make it easy to restore spending key & viewing key together from a mnemonic source in
+    // a deterministic way
+    const v = Fr.from(
+      createKeccak('keccak256')
+        .update(privateKey)
+        .digest(),
+    )
+    super(A, v)
+    this.privateKey = privateKey
+    this.ethAddress = ethAccount.address
+    this.ethAccount = ethAccount
+  }
+
+  static fromEthAccount(account: Account): ZkAccount {
+    return new ZkAccount(account.privateKey)
   }
 
   toKeystoreSqlObj(password: string): Keystore {
     return {
-      pubKey: hexify(this.pubKey.encode()),
-      address: this.address,
+      zkAddress: this.zkAddress.toString(),
+      address: this.ethAddress,
       encrypted: JSON.stringify(this.ethAccount.encrypt(password)),
     }
   }
 
-  signEdDSA(msg: Field): EdDSA {
-    const signature = signEdDSA({ msg, privKey: this.snarkPK.toHex(32) })
-    assert(verifyEdDSA(msg, signature, this.pubKey))
+  signEdDSA(msg: Fp): EdDSA {
+    const signature = signEdDSA({ msg, privKey: this.privateKey })
+    assert(verifyEdDSA(msg, signature, this.getEdDSAPubKey()))
     return signature
   }
 
   toAddAccount(): AddAccount {
     return {
-      address: this.address,
-      privateKey: this.ethPK,
+      address: this.ethAddress,
+      privateKey: this.privateKey,
     }
-  }
-
-  decrypt(zkTx: ZkTx): Utxo | undefined {
-    const { memo } = zkTx
-    if (!memo) {
-      return
-    }
-    let note: Utxo | undefined
-    for (const outflow of zkTx.outflow) {
-      try {
-        note = Utxo.decrypt({
-          utxoHash: outflow.note,
-          memo,
-          privKey: this.snarkPK.toHex(32),
-        })
-      } catch (err) {
-        console.error(err)
-      }
-      if (note) break
-    }
-    return note ? Utxo.from(note) : undefined
   }
 
   static fromEncryptedKeystoreV3Json(

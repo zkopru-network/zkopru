@@ -1,7 +1,7 @@
 import Web3 from 'web3'
-import { ZkOPRUNode, NetworkStatus } from '@zkopru/core'
+import { ZkopruNode, NetworkStatus } from '@zkopru/core'
 import { ZkAccount, HDWallet } from '@zkopru/account'
-import { DB, EncryptedWallet } from '@zkopru/prisma'
+import { DB, EncryptedWallet } from '@zkopru/database'
 import { PromptApp } from '@zkopru/utils'
 import { WebsocketProvider } from 'web3-core'
 
@@ -9,9 +9,7 @@ export interface Config {
   fullnode: boolean
   develop: boolean
   address: string
-  coordinator: string
   websocket: string
-  keys: string
   sqlite?: string
   postgres?: string
   config?: string
@@ -21,6 +19,8 @@ export interface Config {
   seedKeystore?: EncryptedWallet
   password?: string
   numberOfAccounts?: number
+  snarkKeyCid?: string
+  snarkKeyPath?: string
 }
 
 export enum Menu {
@@ -44,7 +44,7 @@ export interface Context {
   provider?: WebsocketProvider
   db?: DB
   wallet?: HDWallet
-  node?: ZkOPRUNode
+  node?: ZkopruNode
   accounts?: ZkAccount[]
   passwordHash?: string
   isInitialSetup?: boolean

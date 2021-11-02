@@ -37,6 +37,32 @@ export const ICoordinatableABI = [
     inputs: [
       {
         indexed: false,
+        internalType: 'address',
+        name: 'tokenAddr',
+        type: 'address',
+      },
+    ],
+    name: 'NewErc20',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'tokenAddr',
+        type: 'address',
+      },
+    ],
+    name: 'NewErc721',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
         internalType: 'uint256',
         name: 'proposalNum',
         type: 'uint256',
@@ -49,6 +75,19 @@ export const ICoordinatableABI = [
       },
     ],
     name: 'NewProposal',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'coordinator',
+        type: 'address',
+      },
+    ],
+    name: 'StakeChanged',
     type: 'event',
   },
   {
@@ -66,7 +105,25 @@ export const ICoordinatableABI = [
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'bytes', name: 'submission', type: 'bytes' }],
+    inputs: [{ internalType: 'address', name: 'coordinator', type: 'address' }],
+    name: 'stake',
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'bytes', name: 'blockData', type: 'bytes' },
+      { internalType: 'bytes32', name: 'parentHash', type: 'bytes32' },
+      { internalType: 'bytes32[]', name: 'depositHashes', type: 'bytes32[]' },
+    ],
+    name: 'safePropose',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'bytes', name: 'blockData', type: 'bytes' }],
     name: 'propose',
     outputs: [],
     stateMutability: 'nonpayable',
@@ -89,6 +146,20 @@ export const ICoordinatableABI = [
   {
     inputs: [],
     name: 'commitMassDeposit',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'tokenAddr', type: 'address' }],
+    name: 'registerERC20',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'tokenAddr', type: 'address' }],
+    name: 'registerERC721',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',

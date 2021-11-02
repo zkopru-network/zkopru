@@ -1,45 +1,47 @@
-import { Field, Point } from '@zkopru/babyjubjub'
-import { DB, LightTree, TreeSpecies } from '@zkopru/prisma'
+import { Fp } from '@zkopru/babyjubjub'
+import { DB, LightTree, TreeSpecies } from '@zkopru/database'
+import { ZkAddress } from '@zkopru/transaction'
 import {
   LightRollUpTree,
   TreeMetadata,
   TreeData,
   TreeConfig,
 } from './light-rollup-tree'
+import { TreeCache } from './utils'
 
-export class UtxoTree extends LightRollUpTree<Field> {
+export class UtxoTree extends LightRollUpTree<Fp> {
   constructor(conf: {
     db: DB
-    metadata: TreeMetadata<Field>
-    data: TreeData<Field>
-    config: TreeConfig<Field>
+    metadata: TreeMetadata<Fp>
+    data: TreeData<Fp>
+    config: TreeConfig<Fp>
+    treeCache: TreeCache
   }) {
     super({ ...conf, species: TreeSpecies.UTXO })
   }
 
-  zero = Field.zero
+  zero = Fp.zero
 
-  pubKeysToObserve?: Point[]
+  zkAddressesToObserve?: ZkAddress[]
 
-  updatePubKeys(pubKeys: Point[]) {
-    this.pubKeysToObserve = pubKeys
+  updatePubKeys(addresses: ZkAddress[]) {
+    this.zkAddressesToObserve = addresses
   }
 
-  async indexesOfTrackingLeaves(): Promise<Field[]> {
-    const keys: string[] = this.pubKeysToObserve
-      ? this.pubKeysToObserve.map(point => point.toHex())
+  async indexesOfTrackingLeaves(): Promise<Fp[]> {
+    const keys: string[] = this.zkAddressesToObserve
+      ? this.zkAddressesToObserve.map(address => address.toString())
       : []
 
-    const trackingLeaves = await this.db.read(prisma =>
-      prisma.utxo.findMany({
-        where: {
-          AND: [{ treeId: this.metadata.id }, { pubKey: { in: keys } }],
-        },
-      }),
-    )
+    const trackingLeaves = await this.db.findMany('Utxo', {
+      where: {
+        treeId: this.metadata.id,
+        owner: keys,
+      },
+    })
     return trackingLeaves
       .filter(leaf => leaf.index !== null)
-      .map(leaf => Field.from(leaf.index as string))
+      .map(leaf => Fp.from(leaf.index as string))
   }
 
   static async bootstrap({
@@ -47,11 +49,13 @@ export class UtxoTree extends LightRollUpTree<Field> {
     metadata,
     data,
     config,
+    treeCache,
   }: {
     db: DB
-    metadata: TreeMetadata<Field>
-    data: TreeData<Field>
-    config: TreeConfig<Field>
+    metadata: TreeMetadata<Fp>
+    data: TreeData<Fp>
+    config: TreeConfig<Fp>
+    treeCache: TreeCache
   }): Promise<UtxoTree> {
     const initialData = await LightRollUpTree.initTreeFromDatabase({
       db,
@@ -60,25 +64,30 @@ export class UtxoTree extends LightRollUpTree<Field> {
       data,
       config,
     })
-    return new UtxoTree({ ...initialData })
+    return new UtxoTree({ ...initialData, treeCache })
   }
 
-  static from(db: DB, obj: LightTree, config: TreeConfig<Field>): UtxoTree {
+  static from(
+    db: DB,
+    obj: LightTree,
+    config: TreeConfig<Fp>,
+    treeCache: TreeCache,
+  ): UtxoTree {
     return new UtxoTree({
       db,
       metadata: {
         id: obj.id,
         species: obj.species,
-        index: obj.treeIndex,
-        start: Field.from(obj.start),
-        end: Field.from(obj.end),
+        start: Fp.from(obj.start),
+        end: Fp.from(obj.end),
       },
       data: {
-        root: Field.from(obj.root),
-        index: Field.from(obj.index),
-        siblings: JSON.parse(obj.siblings).map(sib => Field.from(sib)),
+        root: Fp.from(obj.root),
+        index: Fp.from(obj.index),
+        siblings: JSON.parse(obj.siblings).map(sib => Fp.from(sib)),
       },
       config,
+      treeCache,
     })
   }
 }

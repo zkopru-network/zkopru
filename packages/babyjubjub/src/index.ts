@@ -1,2 +1,5 @@
-export { Field, F } from './field'
-export { Point, signEdDSA, verifyEdDSA, EdDSA } from './point'
+export { F } from './types/ff'
+export { Fp } from './fp'
+export { Fr } from './fr'
+export { Point } from './point'
+export { signEdDSA, verifyEdDSA, EdDSA } from './eddsa'

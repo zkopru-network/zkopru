@@ -1,7 +1,8 @@
-import { getDummyBody } from './testset-block'
+import { getDummyBlock } from './testset-block'
 
+// eslint-disable-next-line prettier/prettier
 (async () => {
-  await getDummyBody()
+  await getDummyBlock()
 })().catch(e => {
   console.error(e)
 })

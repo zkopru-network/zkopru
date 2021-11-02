@@ -1,7 +1,7 @@
 import chalk from 'chalk'
 import path from 'path'
 import fs from 'fs'
-import { EncryptedWallet } from '@zkopru/prisma'
+import { EncryptedWallet } from '@zkopru/database'
 import Configurator, { Context, Menu } from '../configurator'
 
 export default class SaveConfig extends Configurator {
@@ -52,7 +52,7 @@ export default class SaveConfig extends Configurator {
           initial: false,
           name: 'overwrite',
           message:
-            'You may overwrite exising config file. Do you want to overwrite?',
+            'You may overwrite existing config file. Do you want to overwrite?',
         })
         pathConfirmed = overwrite
       }

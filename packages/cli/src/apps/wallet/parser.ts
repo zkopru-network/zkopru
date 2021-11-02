@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import yargs from 'yargs'
+import { DEFAULT } from './config'
 
 export const { argv } = yargs
   .scriptName('zk-wizard')
@@ -21,32 +22,26 @@ export const { argv } = yargs
     networkId: {
       type: 'number',
       alias: 'n',
-      default: 1,
+      default: DEFAULT.networkId,
     },
     chainId: {
       type: 'number',
       alias: 'c',
-      default: 1,
+      default: DEFAULT.chainId,
     },
     address: {
       type: 'string',
       alias: 'a',
-      default: '0x98a9b814B423B4D17Cd612cD7943986aB9BF8c41',
-    },
-    coordinator: {
-      type: 'string',
-      alias: 'r',
-      default: 'https://coordinator.zkopru.network',
+      default: DEFAULT.address,
     },
     websocket: {
       type: 'string',
       alias: 'ws',
-      default: 'ws://goerli.zkopru.network:8546',
+      default: DEFAULT.websocket,
     },
-    keys: {
+    snarkKeyPath: {
       type: 'string',
-      default: 'keys',
-      describe: 'Path to store SNARK keys',
+      describe: 'Path to local SNARK keys, overrides snarkKeyCid',
     },
     sqlite: {
       type: 'string',
@@ -61,6 +56,11 @@ export const { argv } = yargs
     config: {
       type: 'string',
       describe: 'You can save wallet configuration file',
+    },
+    snarkKeyCid: {
+      type: 'string',
+      default: '/ipfs/QmSQtbTnt5RWrP8uWJ3S5xUKntTx2DqcM7mM5vUg9uJGxq',
+      describe: 'An IPFS content identifier storing the proving keys',
     },
   })
   .help()

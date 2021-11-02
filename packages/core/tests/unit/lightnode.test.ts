@@ -1,11 +1,15 @@
+/**
+ * @jest-environment node
+ */
 /* eslint-disable jest/no-hooks */
 import Web3 from 'web3'
-import { Docker } from 'node-docker-api'
 import { WebsocketProvider } from 'web3-core'
 import { Container } from 'node-docker-api/lib/container'
-import { MockupDB, DB } from '@zkopru/prisma'
+import { soliditySha3Raw } from 'web3-utils'
+import { DB, SQLiteConnector, schema } from '~database/node'
 import { ZkAccount } from '~account'
-import { sleep, readFromContainer } from '~utils'
+import { sleep } from '~utils'
+import { readFromContainer, buildAndGetContainer } from '~utils-docker'
 import { LightNode, HttpBootstrapHelper } from '~core'
 
 describe('integration test to run testnet', () => {
@@ -14,23 +18,20 @@ describe('integration test to run testnet', () => {
   let container: Container
   let lightNode: LightNode
   let wsProvider: WebsocketProvider
-  let mockup: MockupDB
+  let mockup: DB
   beforeAll(async () => {
-    mockup = await DB.mockup()
-    const docker = new Docker({ socketPath: '/var/run/docker.sock' })
-    try {
-      container = await docker.container.create({
-        Image: 'wanseob/zkopru-contract:0.0.1',
-        name: testName,
-        rm: true,
-      })
-    } catch {
-      container = docker.container.get(testName)
-    }
+    mockup = await SQLiteConnector.create(schema, ':memory:')
+    // It may take about few minutes. If you want to skip building image,
+    // run `yarn pull:images` on the root directory
+    container = await buildAndGetContainer({
+      compose: [__dirname, '../../../../compose'],
+      service: 'contracts',
+      option: { containerName: testName },
+    })
     await container.start()
     const deployed = await readFromContainer(
       container,
-      '/proj/build/deployed/ZkOptimisticRollUp.json',
+      '/proj/build/deployed/Zkopru.json',
     )
     address = JSON.parse(deployed.toString()).address
     const status = await container.status()
@@ -49,33 +50,24 @@ describe('integration test to run testnet', () => {
       })
     }
     await waitConnection()
-  }, 60000)
+  }, 3600000)
   afterAll(async () => {
     await container.stop()
     await container.delete()
-    await mockup.terminate()
+    await mockup.close()
     wsProvider.disconnect(0, 'close connection')
   }, 20000)
   describe('light node', () => {
     it('should be defined', async () => {
       const accounts: ZkAccount[] = [
-        new ZkAccount(Buffer.from('sample private key')),
+        new ZkAccount(soliditySha3Raw('sample private key')),
       ]
       lightNode = await LightNode.new({
         provider: wsProvider,
         address,
-        db: mockup.db,
+        db: mockup,
         accounts,
         bootstrapHelper: new HttpBootstrapHelper('http://localhost:8888'),
-        option: {
-          header: true,
-          deposit: true,
-          migration: true,
-          outputRollUp: true,
-          withdrawalRollUp: true,
-          nullifierRollUp: false, // Only for FULL NODE
-          snark: false,
-        },
       })
       expect(lightNode).toBeDefined()
     }, 60000)

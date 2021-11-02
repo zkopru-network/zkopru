@@ -4,26 +4,30 @@ services:
   testnet:
     build:
       context: ./packages/contracts/
-      dockerfile: ../../containers/Contract.dockerfile
+      dockerfile: ../../dockerfiles/Contract.dockerfile
     ports:
       - "5000:5000"
-    command: ganache-cli --db=/data -i 20200406 -p 5000 --deterministic --host 0.0.0.0
+    command: ganache-cli --db=/data -i 20200406 -p 5000 --deterministic --host 0.0.0.0 --blockTime 13
   coordinator:
     build:
       context: ./
-      dockerfile: ./containers/Coordinator.dockerfile
+      dockerfile: ./dockerfiles/Coordinator.dockerfile
     ports:
       - "8888:8888"
     links:
       - 'testnet:testnet'
     depends_on:
       - 'testnet'
-      - 'postgres'
-    command: 'node /proj/packages/coordinator/dist/cli.js --ws ws://testnet:5000 --config /proj/packages/coordinator/coordinator.json'
-  postgres:
-    image: postgres
-    restart: always
-    environment:
-      POSTGRES_PASSWORD: helloworld
+    command: 'node /proj/packages/cli/dist/apps/coordinator/cli.js --ws ws://testnet:5000 --config /proj/packages/cli/coordinator.json'
+  wallet:
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/Cli.dockerfile
     ports:
-      - "5432:5432"
+      - "4321:4321"
+    links:
+      - 'testnet:testnet'
+      - 'coordinator:coordinator'
+    depends_on:
+      - 'testnet'
+    command: sh -c "sleep 5s && gotty -w --port 4321 node /proj/packages/cli/dist/apps/wallet/cli.js --config /proj/packages/cli/wallet.dev.json" 

@@ -1,40 +1,63 @@
 {
   "name": "@zkopru/circuits",
-  "version": "1.0.0-beta.2",
+  "version": "2.0.0-beta.0",
   "license": "GPL-3.0-or-later",
   "_moduleAliases": {
     "circomlib": "../../node_modules/circomlib",
     "wasmsnark": "../../node_modules/wasmsnark",
+    "~babyjubjub": "../babyjubjub/dist",
     "~dataset": "../dataset/dist",
-    "~utils": "../utils/dist"
+    "~database": "../database/dist",
+    "~tree": "../tree/dist",
+    "~utils": "../utils/dist",
+    "~zk-wizard": "../zk-wizard/dist"
   },
   "files": [
     "impls",
     "lib"
   ],
   "scripts": {
+    "download-keys": "ts-node utils/download-keys.ts",
     "prebuild": "shx mkdir -p dist",
-    "circuit": "./script/compile_circuits.sh",
-    "setup": "./script/snark_setup.sh",
+    "phase1:pull": "ts-node utils/pull-phase1.ts",
+    "phase1:build": "./script/powers_of_tau_phase_1.sh",
+    "phase2:pull": "ts-node utils/pull-keys.ts",
+    "phase2:build": "./script/powers_of_tau_phase_2.sh",
+    "build-keys": "ts-node utils/build-keys.ts",
+    "postbuild-keys": "yarn update-contracts",
+    "update-contracts": "copyfiles -f keys/vks/* ../contracts/keys/vks",
+    "compile": "./script/compile_circuits.sh",
+    "setup": "yarn setup:pull",
+    "setup:pull": "yarn phase1:pull && yarn phase2:pull",
+    "setup:build": "yarn phase1:pull && yarn compile && yarn phase2:build",
     "build": "tsc --build tsconfig.build.json",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "link-modules": "link-module-alias",
-    "test": "jest",
+    "test": "jest --detectOpenHandles --forceExit",
+    "test:trace": "LOG_LEVEL=trace PRINT_LOG=true jest",
     "test:unit": "jest test/unit",
     "test:watch": "jest --watch",
     "test:ci": "jest --coverage --ci --reporters='jest-junit'",
     "coverage": "jest --coverage",
     "coverage:show": "live-server coverage",
-    "dev": "ts-node-dev -r tsconfig-paths/register src/index.ts",
-    "start": "node dist/index.js"
+    "start": "ts-node index.ts"
   },
   "dependencies": {
-    "circomlib": "^0.1.1"
+    "@zkopru/utils-docker": "file:../utils-docker",
+    "circom": "0.5.42",
+    "circomlib": "0.5.1",
+    "snarkjs": "0.3.33",
+    "tar": "^6.0.2"
   },
   "devDependencies": {
-    "ffjavascript": "^0.1.2",
+    "@types/cli-progress": "^3.9.2",
+    "@types/follow-redirects": "^1.13.1",
+    "cli-progress": "^3.9.1",
+    "ffjavascript": "0.2.22",
+    "follow-redirects": "^1.14.4",
     "node-docker-api": "^1.1.22",
-    "snarkjs": "^0.1.25",
+    "shelljs": "^0.8.4",
+    "uuid": "^8.1.0",
     "wasmsnark": "^0.0.10"
   },
   "publishConfig": {

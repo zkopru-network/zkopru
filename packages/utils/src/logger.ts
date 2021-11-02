@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import pino from 'pino'
+import prettier from 'pino-pretty'
 import { Writable } from 'stream'
 
 export class StreamConcatenator extends Writable {
@@ -33,4 +34,45 @@ export class StreamConcatenator extends Writable {
 }
 
 export const logStream = new StreamConcatenator()
-export const logger = pino({ level: 'info' }, logStream)
+export const logger = pino(
+  {
+    level: process.env.LOG_LEVEL || (process.env.DEBUG ? 'debug' : 'info'),
+  },
+  logStream,
+)
+
+const pinoPrettier = prettier({
+  translateTime: false,
+  colorize: true,
+})
+
+export const attachConsoleLogToPino = () => {
+  logStream.addStream(
+    new Writable({
+      write: (chunk, _, cb) => {
+        const log = JSON.parse(chunk.toString())
+        console.log(pinoPrettier(log).trim())
+        cb()
+      },
+    }),
+  )
+}
+export const attachConsoleErrorToPino = () => {
+  logStream.addStream(
+    new Writable({
+      write: (chunk, _, cb) => {
+        const log = JSON.parse(chunk.toString())
+        if (log.level >= 50) {
+          // error: 50, info: 30
+          console.error(pinoPrettier(log).trim())
+        }
+        cb()
+      },
+    }),
+  )
+}
+
+if (process.env.DEBUG || process.env.LOG_LEVEL) {
+  attachConsoleLogToPino()
+  attachConsoleErrorToPino()
+}

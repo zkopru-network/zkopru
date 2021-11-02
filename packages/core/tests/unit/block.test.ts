@@ -2,9 +2,13 @@
  * @jest-environment node
  */
 import { Transaction } from 'web3-core'
-import { hexify } from '@zkopru/utils'
+import AbiCoder from 'web3-eth-abi'
 import { getDummyBody, dummyHeader } from '~dataset/testset-block'
 import { serializeHeader, serializeBody, Block, headerHash } from '~core'
+
+const encodeFunctionSignature = (AbiCoder as any).encodeFunctionSignature.bind(
+  AbiCoder,
+)
 
 describe('block.ts', () => {
   it('should be serialized and deserialized', async () => {
@@ -16,10 +20,9 @@ describe('block.ts', () => {
       serializeHeader(header),
       serializeBody(body),
     ])
-    const dummySelector = 'aaaaaaaa'
-    const lengthToHex = hexify(serializedBlock.length, 32).slice(2)
-    const paramPosition = hexify(32, 32).slice(2)
-    console.log('length to hex', lengthToHex)
+    const dummySelector = encodeFunctionSignature('propose(bytes)')
+    const encodeParameters = (AbiCoder as any).encodeParameters.bind(AbiCoder)
+    const inputData = encodeParameters(['bytes'], [serializedBlock])
     const dummyTx: Transaction = {
       hash: 'dummyhash',
       nonce: 1,
@@ -31,8 +34,9 @@ describe('block.ts', () => {
       value: 'dummyvalue',
       gasPrice: 'dummygas',
       gas: 11,
-      input: `0x${dummySelector}${paramPosition}${lengthToHex}${serializedBlock.toString(
-        'hex',
+      input: `0x${dummySelector.replace('0x', '')}${inputData.replace(
+        '0x',
+        '',
       )}`,
     }
     const deserializedBlock = Block.fromTx(dummyTx)
@@ -40,7 +44,6 @@ describe('block.ts', () => {
     const dHeader = deserializedBlock.header
     expect(dHeader.proposer).toStrictEqual(header.proposer)
     expect(dHeader.parentBlock).toStrictEqual(header.parentBlock)
-    expect(dHeader.metadata).toStrictEqual(header.metadata)
     expect(dHeader.fee).toStrictEqual(header.fee)
     expect(dHeader.utxoRoot).toStrictEqual(header.utxoRoot)
     expect(dHeader.utxoIndex).toStrictEqual(header.utxoIndex)
@@ -64,27 +67,15 @@ describe('block.ts', () => {
     })
     dBody.massMigrations.forEach((mm, i) => {
       expect(mm.destination).toStrictEqual(body.massMigrations[i].destination)
-      expect(mm.totalETH).toStrictEqual(body.massMigrations[i].totalETH)
-      expect(mm.migratingLeaves.merged).toStrictEqual(
-        body.massMigrations[i].migratingLeaves.merged,
+      expect(mm.asset.eth).toStrictEqual(body.massMigrations[i].asset.eth)
+      expect(mm.asset.token).toStrictEqual(body.massMigrations[i].asset.token)
+      expect(mm.asset.amount).toStrictEqual(body.massMigrations[i].asset.amount)
+      expect(mm.depositForDest.merged).toStrictEqual(
+        body.massMigrations[i].depositForDest.merged,
       )
-      expect(mm.migratingLeaves.fee).toStrictEqual(
-        body.massMigrations[i].migratingLeaves.fee,
+      expect(mm.depositForDest.fee).toStrictEqual(
+        body.massMigrations[i].depositForDest.fee,
       )
-      expect(mm.erc20).toHaveLength(body.massMigrations[i].erc20.length)
-      expect(mm.erc721).toHaveLength(body.massMigrations[i].erc721.length)
-      mm.erc20.forEach((token, j) => {
-        expect(token.addr).toStrictEqual(body.massMigrations[i].erc20[j].addr)
-        expect(token.amount).toStrictEqual(
-          body.massMigrations[i].erc20[j].amount,
-        )
-      })
-      mm.erc721.forEach((token, j) => {
-        expect(token.addr).toStrictEqual(body.massMigrations[i].erc721[j].addr)
-        token.nfts.forEach((nft, k) => {
-          expect(nft).toStrictEqual(body.massMigrations[i].erc721[j].nfts[k])
-        })
-      })
     })
   }, 600000)
 })

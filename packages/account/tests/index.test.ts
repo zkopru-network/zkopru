@@ -1,19 +1,19 @@
 /* eslint-disable jest/no-hooks */
 import Web3 from 'web3'
 import { HDWallet, ZkAccount } from '~account'
-import { DB, MockupDB } from '~prisma'
+import { DB, SQLiteConnector, schema } from '~database/node'
 
 describe('unit test', () => {
-  let mockup: MockupDB
+  let mockup: DB
   beforeAll(async () => {
-    mockup = await DB.mockup()
+    mockup = await SQLiteConnector.create(schema, ':memory:')
   })
   afterAll(async () => {
-    await mockup.terminate()
+    await mockup.close()
   })
   it('has same private keys and eth address with ganache default accounts', async () => {
     const web3 = new Web3()
-    const hdWallet = new HDWallet(web3, mockup.db)
+    const hdWallet = new HDWallet(web3, mockup)
     await hdWallet.init(
       'myth like bonus scare over problem client lizard pioneer submit female collect',
       'samplepassword',
@@ -39,8 +39,8 @@ describe('unit test', () => {
       '0xACa94ef8bD5ffEE41947b4585a84BdA5a3d3DA6E',
       '0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e',
     ]
-    expect(ganacheAddress.map(a => a.toLowerCase())).toStrictEqual(
-      accounts.map(account => account.address),
+    expect(ganacheAddress).toStrictEqual(
+      accounts.map(account => account.ethAddress),
     )
-  }, 30000)
+  }, 90000)
 })

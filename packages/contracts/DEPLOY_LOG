@@ -1,0 +1,514 @@
+# Goerli Testnet
+
+Commit Hash: [0fc61ed6](https://github.com/zkopru-network/zkopru/commit/0fc61ed6d5de3c5ca550e27025d42759326a59b2)
+
+1_initial_migration.js
+======================
+
+   Deploying 'Migrations'
+   ----------------------
+   > transaction hash:    0x275c8fe2b910149502583f93efce205ac3b8b86c89f3f10befb27b86d72ae1ef
+   > Blocks: 1            Seconds: 13
+   > contract address:    0x2F38c6ca9a4B5fE6583AB898ECd33ED62D2DA658
+   > block number:        5744626
+   > block timestamp:     1635341742
+   > account:             0x2B418e5437a296b2FEba3f57ff6828CdD420c361
+   > balance:             22.975180652
+   > gas used:            221335 (0x36097)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.0044267 ETH
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:           0.0044267 ETH
+
+
+2_poseidon.js
+=============
+
+   Deploying 'Poseidon2'
+   ---------------------
+   > transaction hash:    0x7bb828c1ffcf6b4c1a1b9ff322c0b45d81a9ba73e5d559eff5c66043aa18fee3
+   > Blocks: 2            Seconds: 25
+   > contract address:    0x9E70522f152fbAa29DeD7C24dEB7C2E2203c2527
+   > block number:        5744629
+   > block timestamp:     1635341787
+   > account:             0x2B418e5437a296b2FEba3f57ff6828CdD420c361
+   > balance:             22.931135132
+   > gas used:            2156516 (0x20e7e4)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.04313032 ETH
+
+
+   Deploying 'Poseidon3'
+   ---------------------
+   > transaction hash:    0x5c9aa3fc3fe23a837e05b52927e479bf25bbfc51a1c53515577f7944f7f24008
+   > Blocks: 1            Seconds: 9
+   > contract address:    0x9a9460d412a5f89515FA836E311b684963A4C989
+   > block number:        5744630
+   > block timestamp:     1635341802
+   > account:             0x2B418e5437a296b2FEba3f57ff6828CdD420c361
+   > balance:             22.931135132
+   > gas used:            2744494 (0x29e0ae)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.05488988 ETH
+
+
+   Deploying 'Poseidon4'
+   ---------------------
+   > transaction hash:    0x771dac330f1756d3ba5fbb8736269e365c8f28cc81e14f19ba26fd8fe9147cca
+   > Blocks: 1            Seconds: 9
+   > contract address:    0xbAcA8E1e76AeAcCb14d1e0D3E8FD281AEa43F7E0
+   > block number:        5744631
+   > block timestamp:     1635341817
+   > account:             0x2B418e5437a296b2FEba3f57ff6828CdD420c361
+   > balance:             22.804867872
+   > gas used:            3568869 (0x3674e5)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.07137738 ETH
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:          0.16939758 ETH
+
+
+3_tokens.js
+===========
+
+   Deploying 'TestERC20'
+   ---------------------
+   > transaction hash:    0x5f8022e18b761a36ca9565ff3e5b0a4a40cf578c17e0b267371f6a011e7d3786
+   > Blocks: 2            Seconds: 25
+   > contract address:    0x3A09C617CE641530529A8D551d76B390e9D3AE1e
+   > block number:        5744634
+   > block timestamp:     1635341862
+   > account:             0x2B418e5437a296b2FEba3f57ff6828CdD420c361
+   > balance:             22.782051152
+   > gas used:            1112176 (0x10f870)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.02224352 ETH
+
+
+   Deploying 'TestERC721'
+   ----------------------
+   > transaction hash:    0x18a0a437c2d54cc7f5597cd5e62bac28452b34286373cd5225ac0a3ec58f2de3
+   > Blocks: 1            Seconds: 9
+   > contract address:    0x2184ce4689671213e880628f392b461A30151Ff4
+   > block number:        5744635
+   > block timestamp:     1635341877
+   > account:             0x2B418e5437a296b2FEba3f57ff6828CdD420c361
+   > balance:             22.711547132
+   > gas used:            3525201 (0x35ca51)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.07050402 ETH
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:          0.09274754 ETH
+
+
+4_ui.js
+=======
+
+   Re-using deployed 'Poseidon3'
+   -----------------------------
+   > contract address:    0x9a9460d412a5f89515FA836E311b684963A4C989
+
+
+   Re-using deployed 'Poseidon4'
+   -----------------------------
+   > contract address:    0xbAcA8E1e76AeAcCb14d1e0D3E8FD281AEa43F7E0
+
+
+   Linking
+   -------
+   * Contract: UserInteractable <--> Library: Poseidon3 (at address: 0x9a9460d412a5f89515FA836E311b684963A4C989)
+
+   Linking
+   -------
+   * Contract: UserInteractable <--> Library: Poseidon4 (at address: 0xbAcA8E1e76AeAcCb14d1e0D3E8FD281AEa43F7E0)
+
+   Deploying 'UserInteractable'
+   ----------------------------
+   > transaction hash:    0x3006883adf2aee5f07d63ecba4c584f97b27485b6da9c219c6c49023a4e98abd
+   > Blocks: 1            Seconds: 9
+   > contract address:    0xb93F12c104dFD9BB4315fb8CfAa83E157807c412
+   > block number:        5744637
+   > block timestamp:     1635341908
+   > account:             0x2B418e5437a296b2FEba3f57ff6828CdD420c361
+   > balance:             22.620764932
+   > gas used:            4510450 (0x44d2f2)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.090209 ETH
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:            0.090209 ETH
+
+
+5_coordinator.js
+================
+
+   Deploying 'Coordinatable'
+   -------------------------
+   > transaction hash:    0x7138a657ecf40144ccfd05fd97df9c39806d36659c85ed9177393dba0e3efaa7
+   > Blocks: 1            Seconds: 9
+   > contract address:    0xa788c18f12bd651DB64F1C9Ea47c18871bad4767
+   > block number:        5744640
+   > block timestamp:     1635341953
+   > account:             0x2B418e5437a296b2FEba3f57ff6828CdD420c361
+   > balance:             22.542332352
+   > gas used:            3892969 (0x3b66e9)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.07785938 ETH
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:          0.07785938 ETH
+
+
+6_utxo_tree_validator.js
+========================
+
+   Re-using deployed 'Poseidon2'
+   -----------------------------
+   > contract address:    0x9E70522f152fbAa29DeD7C24dEB7C2E2203c2527
+
+
+   Linking
+   -------
+   * Contract: UtxoTreeValidator <--> Library: Poseidon2 (at address: 0x9E70522f152fbAa29DeD7C24dEB7C2E2203c2527)
+
+   Deploying 'UtxoTreeValidator'
+   -----------------------------
+   > transaction hash:    0x7cdb3cb9962fff1fad322b08134f4a0499a6296e669071cbcb53e9a14c8b8930
+   > Blocks: 1            Seconds: 9
+   > contract address:    0x29b0E2a532ABF946467f198d37FfF561AEEcB333
+   > block number:        5744642
+   > block timestamp:     1635341983
+   > account:             0x2B418e5437a296b2FEba3f57ff6828CdD420c361
+   > balance:             22.452302292
+   > gas used:            4472843 (0x44400b)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.08945686 ETH
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:          0.08945686 ETH
+
+
+7_withdrawal_tree_validator.js
+==============================
+
+   Deploying 'WithdrawalTreeValidator'
+   -----------------------------------
+   > transaction hash:    0x0b2130935118fd41364ef1cfe36877f8a677a55bca5947b781282ad954ec4c39
+   > Blocks: 2            Seconds: 26
+   > contract address:    0x6aF6059AdBdE8B9B2c97d51E9bbA81170E3CF8D4
+   > block number:        5744645
+   > block timestamp:     1635342028
+   > account:             0x2B418e5437a296b2FEba3f57ff6828CdD420c361
+   > balance:             22.388354372
+   > gas used:            3168736 (0x3059e0)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.06337472 ETH
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:          0.06337472 ETH
+
+
+8_nullifier_tree_validator.js
+=============================
+
+   Deploying 'NullifierTreeValidator'
+   ----------------------------------
+   > transaction hash:    0x5de8b2433510286d6d8010d0bdb41a9d7bbd37dbc2711052398506aa1fb3482e
+   > Blocks: 2            Seconds: 22
+   > contract address:    0x31B8Fac95762B39f64Ce238cb4745052e610C115
+   > block number:        5744650
+   > block timestamp:     1635342103
+   > account:             0x2B418e5437a296b2FEba3f57ff6828CdD420c361
+   > balance:             22.348854992
+   > gas used:            1946309 (0x1db2c5)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.03892618 ETH
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:          0.03892618 ETH
+
+
+9_header_validator.js
+=====================
+
+   Deploying 'HeaderValidator'
+   ---------------------------
+   > transaction hash:    0x0d673eb0249ac60ce977357f4ca2d655b652870da3dc5ef3fb9ed070503c6e60
+   > Blocks: 1            Seconds: 9
+   > contract address:    0xD541760D5c8dc38fD0b061E1D0ae47a03ce1eB8A
+   > block number:        5744653
+   > block timestamp:     1635342148
+   > account:             0x2B418e5437a296b2FEba3f57ff6828CdD420c361
+   > balance:             22.299014832
+   > gas used:            2463348 (0x259674)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.04926696 ETH
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:          0.04926696 ETH
+
+
+10_tx_validator.js
+==================
+
+   Deploying 'TxValidator'
+   -----------------------
+   > transaction hash:    0xa61d71617fde4b0a9b8badfef0d87142a376f17c2aa19c8d9862f926b2c91c12
+   > Blocks: 1            Seconds: 9
+   > contract address:    0x1f5099a2831bdC8845E2dEc3513e2e81Ec9Be08c
+   > block number:        5744655
+   > block timestamp:     1635342178
+   > account:             0x2B418e5437a296b2FEba3f57ff6828CdD420c361
+   > balance:             22.298441632
+   > gas used:            4302506 (0x41a6aa)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.08605012 ETH
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:          0.08605012 ETH
+
+
+11_deposit_validator.js
+=======================
+
+   Deploying 'DepositValidator'
+   ----------------------------
+   > transaction hash:    0x79cde6715b764cc3ba9369b9703c6f50dab04586240afc14d8c9b97221ca5096
+   > Blocks: 1            Seconds: 9
+   > contract address:    0x7eEEdc2E18E838C8d431936565be2892f4475756
+   > block number:        5744658
+   > block timestamp:     1635342223
+   > account:             0x2B418e5437a296b2FEba3f57ff6828CdD420c361
+   > balance:             22.180924292
+   > gas used:            1544701 (0x1791fd)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.03089402 ETH
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:          0.03089402 ETH
+
+
+12_migration_validator.js
+=========================
+
+   Deploying 'MigrationValidator'
+   ------------------------------
+   > transaction hash:    0xa899db1ec9bbf52a798409a92c1f849de1caea81bdb3329b07e174d7fc4e2e85
+   > Blocks: 1            Seconds: 9
+   > contract address:    0xbB56cD168769A24736b5d1A26057138749CdBc3F
+   > block number:        5744660
+   > block timestamp:     1635342253
+   > account:             0x2B418e5437a296b2FEba3f57ff6828CdD420c361
+   > balance:             22.127563272
+   > gas used:            2639391 (0x28461f)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.05278782 ETH
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:          0.05278782 ETH
+
+
+13_challengeable.js
+===================
+
+   Deploying 'Challengeable'
+   -------------------------
+   > transaction hash:    0x7331cb61c04f98dede4e343b7ffcf16d88efa24ad3d7e7afaeccb0cba7cc910d
+   > Blocks: 2            Seconds: 21
+   > contract address:    0x0E173322AD6897B5a2a12ff9c404917cee8FA047
+   > block number:        5744663
+   > block timestamp:     1635342298
+   > account:             0x2B418e5437a296b2FEba3f57ff6828CdD420c361
+   > balance:             22.099581332
+   > gas used:            1370437 (0x14e945)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.02740874 ETH
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:          0.02740874 ETH
+
+
+14_migratable.js
+================
+
+   Deploying 'Migratable'
+   ----------------------
+   > transaction hash:    0xb4fbd74a1eecb86bfd4ede2c69ff759edafad407d5d429a900b61f73b5f8a4e3
+   > Blocks: 2            Seconds: 22
+   > contract address:    0xBFEbf1870EFe80Ca66614F03a9bB448CC16b9225
+   > block number:        5744666
+   > block timestamp:     1635342343
+   > account:             0x2B418e5437a296b2FEba3f57ff6828CdD420c361
+   > balance:             22.057540092
+   > gas used:            2073402 (0x1fa33a)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.04146804 ETH
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:          0.04146804 ETH
+
+
+15_configurable.js
+==================
+
+   Deploying 'Configurable'
+   ------------------------
+   > transaction hash:    0x624724a2db3326e4a5f1f52102eb286d234c2bb3a2631c4a94eeb2fa4b4f071e
+   > Blocks: 2            Seconds: 23
+   > contract address:    0xF6AEA0612e0F01Def0aD05339DB34e7475764578
+   > block number:        5744671
+   > block timestamp:     1635342418
+   > account:             0x2B418e5437a296b2FEba3f57ff6828CdD420c361
+   > balance:             22.032546912
+   > gas used:            1220999 (0x12a187)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.02441998 ETH
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:          0.02441998 ETH
+
+
+16_zk_optimistic_rollup.js
+==========================
+
+   Re-using deployed 'Poseidon2'
+   -----------------------------
+   > contract address:    0x9E70522f152fbAa29DeD7C24dEB7C2E2203c2527
+
+
+   Deploying 'Zkopru'
+   ------------------
+   > transaction hash:    0x50bc6b260f8cc225335071cd6b75b2bf8219dee18f9d6c553a2524281879d424
+   > Blocks: 1            Seconds: 5
+   > contract address:    0xe93b68a8ea810242BEBc5fb225EB01ddF2bf070A
+   > block number:        5744673
+   > block timestamp:     1635342448
+   > account:             0x2B418e5437a296b2FEba3f57ff6828CdD420c361
+   > balance:             21.925385032
+   > gas used:            5329434 (0x51521a)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.10658868 ETH
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:          0.10658868 ETH
+
+
+17_burn_auction.js
+==================
+
+   Deploying 'BurnAuction'
+   -----------------------
+   > transaction hash:    0xf0914b62330a540e9533d18610ac876769ff55c092fd8c69aedbc39af7d5c07c
+   > Blocks: 2            Seconds: 25
+   > contract address:    0x6fA72fd5F09c2081d2cFA3a28dCeC85725A1Dc67
+   > block number:        5744676
+   > block timestamp:     1635342493
+   > account:             0x2B418e5437a296b2FEba3f57ff6828CdD420c361
+   > balance:             21.869771272
+   > gas used:            2752028 (0x29fe1c)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.05504056 ETH
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:          0.05504056 ETH
+
+
+18_setup.js
+===========
+[
+  'erc20: 0x3A09C617CE641530529A8D551d76B390e9D3AE1e',
+  'erc721: 0x2184ce4689671213e880628f392b461A30151Ff4',
+  'ui: 0xb93F12c104dFD9BB4315fb8CfAa83E157807c412',
+  'coordinatable: 0xa788c18f12bd651DB64F1C9Ea47c18871bad4767',
+  'migratable: 0xBFEbf1870EFe80Ca66614F03a9bB448CC16b9225',
+  'configurable: 0xF6AEA0612e0F01Def0aD05339DB34e7475764578',
+  'challengeable: 0x0E173322AD6897B5a2a12ff9c404917cee8FA047',
+  'utxoTreeValidator: 0x29b0E2a532ABF946467f198d37FfF561AEEcB333',
+  'withdrawalTreeValidator: 0x6aF6059AdBdE8B9B2c97d51E9bbA81170E3CF8D4',
+  'nullifierTreeValidator: 0x31B8Fac95762B39f64Ce238cb4745052e610C115',
+  'headerValidator: 0xD541760D5c8dc38fD0b061E1D0ae47a03ce1eB8A',
+  'txValidator: 0x1f5099a2831bdC8845E2dEc3513e2e81Ec9Be08c',
+  'depositValidator: 0x7eEEdc2E18E838C8d431936565be2892f4475756',
+  'migrationValidator: 0xbB56cD168769A24736b5d1A26057138749CdBc3F',
+  'burnAuction: 0x6fA72fd5F09c2081d2cFA3a28dCeC85725A1Dc67'
+]
+Deployed ZKOPRU at:
+0xe93b68a8ea810242BEBc5fb225EB01ddF2bf070A
+
+   > Saving migration to chain.
+   -------------------------------------
+   > Total cost:                   0 ETH

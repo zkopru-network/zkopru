@@ -1,44 +1,14 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import chalk from 'chalk'
 import fs from 'fs'
-import Web3 from 'web3'
+import {
+  DB,
+  SQLiteConnector,
+  PostgresConnector,
+  schema,
+  initDB,
+} from '@zkopru/database/dist/node'
 import { L1Contract } from '@zkopru/core'
-import { DB } from '@zkopru/prisma'
-import path from 'path'
 import Configurator, { Context, Menu } from '../configurator'
-
-async function initDB({
-  db,
-  web3,
-  address,
-}: {
-  db: DB
-  web3: Web3
-  address: string
-}) {
-  const networkId = await web3.eth.net.getId()
-  const chainId = await web3.eth.getChainId()
-  const config = await db.read(prisma =>
-    prisma.config.findOne({
-      where: {
-        networkId_chainId_address: {
-          networkId,
-          address,
-          chainId,
-        },
-      },
-    }),
-  )
-  if (!config) {
-    const layer1: L1Contract = new L1Contract(web3, address)
-    const configFromContract = await layer1.getConfig()
-    await db.write(prisma =>
-      prisma.config.create({
-        data: configFromContract,
-      }),
-    )
-  }
-}
 
 export default class LoadDatabase extends Configurator {
   static code = Menu.LOAD_DATABASE
@@ -50,23 +20,10 @@ export default class LoadDatabase extends Configurator {
     }
     let database: DB
     if (this.base.postgres) {
-      database = new DB({
-        datasources: {
-          postgres: { url: this.base.postgres },
-        },
-      })
+      database = await PostgresConnector.create(schema, this.base.postgres)
     } else if (this.base.sqlite) {
       const dbPath = this.base.sqlite
-      if (!fs.existsSync(dbPath)) {
-        // create new dataabase
-        const { db } = await DB.mockup(dbPath)
-        database = db
-      } else {
-        // database exists
-        database = new DB({
-          datasources: { sqlite: { url: `sqlite://${dbPath}` } },
-        })
-      }
+      database = await SQLiteConnector.create(schema, dbPath)
     } else {
       // no configuration. try to create new one
       const enum DBType {
@@ -126,13 +83,10 @@ export default class LoadDatabase extends Configurator {
           message: 'DB Name',
           initial: 'zkopru-coordinator',
         })
-        database = new DB({
-          datasources: {
-            postgres: {
-              url: `postgresql://${user}:${password}@${host}:${port}/${dbName}`,
-            },
-          },
-        })
+        database = await PostgresConnector.create(
+          schema,
+          `postgresql://${user}:${password}@${host}:${port}/${dbName}`,
+        )
       } else {
         console.log(chalk.blue('Creating a sqlite3 connection'))
         console.log(chalk.yellow('Provide file path to store sqlite db'))
@@ -143,10 +97,7 @@ export default class LoadDatabase extends Configurator {
           message: 'Provide sqlite db here',
           initial: 'zkopru-coordinator.db',
         })
-        if (!fs.existsSync(dbName)) {
-          const { db } = await DB.mockup(dbName)
-          database = db
-        } else {
+        if (fs.existsSync(dbName)) {
           const { overwrite } = await this.ask({
             type: 'confirm',
             name: 'overwrite',
@@ -156,24 +107,23 @@ export default class LoadDatabase extends Configurator {
             initial: false,
           })
           if (overwrite) {
-            const { db } = await DB.mockup(dbName)
-            database = db
-          } else {
-            const dbPath = path.join(path.resolve('.'), dbName)
-            database = new DB({
-              datasources: { sqlite: { url: `sqlite://${dbPath}` } },
-            })
+            fs.unlinkSync(dbName)
           }
         }
+        database = await SQLiteConnector.create(schema, dbName)
       }
     }
-    await initDB({
-      db: database,
-      web3: context.web3,
-      address: this.base.address,
-    })
+    await initDB(
+      database,
+      context.web3,
+      this.base.address,
+      new L1Contract(context.web3, this.base.address),
+    )
     return {
-      context: { ...context, db: database },
+      context: {
+        ...context,
+        db: database,
+      },
       next: Menu.LOAD_COORDINATOR,
     }
   }

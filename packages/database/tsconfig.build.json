@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.build.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "../../.build-cache/database.tsbuildinfo"
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../babyjubjub/tsconfig.build.json", "prepend": false },
+    { "path": "../utils/tsconfig.build.json", "prepend": false },
+  ]
+}

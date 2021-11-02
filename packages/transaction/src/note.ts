@@ -1,8 +1,6 @@
-import * as circomlib from 'circomlib'
-import { Field, Point } from '@zkopru/babyjubjub'
-import { NoteSql } from '@zkopru/prisma'
-
-const poseidonHash = circomlib.poseidon.createHash(6, 8, 57)
+import { poseidon } from 'circomlib'
+import { Fp } from '@zkopru/babyjubjub'
+import { ZkAddress } from './zk-address'
 
 export enum OutflowType {
   UTXO = 0,
@@ -21,95 +19,64 @@ export enum NoteStatus {
   WITHDRAWN = 7,
 }
 
+export type Asset = {
+  eth: Fp
+  tokenAddr: Fp
+  erc20Amount: Fp
+  nft: Fp
+}
 export class Note {
+  owner: ZkAddress
+
+  salt: Fp
+
+  asset: Asset
+
   outflowType: OutflowType
 
-  eth: Field
-
-  pubKey: Point
-
-  salt: Field
-
-  tokenAddr: Field
-
-  erc20Amount: Field
-
-  nft: Field
-
-  constructor(
-    eth: Field,
-    salt: Field,
-    tokenAddr: Field,
-    erc20Amount: Field,
-    nft: Field,
-    pubKey: Point,
-  ) {
-    this.eth = eth
-    this.pubKey = pubKey
+  constructor(owner: ZkAddress, salt: Fp, asset: Asset) {
+    this.owner = owner
     this.salt = salt
-    this.tokenAddr = tokenAddr
-    this.erc20Amount = erc20Amount
-    this.nft = nft
+    this.asset = asset
     this.outflowType = OutflowType.UTXO
   }
 
-  toJSON(): string {
-    return JSON.stringify({
-      eth: this.eth,
-      salt: this.salt,
-      token: this.tokenAddr,
-      amount: this.erc20Amount,
-      nft: this.nft.toHex(),
-      pubKey: {
-        x: this.pubKey.x,
-        y: this.pubKey.y,
-      },
-    })
-  }
-
-  hash(): Field {
-    const firstHash = Field.from(
-      poseidonHash([
-        this.eth.toIden3BigInt(),
-        this.pubKey.x.toIden3BigInt(),
-        this.pubKey.y.toIden3BigInt(),
-        this.salt.toIden3BigInt(),
+  hash(): Fp {
+    const assetHash = this.assetHash()
+    const noteHash = Fp.from(
+      poseidon([
+        this.owner.spendingPubKey().toBigInt(),
+        this.salt.toBigInt(),
+        assetHash.toBigInt(),
       ]).toString(),
     )
-    const resultHash = Field.from(
-      poseidonHash([
-        firstHash.toIden3BigInt(),
-        this.tokenAddr.toIden3BigInt(),
-        this.erc20Amount.toIden3BigInt(),
-        this.nft.toIden3BigInt(),
+    return noteHash
+  }
+
+  assetHash(): Fp {
+    return Fp.from(
+      poseidon([
+        this.asset.eth.toBigInt(),
+        this.asset.tokenAddr.toBigInt(),
+        this.asset.erc20Amount.toBigInt(),
+        this.asset.nft.toBigInt(),
       ]).toString(),
     )
-    return resultHash
   }
 
-  static fromJSON(data: string): Note {
-    const obj = JSON.parse(data)
-    return new Note(
-      obj.eth,
-      obj.salt,
-      obj.token,
-      obj.amount,
-      obj.nft,
-      new Point(obj.pubKey.x, obj.pubKey.y),
-    )
+  eth(): Fp {
+    return this.asset.eth
   }
 
-  static fromSql(obj: NoteSql): Note | undefined {
-    const { eth, salt, tokenAddr, erc20Amount, nft, pubKey } = obj
-    if (eth && salt && tokenAddr && erc20Amount && nft && pubKey)
-      return new Note(
-        Field.from(eth),
-        Field.from(salt),
-        Field.from(tokenAddr),
-        Field.from(erc20Amount),
-        Field.from(nft),
-        Point.fromHex(pubKey),
-      )
-    return undefined
+  tokenAddr(): Fp {
+    return this.asset.tokenAddr
+  }
+
+  erc20Amount(): Fp {
+    return this.asset.erc20Amount
+  }
+
+  nft(): Fp {
+    return this.asset.nft
   }
 }

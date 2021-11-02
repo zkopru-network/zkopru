@@ -4,12 +4,15 @@ db
 zkopru.db
 .data
 **/*/.data
+.mockup
+**/*/.mockup
 **/*/*.db
 **/*/*.db-journal
 temp
 reports
 junit.xml
 dist
+browser
 .build-cache
 keys.tgz
 keys/
@@ -204,3 +207,9 @@ typings/
 .history
 
 # End of https://www.gitignore.io/api/node,intellij+all,visualstudiocode
+
+*.sqlite
+*.secret
+config.json
+*.swp
+.DS_Store

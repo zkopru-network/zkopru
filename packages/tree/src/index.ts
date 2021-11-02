@@ -6,7 +6,12 @@ export {
   LightRollUpTree,
 } from './light-rollup-tree'
 
-export { MerkleProof, verifyProof, startingLeafProof } from './merkle-proof'
+export {
+  MerkleProof,
+  merkleRoot,
+  verifyProof,
+  startingLeafProof,
+} from './merkle-proof'
 
 export { UtxoTree } from './utxo-tree'
 
@@ -22,3 +27,5 @@ export {
   GrovePatch,
   GroveSnapshot as DryPatchResult,
 } from './grove'
+
+export { TreeCache, MerkleTreeLib, SubTreeLib, SMT } from './utils'
