@@ -1,7 +1,7 @@
 {
   "name": "@zkopru/dataset",
   "private": true,
-  "version": "1.0.0-beta.2",
+  "version": "2.0.0-beta.0",
   "license": "GPL-3.0-or-later",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -35,8 +35,8 @@
     "@zkopru/database": "file:../database",
     "@zkopru/transaction": "file:../transaction",
     "@zkopru/tree": "file:../tree",
-    "@zkopru/utils-docker": "file:../utils-docker",
     "@zkopru/utils": "file:../utils",
+    "@zkopru/utils-docker": "file:../utils-docker",
     "@zkopru/zk-wizard": "file:../zk-wizard",
     "big-integer": "^1.6.48",
     "fs-extra": "^9.0.0",
