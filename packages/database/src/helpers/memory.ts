@@ -67,6 +67,9 @@ export function validateDocuments(table: SchemaTable, _docs: any | any[]) {
 function _matchDocument(where: WhereClause, doc: any) {
   for (const [key, val] of Object.entries(where)) {
     if (typeof val === 'object' && !Array.isArray(val) && val !== null) {
+      if (val.ne === null && (doc[key] === null || doc[key] === undefined)) {
+        return false
+      }
       if (typeof val.ne !== 'undefined' && doc[key] === val.ne) {
         return false
       }
@@ -86,6 +89,7 @@ function _matchDocument(where: WhereClause, doc: any) {
         if (!Array.isArray(val.nin))
           throw new Error('Invalid nin value provided, must be array')
         for (const v of val.nin) {
+          if (doc[key] === null && (v === null || v === undefined)) return false
           if (doc[key] === v) return false
         }
       }

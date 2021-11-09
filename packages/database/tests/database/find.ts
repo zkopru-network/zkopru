@@ -424,4 +424,33 @@ export default function(this: { db: DB }) {
       assert.equal(docs.length, 2)
     }
   })
+
+  test('should find null field only', async () => {
+    const table = 'TableThree'
+    await this.db.create(table, {
+      id: 'test1',
+    })
+    await this.db.create(table, {
+      id: 'test2',
+      optionalField: 'not null',
+    })
+    {
+      const docs = await this.db.findMany(table, {
+        where: {
+          optionalField: null,
+        },
+      })
+      assert.equal(docs.length, 1, 'eq failed')
+      assert(!docs[0].optionalField, 'eq incorrect')
+    }
+    {
+      const docs = await this.db.findMany(table, {
+        where: {
+          optionalField: { ne: null },
+        },
+      })
+      assert.equal(docs.length, 1, 'ne failed')
+      assert(!!docs[0].optionalField, 'ne incorect')
+    }
+  })
 }
