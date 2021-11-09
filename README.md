@@ -52,6 +52,7 @@ zkopru-wallet
 - Kobi Gurkan ([@kobigurk](https://github.com/kobigurk), kobigurk@gmail.com)
 - Thore Hildebrandt ([@ETHorHIL](https://github.com/ETHorHIL), hildebrandtthore@gmail.com)
 - Geoff Lamperd ([@glamperd](https://github.com/glamperd))
+- Jinhwan Shin ([@sifnoc](https://github.com/sifnoc))
 
 ## License
 
