@@ -1,0 +1,40 @@
+name: Release Monorepo Packages
+on:
+  release:
+    types: [created]
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      # Setup .npmrc file to publish to npm
+      - uses: actions/setup-node@v2
+        with:
+          node-version: "16.x"
+          registry-url: "https://registry.npmjs.org"
+          # Defaults to the user or organization that owns the workflow file
+          scope: "@zkopru"
+      - name: Git Identity
+        run: |
+          git config --global user.name '${{ github.actor }}'
+          git config --global user.email '${{ github.actor }}@users.noreply.github.com'
+          git remote set-url origin https://x-access-token:${GH_PERSONAL_ACCESS_TOKEN}@github.com/$GITHUB_REPOSITORY
+        env:
+          GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+      - run: npm config set access public
+      - run: yarn
+      - run: yarn build
+      - run: yarn lerna version ${{ github.event.release.tag_name }} --yes --no-git-tag-version
+      - run: yarn version --new-version ${{ github.event.release.tag_name }} --no-git-tag-version
+      - run: git add . && git commit -m -n "chore(release):${{ github.event.release.tag_name }}"
+      - run: echo //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN} > .npmrc
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+      - run: yarn lerna publish from-package --yes --no-verify-access
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+      - run: git checkout -b release/${{ github.event.release.tag_name }}
+      - run: git push origin release/${{ github.event.release.tag_name }}
+      - run: git checkout -b main
+      - run: git pull origin main
+      - run: git push origin main
