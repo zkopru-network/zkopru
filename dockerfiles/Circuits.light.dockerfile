@@ -1,4 +1,4 @@
-FROM node:13-alpine
+FROM node:16-alpine
 WORKDIR /proj
 RUN apk update && apk add bash git curl
 COPY package.json /proj/package.json
