@@ -249,10 +249,14 @@ export default class ZkopruWallet {
         utxo: true,
       },
     })
+    const pendingDeposits = await this.wallet.db.findMany('PendingDeposit', {
+      where: {},
+      include: { utxo: true },
+    })
     const incompleteDeposits = await this.wallet.db.findMany('Deposit', {
       where: {
         ownerAddress: zkAddress,
-        includedIn: { eq: null },
+        includedIn: null,
       },
       include: {
         proposal: { header: true },
@@ -274,7 +278,10 @@ export default class ZkopruWallet {
     })
     return {
       pending: [
-        ...pending.map(obj => Object.assign(obj, { type: 'Send' })),
+        ...pending.map(obj => Object.assign(obj, { type: 'PendingSend' })),
+        ...pendingDeposits.map(obj =>
+          Object.assign(obj, { type: 'PendingDeposit', ...obj.utxo }),
+        ),
         ...incompleteDeposits.map(obj =>
           Object.assign(obj, { type: 'Deposit', ...obj.utxo }),
         ),
@@ -282,9 +289,9 @@ export default class ZkopruWallet {
       history: [
         ...sent.map(obj => Object.assign(obj, { type: 'Send' })),
         ...received.map(obj => Object.assign(obj, { type: 'Receive' })),
-        ...completeDeposits
-          .filter(deposit => !!deposit.proposal)
-          .map(obj => Object.assign(obj, { type: 'Deposit', ...obj.utxo })),
+        ...completeDeposits.map(obj =>
+          Object.assign(obj, { type: 'Deposit', ...obj.utxo }),
+        ),
         ...withdrawals.map(obj => Object.assign(obj, { type: 'Withdraw' })),
       ],
     }
