@@ -283,6 +283,22 @@ export default [
     ],
   },
   {
+    name: 'PendingDeposit',
+    primaryKey: 'note',
+    rows: [
+      ['note', 'String'],
+      ['fee', 'String'],
+      {
+        name: 'utxo',
+        relation: {
+          localField: 'note',
+          foreignField: 'hash',
+          foreignTable: 'Utxo',
+        },
+      },
+    ],
+  },
+  {
     name: 'Deposit',
     primaryKey: 'note',
     rows: [

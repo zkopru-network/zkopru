@@ -786,7 +786,18 @@ export class ZkWalletAccount {
         .eth()
         .add(fee)
         .toString(16),
-      onComplete: () => this.saveOutflow(note),
+      onComplete: async () => {
+        await this.db.transaction(async db => {
+          db.create('PendingDeposit', {
+            note: note
+              .hash()
+              .toUint256()
+              .toString(),
+            fee: fee.toUint256().toString(),
+          })
+          await this.saveOutflow(note, db)
+        })
+      },
     }
   }
 
