@@ -1,4 +1,4 @@
-FROM node:12-stretch-slim
+FROM node:16-stretch-slim
 RUN apt update
 RUN apt install -y git make musl-dev sqlite g++ python
 WORKDIR /proj

@@ -1,4 +1,4 @@
-FROM node:13-alpine as phase1
+FROM node:16-alpine as phase1
 WORKDIR /proj
 RUN apk update && apk add bash git
 COPY package.json /proj/package.json

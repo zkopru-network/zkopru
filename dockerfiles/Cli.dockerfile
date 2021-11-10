@@ -1,4 +1,4 @@
-FROM node:14-stretch-slim
+FROM node:16-stretch-slim
 RUN apt update
 RUN apt install -y git make musl-dev golang-go sqlite g++ tmux
 RUN mkdir -p /usr/share/man/man1
