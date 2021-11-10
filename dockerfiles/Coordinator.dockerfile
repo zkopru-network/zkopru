@@ -1,6 +1,6 @@
 FROM node:12-alpine
 RUN apk add --no-cache --virtual .gyp \
-        python \
+        python2 \
         make \
         g++ \
     && npm install  -g node-gyp-build \
