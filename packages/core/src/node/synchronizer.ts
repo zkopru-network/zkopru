@@ -352,12 +352,18 @@ export class Synchronizer extends EventEmitter {
           blockNumber,
         }
         logger.info(`core/synchronizer - NewDeposit(${deposit.note})`)
-        await this.blockCache.upsertCache(
-          'Deposit',
-          {
-            where: { note: deposit.note },
-            update: deposit,
-            create: deposit,
+        await this.blockCache.transactionCache(
+          db => {
+            db.upsert('Deposit', {
+              where: { note: deposit.note },
+              update: deposit,
+              create: deposit,
+            })
+            db.delete('PendingDeposit', {
+              where: {
+                note: deposit.note,
+              },
+            })
           },
           blockNumber,
           event.blockHash,
@@ -442,28 +448,24 @@ export class Synchronizer extends EventEmitter {
           depositedAt: blockNumber,
         }
         logger.info(`core/synchronizer - Discovered my deposit (${utxo.hash})`)
-        await this.blockCache.upsertCache(
-          'Utxo',
-          {
-            where: { hash: utxo.hash },
-            update: utxo,
-            create: utxo,
-          },
-          blockNumber,
-          event.blockHash,
-        )
-        await this.blockCache.updateCache(
-          'Deposit',
-          {
-            where: {
-              note: note
-                .hash()
-                .toUint256()
-                .toString(),
-            },
-            update: {
-              ownerAddress: owner.toString(),
-            },
+        await this.blockCache.transactionCache(
+          db => {
+            db.upsert('Utxo', {
+              where: { hash: utxo.hash },
+              update: utxo,
+              create: utxo,
+            })
+            db.update('Deposit', {
+              where: {
+                note: note
+                  .hash()
+                  .toUint256()
+                  .toString(),
+              },
+              update: {
+                ownerAddress: owner.toString(),
+              },
+            })
           },
           blockNumber,
           event.blockHash,
