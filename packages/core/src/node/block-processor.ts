@@ -380,7 +380,7 @@ export class BlockProcessor extends EventEmitter {
       ethAmount = ethAmount.add(note.eth())
     }
     if (inflows.length !== tx.inflow.length) {
-      // it's a receive transaction
+      // it's a receive transaction because we don't know all the UTXO nullfiers
       db.update('Tx', {
         where: {
           hash: tx.hash().toString(),
@@ -420,12 +420,14 @@ export class BlockProcessor extends EventEmitter {
       }
       ethAmountSent = ethAmountSent.add(Fp.from(inflow.eth))
     }
+    const selfTx = tokenAmountSent.eq(tokenAmount) && ethAmountSent.sub(tx.fee).eq(ethAmount)
     db.update('Tx', {
       where: {
         hash: tx.hash().toString(),
       },
       update: {
         senderAddress: knownReceiver.zkAddress.toString(),
+        receiverAddress: selfTx ? knownReceiver.zkAddress.toString() : undefined,
         tokenAddr: tokenAddress ? tokenAddress.toHex().toString() : '0x0',
         erc20Amount: tokenAmountSent.sub(tokenAmount).toString(),
         eth: ethAmountSent
