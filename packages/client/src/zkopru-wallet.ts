@@ -226,6 +226,7 @@ export default class ZkopruWallet {
     const sent = await this.wallet.db.findMany('Tx', {
       where: {
         senderAddress: zkAddress,
+        receiverAddress: null,
       },
       include: {
         proposal: { header: true },
@@ -234,6 +235,16 @@ export default class ZkopruWallet {
     const received = await this.wallet.db.findMany('Tx', {
       where: {
         receiverAddress: zkAddress,
+        senderAddress: null,
+      },
+      include: {
+        proposal: { header: true },
+      },
+    })
+    const self = await this.wallet.db.findMany('Tx', {
+      where: {
+        receiverAddress: zkAddress,
+        senderAddress: zkAddress,
       },
       include: {
         proposal: { header: true },
@@ -287,6 +298,7 @@ export default class ZkopruWallet {
         ),
       ],
       history: [
+        ...self.map(obj => Object.assign(obj, { type: 'Self' })),
         ...sent.map(obj => Object.assign(obj, { type: 'Send' })),
         ...received.map(obj => Object.assign(obj, { type: 'Receive' })),
         ...completeDeposits.map(obj =>
