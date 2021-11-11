@@ -634,26 +634,30 @@ export class ZkWalletAccount {
   ) {
     // calculate the amount of the tx for the ui
     const notes = from.decrypt(tx)
-    const tokenAddress = `0x${notes[0].asset.tokenAddr.toString('hex')}`
-    const myOutflowTotal = notes.reduce((total, note: Utxo) => {
-      if (+tokenAddress === 0) {
-        return total.add(new Fp(note.asset.eth))
-      }
-      if (note.asset.tokenAddr.eq(Fp.from(tokenAddress))) {
-        return total.add(note.asset.erc20Amount)
-      }
-      return total
-    }, new Fp('0'))
-    const sentAmount = Fp.from(0)
+    let tokenAddress: Fp | undefined
+    const tokenSentAmount = Fp.from(0)
+    const ethSentAmount = Fp.from(0)
     for (const i of inflow) {
-      if (+tokenAddress === 0 && i.asset.eth.gt(Fp.from(0))) {
-        sentAmount.iadd(i.asset.eth)
-      } else if (i.asset.tokenAddr.eq(Fp.from(tokenAddress))) {
-        sentAmount.iadd(i.asset.erc20Amount)
+      if (!tokenAddress && !i.tokenAddr().eq(Fp.from(0))) {
+        tokenAddress = i.tokenAddr()
+      }
+      ethSentAmount.iadd(i.asset.eth)
+      if (tokenAddress && i.asset.tokenAddr.eq(Fp.from(tokenAddress))) {
+        tokenSentAmount.iadd(i.asset.erc20Amount)
       }
     }
+    // const tokenAddress = `0x${notes[0].asset.tokenAddr.toString('hex')}`
+    const myTokenAmount = Fp.from(0)
+    const myEthAmount = Fp.from(0)
+    for (const note of notes) {
+      if (tokenAddress && note.asset.tokenAddr.eq(Fp.from(tokenAddress))) {
+        myTokenAmount.iadd(note.asset.erc20Amount)
+      }
+      myEthAmount.iadd(note.asset.eth)
+    }
     // sentAmount = totalInflow - myOutflow - fee
-    const totalSent = sentAmount.sub(myOutflowTotal).sub(tx.fee)
+    const tokenSent = tokenSentAmount.sub(myTokenAmount)
+    const ethSent = ethSentAmount.sub(myEthAmount).sub(tx.fee)
     const pendingTx = {
       hash: tx.hash().toString(),
       fee: tx.fee.toString(),
@@ -664,8 +668,9 @@ export class ZkWalletAccount {
       inflow: tx.inflow,
       outflow: tx.outflow,
       senderAddress: from.zkAddress.toString(),
-      tokenAddr: tokenAddress,
-      amount: totalSent.toString(),
+      tokenAddr: tokenAddress ? tokenAddress.toHex() : '0x0',
+      erc20Amount: tokenSent.toString(),
+      eth: ethSent.toString(),
     }
     await (db || this.db).upsert('PendingTx', {
       where: {
