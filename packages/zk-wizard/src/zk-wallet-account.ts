@@ -16,6 +16,7 @@ import {
   ZkTx,
   Outflow,
   Withdrawal,
+  OutflowType,
 } from '@zkopru/transaction'
 import { Fp, F } from '@zkopru/babyjubjub'
 import { Layer1, TransactionObject, Tx, TxUtil } from '@zkopru/contracts'
@@ -614,7 +615,10 @@ export class ZkWalletAccount {
       }
       await this.db.transaction(async db => {
         await this.storePendingTx(zkTx, fromAccount, tx.inflow, db)
+        await this.storePendingWithdrawal(tx, db)
         for (const outflow of tx.outflow) {
+          // eslint-disable-next-line no-continue
+          if (outflow instanceof Withdrawal) continue
           await this.saveOutflow(outflow, db)
         }
         await this.lockUtxos(tx.inflow, db)
@@ -632,6 +636,9 @@ export class ZkWalletAccount {
     inflow: Utxo[],
     db?: TransactionDB,
   ) {
+    for (const outflow of tx.outflow) {
+      if (outflow.outflowType.eq(Fp.from(OutflowType.WITHDRAWAL))) return
+    }
     // calculate the amount of the tx for the ui
     const notes = from.decrypt(tx)
     let tokenAddress: Fp | undefined
@@ -679,6 +686,46 @@ export class ZkWalletAccount {
       create: pendingTx,
       update: pendingTx,
     })
+  }
+
+  async storePendingWithdrawal(tx: RawTx, db?: TransactionDB) {
+    const withdrawalOutflows = tx.outflow.filter(
+      outflow => outflow instanceof Withdrawal,
+    ) as Withdrawal[]
+    for (const outflow of withdrawalOutflows) {
+      const data = {
+        hash: outflow
+          .hash()
+          .toUint256()
+          .toString(),
+        withdrawalHash: outflow.withdrawalHash().toString(),
+        owner: outflow.owner.toString(),
+        salt: outflow.salt.toUint256().toString(),
+        eth: outflow
+          .eth()
+          .toUint256()
+          .toString(),
+        tokenAddr: outflow
+          .tokenAddr()
+          .toAddress()
+          .toString(),
+        erc20Amount: outflow
+          .erc20Amount()
+          .toUint256()
+          .toString(),
+        nft: outflow
+          .nft()
+          .toUint256()
+          .toString(),
+        to: outflow.publicData.to.toAddress().toString(),
+        fee: tx.fee.toUint256().toString(),
+      }
+      await (db || this.db).upsert('Withdrawal', {
+        where: { hash: data.hash },
+        update: data,
+        create: { ...data, status: WithdrawalStatus.NON_INCLUDED },
+      })
+    }
   }
 
   async sendLayer2Tx(zkTx: ZkTx | ZkTx[]): Promise<Response> {
@@ -837,39 +884,8 @@ export class ZkWalletAccount {
         update: data,
         create: { ...data, status: UtxoStatus.NON_INCLUDED },
       })
-    } else if (outflow instanceof Withdrawal) {
-      const data = {
-        hash: outflow
-          .hash()
-          .toUint256()
-          .toString(),
-        withdrawalHash: outflow.withdrawalHash().toString(),
-        owner: outflow.owner.toString(),
-        salt: outflow.salt.toUint256().toString(),
-        eth: outflow
-          .eth()
-          .toUint256()
-          .toString(),
-        tokenAddr: outflow
-          .tokenAddr()
-          .toAddress()
-          .toString(),
-        erc20Amount: outflow
-          .erc20Amount()
-          .toUint256()
-          .toString(),
-        nft: outflow
-          .nft()
-          .toUint256()
-          .toString(),
-        to: outflow.publicData.to.toAddress().toString(),
-        fee: outflow.publicData.fee.toAddress().toString(),
-      }
-      await (db || this.db).upsert('Withdrawal', {
-        where: { hash: data.hash },
-        update: data,
-        create: { ...data, status: WithdrawalStatus.NON_INCLUDED },
-      })
+    } else {
+      throw new Error('Non-UTXO object in zk-wallet-account::saveOutflow')
     }
   }
 }
