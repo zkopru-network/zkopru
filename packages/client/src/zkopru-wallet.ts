@@ -287,7 +287,7 @@ export default class ZkopruWallet {
       where: {
         to: this.node.node?.layer1.web3.utils.toChecksumAddress(ethAddress),
         includedIn: null,
-      }
+      },
     })
     const pending = await this.wallet.db.findMany('PendingTx', {
       where: {
@@ -304,7 +304,7 @@ export default class ZkopruWallet {
           Object.assign(obj, { type: 'Deposit', ...obj.utxo }),
         ),
         ...incompleteWithdrawals.map(obj =>
-          Object.assign(obj, { type: 'Withdraw' })
+          Object.assign(obj, { type: 'Withdraw' }),
         ),
       ],
       history: [

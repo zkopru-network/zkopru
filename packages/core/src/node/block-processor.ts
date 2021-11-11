@@ -361,7 +361,10 @@ export class BlockProcessor extends EventEmitter {
     decryptedNotes: Utxo[],
     db: TransactionDB,
   ) {
-    const isWithdrawal = tx.outflow.findIndex(({ outflowType }) => outflowType.eqn(OutflowType.WITHDRAWAL)) !== -1
+    const isWithdrawal =
+      tx.outflow.findIndex(({ outflowType }) =>
+        outflowType.eqn(OutflowType.WITHDRAWAL),
+      ) !== -1
     if (isWithdrawal) return // we don't need to save withdrawal here
     const inflows = await this.db.findMany('Utxo', {
       where: {
