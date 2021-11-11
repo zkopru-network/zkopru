@@ -516,7 +516,7 @@ export class BlockProcessor extends EventEmitter {
           tokenAddr: outflow.data.tokenAddr.toAddress().toString(),
           erc20Amount: outflow.data.erc20Amount.toUint256().toString(),
           nft: outflow.data.nft.toUint256().toString(),
-          fee: outflow.data.fee.toUint256().toString(),
+          fee: tx.fee.toUint256().toString(),
           includedIn: block.hash.toString(),
         }
         db.upsert('Withdrawal', {
