@@ -361,6 +361,8 @@ export class BlockProcessor extends EventEmitter {
     decryptedNotes: Utxo[],
     db: TransactionDB,
   ) {
+    const isWithdrawal = tx.outflow.findIndex(({ outflowType }) => outflowType.eqn(OutflowType.WITHDRAWAL)) !== -1
+    if (isWithdrawal) return // we don't need to save withdrawal here
     const inflows = await this.db.findMany('Utxo', {
       where: {
         nullifier: tx.inflow.map(inflow => inflow.nullifier.toString()),
@@ -420,14 +422,17 @@ export class BlockProcessor extends EventEmitter {
       }
       ethAmountSent = ethAmountSent.add(Fp.from(inflow.eth))
     }
-    const selfTx = tokenAmountSent.eq(tokenAmount) && ethAmountSent.sub(tx.fee).eq(ethAmount)
+    const selfTx =
+      tokenAmountSent.eq(tokenAmount) && ethAmountSent.sub(tx.fee).eq(ethAmount)
     db.update('Tx', {
       where: {
         hash: tx.hash().toString(),
       },
       update: {
         senderAddress: knownReceiver.zkAddress.toString(),
-        receiverAddress: selfTx ? knownReceiver.zkAddress.toString() : undefined,
+        receiverAddress: selfTx
+          ? knownReceiver.zkAddress.toString()
+          : undefined,
         tokenAddr: tokenAddress ? tokenAddress.toHex().toString() : '0x0',
         erc20Amount: tokenAmountSent.sub(tokenAmount).toString(),
         eth: ethAmountSent
@@ -478,8 +483,6 @@ export class BlockProcessor extends EventEmitter {
       })
       for (const tx of withdrawalTxs) {
         const { prepayInfo } = tx.parseMemo()
-        // eslint-disable-next-line no-continue
-        if (!prepayInfo) continue
         const outflows = tx.outflow.filter(o =>
           o.outflowType.eqn(OutflowType.WITHDRAWAL),
         )
@@ -518,21 +521,23 @@ export class BlockProcessor extends EventEmitter {
           create: withdrawalSql,
           update: withdrawalSql,
         })
-        const instantWithdrawDoc = {
-          signature: `0x${prepayInfo.signature.toString('hex')}`,
-          withdrawalHash,
-          prepayFeeInEth: prepayInfo.prepayFeeInEth.toString(),
-          prepayFeeInToken: prepayInfo.prepayFeeInToken.toString(),
-          expiration: prepayInfo.expiration,
-          prepayer: '0x0000000000000000000000000000000000000000',
+        if (prepayInfo) {
+          const instantWithdrawDoc = {
+            signature: `0x${prepayInfo.signature.toString('hex')}`,
+            withdrawalHash,
+            prepayFeeInEth: prepayInfo.prepayFeeInEth.toString(),
+            prepayFeeInToken: prepayInfo.prepayFeeInToken.toString(),
+            expiration: prepayInfo.expiration,
+            prepayer: '0x0000000000000000000000000000000000000000',
+          }
+          db.upsert('InstantWithdrawal', {
+            where: {
+              signature: instantWithdrawDoc.signature,
+            },
+            create: instantWithdrawDoc,
+            update: instantWithdrawDoc,
+          })
         }
-        db.upsert('InstantWithdrawal', {
-          where: {
-            signature: instantWithdrawDoc.signature,
-          },
-          create: instantWithdrawDoc,
-          update: instantWithdrawDoc,
-        })
       }
     }
     // save my withdrawals
