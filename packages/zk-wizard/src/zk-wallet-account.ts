@@ -613,7 +613,7 @@ export class ZkWalletAccount {
         throw new Error('Generated snark proof is invalid')
       }
       await this.db.transaction(async db => {
-        await this.storePendingTx(tx, zkTx, fromAccount, tx.inflow, db)
+        await this.storePendingTx(tx, zkTx, fromAccount, db)
         await this.storePendingWithdrawal(tx, db)
         for (const outflow of tx.outflow) {
           // eslint-disable-next-line no-continue
@@ -633,18 +633,17 @@ export class ZkWalletAccount {
     tx: RawTx,
     zkTx: ZkTx,
     from: ZkAccount,
-    inflow: Utxo[],
     db?: TransactionDB,
   ) {
     for (const outflow of tx.outflow) {
       if (outflow instanceof Withdrawal) return
     }
     // calculate the amount of the tx for the ui
-    const notes = from.decrypt(zkTx)
+    const notes = from.decrypt(zkTx, this.node.layer2.tokenRegistry)
     let tokenAddress: Fp | undefined
     const tokenSentAmount = Fp.from(0)
     const ethSentAmount = Fp.from(0)
-    for (const i of inflow) {
+    for (const i of tx.inflow) {
       if (!tokenAddress && !i.tokenAddr().eq(Fp.from(0))) {
         tokenAddress = i.tokenAddr()
       }
@@ -657,7 +656,7 @@ export class ZkWalletAccount {
     const myTokenAmount = Fp.from(0)
     const myEthAmount = Fp.from(0)
     for (const note of notes) {
-      if (tokenAddress && note.asset.tokenAddr.eq(Fp.from(tokenAddress))) {
+      if (tokenAddress && note.asset.tokenAddr.eq(tokenAddress)) {
         myTokenAmount.iadd(note.asset.erc20Amount)
       }
       myEthAmount.iadd(note.asset.eth)
