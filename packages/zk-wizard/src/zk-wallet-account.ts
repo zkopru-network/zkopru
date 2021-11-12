@@ -16,7 +16,6 @@ import {
   ZkTx,
   Outflow,
   Withdrawal,
-  OutflowType,
 } from '@zkopru/transaction'
 import { Fp, F } from '@zkopru/babyjubjub'
 import { Layer1, TransactionObject, Tx, TxUtil } from '@zkopru/contracts'
@@ -614,7 +613,7 @@ export class ZkWalletAccount {
         throw new Error('Generated snark proof is invalid')
       }
       await this.db.transaction(async db => {
-        await this.storePendingTx(zkTx, fromAccount, tx.inflow, db)
+        await this.storePendingTx(tx, zkTx, fromAccount, tx.inflow, db)
         await this.storePendingWithdrawal(tx, db)
         for (const outflow of tx.outflow) {
           // eslint-disable-next-line no-continue
@@ -631,16 +630,17 @@ export class ZkWalletAccount {
   }
 
   async storePendingTx(
-    tx: ZkTx,
+    tx: RawTx,
+    zkTx: ZkTx,
     from: ZkAccount,
     inflow: Utxo[],
     db?: TransactionDB,
   ) {
     for (const outflow of tx.outflow) {
-      if (outflow.outflowType.eq(Fp.from(OutflowType.WITHDRAWAL))) return
+      if (outflow instanceof Withdrawal) return
     }
     // calculate the amount of the tx for the ui
-    const notes = from.decrypt(tx)
+    const notes = from.decrypt(zkTx)
     let tokenAddress: Fp | undefined
     const tokenSentAmount = Fp.from(0)
     const ethSentAmount = Fp.from(0)
@@ -666,14 +666,14 @@ export class ZkWalletAccount {
     const tokenSent = tokenSentAmount.sub(myTokenAmount)
     const ethSent = ethSentAmount.sub(myEthAmount).sub(tx.fee)
     const pendingTx = {
-      hash: tx.hash().toString(),
-      fee: tx.fee.toString(),
-      proof: tx.proof,
-      memoVersion: tx.memo?.version,
-      memoData: tx.memo?.data.toString('base64'),
-      swap: tx.swap?.toString(),
-      inflow: tx.inflow,
-      outflow: tx.outflow,
+      hash: zkTx.hash().toString(),
+      fee: zkTx.fee.toString(),
+      proof: zkTx.proof,
+      memoVersion: zkTx.memo?.version,
+      memoData: zkTx.memo?.data.toString('base64'),
+      swap: zkTx.swap?.toString(),
+      inflow: zkTx.inflow,
+      outflow: zkTx.outflow,
       senderAddress: from.zkAddress.toString(),
       tokenAddr: tokenAddress ? tokenAddress.toHex() : '0x0',
       erc20Amount: tokenSent.toString(),
