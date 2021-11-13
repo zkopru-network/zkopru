@@ -1,27 +1,9 @@
-FROM node:16-stretch-slim
-RUN apt update
-RUN apt install -y git make musl-dev golang-go sqlite g++ tmux
+FROM node:16-alpine
+RUN apk update \
+    && apk add git go sqlite postgresql-client netcat-openbsd tmux musl-dev
 RUN mkdir -p /usr/share/man/man1
 RUN mkdir -p /usr/share/man/man7
-RUN apt install -y postgresql-client netcat
 
-# Configure Go
-ENV GOROOT /usr/lib/go
-ENV GOPATH /go
-ENV PATH /go/bin:$PATH
-
-RUN mkdir -p ${GOPATH}/src ${GOPATH}/bin
-
-# Install Gotty (it needs go >= 1.9)
-RUN go get golang.org/dl/go1.10.7
-RUN go1.10.7 download
-RUN go1.10.7 get github.com/yudai/gotty
-
-RUN apt install -y python
-# Install Lerna & gyp
-RUN npm install -g node-gyp-build
-RUN npm install -g lerna
-RUN ln -s "$(which nodejs)" /usr/bin/node
 WORKDIR /proj
 
 # Copy SNARK keys
@@ -43,7 +25,16 @@ COPY ./packages/utils/package.json /proj/packages/utils/package.json
 COPY ./packages/zk-wizard/package.json /proj/packages/zk-wizard/package.json
 COPY ./yarn.lock /proj/yarn.lock
 
-RUN yarn install
+
+RUN npm install -g lerna
+# install build tools
+RUN apk add --no-cache --virtual .gyp \
+    python2 \
+    make \
+    g++ \
+    && npm install  -g node-gyp-build \
+    && yarn install \
+    && apk del .gyp
 
 # Copy dist
 COPY ./packages/account/dist /proj/packages/account/dist
@@ -61,6 +52,14 @@ RUN lerna clean -y --loglevel silent && lerna bootstrap
 
 COPY ./packages/cli/coordinator.*.json /proj/packages/cli/
 COPY ./packages/cli/wallet.*.json /proj/packages/cli/
+
+# Install gotty
+ENV GOROOT /usr/lib/go
+ENV GOPATH /go
+ENV PATH /go/bin:$PATH
+RUN mkdir -p ${GOPATH}/src ${GOPATH}/bin
+RUN go get github.com/sorenisanerd/gotty
+
 
 COPY ./scripts/dev_start.sh /dev_start.sh
 EXPOSE 8888
