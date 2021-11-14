@@ -1,5 +1,5 @@
 FROM node:16-alpine
-RUN apk update && apk add git sqlite
+RUN apk add --no-cache git sqlite
 WORKDIR /proj
 
 RUN git clone --depth=1 https://github.com/zkopru-network/zkopru

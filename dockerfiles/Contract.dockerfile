@@ -1,5 +1,5 @@
 FROM node:16-alpine
-RUN apk add git
+RUN apk  --no-cache add git
 WORKDIR /proj
 COPY ./package.json /proj/package.json
 # Stub a package json for @zkopru/utils so yarn install works

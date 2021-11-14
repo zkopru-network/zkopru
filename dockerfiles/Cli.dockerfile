@@ -1,8 +1,7 @@
 FROM node:16-alpine
-RUN apk update \
-    && apk add git go sqlite postgresql-client netcat-openbsd tmux musl-dev
-RUN mkdir -p /usr/share/man/man1
-RUN mkdir -p /usr/share/man/man7
+RUN apk add --no-cache git go sqlite postgresql-client netcat-openbsd tmux musl-dev
+RUN mkdir -p /usr/share/man/man1 \
+    && mkdir -p /usr/share/man/man7
 
 WORKDIR /proj
 
@@ -25,13 +24,12 @@ COPY ./packages/utils/package.json /proj/packages/utils/package.json
 COPY ./packages/zk-wizard/package.json /proj/packages/zk-wizard/package.json
 COPY ./yarn.lock /proj/yarn.lock
 
-
-RUN npm install -g lerna
 # install build tools
 RUN apk add --no-cache --virtual .gyp \
     python2 \
     make \
     g++ \
+    && npm install -g lerna \
     && npm install  -g node-gyp-build \
     && yarn install \
     && apk del .gyp
@@ -57,9 +55,8 @@ COPY ./packages/cli/wallet.*.json /proj/packages/cli/
 ENV GOROOT /usr/lib/go
 ENV GOPATH /go
 ENV PATH /go/bin:$PATH
-RUN mkdir -p ${GOPATH}/src ${GOPATH}/bin
-RUN go get github.com/sorenisanerd/gotty
-
+RUN mkdir -p ${GOPATH}/src ${GOPATH}/bin \
+    && go get github.com/sorenisanerd/gotty
 
 COPY ./scripts/dev_start.sh /dev_start.sh
 EXPOSE 8888

@@ -1,14 +1,14 @@
 FROM node:16-alpine
 WORKDIR /proj
-RUN apk update && apk add bash git curl
+RUN apk add --no-cache bash git curl
 COPY package.json /proj/package.json
 RUN mkdir /utils-docker && echo '{"version": "0.0.0"}' > /utils-docker/package.json
-RUN npm install --only=prod
-RUN npm install -g circom ./node_modules/circom
-RUN npm install -g snarkjs ./node_modules/snarkjs
-RUN curl -LJO https://github.com/zkopru-network/zkopru/releases/download/20201112/pot17_final.ptau
-RUN mkdir -p /proj/build/ptau
-RUN mv pot17_final.ptau /proj/build/ptau/pot17_final.ptau
+RUN npm install --only=prod \
+    && npm install -g circom ./node_modules/circom \
+    && npm install -g snarkjs ./node_modules/snarkjs
+RUN curl -LJO https://github.com/zkopru-network/zkopru/releases/download/20201112/pot17_final.ptau \
+    && mkdir -p /proj/build/ptau \
+    && mv pot17_final.ptau /proj/build/ptau/pot17_final.ptau
 
 COPY impls/*.circom /proj/impls/
 COPY lib /proj/lib
