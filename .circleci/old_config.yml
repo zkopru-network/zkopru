@@ -1,0 +1,199 @@
+version: 2.1
+workflows:
+  test_app:
+    jobs:
+      - build
+      - lint:
+          requires:
+            - build
+      - load_keys:
+          requires:
+            - build
+      # - test_circuits:
+      #     requires:
+      #       - build_keys
+      - test_coordinator:
+          requires:
+            - build
+      - test_accounts:
+          requires:
+            - build
+      - test_tree:
+          requires:
+            - build
+      - test_babyjubjub:
+          requires:
+            - build
+      - test_client:
+          requires:
+            - build
+      - test_database:
+          requires:
+            - build
+      - test_zkwizard:
+          requires:
+            - load_keys
+      - test_integration:
+          requires:
+            - load_keys
+      - test_utils:
+          requires:
+            - build
+jobs:
+  build:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - checkout
+      - run:
+          name: Install Yarn
+          command: curl -o- -L https://yarnpkg.com/install.sh | bash
+      - run:
+          name: Install
+          command: yarn
+      - run:
+          name: Build Contract
+          command: yarn build:contract
+      - run:
+          name: Build TS
+          command: yarn build:ts:serial
+      - persist_to_workspace:
+          root: ~/
+          paths: project
+  lint:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Lint
+          command: yarn lint .
+  load_keys:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Load Keys
+          command: |
+            cd packages/circuits
+            yarn download-keys
+      - persist_to_workspace:
+          root: ~/
+          paths: project
+  test_circuits:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Circuit Tests
+          command: yarn test --scope=@zkopru/circuits
+          no_output_timeout: 120m
+  test_coordinator:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Build Testnet
+          command: docker-compose -f compose/docker-compose.yml build contracts
+      - run:
+          name: Coordinator Tests
+          command: yarn test --scope=@zkopru/coordinator
+  test_contracts:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Build Testnet
+          command: docker-compose -f compose/docker-compose.yml build contracts-for-integration-test
+      - run:
+          name: Generate Block Data
+          command: |
+            cd packages/contracts
+            DEBUG=1 yarn testblock:generate --scope=@zkopru/contracts
+      - run:
+          name: Contract Tests
+          command: yarn test --scope=@zkopru/contracts
+  test_accounts:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Account Tests
+          command: yarn test --scope=@zkopru/account
+  test_tree:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Tree Tests
+          command: yarn test --scope=@zkopru/tree
+  test_zkwizard:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: ZK Wizard Tests
+          command: yarn test --scope=@zkopru/zk-wizard
+  test_client:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Client Tests
+          command: yarn test --scope=@zkopru/client
+  test_database:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Database Tests
+          command: yarn test --scope=@zkopru/database
+  test_babyjubjub:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: BabyJubJub Tests
+          command: yarn test --scope=@zkopru/babyjubjub
+  test_utils:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Utils Tests
+          command: yarn test --scope=@zkopru/utils
+  test_integration:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Build Testnet
+          command: docker-compose -f compose/docker-compose.yml build contracts-for-integration-test
+      - run:
+          name: Integration Tests
+          command: DEBUG=1 yarn test --scope=@zkopru/integration-test

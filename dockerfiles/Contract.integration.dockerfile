@@ -5,7 +5,7 @@ COPY ./package.json /proj/package.json
 # Stub a package json for @zkopru/utils so yarn install works
 RUN mkdir /utils && echo '{"version": "0.0.0"}' > /utils/package.json
 
-RUN apk add git \
+RUN apk add --no-cache git \
     && apk add --no-cache --virtual .gyp \
     python3 \
     make \
