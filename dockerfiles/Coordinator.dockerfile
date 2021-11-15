@@ -1,6 +1,5 @@
 FROM node:16-alpine
 RUN apk add --no-cache git
-RUN npm install -g lerna
 WORKDIR /proj
 
 # Copy package.json
@@ -22,7 +21,7 @@ RUN apk add --no-cache --virtual .gyp \
     python2 \
     make \
     g++ \
-    && npm install  -g node-gyp-build \
+    && npm install -g lerna node-gyp-build \
     && yarn install \
     && apk del .gyp
 

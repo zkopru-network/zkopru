@@ -1,9 +1,9 @@
 FROM node:16-alpine as phase1
 WORKDIR /proj
-RUN apk update && apk add bash git
+RUN apk --no-cache add bash git
 COPY package.json /proj/package.json
 RUN mkdir /utils-docker && echo '{"version": "0.0.0"}' > /utils-docker/package.json
-RUN npm install --only=prod
+RUN npm install --only=prod 
 RUN npm install -g circom ./node_modules/circom
 RUN npm install -g snarkjs ./node_modules/snarkjs
 COPY script/powers_of_tau_phase_1.sh /proj/script/powers_of_tau_phase_1.sh
