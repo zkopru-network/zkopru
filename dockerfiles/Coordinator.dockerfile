@@ -1,12 +1,5 @@
 FROM node:16-alpine
-RUN apk add --no-cache --virtual .gyp \
-        python2 \
-        make \
-        g++ \
-    && npm install  -g node-gyp-build \
-    && apk del .gyp
 RUN apk add --no-cache git
-RUN npm install -g lerna
 WORKDIR /proj
 
 # Copy package.json
@@ -24,7 +17,13 @@ COPY ./packages/tree/package.json /proj/packages/tree/package.json
 COPY ./packages/utils/package.json /proj/packages/utils/package.json
 COPY ./packages/zk-wizard/package.json /proj/packages/zk-wizard/package.json
 
-RUN yarn install
+RUN apk add --no-cache --virtual .gyp \
+    python2 \
+    make \
+    g++ \
+    && npm install -g lerna node-gyp-build \
+    && yarn install \
+    && apk del .gyp
 
 # Copy dist
 COPY ./packages/account/dist /proj/packages/account/dist

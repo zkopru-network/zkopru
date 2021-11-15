@@ -1,16 +1,18 @@
 FROM node:16-alpine
-RUN apk add --no-cache --virtual .gyp \
-        python2 \
-        make \
-        g++ \
-    && npm install -g truffle ganache-cli --unsafe-perm=true --allow-root \
-    && apk del .gyp
-RUN apk add git
+RUN apk --no-cache add git
 WORKDIR /proj
 COPY ./package.json /proj/package.json
 # Stub a package json for @zkopru/utils so yarn install works
 RUN mkdir /utils && echo '{"version": "0.0.0"}' > /utils/package.json
-RUN yarn install
+
+RUN apk add --no-cache --virtual .gyp \
+    python3 \
+    make \
+    g++ \
+    && npm install -g truffle ganache-cli --unsafe-perm=true --allow-root \
+    && yarn install \
+    && apk del .gyp
+
 COPY ./contracts /proj/contracts
 COPY ./utils /proj/utils
 COPY ./migrations /proj/migrations

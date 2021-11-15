@@ -1,18 +1,23 @@
-FROM node:16-stretch-slim
-RUN apt update
-RUN apt install -y git make musl-dev sqlite g++ python
+FROM node:16-alpine
+RUN apk add --no-cache git sqlite
 WORKDIR /proj
 
-RUN npm install -g node-gyp-build
-RUN ln -s "$(which nodejs)" /usr/bin/node
-RUN npm install -g truffle ganache-cli --unsafe-perm=true --allow-root
-
-# Install yarn
 RUN git clone --depth=1 https://github.com/zkopru-network/zkopru
 
 WORKDIR /proj/zkopru
-RUN yarn
-RUN yarn build
+
+# install build tools temporarily
+RUN apk add --no-cache --virtual .gyp \
+        python3 \
+        python2 \
+        make \
+        g++ \
+        chromium \
+        && npm install -g truffle ganache-cli --unsafe-perm=true --allow-root \
+        && yarn \
+        && yarn install \
+        && npx lerna run build --scope=@zkopru/cli \
+        && apk del .gyp
 
 WORKDIR /proj/zkopru/packages/cli
 
