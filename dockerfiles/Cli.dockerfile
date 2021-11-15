@@ -55,8 +55,8 @@ COPY ./packages/cli/wallet.*.json /proj/packages/cli/
 ENV GOROOT /usr/lib/go
 ENV GOPATH /go
 ENV PATH /go/bin:$PATH
-RUN mkdir -p ${GOPATH}/src ${GOPATH}/bin
-RUN go get github.com/sorenisanerd/gotty
+RUN mkdir -p ${GOPATH}/src ${GOPATH}/bin \
+    && go get github.com/sorenisanerd/gotty
 
 COPY ./scripts/dev_start.sh /dev_start.sh
 EXPOSE 8888
