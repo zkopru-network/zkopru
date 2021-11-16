@@ -9,7 +9,8 @@
     "dist"
   ],
   "_moduleAliases": {
-    "~dataset": "dist"
+    "~dataset": "dist",
+    "~transaction": "../transaction/dist"
   },
   "scripts": {
     "prebuild": "shx mkdir -p dist",

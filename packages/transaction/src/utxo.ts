@@ -113,7 +113,7 @@ export class Utxo extends Note {
     memo: Buffer
     spendingPubKey: Fp
     viewingKey: Fr
-    tokenRegistry?: TokenRegistry
+    tokenRegistry: TokenRegistry
   }): Utxo | undefined {
     const ephemeralPubKey = Point.decode(memo.subarray(0, 32))
     const sharedKey = ephemeralPubKey.mul(viewingKey).encode()
@@ -134,32 +134,30 @@ export class Utxo extends Note {
       return etherNote
     }
     // Try to find ERC20 or ERC721 notes
-    if (tokenRegistry) {
-      const erc20Addresses = tokenRegistry.getErc20Addresses(tokenIdentifier)
-      for (const tokenAddr of erc20Addresses) {
-        const erc20Note = Utxo.newERC20Note({
-          owner,
-          eth: Fp.from(0),
-          tokenAddr,
-          erc20Amount: value,
-          salt,
-        })
-        if (utxoHash.eq(erc20Note.hash())) {
-          return erc20Note
-        }
+    const erc20Addresses = tokenRegistry.getErc20Addresses(tokenIdentifier)
+    for (const tokenAddr of erc20Addresses) {
+      const erc20Note = Utxo.newERC20Note({
+        owner,
+        eth: Fp.from(0),
+        tokenAddr,
+        erc20Amount: value,
+        salt,
+      })
+      if (utxoHash.eq(erc20Note.hash())) {
+        return erc20Note
       }
-      const erc721Addresses = tokenRegistry.getErc721Addresses(tokenIdentifier)
-      for (const tokenAddr of erc721Addresses) {
-        const nftNote = Utxo.newNFTNote({
-          owner,
-          eth: Fp.from(0),
-          tokenAddr,
-          nft: value,
-          salt,
-        })
-        if (utxoHash.eq(nftNote.hash())) {
-          return nftNote
-        }
+    }
+    const erc721Addresses = tokenRegistry.getErc721Addresses(tokenIdentifier)
+    for (const tokenAddr of erc721Addresses) {
+      const nftNote = Utxo.newNFTNote({
+        owner,
+        eth: Fp.from(0),
+        tokenAddr,
+        nft: value,
+        salt,
+      })
+      if (utxoHash.eq(nftNote.hash())) {
+        return nftNote
       }
     }
     return undefined
