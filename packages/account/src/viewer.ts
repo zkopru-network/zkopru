@@ -36,7 +36,7 @@ export class ZkViewer {
     return this.A
   }
 
-  decrypt(zkTx: ZkTx, tokenRegistry?: TokenRegistry): Utxo[] {
+  decrypt(zkTx: ZkTx, tokenRegistry: TokenRegistry): Utxo[] {
     const tryDecodeNote = (
       bytes: Buffer,
       outflows: ZkOutflow[],
