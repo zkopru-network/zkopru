@@ -105,6 +105,10 @@ export interface Reader extends BaseContract {
       utxoRoot: string | number[],
     ): NonPayableTransactionObject<boolean>
 
+    newWithdrawalOwner(
+      withdrawalHash: string | number[],
+    ): NonPayableTransactionObject<string>
+
     proposers(
       addr: string,
     ): NonPayableTransactionObject<{

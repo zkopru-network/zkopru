@@ -266,6 +266,15 @@ export const ZkopruABI = [
   },
   {
     inputs: [
+      { internalType: 'bytes32', name: 'withdrawalHash', type: 'bytes32' },
+    ],
+    name: 'newWithdrawalOwner',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
       { internalType: 'address', name: '', type: 'address' },
       { internalType: 'address', name: '', type: 'address' },
       { internalType: 'uint256', name: '', type: 'uint256' },

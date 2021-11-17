@@ -38,6 +38,14 @@ contract Reader is Storage {
         return chain.finalizedUTXORoots[uint256(utxoRoot)];
     }
 
+    function newWithdrawalOwner(bytes32 withdrawalHash)
+        public
+        view
+        returns (address)
+    {
+        return chain.newWithdrawalOwner[withdrawalHash];
+    }
+
     function proposers(address addr)
         public
         view
