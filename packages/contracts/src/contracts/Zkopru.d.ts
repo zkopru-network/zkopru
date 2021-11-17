@@ -138,6 +138,10 @@ export interface Zkopru extends BaseContract {
       migrationRoot: string | number[],
     ): NonPayableTransactionObject<boolean>
 
+    newWithdrawalOwner(
+      withdrawalHash: string | number[],
+    ): NonPayableTransactionObject<string>
+
     /**
      * See {IERC721Receiver-onERC721Received}. Always returns `IERC721Receiver.onERC721Received.selector`.
      */
