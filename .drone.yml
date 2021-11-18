@@ -1,0 +1,19 @@
+kind: pipeline
+name: default
+
+steps:
+- name: trigger  
+  image: plugins/downstream
+  fork: true
+  settings:
+    server: https://zkopru.sifnoc.net
+    token:
+      from_secret: drone_token
+    repositories:
+      - ${DRONE_REPO_OWNER}/stress-test
+
+trigger:
+  repo:
+    - ${DRONE_REPO_OWNER}/zkopru
+  branch:
+    - main
