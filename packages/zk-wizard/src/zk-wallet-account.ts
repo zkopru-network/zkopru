@@ -748,13 +748,14 @@ export class ZkWalletAccount {
     tx: RawTx
     from?: ZkAccount
     encryptTo?: ZkAddress
-  }): Promise<void> {
+  }): Promise<string> {
     const zkTx = await this.shieldTx({ tx, from, encryptTo })
     const response = await this.sendLayer2Tx(zkTx)
     if (response.status !== 200) {
       await this.unlockUtxos(tx.inflow)
       throw Error(await response.text())
     }
+    return zkTx.hash.toString()
   }
 
   private async deposit(note: Utxo, fee: Fp): Promise<boolean> {
