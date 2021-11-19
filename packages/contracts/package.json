@@ -50,11 +50,12 @@
     "start": "node dist/index.js",
     "testnet": "truffle develop --testnet",
     "prettier": "prettier --write ./**/*.{ts,js,sol}",
-    "testblock:generate": "node utils/testblock-generator"
+    "testblock:generate": "node utils/testblock-generator",
+    "deploy:goerli": "truffle migrate --network goerli_pkey --skip-dry-run"
   },
   "devDependencies": {
     "@truffle/artifactor": "^4.0.54",
-    "@truffle/hdwallet-provider": "1.2.2",
+    "@truffle/hdwallet-provider": "1.7.0",
     "chai": "^4.2.0",
     "circomlib": "0.5.1",
     "eth-gas-reporter": "^0.2.17",
