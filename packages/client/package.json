@@ -18,8 +18,8 @@
     "~utils-docker": "../utils-docker/dist"
   },
   "scripts": {
-    "build": "tsc --build tsconfig.build.json && webpack",
-    "webpack": "webpack",
+    "build": "tsc --build tsconfig.build.json && webpack-cli",
+    "webpack": "webpack-cli",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "link-modules": "link-module-alias",
     "test": "jest",
