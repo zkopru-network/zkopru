@@ -9,7 +9,7 @@ steps:
   image: plugins/downstream
   fork: true
   settings:
-    server: https://drone.zkopru.net
+    server: https://drone.zkopru.network
     token:
       from_secret: drone_token
     repositories:
