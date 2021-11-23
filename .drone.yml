@@ -1,19 +1,20 @@
 kind: pipeline
 name: default
 
+clone:
+  disable: true
+
 steps:
 - name: trigger  
   image: plugins/downstream
   fork: true
   settings:
-    server: https://drone.zkopru.network
+    server: https://drone.zkopru.net
     token:
       from_secret: drone_token
     repositories:
-      - ${DRONE_REPO_OWNER}/stress-test
+      - zkopru-network/stress-test
 
 trigger:
-  repo:
-    - ${DRONE_REPO_OWNER}/zkopru
   branch:
     - main
