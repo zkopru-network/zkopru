@@ -10,10 +10,10 @@ jobs:
       # Setup .npmrc file to publish to npm
       - uses: actions/setup-node@v2
         with:
-          node-version: "16.x"
-          registry-url: "https://registry.npmjs.org"
+          node-version: '16.x'
+          registry-url: 'https://registry.npmjs.org'
           # Defaults to the user or organization that owns the workflow file
-          scope: "@zkopru"
+          scope: '@zkopru'
       - name: Git Identity
         run: |
           git config --global user.name '${{ github.actor }}'
@@ -36,5 +36,5 @@ jobs:
       - run: git checkout -b release/${{ github.event.release.tag_name }}
       - run: git push origin release/${{ github.event.release.tag_name }}
       - run: git checkout -b main
-      - run: git pull origin main --ff-only
+      - run: git pull origin main --rebase
       - run: git push origin main
