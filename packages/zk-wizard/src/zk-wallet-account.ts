@@ -755,7 +755,7 @@ export class ZkWalletAccount {
       await this.unlockUtxos(tx.inflow)
       throw Error(await response.text())
     }
-    return zkTx.hash.toString()
+    return zkTx.hash().toString()
   }
 
   private async deposit(note: Utxo, fee: Fp): Promise<boolean> {
