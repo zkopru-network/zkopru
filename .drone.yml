@@ -7,11 +7,14 @@ clone:
 steps:
 - name: trigger  
   image: plugins/downstream
-  fork: true
   settings:
     server: https://drone.zkopru.network
+    fork: false
     token:
       from_secret: drone_token
+    params:
+      - TRIGGER_HASH=${DRONE_COMMIT}
+      - TRIGGER_BRANCH=${DRONE_BRANCH}
     repositories:
       - zkopru-network/stress-test
 
