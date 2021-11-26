@@ -15,7 +15,7 @@
     "images:push": "docker-compose -f compose/docker-compose.yml push",
     "predevelop": "yarn build:ts && docker-compose -f compose/docker-compose.dev.yml build",
     "develop": "(sleep 10; open-cli http://localhost:4321) & (sleep 10; open-cli http://localhost:1234) & docker-compose -f compose/docker-compose.dev.yml up --force-recreate -V",
-    "develop:instant": "yarn build:ts && docker-compose -f docker-compose.instant-block.yml up --build --force-recreate -V",
+    "develop:instant": "yarn build:ts && docker-compose -f compose/docker-compose.instant-block.yml up --build --force-recreate -V",
     "build": "lerna run build:contract && yarn build:ts",
     "build:ts": "lerna run --parallel build && yarn link-modules",
     "build:ts:serial": "lerna run build && yarn link-modules",
