@@ -66,17 +66,15 @@ export default class ZkopruNode {
     )
     // eslint-disable-next-line no-inner-declarations
     async function waitConnection(_provider: any) {
-      return new Promise<void>(async (rs, rj) => {
-        let count = 0
-        for (;;) {
-          if (_provider.connected) return rs()
-          await new Promise(r => setTimeout(r, 200))
-          count += 1
-          if (count > 100) {
-            rj(new Error('Connection timed out'))
-          }
+      let count = 0
+      for (;;) {
+        if (_provider.connected) return
+        await new Promise(r => setTimeout(r, 200))
+        count += 1
+        if (count > 100) {
+          throw new Error('Connection timed out')
         }
-      })
+      }
     }
     provider.connect()
     await waitConnection(provider)
