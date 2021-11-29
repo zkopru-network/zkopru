@@ -188,7 +188,7 @@ export class Synchronizer extends EventEmitter {
             .subn(1) // proposal num starts from 0
             .toString(10)
           logger.info(
-            `core/syncrhonizer - processed ${proposalNum}/${layer1ProposedBlocks}`,
+            `core/synchronizer- processed ${proposalNum}/${layer1ProposedBlocks}`,
           )
         })
     }
