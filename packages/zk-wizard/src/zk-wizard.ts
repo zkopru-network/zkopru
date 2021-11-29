@@ -29,7 +29,7 @@ import {
 
 import { SNARKResult, genSNARK } from './snark'
 
-const IPFS_GATEWAY_HOST = `https://ipfs.tubby.cloud`
+const IPFS_GATEWAY_HOST = `https://ipfs.zkopru.network`
 
 export class ZkWizard {
   path?: string
@@ -113,6 +113,7 @@ export class ZkWizard {
   private async loadKeyPaths(
     nIn: number,
     nOut: number,
+    ipfsGateway: string = IPFS_GATEWAY_HOST,
   ): Promise<{
     wasmPath: string
     zkeyPath: string
@@ -170,14 +171,14 @@ export class ZkWizard {
         {
           logger.info('Downloading vkey')
           const response = await fetch(
-            new URL(vKeyUrlPath, IPFS_GATEWAY_HOST).toString(),
+            new URL(vKeyUrlPath, ipfsGateway).toString(),
           )
           vKey = await response.json()
         }
         if (!fs.existsSync(wasmPath)) {
           logger.info('Downloading wasm')
           const response = await fetch(
-            new URL(wasmUrlPath, IPFS_GATEWAY_HOST).toString(),
+            new URL(wasmUrlPath, ipfsGateway).toString(),
           )
           const filestream = fs.createWriteStream(wasmPath)
           await new Promise((rs, rj) => {
@@ -189,7 +190,7 @@ export class ZkWizard {
         if (!fs.existsSync(zkeyPath)) {
           logger.info('Downloading zkey')
           const response = await fetch(
-            new URL(zKeyUrlPath, IPFS_GATEWAY_HOST).toString(),
+            new URL(zKeyUrlPath, ipfsGateway).toString(),
           )
           const filestream = fs.createWriteStream(zkeyPath)
           await new Promise((rs, rj) => {
@@ -205,13 +206,11 @@ export class ZkWizard {
         }
       }
       // In a web browser, no fs access, store in localstorage
-      const response = await fetch(
-        new URL(vKeyUrlPath, IPFS_GATEWAY_HOST).toString(),
-      )
+      const response = await fetch(new URL(vKeyUrlPath, ipfsGateway).toString())
       const vKey = await response.json()
       return {
-        wasmPath: new URL(wasmUrlPath, IPFS_GATEWAY_HOST).toString(),
-        zkeyPath: new URL(zKeyUrlPath, IPFS_GATEWAY_HOST).toString(),
+        wasmPath: new URL(wasmUrlPath, ipfsGateway).toString(),
+        zkeyPath: new URL(zKeyUrlPath, ipfsGateway).toString(),
         vKey,
       }
     }
