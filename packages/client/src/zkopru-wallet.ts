@@ -222,6 +222,14 @@ export default class ZkopruWallet {
     return weiPerByte
   }
 
+  async calculateWeiPerByte() {
+    const currentGasPrice = await this.wallet.node.layer1.web3.eth.getGasPrice()
+    const gasPerNonZero = 16
+    // let's assume all of the bytes are non-zero
+    // it's hard to look at an actual tx because the fee is encoded
+    return Fp.from(currentGasPrice).mul(Fp.from(gasPerNonZero))
+  }
+
   async transactionsFor(zkAddress: string, ethAddress: string) {
     const sent = await this.wallet.db.findMany('Tx', {
       where: {
