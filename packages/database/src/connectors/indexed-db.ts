@@ -131,7 +131,7 @@ export class IndexedDBConnector extends DB {
      * Currently only queries for single values can be accelerated by index.
      * Many fields can be specified, but each may have only 1 value.
      *
-     * TODO: gt, lt, exists, include operators
+     * TODO: gt, lt, exists operators
      * */
     if (!this.db) throw new Error('DB is not initialized')
     // scan if there's a complex query
@@ -142,7 +142,13 @@ export class IndexedDBConnector extends DB {
       return this.findUsingScan(collection, options, _tx)
     }
     for (const key of Object.keys(options.where)) {
-      if (typeof options.where[key] === 'object') {
+      if (
+        (typeof options.where[key] === 'object' &&
+          !Array.isArray(options.where[key])) ||
+        key === 'OR' ||
+        key === 'AND' ||
+        options.where[key] === undefined
+      ) {
         return this.findUsingScan(collection, options, _tx)
       }
     }
@@ -185,16 +191,43 @@ export class IndexedDBConnector extends DB {
       // use this index
       const tx = _tx || this.db.transaction(collection)
       const txIndex = tx.objectStore(collection).index(index.name)
-      const query = index.keys.map(k => options.where[k])
-      const result = await txIndex.getAll(query)
-      const found = result.filter(i => !!i)
+      // All keys in an array
+      const keyVals = {}
+      const keyIndexes = {}
+      for (const key of Object.keys(options.where)) {
+        keyVals[key] = [options.where[key]].flat()
+        keyIndexes[key] = 0
+        if (keyVals[key].length === 0) {
+          return []
+        }
+      }
+      const allResults = [] as any[]
+      // process all combinations of values
+      for (;;) {
+        const query = index.keys.map(k => {
+          return keyVals[k][keyIndexes[k]]
+        })
+        const result = await txIndex.getAll(query)
+        const found = result.filter(i => !!i)
+        allResults.push(...found)
+        let done = true
+        for (const key of Object.keys(options.where)) {
+          if (keyIndexes[key] < keyVals[key].length - 1) {
+            keyIndexes[key] += 1
+            done = false
+            break
+          }
+        }
+        if (done) break
+      }
+      // otherwise we've exhausted all combinations
       await loadIncluded(collection, {
-        models: found,
+        models: allResults,
         include: options.include,
         findMany: this._findMany.bind(this),
         table,
       })
-      return found
+      return allResults
     }
     // no index supports the query, scan
     return this.findUsingScan(collection, options, _tx)
