@@ -35,7 +35,7 @@ export class IndexedDBConnector extends DB {
   static async create(tables: TableData[]) {
     const schema = constructSchema(tables)
     const connector = new this(schema)
-    connector.db = await openDB(DB_NAME, 17, {
+    connector.db = await openDB(DB_NAME, 18, {
       /**
        * If an index is changed (e.g. same keys different "unique" value) the
        * index will not be updated. If such a case occurs the name should be
@@ -195,21 +195,19 @@ export class IndexedDBConnector extends DB {
       const keyVals = {}
       const keyIndexes = {}
       for (const key of Object.keys(options.where)) {
-        keyVals[key] = [options.where[key]].flat()
+        keyVals[key] = [options.where[key]].flat().filter(i => i !== undefined)
         keyIndexes[key] = 0
         if (keyVals[key].length === 0) {
           return []
         }
       }
-      const allResults = [] as any[]
+      const resultPromises = [] as Promise<any>[]
       // process all combinations of values
       for (;;) {
         const query = index.keys.map(k => {
           return keyVals[k][keyIndexes[k]]
         })
-        const result = await txIndex.getAll(query)
-        const found = result.filter(i => !!i)
-        allResults.push(...found)
+        resultPromises.push(txIndex.getAll(query))
         let done = true
         for (const key of Object.keys(options.where)) {
           if (keyIndexes[key] < keyVals[key].length - 1) {
@@ -220,6 +218,9 @@ export class IndexedDBConnector extends DB {
         }
         if (done) break
       }
+      const allResults = (await Promise.all(resultPromises))
+        .flat()
+        .filter(i => !!i)
       // otherwise we've exhausted all combinations
       await loadIncluded(collection, {
         models: allResults,
