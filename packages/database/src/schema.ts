@@ -433,6 +433,9 @@ export default [
       {
         keys: ['nodeIndex', 'treeId'],
       },
+      {
+        keys: ['nodeIndex', 'value'],
+      },
     ],
     rows: [
       ['treeId', 'String'],
