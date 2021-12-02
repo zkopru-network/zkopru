@@ -1,6 +1,6 @@
 {
   "name": "@zkopru/cli",
-  "version": "2.0.0-beta.6",
+  "version": "2.0.0-beta.7",
   "license": "GPL-3.0-or-later",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
