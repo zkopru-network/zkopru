@@ -48,6 +48,8 @@ export class Watchdog {
       )
       return receipt?.status || false
     } catch (err) {
+      logger.error(`core/watchdog - Error executing slash`)
+      logger.error(err)
       return false
     }
   }
