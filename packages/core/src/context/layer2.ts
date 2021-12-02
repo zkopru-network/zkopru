@@ -395,6 +395,23 @@ export class L2Chain {
         }
       }
     }
+
+    // 3. try to find invalid inflow
+    const nullifiers = zkTx.inflow.map(({ nullifier }) => nullifier.toString())
+    const utxos = await this.db.findMany('Utxo', {
+      where: {
+        nullifier: nullifiers,
+        usedAt: { ne: null },
+      },
+    })
+    if (utxos.length > 0) return false
+    const keyedNullifiers = {}
+    for (const nullifier of nullifiers) {
+      if (keyedNullifiers[nullifier]) {
+        return false
+      }
+      keyedNullifiers[nullifier] = true
+    }
     return true
   }
 

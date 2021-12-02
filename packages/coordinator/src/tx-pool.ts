@@ -271,7 +271,8 @@ export class TxMemPool implements TxPoolInterface {
   revert(txRoot: string) {
     const txs = this.queued[txRoot]
     if (txs) {
-      txs.forEach(this.addToTxPool.bind(this))
+      // TODO: validate transactions before trying to include again
+      // txs.forEach(this.addToTxPool.bind(this))
     }
     delete this.queued[txRoot]
   }
