@@ -3,6 +3,7 @@ import { Block, MAX_MASS_DEPOSIT_COMMIT_GAS } from '@zkopru/core'
 import { TransactionReceipt } from 'web3-core'
 import { soliditySha3Raw } from 'web3-utils'
 import { logger } from '@zkopru/utils'
+import { FullValidator } from '@zkopru/core'
 import { ProposerBase } from '../interfaces/proposer-base'
 
 export class BlockProposer extends ProposerBase {
@@ -45,11 +46,22 @@ export class BlockProposer extends ProposerBase {
         hash: block.header.parentBlock.toString(),
       },
     })
+    const parentHeader = await layer2.db.findOne('Header', {
+      where: {
+        hash: block.header.parentBlock.toString(),
+      },
+    })
     if (!parentProposal) {
       throw new Error('Unable to find parent proposal')
     }
     if (!parentProposal.proposalData && parentProposal.proposalNum !== 0) {
       throw new Error('No proposal data for parent block')
+    }
+    // validate the block before proposing
+    const validator = new FullValidator(layer1, layer2)
+    const validationResult = await validator.validate(parentHeader, block)
+    if (validationResult.slashable) {
+      throw new Error('Block is slashable, aborting proposal')
     }
     const bytes = block.serializeBlock()
     const blockData = `0x${bytes.toString('hex')}`
