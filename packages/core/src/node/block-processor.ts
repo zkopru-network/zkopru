@@ -460,7 +460,7 @@ export class BlockProcessor extends EventEmitter {
       const existingTx = await this.db.findOne('Tx', {
         where: {
           hash: tx.hash().toString(),
-        }
+        },
       })
       if (existingTx) return
       db.create('Tx', {
