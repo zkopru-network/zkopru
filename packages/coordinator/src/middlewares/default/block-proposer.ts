@@ -4,6 +4,7 @@ import { TransactionReceipt } from 'web3-core'
 import { soliditySha3Raw } from 'web3-utils'
 import { logger } from '@zkopru/utils'
 import { FullValidator } from '@zkopru/core'
+import { Bytes32, Address, Uint256 } from 'soltypes'
 import { ProposerBase } from '../interfaces/proposer-base'
 
 export class BlockProposer extends ProposerBase {
@@ -59,7 +60,22 @@ export class BlockProposer extends ProposerBase {
     }
     // validate the block before proposing
     const validator = new FullValidator(layer1, layer2)
-    const validationResult = await validator.validate(parentHeader, block)
+    const validationResult = await validator.validate(
+      {
+        proposer: Address.from(parentHeader.proposer),
+        parentBlock: Bytes32.from(parentHeader.parentBlock),
+        fee: Uint256.from(parentHeader.fee),
+        utxoRoot: Uint256.from(parentHeader.utxoRoot),
+        utxoIndex: Uint256.from(parentHeader.utxoIndex),
+        nullifierRoot: Bytes32.from(parentHeader.nullifierRoot),
+        withdrawalRoot: Uint256.from(parentHeader.withdrawalRoot),
+        withdrawalIndex: Uint256.from(parentHeader.withdrawalIndex),
+        txRoot: Bytes32.from(parentHeader.txRoot),
+        depositRoot: Bytes32.from(parentHeader.depositRoot),
+        migrationRoot: Bytes32.from(parentHeader.migrationRoot),
+      },
+      block,
+    )
     if (validationResult.slashable) {
       throw new Error('Block is slashable, aborting proposal')
     }
