@@ -37,9 +37,28 @@ export class BlockGenerator extends GeneratorBase {
       this.context.config.maxBytes - consumedBytes,
       this.context.gasPrice.muln(this.context.config.priceMultiplier),
     )
+    const usedNullifiers = {}
+    const validPendingsTxs = (
+      await Promise.all(
+        pendingTxs.map(async tx => {
+          const valid = await this.context.node.layer2.isValidTx(tx)
+          return valid ? tx : undefined
+        }),
+      )
+    ).filter(tx => {
+      if (!tx) return false
+      const nullifiers = tx.inflow.map(({ nullifier }) => nullifier.toString())
+      for (const nullifier of nullifiers) {
+        if (usedNullifiers[nullifier]) {
+          return false
+        }
+        usedNullifiers[nullifier] = true
+      }
+      return true
+    }) as ZkTx[]
     const txs = [] as ZkTx[]
     // check each pending tx to make sure it doesn't break the dry patch
-    for (const tx of pendingTxs) {
+    for (const tx of validPendingsTxs) {
       const { ok } = await this.dryRun([...txs, tx], pendingMassDeposits)
       if (!ok) {
         logger.info('Warning, transaction dry run not ok, skipping')
