@@ -206,7 +206,7 @@ export class BlockProcessor extends EventEmitter {
     const validationResult = await this.validator.validate(parent, block)
     if (validationResult.slashable) {
       // implement challenge here & mark as invalidated
-      await this.db.transaction(db => {
+      await this.db.transaction(async db => {
         db.update('Proposal', {
           where: { hash: block.hash.toString() },
           update: { verified: false },
@@ -216,7 +216,7 @@ export class BlockProcessor extends EventEmitter {
           update: { includedIn: null },
         })
         // save transactions and mark them as challenged
-        this.saveTransactions(block, db, true)
+        await this.saveTransactions(block, db, true)
       })
       logger.warn(
         `core/block-processor - challenge: ${validationResult['_method']?.name}`,
@@ -235,7 +235,7 @@ export class BlockProcessor extends EventEmitter {
       async db => {
         this.layer2.grove.treeCache.enable()
         this.layer2.grove.treeCache.clear()
-        this.saveTransactions(block, db)
+        await this.saveTransactions(block, db)
         await this.decryptMyUtxos(
           patch,
           block.body.txs,
@@ -447,13 +447,22 @@ export class BlockProcessor extends EventEmitter {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  private saveTransactions(
+  private async saveTransactions(
     block: Block,
     db: TransactionDB,
     challenged = false,
   ) {
     logger.trace(`core/block-processor - BlockProcessor::saveTransactions()`)
-    block.body.txs.forEach(tx => {
+    const promises = block.body.txs.map(async tx => {
+      db.delete('PendingTx', {
+        where: { hash: tx.hash().toString() },
+      })
+      const existingTx = await this.db.findOne('Tx', {
+        where: {
+          hash: tx.hash().toString(),
+        }
+      })
+      if (existingTx) return
       db.create('Tx', {
         hash: tx.hash().toString(),
         blockHash: block.hash.toString(),
@@ -463,10 +472,8 @@ export class BlockProcessor extends EventEmitter {
         challenged,
         slashed: false,
       })
-      db.delete('PendingTx', {
-        where: { hash: tx.hash().toString() },
-      })
     })
+    await Promise.all(promises)
   }
 
   // eslint-disable-next-line class-methods-use-this
