@@ -29,6 +29,7 @@ export default class LoadCoordinator extends Configurator {
       address,
       provider,
       db,
+      slasher: context.account,
     })
     const coordinator = new Coordinator(fullNode, context.account, {
       maxBytes,
