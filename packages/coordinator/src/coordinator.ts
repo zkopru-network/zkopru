@@ -121,13 +121,8 @@ export class Coordinator extends EventEmitter {
         logger.info(`coordinator/coordinator.ts - current status: ${status}`)
         switch (status) {
           case NetworkStatus.SYNCED:
+            break
           case NetworkStatus.FULLY_SYNCED:
-            if (!this.taskRunners.blockPropose.isRunning()) {
-              this.taskRunners.blockPropose.start({
-                task: this.proposeTask.bind(this),
-                interval: 10000,
-              })
-            }
             break
           case NetworkStatus.ON_ERROR:
             logger.error(
@@ -159,6 +154,10 @@ export class Coordinator extends EventEmitter {
     })
     this.taskRunners.massDepositCommit.start({
       task: this.commitMassDepositsIfNeeded.bind(this),
+      interval: 10000,
+    })
+    this.taskRunners.blockPropose.start({
+      task: this.proposeTask.bind(this),
       interval: 10000,
     })
     await Promise.all([
