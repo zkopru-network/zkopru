@@ -17,6 +17,7 @@ import { OffchainNullifierTreeValidator } from './offchain-nullifier-tree-valida
 import { OffchainTxValidator } from './offchain-tx-validator'
 import { OffchainUtxoTreeValidator } from './offchain-utxo-tree-validator'
 import { OffchainWithdrawalTreeValidator } from './offchain-withdrawal-tree-validator'
+
 export { OffchainDepositValidator } from './offchain-deposit-validator'
 export { OffchainHeaderValidator } from './offchain-header-validator'
 export { OffchainMigrationValidator } from './offchain-migration-validator'
