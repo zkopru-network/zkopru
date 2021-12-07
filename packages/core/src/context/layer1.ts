@@ -16,7 +16,7 @@ import AsyncLock from 'async-lock'
 import { verifyingKeyIdentifier, VerifyingKey } from '../snark/snark-verifier'
 
 // https://github.com/zkopru-network/zkopru/issues/235
-export const MAX_MASS_DEPOSIT_COMMIT_GAS = 72000
+export const MAX_MASS_DEPOSIT_COMMIT_GAS = 100000
 
 export class L1Contract extends ZkopruContract {
   web3: Web3
