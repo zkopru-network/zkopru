@@ -73,7 +73,6 @@ export class BlockProposer extends ProposerBase {
         from: this.context.account.address,
       })
       expectedGas += MAX_MASS_DEPOSIT_COMMIT_GAS
-      expectedGas += 1500000
     } catch (err) {
       logger.warn(`core/block-proposer.ts - propose() fails. Skip gen block`)
       if (typeof err.toString === 'function') {
