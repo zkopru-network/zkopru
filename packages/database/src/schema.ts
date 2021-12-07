@@ -439,7 +439,7 @@ export default [
     ],
     rows: [
       ['treeId', 'String'],
-      ['nodeIndex', 'String'],
+      ['nodeIndex', 'String', { index: true }],
       ['value', 'String'],
     ],
   },
