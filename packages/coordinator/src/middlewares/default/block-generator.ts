@@ -56,9 +56,11 @@ export class BlockGenerator extends GeneratorBase {
       }
       return true
     }) as ZkTx[]
+    const MAX_TRANSACTIONS = 20
     const txs = [] as ZkTx[]
     // check each pending tx to make sure it doesn't break the dry patch
     for (const tx of validPendingsTxs) {
+      if (txs.length >= MAX_TRANSACTIONS) break
       const { ok } = await this.dryRun([...txs, tx], pendingMassDeposits)
       if (!ok) {
         logger.info('Warning, transaction dry run not ok, skipping')
