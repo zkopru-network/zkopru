@@ -1,6 +1,6 @@
 export { CODE } from './code'
-export { OnchainValidator } from './onchain'
-export { OffchainValidator } from './offchain'
+export * from './onchain'
+export * from './offchain'
 export { ValidatorBase } from './validator'
 export {
   Validation,
