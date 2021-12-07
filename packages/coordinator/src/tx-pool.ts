@@ -4,6 +4,8 @@ import { DB } from '@zkopru/database'
 import { root, logger } from '@zkopru/utils'
 import assert from 'assert'
 import BN from 'bn.js'
+import { L2Chain, OffchainTxValidator } from '@zkopru/core'
+import { Uint256 } from 'soltypes'
 
 export interface TxPoolInterface {
   pendingNum(): number
@@ -27,10 +29,13 @@ export class TxMemPool implements TxPoolInterface {
 
   db: DB
 
-  constructor(db: DB) {
+  layer2: L2Chain
+
+  constructor(db: DB, layer2: L2Chain) {
     this.txs = {}
     this.queued = {}
     this.db = db
+    this.layer2 = layer2
   }
 
   // Look for transactions that have been included in a verified block
@@ -172,6 +177,21 @@ export class TxMemPool implements TxPoolInterface {
     const txHashes = Object.keys(this.txs)
     const hashesToDrop = await this.verifiedTx(txHashes)
     for (const hash of hashesToDrop) {
+      delete this.txs[hash]
+    }
+    const hashesToRemove = [] as string[]
+    const latestBlockHash = await this.layer2.latestBlock()
+    const offchainTxValidator = new OffchainTxValidator(this.layer2)
+    for (const txHash of Object.keys(this.txs)) {
+      const tx = this.txs[txHash]
+      for (const { root } of tx.inflow) {
+        if (!(await offchainTxValidator.isValidRef(latestBlockHash, new Uint256(root.toString())))) {
+          hashesToRemove.push(txHash)
+          break
+        }
+      }
+    }
+    for (const hash of hashesToRemove) {
       delete this.txs[hash]
     }
   }
