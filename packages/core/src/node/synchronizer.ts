@@ -247,22 +247,23 @@ export class Synchronizer extends EventEmitter {
             depositRoot: genesisHeader.depositRoot.toString(),
             migrationRoot: genesisHeader.migrationRoot.toString(),
           }
-
-          await this.db.create('Proposal', {
-            hash: blockHash,
-            proposalNum: 0,
-            canonicalNum: 0,
-            proposedAt: blockNumber,
-            proposalTx: transactionHash,
-            finalized: true,
-            verified: true,
-            proposalData: '',
-            timestamp,
+          await this.db.transaction(db => {
+            db.create('Proposal', {
+              hash: blockHash,
+              proposalNum: 0,
+              canonicalNum: 0,
+              proposedAt: blockNumber,
+              proposalTx: transactionHash,
+              finalized: true,
+              verified: true,
+              proposalData: '',
+              timestamp,
+            })
+            db.create('Block', {
+              hash: blockHash,
+            })
+            db.create('Header', header)
           })
-          await this.db.create('Block', {
-            hash: blockHash,
-          })
-          await this.db.create('Header', header)
           genesisListener.removeAllListeners()
         })
     }
