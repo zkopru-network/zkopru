@@ -72,6 +72,7 @@ export class BlockProposer extends ProposerBase {
       expectedGas = await proposeTx.estimateGas({
         from: this.context.account.address,
       })
+      expectedGas *= 2
       expectedGas += MAX_MASS_DEPOSIT_COMMIT_GAS
     } catch (err) {
       logger.warn(`core/block-proposer.ts - propose() fails. Skip gen block`)
