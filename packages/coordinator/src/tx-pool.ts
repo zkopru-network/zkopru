@@ -185,7 +185,12 @@ export class TxMemPool implements TxPoolInterface {
     for (const txHash of Object.keys(this.txs)) {
       const tx = this.txs[txHash]
       for (const { root } of tx.inflow) {
-        if (!(await offchainTxValidator.isValidRef(latestBlockHash, new Uint256(root.toString())))) {
+        if (
+          !(await offchainTxValidator.isValidRef(
+            latestBlockHash,
+            new Uint256(root.toString()),
+          ))
+        ) {
           hashesToRemove.push(txHash)
           break
         }
