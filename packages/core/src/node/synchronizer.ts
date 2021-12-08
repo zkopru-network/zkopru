@@ -380,12 +380,12 @@ export class Synchronizer extends EventEmitter {
     }
 
     this.erc20RegistrationSubscriber = this.l1Contract.coordinator.events
-      .NewErc20({ fromBlock: pivotBlock })
+      .NewErc20({ fromBlock: Math.min(pivotBlock, currentBlock) })
       .on('data', async event => {
         await handleNewErc20Event(event)
       })
     this.erc721RegistrationSubscriber = this.l1Contract.coordinator.events
-      .NewErc721({ fromBlock: pivotBlock })
+      .NewErc721({ fromBlock: Math.min(pivotBlock, currentBlock) })
       .on('data', async event => {
         await handleNewErc721Event(event)
       })
@@ -439,7 +439,7 @@ export class Synchronizer extends EventEmitter {
     )
     const pivotBlock = (await this.l1Contract.web3.eth.getBlockNumber()) - 15
     const SCAN_LENGTH = 1000
-    let currentBlock = proposedAt
+    let currentBlock = fromBlock
     while (currentBlock < pivotBlock) {
       const start = currentBlock
       const end = Math.min(currentBlock + SCAN_LENGTH - 1, pivotBlock)
@@ -453,7 +453,7 @@ export class Synchronizer extends EventEmitter {
       currentBlock = end + 1
     }
     this.depositSubscriber = this.l1Contract.user.events
-      .Deposit({ fromBlock: pivotBlock })
+      .Deposit({ fromBlock: Math.min(pivotBlock, currentBlock) })
       .on('connected', subId => {
         logger.info(
           `core/synchronizer - Deposit listener is connected. Id: ${subId}`,
@@ -585,7 +585,7 @@ export class Synchronizer extends EventEmitter {
     )
     const pivotBlock = (await this.l1Contract.web3.eth.getBlockNumber()) - 15
     const SCAN_LENGTH = 1000
-    let currentBlock = proposedAt
+    let currentBlock = fromBlock
     while (currentBlock < pivotBlock) {
       const start = currentBlock
       const end = Math.min(currentBlock + SCAN_LENGTH - 1, pivotBlock)
@@ -600,7 +600,7 @@ export class Synchronizer extends EventEmitter {
     }
     this.depositUtxoSubscriber = this.l1Contract.user.events
       .DepositUtxo({
-        fromBlock: pivotBlock,
+        fromBlock: Math.min(pivotBlock, currentBlock),
         filter: {
           spendingPubKey: addresses.map(address => address.spendingPubKey()),
         },
@@ -663,7 +663,7 @@ export class Synchronizer extends EventEmitter {
     const fromBlock = lastMassDeposit[0]?.blockNumber || proposedAt
     const pivotBlock = (await this.l1Contract.web3.eth.getBlockNumber()) - 15
     const SCAN_LENGTH = 1000
-    let currentBlock = proposedAt
+    let currentBlock = fromBlock
     while (currentBlock < pivotBlock) {
       const start = currentBlock
       const end = Math.min(currentBlock + SCAN_LENGTH - 1, pivotBlock)
@@ -683,7 +683,7 @@ export class Synchronizer extends EventEmitter {
       `core/synchronizer - Scan mass deposits from block number ${fromBlock}`,
     )
     this.massDepositCommitSubscriber = this.l1Contract.coordinator.events
-      .MassDepositCommit({ fromBlock: pivotBlock })
+      .MassDepositCommit({ fromBlock: Math.min(pivotBlock, currentBlock) })
       .on('connected', subId => {
         logger.info(
           `core/synchronizer - MassDepositCommit listener is connected. Id: ${subId}`,
@@ -748,7 +748,7 @@ export class Synchronizer extends EventEmitter {
     const fromBlock = lastProposal[0]?.proposedAt || proposedAt
     const pivotBlock = (await this.l1Contract.web3.eth.getBlockNumber()) - 15
     const SCAN_LENGTH = 1000
-    let currentBlock = proposedAt
+    let currentBlock = fromBlock
     while (currentBlock < pivotBlock) {
       const start = currentBlock
       const end = Math.min(currentBlock + SCAN_LENGTH - 1, pivotBlock)
@@ -768,7 +768,7 @@ export class Synchronizer extends EventEmitter {
       `core/synchronizer - Scan new proposals from block number ${fromBlock}`,
     )
     this.proposalSubscriber = this.l1Contract.coordinator.events
-      .NewProposal({ fromBlock: pivotBlock })
+      .NewProposal({ fromBlock: Math.min(pivotBlock, currentBlock) })
       .on('connected', subId => {
         logger.info(
           `core/synchronizer - NewProposal listener is connected. Id: ${subId}`,
@@ -855,7 +855,7 @@ export class Synchronizer extends EventEmitter {
       currentBlock = end + 1
     }
     this.slashSubscriber = this.l1Contract.challenger.events
-      .Slash({ fromBlock: pivotBlock })
+      .Slash({ fromBlock: Math.min(pivotBlock, currentBlock) })
       .on('connected', subId => {
         logger.info(
           `core/synchronizer - Slash listener is connected. Id: ${subId}`,
@@ -925,7 +925,7 @@ export class Synchronizer extends EventEmitter {
       currentBlock = end + 1
     }
     this.finalizationSubscriber = this.l1Contract.coordinator.events
-      .Finalized({ fromBlock: pivotBlock })
+      .Finalized({ fromBlock: Math.min(pivotBlock, currentBlock) })
       .on('connected', subId => {
         logger.info(
           `core/synchronizer - Finalization listener is connected. Id: ${subId}`,
