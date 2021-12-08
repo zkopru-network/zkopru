@@ -43,10 +43,9 @@ export class FullValidator extends Validator {
   }: ValidateFnCalls): Promise<Validation> {
     const offchainResult: Validation[] = await Promise.all(
       fnCalls.map(fnCall => {
-        const result = offchainValidator[fnCall.name].call(
-          offchainValidator,
-          ...fnCall.args,
-        )
+        const result = offchainValidator[fnCall.name]
+          .call(offchainValidator, ...fnCall.args)
+          .catch(err => ({ slashable: false, err }))
         return result
       }),
     )
@@ -78,6 +77,8 @@ export class FullValidator extends Validator {
     if (onchainFailure) {
       return onchainFailure
     }
+    const offchainError = offchainResult.find(res => !!(res as any).err)
+    if (offchainError) throw (offchainError as any).err
     const offchainFailure = offchainResult.find(res => res.slashable === true)
     if (offchainFailure) {
       return offchainFailure
