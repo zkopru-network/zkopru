@@ -204,7 +204,7 @@ export class BlockProcessor extends EventEmitter {
     )
     // validate the block details and get challenge if it has any invalid data.
     const validationResult = await this.validator.validate(parent, block)
-    if (validationResult.slashable) {
+    if (validationResult.slashable || block.slashed) {
       // implement challenge here & mark as invalidated
       await this.db.transaction(async db => {
         db.update('Proposal', {
