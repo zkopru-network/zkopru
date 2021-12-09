@@ -276,25 +276,35 @@ export class L2Chain {
     aggregatedFee = aggregatedFee.add(
       pendingDeposits.reduce((prev, item) => prev.add(item.fee), Fp.zero),
     )
+    const includedIndexes = {}
+    const validLeaves = [] as Fp[]
     for (const commit of commits) {
       const deposits = pendingDeposits.filter(deposit => {
         return deposit.queuedAt === commit.index
       })
       const { merged, fee } = mergeDeposits(deposits)
-      if (merged.toString() !== commit.merged) {
-        throw new Error('Invalid merged value for deposits')
+      if (
+        merged.toString() !== commit.merged ||
+        !Fp.from(fee.toString()).eq(Fp.from(commit.fee))
+      ) {
+        // eslint-disable-next-line no-continue
+        continue
       }
-      if (!Fp.from(fee.toString()).eq(Fp.from(commit.fee))) {
-        throw new Error('Invalid merged fee for deposits')
-      }
+      validLeaves.push(...deposits.map(deposit => Fp.from(deposit.note)))
+      includedIndexes[commit.index] = true
     }
     return {
-      massDeposits: commits.map(commit => ({
-        merged: Bytes32.from(commit.merged),
-        fee: Uint256.from(commit.fee),
-      })),
-      leaves,
-      totalFee: aggregatedFee,
+      massDeposits: commits
+        .filter(commit => includedIndexes[commit.index])
+        .map(commit => ({
+          merged: Bytes32.from(commit.merged),
+          fee: Uint256.from(commit.fee),
+        })),
+      leaves: validLeaves,
+      totalFee: commits.reduce((acc, commit) => {
+        if (!includedIndexes[commit.index]) return acc
+        return acc.add(Fp.from(commit.fee))
+      }, Fp.zero),
       calldataSize: consumedBytes,
     }
   }
