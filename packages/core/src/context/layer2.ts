@@ -282,7 +282,9 @@ export class L2Chain {
         fee: Uint256.from(commit.fee),
       })),
       leaves,
-      totalFee: aggregatedFee,
+      totalFee: commits.reduce((acc, commit) => {
+        return acc.add(Fp.from(commit.fee))
+      }, Fp.zero),
       calldataSize: consumedBytes,
     }
   }
