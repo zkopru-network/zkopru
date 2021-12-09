@@ -316,7 +316,7 @@ export class L2Chain {
       },
       orderBy: { proposalNum: 'asc' },
       limit: 1,
-      include: { block: { header: true } },
+      include: { block: { header: true, slash: true } },
     })
     const unprocessedProposal = unprocessedProposals.pop()
     if (
@@ -356,7 +356,9 @@ export class L2Chain {
         depositRoot: Bytes32.from(parentHeader.depositRoot),
         migrationRoot: Bytes32.from(parentHeader.migrationRoot),
       },
-      block,
+      block: Object.assign(block, {
+        slashed: !!unprocessedProposal.block.slash,
+      }),
       proposal: unprocessedProposal,
     }
   }
