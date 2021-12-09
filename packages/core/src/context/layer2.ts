@@ -9,7 +9,7 @@ import { Grove, GrovePatch, Leaf } from '@zkopru/tree'
 import BN from 'bn.js'
 import AsyncLock from 'async-lock'
 import { Bytes32, Address, Uint256 } from 'soltypes'
-import { logger } from '@zkopru/utils'
+import { logger, mergeDeposits } from '@zkopru/utils'
 import { Fp } from '@zkopru/babyjubjub'
 import {
   OutflowType,
@@ -276,6 +276,18 @@ export class L2Chain {
     aggregatedFee = aggregatedFee.add(
       pendingDeposits.reduce((prev, item) => prev.add(item.fee), Fp.zero),
     )
+    for (const commit of commits) {
+      const deposits = pendingDeposits.filter(deposit => {
+        return deposit.queuedAt === commit.index
+      })
+      const { merged, fee } = mergeDeposits(deposits)
+      if (merged.toString() !== commit.merged) {
+        throw new Error('Invalid merged value for deposits')
+      }
+      if (!Fp.from(fee.toString()).eq(Fp.from(commit.fee))) {
+        throw new Error('Invalid merged fee for deposits')
+      }
+    }
     return {
       massDeposits: commits.map(commit => ({
         merged: Bytes32.from(commit.merged),
