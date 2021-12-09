@@ -209,7 +209,7 @@ export class Queue {
 }
 
 export function mergeDeposits(
-  deposits: { note: Bytes32; fee: Uint256 }[],
+  deposits: { note: Bytes32 | string; fee: Uint256 | string }[],
 ): {
   merged: Bytes32
   fee: Uint256
@@ -218,7 +218,7 @@ export function mergeDeposits(
   let merged = ''
   for (const deposit of deposits) {
     merged = soliditySha3Raw(merged, deposit.note.toString())
-    fee = fee.add(deposit.fee.toBN())
+    fee = fee.add(new BN(deposit.fee.toString()))
   }
   return {
     merged: Bytes32.from(merged),
