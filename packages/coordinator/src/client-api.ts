@@ -84,9 +84,6 @@ export class ClientApi {
   }
 
   private async blockNumber(): Promise<number> {
-    if (!this.context.node.synchronizer.isSynced()) {
-      throw new Error(`Node is not synced`)
-    }
     const latestBlockHash = await this.context.node.layer2.latestBlock()
     const latestBlock = await this.context.node.layer2.getProposal(
       latestBlockHash,
