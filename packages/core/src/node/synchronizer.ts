@@ -226,6 +226,74 @@ export class Synchronizer extends EventEmitter {
     if (numOfGenesisBlock > 0) {
       return
     }
+    const ingestEvent = async (event: any) => {
+      const { returnValues, blockNumber, transactionHash } = event
+      const { timestamp } = await this.l1Contract.web3.eth.getBlock(blockNumber)
+      // WRITE DATABASE
+      const { blockHash, proposer, parentBlock } = returnValues
+      logger.info(
+        `core/synchronizer - Genesis block ${blockHash} is proposed by ${proposer}`,
+      )
+      // GENESIS BLOCK
+      const config = await this.l1Contract.getConfig()
+      const genesisHeader = genesis({
+        address: Address.from(proposer),
+        parent: Bytes32.from(parentBlock),
+        config,
+      })
+      if (!Bytes32.from(blockHash).eq(headerHash(genesisHeader))) {
+        throw Error('Failed to set up the genesis block')
+      }
+      const header: HeaderSql = {
+        hash: blockHash,
+        proposer: genesisHeader.proposer.toString(),
+        parentBlock: genesisHeader.parentBlock.toString(),
+        fee: genesisHeader.fee.toString(),
+        utxoRoot: genesisHeader.utxoRoot.toString(),
+        utxoIndex: genesisHeader.utxoIndex.toString(),
+        nullifierRoot: genesisHeader.nullifierRoot.toString(),
+        withdrawalRoot: genesisHeader.withdrawalRoot.toString(),
+        withdrawalIndex: genesisHeader.withdrawalIndex.toString(),
+        txRoot: genesisHeader.txRoot.toString(),
+        depositRoot: genesisHeader.depositRoot.toString(),
+        migrationRoot: genesisHeader.migrationRoot.toString(),
+      }
+      await this.db.transaction(db => {
+        db.upsert('Proposal', {
+          where: {
+            hash: blockHash,
+          },
+          update: {},
+          create: {
+            hash: blockHash,
+            proposalNum: 0,
+            canonicalNum: 0,
+            proposedAt: blockNumber,
+            proposalTx: transactionHash,
+            finalized: true,
+            verified: true,
+            proposalData: '',
+            timestamp,
+          },
+        })
+        db.upsert('Block', {
+          where: {
+            hash: blockHash,
+          },
+          update: {},
+          create: {
+            hash: blockHash,
+          },
+        })
+        db.upsert('Header', {
+          where: {
+            hash: header.hash,
+          },
+          update: {},
+          create: header,
+        })
+      })
+    }
     logger.info('core/synchronizer - No genesis block. Trying to fetch')
     const events = await this.l1Contract.upstream.getPastEvents(
       'GenesisBlock',
@@ -233,76 +301,25 @@ export class Synchronizer extends EventEmitter {
         fromBlock: 0,
       },
     )
-    if (events.length === 0) {
-      throw new Error('Got 0 genesis events')
-    } else if (events.length > 1) {
-      throw new Error('Got multiple gensis events')
+    if (events.length > 1) {
+      throw new Error('Got multiple genesis events')
+    } else if (events.length === 1) {
+      await ingestEvent(events[0])
+      return
     }
-    const { returnValues, blockNumber, transactionHash } = events[0]
-    const { timestamp } = await this.l1Contract.web3.eth.getBlock(blockNumber)
-    // WRITE DATABASE
-    const { blockHash, proposer, parentBlock } = returnValues
-    logger.info(
-      `core/synchronizer - Genesis block ${blockHash} is proposed by ${proposer}`,
-    )
-    // GENESIS BLOCK
-    const config = await this.l1Contract.getConfig()
-    const genesisHeader = genesis({
-      address: Address.from(proposer),
-      parent: Bytes32.from(parentBlock),
-      config,
-    })
-    if (!Bytes32.from(blockHash).eq(headerHash(genesisHeader))) {
-      throw Error('Failed to set up the genesis block')
-    }
-    const header: HeaderSql = {
-      hash: blockHash,
-      proposer: genesisHeader.proposer.toString(),
-      parentBlock: genesisHeader.parentBlock.toString(),
-      fee: genesisHeader.fee.toString(),
-      utxoRoot: genesisHeader.utxoRoot.toString(),
-      utxoIndex: genesisHeader.utxoIndex.toString(),
-      nullifierRoot: genesisHeader.nullifierRoot.toString(),
-      withdrawalRoot: genesisHeader.withdrawalRoot.toString(),
-      withdrawalIndex: genesisHeader.withdrawalIndex.toString(),
-      txRoot: genesisHeader.txRoot.toString(),
-      depositRoot: genesisHeader.depositRoot.toString(),
-      migrationRoot: genesisHeader.migrationRoot.toString(),
-    }
-    await this.db.transaction(db => {
-      db.upsert('Proposal', {
-        where: {
-          hash: blockHash,
-        },
-        update: {},
-        create: {
-          hash: blockHash,
-          proposalNum: 0,
-          canonicalNum: 0,
-          proposedAt: blockNumber,
-          proposalTx: transactionHash,
-          finalized: true,
-          verified: true,
-          proposalData: '',
-          timestamp,
-        },
-      })
-      db.upsert('Block', {
-        where: {
-          hash: blockHash,
-        },
-        update: {},
-        create: {
-          hash: blockHash,
-        },
-      })
-      db.upsert('Header', {
-        where: {
-          hash: header.hash,
-        },
-        update: {},
-        create: header,
-      })
+    // otherwise wait for the event to be emitted
+    await new Promise((rs, rj) => {
+      const genesisListener = this.l1Contract.upstream.events
+        .GenesisBlock({ fromBlock: 0 })
+        .on('data', async (event: any) => {
+          await ingestEvent(event)
+          genesisListener.removeAllListeners()
+          rs()
+        })
+        .on('error', err => {
+          genesisListener.removeAllListeners()
+          rj(err)
+        })
     })
   }
 
