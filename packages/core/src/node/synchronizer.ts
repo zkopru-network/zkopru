@@ -226,7 +226,7 @@ export class Synchronizer extends EventEmitter {
     if (numOfGenesisBlock > 0) {
       return
     }
-    const ingestEvent = async (event: any) => {
+    const ingestEvent = async (event: any, onComplete?: () => void) => {
       const { returnValues, blockNumber, transactionHash } = event
       const { timestamp } = await this.l1Contract.web3.eth.getBlock(blockNumber)
       // WRITE DATABASE
@@ -258,41 +258,46 @@ export class Synchronizer extends EventEmitter {
         depositRoot: genesisHeader.depositRoot.toString(),
         migrationRoot: genesisHeader.migrationRoot.toString(),
       }
-      await this.db.transaction(db => {
-        db.upsert('Proposal', {
-          where: {
-            hash: blockHash,
-          },
-          update: {},
-          create: {
-            hash: blockHash,
-            proposalNum: 0,
-            canonicalNum: 0,
-            proposedAt: blockNumber,
-            proposalTx: transactionHash,
-            finalized: true,
-            verified: true,
-            proposalData: '',
-            timestamp,
-          },
-        })
-        db.upsert('Block', {
-          where: {
-            hash: blockHash,
-          },
-          update: {},
-          create: {
-            hash: blockHash,
-          },
-        })
-        db.upsert('Header', {
-          where: {
-            hash: header.hash,
-          },
-          update: {},
-          create: header,
-        })
-      })
+      await this.blockCache.transactionCache(
+        db => {
+          db.upsert('Proposal', {
+            where: {
+              hash: blockHash,
+            },
+            update: {},
+            create: {
+              hash: blockHash,
+              proposalNum: 0,
+              canonicalNum: 0,
+              proposedAt: blockNumber,
+              proposalTx: transactionHash,
+              finalized: true,
+              verified: true,
+              proposalData: '',
+              timestamp,
+            },
+          })
+          db.upsert('Block', {
+            where: {
+              hash: blockHash,
+            },
+            update: {},
+            create: {
+              hash: blockHash,
+            },
+          })
+          db.upsert('Header', {
+            where: {
+              hash: header.hash,
+            },
+            update: {},
+            create: header,
+          })
+        },
+        blockNumber,
+        event.blockHash,
+        onComplete,
+      )
     }
     logger.info('core/synchronizer - No genesis block. Trying to fetch')
     const events = await this.l1Contract.upstream.getPastEvents(
@@ -312,9 +317,14 @@ export class Synchronizer extends EventEmitter {
       const genesisListener = this.l1Contract.upstream.events
         .GenesisBlock({ fromBlock: 0 })
         .on('data', async (event: any) => {
-          await ingestEvent(event)
-          genesisListener.removeAllListeners()
-          rs()
+          await ingestEvent(event, () => {
+            genesisListener.removeAllListeners()
+            rs()
+          })
+        })
+        .on('changed', event => {
+          this.blockCache.clearChangesForBlockHash(event.blockHash)
+          logger.info(`core/synchronizer - GenesisBlock Event changed`, event)
         })
         .on('error', err => {
           genesisListener.removeAllListeners()
