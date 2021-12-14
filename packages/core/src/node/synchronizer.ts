@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/camelcase */
+/* eslint-disable @typescript-eslint/camelcase, no-underscore-dangle */
 import assert from 'assert'
 import { logger, Worker } from '@zkopru/utils'
 import {
@@ -65,6 +65,8 @@ export class Synchronizer extends EventEmitter {
   fetching: {
     [proposalTx: string]: boolean
   }
+
+  _genesisPromise: undefined | Promise<void>
 
   constructor(db: DB, l1Contract: L1Contract, blockCache: BlockCache) {
     super()
@@ -204,6 +206,19 @@ export class Synchronizer extends EventEmitter {
   }
 
   async loadGenesis() {
+    this._genesisPromise = this._loadGenesis().catch(err => {
+      this._genesisPromise = undefined
+      throw err
+    })
+    return this._genesisPromise
+  }
+
+  async loadGenesisIfNeeded() {
+    if (this._genesisPromise) return this._genesisPromise
+    return this.loadGenesis()
+  }
+
+  private async _loadGenesis() {
     logger.trace(`core/synchronizer - Synchronizer::loadGenesis()`)
     const numOfGenesisBlock = await this.db.count('Proposal', {
       proposalNum: 0,
@@ -334,7 +349,7 @@ export class Synchronizer extends EventEmitter {
       })
     }
     logger.trace(`core/synchronizer - Synchronizer::listenTokenRegistry()`)
-    await this.loadGenesis()
+    await this.loadGenesisIfNeeded()
     const { proposedAt } = await this.db.findOne('Proposal', {
       where: {
         proposalNum: 0,
@@ -422,7 +437,7 @@ export class Synchronizer extends EventEmitter {
       )
       if (cb) cb(deposit)
     }
-    await this.loadGenesis()
+    await this.loadGenesisIfNeeded()
     const { proposedAt } = await this.db.findOne('Proposal', {
       where: {
         proposalNum: 0,
@@ -567,7 +582,7 @@ export class Synchronizer extends EventEmitter {
       }
       if (cb) cb(utxo)
     }
-    await this.loadGenesis()
+    await this.loadGenesisIfNeeded()
     const { proposedAt } = await this.db.findOne('Proposal', {
       where: {
         proposalNum: 0,
@@ -649,7 +664,7 @@ export class Synchronizer extends EventEmitter {
       if (cb) cb(massDeposit)
     }
     logger.trace(`core/synchronizer - Synchronizer::listenMassDepositCommit()`)
-    await this.loadGenesis()
+    await this.loadGenesisIfNeeded()
     const { proposedAt } = await this.db.findOne('Proposal', {
       where: {
         proposalNum: 0,
@@ -734,7 +749,7 @@ export class Synchronizer extends EventEmitter {
       if (cb) cb(blockHash)
     }
     logger.trace(`core/synchronizer - Synchronizer::listenNewProposals()`)
-    await this.loadGenesis()
+    await this.loadGenesisIfNeeded()
     const { proposedAt } = await this.db.findOne('Proposal', {
       where: {
         proposalNum: 0,
@@ -827,7 +842,7 @@ export class Synchronizer extends EventEmitter {
       if (cb) cb(hash)
     }
     logger.trace(`core/synchronizer - Synchronizer::listenSlash()`)
-    await this.loadGenesis()
+    await this.loadGenesisIfNeeded()
     const { proposedAt } = await this.db.findOne('Proposal', {
       where: {
         proposalNum: 0,
@@ -894,7 +909,7 @@ export class Synchronizer extends EventEmitter {
       if (cb) cb(blockHash)
     }
     logger.trace(`core/synchronizer - Synchronizer::listenFinalization()`)
-    await this.loadGenesis()
+    await this.loadGenesisIfNeeded()
     const { proposedAt } = await this.db.findOne('Proposal', {
       where: {
         proposalNum: 0,
