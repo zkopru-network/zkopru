@@ -37,6 +37,7 @@ type PendingOperation = {
   create?: any
   update?: any
   transactionOperations?: TransactionOperation[]
+  onWrite?: () => void
 }
 
 export class BlockCache {
@@ -164,6 +165,9 @@ export class BlockCache {
     } else {
       throw new Error(`Unrecognized operation type: "${operation.type}"`)
     }
+    if (typeof operation.onWrite === 'function') {
+      operation.onWrite()
+    }
   }
 
   async upsertCache(
@@ -224,6 +228,7 @@ export class BlockCache {
     operation: (db: TransactionDB) => void | Promise<void>,
     blockNumber: number,
     blockHash: string,
+    onWrite?: () => void,
   ) {
     if (typeof blockNumber !== 'number')
       throw new Error('Invalid block number provided to BlockCache.upsertCache')
@@ -276,12 +281,14 @@ export class BlockCache {
       collection: '',
       type: OperationType.TRANSACTION,
       transactionOperations: operations,
+      onWrite,
     }
     if (
       this.BLOCK_CONFIRMATIONS === 0 ||
       currentBlockNumber - blockNumber >= this.BLOCK_CONFIRMATIONS
     ) {
       await this.writeChange(pendingOperation)
+      if (typeof onWrite === 'function') onWrite()
     } else {
       this.pendingOperations.push(pendingOperation)
     }
