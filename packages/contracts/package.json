@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@ethereumjs/tx": "3.2.0",
-    "@openzeppelin/contracts": "3.4.1",
+    "@openzeppelin/contracts": "4.4.1",
     "@zkopru/utils": "file:../utils",
     "bn.js": "^5.2.0",
     "ganache-time-traveler": "^1.0.15",
