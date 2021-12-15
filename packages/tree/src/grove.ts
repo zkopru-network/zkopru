@@ -13,6 +13,8 @@ import {
   TransactionDB,
 } from '@zkopru/database'
 import { ZkAddress } from '@zkopru/transaction'
+import zlib from 'zlib'
+import JsonStreamStringify from 'json-stream-stringify'
 import { Hasher, genesisRoot } from './hasher'
 import { MerkleProof, verifyProof, startingLeafProof } from './merkle-proof'
 import { Leaf } from './light-rollup-tree'
@@ -222,6 +224,38 @@ export class Grove {
         nullifierTreeRoot: nullifierRoot,
       }
     })
+  }
+
+  async exportData(): Promise<any> {
+    const data = await this.lock.acquire('grove', async () => {
+      const lightTrees = await this.db.findMany('LightTree', {
+        where: {},
+      })
+      const treeNodes = await this.db.findMany('TreeNode', {
+        where: {},
+      })
+      const proposal = await this.db.findOne('Proposal', {
+        where: {
+          verified: true,
+        },
+        orderBy: {
+          proposalNum: 'desc',
+        },
+        include: {
+          header: true,
+        },
+      })
+      return {
+        lightTrees,
+        treeNodes,
+        headerHash: proposal.header.hash,
+      }
+    })
+    // now stringify and compress the data
+    const stringifyStream = new JsonStreamStringify(data)
+    const { createGzip } = zlib
+    const gzip = createGzip()
+    return stringifyStream.pipe(gzip)
   }
 
   private recordBootstrap(db: TransactionDB, header?: string): void {

@@ -96,6 +96,7 @@ export class CoordinatorApi {
       }
       app.get('/price', catchError(this.bytePriceHandler))
       app.post('/', express.json(), catchError(this.clientApiHandler))
+      app.get('/fastsync', catchError(this.fastSync))
       this.server = app.listen(this.context.config.port, () => {
         logger.info(
           `coordinator.js: API is running on serverPort ${this.context.config.port}`,
@@ -112,6 +113,11 @@ export class CoordinatorApi {
         res()
       }
     })
+  }
+
+  private fastSync: RequestHandler = async (_, res) => {
+    const stream = await this.context.node.layer2.grove.exportData()
+    stream.pipe(res)
   }
 
   private clientApiHandler: RequestHandler = async (req, res) => {
