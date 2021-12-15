@@ -137,6 +137,7 @@ export class LightNode extends ZkopruNode {
       validator,
       l2Chain,
       tracker,
+      l1Contract,
     })
     // If the chain needs bootstraping, fetch bootstrap data and apply
     const synchronizer = new Synchronizer(db, l1Contract, blockCache)

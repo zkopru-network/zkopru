@@ -25,11 +25,16 @@ import {
 } from '@zkopru/transaction'
 import { Bytes32, Address, Uint256 } from 'soltypes'
 import AsyncLock from 'async-lock'
+import fetch from 'node-fetch'
+import pako from 'pako'
+import { StringDecoder } from 'string_decoder'
 import { L2Chain, Patch } from '../context/layer2'
 import { Block, Header, massDepositHash } from '../block'
 import { ValidatorBase as Validator } from '../validator'
 import { Tracker } from './tracker'
 import { Validation } from '../validator/types'
+import { L1Contract } from '../context/layer1'
+import { CoordinatorManager } from '../coordinator-manager'
 
 interface BlockProcessorEvents {
   slash: (challenge: Validation & { block: Block }) => void
@@ -53,6 +58,8 @@ export class BlockProcessor extends EventEmitter {
 
   blockCache: BlockCache
 
+  layer1: L1Contract
+
   layer2: L2Chain
 
   tracker: Tracker
@@ -65,18 +72,24 @@ export class BlockProcessor extends EventEmitter {
 
   lastEmittedProposalNum = -1
 
+  activeFastSync?: {
+    latestHash: string
+  }
+
   constructor({
     db,
     blockCache,
     l2Chain,
     tracker,
     validator,
+    l1Contract,
   }: {
     db: DB
     blockCache: BlockCache
     l2Chain: L2Chain
     tracker: Tracker
     validator: Validator
+    l1Contract: L1Contract
   }) {
     super()
     logger.trace(`core/block-processor - BlockProcessor::constructor()`)
@@ -86,6 +99,7 @@ export class BlockProcessor extends EventEmitter {
     this.tracker = tracker
     this.validator = validator
     this.worker = new Worker<void>()
+    this.layer1 = l1Contract
   }
 
   isRunning(): boolean {
@@ -113,7 +127,56 @@ export class BlockProcessor extends EventEmitter {
     }
   }
 
+  private async attemptFastSync() {
+    const activeFastSync = await this.db.findOne('FastSync', {
+      where: {},
+    })
+    const treeNodeCount = await this.db.count('TreeNode', {})
+    // no fast sync needed
+    if (!activeFastSync && treeNodeCount > 0) return
+    if (activeFastSync) {
+      // continue the active fast sync
+      this.activeFastSync = activeFastSync
+    } else if (treeNodeCount === 0) {
+      // load the tree node data
+      const manager = new CoordinatorManager(
+        this.layer1.address,
+        this.layer1.web3,
+      )
+      let urls = await manager.loadUrls()
+      urls = ['http://localhost:8888']
+      if (urls.length === 0) return
+      try {
+        console.log('break1')
+        const r = await fetch(`${urls[0]}/fastsync`)
+        const data = await r.arrayBuffer()
+        // now we need to de-gzip it
+        const output = pako.inflate(data)
+        const decoder = new StringDecoder('utf8')
+        const outputString = decoder.end(Buffer.from(output))
+        const obj = JSON.parse(outputString)
+        await this.db.transaction(db => {
+          db.delete('LightTree', {
+            where: {},
+          })
+          db.create('LightTree', obj.lightTrees)
+          db.create('TreeNode', obj.treeNodes)
+          db.create('FastSync', {
+            latestHash: obj.headerHash,
+          })
+        })
+        this.activeFastSync = {
+          latestHash: obj.headerHash,
+        }
+      } catch (err) {
+        console.log('fast sync errored')
+        console.log(err)
+      }
+    }
+  }
+
   private async processBlocks() {
+    await this.attemptFastSync()
     logger.trace(`core/block-processor - BlockProcessor::processBlocks()`)
     while (this.isRunning()) {
       try {
@@ -203,7 +266,9 @@ export class BlockProcessor extends EventEmitter {
       `core/block-processor - Processing proposal #${proposal.proposalNum}()`,
     )
     // validate the block details and get challenge if it has any invalid data.
-    const validationResult = await this.validator.validate(parent, block)
+    const validationResult = this.activeFastSync
+      ? { slashable: false }
+      : await this.validator.validate(parent, block)
     if (validationResult.slashable || block.slashed) {
       // implement challenge here & mark as invalidated
       await this.db.transaction(async db => {
@@ -253,6 +318,21 @@ export class BlockProcessor extends EventEmitter {
             isUncle: isUncle ? true : null,
           },
         })
+        if (this.activeFastSync) {
+          // clear the fast sync if we've processed the latest block
+          db.delete('FastSync', {
+            where: {
+              latestHash: this.activeFastSync.latestHash,
+            },
+          })
+          if (
+            Fp.from(block.hash.toString()).eq(
+              Fp.from(this.activeFastSync.latestHash),
+            )
+          ) {
+            this.activeFastSync = undefined
+          }
+        }
       },
       () => {
         this.layer2.grove.treeCache.disable()
@@ -651,7 +731,9 @@ export class BlockProcessor extends EventEmitter {
       db,
     )
     // Apply tree patch
-    await this.layer2.grove.applyGrovePatch(treePatch, db)
+    if (!this.activeFastSync) {
+      await this.layer2.grove.applyGrovePatch(treePatch, db)
+    }
     await this.updateMyUtxos(this.tracker.transferTrackers, patch, db)
     await this.updateMyWithdrawals(this.tracker.withdrawalTrackers, patch, db)
   }

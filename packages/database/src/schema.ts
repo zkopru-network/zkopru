@@ -481,4 +481,16 @@ export default [
       ['decimals', 'Int'],
     ],
   },
+  {
+    name: 'FastSync',
+    primaryKey: 'id',
+    rows: [
+      {
+        name: 'id',
+        type: 'String',
+        default: () => uuid.v4(),
+      },
+      ['latestHash', 'String'],
+    ],
+  },
 ] as TableData[]
