@@ -81,16 +81,16 @@ export class TxUtil {
     return rawTransaction as string
   }
 
-  // depends on chainID, @ethereumjs supports mainnet and other testchain
+  // depends on chainId, @ethereumjs supports mainnet and other testchain
   static async getCommon(web3: Web3): Promise<Common> {
-    const chainID = await web3.eth.getChainId()
+    const chainId = await web3.eth.getChainId()
     const knownChainID = [1, 3, 4, 42, 5] // base on enum Chain on @ethereumjs/common
 
     let common: Common
-    if (knownChainID.includes(chainID)) {
-      common = new Common({ chain: chainID })
+    if (knownChainID.includes(chainId)) {
+      common = new Common({ chain: chainId })
     } else {
-      common = Common.custom({ chainId: chainID })
+      common = Common.custom({ chainId })
     }
     return common
   }
