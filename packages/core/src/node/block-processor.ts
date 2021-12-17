@@ -131,7 +131,6 @@ export class BlockProcessor extends EventEmitter {
     const activeFastSync = await this.db.findOne('FastSync', {
       where: {},
     })
-    console.log('active fast sync', activeFastSync)
     const treeNodeCount = await this.db.count('TreeNode', {})
     // no fast sync needed
     if (!activeFastSync && treeNodeCount > 0) return
@@ -144,8 +143,7 @@ export class BlockProcessor extends EventEmitter {
         this.layer1.address,
         this.layer1.web3,
       )
-      let urls = await manager.loadUrls()
-      urls = ['http://localhost:8888']
+      const urls = await manager.loadUrls()
       if (urls.length === 0) return
       try {
         const r = await fetch(`${urls[0]}/fastsync`)
@@ -176,8 +174,10 @@ export class BlockProcessor extends EventEmitter {
           latestHash: obj.headerHash,
         }
       } catch (err) {
-        console.log('fast sync errored')
-        console.log(err)
+        logger.error(
+          'core/block-processor - BlockProcessor::attemptFastSync errored',
+        )
+        logger.error(err)
       }
     }
   }
