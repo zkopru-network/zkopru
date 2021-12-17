@@ -131,6 +131,7 @@ export class BlockProcessor extends EventEmitter {
     const activeFastSync = await this.db.findOne('FastSync', {
       where: {},
     })
+    console.log('active fast sync', activeFastSync)
     const treeNodeCount = await this.db.count('TreeNode', {})
     // no fast sync needed
     if (!activeFastSync && treeNodeCount > 0) return
@@ -154,6 +155,7 @@ export class BlockProcessor extends EventEmitter {
         const decoder = new StringDecoder('utf8')
         const outputString = decoder.end(Buffer.from(output))
         const obj = JSON.parse(outputString)
+        console.log(obj.headerHash)
         await this.db.transaction(db => {
           // wipe existing trees
           db.delete('LightTree', {
@@ -323,20 +325,19 @@ export class BlockProcessor extends EventEmitter {
             isUncle: isUncle ? true : null,
           },
         })
-        if (this.activeFastSync) {
+        if (
+          this.activeFastSync &&
+          Fp.from(block.hash.toString()).eq(
+            Fp.from(this.activeFastSync.latestHash),
+          )
+        ) {
           // clear the fast sync if we've processed the latest block
           db.delete('FastSync', {
             where: {
               latestHash: this.activeFastSync.latestHash,
             },
           })
-          if (
-            Fp.from(block.hash.toString()).eq(
-              Fp.from(this.activeFastSync.latestHash),
-            )
-          ) {
-            this.activeFastSync = undefined
-          }
+          this.activeFastSync = undefined
         }
       },
       () => {
