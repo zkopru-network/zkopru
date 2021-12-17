@@ -942,12 +942,11 @@ export class Synchronizer extends EventEmitter {
         proposalNum: 0,
       },
     })
-    const lastFinalized = await this.db.findMany('Proposal', {
+    const lastFinalized = await this.db.findOne('Proposal', {
       where: { finalized: true },
       orderBy: { proposedAt: 'desc' },
-      limit: 1,
     })
-    const fromBlock = lastFinalized[0]?.proposedAt || proposedAt
+    const fromBlock = lastFinalized?.proposedAt || proposedAt
     const pivotBlock = (await this.l1Contract.web3.eth.getBlockNumber()) - 15
     const SCAN_LENGTH = 1000
     let currentBlock = fromBlock
@@ -988,7 +987,7 @@ export class Synchronizer extends EventEmitter {
 
   async fetchUnfetchedProposals() {
     logger.trace(`core/synchronizer - Synchronizer::fetchUnfetchedProposals()`)
-    const MAX_FETCH_JOB = 10
+    const MAX_FETCH_JOB = 100
     const availableFetchJob = Math.max(
       MAX_FETCH_JOB - Object.keys(this.fetching).length,
       0,
