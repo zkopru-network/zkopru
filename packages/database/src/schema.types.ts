@@ -128,7 +128,8 @@ export type PendingTx = {
   senderAddress?: string | null
   receiverAddress?: string | null
   tokenAddr?: string | null
-  amount?: string | null
+  erc20Amount?: string | null
+  eth?: string | null
 }
 
 export type MassDeposit = {
@@ -137,6 +138,12 @@ export type MassDeposit = {
   fee: string
   blockNumber: number
   includedIn?: string | null
+}
+
+export type PendingDeposit = {
+  note: string
+  fee: string
+  utxo?: Object | null
 }
 
 export type Deposit = {
@@ -244,4 +251,9 @@ export type ERC20Info = {
   address: string
   symbol: string
   decimals: number
+}
+
+export type FastSync = {
+  id: string
+  latestHash: string
 }
