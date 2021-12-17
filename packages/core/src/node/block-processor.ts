@@ -147,7 +147,6 @@ export class BlockProcessor extends EventEmitter {
       urls = ['http://localhost:8888']
       if (urls.length === 0) return
       try {
-        console.log('break1')
         const r = await fetch(`${urls[0]}/fastsync`)
         const data = await r.arrayBuffer()
         // now we need to de-gzip it
@@ -156,15 +155,21 @@ export class BlockProcessor extends EventEmitter {
         const outputString = decoder.end(Buffer.from(output))
         const obj = JSON.parse(outputString)
         await this.db.transaction(db => {
+          // wipe existing trees
           db.delete('LightTree', {
             where: {},
           })
+          // create new ones from coordinator data
           db.create('LightTree', obj.lightTrees)
           db.create('TreeNode', obj.treeNodes)
+          // create a record of the fast sync so we can resume later or abort
+          // if the merkle root is incorrect
           db.create('FastSync', {
             latestHash: obj.headerHash,
           })
         })
+        // re-init the grove and in memory rollup trees with new data
+        await this.layer2.grove.init()
         this.activeFastSync = {
           latestHash: obj.headerHash,
         }
