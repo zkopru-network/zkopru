@@ -68,6 +68,7 @@ describe('rPC tests', () => {
       address,
       db: mockup,
       accounts,
+      enableFastSync: false,
     })
     coordinator = new Coordinator(fullNode, accounts[0].ethAccount, {
       maxBytes: 131072,

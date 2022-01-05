@@ -110,6 +110,7 @@ describe('coordinator test to run testnet', () => {
       address,
       db: mockup,
       accounts,
+      enableFastSync: false,
     })
   }, 90000)
   afterAll(async () => {

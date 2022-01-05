@@ -183,6 +183,7 @@ async function getCoordinator(
     address,
     provider,
     db: mockupDB,
+    enableFastSync: false,
   })
   const { maxBytes, priceMultiplier, port } = DEFAULT
   const coordinator = new Coordinator(fullNode, account, {
@@ -216,6 +217,7 @@ export async function getWallet({
     provider,
     db: mockupDB,
     slasher: account.ethAccount,
+    enableFastSync: false,
   })
   const web3 = new Web3(provider)
   const hdWallet = new HDWallet(web3, mockupDB)

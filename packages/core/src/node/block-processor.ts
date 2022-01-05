@@ -350,17 +350,12 @@ export class BlockProcessor extends EventEmitter {
     }
     const tokenRegistry = await this.layer2.getTokenRegistry()
     // generate a patch to current db
-    let time = +new Date()
     const patch = await this.makePatch(parent, block)
-    console.log('makePatch', +new Date() - time)
-    time = +new Date()
     await this.db.transaction(
       async db => {
         this.layer2.grove.treeCache.enable()
         this.layer2.grove.treeCache.clear()
         await this.saveTransactions(block, db)
-        console.log('saveTransactions', +new Date() - time)
-        time = +new Date()
         await this.decryptMyUtxos(
           patch,
           block.body.txs,
@@ -368,14 +363,8 @@ export class BlockProcessor extends EventEmitter {
           tokenRegistry,
           db,
         )
-        console.log('decryptMyUtxos', +new Date() - time)
-        time = +new Date()
         this.saveWithdrawals(block, this.tracker.withdrawalTrackers, db)
-        console.log('saveWithdrawals', +new Date() - time)
-        time = +new Date()
         await this.applyPatch(patch, db)
-        console.log('applyPatch', +new Date() - time)
-        time = +new Date()
         // Mark as verified
         db.update('Proposal', {
           where: { hash: block.hash.toString() },
@@ -775,26 +764,19 @@ export class BlockProcessor extends EventEmitter {
   private async applyPatch(patch: Patch, db: TransactionDB) {
     logger.trace(`core/block-processor - BlockProcessor::applyPatch()`)
     const { block, treePatch, massDeposits } = patch
-    let time = +new Date()
     await BlockProcessor.markUsedUtxosAsNullified(
       patch.treePatch.nullifiers,
       block,
       db,
     )
-    console.log('b1', +new Date() - time)
-    time = +new Date()
     // Update mass deposits inclusion status
     if (massDeposits) {
       await this.markMassDepositsAsIncludedIn(massDeposits, block, db)
-      console.log('b2', +new Date() - time)
-      time = +new Date()
     }
     await BlockProcessor.markNewUtxosAsUnspent(
       (patch.treePatch?.utxos || []).map(utxo => utxo.hash),
       db,
     )
-    console.log('b3', +new Date() - time)
-    time = +new Date()
     await BlockProcessor.markNewWithdrawalsAsUnfinalized(
       (patch.treePatch?.withdrawals || []).map(withdrawal => {
         assert(withdrawal.noteHash)
@@ -802,17 +784,12 @@ export class BlockProcessor extends EventEmitter {
       }),
       db,
     )
-    console.log('b4', +new Date() - time)
-    time = +new Date()
     // Apply tree patch
     if (!this.activeFastSync) {
       await this.layer2.grove.applyGrovePatch(treePatch, db)
     }
     await this.updateMyUtxos(this.tracker.transferTrackers, patch, db)
-    console.log('b5', +new Date() - time)
-    time = +new Date()
     await this.updateMyWithdrawals(this.tracker.withdrawalTrackers, patch, db)
-    console.log('b6', +new Date() - time)
   }
 
   private async markMassDepositsAsIncludedIn(
@@ -823,13 +800,11 @@ export class BlockProcessor extends EventEmitter {
     logger.trace(
       `core/block-processor - BlockProcessor::markMassDepositsAsIncludedIn()`,
     )
-    const time = +new Date()
     const nonIncluded = await this.db.findMany('MassDeposit', {
       where: {
         includedIn: null,
       },
     })
-    console.log('fuck', +new Date() - time)
     const candidates: { [index: string]: MassDepositSql } = {}
     nonIncluded.forEach(md => {
       candidates[md.index] = md
