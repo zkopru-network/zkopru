@@ -118,7 +118,7 @@ export default class LoadDatabase extends Configurator {
     }
     await initDB(
       database,
-      context.web3,
+      context.web3 as any,
       this.base.address,
       new L1Contract(context.web3, this.base.address),
     )

@@ -80,5 +80,9 @@ export const { argv } = yargs
       type: 'string',
       describe: `Comma separated list of domains from which to accept cross origin API requests (browser enforced). Accepts '*' wildcard.`,
     },
+    enableFastSync: {
+      type: 'boolean',
+      describe: `Enable fast sync by downloading the merkle tree from another node if possible [${DEFAULT.enableFastSync}]`,
+    },
   })
   .help()

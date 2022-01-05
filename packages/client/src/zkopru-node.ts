@@ -83,6 +83,7 @@ export default class ZkopruNode {
       address: this.config.address as string,
       provider,
       db: await this.db(...args),
+      enableFastSync: false,
     })
   }
 

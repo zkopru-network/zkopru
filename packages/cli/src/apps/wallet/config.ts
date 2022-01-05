@@ -6,4 +6,5 @@ export const DEFAULT = {
   maxBytes: 131072,
   priceMultiplier: 48,
   maxBid: 20000,
+  enableFastSync: false,
 }

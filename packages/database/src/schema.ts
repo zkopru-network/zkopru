@@ -271,6 +271,11 @@ export default [
   {
     name: 'MassDeposit',
     primaryKey: 'index',
+    indexes: [
+      {
+        keys: ['note'],
+      },
+    ],
     rows: [
       ['index', 'String'],
       ['merged', 'String'],
@@ -302,6 +307,14 @@ export default [
   {
     name: 'Deposit',
     primaryKey: 'note',
+    indexes: [
+      {
+        keys: ['queuedAt'],
+      },
+      {
+        keys: ['ownerAddress', 'includedIn'],
+      },
+    ],
     rows: [
       ['note', 'String'],
       ['fee', 'String'],
@@ -333,6 +346,14 @@ export default [
   {
     name: 'Utxo',
     primaryKey: 'hash',
+    indexes: [
+      {
+        keys: ['hash', 'treeId'],
+      },
+      {
+        keys: ['hash', 'owner'],
+      },
+    ],
     rows: [
       ['hash', 'String'],
       ['eth', 'String', { optional: true }],
@@ -359,6 +380,14 @@ export default [
   {
     name: 'Withdrawal',
     primaryKey: 'hash',
+    indexes: [
+      {
+        keys: ['hash', 'treeId'],
+      },
+      {
+        keys: ['hash', 'to'],
+      },
+    ],
     rows: [
       ['hash', 'String'],
       ['withdrawalHash', 'String'],
@@ -491,6 +520,11 @@ export default [
         default: () => uuid.v4(),
       },
       ['latestHash', 'String'],
+      {
+        name: 'finishedIngesting',
+        type: 'Bool',
+        default: false,
+      },
     ],
   },
 ] as TableData[]

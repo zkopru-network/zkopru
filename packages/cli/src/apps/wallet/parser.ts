@@ -62,5 +62,10 @@ export const { argv } = yargs
       default: '/ipfs/QmSQtbTnt5RWrP8uWJ3S5xUKntTx2DqcM7mM5vUg9uJGxq',
       describe: 'An IPFS content identifier storing the proving keys',
     },
+    enableFastSync: {
+      type: 'boolean',
+      describe: `Enable fast sync by downloading the merkle tree from another node if possible [${DEFAULT.enableFastSync}]`,
+      default: DEFAULT.enableFastSync,
+    },
   })
   .help()

@@ -21,6 +21,7 @@ export interface Config {
   numberOfAccounts?: number
   snarkKeyCid?: string
   snarkKeyPath?: string
+  enableFastSync: boolean
 }
 
 export enum Menu {

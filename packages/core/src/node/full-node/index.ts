@@ -52,12 +52,14 @@ export class FullNode extends ZkopruNode {
     db,
     slasher,
     accounts,
+    enableFastSync,
   }: {
     provider: provider
     address: string
     db: DB
     slasher?: Account
     accounts?: ZkAccount[]
+    enableFastSync: boolean
   }): Promise<FullNode> {
     if (!provider.connected) throw Error('provider is not connected')
     const web3: Web3 = new Web3(provider)
@@ -90,6 +92,7 @@ export class FullNode extends ZkopruNode {
       l2Chain,
       tracker,
       l1Contract,
+      enableFastSync,
     })
     // If the chain needs bootstraping, fetch bootstrap data and apply
     const synchronizer = new Synchronizer(db, l1Contract, blockCache)

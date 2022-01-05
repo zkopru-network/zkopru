@@ -97,6 +97,7 @@ export class LightNode extends ZkopruNode {
     accounts,
     slasher,
     bootstrapHelper,
+    enableFastSync,
   }: {
     provider: provider
     address: string
@@ -104,6 +105,7 @@ export class LightNode extends ZkopruNode {
     slasher?: Account
     accounts?: ZkAccount[]
     bootstrapHelper: BootstrapHelper
+    enableFastSync: boolean
   }): Promise<LightNode> {
     if (!provider.connected) throw Error('provider is not connected')
     if (!bootstrapHelper)
@@ -138,6 +140,7 @@ export class LightNode extends ZkopruNode {
       l2Chain,
       tracker,
       l1Contract,
+      enableFastSync,
     })
     // If the chain needs bootstraping, fetch bootstrap data and apply
     const synchronizer = new Synchronizer(db, l1Contract, blockCache)

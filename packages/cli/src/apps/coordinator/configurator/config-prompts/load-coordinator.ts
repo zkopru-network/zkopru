@@ -23,6 +23,7 @@ export default class LoadCoordinator extends Configurator {
       publicUrls,
       vhosts,
       corsdomain,
+      enableFastSync,
     } = this.base
     const { provider, db } = context
     const fullNode: FullNode = await FullNode.new({
@@ -30,6 +31,7 @@ export default class LoadCoordinator extends Configurator {
       provider,
       db,
       slasher: context.account,
+      enableFastSync,
     })
     const coordinator = new Coordinator(fullNode, context.account, {
       maxBytes,

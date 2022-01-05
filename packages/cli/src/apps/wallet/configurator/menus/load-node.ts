@@ -21,13 +21,14 @@ export default class LoadNode extends Configurator {
       throw Error('Websocket provider is not connected')
     let node: ZkopruNode
     const { provider, db, accounts } = context
-    const { address } = this.base
+    const { address, enableFastSync } = this.base
     if (this.base.fullnode) {
       node = await FullNode.new({
         provider,
         address,
         db,
         accounts,
+        enableFastSync,
       })
     } else {
       const manager = new CoordinatorManager(address, new Web3(provider))
@@ -42,6 +43,7 @@ export default class LoadNode extends Configurator {
         db,
         accounts,
         bootstrapHelper: new HttpBootstrapHelper(coordinator),
+        enableFastSync,
       })
       this.print(chalk.blue(`Bootstrap light node from ${coordinator}`))
       await (node as LightNode).bootstrap()

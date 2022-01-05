@@ -72,6 +72,8 @@ export class BlockProcessor extends EventEmitter {
 
   lastEmittedProposalNum = -1
 
+  enableFastSync = false
+
   activeFastSync?: {
     latestHash: string
   }
@@ -83,6 +85,7 @@ export class BlockProcessor extends EventEmitter {
     tracker,
     validator,
     l1Contract,
+    enableFastSync,
   }: {
     db: DB
     blockCache: BlockCache
@@ -90,6 +93,7 @@ export class BlockProcessor extends EventEmitter {
     tracker: Tracker
     validator: Validator
     l1Contract: L1Contract
+    enableFastSync: boolean
   }) {
     super()
     logger.trace(`core/block-processor - BlockProcessor::constructor()`)
@@ -100,6 +104,7 @@ export class BlockProcessor extends EventEmitter {
     this.validator = validator
     this.worker = new Worker<void>()
     this.layer1 = l1Contract
+    this.enableFastSync = enableFastSync
   }
 
   isRunning(): boolean {
@@ -134,10 +139,29 @@ export class BlockProcessor extends EventEmitter {
     const treeNodeCount = await this.db.count('TreeNode', {})
     // no fast sync needed
     if (!activeFastSync && treeNodeCount > 0) return
-    if (activeFastSync) {
+    if (activeFastSync && !this.enableFastSync) {
+      // clear the partial fast sync
+      await this.db.transaction(db => {
+        db.delete('LightTree', {
+          where: {},
+        })
+        db.delete('TreeNode', {
+          where: {},
+        })
+        db.delete('FastSync', {
+          where: {},
+        })
+      })
+      return
+    }
+    if (!this.enableFastSync) return
+    if (
+      activeFastSync &&
+      (treeNodeCount === 0 || activeFastSync.finishedIngesting)
+    ) {
       // continue the active fast sync
       this.activeFastSync = activeFastSync
-    } else if (treeNodeCount === 0) {
+    } else if (activeFastSync || treeNodeCount === 0) {
       // load the tree node data
       const manager = new CoordinatorManager(
         this.layer1.address,
@@ -153,20 +177,44 @@ export class BlockProcessor extends EventEmitter {
         const decoder = new StringDecoder('utf8')
         const outputString = decoder.end(Buffer.from(output))
         const obj = JSON.parse(outputString)
-        console.log(obj.headerHash)
         await this.db.transaction(db => {
           // wipe existing trees
           db.delete('LightTree', {
             where: {},
           })
+          db.delete('TreeNode', {
+            where: {},
+          })
+          db.delete('FastSync', {
+            where: {},
+          })
           // create new ones from coordinator data
           db.create('LightTree', obj.lightTrees)
-          db.create('TreeNode', obj.treeNodes)
           // create a record of the fast sync so we can resume later or abort
           // if the merkle root is incorrect
           db.create('FastSync', {
             latestHash: obj.headerHash,
           })
+        })
+        const chunkSize = 500
+        const chunkCount = Math.ceil(obj.treeNodes.length / chunkSize)
+        for (let x = 0; x < chunkCount; x += 1) {
+          logger.info(
+            `core/block-processor - BlockProcessor::attemptFastSync chunk ${x +
+              1} of ${chunkCount}`,
+          )
+          await this.db.create(
+            'TreeNode',
+            obj.treeNodes.slice(x * chunkSize, (x + 1) * chunkSize),
+          )
+        }
+        await this.db.update('TreeNode', {
+          where: {
+            id: activeFastSync.id,
+          },
+          update: {
+            finishedIngesting: true,
+          },
         })
         // re-init the grove and in memory rollup trees with new data
         await this.layer2.grove.init()
@@ -302,12 +350,17 @@ export class BlockProcessor extends EventEmitter {
     }
     const tokenRegistry = await this.layer2.getTokenRegistry()
     // generate a patch to current db
+    let time = +new Date()
     const patch = await this.makePatch(parent, block)
+    console.log('makePatch', +new Date() - time)
+    time = +new Date()
     await this.db.transaction(
       async db => {
         this.layer2.grove.treeCache.enable()
         this.layer2.grove.treeCache.clear()
         await this.saveTransactions(block, db)
+        console.log('saveTransactions', +new Date() - time)
+        time = +new Date()
         await this.decryptMyUtxos(
           patch,
           block.body.txs,
@@ -315,8 +368,14 @@ export class BlockProcessor extends EventEmitter {
           tokenRegistry,
           db,
         )
+        console.log('decryptMyUtxos', +new Date() - time)
+        time = +new Date()
         this.saveWithdrawals(block, this.tracker.withdrawalTrackers, db)
+        console.log('saveWithdrawals', +new Date() - time)
+        time = +new Date()
         await this.applyPatch(patch, db)
+        console.log('applyPatch', +new Date() - time)
+        time = +new Date()
         // Mark as verified
         db.update('Proposal', {
           where: { hash: block.hash.toString() },
@@ -716,19 +775,26 @@ export class BlockProcessor extends EventEmitter {
   private async applyPatch(patch: Patch, db: TransactionDB) {
     logger.trace(`core/block-processor - BlockProcessor::applyPatch()`)
     const { block, treePatch, massDeposits } = patch
+    let time = +new Date()
     await BlockProcessor.markUsedUtxosAsNullified(
       patch.treePatch.nullifiers,
       block,
       db,
     )
+    console.log('b1', +new Date() - time)
+    time = +new Date()
     // Update mass deposits inclusion status
     if (massDeposits) {
       await this.markMassDepositsAsIncludedIn(massDeposits, block, db)
+      console.log('b2', +new Date() - time)
+      time = +new Date()
     }
     await BlockProcessor.markNewUtxosAsUnspent(
       (patch.treePatch?.utxos || []).map(utxo => utxo.hash),
       db,
     )
+    console.log('b3', +new Date() - time)
+    time = +new Date()
     await BlockProcessor.markNewWithdrawalsAsUnfinalized(
       (patch.treePatch?.withdrawals || []).map(withdrawal => {
         assert(withdrawal.noteHash)
@@ -736,12 +802,17 @@ export class BlockProcessor extends EventEmitter {
       }),
       db,
     )
+    console.log('b4', +new Date() - time)
+    time = +new Date()
     // Apply tree patch
     if (!this.activeFastSync) {
       await this.layer2.grove.applyGrovePatch(treePatch, db)
     }
     await this.updateMyUtxos(this.tracker.transferTrackers, patch, db)
+    console.log('b5', +new Date() - time)
+    time = +new Date()
     await this.updateMyWithdrawals(this.tracker.withdrawalTrackers, patch, db)
+    console.log('b6', +new Date() - time)
   }
 
   private async markMassDepositsAsIncludedIn(
@@ -752,11 +823,13 @@ export class BlockProcessor extends EventEmitter {
     logger.trace(
       `core/block-processor - BlockProcessor::markMassDepositsAsIncludedIn()`,
     )
+    const time = +new Date()
     const nonIncluded = await this.db.findMany('MassDeposit', {
       where: {
         includedIn: null,
       },
     })
+    console.log('fuck', +new Date() - time)
     const candidates: { [index: string]: MassDepositSql } = {}
     nonIncluded.forEach(md => {
       candidates[md.index] = md

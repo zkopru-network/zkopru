@@ -24,6 +24,7 @@ export interface Config {
   publicUrls?: string
   vhosts: string
   corsdomain?: string
+  enableFastSync: boolean
 }
 
 export enum Menu {
