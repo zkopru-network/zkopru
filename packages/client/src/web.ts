@@ -14,5 +14,6 @@ export default {
   ZkAddress,
 }
 
-export { ZkAccount } from '@zkopru/account'
-export { UtxoStatus } from '@zkopru/transaction'
+export * from '@zkopru/core'
+export * from '@zkopru/account'
+export * from '@zkopru/transaction'
