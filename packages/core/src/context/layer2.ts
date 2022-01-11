@@ -206,12 +206,24 @@ export class L2Chain {
           .slice(0, 6),
       )}})`,
     )
+    if (massDeposits.length === 0) return []
+    // TODO: actually optimize OR queries
     const massDepositObjects = await this.db.findMany('MassDeposit', {
       where: {
-        OR: massDeposits.map(({ merged, fee }) => ({
-          merged: merged.toString(),
-          fee: fee.toString(),
-        })),
+        ...(massDeposits.length > 1
+          ? {
+              OR: massDeposits.map(({ merged, fee }) => ({
+                merged: merged.toString(),
+                fee: fee.toString(),
+              })),
+            }
+          : {}),
+        ...(massDeposits.length === 1
+          ? {
+              merged: massDeposits[0].merged.toString(),
+              fee: massDeposits[0].fee.toString(),
+            }
+          : {}),
       },
       orderBy: {
         blockNumber: 'asc',
