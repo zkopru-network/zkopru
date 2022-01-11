@@ -1,4 +1,4 @@
-/* eslint-disable class-methods-use-this, no-underscore-dangle */
+/* eslint-disable class-methods-use-this, no-underscore-dangle, no-continue, no-undef */
 import AsyncLock from 'async-lock'
 import { openDB, IDBPDatabase, IDBPTransaction } from 'idb'
 import {
@@ -35,7 +35,7 @@ export class IndexedDBConnector extends DB {
   static async create(tables: TableData[]) {
     const schema = constructSchema(tables)
     const connector = new this(schema)
-    connector.db = await openDB(DB_NAME, 18, {
+    connector.db = await openDB(DB_NAME, 23, {
       /**
        * If an index is changed (e.g. same keys different "unique" value) the
        * index will not be updated. If such a case occurs the name should be
@@ -43,7 +43,8 @@ export class IndexedDBConnector extends DB {
        * */
       async upgrade(db, _, __, tx) {
         for (const table of tables) {
-          const indexes = (schema[table.name] || {}).indexes || []
+          const tableSchema = schema[table.name] || ({} as any)
+          const indexes = tableSchema.indexes || []
           if (db.objectStoreNames.contains(table.name)) {
             // table exists, look for indexes we need to create
             for (const index of indexes) {
@@ -135,19 +136,21 @@ export class IndexedDBConnector extends DB {
      * */
     if (!this.db) throw new Error('DB is not initialized')
     // scan if there's a complex query
+    const start = +new Date()
     if (
-      typeof options.orderBy === 'object' ||
+      // typeof options.orderBy === 'object' ||
       Object.keys(options.where).length === 0
     ) {
       return this.findUsingScan(collection, options, _tx)
     }
     for (const key of Object.keys(options.where)) {
+      if (key === 'AND' || key === 'OR')
+        return this.findUsingScan(collection, options, _tx)
+      if (options.where[key] === undefined)
+        return this.findUsingScan(collection, options, _tx)
       if (
-        (typeof options.where[key] === 'object' &&
-          !Array.isArray(options.where[key])) ||
-        key === 'OR' ||
-        key === 'AND' ||
-        options.where[key] === undefined
+        typeof options.where[key] === 'object' &&
+        !Array.isArray(options.where[key])
       ) {
         return this.findUsingScan(collection, options, _tx)
       }
@@ -205,7 +208,9 @@ export class IndexedDBConnector extends DB {
       // process all combinations of values
       for (;;) {
         const query = index.keys.map(k => {
-          return keyVals[k][keyIndexes[k]]
+          const val = keyVals[k][keyIndexes[k]]
+          if (typeof val === 'boolean') return val ? 1 : 0
+          return val
         })
         resultPromises.push(txIndex.getAll(query))
         let done = true
@@ -228,6 +233,24 @@ export class IndexedDBConnector extends DB {
         findMany: this._findMany.bind(this),
         table,
       })
+      if (options.orderBy && Object.keys(options.orderBy).length > 0) {
+        allResults.sort((a, b) => {
+          const key = Object.keys(options.orderBy || {})[0]
+          const order = (options.orderBy as any)[key]
+          if (a[key] === b[key]) return 0
+          if (a[key] > b[key]) return order === 'asc' ? 1 : -1
+          if (a[key] < b[key]) return order === 'asc' ? -1 : 1
+          return 0
+        })
+      }
+      if (+new Date() - start > 50 && typeof window !== 'undefined')
+        console.log(
+          'query length',
+          collection,
+          options.where,
+          options.include,
+          +new Date() - start,
+        )
       return allResults
     }
     // no index supports the query, scan
@@ -239,6 +262,7 @@ export class IndexedDBConnector extends DB {
     options: FindManyOptions,
     _tx?: IDBPTransaction<any, string[], 'readwrite' | 'readonly'>,
   ) {
+    const start = +new Date()
     if (!this.db) throw new Error('DB is not initialized')
     const table = this.schema[collection]
     if (!table) throw new Error(`Invalid collection: "${collection}"`)
@@ -261,8 +285,57 @@ export class IndexedDBConnector extends DB {
       const direction = (options.orderBy || {})[key] === 'asc' ? 'next' : 'prev'
       const index = tx.objectStore(collection).index(indexName)
       cursor = await index.openCursor(null, direction)
-    } else {
+    } else if (Object.keys(options.where).length === 0) {
       cursor = await tx.objectStore(collection).openCursor()
+    } else if (
+      options.where.OR !== undefined ||
+      options.where.AND !== undefined
+    ) {
+      cursor = await tx.objectStore(collection).openCursor()
+    } else {
+      // use one of the keys in the query to filter
+      for (const name of tx.objectStore(collection).indexNames) {
+        const index = tx.objectStore(collection).index(name)
+        const keys = [index.keyPath].flat()
+        const ranges = [] as any[]
+        for (const key of keys) {
+          const val = options.where[key]
+          if (val === null || val === undefined) break
+          if (Array.isArray(val)) break
+          const cleanBool = v => {
+            if (typeof v === 'boolean') return v ? 1 : 0
+            return v
+          }
+          if (typeof val !== 'object') {
+            ranges.push(IDBKeyRange.only(cleanBool(val)))
+            continue
+          }
+          if (Object.keys(val).length !== 1) break
+          if (val.gt !== undefined) {
+            ranges.push(IDBKeyRange.lowerBound(cleanBool(val.gt), true))
+            continue
+          } else if (val.gte !== undefined) {
+            ranges.push(IDBKeyRange.lowerBound(cleanBool(val.gte), false))
+            continue
+          } else if (val.lt !== undefined) {
+            ranges.push(IDBKeyRange.upperBound(cleanBool(val.lt), true))
+            continue
+          } else if (val.lte !== undefined) {
+            ranges.push(IDBKeyRange.upperBound(cleanBool(val.lte), false))
+            continue
+          }
+          break
+        }
+        if (ranges.length === keys.length) {
+          cursor = await index.openCursor(
+            keys.length === 1 ? ranges[0] : ranges,
+          )
+          break
+        }
+      }
+      if (!cursor) {
+        cursor = await tx.objectStore(collection).openCursor()
+      }
     }
     const { where, limit } = options
     while (cursor) {
@@ -279,6 +352,14 @@ export class IndexedDBConnector extends DB {
       findMany: this._findMany.bind(this),
       table,
     })
+    if (+new Date() - start > 50 && typeof window !== undefined)
+      console.log(
+        'query length scan',
+        collection,
+        where,
+        options.limit,
+        +new Date() - start,
+      )
     return found
   }
 
