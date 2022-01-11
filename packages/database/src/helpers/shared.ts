@@ -39,7 +39,7 @@ export async function loadIncluded(
   },
 ) {
   const { models, include, table, findMany } = options
-  if (!include) return
+  if (!include || !models || !models.length) return
   if (!table) throw new Error(`Unable to find table ${collection} in schema`)
   for (const key of Object.keys(include)) {
     const relation = table.relations[key]
