@@ -320,7 +320,7 @@ export default [
       ['transactionIndex', 'Int'],
       ['logIndex', 'Int'],
       ['blockNumber', 'Int', { index: true }],
-      ['queuedAt', 'String'],
+      ['queuedAt', 'String', { index: true }],
       ['ownerAddress', 'String', { optional: true }],
       ['includedIn', 'String', { optional: true }],
       ['from', 'String', { optional: true }],
