@@ -1,4 +1,5 @@
 /* eslint-disable jest/no-hooks, jest/valid-describe */
+import assert from 'assert'
 import testSchema from './test-schema'
 import { DB, IndexedDBConnector } from '~database/web'
 import FindTests from './database/find'
@@ -27,4 +28,34 @@ describe('indexedDB tests', function(this: any) {
   UpdateTests.bind(this)()
   DeleteTests.bind(this)()
   TransactionTests.bind(this)()
+
+  it('should sort indexed query', async () => {
+    const table = 'IndexTable'
+    for (let x = 0; x < 10; x += 1) {
+      await this.db.create(table, {
+        id: x,
+        id2: 10 - x,
+      })
+    }
+    {
+      const row = await this.db.findOne(table, {
+        where: {
+          id: [0, 1, 2],
+          id2: [10, 9, 8],
+        },
+        orderBy: { id: 'asc' },
+      })
+      assert.equal(row.id, 0)
+    }
+    {
+      const row = await this.db.findOne(table, {
+        where: {
+          id: [0, 1, 2],
+          id2: [10, 9, 8],
+        },
+        orderBy: { id: 'desc' },
+      })
+      assert.equal(row.id, 2)
+    }
+  })
 })

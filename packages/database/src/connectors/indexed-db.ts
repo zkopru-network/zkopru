@@ -227,22 +227,28 @@ export class IndexedDBConnector extends DB {
         .flat()
         .filter(i => !!i)
       // otherwise we've exhausted all combinations
+      if (options.orderBy && Object.keys(options.orderBy).length > 0) {
+        const key = Object.keys(options.orderBy || {})[0]
+        const order = (options.orderBy as any)[key]
+        allResults.sort((a, b) => {
+          if (a[key] > b[key]) return 1
+          if (a[key] < b[key]) return -1
+          return 0
+        })
+        if (order === 'desc') {
+          allResults.reverse()
+        }
+      }
+      const finalResults =
+        typeof options.limit === 'number'
+          ? allResults.slice(0, options.limit)
+          : allResults
       await loadIncluded(collection, {
-        models: allResults,
+        models: finalResults,
         include: options.include,
         findMany: this._findMany.bind(this),
         table,
       })
-      if (options.orderBy && Object.keys(options.orderBy).length > 0) {
-        allResults.sort((a, b) => {
-          const key = Object.keys(options.orderBy || {})[0]
-          const order = (options.orderBy as any)[key]
-          if (a[key] === b[key]) return 0
-          if (a[key] > b[key]) return order === 'asc' ? 1 : -1
-          if (a[key] < b[key]) return order === 'asc' ? -1 : 1
-          return 0
-        })
-      }
       if (+new Date() - start > 50 && typeof window !== 'undefined')
         console.log(
           'query length',
@@ -251,7 +257,7 @@ export class IndexedDBConnector extends DB {
           options.include,
           +new Date() - start,
         )
-      return allResults
+      return finalResults
     }
     // no index supports the query, scan
     return this.findUsingScan(collection, options, _tx)

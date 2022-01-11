@@ -112,4 +112,13 @@ export default [
       ['optionalField', 'String', { optional: true }],
     ],
   },
+  {
+    name: 'IndexTable',
+    primaryKey: 'id',
+    indexes: [{ keys: ['id', 'id2'] }],
+    rows: [
+      ['id', 'Int'],
+      ['id2', 'Int'],
+    ],
+  },
 ] as TableData[]
