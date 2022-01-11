@@ -352,7 +352,7 @@ export class IndexedDBConnector extends DB {
       findMany: this._findMany.bind(this),
       table,
     })
-    if (+new Date() - start > 50 && typeof window !== undefined)
+    if (+new Date() - start > 50 && typeof window !== 'undefined')
       console.log(
         'query length scan',
         collection,
