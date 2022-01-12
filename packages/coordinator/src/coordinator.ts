@@ -482,7 +482,7 @@ export class Coordinator extends EventEmitter {
         hash: blockHashes,
         finalized: null,
         verified: true,
-        isUncle: null,
+        isUncle: false,
         proposalData: { ne: null },
         proposedAt: {
           lt: currentBlockNumber - l1Config.challengePeriod,

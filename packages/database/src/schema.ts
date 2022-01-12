@@ -146,6 +146,7 @@ export default [
       ['timestamp', 'Int', { optional: true }],
       ['fetched', 'String', { optional: true }],
       ['finalized', 'Bool', { optional: true }],
+      ['processed', 'Bool', { default: false, index: true }],
       ['verified', 'Bool', { optional: true }],
       ['isUncle', 'Bool', { optional: true }],
       {
@@ -173,7 +174,7 @@ export default [
     name: 'Slash',
     primaryKey: 'hash',
     rows: [
-      ['hash', 'String'],
+      ['hash', 'String', { index: true }],
       ['proposer', 'String'],
       ['reason', 'String'],
       ['executionTx', 'String'],
@@ -255,7 +256,7 @@ export default [
     name: 'PendingTx',
     primaryKey: 'hash',
     rows: [
-      ['hash', 'String'],
+      ['hash', 'String', { index: true }],
       ['fee', 'String'],
       ['proof', 'Object'],
       ['memoVersion', 'Int', { optional: true }],
@@ -279,14 +280,15 @@ export default [
       },
     ],
     rows: [
-      ['index', 'String'],
-      ['merged', 'String'],
+      ['index', 'String', { index: true }],
+      ['merged', 'String', { index: true }],
       ['fee', 'String'],
       ['blockNumber', 'Int', { index: true }],
       {
         name: 'includedIn',
         type: 'String',
-        optional: true,
+        default: '',
+        index: true,
       },
     ],
   },

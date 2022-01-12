@@ -70,7 +70,8 @@ export class L2Chain {
     const lastVerifiedProposal = await this.db.findOne('Proposal', {
       where: {
         verified: true,
-        isUncle: null,
+        processed: true,
+        isUncle: false,
       },
       orderBy: { proposalNum: 'desc' },
       include: { block: { header: true } },
@@ -265,7 +266,7 @@ export class L2Chain {
     let aggregatedFee: Fp = Fp.zero
     // 1. pick mass deposits
     const commits: MassDepositSql[] = await this.db.findMany('MassDeposit', {
-      where: { includedIn: null },
+      where: { includedIn: '' },
     })
     commits.sort((a, b) => parseInt(a.index, 10) - parseInt(b.index, 10))
     const pendingDeposits = await this.db.findMany('Deposit', {
@@ -332,8 +333,7 @@ export class L2Chain {
   > {
     const unprocessedProposals = await this.db.findMany('Proposal', {
       where: {
-        verified: null,
-        isUncle: null,
+        processed: false,
       },
       orderBy: { proposalNum: 'asc' },
       limit: 1,

@@ -25,7 +25,7 @@ export class BlockProposer extends ProposerBase {
           {
             hash: blockHashes,
             verified: true,
-            isUncle: null,
+            isUncle: false,
           },
           {
             hash: block.hash.toString(),

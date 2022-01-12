@@ -124,7 +124,7 @@ export class BlockProcessor extends EventEmitter {
         if (!unprocessed) {
           const latestProcessed = await this.db.findMany('Proposal', {
             where: {
-              OR: [{ verified: { ne: null } }, { isUncle: { ne: null } }],
+              processed: true,
             },
             orderBy: { proposalNum: 'desc' },
             limit: 1,
@@ -188,11 +188,11 @@ export class BlockProcessor extends EventEmitter {
       await this.db.transaction(db => {
         db.update('Proposal', {
           where: { hash: block.hash.toString() },
-          update: { isUncle: true },
+          update: { isUncle: true, processed: true },
         })
         db.update('MassDeposit', {
           where: { includedIn: block.hash.toString() },
-          update: { includedIn: null },
+          update: { includedIn: '' },
         })
       })
       // TODO: can not process uncle block's grove patch yet
@@ -209,11 +209,11 @@ export class BlockProcessor extends EventEmitter {
       await this.db.transaction(async db => {
         db.update('Proposal', {
           where: { hash: block.hash.toString() },
-          update: { verified: false },
+          update: { verified: false, isUncle: false, processed: true },
         })
         db.update('MassDeposit', {
           where: { includedIn: block.hash.toString() },
-          update: { includedIn: null },
+          update: { includedIn: '' },
         })
         // save transactions and mark them as challenged
         await this.saveTransactions(block, db, true)
@@ -250,7 +250,8 @@ export class BlockProcessor extends EventEmitter {
           where: { hash: block.hash.toString() },
           update: {
             verified: true,
-            isUncle: isUncle ? true : null,
+            processed: true,
+            isUncle: !!isUncle,
           },
         })
       },
@@ -666,7 +667,7 @@ export class BlockProcessor extends EventEmitter {
     )
     const nonIncluded = await this.db.findMany('MassDeposit', {
       where: {
-        includedIn: null,
+        includedIn: '',
       },
     })
     const candidates: { [index: string]: MassDepositSql } = {}

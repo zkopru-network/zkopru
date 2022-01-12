@@ -147,25 +147,17 @@ export class Synchronizer extends EventEmitter {
 
   async updateStatus() {
     logger.trace(`core/synchronizer - Synchronizer::updateStatus()`)
-    const unfetched = await this.db.findOne('Proposal', {
+    const unprocessed = await this.db.findMany('Proposal', {
       where: {
-        proposalData: null,
+        processed: false,
       },
       orderBy: {
         proposalNum: 'desc',
       },
     })
-    const unprocessed = await this.db.findOne('Proposal', {
-      where: {
-        verified: null,
-        isUncle: null,
-      },
-      orderBy: {
-        proposalNum: 'desc',
-      },
-    })
-    const haveFetchedAll = !unfetched
-    const haveProcessedAll = !unprocessed
+    const unfetched = unprocessed.findIndex(p => p.proposalData === null)
+    const haveFetchedAll = unfetched === -1
+    const haveProcessedAll = !unprocessed.length
     if (!haveFetchedAll) {
       this.setStatus(NetworkStatus.ON_SYNCING)
     } else if (!haveProcessedAll) {
@@ -284,6 +276,8 @@ export class Synchronizer extends EventEmitter {
               proposalTx: transactionHash,
               finalized: true,
               verified: true,
+              processed: true,
+              isUncle: false,
               proposalData: '',
               timestamp,
             },
@@ -739,7 +733,7 @@ export class Synchronizer extends EventEmitter {
           merged: Bytes32.from(returnValues.merged).toString(),
           fee: Uint256.from(returnValues.fee).toString(),
           blockNumber,
-          includedIn: null,
+          includedIn: '',
         }
         db.upsert('MassDeposit', {
           where: { index: massDeposit.index },
@@ -1095,6 +1089,7 @@ export class Synchronizer extends EventEmitter {
     if (availableFetchJob === 0) return
     const candidates = await this.db.findMany('Proposal', {
       where: {
+        processed: false,
         proposalData: null,
         proposalTx: { ne: null },
       },
