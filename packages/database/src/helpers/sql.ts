@@ -160,7 +160,7 @@ export function createSql(
   for (const [, row] of Object.entries(table.rows)) {
     for (const doc of docs) {
       if (
-        !row?.default ||
+        typeof row?.default === 'undefined' ||
         (doc[row.name] !== undefined && doc[row.name] !== null)
       )
         // eslint-disable-next-line no-continue
