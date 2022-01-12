@@ -140,6 +140,7 @@ export default [
       { keys: ['verified'] },
       { keys: ['hash'] },
       { keys: ['hash', 'finalized'] },
+      { keys: ['hash', 'verified'] },
     ],
     rows: [
       ['hash', 'String'],
@@ -280,7 +281,7 @@ export default [
     primaryKey: 'index',
     indexes: [
       {
-        keys: ['merged', 'fee'],
+        keys: ['merged'],
       },
     ],
     rows: [
