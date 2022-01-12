@@ -370,7 +370,14 @@ export class IndexedDBConnector extends DB {
   }
 
   async count(collection: string, where: WhereClause) {
-    return (await this.findMany(collection, { where })).length
+    if (Object.keys(where).length !== 0) {
+      return (await this.findMany(collection, { where })).length
+    }
+    // otherwise just count all the docs in the collection
+    if (!this.db) throw new Error('DB is not initialized')
+    const tx = this.db.transaction(collection, 'readonly')
+    const store = tx.objectStore(collection)
+    return store.count()
   }
 
   async update(collection: string, options: UpdateOptions) {
