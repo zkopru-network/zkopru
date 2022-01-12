@@ -273,21 +273,16 @@ export default class ZkopruWallet {
       where: {},
       include: { utxo: true },
     })
-    const withdrawals = await this.wallet.db.findMany('Withdrawal', {
+    const allWithdrawals = await this.wallet.db.findMany('Withdrawal', {
       where: {
         to: this.node.node?.layer1.web3.utils.toChecksumAddress(ethAddress),
-        includedIn: { ne: null },
       },
       include: {
         proposal: { header: true },
       },
     })
-    const incompleteWithdrawals = await this.wallet.db.findMany('Withdrawal', {
-      where: {
-        to: this.node.node?.layer1.web3.utils.toChecksumAddress(ethAddress),
-        includedIn: null,
-      },
-    })
+    const withdrawals = allWithdrawals.filter(w => !!w.includedIn)
+    const incompleteWithdrawals = allWithdrawals.filter(w => !w.includedIn)
     const pending = await this.wallet.db.findMany('PendingTx', {
       where: {
         senderAddress: zkAddress,
