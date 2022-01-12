@@ -147,15 +147,25 @@ export class Synchronizer extends EventEmitter {
 
   async updateStatus() {
     logger.trace(`core/synchronizer - Synchronizer::updateStatus()`)
-    const unfetched = await this.db.count('Proposal', {
-      proposalData: null,
+    const unfetched = await this.db.findOne('Proposal', {
+      where: {
+        proposalData: null,
+      },
+      orderBy: {
+        proposalNum: 'desc',
+      },
     })
-    const unprocessed = await this.db.count('Proposal', {
-      verified: null,
-      isUncle: null,
+    const unprocessed = await this.db.findOne('Proposal', {
+      where: {
+        verified: null,
+        isUncle: null,
+      },
+      orderBy: {
+        proposalNum: 'desc',
+      },
     })
-    const haveFetchedAll = unfetched === 0
-    const haveProcessedAll = unprocessed === 0
+    const haveFetchedAll = !unfetched
+    const haveProcessedAll = !unprocessed
     if (!haveFetchedAll) {
       this.setStatus(NetworkStatus.ON_SYNCING)
     } else if (!haveProcessedAll) {
