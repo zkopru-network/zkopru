@@ -35,7 +35,7 @@ export class IndexedDBConnector extends DB {
   static async create(tables: TableData[]) {
     const schema = constructSchema(tables)
     const connector = new this(schema)
-    connector.db = await openDB(DB_NAME, 24, {
+    connector.db = await openDB(DB_NAME, 28, {
       /**
        * If an index is changed (e.g. same keys different "unique" value) the
        * index will not be updated. If such a case occurs the name should be
@@ -45,6 +45,16 @@ export class IndexedDBConnector extends DB {
         for (const table of tables) {
           const tableSchema = schema[table.name] || ({} as any)
           const indexes = tableSchema.indexes || []
+          for (const index of indexes) {
+            const indexRows = index.keys.map(key =>
+              tableSchema.rows.find(r => r.name === key),
+            )
+            if (indexRows.find(r => r.type === 'Bool')) {
+              console.log(
+                `WARNING: Boolean indexes in IndexDB will always be empty: index "${index.name}"`,
+              )
+            }
+          }
           if (db.objectStoreNames.contains(table.name)) {
             // table exists, look for indexes we need to create
             for (const index of indexes) {
