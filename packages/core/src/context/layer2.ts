@@ -399,7 +399,6 @@ export class L2Chain {
         verified: true,
         hash: blockHashes,
       },
-      orderBy: { proposalNum: 'asc' },
     })
     return canonical.findIndex(p => p.proposalNum < proposalNum) !== -1
   }

@@ -135,13 +135,7 @@ export default [
   {
     name: 'Proposal',
     primaryKey: 'hash',
-    indexes: [
-      { keys: ['isUncle'] },
-      { keys: ['verified'] },
-      { keys: ['hash'] },
-      { keys: ['hash', 'finalized'] },
-      { keys: ['hash', 'verified'] },
-    ],
+    indexes: [{ keys: ['hash'] }],
     rows: [
       ['hash', 'String'],
       ['proposalNum', 'Int', { index: true, optional: true }],
