@@ -174,11 +174,11 @@ export class OffchainTxValidator extends OffchainValidatorContext
     // If any of the found header is finalized, it returns true
     const finalized = await this.layer2.db.findMany('Proposal', {
       where: {
-        finalized: true,
         hash: headers.map(h => h.hash),
       },
     })
-    if (finalized.length > 0) return true
+    // TODO: use index when booleans are supported
+    if (finalized.find(p => p.finalized === true)) return true
     // Or check the recent precedent blocks has that utxo tree root
     let currentBlockHash: string = blockHash.toString()
     for (let i = 0; i < this.layer2.config.referenceDepth; i += 1) {

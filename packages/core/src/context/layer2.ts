@@ -394,13 +394,15 @@ export class L2Chain {
       },
     })
     const blockHashes = headers.map(({ hash }) => hash)
+    // TODO: use index when booleans are supported
     const canonical = await this.db.findMany('Proposal', {
       where: {
-        verified: true,
         hash: blockHashes,
       },
     })
-    return canonical.findIndex(p => p.proposalNum < proposalNum) !== -1
+    return (
+      canonical.findIndex(p => p.verified && p.proposalNum < proposalNum) !== -1
+    )
   }
 
   async isValidTx(zkTx: ZkTx): Promise<boolean> {
