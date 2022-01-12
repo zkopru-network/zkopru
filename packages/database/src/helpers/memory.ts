@@ -10,7 +10,7 @@ export function validateDocuments(table: SchemaTable, _docs: any | any[]) {
       const row = table.rowsByName[key]
       if (!row) throw new Error('Expected row to exist')
       if (
-        row.default &&
+        typeof row.default !== 'undefined' &&
         (doc[row.name] === undefined || doc[row.name] === null)
       ) {
         Object.assign(defaults, {
