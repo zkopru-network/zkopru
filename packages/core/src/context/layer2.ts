@@ -208,22 +208,15 @@ export class L2Chain {
     )
     if (massDeposits.length === 0) return []
     // TODO: actually optimize OR queries
+    const massDepositsByMerged = massDeposits.reduce((acc, obj) => {
+      return {
+        ...acc,
+        [obj.merged.toString()]: obj,
+      }
+    }, {})
     const massDepositObjects = await this.db.findMany('MassDeposit', {
       where: {
-        ...(massDeposits.length > 1
-          ? {
-              OR: massDeposits.map(({ merged, fee }) => ({
-                merged: merged.toString(),
-                fee: fee.toString(),
-              })),
-            }
-          : {}),
-        ...(massDeposits.length === 1
-          ? {
-              merged: massDeposits[0].merged.toString(),
-              fee: massDeposits[0].fee.toString(),
-            }
-          : {}),
+        merged: massDeposits.map(({ merged }) => merged.toString()),
       },
       orderBy: {
         blockNumber: 'asc',
@@ -240,6 +233,14 @@ export class L2Chain {
         logger.info(`core/layer2.ts - fee ${fee.toString()}`)
       }
       throw Error('Failed to find the mass deposit')
+    }
+    for (const obj of massDepositObjects) {
+      if (
+        !massDepositsByMerged[obj.merged] ||
+        massDepositsByMerged[obj.merged].fee.toString() !== obj.fee
+      ) {
+        throw new Error('Deposit fee mismatch')
+      }
     }
     const deposits = await this.db.findMany('Deposit', {
       where: {
@@ -397,11 +398,10 @@ export class L2Chain {
       where: {
         verified: true,
         hash: blockHashes,
-        proposalNum: { lt: proposalNum },
       },
       orderBy: { proposalNum: 'asc' },
     })
-    return canonical.length > 0
+    return canonical.findIndex(p => p.proposalNum < proposalNum) !== -1
   }
 
   async isValidTx(zkTx: ZkTx): Promise<boolean> {
