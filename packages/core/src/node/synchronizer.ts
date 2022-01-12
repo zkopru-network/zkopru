@@ -9,6 +9,7 @@ import {
   MassDeposit as MassDepositSql,
   TokenRegistry as TokenRegistrySql,
   BlockCache,
+  TransactionDB,
 } from '@zkopru/database'
 import { EventEmitter } from 'events'
 import { Bytes32, Address, Uint256 } from 'soltypes'
@@ -334,46 +335,50 @@ export class Synchronizer extends EventEmitter {
   }
 
   async listenTokenRegistry() {
-    const handleNewErc20Event = async (event: any) => {
-      const { returnValues, blockNumber } = event
-      // WRITE DATABASE
-      const { tokenAddr } = (returnValues as unknown) as { tokenAddr: string }
-      logger.info(`core/synchronizer - ERC20 token registered: ${tokenAddr}`)
-      const tokenRegistry: TokenRegistrySql = {
-        address: tokenAddr,
-        isERC20: true,
-        isERC721: false,
-        identifier: Address.from(tokenAddr)
-          .toBN()
-          .modn(256),
-        blockNumber,
-      }
+    const handleNewErc20Events = (events: any, db: TransactionDB) => {
+      for (const event of [events].flat()) {
+        const { returnValues, blockNumber } = event
+        // WRITE DATABASE
+        const { tokenAddr } = (returnValues as unknown) as { tokenAddr: string }
+        logger.info(`core/synchronizer - ERC20 token registered: ${tokenAddr}`)
+        const tokenRegistry: TokenRegistrySql = {
+          address: tokenAddr,
+          isERC20: true,
+          isERC721: false,
+          identifier: Address.from(tokenAddr)
+            .toBN()
+            .modn(256),
+          blockNumber,
+        }
 
-      await this.db.upsert('TokenRegistry', {
-        where: { address: tokenAddr },
-        create: tokenRegistry,
-        update: tokenRegistry,
-      })
-    }
-    const handleNewErc721Event = async (event: any) => {
-      const { returnValues, blockNumber } = event
-      // WRITE DATABASE
-      const { tokenAddr } = (returnValues as unknown) as { tokenAddr: string }
-      logger.info(`core/synchronizer - ERC721 token registered: ${tokenAddr}`)
-      const tokenRegistry: TokenRegistrySql = {
-        address: tokenAddr,
-        isERC20: false,
-        isERC721: true,
-        identifier: Address.from(tokenAddr)
-          .toBN()
-          .modn(256),
-        blockNumber,
+        db.upsert('TokenRegistry', {
+          where: { address: tokenAddr },
+          create: tokenRegistry,
+          update: tokenRegistry,
+        })
       }
-      await this.db.upsert('TokenRegistry', {
-        where: { address: tokenAddr },
-        create: tokenRegistry,
-        update: tokenRegistry,
-      })
+    }
+    const handleNewErc721Events = async (events: any, db: TransactionDB) => {
+      for (const event of [events].flat()) {
+        const { returnValues, blockNumber } = event
+        // WRITE DATABASE
+        const { tokenAddr } = (returnValues as unknown) as { tokenAddr: string }
+        logger.info(`core/synchronizer - ERC721 token registered: ${tokenAddr}`)
+        const tokenRegistry: TokenRegistrySql = {
+          address: tokenAddr,
+          isERC20: false,
+          isERC721: true,
+          identifier: Address.from(tokenAddr)
+            .toBN()
+            .modn(256),
+          blockNumber,
+        }
+        db.upsert('TokenRegistry', {
+          where: { address: tokenAddr },
+          create: tokenRegistry,
+          update: tokenRegistry,
+        })
+      }
     }
     logger.trace(`core/synchronizer - Synchronizer::listenTokenRegistry()`)
     await this.loadGenesisIfNeeded()
@@ -402,8 +407,10 @@ export class Synchronizer extends EventEmitter {
             toBlock: end,
           },
         )
-        for (const event of events) {
-          await handleNewErc20Event(event)
+        if (events.length > 0) {
+          await this.db.transaction(db => {
+            handleNewErc20Events(events, db)
+          })
         }
       }
       {
@@ -414,8 +421,10 @@ export class Synchronizer extends EventEmitter {
             toBlock: end,
           },
         )
-        for (const event of events) {
-          await handleNewErc721Event(event)
+        if (events.length > 0) {
+          await this.db.transaction(db => {
+            handleNewErc721Events(events, db)
+          })
         }
       }
       currentBlock = end + 1
@@ -424,45 +433,55 @@ export class Synchronizer extends EventEmitter {
     this.erc20RegistrationSubscriber = this.l1Contract.coordinator.events
       .NewErc20({ fromBlock: Math.min(pivotBlock, currentBlock) })
       .on('data', async event => {
-        await handleNewErc20Event(event)
+        await this.blockCache.transactionCache(
+          db => {
+            handleNewErc20Events(event, db)
+          },
+          event.blockNumber,
+          event.blockHash,
+        )
       })
     this.erc721RegistrationSubscriber = this.l1Contract.coordinator.events
       .NewErc721({ fromBlock: Math.min(pivotBlock, currentBlock) })
       .on('data', async event => {
-        await handleNewErc721Event(event)
+        await this.blockCache.transactionCache(
+          db => {
+            handleNewErc721Events(event, db)
+          },
+          event.blockNumber,
+          event.blockHash,
+        )
       })
   }
 
   async listenDeposits(cb?: (deposit: DepositSql) => void) {
     logger.trace(`core/synchronizer - Synchronizer::listenDeposits()`)
-    const handleDepositEvent = async (event: any) => {
-      const { returnValues, logIndex, transactionIndex, blockNumber } = event
-      const deposit: DepositSql = {
-        note: Uint256.from(returnValues.note).toString(),
-        fee: Uint256.from(returnValues.fee).toString(),
-        queuedAt: Uint256.from(returnValues.queuedAt).toString(),
-        transactionIndex,
-        logIndex,
-        blockNumber,
+    const handleDepositEvents = (events: any, db: TransactionDB) => {
+      if (Array.isArray(events)) {
+        logger.info(`core/synchronizer - ${events.length} Deposits`)
       }
-      logger.info(`core/synchronizer - NewDeposit(${deposit.note})`)
-      await this.blockCache.transactionCache(
-        db => {
-          db.upsert('Deposit', {
-            where: { note: deposit.note },
-            update: deposit,
-            create: deposit,
-          })
-          db.delete('PendingDeposit', {
-            where: {
-              note: deposit.note,
-            },
-          })
-        },
-        blockNumber,
-        event.blockHash,
-      )
-      if (cb) cb(deposit)
+      for (const event of [events].flat()) {
+        const { returnValues, logIndex, transactionIndex, blockNumber } = event
+        const deposit: DepositSql = {
+          note: Uint256.from(returnValues.note).toString(),
+          fee: Uint256.from(returnValues.fee).toString(),
+          queuedAt: Uint256.from(returnValues.queuedAt).toString(),
+          transactionIndex,
+          logIndex,
+          blockNumber,
+        }
+        db.upsert('Deposit', {
+          where: { note: deposit.note },
+          update: deposit,
+          create: deposit,
+        })
+        db.delete('PendingDeposit', {
+          where: {
+            note: deposit.note,
+          },
+        })
+        if (cb) cb(deposit)
+      }
     }
     await this.loadGenesisIfNeeded()
     const { proposedAt } = await this.db.findOne('Proposal', {
@@ -479,7 +498,9 @@ export class Synchronizer extends EventEmitter {
     logger.info(
       `core/synchronizer - Scan deposit hashes from block number ${fromBlock}`,
     )
-    const pivotBlock = (await this.l1Contract.web3.eth.getBlockNumber()) - 15
+    const pivotBlock =
+      (await this.l1Contract.web3.eth.getBlockNumber()) -
+      this.blockCache.BLOCK_CONFIRMATIONS
     const SCAN_LENGTH = 1000
     let currentBlock = fromBlock
     while (currentBlock < pivotBlock) {
@@ -489,8 +510,10 @@ export class Synchronizer extends EventEmitter {
         fromBlock: start,
         toBlock: end,
       })
-      for (const event of events) {
-        await handleDepositEvent(event)
+      if (events.length > 0) {
+        await this.db.transaction(db => {
+          handleDepositEvents(events, db)
+        })
       }
       currentBlock = end + 1
     }
@@ -502,7 +525,16 @@ export class Synchronizer extends EventEmitter {
         )
       })
       .on('data', async event => {
-        await handleDepositEvent(event)
+        logger.info(
+          `core/synchronizer - NewDeposit(${event.returnValues.note})`,
+        )
+        await this.blockCache.transactionCache(
+          db => {
+            handleDepositEvents(event, db)
+          },
+          event.blockNumber,
+          event.blockHash,
+        )
       })
       .on('changed', event => {
         this.blockCache.clearChangesForBlockHash(event.blockHash)
@@ -518,96 +550,67 @@ export class Synchronizer extends EventEmitter {
     addresses: ZkAddress[],
     cb?: (utxo: UtxoSql) => void,
   ) {
-    const handleDepositUtxoEvent = async (event: any) => {
-      const { returnValues, blockNumber } = event
-      const owner = addresses.find(addr =>
-        Fp.from(returnValues.spendingPubKey).eq(addr.spendingPubKey()),
-      )
-      if (!owner) {
-        // skip storing Deposit details
-        return
-      }
-      const salt = Fp.from(returnValues.salt)
-      const note = new Note(owner, salt, {
-        eth: Fp.from(returnValues.eth),
-        tokenAddr: Fp.from(Address.from(returnValues.token).toBN()),
-        erc20Amount: Fp.from(returnValues.amount),
-        nft: Fp.from(returnValues.nft),
-      })
-      const utxo: UtxoSql = {
-        hash: note
-          .hash()
-          .toUint256()
-          .toString(),
-        eth: note
-          .eth()
-          .toUint256()
-          .toString(),
-        owner: owner.toString(),
-        salt: note.salt.toUint256().toString(),
-        tokenAddr: note
-          .tokenAddr()
-          .toHex()
-          .toString(),
-        erc20Amount: note
-          .erc20Amount()
-          .toUint256()
-          .toString(),
-        nft: note
-          .nft()
-          .toUint256()
-          .toString(),
-        depositedAt: blockNumber,
-      }
-      logger.info(`core/synchronizer - Discovered my deposit (${utxo.hash})`)
-      await this.blockCache.transactionCache(
-        db => {
-          db.upsert('Utxo', {
-            where: { hash: utxo.hash },
-            update: utxo,
-            create: utxo,
-          })
-          db.update('Deposit', {
-            where: {
-              note: note
-                .hash()
-                .toUint256()
-                .toString(),
-            },
-            update: {
-              ownerAddress: owner.toString(),
-            },
-          })
-        },
-        blockNumber,
-        event.blockHash,
-      )
-      try {
-        // try to load the transaction sender
-        const tx = await this.l1Contract.web3.eth.getTransaction(
-          event.transactionHash,
+    const handleDepositUtxoEvents = async (events: any, db: TransactionDB) => {
+      for (const event of [events].flat()) {
+        const { returnValues, blockNumber } = event
+        const owner = addresses.find(addr =>
+          Fp.from(returnValues.spendingPubKey).eq(addr.spendingPubKey()),
         )
-        await this.blockCache.updateCache(
-          'Deposit',
-          {
-            where: {
-              note: note
-                .hash()
-                .toUint256()
-                .toString(),
-            },
-            update: {
-              from: tx.from,
-            },
+        if (!owner) {
+          // skip storing Deposit details
+          return
+        }
+        const salt = Fp.from(returnValues.salt)
+        const note = new Note(owner, salt, {
+          eth: Fp.from(returnValues.eth),
+          tokenAddr: Fp.from(Address.from(returnValues.token).toBN()),
+          erc20Amount: Fp.from(returnValues.amount),
+          nft: Fp.from(returnValues.nft),
+        })
+        const utxo: UtxoSql = {
+          hash: note
+            .hash()
+            .toUint256()
+            .toString(),
+          eth: note
+            .eth()
+            .toUint256()
+            .toString(),
+          owner: owner.toString(),
+          salt: note.salt.toUint256().toString(),
+          tokenAddr: note
+            .tokenAddr()
+            .toHex()
+            .toString(),
+          erc20Amount: note
+            .erc20Amount()
+            .toUint256()
+            .toString(),
+          nft: note
+            .nft()
+            .toUint256()
+            .toString(),
+          depositedAt: blockNumber,
+        }
+        logger.info(`core/synchronizer - Discovered my deposit (${utxo.hash})`)
+        db.upsert('Utxo', {
+          where: { hash: utxo.hash },
+          update: utxo,
+          create: utxo,
+        })
+        db.update('Deposit', {
+          where: {
+            note: note
+              .hash()
+              .toUint256()
+              .toString(),
           },
-          blockNumber,
-          event.blockHash,
-        )
-      } catch (err) {
-        logger.info(err)
-        logger.erro('core/synchronizer - Error loading deposit transaction')
+          update: {
+            ownerAddress: owner.toString(),
+          },
+        })
+        if (cb) cb(utxo)
       }
-      if (cb) cb(utxo)
     }
     await this.loadGenesisIfNeeded()
     const { proposedAt } = await this.db.findOne('Proposal', {
@@ -625,7 +628,9 @@ export class Synchronizer extends EventEmitter {
     logger.info(
       `core/synchronizer - Scan deposit details from block number ${fromBlock}`,
     )
-    const pivotBlock = (await this.l1Contract.web3.eth.getBlockNumber()) - 15
+    const pivotBlock =
+      (await this.l1Contract.web3.eth.getBlockNumber()) -
+      this.blockCache.BLOCK_CONFIRMATIONS
     const SCAN_LENGTH = 1000
     let currentBlock = fromBlock
     while (currentBlock < pivotBlock) {
@@ -635,8 +640,47 @@ export class Synchronizer extends EventEmitter {
         fromBlock: start,
         toBlock: end,
       })
+      if (events.length > 0) {
+        await this.db.transaction(db => {
+          handleDepositUtxoEvents(events, db)
+        })
+      }
       for (const event of events) {
-        await handleDepositUtxoEvent(event)
+        try {
+          // try to load the transaction sender
+          const tx = await this.l1Contract.web3.eth.getTransaction(
+            event.transactionHash,
+          )
+          const { returnValues } = event
+          const owner = addresses.find(addr =>
+            Fp.from(returnValues.spendingPubKey).eq(addr.spendingPubKey()),
+          )
+          if (!owner) {
+            // skip storing Deposit details
+            return
+          }
+          const salt = Fp.from(returnValues.salt)
+          const note = new Note(owner, salt, {
+            eth: Fp.from(returnValues.eth),
+            tokenAddr: Fp.from(Address.from(returnValues.token).toBN()),
+            erc20Amount: Fp.from(returnValues.amount),
+            nft: Fp.from(returnValues.nft),
+          })
+          await this.db.update('Deposit', {
+            where: {
+              note: note
+                .hash()
+                .toUint256()
+                .toString(),
+            },
+            update: {
+              from: tx.from,
+            },
+          })
+        } catch (err) {
+          logger.info(err)
+          logger.error('core/synchronizer - Error loading deposit transaction')
+        }
       }
       currentBlock = end + 1
     }
@@ -653,7 +697,13 @@ export class Synchronizer extends EventEmitter {
         )
       })
       .on('data', async event => {
-        await handleDepositUtxoEvent(event)
+        await this.blockCache.transactionCache(
+          db => {
+            handleDepositUtxoEvents(event, db)
+          },
+          event.blockNumber,
+          event.blockHash,
+        )
       })
       .on('changed', event => {
         this.blockCache.clearChangesForBlockHash(event.blockHash)
@@ -666,29 +716,28 @@ export class Synchronizer extends EventEmitter {
   }
 
   async listenMassDepositCommit(cb?: (commit: MassDepositSql) => void) {
-    const handleMassDepositCommitEvent = async (event: any) => {
-      const { returnValues, blockNumber } = event
-      logger.info(
-        `core/synchronizer - Total fee for MassDepositCommit #${returnValues.index}(${returnValues.merged}) is ${returnValues.fee} gwei`,
-      )
-      const massDeposit: MassDepositSql = {
-        index: Uint256.from(returnValues.index).toString(),
-        merged: Bytes32.from(returnValues.merged).toString(),
-        fee: Uint256.from(returnValues.fee).toString(),
-        blockNumber,
-        includedIn: null,
+    const handleMassDepositCommitEvents = (events: any, db: TransactionDB) => {
+      if (Array.isArray(events)) {
+        logger.info(
+          `core/synchronizer - Ingesting ${events.length} MassDepositCommit events`,
+        )
       }
-      await this.blockCache.upsertCache(
-        'MassDeposit',
-        {
+      for (const event of [events].flat()) {
+        const { returnValues, blockNumber } = event
+        const massDeposit: MassDepositSql = {
+          index: Uint256.from(returnValues.index).toString(),
+          merged: Bytes32.from(returnValues.merged).toString(),
+          fee: Uint256.from(returnValues.fee).toString(),
+          blockNumber,
+          includedIn: null,
+        }
+        db.upsert('MassDeposit', {
           where: { index: massDeposit.index },
           create: massDeposit,
           update: {},
-        },
-        blockNumber,
-        event.blockHash,
-      )
-      if (cb) cb(massDeposit)
+        })
+        if (cb) cb(massDeposit)
+      }
     }
     logger.trace(`core/synchronizer - Synchronizer::listenMassDepositCommit()`)
     await this.loadGenesisIfNeeded()
@@ -703,7 +752,9 @@ export class Synchronizer extends EventEmitter {
       limit: 1,
     })
     const fromBlock = lastMassDeposit[0]?.blockNumber || proposedAt
-    const pivotBlock = (await this.l1Contract.web3.eth.getBlockNumber()) - 15
+    const pivotBlock =
+      (await this.l1Contract.web3.eth.getBlockNumber()) -
+      this.blockCache.BLOCK_CONFIRMATIONS
     const SCAN_LENGTH = 1000
     let currentBlock = fromBlock
     while (currentBlock < pivotBlock) {
@@ -716,8 +767,10 @@ export class Synchronizer extends EventEmitter {
           toBlock: end,
         },
       )
-      for (const event of events) {
-        await handleMassDepositCommitEvent(event)
+      if (events.length > 0) {
+        await this.db.transaction(db => {
+          handleMassDepositCommitEvents(events, db)
+        })
       }
       currentBlock = end + 1
     }
@@ -732,7 +785,17 @@ export class Synchronizer extends EventEmitter {
         )
       })
       .on('data', async event => {
-        await handleMassDepositCommitEvent(event)
+        const { returnValues } = event
+        logger.info(
+          `core/synchronizer - Total fee for MassDepositCommit #${returnValues.index}(${returnValues.merged}) is ${returnValues.fee} gwei`,
+        )
+        await this.blockCache.transactionCache(
+          db => {
+            handleMassDepositCommitEvents(event, db)
+          },
+          event.blockNumber,
+          event.blockHash,
+        )
       })
       .on('changed', event => {
         this.blockCache.clearChangesForBlockHash(event.blockHash)
@@ -748,32 +811,27 @@ export class Synchronizer extends EventEmitter {
   }
 
   async listenNewProposals(cb?: (hash: string) => void) {
-    const handleNewProposalEvent = async (event: any) => {
-      const { returnValues, blockNumber, transactionHash } = event
-      // WRITE DATABASE
-      const { proposalNum, blockHash } = returnValues
-      logger.info(
-        `core/synchronizer - NewProposal: #${proposalNum}(${blockHash}) @ L1 #${blockNumber}`,
-      )
-      const { timestamp } = await this.l1Contract.web3.eth.getBlock(blockNumber)
-      const newProposal = {
-        hash: Bytes32.from(blockHash).toString(),
-        proposalNum: parseInt(proposalNum, 10),
-        proposedAt: blockNumber,
-        proposalTx: transactionHash,
-        timestamp,
+    const handleNewProposalEvents = (events: any, db: TransactionDB) => {
+      if (Array.isArray(events)) {
+        logger.info(`core/synchronizer - ${events.length} new Proposals`)
       }
-      await this.blockCache.upsertCache(
-        'Proposal',
-        {
+      for (const event of [events].flat()) {
+        const { returnValues, blockNumber, transactionHash } = event
+        // WRITE DATABASE
+        const { proposalNum, blockHash } = returnValues
+        const newProposal = {
+          hash: Bytes32.from(blockHash).toString(),
+          proposalNum: parseInt(proposalNum, 10),
+          proposedAt: blockNumber,
+          proposalTx: transactionHash,
+        }
+        db.upsert('Proposal', {
           where: { hash: newProposal.hash },
           create: newProposal,
           update: newProposal,
-        },
-        blockNumber,
-        event.blockHash,
-      )
-      if (cb) cb(blockHash)
+        })
+        if (cb) cb(blockHash)
+      }
     }
     logger.trace(`core/synchronizer - Synchronizer::listenNewProposals()`)
     await this.loadGenesisIfNeeded()
@@ -788,7 +846,9 @@ export class Synchronizer extends EventEmitter {
       limit: 1,
     })
     const fromBlock = lastProposal[0]?.proposedAt || proposedAt
-    const pivotBlock = (await this.l1Contract.web3.eth.getBlockNumber()) - 15
+    const pivotBlock =
+      (await this.l1Contract.web3.eth.getBlockNumber()) -
+      this.blockCache.BLOCK_CONFIRMATIONS
     const SCAN_LENGTH = 1000
     let currentBlock = fromBlock
     while (currentBlock < pivotBlock) {
@@ -801,8 +861,10 @@ export class Synchronizer extends EventEmitter {
           toBlock: end,
         },
       )
-      for (const event of events) {
-        await handleNewProposalEvent(event)
+      if (events.length > 0) {
+        await this.db.transaction(db => {
+          handleNewProposalEvents(events, db)
+        })
       }
       currentBlock = end + 1
     }
@@ -817,7 +879,19 @@ export class Synchronizer extends EventEmitter {
         )
       })
       .on('data', async event => {
-        await handleNewProposalEvent(event)
+        const { returnValues, blockNumber } = event
+        // WRITE DATABASE
+        const { proposalNum, blockHash } = returnValues
+        logger.info(
+          `core/synchronizer - NewProposal: #${proposalNum}(${blockHash}) @ L1 #${blockNumber}`,
+        )
+        await this.blockCache.transactionCache(
+          db => {
+            handleNewProposalEvents(event, db)
+          },
+          event.blockNumber,
+          event.blockHash,
+        )
       })
       .on('changed', event => {
         this.blockCache.clearChangesForBlockHash(event.blockHash)
@@ -835,7 +909,6 @@ export class Synchronizer extends EventEmitter {
       const hash = Bytes32.from(returnValues.blockHash).toString()
       const proposer = Address.from(returnValues.proposer).toString()
       const { reason } = returnValues
-
       logger.info(
         `core/synchronizer - Slash: ${proposer} proposed invalid block ${hash}(${reason}).`,
       )
@@ -881,7 +954,9 @@ export class Synchronizer extends EventEmitter {
       limit: 1,
     })
     const fromBlock = lastSlash[0]?.slashedAt || proposedAt
-    const pivotBlock = (await this.l1Contract.web3.eth.getBlockNumber()) - 15
+    const pivotBlock =
+      (await this.l1Contract.web3.eth.getBlockNumber()) -
+      this.blockCache.BLOCK_CONFIRMATIONS
     const SCAN_LENGTH = 1000
     let currentBlock = fromBlock
     while (currentBlock < pivotBlock) {
@@ -917,23 +992,23 @@ export class Synchronizer extends EventEmitter {
   }
 
   async listenFinalization(cb?: (hash: string) => void) {
-    const handleFinalizationEvent = async (event: any) => {
-      let blockHash: string
-      if (typeof event.returnValues === 'string') blockHash = event.returnValues
-      else blockHash = (event.returnValues as any).blockHash
-      const hash = Bytes32.from(blockHash).toString()
-      logger.info(`core/synchronizer - Finalized ${hash}`)
-      await this.blockCache.upsertCache(
-        'Proposal',
-        {
+    const handleFinalizationEvents = (events: any, db: TransactionDB) => {
+      if (Array.isArray(events)) {
+        logger.info(`core/synchronizer - Finalized ${events.length} blocks`)
+      }
+      for (const event of [events].flat()) {
+        let blockHash: string
+        if (typeof event.returnValues === 'string')
+          blockHash = event.returnValues
+        else blockHash = (event.returnValues as any).blockHash
+        const hash = Bytes32.from(blockHash).toString()
+        db.upsert('Proposal', {
           where: { hash },
           create: { hash, finalized: true },
           update: { finalized: true },
-        },
-        event.blockNumber,
-        event.blockHash,
-      )
-      if (cb) cb(blockHash)
+        })
+        if (cb) cb(blockHash)
+      }
     }
     logger.trace(`core/synchronizer - Synchronizer::listenFinalization()`)
     await this.loadGenesisIfNeeded()
@@ -942,13 +1017,14 @@ export class Synchronizer extends EventEmitter {
         proposalNum: 0,
       },
     })
-    const lastFinalized = await this.db.findMany('Proposal', {
+    const lastFinalized = await this.db.findOne('Proposal', {
       where: { finalized: true },
       orderBy: { proposedAt: 'desc' },
-      limit: 1,
     })
-    const fromBlock = lastFinalized[0]?.proposedAt || proposedAt
-    const pivotBlock = (await this.l1Contract.web3.eth.getBlockNumber()) - 15
+    const fromBlock = lastFinalized?.proposedAt || proposedAt
+    const pivotBlock =
+      (await this.l1Contract.web3.eth.getBlockNumber()) -
+      this.blockCache.BLOCK_CONFIRMATIONS
     const SCAN_LENGTH = 1000
     let currentBlock = fromBlock
     while (currentBlock < pivotBlock) {
@@ -961,8 +1037,10 @@ export class Synchronizer extends EventEmitter {
           toBlock: end,
         },
       )
-      for (const event of events) {
-        await handleFinalizationEvent(event)
+      if (events.length > 0) {
+        await this.db.transaction(db => {
+          handleFinalizationEvents(events, db)
+        })
       }
       currentBlock = end + 1
     }
@@ -974,7 +1052,18 @@ export class Synchronizer extends EventEmitter {
         )
       })
       .on('data', async event => {
-        await handleFinalizationEvent(event)
+        const hash =
+          typeof event.returnValues === 'string'
+            ? event.returnValues
+            : (event.returnValues as any).blockHash
+        logger.info(`core/synchronizer - Finalized ${hash}`)
+        await this.blockCache.transactionCache(
+          db => {
+            handleFinalizationEvents(event, db)
+          },
+          event.blockNumber,
+          event.blockHash,
+        )
       })
       .on('changed', event => {
         this.blockCache.clearChangesForBlockHash(event.blockHash)
@@ -988,7 +1077,7 @@ export class Synchronizer extends EventEmitter {
 
   async fetchUnfetchedProposals() {
     logger.trace(`core/synchronizer - Synchronizer::fetchUnfetchedProposals()`)
-    const MAX_FETCH_JOB = 10
+    const MAX_FETCH_JOB = 20
     const availableFetchJob = Math.max(
       MAX_FETCH_JOB - Object.keys(this.fetching).length,
       0,
@@ -1023,6 +1112,9 @@ export class Synchronizer extends EventEmitter {
       )
       return
     }
+    const { timestamp } = await this.l1Contract.web3.eth.getBlock(
+      proposalData.blockHash,
+    )
     this.fetching[proposalTx] = true
     const block = Block.fromTx(proposalData)
     logger.info(
@@ -1030,21 +1122,24 @@ export class Synchronizer extends EventEmitter {
     )
     const header = block.getHeaderSql()
     try {
-      await this.db.upsert('Block', {
-        where: { hash: header.hash },
-        create: { hash: header.hash },
-        update: {},
-      })
-      await this.db.upsert('Header', {
-        where: { hash: header.hash },
-        create: header,
-        update: header,
-      })
-      await this.db.update('Proposal', {
-        where: { hash: header.hash },
-        update: {
-          proposalData: JSON.stringify(proposalData),
-        },
+      await this.db.transaction(db => {
+        db.upsert('Block', {
+          where: { hash: header.hash },
+          create: { hash: header.hash },
+          update: {},
+        })
+        db.upsert('Header', {
+          where: { hash: header.hash },
+          create: header,
+          update: header,
+        })
+        db.update('Proposal', {
+          where: { hash: header.hash },
+          update: {
+            proposalData: JSON.stringify(proposalData),
+            timestamp,
+          },
+        })
       })
     } catch (err) {
       logger.error(err)
