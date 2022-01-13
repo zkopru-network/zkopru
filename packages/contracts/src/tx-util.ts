@@ -50,6 +50,9 @@ export class TxUtil {
     // but, there are some benefits using @ethereumjs/tx for signing tx
     // less dependency on web3 version and more accurate gas can be use it
     let rawTransaction
+    const nonce = option?.nonce
+      ? +option.nonce.toString()
+      : await web3.eth.getTransactionCount(account.address, 'pending')
     try {
       const txParams = {
         from: account.address,
@@ -58,7 +61,7 @@ export class TxUtil {
         gasLimit: `0x${new BN(gas).toString('hex')}`,
         value: `0x${new BN(value ?? 0).toString('hex')}`,
         data: tx.encodeABI(),
-        nonce: option?.nonce ? +option.nonce.toString() : undefined,
+        nonce,
       }
 
       const common = await this.getCommon(web3)
