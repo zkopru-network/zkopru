@@ -52,7 +52,7 @@ export class TxUtil {
     let rawTransaction
     const nonce = option?.nonce
       ? +option.nonce.toString()
-      : await web3.eth.getTransactionCount(account.address, 'pending')
+      : await web3.eth.getTransactionCount(account.address)
     try {
       const txParams = {
         from: account.address,
