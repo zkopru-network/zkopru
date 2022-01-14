@@ -141,7 +141,7 @@
     "solium": "^1.2.5",
     "tar": "^6.0.2",
     "tar-fs": "^2.1.0",
-    "truffle": "5.4.21",
+    "truffle": "5.4.10",
     "truffle-artifactor": "^4.0.30",
     "ts-jest": "^24.2.0",
     "ts-node-dev": "^1.0.0-pre.44",
