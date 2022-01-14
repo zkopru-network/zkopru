@@ -3,15 +3,12 @@ pragma solidity =0.7.4;
 
 import {
     Coordinatable
-} from "../../../contracts/zkopru/controllers/Coordinatable.sol";
+} from "../../target/zkopru/controllers/Coordinatable.sol";
 
 import {
     IConsensusProvider
-} from "../../../contracts/consensus/interfaces/IConsensusProvider.sol";
-import {
-    Proposer,
-    Proposal
-} from "../../../contracts/zkopru/libraries/Types.sol";
+} from "../../target/consensus/interfaces/IConsensusProvider.sol";
+import { Proposer, Proposal } from "../../target/zkopru/libraries/Types.sol";
 
 contract MockConsensusProvider is IConsensusProvider {
     function openRoundIfNeeded() external override {}

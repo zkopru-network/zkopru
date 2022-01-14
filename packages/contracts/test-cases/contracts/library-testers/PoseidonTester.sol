@@ -6,7 +6,7 @@ import {
     Poseidon2,
     Poseidon3,
     Poseidon4
-} from "../../../contracts/zkopru/libraries/Hash.sol";
+} from "../../target/zkopru/libraries/Hash.sol";
 
 contract PoseidonTester {
     function preHashed() public pure returns (uint256[] memory) {
