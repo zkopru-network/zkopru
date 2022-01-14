@@ -3,6 +3,6 @@ pragma solidity =0.7.4;
 
 import {
     HeaderValidator
-} from "../../../contracts/zkopru/controllers/validators/HeaderValidator.sol";
+} from "../../target/zkopru/controllers/validators/HeaderValidator.sol";
 
 contract HeaderValidatorTester is HeaderValidator {}

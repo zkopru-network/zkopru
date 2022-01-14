@@ -5,9 +5,9 @@ import {
     Hasher,
     MerkleTreeLib,
     SubTreeLib
-} from "../../../contracts/zkopru/libraries/MerkleTree.sol";
+} from "../../target/zkopru/libraries/MerkleTree.sol";
 
-import { Hash } from "../../../contracts/zkopru/libraries/Hash.sol";
+import { Hash } from "../../target/zkopru/libraries/Hash.sol";
 
 contract UtxoTreeTester {
     using MerkleTreeLib for Hasher;

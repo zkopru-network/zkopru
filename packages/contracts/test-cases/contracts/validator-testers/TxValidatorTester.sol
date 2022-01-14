@@ -2,23 +2,18 @@
 pragma solidity =0.7.4;
 pragma experimental ABIEncoderV2;
 
-import { SNARK } from "../../../contracts/zkopru/libraries/SNARK.sol";
+import { SNARK } from "../../target/zkopru/libraries/SNARK.sol";
 import {
     TxValidator
-} from "../../../contracts/zkopru/controllers/validators/TxValidator.sol";
+} from "../../target/zkopru/controllers/validators/TxValidator.sol";
 import {
     Proof,
     Block,
     Transaction,
     Types
-} from "../../../contracts/zkopru/libraries/Types.sol";
-import {
-    G1Point,
-    G2Point
-} from "../../../contracts/zkopru/libraries/Pairing.sol";
-import {
-    Deserializer
-} from "../../../contracts/zkopru/libraries/Deserializer.sol";
+} from "../../target/zkopru/libraries/Types.sol";
+import { G1Point, G2Point } from "../../target/zkopru/libraries/Pairing.sol";
+import { Deserializer } from "../../target/zkopru/libraries/Deserializer.sol";
 
 contract TxValidatorTester is TxValidator {
     using SNARK for SNARK.VerifyingKey;

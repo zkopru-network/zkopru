@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import {
     UserInteractable
-} from "../../../contracts/zkopru/controllers/UserInteractable.sol";
+} from "../../target/zkopru/controllers/UserInteractable.sol";
 
 contract UserInteractableTester is UserInteractable {
     constructor() {}
