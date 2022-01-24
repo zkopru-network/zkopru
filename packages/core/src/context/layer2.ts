@@ -291,10 +291,15 @@ export class L2Chain {
     )
     const includedIndexes = {}
     const validLeaves = [] as Fp[]
+    const validCommits = [] as MassDepositSql[]
     for (const commit of commits) {
       const deposits = pendingDeposits.filter(deposit => {
         return deposit.queuedAt === commit.index
       })
+      if (deposits.length === 0) {
+        logger.trace(`No deposit found, try later`)
+        break
+      }
       const { merged, fee } = mergeDeposits(deposits)
       if (
         merged.toString() !== commit.merged ||
@@ -303,18 +308,20 @@ export class L2Chain {
         // eslint-disable-next-line no-continue
         continue
       }
+      validCommits.push(commit)
       validLeaves.push(...deposits.map(deposit => Fp.from(deposit.note)))
       includedIndexes[commit.index] = true
+      consumedBytes += validCommits.length
     }
     return {
-      massDeposits: commits
+      massDeposits: validCommits
         .filter(commit => includedIndexes[commit.index])
         .map(commit => ({
           merged: Bytes32.from(commit.merged),
           fee: Uint256.from(commit.fee),
         })),
       leaves: validLeaves,
-      totalFee: commits.reduce((acc, commit) => {
+      totalFee: validCommits.reduce((acc, commit) => {
         if (!includedIndexes[commit.index]) return acc
         return acc.add(Fp.from(commit.fee))
       }, Fp.zero),
