@@ -284,7 +284,6 @@ export class L2Chain {
       return a.logIndex - b.logIndex
     })
     // 3. validation
-    const includedIndexes = {}
     const validCommits = [] as MassDepositSql[]
     const validDeposits = [] as DepositSql[]
     for (const commit of commits) {
@@ -305,18 +304,15 @@ export class L2Chain {
       }
       validCommits.push(commit)
       validDeposits.push(...deposits)
-      includedIndexes[commit.index] = true
     }
     return {
       massDeposits: validCommits
-        .filter(commit => includedIndexes[commit.index])
         .map(commit => ({
           merged: Bytes32.from(commit.merged),
           fee: Uint256.from(commit.fee),
         })),
       leaves: validDeposits.map(deposit => Fp.from(deposit.note)),
       totalFee: validCommits.reduce((acc, commit) => {
-        if (!includedIndexes[commit.index]) return acc
         return acc.add(Fp.from(commit.fee))
       }, Fp.zero),
       calldataSize: validCommits.length,
