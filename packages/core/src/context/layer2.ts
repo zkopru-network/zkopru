@@ -260,15 +260,14 @@ export class L2Chain {
   }
 
   async getPendingMassDeposits(): Promise<PendingMassDeposits> {
-    const leaves: Fp[] = []
-    let consumedBytes = 0
-    let aggregatedFee: Fp = Fp.zero
     // 1. pick mass deposits
     const commits: MassDepositSql[] = await this.db.findMany('MassDeposit', {
       where: { includedIn: null },
     })
+    logger.trace(`>>> found ${commits.length} mass deposits in`)
     commits.sort((a, b) => parseInt(a.index, 10) - parseInt(b.index, 10))
-    const pendingDeposits = await this.db.findMany('Deposit', {
+    // 2. pick deposits
+    const pendingDeposits: DepositSql[] = await this.db.findMany('Deposit', {
       where: { queuedAt: commits.map(commit => commit.index) },
     })
     pendingDeposits.sort((a, b) => {
@@ -284,20 +283,17 @@ export class L2Chain {
       }
       return a.logIndex - b.logIndex
     })
-    leaves.push(...pendingDeposits.map(deposit => Fp.from(deposit.note)))
-    consumedBytes += commits.length
-    aggregatedFee = aggregatedFee.add(
-      pendingDeposits.reduce((prev, item) => prev.add(item.fee), Fp.zero),
-    )
+    // 3. validation
     const includedIndexes = {}
-    const validLeaves = [] as Fp[]
     const validCommits = [] as MassDepositSql[]
+    const validDeposits = [] as DepositSql[]
     for (const commit of commits) {
       const deposits = pendingDeposits.filter(deposit => {
         return deposit.queuedAt === commit.index
       })
+      // If found missing deposit or no deposit in commits,
+      // stop iteration
       if (deposits.length === 0) {
-        logger.trace(`No deposit found, try later`)
         break
       }
       const { merged, fee } = mergeDeposits(deposits)
@@ -305,13 +301,11 @@ export class L2Chain {
         merged.toString() !== commit.merged ||
         !Fp.from(fee.toString()).eq(Fp.from(commit.fee))
       ) {
-        // eslint-disable-next-line no-continue
-        continue
+        break
       }
       validCommits.push(commit)
-      validLeaves.push(...deposits.map(deposit => Fp.from(deposit.note)))
+      validDeposits.push(...deposits)
       includedIndexes[commit.index] = true
-      consumedBytes += validCommits.length
     }
     return {
       massDeposits: validCommits
@@ -320,12 +314,12 @@ export class L2Chain {
           merged: Bytes32.from(commit.merged),
           fee: Uint256.from(commit.fee),
         })),
-      leaves: validLeaves,
+      leaves: validDeposits.map(deposit => Fp.from(deposit.note)),
       totalFee: validCommits.reduce((acc, commit) => {
         if (!includedIndexes[commit.index]) return acc
         return acc.add(Fp.from(commit.fee))
       }, Fp.zero),
-      calldataSize: consumedBytes,
+      calldataSize: validCommits.length,
     }
   }
 
