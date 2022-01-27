@@ -264,7 +264,6 @@ export class L2Chain {
     const commits: MassDepositSql[] = await this.db.findMany('MassDeposit', {
       where: { includedIn: null },
     })
-    logger.trace(`>>> found ${commits.length} mass deposits in`)
     commits.sort((a, b) => parseInt(a.index, 10) - parseInt(b.index, 10))
     // 2. pick deposits
     const pendingDeposits: DepositSql[] = await this.db.findMany('Deposit', {
