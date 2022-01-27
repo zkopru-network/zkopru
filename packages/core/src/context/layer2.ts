@@ -306,11 +306,10 @@ export class L2Chain {
       validDeposits.push(...deposits)
     }
     return {
-      massDeposits: validCommits
-        .map(commit => ({
-          merged: Bytes32.from(commit.merged),
-          fee: Uint256.from(commit.fee),
-        })),
+      massDeposits: validCommits.map(commit => ({
+        merged: Bytes32.from(commit.merged),
+        fee: Uint256.from(commit.fee),
+      })),
       leaves: validDeposits.map(deposit => Fp.from(deposit.note)),
       totalFee: validCommits.reduce((acc, commit) => {
         return acc.add(Fp.from(commit.fee))
