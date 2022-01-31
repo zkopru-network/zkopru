@@ -8,7 +8,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable jest/no-hooks */
 import { Bytes32 } from 'soltypes'
-import { ZkTx } from '~transaction'
+import { ZkTx, Sum } from '~transaction'
 import { jestExtendToCompareBigNumber, sleep } from '~utils'
 import { Context, initContext, terminate } from './cases/context'
 import {
@@ -71,6 +71,13 @@ import {
   testRound3SendZkTxsToCoordinator,
   testRound3NewBlockProposalAndSlashing,
 } from './cases/10_zk_tx_round_3'
+import {
+  buildZkSwapTxAliceSendEthToBobAndReceiveERC20 as round4Tx1,
+  buildZkSwapTxBobSendERC20ToAliceAndReceiveEther as round4Tx2,
+  testRound4SendZkTxsToCoordinator,
+  testRound4NewBlockProposal,
+  testRound4NewSpendableUtxos,
+} from './cases/6-2_zk_tx_round_1-2'
 
 process.env.DEFAULT_COORDINATOR = 'http://localhost:8888'
 process.env.BLOCK_CONFIRMATIONS = '0'
@@ -229,6 +236,62 @@ describe('testnet', () => {
       )
     })
   })
+
+  describe('6-2: Zk Transactions round 4 Swap', () => {
+    let aliceSwap: ZkTx
+    let bobSwap: ZkTx
+    let aliceSpendablesBefore: Sum
+    let bobSpendablesBefore: Sum
+    let prevLatestBlock: Bytes32
+
+    const subCtx = () => ({
+      aliceSwap,
+      aliceSpendablesBefore,
+      bobSwap,
+      bobSpendablesBefore,
+      prevLatestBlock,
+    })
+
+    describe('users send swap zk txs to the coordinator', () => {
+      beforeAll(async () => {
+        do {
+          const latest = await context.coordinator.node().layer2.latestBlock()
+          if (latest !== null) {
+            prevLatestBlock = latest
+            break
+          }
+          await sleep(1000)
+        } while (!prevLatestBlock)
+
+        aliceSpendablesBefore = await context.wallets.alice.getSpendableAmount()
+        bobSpendablesBefore = await context.wallets.bob.getSpendableAmount()
+      }, 30000)
+
+      it('create 2 transactions: alice and bob swap 1 Ether and 1 ERC20', async () => {
+        aliceSwap = await round4Tx1(ctx)
+        bobSwap = await round4Tx2(ctx)
+      }, 300000)
+
+      it(
+        'they should send zk transactions to the coordinator',
+        testRound4SendZkTxsToCoordinator(ctx, subCtx),
+        600000,
+      )
+
+      it(
+        'coordinator should propose a new block and wallet clients detect them',
+        testRound4NewBlockProposal(ctx, subCtx),
+        600000,
+      )
+
+      it(
+        'wallets should have new spendables as they sync new block',
+        testRound4NewSpendableUtxos(ctx, subCtx),
+        40000,
+      )
+    })
+  })
+
   describe('7: Zk Transactions round 2', () => {
     let aliceWithdrawal: ZkTx
     let bobWithdrawal: ZkTx
@@ -341,7 +404,7 @@ describe('testnet', () => {
       )
     })
   })
-  describe('11: Migration', () => {
+  describe.skip('11: Migration', () => {
     it.todo('please add test scenarios here')
   })
 })
