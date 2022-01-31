@@ -27,6 +27,16 @@ export async function getContainer(
       Image: imageName,
       name,
       rm: true,
+      HostConfig: {
+        PortBindings: {
+          '5000/tcp': [
+            {
+              HostIp: '0.0.0.0',
+              HostPort: '5000',
+            },
+          ],
+        },
+      },
     })
   } catch {
     container = docker.container.get(name)
