@@ -98,13 +98,13 @@ async function getAddresses(
   return { zkopruAddress, erc20Address, erc721Address }
 }
 
-async function getContainerIP(container: Container): Promise<string> {
-  const status = await container.status()
-  const containerIP = (status.data as {
-    NetworkSettings: { IPAddress: string }
-  }).NetworkSettings.IPAddress
-  return containerIP
-}
+// async function getContainerIP(container: Container): Promise<string> {
+//   const status = await container.status()
+//   const containerIP = (status.data as {
+//     NetworkSettings: { IPAddress: string }
+//   }).NetworkSettings.IPAddress
+//   return containerIP
+// }
 
 async function getWeb3(
   ws: string,
@@ -266,7 +266,8 @@ export async function initContext(): Promise<Context> {
     layer1Container,
   )
   await sleep(2000)
-  const containerIP = await getContainerIP(layer1Container)
+  // const containerIP = await getContainerIP(layer1Container)
+  const containerIP = '0.0.0.0'
   const { web3, provider } = await getWeb3(`ws://${containerIP}:5000`)
   const contract = new L1Contract(web3, zkopruAddress)
   const erc20 = Layer1.getERC20(web3, erc20Address)
