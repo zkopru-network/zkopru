@@ -12,6 +12,7 @@
   "max-bytes": 131072,
   "priceMultiplier": 48,
   "price-multiplier": 48,
+  "corsdomain": "*",
   "port": 8888,
   "$0": "zkopru-coordinator",
   "keystore": {
