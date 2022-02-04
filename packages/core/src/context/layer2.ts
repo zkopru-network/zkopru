@@ -34,7 +34,6 @@ export interface PendingMassDeposits {
   massDeposits: MassDeposit[]
   leaves: Fp[]
   totalFee: Fp
-  calldataSize: number
 }
 
 export class L2Chain {
@@ -313,7 +312,6 @@ export class L2Chain {
       totalFee: validCommits.reduce((acc, commit) => {
         return acc.add(Fp.from(commit.fee))
       }, Fp.zero),
-      calldataSize: validCommits.length,
     }
   }
 
