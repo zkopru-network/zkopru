@@ -11,16 +11,17 @@ services:
   coordinator:
     build:
       context: ../
-      dockerfile: ./dockerfiles/Coordinator.dockerfile
+      dockerfile: ./dockerfiles/Cli.dockerfile
     ports:
       - "8888:8888"
+      - "1234:1234"
     links:
       - 'testnet:testnet'
     depends_on:
       - 'testnet'
     volumes:
       - '../packages:/proj/packages'
-    command: 'node /proj/packages/cli/dist/apps/coordinator/cli.js --ws ws://testnet:5000 --config /proj/packages/cli/coordinator.dev.json'
+    command: sh -c "sleep 5s && gotty -w --port 1234 node /proj/packages/cli/dist/apps/coordinator/cli.js --config /proj/packages/cli/coordinator.dev.json"
   wallet:
     build:
       context: ../

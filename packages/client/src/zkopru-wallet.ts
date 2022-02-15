@@ -258,45 +258,31 @@ export default class ZkopruWallet {
         proposal: { header: true },
       },
     })
-    const completeDeposits = await this.wallet.db.findMany('Deposit', {
+    const allDeposits = await this.wallet.db.findMany('Deposit', {
       where: {
         ownerAddress: zkAddress,
-        includedIn: { neq: null },
       },
       include: {
         proposal: { header: true },
         utxo: true,
       },
     })
+    const completeDeposits = allDeposits.filter(d => !!d.includedIn)
+    const incompleteDeposits = allDeposits.filter(d => !d.includedIn)
     const pendingDeposits = await this.wallet.db.findMany('PendingDeposit', {
       where: {},
       include: { utxo: true },
     })
-    const incompleteDeposits = await this.wallet.db.findMany('Deposit', {
-      where: {
-        ownerAddress: zkAddress,
-        includedIn: null,
-      },
-      include: {
-        proposal: { header: true },
-        utxo: true,
-      },
-    })
-    const withdrawals = await this.wallet.db.findMany('Withdrawal', {
+    const allWithdrawals = await this.wallet.db.findMany('Withdrawal', {
       where: {
         to: this.node.node?.layer1.web3.utils.toChecksumAddress(ethAddress),
-        includedIn: { ne: null },
       },
       include: {
         proposal: { header: true },
       },
     })
-    const incompleteWithdrawals = await this.wallet.db.findMany('Withdrawal', {
-      where: {
-        to: this.node.node?.layer1.web3.utils.toChecksumAddress(ethAddress),
-        includedIn: null,
-      },
-    })
+    const withdrawals = allWithdrawals.filter(w => !!w.includedIn)
+    const incompleteWithdrawals = allWithdrawals.filter(w => !w.includedIn)
     const pending = await this.wallet.db.findMany('PendingTx', {
       where: {
         senderAddress: zkAddress,

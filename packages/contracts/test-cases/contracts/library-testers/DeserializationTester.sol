@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.7.4;
 
-import {
-    Deserializer
-} from "../../../contracts/zkopru/libraries/Deserializer.sol";
+import { Deserializer } from "../../target/zkopru/libraries/Deserializer.sol";
 import {
     Finalization,
     Block,
@@ -15,7 +13,7 @@ import {
     MassDeposit,
     MassMigration,
     Types
-} from "../../../contracts/zkopru/libraries/Types.sol";
+} from "../../target/zkopru/libraries/Types.sol";
 
 contract DeserializationTester {
     using Types for MassDeposit[];

@@ -34,7 +34,6 @@ export interface PendingMassDeposits {
   massDeposits: MassDeposit[]
   leaves: Fp[]
   totalFee: Fp
-  calldataSize: number
 }
 
 export class L2Chain {
@@ -206,12 +205,17 @@ export class L2Chain {
           .slice(0, 6),
       )}})`,
     )
+    if (massDeposits.length === 0) return []
+    // TODO: actually optimize OR queries
+    const massDepositsByMerged = massDeposits.reduce((acc, obj) => {
+      return {
+        ...acc,
+        [obj.merged.toString()]: obj,
+      }
+    }, {})
     const massDepositObjects = await this.db.findMany('MassDeposit', {
       where: {
-        OR: massDeposits.map(({ merged, fee }) => ({
-          merged: merged.toString(),
-          fee: fee.toString(),
-        })),
+        merged: massDeposits.map(({ merged }) => merged.toString()),
       },
       orderBy: {
         blockNumber: 'asc',
@@ -228,6 +232,14 @@ export class L2Chain {
         logger.info(`core/layer2.ts - fee ${fee.toString()}`)
       }
       throw Error('Failed to find the mass deposit')
+    }
+    for (const obj of massDepositObjects) {
+      if (
+        !massDepositsByMerged[obj.merged] ||
+        massDepositsByMerged[obj.merged].fee.toString() !== obj.fee
+      ) {
+        throw new Error('Deposit fee mismatch')
+      }
     }
     const deposits = await this.db.findMany('Deposit', {
       where: {
@@ -247,15 +259,13 @@ export class L2Chain {
   }
 
   async getPendingMassDeposits(): Promise<PendingMassDeposits> {
-    const leaves: Fp[] = []
-    let consumedBytes = 0
-    let aggregatedFee: Fp = Fp.zero
     // 1. pick mass deposits
     const commits: MassDepositSql[] = await this.db.findMany('MassDeposit', {
       where: { includedIn: null },
     })
     commits.sort((a, b) => parseInt(a.index, 10) - parseInt(b.index, 10))
-    const pendingDeposits = await this.db.findMany('Deposit', {
+    // 2. pick deposits
+    const pendingDeposits: DepositSql[] = await this.db.findMany('Deposit', {
       where: { queuedAt: commits.map(commit => commit.index) },
     })
     pendingDeposits.sort((a, b) => {
@@ -271,41 +281,37 @@ export class L2Chain {
       }
       return a.logIndex - b.logIndex
     })
-    leaves.push(...pendingDeposits.map(deposit => Fp.from(deposit.note)))
-    consumedBytes += commits.length
-    aggregatedFee = aggregatedFee.add(
-      pendingDeposits.reduce((prev, item) => prev.add(item.fee), Fp.zero),
-    )
-    const includedIndexes = {}
-    const validLeaves = [] as Fp[]
+    // 3. validation
+    const validCommits = [] as MassDepositSql[]
+    const validDeposits = [] as DepositSql[]
     for (const commit of commits) {
       const deposits = pendingDeposits.filter(deposit => {
         return deposit.queuedAt === commit.index
       })
+      // If found missing deposit or no deposit in commits,
+      // stop iteration
+      if (deposits.length === 0) {
+        break
+      }
       const { merged, fee } = mergeDeposits(deposits)
       if (
         merged.toString() !== commit.merged ||
         !Fp.from(fee.toString()).eq(Fp.from(commit.fee))
       ) {
-        // eslint-disable-next-line no-continue
-        continue
+        break
       }
-      validLeaves.push(...deposits.map(deposit => Fp.from(deposit.note)))
-      includedIndexes[commit.index] = true
+      validCommits.push(commit)
+      validDeposits.push(...deposits)
     }
     return {
-      massDeposits: commits
-        .filter(commit => includedIndexes[commit.index])
-        .map(commit => ({
-          merged: Bytes32.from(commit.merged),
-          fee: Uint256.from(commit.fee),
-        })),
-      leaves: validLeaves,
-      totalFee: commits.reduce((acc, commit) => {
-        if (!includedIndexes[commit.index]) return acc
+      massDeposits: validCommits.map(commit => ({
+        merged: Bytes32.from(commit.merged),
+        fee: Uint256.from(commit.fee),
+      })),
+      leaves: validDeposits.map(deposit => Fp.from(deposit.note)),
+      totalFee: validCommits.reduce((acc, commit) => {
         return acc.add(Fp.from(commit.fee))
       }, Fp.zero),
-      calldataSize: consumedBytes,
     }
   }
 
@@ -381,15 +387,15 @@ export class L2Chain {
       },
     })
     const blockHashes = headers.map(({ hash }) => hash)
+    // TODO: use index when booleans are supported
     const canonical = await this.db.findMany('Proposal', {
       where: {
-        verified: true,
         hash: blockHashes,
-        proposalNum: { lt: proposalNum },
       },
-      orderBy: { proposalNum: 'asc' },
     })
-    return canonical.length > 0
+    return (
+      canonical.findIndex(p => p.verified && p.proposalNum < proposalNum) !== -1
+    )
   }
 
   async isValidTx(zkTx: ZkTx): Promise<boolean> {

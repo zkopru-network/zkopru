@@ -4,12 +4,12 @@ import Web3 from 'web3'
 import { WebsocketProvider } from 'web3-core'
 import { Container } from 'node-docker-api/lib/container'
 import { FullNode } from '@zkopru/core'
-import Zkopru from '../src'
 import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
 import { sleep, trimHexToLength } from '~utils'
 import { readFromContainer, buildAndGetContainer } from '~utils-docker'
 import { DB, SQLiteConnector, schema } from '~database-node'
+import Zkopru from '../src'
 
 describe('rPC tests', () => {
   const accounts: ZkAccount[] = [

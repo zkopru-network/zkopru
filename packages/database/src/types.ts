@@ -186,7 +186,7 @@ export function constructSchema(tables: TableData[]): Schema {
       ) {
         // record it as an index, but don't index booleans
         indexes.push({
-          name: `${fullRow.name}-index`,
+          name: `${fullRow.name}-implicit-index`,
           keys: [fullRow.name],
           unique: fullRow.unique,
           optional: fullRow.optional,

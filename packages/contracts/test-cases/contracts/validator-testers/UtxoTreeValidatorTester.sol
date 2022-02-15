@@ -8,13 +8,11 @@ import {
     Block,
     Transaction,
     Types
-} from "../../../contracts/zkopru/libraries/Types.sol";
-import {
-    Deserializer
-} from "../../../contracts/zkopru/libraries/Deserializer.sol";
+} from "../../target/zkopru/libraries/Types.sol";
+import { Deserializer } from "../../target/zkopru/libraries/Deserializer.sol";
 import {
     UtxoTreeValidator
-} from "../../../contracts/zkopru/controllers/validators/UtxoTreeValidator.sol";
+} from "../../target/zkopru/controllers/validators/UtxoTreeValidator.sol";
 
 contract UtxoTreeValidatorTester is UtxoTreeValidator {
     using Types for Outflow;

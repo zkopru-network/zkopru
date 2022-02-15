@@ -80,6 +80,7 @@ export default [
   {
     name: 'Header',
     primaryKey: 'hash',
+    indexes: [{ keys: ['utxoRoot'] }, { keys: ['parentBlock'] }],
     rows: [
       ['hash', 'String'],
       ['proposer', 'String'],
@@ -134,6 +135,7 @@ export default [
   {
     name: 'Proposal',
     primaryKey: 'hash',
+    indexes: [{ keys: ['hash'] }],
     rows: [
       ['hash', 'String'],
       ['proposalNum', 'Int', { index: true, optional: true }],
@@ -271,6 +273,11 @@ export default [
   {
     name: 'MassDeposit',
     primaryKey: 'index',
+    indexes: [
+      {
+        keys: ['merged'],
+      },
+    ],
     rows: [
       ['index', 'String'],
       ['merged', 'String'],
@@ -308,7 +315,7 @@ export default [
       ['transactionIndex', 'Int'],
       ['logIndex', 'Int'],
       ['blockNumber', 'Int', { index: true }],
-      ['queuedAt', 'String'],
+      ['queuedAt', 'String', { index: true }],
       ['ownerAddress', 'String', { optional: true }],
       ['includedIn', 'String', { optional: true }],
       ['from', 'String', { optional: true }],
