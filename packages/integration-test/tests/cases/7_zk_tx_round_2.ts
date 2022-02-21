@@ -187,6 +187,6 @@ export const testRound2NewSpendableUtxos = (ctx: CtxProvider) => async () => {
   const bobBalance = await wallets.bob.getSpendableAmount()
   const carlBalance = await wallets.carl.getSpendableAmount()
   expect(aliceBalance.erc721[tokens.erc721.address]).toBeUndefined()
-  expect(bobBalance.eth.lt(toBN(toWei('10', 'ether')))).toBeTruthy()
+  expect(bobBalance.eth.lt(toBN(toWei('11', 'ether')))).toBeTruthy()
   expect(carlBalance.erc20[tokens.erc20.address]).toBeUndefined()
 }
