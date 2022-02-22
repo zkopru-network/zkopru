@@ -171,6 +171,13 @@ export class OffchainTxValidator extends OffchainValidatorContext
         utxoRoot: inclusionRef.toString(),
       },
     })
+    // If any of the found header is slashed, it returns false
+    const slashed = await this.layer2.db.findMany('Slash', {
+      where: {
+        hash: headers.map(h => h.hash),
+      },
+    })
+    if (slashed.find(p => p.finalized === true)) return false
     // If any of the found header is finalized, it returns true
     const finalized = await this.layer2.db.findMany('Proposal', {
       where: {
