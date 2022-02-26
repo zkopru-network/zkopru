@@ -178,7 +178,7 @@ export class OffchainTxValidator extends OffchainValidatorContext
       },
     })
     // TODO: use index when booleans are supported
-    if (finalized.find(p => p.finalized === true)) return true
+    if (finalized.find(p => !!p.finalized)) return true
     // Or check the recent precedent blocks has that utxo tree root
     let currentBlockHash: string = blockHash.toString()
     for (let i = 0; i < this.layer2.config.referenceDepth; i += 1) {
