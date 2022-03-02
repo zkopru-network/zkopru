@@ -13,7 +13,7 @@ RUN apk add --no-cache --virtual .gyp \
         make \
         g++ \
         chromium \
-        && npm install -g truffle ganache-cli --unsafe-perm=true --allow-root \
+        && yarn global add truffle ganache-cli \
         && yarn \
         && yarn install \
         && npx lerna run build --scope=@zkopru/cli \

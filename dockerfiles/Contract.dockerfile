@@ -9,7 +9,7 @@ RUN apk add --no-cache --virtual .gyp \
     python3 \
     make \
     g++ \
-    && npm install -g truffle ganache-cli --unsafe-perm=true --allow-root \
+    && yarn global add truffle ganache-cli \
     && yarn install \
     && apk del .gyp
 
