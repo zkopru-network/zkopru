@@ -1,95 +1,85 @@
+import { Logger } from '@ethersproject/logger'
 import BN from 'bn.js'
+import { BigNumber, BigNumberish } from 'ethers'
 import { Bytes32, Uint256, Address } from 'soltypes'
 import RedBN from './types/redbn'
 
-export type F = number | string | number[] | Uint8Array | Buffer | BN
-
-export class Fp extends BN {
-  static ORDER = new BN(
+const logger = new Logger('babyjubjub/2.0.0')
+const _constructorGuard = {}
+export class Fp implements BigNumber {
+  static ORDER = BigNumber.from(
     '21888242871839275222246405745257275088548364400416034343698204186575808495617',
   )
 
-  static half = Fp.from(Fp.ORDER.shrn(1))
+  static half = Fp.from(Fp.ORDER.shr(1))
 
   static zero = Fp.from(0)
 
   static one = Fp.from(1)
 
-  static Red = BN.red(Fp.ORDER)
+  static Red = BN.red(new BN(Fp.ORDER.toString()))
 
-  constructor(number: F, base?: number | 'hex', endian?: BN.Endianness) {
-    let n: BN
-    if (number instanceof BN) {
-      n = new BN(number.toString())
-    } else if (typeof number === 'string' && number.startsWith('0x')) {
-      n = new BN(number.substr(2), 16, endian)
-    } else {
-      n = new BN(number, base, endian)
+  readonly _hex: string
+  readonly _isBigNumber: boolean
+
+  constructor(constructorGuard: any, hex: string) {
+    logger.checkNew(new.target, BigNumber)
+
+    if (constructorGuard !== _constructorGuard) {
+      logger.throwError(
+        'cannot call constructor directly; use Fp.from',
+        Logger.errors.UNSUPPORTED_OPERATION,
+        {
+          operation: 'new (Fp)',
+        },
+      )
     }
-    if (n.isNeg()) {
-      super(n.mod(Fp.ORDER).add(Fp.ORDER), base, endian)
-    } else {
-      super(n.mod(Fp.ORDER), base, endian)
-    }
-    Object.setPrototypeOf(this, Fp.prototype)
+    this._hex = hex
+    this._isBigNumber = true
+    Object.freeze(this)
   }
 
-  static from(x: F): Fp {
-    if (x === undefined) return new Fp(0)
-    return new Fp(x)
+  static from(number: BigNumberish): Fp {
+    let n: BigNumber = BigNumber.from(number)
+    let val: BigNumber
+    if (n.isNegative()) {
+      val = n.mod(Fp.ORDER).add(Fp.ORDER)
+    } else {
+      val = n.mod(Fp.ORDER)
+    }
+    return new Fp(_constructorGuard, val.toHexString())
   }
 
-  static strictFrom(x: F): Fp {
+  static strictFpom(x: BigNumberish): Fp {
     if (!Fp.inRange(x)) throw Error('Not in range')
     return Fp.from(x)
-  }
-
-  static toBN(x: F): BN {
-    if (typeof x === 'string' && x.startsWith('0x')) {
-      return new BN(x.substr(2), 16)
-    }
-    return new BN(x)
   }
 
   static fromBuffer(buff: Buffer): Fp {
     return Fp.from(`0x${buff.toString('hex')}`)
   }
 
-  static inRange(x: F): boolean {
-    let n: BN
-    if (x instanceof BN) {
-      n = x
-    } else if (typeof x === 'string' && x.startsWith('0x')) {
-      n = new BN(x.substr(2), 16)
-    } else {
-      n = new BN(x)
-    }
-    return n.lt(Fp.ORDER)
+  static inRange(x: BigNumberish): boolean {
+    return BigNumber.from(x).lt(Fp.ORDER)
   }
 
-  toBuffer(endian?: BN.Endianness, length?: number): Buffer {
-    return this.toArrayLike(Buffer, endian, length)
-  }
-
-  addPrefixBit(bitLength: number): BN {
-    const prefix = new BN(1).shln(bitLength)
-    if (this.gt(prefix)) throw Error('prefix bit is less than current value')
-    return prefix.or(this)
+  toBuffer(endian?: 'be' | 'le', length?: number): Buffer {
+    return new BN(this.toString()).toArrayLike(Buffer, endian, length)
   }
 
   toJSON(): string {
-    return `0x${super.toJSON()}`
+    return this.toHexString()
   }
 
-  toHex(byteLength?: number): string {
+  toHexString(byteLength?: number): string {
     if (byteLength) {
       return `0x${this.toBuffer('be', byteLength).toString('hex')}`
     }
-    return `0x${this.toString('hex')}`
+    return this.toBigNumber().toHexString()
   }
 
   toBytes32(): Bytes32 {
-    return new Bytes32(`0x${this.toString(16, 64)}`)
+    return new Bytes32(this.toHexString())
   }
 
   toUint256(): Uint256 {
@@ -97,228 +87,109 @@ export class Fp extends BN {
   }
 
   toAddress(): Address {
-    return new Address(`0x${this.toString(16, 40)}`)
-  }
-
-  toBigInt(): bigint {
-    return BigInt(this.toString())
-    // return ffjs.utils.stringifyBigInts(this.toString())
+    return new Address(this.toHexString(20))
   }
 
   toTwos(width: number): Fp {
-    return Fp.from(super.toTwos(width))
+    return Fp.from(this.toBigNumber().toTwos(width))
   }
 
   fromTwos(width: number): Fp {
-    return Fp.from(super.fromTwos(width))
-  }
-
-  neg(): Fp {
-    return Fp.from(super.neg())
-  }
-
-  ineg(): Fp {
-    return Fp.from(super.ineg())
+    return Fp.from(this.toBigNumber().fromTwos(width))
   }
 
   abs(): Fp {
-    return Fp.from(super.abs())
+    return Fp.from(this.toBigNumber().abs())
   }
 
-  iabs(): Fp {
-    return Fp.from(super.iabs())
+  add(f: BigNumberish): Fp {
+    return Fp.from(this.toBigNumber().add(f))
   }
 
-  add(f: F): Fp {
-    return Fp.from(super.add(Fp.from(f)))
+  sub(f: BigNumberish): Fp {
+    return Fp.from(this.toBigNumber().sub(f))
   }
 
-  iadd(f: F): Fp {
-    return Fp.from(super.iadd(Fp.from(f)))
+  mul(f: BigNumberish): Fp {
+    return Fp.from(this.toBigNumber().mul(Fp.from(f)))
   }
 
-  addn(n: number): Fp {
-    return Fp.from(super.addn(n))
+  pow(f: BigNumberish): Fp {
+    return Fp.from(this.toBigNumber().pow(Fp.from(f)))
   }
 
-  iaddn(n: number): Fp {
-    return Fp.from(super.iaddn(n))
+  div(f: BigNumberish): Fp {
+    return Fp.from(this.toBigNumber().div(Fp.from(f)))
   }
 
-  sub(f: F): Fp {
-    return Fp.from(super.sub(Fp.from(f)))
+  mod(f: BigNumberish): Fp {
+    return Fp.from(this.toBigNumber().mod(Fp.from(f)))
   }
 
-  isub(f: F): Fp {
-    return Fp.from(super.isub(Fp.from(f)))
+  or(f: BigNumberish): Fp {
+    return Fp.from(this.toBigNumber().or(Fp.from(f)))
   }
 
-  subn(n: number): Fp {
-    return Fp.from(super.subn(n))
+  and(f: BigNumberish): Fp {
+    return Fp.from(this.toBigNumber().and(Fp.from(f)))
   }
 
-  isubn(n: number): Fp {
-    return Fp.from(super.isubn(n))
+  xor(f: BigNumberish): Fp {
+    return Fp.from(this.toBigNumber().xor(Fp.from(f)))
   }
 
-  mul(f: F): Fp {
-    return Fp.from(super.mul(Fp.from(f)))
+  mask(n: number): Fp {
+    return Fp.from(this.toBigNumber().mask(n))
   }
 
-  imul(f: F): Fp {
-    return Fp.from(super.imul(Fp.from(f)))
+  shl(value: number): Fp {
+    return Fp.from(this.toBigNumber().shl(value))
+  }
+  shr(value: number): Fp {
+    return Fp.from(this.toBigNumber().shr(value))
   }
 
-  muln(n: number): Fp {
-    return Fp.from(super.muln(n))
+  neg(): Fp {
+    return Fp.from(this._hex.startsWith('-') ? this._hex.slice(1) : `-${this._hex}`)
   }
 
-  imuln(n: number): Fp {
-    return Fp.from(super.imuln(n))
+  eq(other: BigNumberish): boolean {
+    return this.toBigNumber().eq(other)
   }
 
-  sqr(): Fp {
-    return Fp.from(super.sqr())
+  lt(other: BigNumberish): boolean {
+    return this.toBigNumber().lt(other)
   }
 
-  isqr(): Fp {
-    return Fp.from(super.isqr())
+  lte(other: BigNumberish): boolean {
+    return this.toBigNumber().lte(other)
+  }
+  gt(other: BigNumberish): boolean {
+    return this.toBigNumber().gt(other)
+  }
+  gte(other: BigNumberish): boolean {
+    return this.toBigNumber().gte(other)
+  }
+  isNegative(): boolean {
+    return this.toBigNumber().isNegative()
+  }
+  isZero(): boolean {
+    return this.toBigNumber().isZero()
+  }
+  toNumber(): number {
+    return this.toBigNumber().toNumber()
   }
 
-  pow(f: F): Fp {
-    return Fp.from(super.pow(Fp.from(f)))
+  toBigInt(): bigint {
+    return this.toBigNumber().toBigInt()
   }
 
-  div(f: F): Fp {
-    return Fp.from(super.div(Fp.from(f)))
+  toBigNumber(): BigNumber {
+    return BigNumber.from(this._hex)
   }
 
-  divn(n: number): Fp {
-    return Fp.from(super.divn(n))
-  }
-
-  mod(f: F): Fp {
-    return Fp.from(super.mod(Fp.from(f)))
-  }
-
-  umod(f: F): Fp {
-    return Fp.from(super.umod(Fp.from(f)))
-  }
-
-  divRound(f: F): Fp {
-    return Fp.from(super.divRound(Fp.from(f)))
-  }
-
-  or(f: F): Fp {
-    return Fp.from(super.or(Fp.from(f)))
-  }
-
-  ior(f: F): Fp {
-    return Fp.from(super.ior(Fp.from(f)))
-  }
-
-  uor(f: F): Fp {
-    return Fp.from(super.uor(Fp.from(f)))
-  }
-
-  iuor(f: F): Fp {
-    return Fp.from(super.iuor(Fp.from(f)))
-  }
-
-  and(f: F): Fp {
-    return Fp.from(super.and(Fp.from(f)))
-  }
-
-  iand(f: F): Fp {
-    return Fp.from(super.iand(Fp.from(f)))
-  }
-
-  uand(f: F): Fp {
-    return Fp.from(super.uand(Fp.from(f)))
-  }
-
-  iuand(f: F): Fp {
-    return Fp.from(super.iuand(Fp.from(f)))
-  }
-
-  andln(n: number): Fp {
-    return Fp.from(super.andln(n))
-  }
-
-  xor(f: F): Fp {
-    return Fp.from(super.xor(Fp.from(f)))
-  }
-
-  ixor(f: F): Fp {
-    return Fp.from(super.ixor(Fp.from(f)))
-  }
-
-  uxor(f: F): Fp {
-    return Fp.from(super.uxor(Fp.from(f)))
-  }
-
-  iuxor(f: F): Fp {
-    return Fp.from(super.iuxor(Fp.from(f)))
-  }
-
-  setn(n: number): Fp {
-    return Fp.from(super.setn(n))
-  }
-
-  shln(n: number): Fp {
-    return Fp.from(super.shln(n))
-  }
-
-  ishln(n: number): Fp {
-    return Fp.from(super.ishln(n))
-  }
-
-  ushln(n: number): Fp {
-    return Fp.from(super.ushln(n))
-  }
-
-  iushln(n: number): Fp {
-    return Fp.from(super.iushln(n))
-  }
-
-  shrn(n: number): Fp {
-    return Fp.from(super.shrn(n))
-  }
-
-  ishrn(n: number): Fp {
-    return Fp.from(super.ishrn(n))
-  }
-
-  ushrn(n: number): Fp {
-    return Fp.from(super.ushrn(n))
-  }
-
-  iushrn(n: number): Fp {
-    return Fp.from(super.iushrn(n))
-  }
-
-  maskn(n: number): Fp {
-    return Fp.from(super.maskn(n))
-  }
-
-  imaskn(n: number): Fp {
-    return Fp.from(super.imaskn(n))
-  }
-
-  bincn(n: number): Fp {
-    return Fp.from(super.bincn(n))
-  }
-
-  notn(w: number): Fp {
-    return Fp.from(super.notn(w))
-  }
-
-  inotn(w: number): Fp {
-    return Fp.from(super.inotn(w))
-  }
-
-  gcd(f: F): Fp {
-    return Fp.from(super.gcd(Fp.from(f)))
+  toString(): string {
+      return BigNumber.from(this._hex).toString()
   }
 
   toRed(): RedBN {
