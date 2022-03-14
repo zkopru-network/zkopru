@@ -60,7 +60,7 @@ describe('baby jubjub point', () => {
     })
   })
   describe('eddsa', () => {
-    const password = 'password'
+    const password = '0xabcd1234abcd1234'
     const pubKey = Point.fromPrivKey(password)
     it('should return an EdDSA pub key point from a private key string', () => {
       expect(pubKey).toBeDefined()
