@@ -1,24 +1,14 @@
 /* eslint-disable jest/no-hooks */
-import BN from 'bn.js'
+import { BigNumber } from 'ethers'
 import { Fp } from '~babyjubjub'
 
 describe('finite field', () => {
   let constant: Fp
   beforeAll(() => {
-    constant = new Fp(18)
+    constant = Fp.from(18)
   })
   it('should accept number for its constructor parameter', () => {
-    const a = new Fp(18)
-    const b = Fp.from(18)
-    expect(a).toBeDefined()
-    expect(b).toBeDefined()
-    expect(a).toBeInstanceOf(Fp)
-    expect(b).toBeInstanceOf(Fp)
-    expect(constant.eq(a)).toBe(true)
-    expect(constant.eq(b)).toBe(true)
-  })
-  it('should accept string string for its constructor parameter', () => {
-    const a = new Fp('18')
+    const a = Fp.from(18)
     const b = Fp.from('18')
     expect(a).toBeDefined()
     expect(b).toBeDefined()
@@ -27,8 +17,18 @@ describe('finite field', () => {
     expect(constant.eq(a)).toBe(true)
     expect(constant.eq(b)).toBe(true)
   })
-  it('should accept hex string with 0x prefix for its constructor parameter', () => {
-    const a = new Fp('0x12')
+  it('should accept hex string for its constructor parameter', () => {
+    const a = Fp.from('18')
+    const b = Fp.from('0x12')
+    expect(a).toBeDefined()
+    expect(b).toBeDefined()
+    expect(a).toBeInstanceOf(Fp)
+    expect(b).toBeInstanceOf(Fp)
+    expect(constant.eq(a)).toBe(true)
+    expect(constant.eq(b)).toBe(true)
+  })
+  it('should accept bigint for its constructor parameter', () => {
+    const a = Fp.from(BigInt(18))
     const b = Fp.from('0x12')
     expect(a).toBeDefined()
     expect(b).toBeDefined()
@@ -38,21 +38,29 @@ describe('finite field', () => {
     expect(constant.eq(b)).toBe(true)
   })
   it('should return same hex', () => {
-    const f = new Fp('0xabcd1234abcd1234')
-    expect(f.toHex(8)).toStrictEqual('0xabcd1234abcd1234')
+    console.log('should return same hex test')
+    const f = Fp.from('0xabcd1234abcd1234')
+    console.log('vall 1')
+    console.log(f.toHexString())
+    console.log('vall 2')
+    console.log(f.toHexString(8))
+    console.log('vall 3')
+    console.log(f.toHexString(8))
+    console.log(f.toHexString(8))
+    expect(f.toHexString(8)).toStrictEqual('0xabcd1234abcd1234')
   })
   it('should return cyclic hex for a number beyond the field range', () => {
-    const f = new Fp(
+    const f = Fp.from(
       '0xabcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234',
     )
-    expect(f.toHex(32)).not.toStrictEqual(
+    expect(f.toHexString(32)).not.toStrictEqual(
       '0xabcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234',
     )
   })
   it('should accept Buffer obj for its constructor parameter', () => {
-    const a = new Fp(Buffer.from('12', 'hex'))
-    const b = Fp.from(Buffer.from('12', 'hex'))
-    expect(new Fp(Buffer.from('12', 'hex'))).toBeDefined()
+    const a = Fp.from(Buffer.from('12', 'hex'))
+    const b = Fp.from('0x12')
+    expect(Fp.from(Buffer.from('12', 'hex'))).toBeDefined()
     expect(a).toBeDefined()
     expect(b).toBeDefined()
     expect(a).toBeInstanceOf(Fp)
@@ -60,10 +68,10 @@ describe('finite field', () => {
     expect(constant.eq(a)).toBe(true)
     expect(constant.eq(b)).toBe(true)
   })
-  it('should accept BN object for its constructor parameter', () => {
-    const a = new Fp(new BN(18))
-    const b = Fp.from(new BN(18))
-    expect(new Fp(new BN(18))).toBeDefined()
+  it('should accept BigNumber object for its constructor parameter', () => {
+    const a = Fp.from(BigNumber.from(18))
+    const b = Fp.from(18)
+    expect(Fp.from(18)).toBeDefined()
     expect(a).toBeDefined()
     expect(b).toBeDefined()
     expect(a).toBeInstanceOf(Fp)
@@ -72,9 +80,8 @@ describe('finite field', () => {
     expect(constant.eq(b)).toBe(true)
   })
   it('should accept itself for its constructor parameter', () => {
-    const a = new Fp(new Fp(18))
-    const b = Fp.from(new Fp(18))
-    expect(new Fp(new Fp(18))).toBeDefined()
+    const a = Fp.from(Fp.from(18))
+    const b = Fp.from(a)
     expect(a).toBeDefined()
     expect(b).toBeDefined()
     expect(a).toBeInstanceOf(Fp)
@@ -85,19 +92,19 @@ describe('finite field', () => {
 })
 describe('cyclic group', () => {
   it('a + (-a) = 0', () => {
-    const a = new Fp(18)
-    const b = new Fp(-18)
+    const a = Fp.from(18)
+    const b = Fp.from(-18)
     expect(a.add(b).isZero()).toBe(true)
   })
   it('a >= 0 and -a >= 0', () => {
-    const a = new Fp(18)
-    const b = new Fp(-18)
-    expect(a.gtn(0)).toBe(true)
-    expect(b.gtn(0)).toBe(true)
+    const a = Fp.from(18)
+    const b = Fp.from(-18)
+    expect(a.gt(0)).toBe(true)
+    expect(b.gt(0)).toBe(true)
   })
   it('a - b > a when b > a', () => {
-    const a = new Fp(18)
-    const b = new Fp(20)
+    const a = Fp.from(18)
+    const b = Fp.from(20)
     expect(a.sub(b).gt(a)).toBe(true)
   })
 })
