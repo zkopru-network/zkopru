@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { Fp } from '@zkopru/babyjubjub'
 import AsyncLock from 'async-lock'
-import BN from 'bn.js'
-import { toBN } from 'web3-utils'
 import { hexify, logger } from '@zkopru/utils'
 import {
   DB,
@@ -13,8 +11,9 @@ import {
 import { Hasher, genesisRoot } from './hasher'
 import { verifyProof, MerkleProof } from './merkle-proof'
 import { TreeCache } from './utils'
+import { BigNumber } from 'ethers'
 
-export interface SMT<T extends Fp | BN> {
+export interface SMT<T extends Fp | BigNumber> {
   depth: number
   hasher: Hasher<T>
   root(): Promise<T>
@@ -29,24 +28,24 @@ export enum SMTLeaf {
 }
 
 type Leaf = {
-  index: BN
+  index: BigNumber
   val: SMTLeaf
 }
 
 type NodeMap = {
-  [key: string]: BN
+  [key: string]: BigNumber
 }
 
-export class NullifierTree implements SMT<BN> {
+export class NullifierTree implements SMT<BigNumber> {
   readonly db: DB
 
   readonly depth: number
 
-  readonly hasher: Hasher<BN>
+  readonly hasher: Hasher<BigNumber>
 
   lock: AsyncLock
 
-  private rootNode!: BN
+  private rootNode!: BigNumber
 
   treeCache: TreeCache
 
@@ -57,7 +56,7 @@ export class NullifierTree implements SMT<BN> {
     treeCache,
   }: {
     db: DB
-    hasher: Hasher<BN>
+    hasher: Hasher<BigNumber>
     depth: number
     treeCache: TreeCache
   }) {
@@ -70,8 +69,8 @@ export class NullifierTree implements SMT<BN> {
       throw Error('Hasher should have enough prehashed values')
   }
 
-  async root(): Promise<BN> {
-    let root: BN | undefined
+  async root(): Promise<BigNumber> {
+    let root: BigNumber | undefined
     await this.lock.acquire('root', async () => {
       root = await this.getRootNode()
     })
@@ -79,49 +78,55 @@ export class NullifierTree implements SMT<BN> {
     return root
   }
 
-  async findUsedNullifier(...nullifiers: BN[]): Promise<BN[]> {
+  async findUsedNullifier(...nullifiers: BigNumber[]): Promise<BigNumber[]> {
     const usedNullifierNodeIndices = await this.db.findMany('TreeNode', {
       // select: { nodeIndex: true },
       where: {
         nodeIndex: nullifiers
-          .map(index => new BN(1).shln(this.depth).or(index))
-          .map(nullifier => hexify(nullifier)),
+          .map(index =>
+            BigNumber.from(1)
+              .shl(this.depth)
+              .or(index),
+          )
+          .map(nullifier => nullifier.toHexString()),
         value: hexify(SMTLeaf.FILLED),
       },
     })
     const usedNullifiers = usedNullifierNodeIndices.map(nullifier =>
-      toBN(nullifier.nodeIndex).sub(new BN(1).shln(this.depth)),
+      BigNumber.from(nullifier.nodeIndex).sub(
+        BigNumber.from(1).shl(this.depth),
+      ),
     )
     return usedNullifiers
   }
 
-  private async getRootNode(): Promise<BN> {
-    if (this.rootNode) return new BN(this.rootNode)
+  private async getRootNode(): Promise<BigNumber> {
+    if (this.rootNode) return BigNumber.from(this.rootNode)
     logger.trace('tree/nullifier-tree.ts - try to get root node from database')
     const rootNode = await this.db.findOne('TreeNode', {
       // select: { value: true },
       where: {
         treeId: NULLIFIER_TREE_ID,
-        nodeIndex: hexify(new BN(1)),
+        nodeIndex: BigNumber.from(1).toHexString(),
       },
     })
     if (rootNode) {
-      this.rootNode = toBN(rootNode.value)
+      this.rootNode = BigNumber.from(rootNode.value)
     } else {
       this.rootNode = genesisRoot(this.hasher)
     }
-    return new BN(this.rootNode)
+    return BigNumber.from(this.rootNode)
   }
 
-  async getInclusionProof(index: BN): Promise<MerkleProof<BN>> {
-    let siblings!: BN[]
-    let merkleProof!: MerkleProof<BN>
+  async getInclusionProof(index: BigNumber): Promise<MerkleProof<BigNumber>> {
+    let siblings!: BigNumber[]
+    let merkleProof!: MerkleProof<BigNumber>
     await this.lock.acquire('root', async () => {
       siblings = await this.getSiblings(index)
       merkleProof = {
         root: await this.getRootNode(),
         index,
-        leaf: toBN(SMTLeaf.FILLED),
+        leaf: BigNumber.from(SMTLeaf.FILLED),
         siblings,
       }
     })
@@ -131,15 +136,17 @@ export class NullifierTree implements SMT<BN> {
     return merkleProof
   }
 
-  async getNonInclusionProof(index: BN): Promise<MerkleProof<BN>> {
-    let siblings!: BN[]
-    let merkleProof!: MerkleProof<BN>
+  async getNonInclusionProof(
+    index: BigNumber,
+  ): Promise<MerkleProof<BigNumber>> {
+    let siblings!: BigNumber[]
+    let merkleProof!: MerkleProof<BigNumber>
     await this.lock.acquire('root', async () => {
       siblings = await this.getSiblings(index)
       merkleProof = {
         root: await this.getRootNode(),
         index,
-        leaf: toBN(SMTLeaf.EMPTY),
+        leaf: BigNumber.from(SMTLeaf.EMPTY),
         siblings,
       }
     })
@@ -150,8 +157,8 @@ export class NullifierTree implements SMT<BN> {
     return merkleProof
   }
 
-  async nullify(leaves: BN[], db: TransactionDB): Promise<BN> {
-    let root: BN = this.rootNode
+  async nullify(leaves: BigNumber[], db: TransactionDB): Promise<BigNumber> {
+    let root: BigNumber = this.rootNode
     await this.lock.acquire('root', async () => {
       root = await this.update(
         leaves.map(leaf => ({
@@ -165,7 +172,7 @@ export class NullifierTree implements SMT<BN> {
     return root
   }
 
-  async recover(leaves: BN[], db: TransactionDB) {
+  async recover(leaves: BigNumber[], db: TransactionDB) {
     await this.lock.acquire('root', async () => {
       await this.update(
         leaves.map(leaf => ({
@@ -178,8 +185,8 @@ export class NullifierTree implements SMT<BN> {
     })
   }
 
-  async dryRunNullify(...leaves: BN[]): Promise<BN> {
-    let result!: BN
+  async dryRunNullify(...leaves: BigNumber[]): Promise<BigNumber> {
+    let result!: BigNumber
     await this.lock.acquire('root', async () => {
       const { newRoot } = await this.dryRun(
         leaves.map(leaf => ({
@@ -193,7 +200,7 @@ export class NullifierTree implements SMT<BN> {
     return result
   }
 
-  private async getSiblings(index: BN): Promise<BN[]> {
+  private async getSiblings(index: BigNumber): Promise<BigNumber[]> {
     const { depth } = this
     const cachedSiblings = await this.treeCache.getCachedSiblings(
       this.db,
@@ -201,35 +208,41 @@ export class NullifierTree implements SMT<BN> {
       NULLIFIER_TREE_ID,
       index,
     )
-    const siblingCache: { [nodeIndex: string]: BN } = {}
+    const siblingCache: { [nodeIndex: string]: BigNumber } = {}
     for (const sibling of cachedSiblings) {
-      siblingCache[toBN(sibling.nodeIndex).toString(10)] = toBN(sibling.value)
+      siblingCache[
+        BigNumber.from(sibling.nodeIndex).toString()
+      ] = BigNumber.from(sibling.value)
     }
     const siblings = Array(this.depth).fill(undefined)
-    const leafNodeIndex = new BN(1).shln(depth).or(index)
-    let pathNodeIndex!: BN
-    let siblingNodeIndex!: BN
+    const leafNodeIndex = BigNumber.from(1)
+      .shl(depth)
+      .or(index)
+    let pathNodeIndex!: BigNumber
+    let siblingNodeIndex!: BigNumber
     for (let level = 0; level < depth; level += 1) {
-      pathNodeIndex = leafNodeIndex.shrn(level)
-      siblingNodeIndex = new BN(1).xor(pathNodeIndex)
-      const cached = siblingCache[siblingNodeIndex.toString(10)]
+      pathNodeIndex = leafNodeIndex.shr(level)
+      siblingNodeIndex = BigNumber.from(1).xor(pathNodeIndex)
+      const cached = siblingCache[siblingNodeIndex.toString()]
       siblings[level] = cached || this.hasher.preHash[level]
     }
     return siblings
   }
 
-  private async getSiblingNodes(...leafIndices: BN[]): Promise<NodeMap> {
+  private async getSiblingNodes(...leafIndices: BigNumber[]): Promise<NodeMap> {
     // get indexes to retrieve
     const nodeIndices: string[] = []
     for (const leafIndex of leafIndices) {
-      const leafPath = new BN(1).shln(this.depth).or(Fp.toBN(leafIndex))
+      const leafPath = BigNumber.from(1)
+        .shl(this.depth)
+        .or(leafIndex)
       for (let level = 0; level < this.depth; level += 1) {
-        const pathIndex = leafPath.shrn(level)
-        const siblingIndex = new BN(1).xor(pathIndex)
-        nodeIndices.push(hexify(siblingIndex))
+        const pathIndex = leafPath.shr(level)
+        const siblingIndex = BigNumber.from(1).xor(pathIndex)
+        nodeIndices.push(siblingIndex.toHexString())
       }
     }
-    // const mutatedNodes: { [nodeIndex: string]: BN } = {}
+    // const mutatedNodes: { [nodeIndex: string]: BigNumber } = {}
     const mutatedNodes: TreeNode[] = await this.db.findMany('TreeNode', {
       where: {
         treeId: NULLIFIER_TREE_ID,
@@ -239,7 +252,7 @@ export class NullifierTree implements SMT<BN> {
     const siblingNodes: NodeMap = {}
     for (const node of mutatedNodes) {
       // key is a hexified node index
-      siblingNodes[node.nodeIndex] = toBN(node.value)
+      siblingNodes[node.nodeIndex] = BigNumber.from(node.value)
     }
     return siblingNodes
   }
@@ -251,31 +264,31 @@ export class NullifierTree implements SMT<BN> {
     leaves: Leaf[],
     db: TransactionDB,
     option?: { strictUpdate?: boolean },
-  ): Promise<BN> {
+  ): Promise<BigNumber> {
     const { updatedNodes } = await this.dryRun(leaves, option)
     // need batch query here..
     for (const nodeIndex of Object.keys(updatedNodes)) {
       this.treeCache.cacheNode(NULLIFIER_TREE_ID, nodeIndex, {
         treeId: NULLIFIER_TREE_ID,
         nodeIndex,
-        value: hexify(updatedNodes[nodeIndex]),
+        value: updatedNodes[nodeIndex].toHexString(),
       })
       db.upsert('TreeNode', {
         where: {
           treeId: NULLIFIER_TREE_ID,
           nodeIndex,
         },
-        update: { value: hexify(updatedNodes[nodeIndex]) },
+        update: { value: updatedNodes[nodeIndex].toHexString() },
         create: {
           treeId: NULLIFIER_TREE_ID,
           nodeIndex,
-          value: hexify(updatedNodes[nodeIndex]),
+          value: updatedNodes[nodeIndex].toHexString(),
         },
       })
     }
-    const newRoot = updatedNodes[hexify(new BN(1))]
+    const newRoot = updatedNodes[BigNumber.from(1).toHexString()]
     logger.trace(`tree/nullifier-tree.ts - setting new root - ${newRoot}`)
-    const oldRoot = new BN(this.rootNode)
+    const oldRoot = BigNumber.from(this.rootNode)
     db.onError(async () => {
       await this.lock.acquire('root', () => {
         this.rootNode = oldRoot
@@ -288,19 +301,23 @@ export class NullifierTree implements SMT<BN> {
   private async dryRun(
     leaves: Leaf[],
     option?: { strictUpdate?: boolean },
-  ): Promise<{ updatedNodes: NodeMap; newRoot: BN }> {
+  ): Promise<{ updatedNodes: NodeMap; newRoot: BigNumber }> {
     // get all sibling nodes
     const siblingNodes: NodeMap = await this.getSiblingNodes(
       ...leaves.map(leaf => leaf.index),
     )
     const updatedNodes: NodeMap = {}
     // cache node update
-    const getSibling = (path: BN): BN => {
-      const sibIndex = hexify(new BN(1).xor(path))
+    const getSibling = (path: BigNumber): BigNumber => {
+      const sibIndex = BigNumber.from(1)
+        .xor(path)
+        .toHexString()
       return (
         updatedNodes[sibIndex] ||
         siblingNodes[sibIndex] ||
-        this.hasher.preHash[this.depth - (path.bitLength() - 1)]
+        this.hasher.preHash[
+          this.depth - (path.toBigInt().toString(2).length - 1)
+        ]
       )
     }
 
@@ -308,15 +325,17 @@ export class NullifierTree implements SMT<BN> {
     // write on the database
     for (const leaf of leaves) {
       const { index, val } = leaf
-      const leafNodeIndex = new BN(1).shln(this.depth).or(index)
+      const leafNodeIndex = BigNumber.from(1)
+        .shl(this.depth)
+        .or(index)
       if (leafNodeIndex.lte(index)) throw Error('Leaf index is out of range')
-      let node = toBN(val)
-      let pathIndex: BN
+      let node = BigNumber.from(val)
+      let pathIndex: BigNumber
       let hasRightSibling: boolean
       for (let level = 0; level < this.depth; level += 1) {
-        pathIndex = leafNodeIndex.shrn(level)
-        updatedNodes[hexify(pathIndex)] = new BN(node)
-        hasRightSibling = pathIndex.isEven()
+        pathIndex = leafNodeIndex.shr(level)
+        updatedNodes[pathIndex.toHexString()] = BigNumber.from(node)
+        hasRightSibling = pathIndex.and(1).isZero()
         if (hasRightSibling) {
           node = this.hasher.parentOf(node, getSibling(pathIndex))
         } else {
@@ -329,7 +348,7 @@ export class NullifierTree implements SMT<BN> {
       }
       newRoot = node
     }
-    updatedNodes[hexify(new BN(1))] = newRoot
+    updatedNodes[BigNumber.from(1).toHexString()] = newRoot
     return { updatedNodes, newRoot }
   }
 }

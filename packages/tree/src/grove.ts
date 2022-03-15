@@ -1,9 +1,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { Fp } from '@zkopru/babyjubjub'
-import { logger, hexify } from '@zkopru/utils'
+import { logger } from '@zkopru/utils'
 import AsyncLock from 'async-lock'
-import BN from 'bn.js'
-import { toBN } from 'web3-utils'
 import assert from 'assert'
 import {
   DB,
@@ -20,6 +18,7 @@ import { UtxoTree } from './utxo-tree'
 import { WithdrawalTree } from './withdrawal-tree'
 import { NullifierTree } from './nullifier-tree'
 import { TreeCache } from './utils'
+import { BigNumber } from 'ethers'
 
 export interface GroveConfig {
   utxoTreeDepth: number
@@ -28,8 +27,8 @@ export interface GroveConfig {
   utxoSubTreeSize: number
   withdrawalSubTreeSize: number
   utxoHasher: Hasher<Fp>
-  withdrawalHasher: Hasher<BN>
-  nullifierHasher: Hasher<BN>
+  withdrawalHasher: Hasher<BigNumber>
+  nullifierHasher: Hasher<BigNumber>
   fullSync?: boolean
   forceUpdate?: boolean
   zkAddressesToObserve: ZkAddress[]
@@ -39,16 +38,16 @@ export interface GroveConfig {
 export interface GrovePatch {
   header?: string
   utxos: Leaf<Fp>[]
-  withdrawals: Leaf<BN>[]
+  withdrawals: Leaf<BigNumber>[]
   nullifiers: Fp[]
 }
 
 export interface GroveSnapshot {
   utxoTreeIndex: Fp
   utxoTreeRoot: Fp
-  withdrawalTreeIndex: BN
-  withdrawalTreeRoot: BN
-  nullifierTreeRoot?: BN
+  withdrawalTreeIndex: BigNumber
+  withdrawalTreeRoot: BigNumber
+  nullifierTreeRoot?: BigNumber
 }
 
 export class Grove {
@@ -78,7 +77,7 @@ export class Grove {
     withdrawalStartingLeafProof,
   }: {
     utxoStartingLeafProof: MerkleProof<Fp>
-    withdrawalStartingLeafProof: MerkleProof<BN>
+    withdrawalStartingLeafProof: MerkleProof<BigNumber>
   }) {
     logger.info('Applied bootstrap')
     await this.lock.acquire('grove', async () => {
@@ -212,12 +211,12 @@ export class Grove {
 
       return {
         utxoTreeIndex: utxoResult.index
-          .addn(utxoFixedSizeLen)
-          .subn(patch.utxos.length),
+          .add(utxoFixedSizeLen)
+          .sub(patch.utxos.length),
         utxoTreeRoot: utxoResult.root,
         withdrawalTreeIndex: withdrawalResult.index
-          .addn(withdrawalFixedSizeLen)
-          .subn(patch.withdrawals.length),
+          .add(withdrawalFixedSizeLen)
+          .sub(patch.withdrawals.length),
         withdrawalTreeRoot: withdrawalResult.root,
         nullifierTreeRoot: nullifierRoot,
       }
@@ -227,10 +226,10 @@ export class Grove {
   private recordBootstrap(db: TransactionDB, header?: string): void {
     const bootstrapData = {
       utxoBootstrap: JSON.stringify(
-        this.utxoTree.data.siblings.map(val => hexify(val)),
+        this.utxoTree.data.siblings.map(val => val.toHexString()),
       ),
       withdrawalBootstrap: JSON.stringify(
-        this.withdrawalTree.data.siblings.map(val => hexify(val)),
+        this.withdrawalTree.data.siblings.map(val => val.toHexString()),
       ),
     }
     if (header) {
@@ -283,7 +282,7 @@ export class Grove {
   }
 
   private async appendWithdrawals(
-    withdrawals: Leaf<BN>[],
+    withdrawals: Leaf<BigNumber>[],
     db: TransactionDB,
   ): Promise<string> {
     const totalItemLen =
@@ -300,7 +299,7 @@ export class Grove {
     if (
       this.withdrawalTree
         .latestLeafIndex()
-        .addn(totalItemLen)
+        .add(totalItemLen)
         .lte(this.withdrawalTree.maxSize())
     ) {
       await this.withdrawalTree.append(paddedWithdrawals, db)
@@ -311,7 +310,7 @@ export class Grove {
   }
 
   private async markAsNullified(
-    nullifiers: BN[],
+    nullifiers: BigNumber[],
     db: TransactionDB,
   ): Promise<void> {
     // only the full node manages the nullifier tree
@@ -323,7 +322,7 @@ export class Grove {
 
   async utxoMerkleProof(hash: Fp): Promise<MerkleProof<Fp>> {
     const utxo = await this.db.findOne('Utxo', {
-      where: { hash: hash.toString(10) },
+      where: { hash: hash.toString() },
     })
     if (!utxo) throw Error('Failed to find the utxo')
     if (!utxo.index) throw Error('It is not included in a block yet')
@@ -340,7 +339,7 @@ export class Grove {
       const level =
         1 +
         this.config.utxoTreeDepth -
-        Fp.from(obj.nodeIndex || 0).toString(2).length
+        BigNumber.from(obj.nodeIndex || 0).toBigInt().toString(2).length
       if (level === this.config.utxoTreeDepth) {
         root = Fp.from(obj.value)
       } else {
@@ -359,11 +358,11 @@ export class Grove {
   }
 
   async withdrawalMerkleProof(
-    noteHash: BN,
-    index?: BN,
-  ): Promise<MerkleProof<BN>> {
+    noteHash: BigNumber,
+    index?: BigNumber,
+  ): Promise<MerkleProof<BigNumber>> {
     const withdrawal = await this.db.findOne('Withdrawal', {
-      where: { withdrawalHash: noteHash.toString(10) },
+      where: { withdrawalHash: noteHash.toString() },
     })
     if (!withdrawal) throw Error('Failed to find the withdrawal')
     const leafIndex = index?.toString() || withdrawal.index
@@ -375,22 +374,22 @@ export class Grove {
       this.withdrawalTree.metadata.id,
       leafIndex,
     )
-    let root: BN = this.withdrawalTree.root()
+    let root: BigNumber = this.withdrawalTree.root()
     const siblings = [...this.config.withdrawalHasher.preHash.slice(0, -1)]
     cachedSiblings.forEach((obj: TreeNode) => {
       const level =
         1 +
         this.config.withdrawalTreeDepth -
-        toBN(obj.nodeIndex || 0).toString(2).length
+        BigNumber.from(obj.nodeIndex || 0).toBigInt().toString(2).length
       if (level === this.config.withdrawalTreeDepth) {
-        root = toBN(obj.value)
+        root = BigNumber.from(obj.value)
       } else {
-        siblings[level] = toBN(obj.value)
+        siblings[level] = BigNumber.from(obj.value)
       }
     })
     const proof = {
       root,
-      index: toBN(leafIndex),
+      index: BigNumber.from(leafIndex),
       leaf: noteHash,
       siblings,
     }
@@ -420,11 +419,11 @@ export class Grove {
       siblings = hasher.preHash.slice(0, -1)
     }
     const data = {
-      root: root.toString(10),
-      index: index.toString(10),
-      siblings: JSON.stringify(siblings.map(f => f.toString(10))),
-      start: index.toString(10),
-      end: index.toString(10),
+      root: root.toString(),
+      index: index.toString(),
+      siblings: JSON.stringify(siblings.map(f => f.toString())),
+      start: index.toString(),
+      end: index.toString(),
     }
     await this.db.upsert('LightTree', {
       where: { species: TreeSpecies.UTXO },
@@ -451,12 +450,12 @@ export class Grove {
   }
 
   private async bootstrapWithdrawalTree(
-    proof?: MerkleProof<BN>,
+    proof?: MerkleProof<BigNumber>,
   ): Promise<{ treeSql: LightTree; tree: WithdrawalTree }> {
     const hasher = this.config.withdrawalHasher
-    let root: BN
-    let index: BN
-    let siblings: BN[]
+    let root: BigNumber
+    let index: BigNumber
+    let siblings: BigNumber[]
 
     if (proof) {
       root = proof.root
@@ -468,15 +467,15 @@ export class Grove {
     } else {
       // NTODO
       root = genesisRoot(hasher)
-      index = new BN(0)
+      index = BigNumber.from(0)
       siblings = hasher.preHash.slice(0, -1)
     }
     const data = {
-      root: hexify(root),
-      index: index.toString(10),
-      siblings: JSON.stringify(siblings.map(val => hexify(val))),
-      start: index.toString(10),
-      end: index.toString(10),
+      root: root.toString(),
+      index: index.toString(),
+      siblings: JSON.stringify(siblings.map(val => val.toHexString())),
+      start: index.toString(),
+      end: index.toString(),
     }
     await this.db.upsert('LightTree', {
       where: { species: TreeSpecies.WITHDRAWAL },
