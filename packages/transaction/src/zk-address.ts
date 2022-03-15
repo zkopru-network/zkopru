@@ -20,7 +20,7 @@ export class ZkAddress {
       .slice(0, 4)
     if (!checksum.equals(decoded.slice(64)))
       throw Error('Checksum does not match')
-    this.PubSK = new Fp(decoded.slice(0, 32), undefined, 'le')
+    this.PubSK = Fp.from(decoded.slice(0, 32))
     this.N = Point.decode(decoded.slice(32, 64))
     this.address = addr
   }

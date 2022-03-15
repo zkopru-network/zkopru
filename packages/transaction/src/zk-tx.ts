@@ -169,7 +169,7 @@ export class ZkTx {
           ])
         }),
         ...this.outflow.map(outflow => {
-          if (outflow.outflowType.eqn(OutflowType.UTXO)) {
+          if (outflow.outflowType.eq(OutflowType.UTXO)) {
             return outflow.note.toBuffer('be', 32)
           }
           if (!outflow.data)

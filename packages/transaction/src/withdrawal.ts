@@ -1,4 +1,5 @@
-import { Fp, F } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
+import { BigNumberish } from 'ethers'
 import { Uint256, Bytes32 } from 'soltypes'
 import { soliditySha3 } from 'web3-utils'
 import { ZkAddress } from './zk-address'
@@ -79,7 +80,7 @@ export class Withdrawal extends Note {
     return Bytes32.from(result).toUint()
   }
 
-  static from(note: Note, to: F, fee: F): Withdrawal {
+  static from(note: Note, to: BigNumberish, fee: BigNumberish): Withdrawal {
     return new Withdrawal(note.owner, note.salt, note.asset, {
       to: Fp.from(to),
       fee: Fp.from(fee),

@@ -1,4 +1,5 @@
-import { Fp, F } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
+import { BigNumberish } from 'ethers'
 import { ZkAddress } from './zk-address'
 import { Utxo } from './utxo'
 import { TxBuilder } from './tx-builder'
@@ -8,7 +9,7 @@ export class SwapTxBuilder extends TxBuilder {
     return new SwapTxBuilder(owner)
   }
 
-  weiPerByte(val: F): SwapTxBuilder {
+  weiPerByte(val: BigNumberish): SwapTxBuilder {
     this.feePerByte = Fp.from(val)
     return this
   }
@@ -23,9 +24,9 @@ export class SwapTxBuilder extends TxBuilder {
     to,
     salt,
   }: {
-    eth: F
+    eth: BigNumberish
     to: ZkAddress
-    salt: F
+    salt: BigNumberish
   }): SwapTxBuilder {
     const note = Utxo.newEtherNote({ eth, owner: to, salt })
     this.send(note)
@@ -38,10 +39,10 @@ export class SwapTxBuilder extends TxBuilder {
     to,
     salt,
   }: {
-    tokenAddr: F
-    erc20Amount: F
+    tokenAddr: BigNumberish
+    erc20Amount: BigNumberish
     to: ZkAddress
-    salt: F
+    salt: BigNumberish
   }): SwapTxBuilder {
     const note = Utxo.newERC20Note({
       eth: 0,
@@ -60,10 +61,10 @@ export class SwapTxBuilder extends TxBuilder {
     to,
     salt,
   }: {
-    tokenAddr: F
-    nft: F
+    tokenAddr: BigNumberish
+    nft: BigNumberish
     to: ZkAddress
-    salt: F
+    salt: BigNumberish
   }): SwapTxBuilder {
     const note = Utxo.newNFTNote({
       eth: 0,
@@ -76,7 +77,7 @@ export class SwapTxBuilder extends TxBuilder {
     return this
   }
 
-  receiveEther(amount: Fp, salt: F): SwapTxBuilder {
+  receiveEther(amount: Fp, salt: BigNumberish): SwapTxBuilder {
     this.swap = Utxo.newEtherNote({
       eth: amount,
       owner: this.changeTo,
@@ -90,9 +91,9 @@ export class SwapTxBuilder extends TxBuilder {
     erc20Amount,
     salt,
   }: {
-    tokenAddr: F
-    erc20Amount: F
-    salt: F
+    tokenAddr: BigNumberish
+    erc20Amount: BigNumberish
+    salt: BigNumberish
   }): SwapTxBuilder {
     this.swap = Utxo.newERC20Note({
       eth: 0,
@@ -109,9 +110,9 @@ export class SwapTxBuilder extends TxBuilder {
     nft,
     salt,
   }: {
-    tokenAddr: F
-    nft: F
-    salt: F
+    tokenAddr: BigNumberish
+    nft: BigNumberish
+    salt: BigNumberish
   }): SwapTxBuilder {
     this.swap = Utxo.newNFTNote({
       eth: 0,

@@ -44,7 +44,7 @@ export class Sum {
   static erc20From(notes: Note[]): { [addr: string]: Fp } {
     const erc20: { [addr: string]: Fp } = {}
     for (const note of notes) {
-      const addr = Address.from(note.asset.tokenAddr.toHex()).toString()
+      const addr = Address.from(note.asset.tokenAddr.toHexString()).toString()
       if (!note.asset.erc20Amount.isZero() && note.asset.nft.isZero()) {
         const prev = erc20[addr] ? erc20[addr] : Fp.from(0)
         erc20[addr] = prev.add(note.asset.erc20Amount)
@@ -56,7 +56,7 @@ export class Sum {
   static nftsFrom(notes: Note[]): { [addr: string]: Fp[] } {
     const erc721: { [addr: string]: Fp[] } = {}
     for (const note of notes) {
-      const addr = Address.from(note.asset.tokenAddr.toHex()).toString()
+      const addr = Address.from(note.asset.tokenAddr.toHexString()).toString()
       if (note.asset.erc20Amount.isZero() && !note.asset.nft.isZero()) {
         if (!erc721[addr]) {
           erc721[addr] = []
