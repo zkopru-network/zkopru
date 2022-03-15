@@ -37,7 +37,7 @@
     "circomlib": "0.5.1",
     "hdkey": "^1.1.1",
     "keccak": "^3.0.1",
-    "soltypes": "^1.3.5",
+    "soltypes": "^2.0.0",
     "web3": "1.2.11",
     "web3-core": "1.2.11",
     "web3-eth-accounts": "1.2.11",
