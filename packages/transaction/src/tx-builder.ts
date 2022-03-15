@@ -1,7 +1,8 @@
-import { Fp, F } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import { txSizeCalculator, logger } from '@zkopru/utils'
-import { fromWei } from 'web3-utils'
 import assert from 'assert'
+import { BigNumberish } from 'ethers'
+import { formatUnits } from 'ethers/lib/utils'
 import { Address } from 'soltypes'
 import { ZkAddress } from './zk-address'
 import { Utxo } from './utxo'
@@ -34,7 +35,7 @@ export class TxBuilder {
     return new TxBuilder(owner)
   }
 
-  weiPerByte(val: F): TxBuilder {
+  weiPerByte(val: BigNumberish): TxBuilder {
     this.feePerByte = Fp.from(val)
     return this
   }
@@ -59,15 +60,15 @@ export class TxBuilder {
     withdrawal,
     migration,
   }: {
-    eth: F
+    eth: BigNumberish
     to: ZkAddress
     withdrawal?: {
-      to: F
-      fee: F
+      to: BigNumberish
+      fee: BigNumberish
     }
     migration?: {
-      to: F
-      fee: F
+      to: BigNumberish
+      fee: BigNumberish
     }
   }): TxBuilder {
     if (withdrawal && migration)
@@ -87,17 +88,17 @@ export class TxBuilder {
     withdrawal,
     migration,
   }: {
-    tokenAddr: F
-    erc20Amount: F
+    tokenAddr: BigNumberish
+    erc20Amount: BigNumberish
     to: ZkAddress
-    eth?: F
+    eth?: BigNumberish
     withdrawal?: {
-      to: F
-      fee: F
+      to: BigNumberish
+      fee: BigNumberish
     }
     migration?: {
-      to: F
-      fee: F
+      to: BigNumberish
+      fee: BigNumberish
     }
   }): TxBuilder {
     const note = Utxo.newERC20Note({
@@ -118,17 +119,17 @@ export class TxBuilder {
     withdrawal,
     migration,
   }: {
-    tokenAddr: F
-    nft: F
+    tokenAddr: BigNumberish
+    nft: BigNumberish
     to: ZkAddress
-    eth?: F
+    eth?: BigNumberish
     withdrawal?: {
-      to: F
-      fee: F
+      to: BigNumberish
+      fee: BigNumberish
     }
     migration?: {
-      to: F
-      fee: F
+      to: BigNumberish
+      fee: BigNumberish
     }
   }): TxBuilder {
     const note = Utxo.newNFTNote({
@@ -259,7 +260,7 @@ export class TxBuilder {
         !!this.swap,
         false,
       )
-      return this.feePerByte.muln(size)
+      return this.feePerByte.mul(size)
     }
 
     const getRequiredETH = (): Fp => {
@@ -289,13 +290,13 @@ export class TxBuilder {
         const target = getRequiredETH()
         const insufficient = target.sub(owned)
         throw Error(
-          `Not enough Ether. Insufficient: ${fromWei(
+          `Not enough Ether. Insufficient: ${formatUnits(
             insufficient.toString(),
             'ether',
           )}`,
         )
       }
-      if (spending.eth().gtn(0)) {
+      if (spending.eth().gt(0)) {
         spendings.push(spending)
       }
     }
@@ -345,12 +346,12 @@ export class TxBuilder {
   protected send(
     note: Outflow,
     withdrawal?: {
-      to: F
-      fee: F
+      to: BigNumberish
+      fee: BigNumberish
     },
     migration?: {
-      to: F
-      fee: F
+      to: BigNumberish
+      fee: BigNumberish
     },
   ) {
     if (withdrawal) {

@@ -1,4 +1,5 @@
-import { Fp, F } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
+import { BigNumberish } from 'ethers'
 import { ZkAddress } from './zk-address'
 import { ZkOutflow } from './zk-tx'
 import { Note, OutflowType, Asset } from './note'
@@ -49,7 +50,7 @@ export class Migration extends Note {
     return outflow
   }
 
-  static from(note: Note, to: F, fee: F): Migration {
+  static from(note: Note, to: BigNumberish, fee: BigNumberish): Migration {
     return new Migration(note.owner, note.salt, note.asset, {
       to: Fp.from(to),
       fee: Fp.from(fee),
