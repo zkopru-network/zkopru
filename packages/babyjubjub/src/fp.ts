@@ -50,7 +50,7 @@ export class Fp implements BigNumber {
     return new Fp(_constructorGuard, val.toHexString())
   }
 
-  static strictFpom(x: BigNumberish): Fp {
+  static strictFrom(x: BigNumberish): Fp {
     if (!Fp.inRange(x)) throw Error('Not in range')
     return Fp.from(x)
   }
