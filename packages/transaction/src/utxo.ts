@@ -1,7 +1,8 @@
 import { randomHex } from 'web3-utils'
 import { poseidon } from 'circomlib'
 import * as chacha20 from 'chacha20'
-import { Fp, Fr, F, Point } from '@zkopru/babyjubjub'
+import { BigNumberish } from 'ethers'
+import { Fp, Fr, Point } from '@zkopru/babyjubjub'
 import { ZkAddress } from './zk-address'
 import { Note, OutflowType, NoteStatus, Asset } from './note'
 import { Withdrawal } from './withdrawal'
@@ -29,14 +30,20 @@ export class Utxo extends Note {
     return new Utxo(note.owner, note.salt, note.asset, UtxoStatus.NON_INCLUDED)
   }
 
-  toWithdrawal({ to, fee }: { to: F; fee: F }): Withdrawal {
+  toWithdrawal({
+    to,
+    fee,
+  }: {
+    to: BigNumberish
+    fee: BigNumberish
+  }): Withdrawal {
     return new Withdrawal(this.owner, this.salt, this.asset, {
       to: Fp.from(to),
       fee: Fp.from(fee),
     })
   }
 
-  toMigration({ to, fee }: { to: F; fee: F }): Migration {
+  toMigration({ to, fee }: { to: BigNumberish; fee: BigNumberish }): Migration {
     return new Migration(this.owner, this.salt, this.asset, {
       to: Fp.from(to),
       fee: Fp.from(fee),
@@ -51,9 +58,9 @@ export class Utxo extends Note {
       .encode()
     const tokenId = TokenRegistry.getTokenId(this.asset.tokenAddr)
     let value: Fp
-    if (this.asset.eth.gtn(0)) {
+    if (this.asset.eth.gt(0)) {
       value = this.asset.eth
-    } else if (this.asset.erc20Amount.gtn(0)) {
+    } else if (this.asset.erc20Amount.gt(0)) {
       value = this.asset.erc20Amount
     } else {
       value = this.asset.nft
@@ -169,8 +176,8 @@ export class Utxo extends Note {
     salt,
   }: {
     owner: ZkAddress
-    eth: F
-    salt?: F
+    eth: BigNumberish
+    salt?: BigNumberish
   }): Utxo {
     const note = new Note(
       owner,
@@ -193,10 +200,10 @@ export class Utxo extends Note {
     salt,
   }: {
     owner: ZkAddress
-    eth: F
-    tokenAddr: F
-    erc20Amount: F
-    salt?: F
+    eth: BigNumberish
+    tokenAddr: BigNumberish
+    erc20Amount: BigNumberish
+    salt?: BigNumberish
   }): Utxo {
     const note = new Note(
       owner,
@@ -219,10 +226,10 @@ export class Utxo extends Note {
     salt,
   }: {
     owner: ZkAddress
-    eth: F
-    tokenAddr: F
-    nft: F
-    salt?: F
+    eth: BigNumberish
+    tokenAddr: BigNumberish
+    nft: BigNumberish
+    salt?: BigNumberish
   }): Utxo {
     const note = new Note(
       owner,
