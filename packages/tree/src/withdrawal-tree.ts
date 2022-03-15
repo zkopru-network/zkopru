@@ -1,6 +1,5 @@
 import { DB, LightTree, TreeSpecies } from '@zkopru/database'
-import BN from 'bn.js'
-import { toBN } from 'web3-utils'
+import { BigNumber } from 'ethers'
 import {
   LightRollUpTree,
   TreeMetadata,
@@ -9,16 +8,16 @@ import {
 } from './light-rollup-tree'
 import { TreeCache } from './utils'
 
-export class WithdrawalTree extends LightRollUpTree<BN> {
-  zero = toBN(0)
+export class WithdrawalTree extends LightRollUpTree<BigNumber> {
+  zero = BigNumber.from(0)
 
   addressesToObserve?: string[]
 
   constructor(conf: {
     db: DB
-    metadata: TreeMetadata<BN>
-    data: TreeData<BN>
-    config: TreeConfig<BN>
+    metadata: TreeMetadata<BigNumber>
+    data: TreeData<BigNumber>
+    config: TreeConfig<BigNumber>
     treeCache: TreeCache
   }) {
     super({ ...conf, species: TreeSpecies.WITHDRAWAL })
@@ -28,7 +27,7 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
     this.addressesToObserve = addresses
   }
 
-  async indexesOfTrackingLeaves(): Promise<BN[]> {
+  async indexesOfTrackingLeaves(): Promise<BigNumber[]> {
     const keys: string[] = this.addressesToObserve || []
 
     const trackingLeaves = await this.db.findMany('Withdrawal', {
@@ -39,7 +38,7 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
     })
     return trackingLeaves
       .filter(leaf => leaf.index !== null)
-      .map(leaf => toBN(leaf.index as string))
+      .map(leaf => BigNumber.from(leaf.index as string))
   }
 
   static async bootstrap({
@@ -50,9 +49,9 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
     treeCache,
   }: {
     db: DB
-    metadata: TreeMetadata<BN>
-    data: TreeData<BN>
-    config: TreeConfig<BN>
+    metadata: TreeMetadata<BigNumber>
+    data: TreeData<BigNumber>
+    config: TreeConfig<BigNumber>
     treeCache: TreeCache
   }): Promise<WithdrawalTree> {
     const initialData = await LightRollUpTree.initTreeFromDatabase({
@@ -68,7 +67,7 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
   static from(
     db: DB,
     obj: LightTree,
-    config: TreeConfig<BN>,
+    config: TreeConfig<BigNumber>,
     treeCache: TreeCache,
   ): WithdrawalTree {
     return new WithdrawalTree({
@@ -76,13 +75,13 @@ export class WithdrawalTree extends LightRollUpTree<BN> {
       metadata: {
         id: obj.id,
         species: obj.species,
-        start: toBN(obj.start),
-        end: toBN(obj.end),
+        start: BigNumber.from(obj.start),
+        end: BigNumber.from(obj.end),
       },
       data: {
-        root: toBN(obj.root),
-        index: toBN(obj.index),
-        siblings: JSON.parse(obj.siblings).map(toBN),
+        root: BigNumber.from(obj.root),
+        index: BigNumber.from(obj.index),
+        siblings: JSON.parse(obj.siblings).map(s => BigNumber.from(s)),
       },
       config,
       treeCache,

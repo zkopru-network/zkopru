@@ -1,15 +1,14 @@
-import { soliditySha3 } from 'web3-utils'
 import { poseidon } from 'circomlib'
 import { Fp } from '@zkopru/babyjubjub'
-import { hexify } from '@zkopru/utils'
-import BN from 'bn.js'
+import { BigNumber, BigNumberish } from 'ethers'
+import { solidityKeccak256 } from 'ethers/lib/utils'
 
-export interface Hasher<T extends Fp | BN> {
+export interface Hasher<T extends BigNumberish> {
   parentOf(left: T, right: T): T
   preHash: T[]
 }
 
-function getPreHash<T extends Fp | BN>(
+function getPreHash<T extends BigNumberish>(
   zero: T,
   parentOf: (left: T, right: T) => T,
   depth: number,
@@ -23,16 +22,16 @@ function getPreHash<T extends Fp | BN>(
   return preHash
 }
 
-export function genesisRoot<T extends Fp | BN>(hasher: Hasher<T>): T {
+export function genesisRoot<T extends BigNumberish>(hasher: Hasher<T>): T {
   return hasher.preHash.slice(-1)[0]
 }
 
-export function keccakHasher(depth: number): Hasher<BN> {
-  const parentOf = (left: BN, right: BN) => {
-    const val = soliditySha3(hexify(left, 32), hexify(right, 32)) || '0x'
-    return new BN(val.substr(2), 16)
+export function keccakHasher(depth: number): Hasher<BigNumber> {
+  const parentOf = (left: BigNumber, right: BigNumber) => {
+    const val = solidityKeccak256(['uint256', 'uint256'], [left, right])
+    return BigNumber.from(val)
   }
-  const preHash = getPreHash<BN>(new BN(0), parentOf, depth)
+  const preHash = getPreHash<BigNumber>(BigNumber.from(0), parentOf, depth)
   return { parentOf, preHash }
 }
 

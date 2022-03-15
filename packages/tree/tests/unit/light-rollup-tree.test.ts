@@ -53,6 +53,7 @@ describe('rollup tree unit test', () => {
 
   describe('append()', () => {
     it('should match external for single append', async () => {
+      console.log('helo')
       const { parentOf, preHash } = poseidonHasher(depth)
       const tree = new SparseTree<Fp>({
         depth: depth + 1,
