@@ -1,7 +1,5 @@
-import BN from 'bn.js'
-import { Fp, F } from '@zkopru/babyjubjub'
-import { hexify } from '@zkopru/utils'
 import { DB, TreeNode } from '@zkopru/database'
+import { BigNumber, BigNumberish } from 'ethers'
 
 // An in memory cache for loading tree indexes in a database transaction
 //
@@ -36,17 +34,17 @@ export class TreeCache {
     db: DB,
     depth: number,
     treeId: string,
-    leafIndex: F,
+    leafIndex: BigNumberish,
   ): Promise<TreeNode[]> {
     const siblingIndexes = Array(depth).fill(null)
-    const leafPath = new BN(1).shln(depth).or(Fp.toBN(leafIndex))
-    if (leafPath.lte(Fp.toBN(leafIndex)))
+    const leafPath = BigNumber.from(1).shl(depth).or(leafIndex)
+    if (leafPath.lte(leafIndex))
       throw Error('Leaf index is out of range')
 
     for (let level = 0; level < depth; level += 1) {
-      const pathIndex = leafPath.shrn(level)
-      const siblingIndex = new BN(1).xor(pathIndex)
-      siblingIndexes[level] = hexify(siblingIndex)
+      const pathIndex = leafPath.shr(level)
+      const siblingIndex = BigNumber.from(1).xor(pathIndex)
+      siblingIndexes[level] = siblingIndex.toHexString()
     }
     const inMemoryNodes = this.enabled
       ? siblingIndexes

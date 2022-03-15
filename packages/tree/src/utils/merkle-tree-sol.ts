@@ -1,11 +1,11 @@
 import { Fp } from '@zkopru/babyjubjub'
 import assert from 'assert'
-import BN from 'bn.js'
+import { BigNumber } from 'ethers'
 import { Hasher } from '../hasher'
 
 // This TS code corresponds to the MerkleTree.sol code file
 
-function appendLeaf<T extends Fp | BN>(
+function appendLeaf<T extends Fp | BigNumber>(
   hasher: Hasher<T>,
   index: T,
   leaf: T,
@@ -19,7 +19,7 @@ function appendLeaf<T extends Fp | BN>(
   const path = index
   let node: T = leaf
   for (let level = 0; level < siblings.length; level += 1) {
-    if (path.shrn(level).isEven()) {
+    if (path.shr(level).and(1).isZero()) {
       // Right empty sibling
       nextSiblings[level] = node // current node becomes the next merkle proof's left sibling
       node = hasher.parentOf(node, hasher.preHash[level])
@@ -30,7 +30,7 @@ function appendLeaf<T extends Fp | BN>(
     }
   }
   const nextRoot = node
-  const nextIndex = index.addn(1) as T
+  const nextIndex = index.add(1) as T
   return {
     nextRoot,
     nextIndex,
@@ -38,7 +38,7 @@ function appendLeaf<T extends Fp | BN>(
   }
 }
 
-function startingLeafProof<T extends Fp | BN>(
+function startingLeafProof<T extends Fp | BigNumber>(
   hasher: Hasher<T>,
   root: T,
   index: T,
@@ -47,7 +47,7 @@ function startingLeafProof<T extends Fp | BN>(
   const path = index
   let node: T = hasher.preHash[0]
   for (let level = 0; level < siblings.length; level += 1) {
-    if (path.shrn(level).isEven()) {
+    if (path.shr(level).and(1).isZero()) {
       // Right sibling should be the prehashed zero
       if (!siblings[level].eq(hasher.preHash[level])) return false
       node = hasher.parentOf(node, hasher.preHash[level])
@@ -60,7 +60,7 @@ function startingLeafProof<T extends Fp | BN>(
   return root.eq(node)
 }
 
-export function merkleRoot<T extends Fp | BN>(
+export function merkleRoot<T extends Fp | BigNumber>(
   hasher: Hasher<T>,
   leaf: T,
   index: T,
@@ -69,7 +69,7 @@ export function merkleRoot<T extends Fp | BN>(
   const path = index
   let node: T = leaf
   for (let level = 0; level < siblings.length; level += 1) {
-    if (path.shrn(level).isEven()) {
+    if (path.shr(level).and(1).isZero()) {
       // Right sibling
       node = hasher.parentOf(node, siblings[level])
     } else {
@@ -80,7 +80,7 @@ export function merkleRoot<T extends Fp | BN>(
   return node
 }
 
-export function merkleProof<T extends Fp | BN>(
+export function merkleProof<T extends Fp | BigNumber>(
   hasher: Hasher<T>,
   root: T,
   leaf: T,
@@ -90,7 +90,7 @@ export function merkleProof<T extends Fp | BN>(
   return merkleRoot(hasher, leaf, index, siblings).eq(root)
 }
 
-export function append<T extends Fp | BN>(
+export function append<T extends Fp | BigNumber>(
   hasher: Hasher<T>,
   startingRoot: T,
   index: T,
@@ -118,7 +118,7 @@ export function append<T extends Fp | BN>(
 }
 
 // Sub tree library
-function subTreeRoot<T extends Fp | BN>(
+function subTreeRoot<T extends Fp | BigNumber>(
   hasher: Hasher<T>,
   subTreeDepth: number,
   leaves: T[],
@@ -181,7 +181,7 @@ function subTreeRoot<T extends Fp | BN>(
   return rootNode
 }
 
-function appendSubTree<T extends Fp | BN>(
+function appendSubTree<T extends Fp | BigNumber>(
   hasher: Hasher<T>,
   index: T,
   subTreeDepth: number,
@@ -195,11 +195,11 @@ function appendSubTree<T extends Fp | BN>(
   const subTreeSize = 1 << subTreeDepth
   assert(leaves.length <= subTreeSize, 'Overflowed')
   const nextSiblings: T[] = [...siblings] // we'll not use nodes[0]
-  const subTreePath = index.shrn(subTreeDepth)
+  const subTreePath = index.shr(subTreeDepth)
   let path = subTreePath
   let node = subTreeRoot(hasher, subTreeDepth, leaves)
   for (let level = 0; level < siblings.length; level += 1) {
-    if (path.isEven()) {
+    if (path.and(1).isZero()) {
       // right empty sibling
       nextSiblings[level] = node // current node will be the next merkle proof's left sibling
       node = hasher.parentOf(node, hasher.preHash[level + subTreeDepth])
@@ -208,10 +208,10 @@ function appendSubTree<T extends Fp | BN>(
       nextSiblings[level] = siblings[level] // keep current sibling
       node = hasher.parentOf(siblings[level], node)
     }
-    path = path.shrn(1)
+    path = path.shr(1)
   }
   const nextRoot = node
-  const nextIndex = index.addn(1 << subTreeDepth) as T
+  const nextIndex = index.add(1 << subTreeDepth) as T
   return {
     nextRoot,
     nextIndex,
@@ -219,17 +219,17 @@ function appendSubTree<T extends Fp | BN>(
   }
 }
 
-function emptySubTreeProof<T extends Fp | BN>(
+function emptySubTreeProof<T extends Fp | BigNumber>(
   hasher: Hasher<T>,
   root: T,
   index: T,
   subTreeDepth: number,
   subTreeSiblings: T[],
 ): boolean {
-  const subTreePath = index.shrn(subTreeDepth)
+  const subTreePath = index.shr(subTreeDepth)
   let path = subTreePath
   for (let level = 0; level < subTreeSiblings.length; level += 1) {
-    if (path.isEven()) {
+    if (path.and(1).isZero()) {
       // right sibling should be a prehashed zero
       if (!subTreeSiblings[level].eq(hasher.preHash[level + subTreeDepth])) {
         return false
@@ -241,7 +241,7 @@ function emptySubTreeProof<T extends Fp | BN>(
         return false
       }
     }
-    path = path.shrn(1)
+    path = path.shr(1)
   }
   return merkleProof(
     hasher,
@@ -252,7 +252,7 @@ function emptySubTreeProof<T extends Fp | BN>(
   )
 }
 
-export function splitToSubTrees<T extends Fp | BN>(
+export function splitToSubTrees<T extends Fp | BigNumber>(
   hasher: Hasher<T>,
   leaves: T[],
   subTreeDepth: number,
@@ -276,7 +276,7 @@ export function splitToSubTrees<T extends Fp | BN>(
   return subTrees
 }
 
-export function appendAsSubTrees<T extends Fp | BN>(
+export function appendAsSubTrees<T extends Fp | BigNumber>(
   hasher: Hasher<T>,
   startingRoot: T,
   index: T,
@@ -284,7 +284,7 @@ export function appendAsSubTrees<T extends Fp | BN>(
   leaves: T[],
   subTreeSiblings: T[],
 ): T {
-  assert(index.modn(1 << subTreeDepth) === 0, 'Cannot merge subtree')
+  assert(index.mod(1 << subTreeDepth).isZero(), 'Cannot merge subtree')
   assert(
     hasher.preHash.length === subTreeDepth + subTreeSiblings.length + 1,
     "Should submit subtree's siblings",
