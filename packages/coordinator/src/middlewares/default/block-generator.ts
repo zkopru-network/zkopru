@@ -23,12 +23,13 @@ export class BlockGenerator extends GeneratorBase {
     }
 
     // Calculate consumed bytes and aggregated fee
-    const consumedBytes = 32 // bytes length
+    let consumedBytes = 32 // bytes length
     let aggregatedFee: Fp = Fp.zero
 
     const { layer2 } = this.context.node
     // 1. pick mass deposits
     const pendingMassDeposits = await layer2.getPendingMassDeposits()
+    consumedBytes += pendingMassDeposits.calldataSize
     aggregatedFee = aggregatedFee.add(pendingMassDeposits.totalFee)
 
     // 2. pick transactions
