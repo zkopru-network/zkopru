@@ -258,6 +258,7 @@ export class TxBuilder {
           .length,
         !!this.swap,
         false,
+        false,
       )
       return this.feePerByte.muln(size)
     }

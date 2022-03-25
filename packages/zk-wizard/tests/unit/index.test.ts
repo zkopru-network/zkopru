@@ -7,6 +7,7 @@ import { Fp } from '@zkopru/babyjubjub'
 import { ZkTx, Utxo, UtxoStatus, TokenRegistry } from '@zkopru/transaction'
 import { ZkWizard } from '@zkopru/zk-wizard'
 import { keccakHasher, poseidonHasher, Grove } from '@zkopru/tree'
+import { txSizeCalculator } from '@zkopru/utils'
 import { DB, SQLiteConnector, schema } from '~database/node'
 import { accounts, address } from '~dataset/testset-predefined'
 import { utxos } from '~dataset/testset-utxos'
@@ -142,6 +143,16 @@ describe('index', () => {
       expect(note[0]).toBeDefined()
       expect(note[0].owner.toString()).toBe(accounts.bob.zkAddress.toString())
     }, 60000)
+    it('should match tx size', async () => {
+      const calculatedSize = txSizeCalculator(
+        txs.tx_1.inflow.length,
+        txs.tx_1.outflow.length,
+        0,
+        !!txs.tx_1.swap,
+        false,
+      )
+      expect(calculatedSize).toBe(zkTx1.size())
+    })
   })
   describe('basic tx to send ETH spending 1 input and creating 2 output', () => {
     let zkTx: ZkTx
@@ -170,6 +181,16 @@ describe('index', () => {
       expect(note[0]).toBeDefined()
       expect(note[0].owner.toString()).toBe(accounts.bob.zkAddress.toString())
     }, 60000)
+    it('should match tx size', async () => {
+      const calculatedSize = txSizeCalculator(
+        txs.tx_2_1.inflow.length,
+        txs.tx_2_1.outflow.length,
+        0,
+        !!txs.tx_2_1.swap,
+        false,
+      )
+      expect(calculatedSize).toBe(zkTx.size())
+    })
   })
   describe('erc721 transaction', () => {
     let zkTx: ZkTx
@@ -184,6 +205,16 @@ describe('index', () => {
       expect(note[0]).toBeDefined()
       expect(note[0].owner.toString()).toBe(accounts.alice.zkAddress.toString())
     }, 60000)
+    it('should match tx size', async () => {
+      const calculatedSize = txSizeCalculator(
+        txs.tx_2_2.inflow.length,
+        txs.tx_2_2.outflow.length,
+        0,
+        !!txs.tx_2_2.swap,
+        false,
+      )
+      expect(calculatedSize).toBe(zkTx.size())
+    })
   })
   describe('note aggregation', () => {
     let zkTx: ZkTx
