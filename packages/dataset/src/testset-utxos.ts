@@ -136,6 +136,59 @@ const migration_4_3 = Utxo.newNFTNote({
   fee: Fp.from(1),
 })
 
+// testing size of transactions
+// inflow = outflow + fee
+const utxo5_1_in_1: Utxo = Utxo.newEtherNote({
+  owner: accounts.alice.zkAddress,
+  salt: 31,
+  eth: 10,
+})
+const utxo5_1_out_1: Utxo = Utxo.newEtherNote({
+  owner: accounts.bob.zkAddress,
+  salt: 32,
+  eth: 9,
+})
+
+const utxo5_2_in_1: Utxo = Utxo.newEtherNote({
+  owner: accounts.alice.zkAddress,
+  salt: 33,
+  eth: 10,
+})
+
+const utxo5_2_out_1: Utxo = Utxo.newEtherNote({
+  owner: accounts.bob.zkAddress,
+  salt: 34,
+  eth: 5,
+})
+
+const utxo5_2_out_2: Utxo = Utxo.newEtherNote({
+  owner: accounts.alice.zkAddress,
+  salt: 35,
+  eth: 4,
+})
+
+const utxo5_3_in_1: Utxo = Utxo.newERC20Note({
+  owner: accounts.alice.zkAddress,
+  salt: 36,
+  eth: 22222333333,
+  tokenAddr: TokenUtils.DAI,
+  erc20Amount: 8888,
+})
+const utxo5_3_out_1: Utxo = Utxo.newERC20Note({
+  owner: accounts.alice.zkAddress,
+  salt: 37,
+  eth: 22222333332,
+  tokenAddr: TokenUtils.DAI,
+  erc20Amount: 5555,
+})
+const utxo5_3_out_2: Utxo = Utxo.newERC20Note({
+  owner: accounts.bob.zkAddress,
+  salt: 38,
+  eth: 0,
+  tokenAddr: TokenUtils.DAI,
+  erc20Amount: 3333,
+})
+
 export const utxos = {
   utxo1_in_1,
   utxo1_out_1,
@@ -157,4 +210,12 @@ export const utxos = {
   migration_4_1,
   migration_4_2,
   migration_4_3,
+  utxo5_1_in_1,
+  utxo5_1_out_1,
+  utxo5_2_in_1,
+  utxo5_2_out_1,
+  utxo5_2_out_2,
+  utxo5_3_in_1,
+  utxo5_3_out_1,
+  utxo5_3_out_2,
 }
