@@ -3,9 +3,9 @@ import * as ffjs from 'ffjavascript'
 import * as circomlib from 'circomlib'
 import createBlakeHash from 'blake-hash'
 import BN from 'bn.js'
+import { BigNumberish } from 'ethers'
 import { Fp } from './fp'
 import { Fr } from './fr'
-import { BigNumberish } from 'ethers'
 
 export class Point {
   x: Fp
@@ -41,7 +41,12 @@ export class Point {
     if (x.isOdd() === xOdd) {
       return Point.from(x.toString(), y)
     }
-    return Point.from(Fp.from(x.toString()).neg().toString(), y)
+    return Point.from(
+      Fp.from(x.toString())
+        .neg()
+        .toString(),
+      y,
+    )
   }
 
   static fromHex(hex: string) {
