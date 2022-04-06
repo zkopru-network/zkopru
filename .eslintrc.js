@@ -17,7 +17,7 @@ const common = {
     'jest/no-focused-tests': 'error',
     'jest/no-identical-title': 'error',
     'jest/prefer-to-have-length': 'warn',
-    'jest/valid-expect': 'error',
+    'jest/valid-expect': 'off',
     'jest/expect-expect': 'off',
     'jest/prefer-expect-assertions': 'off',
     'jest/no-test-return-statement': 'off',
@@ -35,6 +35,7 @@ const common = {
     'no-shadow': 'off',
     'no-bitwise': 'off',
     'no-unused-vars': 'off',
+    'no-underscore-dangle': 'off',
   },
 }
 

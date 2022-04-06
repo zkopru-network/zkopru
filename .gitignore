@@ -14,6 +14,9 @@ junit.xml
 dist
 browser
 .build-cache
+**/*/cache
+**/*/artifacts
+**/*/typechain
 keys.tgz
 keys/
 # Created by https://www.gitignore.io/api/node,intellij+all,visualstudiocode
