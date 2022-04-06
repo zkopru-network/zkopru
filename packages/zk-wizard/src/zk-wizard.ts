@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { ZkAccount } from '@zkopru/account'
-import { Fp, F } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
 import {
   RawTx,
   ZkTx,
@@ -27,6 +27,7 @@ import {
   pubToAddress,
 } from 'ethereumjs-util'
 
+import { BigNumberish } from 'ethers'
 import { SNARKResult, genSNARK } from './snark'
 
 const IPFS_GATEWAY_HOST = `https://ipfs.zkopru.network`
@@ -362,7 +363,7 @@ export class ZkWizard {
       proof: {
         pi_a: result.proof.pi_a.map(Fp.from),
         pi_b: result.proof.pi_b.map(
-          (arr: F[]) => arr.map((val: F) => Fp.from(val)), // caution: snarkjs G2Point is reversed.
+          (arr: BigNumberish[]) => arr.map((val: BigNumberish) => Fp.from(val)), // caution: snarkjs G2Point is reversed.
         ),
         pi_c: result.proof.pi_c.map(Fp.from),
       },
@@ -384,7 +385,7 @@ export class ZkWizard {
     [name: string]: bigint | bigint[] | bigint[][]
   } {
     const inputs: { [name: string]: bigint | bigint[] | bigint[][] } = {}
-    const depth = merkleProof[0].siblings.length
+    const depth = Object.values(merkleProof)[0].siblings.length
     const spendingNoteEdDSAPoint: bigint[][] = Array(2)
       .fill(undefined)
       .map(() => [])
