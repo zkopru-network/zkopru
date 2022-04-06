@@ -7,14 +7,16 @@ import {
 } from 'bip39'
 import crypto from 'crypto'
 import HDNode from 'hdkey'
-import Web3 from 'web3'
 import { Fp } from '@zkopru/babyjubjub'
+import { Provider } from '@ethersproject/abstract-provider'
 import { DB, EncryptedWallet, Keystore } from '@zkopru/database'
+import { decryptKeystore } from '@ethersproject/json-wallets'
+import { Wallet } from 'ethers'
 import { ZkAccount } from './account'
 
 export const PATH = (index: number) => `m/44'/60'/0'/0/${index}`
 export class HDWallet {
-  web3: Web3
+  provider: Provider
 
   db: DB
 
@@ -26,9 +28,9 @@ export class HDWallet {
 
   private seed!: Buffer
 
-  constructor(web3: Web3, db: DB) {
+  constructor(provider: Provider, db: DB) {
     this.db = db
-    this.web3 = web3
+    this.provider = provider
   }
 
   static newMnemonic(strength?: number, list?: string[]): string {
@@ -91,16 +93,16 @@ export class HDWallet {
     }
   }
 
-  async retrieveAccounts(): Promise<ZkAccount[]> {
+  async retrieveAccounts(provider?: Provider): Promise<ZkAccount[]> {
     if (!this.seed) throw Error('Not initialized')
     const keys: Keystore[] = await this.db.findMany('Keystore', { where: {} })
     const accounts: ZkAccount[] = []
     for (let i = 0; i < keys.length; i += 1) {
-      const ethAccount = this.web3.eth.accounts.decrypt(
-        JSON.parse(keys[i].encrypted),
+      const keystoreAccount = await decryptKeystore(
+        keys[i].encrypted,
         this.password,
       )
-      accounts.push(ZkAccount.fromEthAccount(ethAccount))
+      accounts.push(ZkAccount.fromEthAccount(keystoreAccount, provider))
     }
     return accounts
   }
@@ -115,10 +117,11 @@ export class HDWallet {
     } catch (err) {
       throw Error('Jubjub does not support the derived key. Use another index')
     }
-    const ethAccount = this.web3.eth.accounts.privateKeyToAccount(
+    const ethAccount = new Wallet(
       typeof privateKey === 'string' ? privateKey : privateKey.toString('hex'),
+      this.provider,
     )
-    const account = ZkAccount.fromEthAccount(ethAccount)
+    const account = ZkAccount.fromEthAccount(ethAccount, this.provider)
     await this.db.create('Keystore', account.toKeystoreSqlObj(this.password))
     return account
   }
