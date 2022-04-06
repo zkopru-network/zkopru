@@ -2,8 +2,8 @@ import assert from 'assert'
 import { Fp } from '@zkopru/babyjubjub'
 import { Bytes32, Uint256 } from 'soltypes'
 import { logger } from '@zkopru/utils'
-import BN from 'bn.js'
 import { L1Contract } from '~core/context/layer1'
+import { BigNumber } from 'ethers'
 import { Block, Header, headerHash } from '../block'
 import { L2Chain } from '../context/layer2'
 import { OffchainValidator } from './offchain'
@@ -139,18 +139,18 @@ export abstract class ValidatorBase {
     )
     const currentRoot = await this.layer2.grove.nullifierTree.root()
     assert(
-      parent.nullifierRoot.toBN().eq(currentRoot),
+      parent.nullifierRoot.toBigNumber().eq(currentRoot),
       'Nullifier tree root mismatch',
     )
     const onchainValidator = this.onchain.nullifierTree
     const offchainValidator = this.offchain.nullifierTree
     const nullifiers = block.body.txs.reduce((list, tx) => {
       return [...list, ...tx.inflow.map(inflow => inflow.nullifier)]
-    }, [] as BN[])
+    }, [] as BigNumber[])
     const newRoot = await this.layer2.grove.nullifierTree.dryRunNullify(
       ...nullifiers,
     )
-    if (newRoot.eq(block.header.nullifierRoot.toBN())) {
+    if (newRoot.eq(block.header.nullifierRoot.toBigNumber())) {
       // Valid nullifier tree transformation
       return {
         onchainValidator,
@@ -165,7 +165,7 @@ export abstract class ValidatorBase {
         const nonInclusionProof = await this.layer2.grove.nullifierTree.getNonInclusionProof(
           inflow.nullifier,
         )
-        if (!nonInclusionProof.root.eq(parent.nullifierRoot.toBN())) {
+        if (!nonInclusionProof.root.eq(parent.nullifierRoot.toBigNumber())) {
           throw Error('Node has different nullifier root')
         }
         siblings.push(
@@ -207,8 +207,8 @@ export abstract class ValidatorBase {
     )
     const startingLeafProof = await this.layer2.grove.utxoTree.getStartingLeafProof()
     if (
-      !parent.utxoRoot.toBN().eq(startingLeafProof.root) ||
-      !parent.utxoIndex.toBN().eq(startingLeafProof.index)
+      !parent.utxoRoot.toBigNumber().eq(startingLeafProof.root) ||
+      !parent.utxoIndex.toBigNumber().eq(startingLeafProof.index)
     ) {
       throw Error('Utxo tree is returning invalid starting leaf proof.')
     }
@@ -239,8 +239,8 @@ export abstract class ValidatorBase {
     const offchainValidator = this.offchain.withdrawalTree
     const startingLeafProof = await this.layer2.grove.withdrawalTree.getStartingLeafProof()
     if (
-      !parent.withdrawalRoot.toBN().eq(startingLeafProof.root) ||
-      !parent.withdrawalIndex.toBN().eq(startingLeafProof.index)
+      !parent.withdrawalRoot.toBigNumber().eq(startingLeafProof.root) ||
+      !parent.withdrawalIndex.toBigNumber().eq(startingLeafProof.index)
     ) {
       throw Error('Withdrawal tree is returning invalid starting leaf proof.')
     }
@@ -275,17 +275,19 @@ export abstract class ValidatorBase {
     const validateDuplicatedNullifierCalls: FnCall[] = []
     const validateSNARKCalls: FnCall[] = []
 
-    let usedNullifiers: BN[] | undefined
+    let usedNullifiers: BigNumber[] | undefined
     if (this.layer2.grove.nullifierTree) {
       const nullifiers = block.body.txs.reduce((list, tx) => {
         return [...list, ...tx.inflow.map(inflow => inflow.nullifier)]
-      }, [] as BN[])
+      }, [] as BigNumber[])
       usedNullifiers = await this.layer2.grove.nullifierTree.findUsedNullifier(
         ...nullifiers,
       )
     }
+    const nullifiersCount: { [nullifier: string]: number } = {}
     for (let i = 0; i < block.body.txs.length; i += 1) {
       for (let j = 0; j < block.body.txs[i].inflow.length; j += 1) {
+        nullifiersCount[block.body.txs[i].inflow[j].nullifier.toString()] += 1
         validateInclusionCalls.push(
           toFnCall(
             'validateInclusion',
@@ -301,7 +303,7 @@ export abstract class ValidatorBase {
           const inclusionProof = await this.layer2.grove.nullifierTree.getInclusionProof(
             block.body.txs[i].inflow[j].nullifier,
           )
-          if (!inclusionProof.root.eq(parent.nullifierRoot.toBN())) {
+          if (!inclusionProof.root.eq(parent.nullifierRoot.toBigNumber())) {
             throw Error('Node has different nullifier root')
           }
           validateUsedNullifierCalls.push(
@@ -330,17 +332,20 @@ export abstract class ValidatorBase {
           toFnCall('validateAtomicSwap', block, Uint256.from(i.toString())),
         )
       }
-      validateDuplicatedNullifierCalls.push(
-        toFnCall(
-          'validateDuplicatedNullifier',
-          block,
-          Uint256.from(i.toString()),
-        ),
-      )
+
       validateSNARKCalls.push(
         toFnCall('validateSNARK', block, Uint256.from(i.toString())),
       )
     }
+    const duplicated = Object.keys(nullifiersCount).filter(
+      nullifier => nullifiersCount[nullifier] > 1,
+    )
+    for (const nullifier of duplicated) {
+      validateDuplicatedNullifierCalls.push(
+        toFnCall('validateDuplicatedNullifier', block, Bytes32.from(nullifier)),
+      )
+    }
+
     return {
       onchainValidator,
       offchainValidator,

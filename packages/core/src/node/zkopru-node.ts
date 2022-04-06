@@ -3,7 +3,7 @@ import { ZkAccount } from '@zkopru/account'
 import { DB, BlockCache, ERC20Info } from '@zkopru/database'
 import { Grove, poseidonHasher, keccakHasher } from '@zkopru/tree'
 import { logger } from '@zkopru/utils'
-import { Layer1 } from '@zkopru/contracts'
+import { ERC20__factory } from '@zkopru/contracts'
 import { Bytes20 } from 'soltypes'
 import { L1Contract } from '../context/layer1'
 import { L2Chain } from '../context/layer2'
@@ -143,10 +143,10 @@ export class ZkopruNode {
       })
       if (!info) {
         // load the data and store it
-        const contract = Layer1.getERC20(this.layer1.web3, address)
+        const contract = ERC20__factory.connect(address, this.layer1.provider)
         const [symbol, decimals] = await Promise.all([
-          contract.methods.symbol().call(),
-          contract.methods.decimals().call(),
+          contract.symbol(),
+          contract.decimals(),
         ])
         await this.db.upsert('ERC20Info', {
           where: { address },
@@ -185,10 +185,10 @@ export class ZkopruNode {
         // eslint-disable-next-line no-continue
         continue
       // otherwise load the token info
-      const contract = Layer1.getERC20(this.layer1.web3, address)
+      const contract = ERC20__factory.connect(address, this.layer1.provider)
       const [symbol, decimals] = await Promise.all([
-        contract.methods.symbol().call(),
-        contract.methods.decimals().call(),
+        contract.symbol(),
+        contract.decimals(),
       ])
       logger.info(`core/zkopru-node - Register ${symbol} to the token registry`)
       await this.db.upsert('ERC20Info', {

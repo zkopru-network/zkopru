@@ -23,10 +23,10 @@ export function verifyingKeyIdentifier(nI: number, nO: number): string {
   assert(nI < 256, 'nI is a 8 bit value')
   assert(nO < 256, 'nI is a 8 bit value')
   return Uint256.from(`${nI}`)
-    .toBN()
-    .shln(128)
-    .addn(nO)
-    .toString(10)
+    .toBigNumber()
+    .shl(128)
+    .add(nO)
+    .toString()
 }
 
 export class SNARKVerifier {
@@ -61,7 +61,7 @@ export class SNARKVerifier {
       try {
         result = await snarkjs.groth16.verify(vk, signals, proof)
       } catch (e) {
-        logger.error(e)
+        logger.error(e as any)
         result = false
       }
       return result

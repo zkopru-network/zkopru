@@ -2,7 +2,7 @@ import { Hasher, keccakHasher, SubTreeLib } from '@zkopru/tree'
 import assert from 'assert'
 import { Uint256 } from 'soltypes'
 import { OutflowType, Withdrawal, ZkOutflow } from '@zkopru/transaction'
-import BN from 'bn.js'
+import { BigNumber } from 'ethers'
 import { L2Chain } from '../../context/layer2'
 import { headerHash } from '../../block'
 import {
@@ -17,9 +17,9 @@ import { CODE } from '../code'
 
 export class OffchainWithdrawalTreeValidator extends OffchainValidatorContext
   implements WithdrawalTreeValidator {
-  hasher: Hasher<BN>
+  hasher: Hasher<BigNumber>
 
-  MAX_WITHDRAWAL: BN
+  MAX_WITHDRAWAL: BigNumber
 
   SUB_TREE_DEPTH: number
 
@@ -28,7 +28,9 @@ export class OffchainWithdrawalTreeValidator extends OffchainValidatorContext
   constructor(layer2: L2Chain) {
     super(layer2)
     this.hasher = keccakHasher(layer2.config.withdrawalTreeDepth)
-    this.MAX_WITHDRAWAL = new BN(1).shln(layer2.config.withdrawalTreeDepth)
+    this.MAX_WITHDRAWAL = BigNumber.from(1).shl(
+      layer2.config.withdrawalTreeDepth,
+    )
     this.SUB_TREE_DEPTH = layer2.config.withdrawalSubTreeDepth
     this.SUB_TREE_SIZE = layer2.config.withdrawalSubTreeSize
   }
@@ -43,7 +45,7 @@ export class OffchainWithdrawalTreeValidator extends OffchainValidatorContext
       block.header.parentBlock.eq(headerHash(parentHeader)),
       'Invalid prev header',
     )
-    if (block.header.withdrawalIndex.toBN().gt(this.MAX_WITHDRAWAL)) {
+    if (block.header.withdrawalIndex.toBigNumber().gt(this.MAX_WITHDRAWAL)) {
       return {
         slashable: true,
         reason: CODE.W2,
@@ -53,18 +55,18 @@ export class OffchainWithdrawalTreeValidator extends OffchainValidatorContext
       return [
         ...arr,
         ...tx.outflow.filter(outflow =>
-          outflow.outflowType.eqn(OutflowType.WITHDRAWAL),
+          outflow.outflowType.eq(OutflowType.WITHDRAWAL),
         ),
       ]
     }, [] as ZkOutflow[])
     const numOfWithdrawals = withdrawalOutflowArr.length
     const numOfSubTrees = Math.ceil(numOfWithdrawals / this.SUB_TREE_SIZE)
     const nextIndex = parentHeader.withdrawalIndex
-      .toBN()
-      .addn(this.SUB_TREE_SIZE * numOfSubTrees)
+      .toBigNumber()
+      .add(this.SUB_TREE_SIZE * numOfSubTrees)
 
     return {
-      slashable: !block.header.withdrawalIndex.toBN().eq(nextIndex),
+      slashable: !block.header.withdrawalIndex.toBigNumber().eq(nextIndex),
       reason: CODE.W1,
     }
   }
@@ -80,27 +82,30 @@ export class OffchainWithdrawalTreeValidator extends OffchainValidatorContext
       block.header.parentBlock.eq(headerHash(parentHeader)),
       'Invalid prev header',
     )
-    const newWithdrawals: BN[] = block.body.txs.reduce((arr, tx) => {
+    const newWithdrawals: BigNumber[] = block.body.txs.reduce((arr, tx) => {
       return [
         ...arr,
         ...tx.outflow
-          .filter(outflow => outflow.outflowType.eqn(OutflowType.WITHDRAWAL))
+          .filter(outflow => outflow.outflowType.eq(OutflowType.WITHDRAWAL))
           .map(outflow => {
             assert(outflow.data)
-            return Withdrawal.withdrawalHash(outflow.note, outflow.data).toBN()
+            return Withdrawal.withdrawalHash(
+              outflow.note,
+              outflow.data,
+            ).toBigNumber()
           }),
       ]
-    }, [] as BN[])
+    }, [] as BigNumber[])
     const computedRoot = SubTreeLib.appendAsSubTrees(
       this.hasher,
-      parentHeader.withdrawalRoot.toBN(),
-      parentHeader.withdrawalIndex.toBN(),
+      parentHeader.withdrawalRoot.toBigNumber(),
+      parentHeader.withdrawalIndex.toBigNumber(),
       this.SUB_TREE_DEPTH,
       newWithdrawals,
-      subTreeSiblings.map(sib => sib.toBN()),
+      subTreeSiblings.map(sib => sib.toBigNumber()),
     )
     return {
-      slashable: !computedRoot.eq(block.header.withdrawalRoot.toBN()),
+      slashable: !computedRoot.eq(block.header.withdrawalRoot.toBigNumber()),
       reason: CODE.W3,
     }
   }

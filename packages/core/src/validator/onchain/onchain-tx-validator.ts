@@ -10,10 +10,10 @@ export class OnchainTxValidator extends OnchainValidatorContext
     txIndex: Uint256,
     inflowIndex: Uint256,
   ): Promise<Validation> {
-    const tx = this.layer1.validators.tx.methods.validateInclusion(
+    const tx = await this.layer1.validators.tx.populateTransaction.validateInclusion(
       blockDataToHexString(block),
-      txIndex.toString(),
-      inflowIndex.toString(),
+      txIndex.toBigNumber(),
+      inflowIndex.toBigNumber(),
     )
     const result = await this.isSlashable(tx)
     return result
@@ -23,9 +23,9 @@ export class OnchainTxValidator extends OnchainValidatorContext
     block: BlockData,
     txIndex: Uint256,
   ): Promise<Validation> {
-    const tx = this.layer1.validators.tx.methods.validateOutflow(
+    const tx = await this.layer1.validators.tx.populateTransaction.validateOutflow(
       blockDataToHexString(block),
-      txIndex.toString(),
+      txIndex.toBigNumber(),
     )
     const result = await this.isSlashable(tx)
     return result
@@ -35,9 +35,9 @@ export class OnchainTxValidator extends OnchainValidatorContext
     block: BlockData,
     txIndex: Uint256,
   ): Promise<Validation> {
-    const tx = this.layer1.validators.tx.methods.validateAtomicSwap(
+    const tx = await this.layer1.validators.tx.populateTransaction.validateAtomicSwap(
       blockDataToHexString(block),
-      txIndex.toString(),
+      txIndex.toBigNumber(),
     )
     const result = await this.isSlashable(tx)
     return result
@@ -50,12 +50,12 @@ export class OnchainTxValidator extends OnchainValidatorContext
     inflowIndex: Uint256,
     siblings: Bytes32[],
   ): Promise<Validation> {
-    const tx = this.layer1.validators.tx.methods.validateUsedNullifier(
+    const tx = await this.layer1.validators.tx.populateTransaction.validateUsedNullifier(
       blockDataToHexString(block),
       headerDataToHexString(parentHeader),
-      txIndex.toString(),
-      inflowIndex.toString(),
-      siblings.map(s => s.toString()),
+      txIndex.toBigNumber(),
+      inflowIndex.toBigNumber(),
+      siblings.map(s => s.toBigNumber()) as any,
     )
     const result = await this.isSlashable(tx)
     return result
@@ -63,20 +63,20 @@ export class OnchainTxValidator extends OnchainValidatorContext
 
   async validateDuplicatedNullifier(
     block: BlockData,
-    txIndex: Bytes32,
+    nullifier: Bytes32,
   ): Promise<Validation> {
-    const tx = this.layer1.validators.tx.methods.validateDuplicatedNullifier(
+    const tx = await this.layer1.validators.tx.populateTransaction.validateDuplicatedNullifier(
       blockDataToHexString(block),
-      txIndex.toString(),
+      nullifier.toString(),
     )
     const result = await this.isSlashable(tx)
     return result
   }
 
   async validateSNARK(block: BlockData, txIndex: Uint256): Promise<Validation> {
-    const tx = this.layer1.validators.tx.methods.validateSNARK(
+    const tx = await this.layer1.validators.tx.populateTransaction.validateSNARK(
       blockDataToHexString(block),
-      txIndex.toString(),
+      txIndex.toBigNumber(),
     )
     const result = await this.isSlashable(tx)
     return result

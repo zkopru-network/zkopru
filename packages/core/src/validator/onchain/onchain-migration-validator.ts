@@ -10,10 +10,10 @@ export class OnchainMigrationValidator extends OnchainValidatorContext
     migrationIndex1: Uint256,
     migrationIndex2: Uint256,
   ): Promise<Validation> {
-    const tx = this.layer1.validators.migration.methods.validateDuplicatedMigrations(
+    const tx = await this.layer1.validators.migration.populateTransaction.validateDuplicatedMigrations(
       blockDataToHexString(block),
-      migrationIndex1.toString(),
-      migrationIndex2.toString(),
+      migrationIndex1.toBigNumber(),
+      migrationIndex2.toBigNumber(),
     )
     const result = await this.isSlashable(tx)
     return result
@@ -23,9 +23,9 @@ export class OnchainMigrationValidator extends OnchainValidatorContext
     block: BlockData,
     migrationIndex: Uint256,
   ): Promise<Validation> {
-    const tx = this.layer1.validators.migration.methods.validateEthMigration(
+    const tx = await this.layer1.validators.migration.populateTransaction.validateEthMigration(
       blockDataToHexString(block),
-      migrationIndex.toString(),
+      migrationIndex.toBigNumber(),
     )
     const result = await this.isSlashable(tx)
     return result
@@ -35,9 +35,9 @@ export class OnchainMigrationValidator extends OnchainValidatorContext
     block: BlockData,
     migrationIndex: Uint256,
   ): Promise<Validation> {
-    const tx = this.layer1.validators.migration.methods.validateERC20Migration(
+    const tx = await this.layer1.validators.migration.populateTransaction.validateERC20Migration(
       blockDataToHexString(block),
-      migrationIndex.toString(),
+      migrationIndex.toBigNumber(),
     )
     const result = await this.isSlashable(tx)
     return result
@@ -47,9 +47,9 @@ export class OnchainMigrationValidator extends OnchainValidatorContext
     block: BlockData,
     migrationIndex: Uint256,
   ): Promise<Validation> {
-    const tx = this.layer1.validators.migration.methods.validateMergedLeaves(
+    const tx = await this.layer1.validators.migration.populateTransaction.validateMergedLeaves(
       blockDataToHexString(block),
-      migrationIndex.toString(),
+      migrationIndex.toBigNumber(),
     )
     const result = await this.isSlashable(tx)
     return result
@@ -59,9 +59,9 @@ export class OnchainMigrationValidator extends OnchainValidatorContext
     block: BlockData,
     migrationIndex: Uint256,
   ): Promise<Validation> {
-    const tx = this.layer1.validators.migration.methods.validateMigrationFee(
+    const tx = await this.layer1.validators.migration.populateTransaction.validateMigrationFee(
       blockDataToHexString(block),
-      migrationIndex.toString(),
+      migrationIndex.toBigNumber(),
     )
     const result = await this.isSlashable(tx)
     return result
@@ -71,9 +71,9 @@ export class OnchainMigrationValidator extends OnchainValidatorContext
     block: BlockData,
     migrationIndex: Uint256,
   ): Promise<Validation> {
-    const tx = this.layer1.validators.migration.methods.validateTokenRegistration(
+    const tx = await this.layer1.validators.migration.populateTransaction.validateTokenRegistration(
       blockDataToHexString(block),
-      migrationIndex.toString(),
+      migrationIndex.toBigNumber(),
     )
     const result = await this.isSlashable(tx)
     return result
@@ -84,10 +84,10 @@ export class OnchainMigrationValidator extends OnchainValidatorContext
     txIndex: Uint256,
     outflowIndex: Uint256,
   ): Promise<Validation> {
-    const tx = this.layer1.validators.migration.methods.validateMissedMassMigration(
+    const tx = await this.layer1.validators.migration.populateTransaction.validateMissedMassMigration(
       blockDataToHexString(block),
-      txIndex.toString(),
-      outflowIndex.toString(),
+      txIndex.toBigNumber(),
+      outflowIndex.toBigNumber(),
     )
     const result = await this.isSlashable(tx)
     return result

@@ -11,7 +11,6 @@ import {
 } from '@zkopru/database'
 import { logger, Worker } from '@zkopru/utils'
 import assert from 'assert'
-import BN from 'bn.js'
 import { EventEmitter } from 'events'
 import {
   OutflowType,
@@ -25,6 +24,7 @@ import {
 } from '@zkopru/transaction'
 import { Bytes32, Address, Uint256 } from 'soltypes'
 import AsyncLock from 'async-lock'
+import { BigNumber } from 'ethers'
 import { L2Chain, Patch } from '../context/layer2'
 import { Block, Header, massDepositHash } from '../block'
 import { ValidatorBase as Validator } from '../validator'
@@ -292,7 +292,7 @@ export class BlockProcessor extends EventEmitter {
         }
       }
     }
-    const startingUtxoIndex = patch.prevHeader.utxoIndex.toBN()
+    const startingUtxoIndex = patch.prevHeader.utxoIndex.toBigNumber()
     if (myUtxos.length > 0) {
       logger.info(
         `core/block-processor - found ${myUtxos.length} UTXO(s) from transactions`,
@@ -304,7 +304,7 @@ export class BlockProcessor extends EventEmitter {
         utxo.hash.eq(Fp.from(note.hash())),
       )
       assert(orderInArr >= 0)
-      const index = Fp.from(startingUtxoIndex.addn(orderInArr).toString())
+      const index = Fp.from(startingUtxoIndex.add(orderInArr).toString())
       const viewer = this.tracker.transferTrackers.find(t => {
         return t.zkAddress.viewingPubKey().eq(note.owner.viewingPubKey())
       })
@@ -363,7 +363,7 @@ export class BlockProcessor extends EventEmitter {
   ) {
     const isWithdrawal =
       tx.outflow.findIndex(({ outflowType }) =>
-        outflowType.eqn(OutflowType.WITHDRAWAL),
+        outflowType.eq(OutflowType.WITHDRAWAL),
       ) !== -1
     if (isWithdrawal) return // we don't need to save withdrawal here
     const inflows = await this.db.findMany('Utxo', {
@@ -373,10 +373,10 @@ export class BlockProcessor extends EventEmitter {
     })
     // my outflow amounts
     let tokenAddress: Fp | undefined
-    let ethAmount = new BN('0')
-    let tokenAmount = new BN('0')
+    let ethAmount = BigNumber.from(0)
+    let tokenAmount = BigNumber.from(0)
     for (const note of decryptedNotes) {
-      if (!tokenAddress && !note.tokenAddr().eq(new BN('0'))) {
+      if (!tokenAddress && !note.tokenAddr().isZero()) {
         tokenAddress = note.tokenAddr()
       }
       if (tokenAddress && tokenAddress.eq(note.tokenAddr())) {
@@ -392,7 +392,9 @@ export class BlockProcessor extends EventEmitter {
         },
         update: {
           receiverAddress: knownReceiver.zkAddress.toString(),
-          tokenAddr: tokenAddress ? tokenAddress.toHex().toString() : '0x0',
+          tokenAddr: tokenAddress
+            ? tokenAddress.toHexString().toString()
+            : '0x0',
           eth: ethAmount.toString(),
           erc20Amount: tokenAmount.toString(),
         },
@@ -417,8 +419,8 @@ export class BlockProcessor extends EventEmitter {
       return
     }
     // otherwise we're the sender
-    let tokenAmountSent = new BN('0')
-    let ethAmountSent = new BN('0')
+    let tokenAmountSent = BigNumber.from(0)
+    let ethAmountSent = BigNumber.from(0)
     for (const inflow of inflows) {
       if (tokenAddress && tokenAddress.eq(Fp.from(inflow.tokenAddr))) {
         tokenAmountSent = tokenAmountSent.add(Fp.from(inflow.erc20Amount))
@@ -436,7 +438,7 @@ export class BlockProcessor extends EventEmitter {
         receiverAddress: selfTx
           ? knownReceiver.zkAddress.toString()
           : undefined,
-        tokenAddr: tokenAddress ? tokenAddress.toHex().toString() : '0x0',
+        tokenAddr: tokenAddress ? tokenAddress.toHexString().toString() : '0x0',
         erc20Amount: tokenAmountSent.sub(tokenAmount).toString(),
         eth: ethAmountSent
           .sub(Fp.from(tx.fee))
@@ -468,7 +470,7 @@ export class BlockProcessor extends EventEmitter {
         blockHash: block.hash.toString(),
         inflowCount: tx.inflow.length,
         outflowCount: tx.outflow.length,
-        fee: tx.fee.toHex(),
+        fee: tx.fee.toHexString(),
         challenged,
         slashed: false,
       })
@@ -487,14 +489,14 @@ export class BlockProcessor extends EventEmitter {
       const withdrawalTxs = block.body.txs.filter(tx => {
         return (
           tx.outflow.findIndex(outflow =>
-            outflow.outflowType.eqn(OutflowType.WITHDRAWAL),
+            outflow.outflowType.eq(OutflowType.WITHDRAWAL),
           ) !== -1
         )
       })
       for (const tx of withdrawalTxs) {
         const { prepayInfo } = tx.parseMemo()
         const outflows = tx.outflow.filter(o =>
-          o.outflowType.eqn(OutflowType.WITHDRAWAL),
+          o.outflowType.eq(OutflowType.WITHDRAWAL),
         )
         if (outflows.length === 0) {
           logger.warn('Unable to find withdrawal outflow for memo')
@@ -557,7 +559,7 @@ export class BlockProcessor extends EventEmitter {
         (acc, tx) => [
           ...acc,
           ...tx.outflow.filter(outflow =>
-            outflow.outflowType.eqn(OutflowType.WITHDRAWAL),
+            outflow.outflowType.eq(OutflowType.WITHDRAWAL),
           ),
         ],
         [] as ZkOutflow[],
@@ -771,7 +773,7 @@ export class BlockProcessor extends EventEmitter {
         owner: accounts.map(account => account.zkAddress.toString()),
       },
     })
-    const startingUtxoIndex = patch.prevHeader.utxoIndex.toBN()
+    const startingUtxoIndex = patch.prevHeader.utxoIndex.toBigNumber()
     const utxosToUpdate: {
       hash: string
       index: string
@@ -782,7 +784,7 @@ export class BlockProcessor extends EventEmitter {
         utxo.hash.eq(Fp.from(utxoData.hash)),
       )
       assert(orderInArr >= 0)
-      const index = Fp.from(startingUtxoIndex.addn(orderInArr).toString())
+      const index = Fp.from(startingUtxoIndex.add(orderInArr).toString())
       const viewer = accounts.find(
         account => account.zkAddress.toString() === utxoData.owner,
       )
@@ -820,7 +822,7 @@ export class BlockProcessor extends EventEmitter {
         to: accounts.map(account => account.toString()),
       },
     })
-    const startingWithdrawalIndex = patch.prevHeader.withdrawalIndex.toBN()
+    const startingWithdrawalIndex = patch.prevHeader.withdrawalIndex.toBigNumber()
     const withdrawalsToUpdate: {
       hash: string
       index: string
@@ -829,10 +831,10 @@ export class BlockProcessor extends EventEmitter {
     }[] = []
     for (const withdrawalData of myStoredWithdrawals) {
       const orderInArr = patch.treePatch.withdrawals.findIndex(withdrawal =>
-        new BN(withdrawalData.withdrawalHash).eq(withdrawal.hash),
+        BigNumber.from(withdrawalData.withdrawalHash).eq(withdrawal.hash),
       )
       assert(orderInArr >= 0)
-      const index = startingWithdrawalIndex.addn(orderInArr)
+      const index = startingWithdrawalIndex.add(orderInArr)
       const { hash } = patch.treePatch.withdrawals[orderInArr]
       if (!hash) throw Error('Withdrawal does not have note hash')
       const merkleProof = await this.layer2.grove.withdrawalMerkleProof(
@@ -844,7 +846,7 @@ export class BlockProcessor extends EventEmitter {
         index: index.toString(),
         includedIn: patch.block.toString(),
         siblings: JSON.stringify(
-          merkleProof.siblings.map(sib => sib.toString(10)),
+          merkleProof.siblings.map(sib => sib.toString()),
         ),
       })
     }

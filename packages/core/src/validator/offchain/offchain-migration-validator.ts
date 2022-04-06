@@ -1,9 +1,9 @@
 import { OutflowType, ZkOutflow } from '@zkopru/transaction'
 import assert from 'assert'
-import BN from 'bn.js'
+import { BigNumber } from 'ethers'
+import { solidityKeccak256 } from 'ethers/lib/utils'
 /* eslint-disable class-methods-use-this */
 import { Bytes32, Uint256 } from 'soltypes'
-import { soliditySha3Raw } from 'web3-utils'
 import { CODE } from '../code'
 import { BlockData, MigrationValidator, Validation } from '../types'
 import { blockDataToBlock } from '../utils'
@@ -18,9 +18,9 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
   ): Promise<Validation> {
     const block = blockDataToBlock(data)
     const migration1 =
-      block.body.massMigrations[migrationIndex1.toBN().toNumber()]
+      block.body.massMigrations[migrationIndex1.toBigNumber().toNumber()]
     const migration2 =
-      block.body.massMigrations[migrationIndex2.toBN().toNumber()]
+      block.body.massMigrations[migrationIndex2.toBigNumber().toNumber()]
     const slash: Validation = {
       slashable:
         migration1.destination.eq(migration2.destination) &&
@@ -37,15 +37,15 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
     const block = blockDataToBlock(data)
     // get target migration
     const migration =
-      block.body.massMigrations[migrationIndex.toBN().toNumber()]
+      block.body.massMigrations[migrationIndex.toBigNumber().toNumber()]
     // initialize total ETH value
-    let eth = new BN(0)
+    let eth = BigNumber.from(0)
     // Filter outflow using the destination address
     const migrationOutflowArr = block.body.txs.reduce((arr, tx) => {
       const filteredOutflow = tx.outflow.filter(
         outflow =>
-          outflow.data?.to.eq(migration.destination.toBN()) &&
-          outflow.data?.tokenAddr.eq(migration.asset.token.toBN()),
+          outflow.data?.to.eq(migration.destination.toBigNumber()) &&
+          outflow.data?.tokenAddr.eq(migration.asset.token.toBigNumber()),
       )
       return [...arr, ...filteredOutflow]
     }, [] as ZkOutflow[])
@@ -56,7 +56,7 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
     }
     // Return the result
     const slash: Validation = {
-      slashable: !eth.eq(migration.asset.eth.toBN()),
+      slashable: !eth.eq(migration.asset.eth.toBigNumber()),
       reason: CODE.M2,
     }
     return slash
@@ -69,15 +69,15 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
     const block = blockDataToBlock(data)
     // get target migration
     const migration =
-      block.body.massMigrations[migrationIndex.toBN().toNumber()]
+      block.body.massMigrations[migrationIndex.toBigNumber().toNumber()]
     // initialize total ETH value
-    let amount = new BN(0)
+    let amount = BigNumber.from(0)
     // Filter outflow using the destination address
     const migrationOutflowArr = block.body.txs.reduce((arr, tx) => {
       const filteredOutflow = tx.outflow.filter(
         outflow =>
-          outflow.data?.to.eq(migration.destination.toBN()) &&
-          outflow.data?.tokenAddr.eq(migration.asset.token.toBN()),
+          outflow.data?.to.eq(migration.destination.toBigNumber()) &&
+          outflow.data?.tokenAddr.eq(migration.asset.token.toBigNumber()),
       )
       return [...arr, ...filteredOutflow]
     }, [] as ZkOutflow[])
@@ -88,7 +88,7 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
     }
     // Return the result
     const slash: Validation = {
-      slashable: !amount.eq(migration.asset.amount.toBN()),
+      slashable: !amount.eq(migration.asset.amount.toBigNumber()),
       reason: CODE.M3,
     }
     return slash
@@ -101,13 +101,13 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
     const block = blockDataToBlock(data)
     // get target migration
     const migration =
-      block.body.massMigrations[migrationIndex.toBN().toNumber()]
+      block.body.massMigrations[migrationIndex.toBigNumber().toNumber()]
     // Filter outflow using the destination address
     const migrationOutflowArr = block.body.txs.reduce((arr, tx) => {
       const filteredOutflow = tx.outflow.filter(
         outflow =>
-          outflow.data?.to.eq(migration.destination.toBN()) &&
-          outflow.data?.tokenAddr.eq(migration.asset.token.toBN()),
+          outflow.data?.to.eq(migration.destination.toBigNumber()) &&
+          outflow.data?.tokenAddr.eq(migration.asset.token.toBigNumber()),
       )
       return [...arr, ...filteredOutflow]
     }, [] as ZkOutflow[])
@@ -116,7 +116,10 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
       .toBytes()
       .toString()
     for (const note of migrationOutflowArr.map(outflow => outflow.note)) {
-      merged = soliditySha3Raw(merged, note)
+      merged = solidityKeccak256(
+        ['bytes32', 'uint256'],
+        [merged, note.toBigNumber()],
+      )
     }
     // Return the result
     const slash: Validation = {
@@ -133,25 +136,25 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
     const block = blockDataToBlock(data)
     // get target migration
     const migration =
-      block.body.massMigrations[migrationIndex.toBN().toNumber()]
+      block.body.massMigrations[migrationIndex.toBigNumber().toNumber()]
     // Filter outflow using the destination address
     const migrationOutflowArr = block.body.txs.reduce((arr, tx) => {
       const filteredOutflow = tx.outflow.filter(
         outflow =>
-          outflow.data?.to.eq(migration.destination.toBN()) &&
-          outflow.data?.tokenAddr.eq(migration.asset.token.toBN()),
+          outflow.data?.to.eq(migration.destination.toBigNumber()) &&
+          outflow.data?.tokenAddr.eq(migration.asset.token.toBigNumber()),
       )
       return [...arr, ...filteredOutflow]
     }, [] as ZkOutflow[])
     // Calculate the fee
-    let migrationFee: BN = new BN(0)
+    let migrationFee: BigNumber = BigNumber.from(0)
     for (const fee of migrationOutflowArr.map(outflow => outflow.data?.fee)) {
       assert(fee, 'Filtering error')
       migrationFee = migrationFee.add(fee)
     }
     // Return the result
     const slash: Validation = {
-      slashable: !migration.depositForDest.fee.toBN().eq(migrationFee),
+      slashable: !migration.depositForDest.fee.toBigNumber().eq(migrationFee),
       reason: CODE.M5,
     }
     return slash
@@ -164,11 +167,11 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
     const block = blockDataToBlock(data)
     // get target migration
     const migration =
-      block.body.massMigrations[migrationIndex.toBN().toNumber()]
+      block.body.massMigrations[migrationIndex.toBigNumber().toNumber()]
     const { token } = migration.asset
     let slashable = false
     // check the token is registered
-    if (!token.toBN().eqn(0)) {
+    if (!token.toBigNumber().isZero()) {
       const registeredInfo = await this.layer2.db.findOne('TokenRegistry', {
         where: { address: token.toString() },
       })
@@ -193,17 +196,20 @@ export class OffchainMigrationValidator extends OffchainValidatorContext
   ): Promise<Validation> {
     const block = blockDataToBlock(data)
     // get target output
-    const transaction = block.body.txs[txIndex.toBN().toNumber()]
-    const outflow = transaction.outflow[outflowIndex.toBN().toNumber()]
+    const transaction = block.body.txs[txIndex.toBigNumber().toNumber()]
+    const outflow = transaction.outflow[outflowIndex.toBigNumber().toNumber()]
     let slashable: boolean
-    if (outflow.outflowType.eqn(OutflowType.MIGRATION)) {
+    if (outflow.outflowType.eq(OutflowType.MIGRATION)) {
       // Find mass migration for the given destination
       const dest = outflow.data?.to
       if (!dest) throw Error('Destination does not exist.')
       const token = outflow.data?.tokenAddr
       if (!token) throw Error('Token address does not exist.')
       const migration = block.body.massMigrations.find(mm => {
-        return dest.eq(mm.destination.toBN()) && token.eq(mm.asset.token.toBN())
+        return (
+          dest.eq(mm.destination.toBigNumber()) &&
+          token.eq(mm.asset.token.toBigNumber())
+        )
       })
       slashable = migration === undefined
     } else {

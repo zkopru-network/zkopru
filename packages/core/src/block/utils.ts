@@ -363,8 +363,8 @@ export function getMassMigrationForToken(
   migratingNotes: ZkOutflow[],
 ): MassMigration {
   const notes = migratingNotes
-    .filter(note => note.data?.to.eq(destination.toBN()))
-    .filter(note => note.data?.tokenAddr.eq(token.toBN()))
+    .filter(note => note.data?.to.eq(destination.toBigNumber()))
+    .filter(note => note.data?.tokenAddr.eq(token.toBigNumber()))
   const eth = notes
     .reduce((acc, note) => acc.add(note.data?.eth || Fp.zero), Fp.zero)
     .toUint256()
@@ -391,16 +391,16 @@ export function getMassMigrationForToken(
 export function getMassMigrations(txs: ZkTx[]): MassMigration[] {
   const migratingNotes: ZkOutflow[] = txs
     .reduce((acc, tx) => [...acc, ...tx.outflow], [] as ZkOutflow[])
-    .filter(outflow => outflow.outflowType.eqn(OutflowType.MIGRATION))
+    .filter(outflow => outflow.outflowType.eq(OutflowType.MIGRATION))
 
   const tokens = migratingNotes
     .map(note => note.data?.tokenAddr)
-    .map(addr => addr?.toHex())
+    .map(addr => addr?.toHexString())
     .filter((v, i, self) => self.indexOf(v) === i)
     .map(addr => Address.from(addr as string))
 
   const destinations = migratingNotes
-    .map(note => note.data?.to.toHex())
+    .map(note => note.data?.to.toHexString())
     .filter((v, i, self) => self.indexOf(v) === i)
     .map(addr => Address.from(addr as string))
 

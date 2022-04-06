@@ -11,7 +11,7 @@ export class OffchainDepositValidator extends OffchainValidatorContext
     index: Uint256,
   ): Promise<Validation> {
     const block = blockDataToBlock(data)
-    const migration = block.body.massDeposits[index.toBN().toNumber()]
+    const migration = block.body.massDeposits[index.toBigNumber().toNumber()]
     const storedMigration = await this.layer2.getDeposits(migration)
     return {
       slashable: storedMigration.length === 0,

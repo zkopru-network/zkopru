@@ -9,8 +9,8 @@ import { logger } from '@zkopru/utils'
 import { soliditySha3Raw } from 'web3-utils'
 import AbiCoder from 'web3-eth-abi'
 import { Bytes32, Uint256 } from 'soltypes'
-import { Transaction } from 'web3-core'
 // import assert from 'assert'
+import { Transaction } from 'ethers'
 import { Finalization, Header, Body } from './types'
 import {
   deserializeHeaderFrom,
@@ -177,8 +177,8 @@ export class Block {
   }
 
   static fromTx(tx: Transaction, verified?: boolean): Block {
-    logger.trace(`core/block.ts - Block::fromTx(${tx.hash.slice(0, 6)}...)`)
-    const queue = new Utils.StringifiedHexQueue(tx.input)
+    logger.trace(`core/block.ts - Block::fromTx(${tx.hash?.slice(0, 6)}...)`)
+    const queue = new Utils.StringifiedHexQueue(tx.data)
     // remove function selector
     const selector = queue.dequeue(4).toString()
     const data = queue.dequeueAll()

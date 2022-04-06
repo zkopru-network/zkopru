@@ -14,5 +14,4 @@ export {
   WithdrawalTreeValidator,
   UtxoTreeValidator,
   NullifierTreeValidator,
-  ChallengeTx,
 } from './types'
