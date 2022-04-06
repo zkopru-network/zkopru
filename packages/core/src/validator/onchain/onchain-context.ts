@@ -1,7 +1,6 @@
 /* eslint dot-notation: ["error", { "allowPattern": "^(_[a-z]+)+$" }] */
-import { TransactionObject } from '@zkopru/contracts'
+import { TransactionRequest } from '@ethersproject/providers'
 import { logger } from '@zkopru/utils'
-import { TransactionConfig } from 'web3-core'
 import { L1Contract } from '../../context/layer1'
 import { Validation } from '../types'
 
@@ -12,36 +11,14 @@ export class OnchainValidatorContext {
     this.layer1 = layer1
   }
 
-  async isSlashable(
-    tx: TransactionObject<{
-      slash: boolean
-      reason: string
-      0: boolean
-      1: string
-    }>,
-    config?: TransactionConfig,
-  ): Promise<Validation> {
+  async isSlashable(tx: TransactionRequest): Promise<Validation> {
     let slashable = false
     try {
-      await this.layer1.web3.eth.call({
-        ...config,
-        to: this.layer1.address,
-        data: tx.encodeABI(),
-      })
+      await this.layer1.provider.call(tx)
       slashable = true
-      await this.layer1.web3.eth.estimateGas(
-        {
-          to: this.layer1.address,
-          data: tx.encodeABI(),
-        },
-        (_, gas) => {
-          logger.warn(
-            `core/onchain-context.ts - slashable ${tx['_method']?.name}`,
-          )
-          logger.warn(
-            `core/onchain-context.ts - estimated gas ${tx['_method']?.name}: ${gas}`,
-          )
-        },
+      const estimatedGas = await this.layer1.provider.estimateGas(tx)
+      logger.warn(
+        `core/onchain-context.ts - slashable ${tx['_method']?.name}: ${estimatedGas}`,
       )
     } catch (err) {
       logger.trace(

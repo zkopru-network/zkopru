@@ -1,15 +1,15 @@
 import fetch from 'node-fetch'
 import { MerkleProof } from '@zkopru/tree'
 import { Fp } from '@zkopru/babyjubjub'
-import BN from 'bn.js'
 import { Proposal } from '@zkopru/database'
 import { logger } from '@zkopru/utils'
+import { BigNumber } from 'ethers'
 
 export interface BootstrapData {
   proposal: Proposal
   blockHash: string
   utxoStartingLeafProof: MerkleProof<Fp>
-  withdrawalStartingLeafProof: MerkleProof<BN>
+  withdrawalStartingLeafProof: MerkleProof<BigNumber>
 }
 
 export interface BootstrapHelper {

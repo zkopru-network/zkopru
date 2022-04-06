@@ -1,18 +1,12 @@
+import { TransactionRequest } from '@ethersproject/providers'
 import { Bytes32, Uint256 } from 'soltypes'
-import { TransactionObject } from '@zkopru/contracts'
 import { Block, Header } from '../block'
 
-export type ChallengeTx = TransactionObject<{
-  slash: boolean
-  reason: string
-  0: boolean
-  1: string
-}>
 export interface Validation {
   slashable: boolean
   reason?: string
-  tx?: ChallengeTx
-  prerequesites?: TransactionObject<any>[]
+  tx?: TransactionRequest
+  prerequesites?: TransactionRequest[]
 }
 
 export type BlockData = Block | string | Buffer

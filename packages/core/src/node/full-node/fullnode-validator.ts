@@ -45,21 +45,39 @@ export class FullValidator extends Validator {
       fnCalls.map(fnCall => {
         const result = offchainValidator[fnCall.name]
           .call(offchainValidator, ...fnCall.args)
-          .catch(err => ({ slashable: false, err }))
+          .catch(err => {
+            if (err instanceof Error) {
+              logger.error(
+                `core/fullnode-validator - offchain validation error: ${
+                  fnCall.name
+                }(${JSON.stringify(fnCall.args)}): ${err.toString()}`,
+              )
+            }
+            return { slashable: false, err }
+          })
         return result
       }),
     )
-    for (const result of offchainResult.filter(result => result.slashable)) {
+
+    for (const result of offchainResult.filter(result => !!result.slashable)) {
       logger.warn(
         `core/fullnode-validator - offchain validation failed: ${result.reason}`,
       )
     }
     const onchainResult: Validation[] = await Promise.all(
       fnCalls.map(fnCall => {
-        const result = onchainValidator[fnCall.name].call(
-          onchainValidator,
-          ...fnCall.args,
-        )
+        const result = onchainValidator[fnCall.name]
+          .call(onchainValidator, ...fnCall.args)
+          .catch(err => {
+            if (err instanceof Error) {
+              logger.error(
+                `core/fullnode-validator - onchain validation error: ${
+                  fnCall.name
+                }(${JSON.stringify(fnCall.args)}): ${err.toString()}`,
+              )
+            }
+            return { slashable: false, err }
+          })
         return result
       }),
     )
