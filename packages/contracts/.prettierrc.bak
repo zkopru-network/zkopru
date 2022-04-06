@@ -1,0 +1,40 @@
+{
+  "overrides": [
+    {
+      "files": "*.ts",
+      "options": {
+        "printWidth": 80,
+        "tabWidth": 2,
+        "useTabs": false,
+        "singleQuote": true,
+        "bracketSpacing": true,
+        "semi": false,
+        "trailingComma": "all",
+        "endOfLine": "lf",
+        "explicitTypes": "always"
+      }
+    },
+    {
+      "files": "*.sol",
+      "options": {
+        "printWidth": 80,
+        "tabWidth": 4,
+        "useTabs": false,
+        "singleQuote": false,
+        "bracketSpacing": true,
+        "explicitTypes": "always"
+      }
+    },
+    {
+      "files": "{Hash,Proxy}.sol",
+      "options": {
+        "printWidth": 160,
+        "tabWidth": 4,
+        "useTabs": false,
+        "singleQuote": false,
+        "bracketSpacing": true,
+        "explicitTypes": "always"
+      }
+    }
+  ]
+}
