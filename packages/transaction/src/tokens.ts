@@ -41,7 +41,12 @@ export class TokenRegistry {
   getErc20Addresses(id: number): Fp[] {
     if (id >= 256) throw Error('Token identifier should have 8 bit value')
     const candidates = this.erc20s
-      .filter(addr => addr.toBigNumber().mod(256).eq(id))
+      .filter(addr =>
+        addr
+          .toBigNumber()
+          .mod(256)
+          .eq(id),
+      )
       .map(addr => Fp.from(addr.toBigNumber()))
     return candidates
   }
@@ -49,7 +54,12 @@ export class TokenRegistry {
   getErc721Addresses(id: number): Fp[] {
     if (id >= 256) throw Error('Token identifier should have 8 bit value')
     const candidates = this.erc721s
-      .filter(addr => addr.toBigNumber().mod(256).eq(id))
+      .filter(addr =>
+        addr
+          .toBigNumber()
+          .mod(256)
+          .eq(id),
+      )
       .map(addr => Fp.from(addr.toBigNumber()))
     return candidates
   }
