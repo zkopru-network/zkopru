@@ -3,9 +3,9 @@ workflows:
   test_app:
     jobs:
       - build
-      - lint:
-          requires:
-            - build
+      # - lint:
+      #     requires:
+      #       - build
       - load_keys:
           requires:
             - build
@@ -52,9 +52,6 @@ jobs:
           name: Install
           command: yarn
       - run:
-          name: Build Contract
-          command: yarn build:contract
-      - run:
           name: Build TS
           command: yarn build:ts:serial
       - persist_to_workspace:
@@ -100,9 +97,6 @@ jobs:
       - attach_workspace:
           at: ~/
       - run:
-          name: Build Testnet
-          command: docker-compose -f compose/docker-compose.yml build contracts
-      - run:
           name: Coordinator Tests
           command: yarn test --scope=@zkopru/coordinator
   test_contracts:
@@ -111,9 +105,6 @@ jobs:
     steps:
       - attach_workspace:
           at: ~/
-      - run:
-          name: Build Testnet
-          command: docker-compose -f compose/docker-compose.yml build contracts-for-integration-test
       - run:
           name: Generate Block Data
           command: |
@@ -192,8 +183,5 @@ jobs:
       - attach_workspace:
           at: ~/
       - run:
-          name: Build Testnet
-          command: docker-compose -f compose/docker-compose.yml build contracts-for-integration-test
-      - run:
           name: Integration Tests
-          command: DEBUG=1 yarn test --scope=@zkopru/integration-test
+          command: LOG_LEVEL=debug yarn test --scope=@zkopru/integration-test

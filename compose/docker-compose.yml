@@ -4,7 +4,7 @@ services:
   contracts:
     image: zkoprunet/contracts:2.0.0-beta.0
     build:
-      context: ../packages/contracts/
+      context: ../
       dockerfile: ../../dockerfiles/Contract.dockerfile
   contracts-for-integration-test:
     image: zkoprunet/contracts-integration-test:2.0.0-beta.0

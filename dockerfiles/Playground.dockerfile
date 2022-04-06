@@ -13,7 +13,7 @@ RUN apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.10/m
         make \
         g++ \
         chromium \
-        && yarn global add truffle ganache-cli \
+        && yarn global add hardhat ganache-cli \
         && yarn \
         && yarn install \
         && npx lerna run build --scope=@zkopru/cli \
@@ -22,7 +22,7 @@ RUN apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.10/m
 WORKDIR /proj/zkopru/packages/cli
 
 RUN  ganache-cli --db=/proj/data -i 20200406 -p 5000 --gasLimit 12000000 --deterministic --host 0.0.0.0 & \
-        sleep 5 && cd /proj/zkopru/packages/contracts && truffle migrate --network testnet
+        sleep 5 && cd /proj/zkopru/packages/contracts && hardhat run  --network testnet
 
 COPY ./packages/circuits/keys /proj/zkopru/packages/cli/keys
 
