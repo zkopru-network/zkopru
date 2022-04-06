@@ -1,7 +1,8 @@
-import { toBN, fromWei, toWei } from 'web3-utils'
+import { fromWei, toWei } from 'web3-utils'
 import assert from 'assert'
 import chalk from 'chalk'
 import { parseStringToUnit, logger } from '@zkopru/utils'
+import { BigNumber } from 'ethers'
 import App, { AppMenu, Context } from '..'
 
 export default class DepositEther extends App {
@@ -40,8 +41,8 @@ export default class DepositEther extends App {
       messages.push(`Fee: ${fee} ETH`)
       messages.push(`    = ${feeWei} wei`)
       this.print(messages.join('\n'))
-      const total = toBN(amountWei).add(toBN(feeWei))
-      if (toBN(balance.eth).lt(total)) {
+      const total = BigNumber.from(amountWei).add(feeWei)
+      if (BigNumber.from(balance.eth).lt(total)) {
         this.print(chalk.red('Not enough balance. Try again'))
       } else {
         hasEnoughBalance = true
@@ -66,7 +67,7 @@ export default class DepositEther extends App {
     try {
       success = await this.base.depositEther(amountWei, feeWei)
     } catch (err) {
-      logger.error(err)
+      if (err instanceof Error) logger.error(err)
     }
     if (!success) {
       const { tryAgain } = await this.ask({

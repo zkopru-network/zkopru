@@ -59,7 +59,7 @@ export default class Wallet extends PromptApp<ExampleConfigContext, void> {
         config: {
           ...context.config,
           address,
-          websocket,
+          provider: websocket,
         },
         outputPath: context.outputPath,
       },

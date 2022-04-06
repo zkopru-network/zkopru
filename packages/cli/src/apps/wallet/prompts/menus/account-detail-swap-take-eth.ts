@@ -34,12 +34,13 @@ export default class AtomicSwapTakeEth extends App {
       tx = swapTxBuilder.build()
       this.print(`Succeeded to build a transaction. Start to generate proof`)
     } catch (err) {
-      this.print(`Failed to build transaction \n${err.toString()}`)
+      if (err instanceof Error)
+        this.print(`Failed to build transaction \n${err.toString()}`)
     }
     try {
       await wallet.sendTx({ tx, from: account })
     } catch (err) {
-      logger.error(err)
+      if (err instanceof Error) logger.error(err)
       logger.error(tx)
     }
     return { context, next: AppMenu.ACCOUNT_DETAIL }

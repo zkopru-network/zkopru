@@ -34,10 +34,10 @@ export const { argv } = yargs
       alias: 'a',
       default: DEFAULT.address,
     },
-    websocket: {
+    provider: {
       type: 'string',
-      alias: 'ws',
-      default: DEFAULT.websocket,
+      p: 'ws',
+      default: DEFAULT.provider,
     },
     snarkKeyPath: {
       type: 'string',

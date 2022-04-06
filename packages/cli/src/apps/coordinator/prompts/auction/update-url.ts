@@ -1,19 +1,19 @@
 import chalk from 'chalk'
-import { Layer1 } from '@zkopru/contracts'
+import { BurnAuction__factory } from '@zkopru/contracts'
 import App, { AppMenu, Context } from '..'
 
 export default class UpdateUrl extends App {
   static code = AppMenu.AUCTION_UPDATE_URL
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
-    const consensus = await this.base
-      .layer1()
-      .upstream.methods.consensusProvider()
-      .call()
-    const auction = Layer1.getIBurnAuction(this.base.layer1().web3, consensus)
-    const myUrl = await auction.methods
-      .coordinatorUrls(this.base.context.account.address)
-      .call()
+    const consensus = await this.base.layer1().zkopru.consensusProvider()
+    const auction = BurnAuction__factory.connect(
+      consensus,
+      this.base.layer1().provider,
+    )
+    const myUrl = await auction.coordinatorUrls(
+      await this.base.context.account.getAddress(),
+    )
     this.print(chalk.blue(`Current url: ${myUrl}`))
     const { url } = await this.ask({
       type: 'text',
@@ -32,16 +32,10 @@ export default class UpdateUrl extends App {
       return { context, next: AppMenu.AUCTION_MENU }
     }
     // send tx
-    const tx = this.base
-      .layer1()
-      .sendExternalTx(
-        auction.methods.setUrl(url),
-        this.base.context.account,
-        consensus,
-      )
+    const tx = await auction.connect(this.base.context.account).setUrl(url)
     this.print(chalk.blue(`Waiting for block confirmation`))
     try {
-      await tx
+      await tx.wait()
       this.print(chalk.blue('Done!'))
     } catch (err) {
       this.print(chalk.red('Error updating url!'))
