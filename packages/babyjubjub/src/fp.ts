@@ -20,6 +20,7 @@ export class Fp implements BigNumber {
   static Red = BN.red(new BN(Fp.ORDER.toString()))
 
   readonly _hex: string
+
   readonly _isBigNumber: boolean
 
   constructor(constructorGuard: any, hex: string) {
@@ -40,13 +41,8 @@ export class Fp implements BigNumber {
   }
 
   static from(number: BigNumberish): Fp {
-    let n: BigNumber = BigNumber.from(number)
-    let val: BigNumber
-    if (n.isNegative()) {
-      val = n.mod(Fp.ORDER).add(Fp.ORDER)
-    } else {
-      val = n.mod(Fp.ORDER)
-    }
+    const n: BigNumber = BigNumber.from(number)
+    const val = n.mod(Fp.ORDER)
     return new Fp(_constructorGuard, val.toHexString())
   }
 
@@ -145,12 +141,15 @@ export class Fp implements BigNumber {
   shl(value: number): Fp {
     return Fp.from(this.toBigNumber().shl(value))
   }
+
   shr(value: number): Fp {
     return Fp.from(this.toBigNumber().shr(value))
   }
 
   neg(): Fp {
-    return Fp.from(this._hex.startsWith('-') ? this._hex.slice(1) : `-${this._hex}`)
+    return Fp.from(
+      this._hex.startsWith('-') ? this._hex.slice(1) : `-${this._hex}`,
+    )
   }
 
   eq(other: BigNumberish): boolean {
@@ -164,18 +163,23 @@ export class Fp implements BigNumber {
   lte(other: BigNumberish): boolean {
     return this.toBigNumber().lte(other)
   }
+
   gt(other: BigNumberish): boolean {
     return this.toBigNumber().gt(other)
   }
+
   gte(other: BigNumberish): boolean {
     return this.toBigNumber().gte(other)
   }
+
   isNegative(): boolean {
     return this.toBigNumber().isNegative()
   }
+
   isZero(): boolean {
     return this.toBigNumber().isZero()
   }
+
   toNumber(): number {
     return this.toBigNumber().toNumber()
   }
@@ -189,7 +193,7 @@ export class Fp implements BigNumber {
   }
 
   toString(): string {
-      return BigNumber.from(this._hex).toString()
+    return BigNumber.from(this._hex).toString()
   }
 
   toRed(): RedBN {
