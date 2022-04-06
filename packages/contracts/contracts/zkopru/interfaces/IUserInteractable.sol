@@ -52,5 +52,5 @@ interface IUserInteractable {
         PublicData memory publicData,
         PrepayRequest memory prepayRequest,
         bytes memory signature
-    ) external;
+    ) external payable;
 }
