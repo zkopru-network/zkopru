@@ -9,9 +9,10 @@
   },
   "include": ["src"],
   "references": [
+    { "path": "../contracts/tsconfig.build.json", "prepend": false },
     { "path": "../coordinator/tsconfig.build.json", "prepend": false },
     { "path": "../core/tsconfig.build.json", "prepend": false },
     { "path": "../database/tsconfig.build.json", "prepend": false },
-    { "path": "../zk-wizard/tsconfig.build.json", "prepend": false },
+    { "path": "../zk-wizard/tsconfig.build.json", "prepend": false }
   ]
 }
