@@ -3,10 +3,10 @@
 import { Fp } from '@zkopru/babyjubjub'
 import AsyncLock from 'async-lock'
 import { DB, TreeSpecies, TransactionDB } from '@zkopru/database'
+import { BigNumber } from 'ethers'
 import { Hasher } from './hasher'
 import { MerkleProof, startingLeafProof, verifyProof } from './merkle-proof'
 import { TreeCache } from './utils'
-import { BigNumber } from 'ethers'
 
 export interface Leaf<T extends Fp | BigNumber> {
   hash: T

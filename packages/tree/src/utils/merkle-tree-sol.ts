@@ -19,7 +19,12 @@ function appendLeaf<T extends Fp | BigNumber>(
   const path = index
   let node: T = leaf
   for (let level = 0; level < siblings.length; level += 1) {
-    if (path.shr(level).and(1).isZero()) {
+    if (
+      path
+        .shr(level)
+        .and(1)
+        .isZero()
+    ) {
       // Right empty sibling
       nextSiblings[level] = node // current node becomes the next merkle proof's left sibling
       node = hasher.parentOf(node, hasher.preHash[level])
@@ -47,7 +52,12 @@ function startingLeafProof<T extends Fp | BigNumber>(
   const path = index
   let node: T = hasher.preHash[0]
   for (let level = 0; level < siblings.length; level += 1) {
-    if (path.shr(level).and(1).isZero()) {
+    if (
+      path
+        .shr(level)
+        .and(1)
+        .isZero()
+    ) {
       // Right sibling should be the prehashed zero
       if (!siblings[level].eq(hasher.preHash[level])) return false
       node = hasher.parentOf(node, hasher.preHash[level])
@@ -69,7 +79,12 @@ export function merkleRoot<T extends Fp | BigNumber>(
   const path = index
   let node: T = leaf
   for (let level = 0; level < siblings.length; level += 1) {
-    if (path.shr(level).and(1).isZero()) {
+    if (
+      path
+        .shr(level)
+        .and(1)
+        .isZero()
+    ) {
       // Right sibling
       node = hasher.parentOf(node, siblings[level])
     } else {
