@@ -1,20 +1,20 @@
 import chalk from 'chalk'
-import { Layer1 } from '@zkopru/contracts'
-import { fromWei } from 'web3-utils'
+import { BurnAuction__factory } from '@zkopru/contracts'
+import { formatEther } from 'ethers/lib/utils'
 import App, { AppMenu, Context } from '..'
 
 export default class Refund extends App {
   static code = AppMenu.AUCTION_REFUND
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
-    const consensus = await this.base
-      .layer1()
-      .upstream.methods.consensusProvider()
-      .call()
-    const auction = Layer1.getIBurnAuction(this.base.layer1().web3, consensus)
-    const pendingBalance = await auction.methods
-      .pendingBalances(this.base.context.account.address)
-      .call()
+    const consensus = await this.base.layer1().zkopru.consensusProvider()
+    const auction = BurnAuction__factory.connect(
+      consensus,
+      this.base.layer1().provider,
+    )
+    const pendingBalance = await auction.pendingBalances(
+      await this.base.context.account.getAddress(),
+    )
     if (pendingBalance.toString() === '0') {
       // nothing to refund
       this.print(chalk.red(`No balance to refund!`))
@@ -24,23 +24,15 @@ export default class Refund extends App {
       type: 'confirm',
       name: 'confirmed',
       initial: true,
-      message: chalk.blue(
-        `Refund ${fromWei(pendingBalance).toString()} Ether?`,
-      ),
+      message: chalk.blue(`Refund ${formatEther(pendingBalance)} Ether?`),
     })
     if (!confirmed) {
       return { context, next: AppMenu.AUCTION_MENU }
     }
-    const tx = this.base
-      .layer1()
-      .sendExternalTx(
-        auction.methods['refund()'](),
-        this.base.context.account,
-        consensus,
-      )
+    const tx = await auction.connect(this.base.context.account)['refund()']()
     this.print(chalk.blue(`Refunding, waiting for block confirmation...`))
     try {
-      await tx
+      await tx.wait()
       this.print(chalk.blue('Done!'))
     } catch (err) {
       this.print(chalk.red('Error refunding!'))

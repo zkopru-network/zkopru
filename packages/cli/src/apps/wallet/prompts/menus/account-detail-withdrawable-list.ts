@@ -1,5 +1,5 @@
 import { WithdrawalStatus } from '@zkopru/transaction'
-import { fromWei } from 'web3-utils'
+import { formatUnits } from 'ethers/lib/utils'
 import App, { AppMenu, Context } from '..'
 
 export default class WithdrawableList extends App {
@@ -28,14 +28,14 @@ export default class WithdrawableList extends App {
         },
         ...unfinalized.map(w => ({
           title: `Not finalized yet - instant withdraw?
-          ETH: ${fromWei(w.eth, 'ether')}
+          ETH: ${formatUnits(w.eth, 'ether')}
           ERC20: ${w.erc20Amount}
           NFT: ${w.nft}`,
           value: { menu: AppMenu.INSTANT_WITHDRAW, withdrawal: w },
         })),
         ...finalized.map(w => ({
           title: `finalized - withdraw now?
-          ETH: ${fromWei(w.eth, 'ether')}
+          ETH: ${formatUnits(w.eth, 'ether')}
           ERC20: ${w.erc20Amount}
           NFT: ${w.nft}`,
           value: { menu: AppMenu.WITHDRAW, withdrawal: w },

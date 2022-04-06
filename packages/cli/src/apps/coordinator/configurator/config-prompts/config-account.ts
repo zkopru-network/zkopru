@@ -1,7 +1,7 @@
 import chalk from 'chalk'
 import fs from 'fs'
-import { Account } from 'web3-core'
 import { makePathAbsolute } from '@zkopru/utils'
+import { Wallet } from 'ethers'
 import Configurator, { Context, Menu } from '../configurator'
 
 export default class ConfigureAccount extends Configurator {
@@ -9,7 +9,7 @@ export default class ConfigureAccount extends Configurator {
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
     console.log(chalk.blue('Setting up the coordinator account'))
-    if (!context.web3) throw Error('Web3 is not loaded')
+    if (!context.provider) throw Error('Web3 is not loaded')
     if (this.base.keystore) {
       let password: string
       if (this.base.password) {
@@ -21,8 +21,8 @@ export default class ConfigureAccount extends Configurator {
       } else {
         throw Error('Password is not configured')
       }
-      const account = context.web3.eth.accounts.decrypt(
-        this.base.keystore,
+      const account = await Wallet.fromEncryptedJson(
+        JSON.stringify(this.base.keystore),
         password,
       )
       return { context: { ...context, account }, next: Menu.LOAD_DATABASE }
@@ -50,9 +50,9 @@ export default class ConfigureAccount extends Configurator {
       choice = result.choice
     }
 
-    let account: Account
+    let account: Wallet
     if (choice === 1) {
-      account = context.web3.eth.accounts.create()
+      account = Wallet.createRandom()
     } else {
       let pk!: string
       while (pk === undefined) {
@@ -72,11 +72,10 @@ export default class ConfigureAccount extends Configurator {
           )
         }
       }
-      account = context.web3.eth.accounts.privateKeyToAccount(pk)
-      context.web3.eth.accounts.wallet.add(account)
+      account = new Wallet(pk)
     }
     console.log(chalk.bold(`Configured account`))
-    console.log(`Account: ${account.address}`)
+    console.log(`Account: ${await account.getAddress()}`)
     console.log(`Private key: ${account.privateKey}`)
     let confirmed = false
     let confirmedPassword!: string
@@ -99,9 +98,9 @@ export default class ConfigureAccount extends Configurator {
       confirmedPassword = password
     } while (!confirmed)
 
-    const keystore = account.encrypt(confirmedPassword)
+    const keystore = await account.encrypt(confirmedPassword)
     return {
-      context: { ...context, keystore, account },
+      context: { ...context, keystore: JSON.parse(keystore), account },
       next: Menu.SAVE_CONFIG,
     }
   }

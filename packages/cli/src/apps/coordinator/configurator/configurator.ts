@@ -1,14 +1,15 @@
-import Web3 from 'web3'
 import { Coordinator } from '@zkopru/coordinator'
 import { NetworkStatus } from '@zkopru/core'
 import { DB } from '@zkopru/database'
 import { PromptApp } from '@zkopru/utils'
-import { Account, WebsocketProvider, EncryptedKeystoreV3Json } from 'web3-core'
+import { BaseProvider } from '@ethersproject/providers'
+import { EncryptedKeystoreV3Json } from 'web3-core'
+import { Signer } from 'ethers'
 
 export interface Config {
   address: string
   bootstrap: boolean
-  websocket: string
+  provider: string
   sqlite?: string
   postgres?: string
   maxBytes: number
@@ -38,12 +39,11 @@ export enum Menu {
 
 export interface Context {
   networkStatus: NetworkStatus
-  web3?: Web3
-  provider?: WebsocketProvider
+  provider?: BaseProvider
   db?: DB
   coordinator?: Coordinator
   keystore?: EncryptedKeystoreV3Json
-  account?: Account
+  account?: Signer
 }
 
 export default abstract class Configurator extends PromptApp<Context, Config> {}

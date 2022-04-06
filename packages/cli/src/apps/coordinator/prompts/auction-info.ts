@@ -1,19 +1,20 @@
 /* eslint-disable prettier/prettier */
-import { Layer1 } from '@zkopru/contracts'
+import { BurnAuction__factory } from '@zkopru/contracts'
+import { formatEther } from 'ethers/lib/utils'
 import App, { AppMenu, Context } from '.'
 
 export default class CoordinatorInfo extends App {
   static code = AppMenu.AUCTION_INFO
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
-    const consensus = await this.base
-      .layer1()
-      .upstream.methods.consensusProvider()
-      .call()
-    const auction = Layer1.getIBurnAuction(this.base.layer1().web3, consensus)
+    const consensus = await this.base.layer1().zkopru.consensusProvider()
+    const auction = BurnAuction__factory.connect(
+      consensus,
+      this.base.layer1().provider,
+    )
     const [currentRound, blockNumber] = await Promise.all([
-      auction.methods.currentRound().call(),
-      this.base.layer1().web3.eth.getBlockNumber(),
+      auction.currentRound(),
+      this.base.layer1().provider.getBlockNumber(),
     ])
     const [
       currentProposer,
@@ -22,11 +23,11 @@ export default class CoordinatorInfo extends App {
       pendingBalance,
       myUrl,
     ] = await Promise.all([
-      auction.methods.coordinatorForRound(currentRound).call(),
-      auction.methods.coordinatorForRound(+currentRound + 1).call(),
-      auction.methods.calcRoundStart(+currentRound + 1).call(),
-      auction.methods.pendingBalances(this.base.context.account.address).call(),
-      auction.methods.coordinatorUrls(this.base.context.account.address).call(),
+      auction.coordinatorForRound(currentRound),
+      auction.coordinatorForRound(+currentRound + 1),
+      auction.calcRoundStart(+currentRound + 1),
+      auction.pendingBalances(await this.base.context.account.getAddress()),
+      auction.coordinatorUrls(await this.base.context.account.getAddress()),
     ])
 
     this.print(`Auction information
@@ -35,9 +36,7 @@ export default class CoordinatorInfo extends App {
     Remaining blocks    : ${+nextRoundStart - blockNumber}
     Next proposer       : ${nextProposer}
     My urls             : ${myUrl}
-    Available balance   : ${this.base
-      .layer1()
-      .web3.utils.fromWei(pendingBalance)}`)
+    Available balance   : ${formatEther(pendingBalance)}`)
     return { context, next: AppMenu.TOP_MENU }
   }
 }

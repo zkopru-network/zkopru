@@ -5,7 +5,13 @@ export default class CoordinatorInfo extends App {
   static code = AppMenu.COORDINATOR_INFO
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
-    const { stake, reward, exitAllowance } = await this.base.layer1().upstream.methods.proposers(this.base.context.account.address).call()
+    const {
+      stake,
+      reward,
+      exitAllowance,
+    } = await this.base
+      .layer1()
+      .zkopru.proposers(await this.base.context.account.getAddress())
     this.print(`Coordinator information
     Staked amount       : ${stake}
     Accumulated rewards : ${reward}

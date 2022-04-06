@@ -6,7 +6,6 @@ import {
   HttpBootstrapHelper,
   CoordinatorManager,
 } from '@zkopru/core'
-import Web3 from 'web3'
 import Configurator, { Context, Menu } from '../configurator'
 
 export default class LoadNode extends Configurator {
@@ -17,7 +16,7 @@ export default class LoadNode extends Configurator {
     if (!context.provider) throw Error('Websocket provider does not exist')
     if (!context.db) throw Error('Database does not exist')
     if (!context.accounts) throw Error('Wallet is not set')
-    if (!context.provider.connected)
+    if (!(await context.provider.ready))
       throw Error('Websocket provider is not connected')
     let node: ZkopruNode
     const { provider, db, accounts } = context
@@ -30,7 +29,7 @@ export default class LoadNode extends Configurator {
         accounts,
       })
     } else {
-      const manager = new CoordinatorManager(address, new Web3(provider))
+      const manager = new CoordinatorManager(address, provider)
       const coordinator = await manager.activeCoordinatorUrl()
       if (!coordinator) {
         this.print(`Unable to find coordinator to sync from`)
