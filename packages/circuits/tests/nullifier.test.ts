@@ -7,6 +7,9 @@
 
 import fs from 'fs'
 import { genSNARK, SNARKResult } from '~zk-wizard/snark'
+import { utxos } from '~dataset/testset-utxos'
+import { accounts } from '~dataset/testset-predefined'
+import { Fp } from '~babyjubjub'
 import {
   checkPhase1Setup,
   compileCircuit,
@@ -14,9 +17,6 @@ import {
   phase2Setup,
   prepareArtifactsDirectory,
 } from './helper'
-import { utxos } from '~dataset/testset-utxos'
-import { accounts } from '~dataset/testset-predefined'
-import { Fp } from '~babyjubjub'
 
 const fileName = 'nullifier.test.circom'
 const artifacts = getArtifacts(fileName)

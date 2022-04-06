@@ -8,6 +8,8 @@
 import fs from 'fs'
 import * as snarkjs from 'snarkjs'
 import { genSNARK, SNARKResult } from '~zk-wizard/snark'
+import { utxos } from '~dataset/testset-utxos'
+import { accounts } from '~dataset/testset-predefined'
 import {
   checkPhase1Setup,
   compileCircuit,
@@ -15,8 +17,6 @@ import {
   phase2Setup,
   prepareArtifactsDirectory,
 } from './helper'
-import { utxos } from '~dataset/testset-utxos'
-import { accounts } from '~dataset/testset-predefined'
 
 const fileName = 'ownership_proof.test.circom'
 const artifacts = getArtifacts(fileName)
