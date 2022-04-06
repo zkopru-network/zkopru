@@ -10,5 +10,5 @@ describe('client tests', () => {
     } catch (err) {
       assert(true)
     }
-  }, 10000)
+  })
 })
