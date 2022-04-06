@@ -16,15 +16,13 @@ import {
   serializeHeader,
   MAX_MASS_DEPOSIT_COMMIT_GAS,
 } from '@zkopru/core'
-import { Account, TransactionReceipt } from 'web3-core'
-import { Subscription } from 'web3-core-subscriptions'
-import { Uint256 } from 'soltypes'
 import assert from 'assert'
 import AsyncLock from 'async-lock'
-import { Layer1 } from '@zkopru/contracts'
-import BN from 'bn.js'
 import fetch from 'node-fetch'
-import { BlockHeader } from 'web3-eth'
+import { BigNumber, BigNumberish, Signer } from 'ethers'
+import { TransactionReceipt } from '@ethersproject/providers'
+import { IBurnAuction__factory } from '@zkopru/contracts'
+import { parseUnits } from 'ethers/lib/utils'
 import { TxMemPool } from './tx-pool'
 import { CoordinatorConfig, CoordinatorContext } from './context'
 import { GeneratorBase } from './middlewares/interfaces/generator-base'
@@ -55,12 +53,10 @@ export class Coordinator extends EventEmitter {
 
   api: CoordinatorApi
 
-  gasPriceSubscriber?: Subscription<BlockHeader>
-
   taskRunners: {
     blockPropose: Worker<void>
     blockFinalize: Worker<void>
-    massDepositCommit: Worker<TransactionReceipt | undefined>
+    massDepositCommit: Worker<TransactionReceipt | void>
   }
 
   proposeLock: AsyncLock
@@ -71,7 +67,7 @@ export class Coordinator extends EventEmitter {
 
   constructor(
     node: FullNode,
-    account: Account,
+    account: Signer,
     config: CoordinatorConfig,
     middlewares?: MiddlewareOption,
   ) {
@@ -192,31 +188,51 @@ export class Coordinator extends EventEmitter {
       vk_delta_2: string[][]
       IC: string[][]
     },
-  ): Promise<TransactionReceipt | undefined> {
-    const tx = this.layer1().setup.methods.registerVk(nIn, nOut, [
-      // caution: snarkjs G2Point is reversed
-      [vk.vk_alpha_1[0], vk.vk_alpha_1[1]],
-      [vk.vk_beta_2[0].reverse(), vk.vk_beta_2[1].reverse()],
-      [vk.vk_gamma_2[0].reverse(), vk.vk_gamma_2[1].reverse()],
-      [vk.vk_delta_2[0].reverse(), vk.vk_delta_2[1].reverse()],
-      vk.IC.map((ic: string[]) => [ic[0], ic[1]]),
-    ])
-    return this.layer1().sendTx(tx, this.context.account)
+  ): Promise<TransactionReceipt> {
+    type Point = [BigNumberish, BigNumberish]
+    const tx = await this.layer1()
+      .setup.connect(this.context.account)
+      .registerVk(nIn, nOut, {
+        alpha1: {
+          X: vk.vk_alpha_1[0],
+          Y: vk.vk_alpha_1[1],
+        },
+        beta2: {
+          X: vk.vk_beta_2[0].reverse() as Point,
+          Y: vk.vk_beta_2[1].reverse() as Point,
+        },
+        gamma2: {
+          X: vk.vk_gamma_2[0].reverse() as Point,
+          Y: vk.vk_gamma_2[1].reverse() as Point,
+        },
+        delta2: {
+          X: vk.vk_delta_2[0].reverse() as Point,
+          Y: vk.vk_delta_2[1].reverse() as Point,
+        },
+        ic: vk.IC.map((ic: string[]) => ({ X: ic[0], Y: ic[1] })),
+      })
+    const receipt = tx.wait()
+    return receipt
   }
 
-  async completeSetup(): Promise<TransactionReceipt | undefined> {
-    const tx = this.layer1().setup.methods.completeSetup()
-    return this.layer1().sendTx(tx, this.context.account)
+  async completeSetup(): Promise<TransactionReceipt> {
+    const tx = await this.layer1()
+      .setup.connect(this.context.account)
+      .completeSetup()
+    const receipt = await tx.wait()
+    return receipt
   }
 
   async bidAuctions(): Promise<void> {
-    const consensus = await this.layer1()
-      .upstream.methods.consensusProvider()
-      .call()
-    const auction = Layer1.getIBurnAuction(this.layer1().web3, consensus)
+    const consensus = await this.layer1().zkopru.consensusProvider()
+    const coordinatorAddress = await this.context.account.getAddress()
+    const auction = IBurnAuction__factory.connect(
+      consensus,
+      this.layer1().provider,
+    )
     const [currentRound, url] = await Promise.all([
-      auction.methods.currentRound().call(),
-      auction.methods.coordinatorUrls(this.context.account.address).call(),
+      auction.currentRound(),
+      auction.coordinatorUrls(coordinatorAddress),
     ])
     if (+currentRound !== this.currentRound) {
       this.currentRound = +currentRound
@@ -227,58 +243,57 @@ export class Coordinator extends EventEmitter {
     if (!url) {
       // Set a url
       // TODO: determine apparent external ip/port
-      const urlTx = auction.methods.setUrl('http://localhost')
-      await this.layer1().sendExternalTx(urlTx, this.context.account, consensus)
+      const urlTx = await auction
+        .connect(this.context.account)
+        .setUrl('http://localhost')
+      await urlTx.wait()
     }
     const futureRounds = 20
-    const maxPrice = new BN((100000 * 10 ** 9).toString())
-    const startRound = +(await auction.methods.currentRound().call()) + 3
-    const promises = [] as Promise<TransactionReceipt | undefined>[]
+    const maxPrice = parseUnits('100000', 'gwei')
+    const startRound = +(await auction.currentRound()) + 3
+    const promises = [] as Promise<TransactionReceipt>[]
 
     for (let x = startRound; x < startRound + futureRounds; x += 1) {
-      const currentWinner = await auction.methods.coordinatorForRound(x).call()
+      const currentWinner = await auction.coordinatorForRound(x)
       if (
         currentWinner.toString().toLowerCase() ===
-        this.context.account.address.toLowerCase()
+        coordinatorAddress.toLowerCase()
       ) {
         // Already highest bidder for this round
         // eslint-disable-next-line no-continue
         continue
       }
-      const nextBid = await auction.methods.minNextBid(x).call()
-      if (new BN(nextBid).gt(maxPrice)) {
+      const nextBid = await auction.minNextBid(x)
+      if (BigNumber.from(nextBid).gt(maxPrice)) {
         // price too high
         // eslint-disable-next-line no-continue
         continue
       }
       logger.info(`coordinator/coordinator.ts - Bidding on round ${x}`)
-      const tx = auction.methods['bid(uint256)'](x)
-      promises.push(
-        this.layer1().sendExternalTx(tx, this.context.account, consensus, {
-          value: nextBid,
-        }),
-      )
+      const tx = await auction
+        .connect(this.context.account)
+        ['bid(uint256)'](x, { value: nextBid })
+      const receipt = tx.wait()
+      promises.push(receipt)
     }
     await Promise.all(promises)
   }
 
-  async registerAsCoordinator(): Promise<TransactionReceipt | undefined> {
+  async registerAsCoordinator(): Promise<TransactionReceipt> {
     const { minimumStake } = this.layer2().config
-    const consensus = await this.layer1()
-      .upstream.methods.consensusProvider()
-      .call()
-    const tx = Layer1.getIBurnAuction(
-      this.layer1().web3,
+    const consensus = await this.layer1().zkopru.consensusProvider()
+    const tx = await IBurnAuction__factory.connect(
       consensus,
-    ).methods.register()
-    return this.layer1().sendTx(tx, this.context.account, {
-      value: minimumStake,
-    })
+      this.context.account,
+    ).register({ value: minimumStake })
+    const receipt = tx.wait()
+    return receipt
   }
 
-  async deregister(): Promise<TransactionReceipt | undefined> {
-    const tx = this.layer1().coordinator.methods.deregister()
-    return this.layer1().sendTx(tx, this.context.account)
+  async deregister(): Promise<TransactionReceipt> {
+    const tx = await this.layer1().coordinator.deregister()
+    const receipt = await tx.wait()
+    return receipt
   }
 
   private async proposeTask() {
@@ -320,7 +335,7 @@ export class Coordinator extends EventEmitter {
       }
     } catch (err) {
       logger.error(
-        `coordinator/coordinator.ts - Error occurred during block proposing: ${err.toString()}`,
+        `coordinator/coordinator.ts - Error occurred during block proposing: ${(err as any).toString()}`,
       )
     }
   }
@@ -331,7 +346,10 @@ export class Coordinator extends EventEmitter {
       `coordinator/coordinator.ts - Skipping block proposal: Not proposable`,
     )
     // get pending tx and forward to active proposer
-    const pendingTx = await this.context.txPool.pickTxs(Infinity, new BN('1'))
+    const pendingTx = await this.context.txPool.pickTxs(
+      Infinity,
+      BigNumber.from(1),
+    )
     if (!pendingTx?.length) return
     const url = await auctionMonitor.functionalCoordinatorUrl(
       auctionMonitor.currentProposer,
@@ -351,7 +369,7 @@ export class Coordinator extends EventEmitter {
     }
   }
 
-  async commitMassDepositsIfNeeded(): Promise<any> {
+  async commitMassDepositsIfNeeded(): Promise<TransactionReceipt | void> {
     // if pending deposit fee + pending mass deposit fee + pending tx fee > block proposal fee
     // then commit the pending deposits to prepare to propose a block
     if (!this.context.auctionMonitor.isProposable) {
@@ -373,48 +391,46 @@ export class Coordinator extends EventEmitter {
       return
     }
     // TODO: take staged fees from db for reorg protection
-    const stagedDeposits = await this.layer1()
-      .upstream.methods.stagedDeposits()
-      .call()
+    const stagedDeposits = await this.layer1().zkopru.stagedDeposits()
     if (+stagedDeposits.fee === 0) return
     const block = await this.middlewares.generator.genBlock()
     const bytes = Buffer.concat([
       serializeHeader(block.header),
       serializeBody(block.body),
     ])
-    const expectedGas =
-      (await this.layer1()
-        .coordinator.methods.propose(`0x${bytes.toString('hex')}`)
-        .estimateGas({
-          from: this.context.account.address,
-        })) + MAX_MASS_DEPOSIT_COMMIT_GAS
-    const expectedCost = this.context.gasPrice.muln(expectedGas)
+    const expectedGas = (
+      await this.layer1().coordinator.estimateGas.propose(
+        `0x${bytes.toString('hex')}`,
+        { from: this.context.account.getAddress() },
+      )
+    ).add(MAX_MASS_DEPOSIT_COMMIT_GAS)
+    const expectedCost = this.context.gasPrice.mul(expectedGas)
     logger.info(
       `coordinator/coordinator.ts - Skipping mass deposit, need ${expectedCost.toString()} have ${block.header.fee
-        .toBN()
-        .add(new BN(stagedDeposits.fee))
+        .toBigNumber()
+        .add(stagedDeposits.fee)
         .toString()}`,
     )
     if (
-      expectedCost.lte(block.header.fee.toBN().add(new BN(stagedDeposits.fee)))
+      expectedCost.lte(block.header.fee.toBigNumber().add(stagedDeposits.fee))
     ) {
       // pending deposits will be enough for a new block, so commit
-      const tx = this.layer1().coordinator.methods.commitMassDeposit()
-      return this.layer1().sendTx(tx, this.context.account)
+      const tx = await this.layer1()
+        .coordinator.connect(this.context.account)
+        .commitMassDeposit()
+      const receipt = await tx.wait()
+      return receipt
     }
   }
 
   async commitMassDeposits(): Promise<TransactionReceipt | undefined> {
-    const stagedDeposits = await this.layer1()
-      .upstream.methods.stagedDeposits()
-      .call()
-    if (
-      Uint256.from(stagedDeposits.fee)
-        .toBN()
-        .gtn(0)
-    ) {
-      const tx = this.layer1().coordinator.methods.commitMassDeposit()
-      return this.layer1().sendTx(tx, this.context.account)
+    const stagedDeposits = await this.layer1().zkopru.stagedDeposits()
+    if (stagedDeposits.fee.gt(0)) {
+      const tx = await this.layer1()
+        .coordinator.connect(this.context.account)
+        .commitMassDeposit()
+      const receipt = await tx.wait()
+      return receipt
     }
     return undefined
   }
@@ -430,22 +446,27 @@ export class Coordinator extends EventEmitter {
     if (!finalization) return
     logger.info('coordinator/coordinator.ts - finalization')
     const blockHash = headerHash(finalization.header).toString()
-    const tx = this.layer1().coordinator.methods.finalize(
-      `0x${serializeFinalization(finalization).toString('hex')}`,
-    )
     let finalizable = false
     try {
-      await tx.call({ from: this.context.account.address })
+      await this.layer1()
+        .coordinator.connect(this.context.account)
+        .callStatic.finalize(
+          `0x${serializeFinalization(finalization).toString('hex')}`,
+        )
       finalizable = true
     } catch (err) {
-      logger.error(
-        `coordinator/coordinator.ts - error occured during finalizeTask(): ${err.toString()}`,
-      )
+      if (err instanceof Error)
+        logger.error(
+          `coordinator/coordinator.ts - error occured during finalizeTask(): ${err.toString()}`,
+        )
       return
     }
     if (finalizable) {
       try {
-        const receipt = await this.layer1().sendTx(tx, this.context.account)
+        const tx = await this.layer1()
+          .coordinator.connect(this.context.account)
+          .finalize(`0x${serializeFinalization(finalization).toString('hex')}`)
+        const receipt = await tx.wait()
         if (receipt) {
           await this.layer2().db.update('Proposal', {
             where: { hash: blockHash },
@@ -460,16 +481,14 @@ export class Coordinator extends EventEmitter {
           )
         }
       } catch (err) {
-        logger.error(err)
+        if (err instanceof Error) logger.error(err)
       }
     }
   }
 
   private async genFinalization(): Promise<Finalization | undefined> {
-    const latest = await this.layer1()
-      .upstream.methods.latest()
-      .call()
-    const currentBlockNumber: number = await this.layer1().web3.eth.getBlockNumber()
+    const latest = await this.layer1().zkopru.latest()
+    const currentBlockNumber: number = await this.layer1().provider.getBlockNumber()
     const l1Config = await this.layer1().getConfig()
     const blocks = await this.layer2().db.findMany('Header', {
       where: {
@@ -514,26 +533,20 @@ export class Coordinator extends EventEmitter {
   }
 
   private async startSubscribeGasPrice() {
-    if (this.gasPriceSubscriber) return
-    this.context.gasPrice = Fp.from(await this.layer1().web3.eth.getGasPrice())
-    this.gasPriceSubscriber = this.layer1()
-      .web3.eth.subscribe('newBlockHeaders')
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      .on('data', async _ => {
-        this.context.gasPrice = Fp.from(
-          await this.layer1().web3.eth.getGasPrice(),
-        )
-      })
+    const listeners = this.layer1().provider.listeners('block')
+    if (!listeners.find(l => l === this.gasHandler)) {
+      this.context.gasPrice = Fp.from(
+        await this.layer1().provider.getGasPrice(),
+      )
+      this.layer1().provider.on('block', this.gasHandler)
+    }
   }
 
   private async stopGasPriceSubscription() {
-    if (!this.gasPriceSubscriber) return
-    try {
-      await this.gasPriceSubscriber.unsubscribe()
-    } catch (e) {
-      logger.error(e.toString())
-    } finally {
-      this.gasPriceSubscriber = undefined
-    }
+    this.layer1().provider.off('block', this.gasHandler)
+  }
+
+  private async gasHandler() {
+    this.context.gasPrice = Fp.from(await this.layer1().provider.getGasPrice())
   }
 }

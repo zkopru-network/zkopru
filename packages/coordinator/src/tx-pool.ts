@@ -1,16 +1,16 @@
 import { Fp } from '@zkopru/babyjubjub'
 import { ZkTx } from '@zkopru/transaction'
-import { DB } from '@zkopru/database'
+import { DB, Header as HeaderSql } from '@zkopru/database'
 import { root, logger } from '@zkopru/utils'
 import assert from 'assert'
-import BN from 'bn.js'
 import { L2Chain, OffchainTxValidator } from '@zkopru/core'
-import { Uint256 } from 'soltypes'
+import { Bytes32, Uint256 } from 'soltypes'
+import { BigNumber } from 'ethers'
 
 export interface TxPoolInterface {
   pendingNum(): number
   addToTxPool(zkTx: ZkTx | ZkTx[]): Promise<void>
-  pickTxs(maxBytes: number, minPricePerByte: BN): Promise<ZkTx[]>
+  pickTxs(maxBytes: number, minPricePerByte: BigNumber): Promise<ZkTx[]>
   markAsIncluded(txs: ZkTx[]): void
   pendingTxs(): ZkTx[]
   drop(txRoot: string): void
@@ -31,11 +31,16 @@ export class TxMemPool implements TxPoolInterface {
 
   layer2: L2Chain
 
+  txValidator: OffchainTxValidator
+
+  latest?: Bytes32
+
   constructor(db: DB, layer2: L2Chain) {
     this.txs = {}
     this.queued = {}
     this.db = db
     this.layer2 = layer2
+    this.txValidator = new OffchainTxValidator(layer2)
   }
 
   // Look for transactions that have been included in a verified block
@@ -180,36 +185,31 @@ export class TxMemPool implements TxPoolInterface {
       delete this.txs[hash]
     }
     const hashesToRemove = [] as string[]
-    const latestBlockHash = await this.layer2.latestBlock()
-    const offchainTxValidator = new OffchainTxValidator(this.layer2)
     for (const txHash of Object.keys(this.txs)) {
       const tx = this.txs[txHash]
-      for (const { root } of tx.inflow) {
-        if (
-          !(await offchainTxValidator.isValidRef(
-            latestBlockHash,
-            new Uint256(root.toString()),
-          ))
-        ) {
-          hashesToRemove.push(txHash)
-          break
-        }
-      }
+      const hasValidRef = await this.hasValidRef(tx)
+      if (!hasValidRef) hashesToRemove.push(txHash)
     }
     for (const hash of hashesToRemove) {
       delete this.txs[hash]
     }
   }
 
-  async pickTxs(maxBytes: number, minPricePerByte: BN): Promise<ZkTx[]> {
+  async pickTxs(maxBytes: number, minPricePerByte: BigNumber): Promise<ZkTx[]> {
+    await this.updateLatestBlock()
     await this.prunePendingTx()
     // TODO add atomic swap tx logic here
     let available = maxBytes
     const sorted = this.getSortedTxs()
+    const refValidity = await Promise.all(
+      sorted.map(tx => this.hasValidRef(tx)),
+    )
+    const filtered = sorted.filter((_, i) => refValidity[i])
+
     const pending: (ZkTx[] | ZkTx)[] = []
     // Add pairing transactions first
     const swapTxs: { [txHash: string]: ZkTx } = {}
-    sorted
+    filtered
       .filter(tx => tx.swap !== undefined)
       .forEach(tx => {
         swapTxs[tx.hash().toString()] = tx
@@ -237,7 +237,8 @@ export class TxMemPool implements TxPoolInterface {
       }
     }
     // Add single transactions to the pending list
-    sorted
+
+    filtered
       .filter(tx => tx.swap === undefined)
       .forEach(tx => {
         pending.push(tx)
@@ -251,7 +252,7 @@ export class TxMemPool implements TxPoolInterface {
       if (tx instanceof ZkTx) {
         // Normal transactions
         const size = tx.size()
-        const expectedFee = minPricePerByte.muln(size)
+        const expectedFee = minPricePerByte.mul(size)
         logger.info(
           `coordinator/tx-pool.ts - expected fee: ${expectedFee.toString()}`,
         )
@@ -266,7 +267,7 @@ export class TxMemPool implements TxPoolInterface {
         if (tx.length !== 2)
           throw Error('Swap transactions are not paired properly')
         const size = tx[0].size() + tx[1].size()
-        const expectedFee = minPricePerByte.muln(size)
+        const expectedFee = minPricePerByte.mul(size)
         const swapFee = tx[0].fee.add(tx[1].fee)
         logger.info(
           `coordinator/tx-pool.ts - expected fee: ${expectedFee.toString()}`,
@@ -310,5 +311,66 @@ export class TxMemPool implements TxPoolInterface {
 
   private getSortedTxs(): ZkTx[] {
     return Object.values(this.txs).sort((a, b) => (a.fee.gt(b.fee) ? 1 : -1))
+  }
+
+  private async hasValidRef(tx: ZkTx): Promise<boolean> {
+    const validity = (
+      await Promise.all(
+        tx.inflow.map(inflow => this.isValidRef(inflow.root.toUint256())),
+      )
+    ).reduce((prevResult, result) => prevResult && result, true)
+    return validity
+  }
+
+  private async isValidRef(inclusionRef: Uint256): Promise<boolean> {
+    if (!this.latest) throw Error('Failed to fetch the latest l2 block')
+    // Find the header of the referenced utxo root
+    const headers = await this.layer2.db.findMany('Header', {
+      where: {
+        utxoRoot: inclusionRef.toString(),
+      },
+    })
+    // If any of the found header is finalized, it returns true
+    const finalized = await this.layer2.db.findMany('Proposal', {
+      where: {
+        hash: headers.map(h => h.hash),
+      },
+    })
+    // TODO: use index when booleans are supported
+    if (finalized.find(p => p.finalized === true)) return true
+    // Or check the recent precedent blocks has that utxo tree root
+    let childBlockHeader: HeaderSql | undefined
+    for (let i = 0; i < this.layer2.config.referenceDepth; i += 1) {
+      if (!childBlockHeader) {
+        const childBlock = await this.layer2.db.findOne('Block', {
+          where: { hash: this.latest.toString() },
+          include: { header: true, slash: true },
+        })
+        childBlockHeader = childBlock.header
+        // this is the case when a client created a tx with the latest synced block.
+        if (
+          childBlockHeader &&
+          inclusionRef.eq(Uint256.from(childBlockHeader.utxoRoot))
+        )
+          return true
+      }
+      assert(childBlockHeader)
+      const parentBlock = await this.layer2.db.findOne('Block', {
+        where: { hash: childBlockHeader.parentBlock },
+        include: { header: true, slash: true },
+      })
+      childBlockHeader = parentBlock.header
+      if (parentBlock === null || parentBlock.slash !== null) {
+        return false
+      }
+      if (inclusionRef.eq(Uint256.from(parentBlock.header.utxoRoot))) {
+        return true
+      }
+    }
+    return false
+  }
+
+  private async updateLatestBlock() {
+    this.latest = await this.layer2.latestBlock()
   }
 }

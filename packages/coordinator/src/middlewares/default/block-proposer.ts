@@ -1,8 +1,9 @@
 /* eslint-disable no-underscore-dangle */
 import { Block, MAX_MASS_DEPOSIT_COMMIT_GAS } from '@zkopru/core'
-import { TransactionReceipt } from 'web3-core'
-import { soliditySha3Raw } from 'web3-utils'
 import { logger } from '@zkopru/utils'
+import { BigNumber, PopulatedTransaction } from 'ethers'
+import { solidityKeccak256 } from 'ethers/lib/utils'
+import { TransactionReceipt } from '@ethersproject/providers'
 import { ProposerBase } from '../interfaces/proposer-base'
 
 export class BlockProposer extends ProposerBase {
@@ -53,46 +54,55 @@ export class BlockProposer extends ProposerBase {
     }
     const bytes = block.serializeBlock()
     const blockData = `0x${bytes.toString('hex')}`
-    let proposeTx: any
+    let proposeTx: PopulatedTransaction
     if (parentProposal.proposalNum === 0) {
       // don't safe propose from genesis block
-      proposeTx = layer1.coordinator.methods.propose(blockData)
+      proposeTx = await layer1.coordinator.populateTransaction.propose(
+        blockData,
+      )
     } else {
       const parentBlock = Block.fromJSON(parentProposal.proposalData)
-      proposeTx = layer1.coordinator.methods.safePropose(
-        blockData,
-        parentBlock.hash.toString(),
-        block.body.massDeposits.map(({ merged, fee }) => {
-          return soliditySha3Raw(merged.toString(), fee.toBN())
-        }),
-      )
+      proposeTx = await layer1.coordinator
+        .connect(this.context.account)
+        .populateTransaction.safePropose(
+          blockData,
+          parentBlock.hash.toString(),
+          block.body.massDeposits.map(({ merged, fee }) => {
+            return solidityKeccak256(
+              ['bytes32', 'uint256'],
+              [merged.toString(), fee.toBigNumber()],
+            )
+          }),
+        )
     }
-    let expectedGas: number
+    let expectedGas: BigNumber
     try {
-      expectedGas = await proposeTx.estimateGas({
-        from: this.context.account.address,
-      })
-      expectedGas *= 2
-      expectedGas += MAX_MASS_DEPOSIT_COMMIT_GAS
+      expectedGas = await layer1.provider.estimateGas(proposeTx)
+      expectedGas = expectedGas.mul(2)
+      expectedGas = expectedGas.add(MAX_MASS_DEPOSIT_COMMIT_GAS)
     } catch (err) {
       logger.warn(`core/block-proposer.ts - propose() fails. Skip gen block`)
-      if (typeof err.toString === 'function') {
+      if (err instanceof Error) {
         logger.info(`core/block-proposer - ${err.toString()}`)
       }
       return undefined
     }
-    const expectedFee = this.context.gasPrice.muln(expectedGas)
-    if (block.header.fee.toBN().lte(expectedFee)) {
+    const expectedFee = this.context.gasPrice.mul(expectedGas)
+    if (block.header.fee.toBigNumber().lte(expectedFee)) {
       logger.info(
         `core/block-proposer.ts - Aggregated fee: ${block.header.fee} / ${expectedFee}`,
       )
       return undefined
     }
-    const receipt = await layer1.sendTx(proposeTx, this.context.account, {
-      gas: expectedGas,
-      gasPrice: this.context.gasPrice.toString(),
+    const signedTx = await this.context.account.signTransaction({
+      ...proposeTx,
+      nonce: await this.context.account.getTransactionCount('latest'),
+      gasLimit: expectedGas,
+      gasPrice: this.context.gasPrice,
     })
-    if (receipt) {
+    const tx = await layer1.provider.sendTransaction(signedTx)
+    const receipt = await tx.wait()
+    if (receipt.status) {
       logger.info(
         `core/block-proposer.ts - safePropose(${block.hash.toString()}) completed`,
       )

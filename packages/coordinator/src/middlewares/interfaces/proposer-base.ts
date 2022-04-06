@@ -1,5 +1,5 @@
 import { Block } from '@zkopru/core'
-import { TransactionReceipt } from 'web3-core'
+import { TransactionReceipt } from '@ethersproject/providers'
 import { CoordinatorContext } from '../../context'
 
 export abstract class ProposerBase {
@@ -38,11 +38,11 @@ export abstract class ProposerBase {
       ? await this.preProcessor(block)
       : block
     if (!preprocessed) return
-    const result = await this.handleProcessedBlock(preprocessed)
-    if (this.postProcessor && result?.status) {
-      await this.postProcessor(result)
+    const receipt = await this.handleProcessedBlock(preprocessed)
+    if (this.postProcessor && receipt?.status) {
+      await this.postProcessor(receipt)
     }
-    return result
+    return receipt
   }
 
   protected abstract handleProcessedBlock(
