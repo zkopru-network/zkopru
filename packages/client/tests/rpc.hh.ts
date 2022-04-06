@@ -1,70 +1,46 @@
-/* eslint-disable jest/no-hooks */
+// import chai from 'chai'
 import assert from 'assert'
-import Web3 from 'web3'
-import { WebsocketProvider } from 'web3-core'
-import { Container } from 'node-docker-api/lib/container'
 import { FullNode } from '@zkopru/core'
 import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
 import { sleep, trimHexToLength } from '~utils'
-import { readFromContainer, buildAndGetContainer } from '~utils-docker'
+import { ethers } from 'hardhat'
+import { deploy } from '~contracts-utils/deployer'
+import { RpcType } from '~client/types'
 import { DB, SQLiteConnector, schema } from '~database-node'
 import Zkopru from '../src'
+// const { expect } = chai
 
 describe('rPC tests', () => {
   const accounts: ZkAccount[] = [
     new ZkAccount(trimHexToLength(Buffer.from('sample private key'), 64)),
   ]
-  let address
-  let container: Container
+  let address: string
   let fullNode: FullNode
-  let wsProvider: WebsocketProvider
   let mockup: DB
   let coordinator: Coordinator
   const coordinators = [] as Coordinator[]
-  const rpc = new Zkopru.RPC('http://127.0.0.1:9999')
+  const rpc = new Zkopru.RPC({
+    type: RpcType.http,
+    url: 'http://127.0.0.1:9999',
+    l1Provider: ethers.provider,
+  })
   // setup a coordinator node to query
-  beforeAll(async () => {
+  before(async () => {
     // logStream.addStream(process.stdout)
     mockup = await SQLiteConnector.create(schema, ':memory:')
     // It may take about few minutes. If you want to skip building image,
     // run `yarn pull:images` on the root directory
-    container = await buildAndGetContainer({
-      compose: [__dirname, '../../../compose'],
-      service: 'contracts',
-    })
-    await container.start()
-    const file = await readFromContainer(
-      container,
-      '/proj/build/deployed/Zkopru.json',
-    )
-    const deployed = JSON.parse(file.toString())
-    address = deployed.address
-    const status = await container.status()
-    const containerIP = (status.data as {
-      NetworkSettings: { IPAddress: string }
-    }).NetworkSettings.IPAddress
-    // const containerIP = '127.0.0.1'
+    const [deployer] = await ethers.getSigners()
+    const { zkopru } = await deploy(deployer)
+    // logStream.addStream(process.stdout)
+    mockup = await SQLiteConnector.create(schema, ':memory:')
+    // It may take about few minutes. If you want to skip building image,
+    // run `yarn pull:images` on the root directory
+    address = zkopru.zkopru.address
     await sleep(3000)
-    wsProvider = new Web3.providers.WebsocketProvider(
-      `ws://${containerIP}:5000`,
-      {
-        reconnect: { auto: true },
-        clientConfig: {
-          keepalive: true,
-          keepaliveInterval: 10000,
-        },
-      },
-    )
-    async function waitConnection() {
-      return new Promise<void>(res => {
-        if (wsProvider.connected) return res()
-        wsProvider.on('connect', res)
-      })
-    }
-    await waitConnection()
     fullNode = await FullNode.new({
-      provider: wsProvider,
+      provider: ethers.provider,
       address,
       db: mockup,
       accounts,
@@ -79,18 +55,15 @@ describe('rPC tests', () => {
       publicUrls: '127.0.0.1:9999',
     })
     await coordinator.start()
-  }, 1200000)
+  })
 
-  afterAll(async () => {
+  after(async () => {
     await coordinator.stop()
-    wsProvider.disconnect(0, 'close connection')
     await mockup.close()
-    await container.stop()
-    await container.delete()
     for (const c of coordinators) {
       await c.stop()
     }
-  }, 10000)
+  })
 
   it('should fail with bad url', async () => {
     try {
@@ -163,13 +136,13 @@ describe('rPC tests', () => {
   it('should get verifying keys', async () => {
     const keys = await rpc.getVerifyingKeys()
     assert(keys)
-  }, 20000)
+  })
 
-  it.todo('should get transaction by hash')
+  it('should get transaction by hash')
 
   it('should get passthrough web3 instance', async () => {
-    const { web3 } = rpc
-    const blockNumber = await web3.eth.getBlockNumber()
+    const { provider } = rpc
+    const blockNumber = await provider.getBlockNumber()
     assert(typeof blockNumber === 'number')
   })
 })

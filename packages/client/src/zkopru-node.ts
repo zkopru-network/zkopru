@@ -1,8 +1,12 @@
 /* eslint-disable no-underscore-dangle */
-import Web3 from 'web3'
 import { SomeDBConnector, DB, schema } from '@zkopru/database'
 import { FullNode } from '@zkopru/core'
-import { Layer1 } from '@zkopru/contracts'
+import { IERC20__factory } from '@zkopru/contracts'
+import {
+  BaseProvider,
+  JsonRpcProvider,
+  WebSocketProvider,
+} from '@ethersproject/providers'
 import { NodeConfig } from './types'
 
 const DEFAULT = {
@@ -51,24 +55,16 @@ export default class ZkopruNode {
 
   async initNode(...args: any[]) {
     if (this.node) return
-    const provider = new Web3.providers.WebsocketProvider(
-      this.config.websocket as string,
-      {
-        reconnect: {
-          delay: 2000,
-          auto: true,
-        },
-        clientConfig: {
-          keepalive: true,
-          keepaliveInterval: 30000,
-        },
-      },
-    )
+
+    const provider = this.config.websocket
+      ? new WebSocketProvider(this.config.websocket as string)
+      : new JsonRpcProvider(this.config.rpcUrl)
     // eslint-disable-next-line no-inner-declarations
-    async function waitConnection(_provider: any) {
+    async function waitConnection(_provider: BaseProvider) {
       let count = 0
       for (;;) {
-        if (_provider.connected) return
+        const ready = await _provider.ready
+        if (ready) return
         await new Promise(r => setTimeout(r, 200))
         count += 1
         if (count > 100) {
@@ -76,7 +72,6 @@ export default class ZkopruNode {
         }
       }
     }
-    provider.connect()
     await waitConnection(provider)
     await new Promise(r => setTimeout(r, 1000))
     this.node = await FullNode.new({
@@ -127,13 +122,11 @@ export default class ZkopruNode {
 
   async registerERC20Tx(address: string) {
     if (!this.node) throw new Error('Zkopru node is not initialized')
-    return this.node.layer1.coordinator.methods
-      .registerERC20(address)
-      .encodeABI()
+    return this.node.layer1.coordinator.registerERC20(address)
   }
 
   async getERC20Contract(address: string) {
     if (!this.node) throw new Error('Zkopru node is not initialized')
-    return Layer1.getERC20(this.node.layer1.web3, address)
+    return IERC20__factory.connect(address, this.node.layer1.provider)
   }
 }

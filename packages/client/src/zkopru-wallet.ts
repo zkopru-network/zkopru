@@ -6,7 +6,9 @@ import {
   ZkAddress,
   SwapTxBuilder,
 } from '@zkopru/transaction'
-import { Fp, F } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
+import { BigNumberish } from 'ethers'
+import { toChecksumAddress } from 'web3-utils'
 import ZkopruNode from './zkopru-node'
 import fetch from './fetch'
 
@@ -157,7 +159,7 @@ export default class ZkopruWallet {
     receiveTokenAddress: string,
     receiveAmount: string,
     weiPerByte: number | string,
-    salt: F,
+    salt: BigNumberish,
   ): Promise<RawTx> {
     if (!this.wallet.account) {
       throw new Error('Account is not set')
@@ -223,7 +225,7 @@ export default class ZkopruWallet {
   }
 
   async calculateWeiPerByte() {
-    const currentGasPrice = await this.wallet.node.layer1.web3.eth.getGasPrice()
+    const currentGasPrice = await this.wallet.node.layer1.provider.getGasPrice()
     const gasPerNonZero = 16
     // let's assume all of the bytes are non-zero
     // it's hard to look at an actual tx because the fee is encoded
@@ -275,7 +277,7 @@ export default class ZkopruWallet {
     })
     const allWithdrawals = await this.wallet.db.findMany('Withdrawal', {
       where: {
-        to: this.node.node?.layer1.web3.utils.toChecksumAddress(ethAddress),
+        to: toChecksumAddress(ethAddress),
       },
       include: {
         proposal: { header: true },
