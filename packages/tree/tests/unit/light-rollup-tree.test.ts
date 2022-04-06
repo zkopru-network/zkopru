@@ -4,10 +4,10 @@ import SparseTree from 'simple-smt'
 import { Fp } from '@zkopru/babyjubjub'
 import * as uuid from 'uuid'
 import assert from 'assert'
-import { LightRollUpTree } from '../../src/light-rollup-tree'
-import { genesisRoot, poseidonHasher } from '../../src/hasher'
 import sample from '~tree/sample'
 import { DB } from '~database'
+import { LightRollUpTree } from '../../src/light-rollup-tree'
+import { genesisRoot, poseidonHasher } from '../../src/hasher'
 import { TreeCache } from '../../src/utils'
 
 class TestTree extends LightRollUpTree<Fp> {
