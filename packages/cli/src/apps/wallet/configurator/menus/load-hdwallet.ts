@@ -11,11 +11,12 @@ export default class LoadHDWallet extends Configurator {
     if (!context.db) {
       throw Error('Database is not loaded')
     }
-    if (!context.web3) {
-      throw Error('Web3 is not loaded')
+    if (!(await context.provider?.ready)) {
+      throw Error('Web3 is not connected')
     }
-    const { web3, db } = context
-    const wallet = new HDWallet(web3, db)
+    const { provider, db } = context
+    if (!provider) throw Error('Provider is not ready')
+    const wallet = new HDWallet(provider, db)
     let existingWallets!: EncryptedWallet[]
     if (!this.base.seedKeystore) {
       existingWallets = await wallet.list()

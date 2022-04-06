@@ -1,15 +1,14 @@
-import Web3 from 'web3'
 import { ZkopruNode, NetworkStatus } from '@zkopru/core'
 import { ZkAccount, HDWallet } from '@zkopru/account'
 import { DB, EncryptedWallet } from '@zkopru/database'
 import { PromptApp } from '@zkopru/utils'
-import { WebsocketProvider } from 'web3-core'
+import { BaseProvider } from '@ethersproject/providers'
 
 export interface Config {
   fullnode: boolean
   develop: boolean
   address: string
-  websocket: string
+  provider: string
   sqlite?: string
   postgres?: string
   config?: string
@@ -40,8 +39,7 @@ export enum Menu {
 export interface Context {
   menu: Menu
   networkStatus: NetworkStatus
-  web3?: Web3
-  provider?: WebsocketProvider
+  provider?: BaseProvider
   db?: DB
   wallet?: HDWallet
   node?: ZkopruNode

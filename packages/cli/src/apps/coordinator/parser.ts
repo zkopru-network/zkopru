@@ -18,7 +18,7 @@ export const { argv } = yargs
     websocket: {
       type: 'string',
       alias: 'ws',
-      describe: `[${DEFAULT.websocket}]`,
+      describe: `[${DEFAULT.provider}]`,
     },
     sqlite: {
       type: 'string',

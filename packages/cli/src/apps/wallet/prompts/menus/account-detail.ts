@@ -1,5 +1,5 @@
 import { Balance } from '@zkopru/zk-wizard'
-import { fromWei } from 'web3-utils'
+import { formatUnits } from 'ethers/lib/utils'
 import App, { AppMenu, Context } from '..'
 
 export default class AccountDetail extends App {
@@ -16,7 +16,7 @@ export default class AccountDetail extends App {
     const { eth, erc20, erc721 } = balance
     messages.push(`Layer 1`)
     messages.push(`   Address: ${account.ethAddress}`)
-    messages.push(`   Ether: ${fromWei(eth, 'ether')}`)
+    messages.push(`   Ether: ${formatUnits(eth, 'ether')}`)
     messages.push(`   ERC20: ${Object.keys(erc20).length === 0 ? 'N/A' : ''}`)
     messages.push(
       ...Object.keys(erc20).map(addr => `      ${addr}: ${erc20[addr]}`),
@@ -27,7 +27,7 @@ export default class AccountDetail extends App {
     )
     messages.push(`Layer 2`)
     messages.push(`   Pub key: ${account.zkAddress.toString()}`)
-    messages.push(`   Ether: ${fromWei(spendables.eth, 'ether')}`)
+    messages.push(`   Ether: ${formatUnits(spendables.eth, 'ether')}`)
     messages.push(
       `   ERC20: ${Object.keys(spendables.erc20).length === 0 ? 'N/A' : ''}`,
     )

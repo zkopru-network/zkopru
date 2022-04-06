@@ -1,4 +1,4 @@
-import { TransactionReceipt } from 'web3-core'
+import { TransactionReceipt } from '@ethersproject/providers'
 import { logger } from '@zkopru/utils'
 import App, { AppMenu, Context } from '..'
 
@@ -11,7 +11,7 @@ export default class CommitDeposits extends App {
     try {
       receipt = await this.base.commitMassDeposits()
     } catch (err) {
-      logger.error(err)
+      logger.error(err as any)
     } finally {
       if (receipt && receipt.status) {
         logger.info('Successfully committed the latest mass deposit')

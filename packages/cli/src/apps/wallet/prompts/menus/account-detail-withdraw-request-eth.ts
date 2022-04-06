@@ -1,8 +1,9 @@
 import { Fp } from '@zkopru/babyjubjub'
 import { Sum, TxBuilder, RawTx, Utxo, ZkAddress } from '@zkopru/transaction'
 import { parseStringToUnit, logger } from '@zkopru/utils'
-import { fromWei, toBN, toWei, isAddress } from 'web3-utils'
 import { Address } from 'soltypes'
+import { formatUnits, isAddress, parseUnits } from 'ethers/lib/utils'
+import { BigNumber } from 'ethers'
 import App, { AppMenu, Context } from '..'
 
 export default class WithdrawRequestEth extends App {
@@ -22,24 +23,29 @@ export default class WithdrawRequestEth extends App {
       logger.error('price fetch error')
       throw err
     }
-    const regularPrice = fromWei(
-      toBN(weiPerByte || '0')
-        .muln(566) // 566 : for 2 inputs & 2 outputs
+    const regularPrice = formatUnits(
+      BigNumber.from(weiPerByte || '0')
+        .mul(566) // 566 : for 2 inputs & 2 outputs
         .toString(),
       'ether',
     )
     const messages: string[] = []
     messages.push(`Account: ${account.zkAddress.toString()}`)
-    messages.push(`Withdrawable ETH: ${fromWei(spendableAmount.eth, 'ether')}`)
     messages.push(
-      `Recommended fee per byte: ${fromWei(weiPerByte, 'gwei')} gwei / byte`,
+      `Withdrawable ETH: ${formatUnits(spendableAmount.eth, 'ether')}`,
+    )
+    messages.push(
+      `Recommended fee per byte: ${formatUnits(
+        weiPerByte,
+        'gwei',
+      )} gwei / byte`,
     )
     messages.push(
       `You may spend ${regularPrice} ETH to send a 566 bytes size tx.`,
     )
     this.print(messages.join('\n'))
     let amountWei: string
-    let confirmedWeiPerByte: string
+    let confirmedWeiPerByte: BigNumber
     let tx!: RawTx
     let to!: Address
     do {
@@ -54,7 +60,7 @@ export default class WithdrawRequestEth extends App {
         to = Address.from(address)
       } catch (err) {
         logger.error(`Failed to get address from`)
-        logger.error(err)
+        if (err instanceof Error) logger.error(err)
       }
       if (!isAddress(to.toString())) {
         this.print('Provided invalid Ethereum address')
@@ -68,11 +74,11 @@ export default class WithdrawRequestEth extends App {
         message: 'How much ETH do you want to transfer(ex: 0.3 ETH)?',
       })
       const eth = parseStringToUnit(amount, 'ether')
-      amountWei = toWei(eth.val, eth.unit).toString()
-      msgs.push(`Sending amount: ${fromWei(amountWei, 'ether')} ETH`)
+      amountWei = parseUnits(eth.val, eth.unit).toString()
+      msgs.push(`Sending amount: ${formatUnits(amountWei, 'ether')} ETH`)
       msgs.push(`    = ${amountWei} wei`)
       this.print([...messages, ...msgs].join('\n'))
-      const gweiPerByte = fromWei(weiPerByte, 'gwei')
+      const gweiPerByte = formatUnits(weiPerByte, 'gwei')
       const { fee } = await this.ask({
         type: 'text',
         name: 'fee',
@@ -80,9 +86,11 @@ export default class WithdrawRequestEth extends App {
         message: `Fee per byte. ex) ${gweiPerByte} gwei`,
       })
       const confirmedWei = parseStringToUnit(fee, 'gwei')
-      confirmedWeiPerByte = toWei(confirmedWei.val, confirmedWei.unit)
-      msgs.push(`Wei per byte: ${fromWei(confirmedWeiPerByte, 'ether')} ETH`)
-      msgs.push(`    = ${fromWei(confirmedWeiPerByte, 'gwei')} gwei`)
+      confirmedWeiPerByte = parseUnits(confirmedWei.val, confirmedWei.unit)
+      msgs.push(
+        `Wei per byte: ${formatUnits(confirmedWeiPerByte, 'ether')} ETH`,
+      )
+      msgs.push(`    = ${formatUnits(confirmedWeiPerByte, 'gwei')} gwei`)
       this.print(messages.join('\n'))
       const { prePayFee } = await this.ask({
         type: 'text',
@@ -91,17 +99,17 @@ export default class WithdrawRequestEth extends App {
         message: `Additional fee for instant withdrawal.`,
       })
       const confirmedPrePayFee = parseStringToUnit(prePayFee, 'gwei')
-      const confirmedPrePayFeeToWei = toWei(
+      const confirmedPrePayFeeToWei = parseUnits(
         confirmedPrePayFee.val,
         confirmedPrePayFee.unit,
       )
       msgs.push(
-        `Instant withdrawal fee: ${fromWei(
+        `Instant withdrawal fee: ${formatUnits(
           confirmedPrePayFeeToWei,
           'ether',
         )} ETH`,
       )
-      msgs.push(`    = ${fromWei(confirmedPrePayFeeToWei, 'gwei')} gwei`)
+      msgs.push(`    = ${formatUnits(confirmedPrePayFeeToWei, 'gwei')} gwei`)
       this.print(messages.join('\n'))
 
       const txBuilder = TxBuilder.from(account.zkAddress)
@@ -120,14 +128,15 @@ export default class WithdrawRequestEth extends App {
           .build()
         this.print(`Succeeded to build a transaction. Start to generate proof`)
       } catch (err) {
-        this.print(`Failed to build transaction \n${err.toString()}`)
+        if (err instanceof Error)
+          this.print(`Failed to build transaction \n${err.toString()}`)
       }
     } while (!tx)
 
     try {
       await wallet.sendTx({ tx, from: account })
     } catch (err) {
-      logger.error(err)
+      if (err instanceof Error) logger.error(err)
       logger.error(tx)
     }
     return { context, next: AppMenu.TRANSFER }

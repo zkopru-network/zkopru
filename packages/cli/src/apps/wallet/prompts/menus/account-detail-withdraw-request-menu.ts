@@ -1,5 +1,5 @@
-import { fromWei } from 'web3-utils'
 import { Sum } from '@zkopru/transaction'
+import { formatUnits } from 'ethers/lib/utils'
 import App, { AppMenu, Context } from '..'
 
 export default class WithdrawRequest extends App {
@@ -18,10 +18,10 @@ export default class WithdrawRequest extends App {
       choices: [
         { title: 'Go back', value: { menu: AppMenu.ACCOUNT_DETAIL } },
         {
-          title: `Withdraw Ether (balance: ${fromWei(
+          title: `Withdraw Ether (balance: ${formatUnits(
             spendables.eth,
             'ether',
-          )} ETH / locked: ${fromWei(locked.eth, 'ether')} ETH)`,
+          )} ETH / locked: ${formatUnits(locked.eth, 'ether')} ETH)`,
           value: { menu: AppMenu.WITHDRAW_REQUEST_ETH },
         },
         ...Object.keys(spendables.erc20).map(address => ({
