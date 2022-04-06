@@ -14,7 +14,7 @@ process.on(
         ffjs.utils.unstringifyBigInts(proof),
       )
     } catch (e) {
-      logger.error(e)
+      logger.error(e as any)
       result = false
     }
     // send response to master process

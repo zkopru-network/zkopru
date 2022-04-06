@@ -4,7 +4,7 @@ import assert from 'assert'
 import { Bytes32, Uint256 } from 'soltypes'
 import { randomHex, soliditySha3Raw } from 'web3-utils'
 import { OutflowType, ZkOutflow } from '@zkopru/transaction'
-import BN from 'bn.js'
+import { BigNumber } from 'ethers'
 import { L1Contract } from '../../context/layer1'
 import { L2Chain } from '../../context/layer2'
 import { Block, headerHash } from '../../block'
@@ -24,7 +24,7 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
 
   hasher: Hasher<Fp>
 
-  MAX_UTXO: BN
+  MAX_UTXO: BigNumber
 
   SUB_TREE_DEPTH: number
 
@@ -34,7 +34,7 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
     super(layer2)
     this.layer1 = layer1
     this.hasher = poseidonHasher(layer2.config.utxoTreeDepth)
-    this.MAX_UTXO = new BN(1).shln(layer2.config.utxoTreeDepth)
+    this.MAX_UTXO = BigNumber.from(1).shl(layer2.config.utxoTreeDepth)
     this.SUB_TREE_DEPTH = layer2.config.utxoSubTreeDepth
     this.SUB_TREE_SIZE = layer2.config.utxoSubTreeSize
   }
@@ -75,7 +75,7 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
       block.header.parentBlock.eq(headerHash(parentHeader)),
       'Invalid prev header',
     )
-    if (block.header.utxoIndex.toBN().gt(this.MAX_UTXO)) {
+    if (block.header.utxoIndex.toBigNumber().gt(this.MAX_UTXO)) {
       return {
         slashable: true,
         reason: CODE.U2,
@@ -85,17 +85,17 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
       return [
         ...arr,
         ...tx.outflow.filter(outflow =>
-          outflow.outflowType.eqn(OutflowType.UTXO),
+          outflow.outflowType.eq(OutflowType.UTXO),
         ),
       ]
     }, [] as ZkOutflow[])
     const numOfUtxos = deposits.length + utxoOutflowArr.length
     const numOfSubTrees = Math.ceil(numOfUtxos / this.SUB_TREE_SIZE)
     const nextIndex = parentHeader.utxoIndex
-      .toBN()
-      .addn(this.SUB_TREE_SIZE * numOfSubTrees)
+      .toBigNumber()
+      .add(this.SUB_TREE_SIZE * numOfSubTrees)
     return {
-      slashable: !block.header.utxoIndex.toBN().eq(nextIndex),
+      slashable: !block.header.utxoIndex.toBigNumber().eq(nextIndex),
       reason: CODE.U1,
     }
   }
@@ -121,7 +121,7 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
         return [
           ...arr,
           ...tx.outflow
-            .filter(outflow => outflow.outflowType.eqn(OutflowType.UTXO))
+            .filter(outflow => outflow.outflowType.eq(OutflowType.UTXO))
             .map(outflow => outflow.note),
         ]
       },
@@ -135,26 +135,31 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
       newUtxos,
       subTreeSiblings.map(sib => Fp.from(sib.toString())),
     )
-    if (!computedRoot.eq(block.header.utxoRoot.toBN())) {
+    if (!computedRoot.eq(block.header.utxoRoot.toBigNumber())) {
       // slashable
       const proofId = randomHex(32)
-      const startTx = this.layer1.validators.utxoTree.methods.newProof(
+      const startTx = await this.layer1.validators.utxoTree.populateTransaction.newProof(
         proofId,
-        Fp.from(parentHeader.utxoRoot.toString()),
-        Fp.from(parentHeader.utxoIndex.toString()),
-        subTreeSiblings.map(sib => Fp.from(sib.toString())),
+        parentHeader.utxoRoot.toString(),
+        parentHeader.utxoIndex.toString(),
+        subTreeSiblings.map(sib => sib.toString()),
       )
       const subTrees: Fp[][] = []
       for (let i = 0; i < newUtxos.length; i += this.SUB_TREE_SIZE) {
         subTrees.push(newUtxos.slice(i, i + this.SUB_TREE_SIZE))
       }
-      const subtreeAppendingTxs = subTrees.map(subTree =>
-        this.layer1.validators.utxoTree.methods.updateProof(proofId, subTree),
+      const subtreeAppendingTxs = await Promise.all(
+        subTrees.map(subTree =>
+          this.layer1.validators.utxoTree.populateTransaction.updateProof(
+            proofId,
+            subTree.map(v => v.toString()),
+          ),
+        ),
       )
       return {
-        slashable: !computedRoot.eq(block.header.utxoRoot.toBN()),
+        slashable: !computedRoot.eq(block.header.utxoRoot.toBigNumber()),
         reason: CODE.U3,
-        tx: this.layer1.validators.utxoTree.methods.validateUTXORootWithProof(
+        tx: await this.layer1.validators.utxoTree.populateTransaction.validateUTXORootWithProof(
           blockDataToHexString(block),
           headerDataToHexString(parentHeader),
           deposits.map(d => d.toString()),
@@ -164,7 +169,7 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
       }
     }
     return {
-      slashable: !computedRoot.eq(block.header.utxoRoot.toBN()),
+      slashable: !computedRoot.eq(block.header.utxoRoot.toBigNumber()),
       reason: CODE.U3,
     }
   }

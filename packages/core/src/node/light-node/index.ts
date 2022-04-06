@@ -1,10 +1,10 @@
 import { ZkAccount } from '@zkopru/account'
-import { WebsocketProvider, IpcProvider, Account } from 'web3-core'
-import Web3 from 'web3'
 import { verifyProof } from '@zkopru/tree'
 import { DB, BlockCache } from '@zkopru/database'
 import { Bytes32 } from 'soltypes'
 import { logger } from '@zkopru/utils'
+import { BaseProvider } from '@ethersproject/providers'
+import { Signer } from 'ethers'
 import { L1Contract } from '../../context/layer1'
 import { L2Chain } from '../../context/layer2'
 import { BootstrapHelper } from '../bootstrap'
@@ -15,8 +15,6 @@ import { BlockProcessor } from '../block-processor'
 import { Tracker } from '../tracker'
 import { LightValidator } from './lightnode-validator'
 import { Watchdog } from '../watchdog'
-
-type provider = WebsocketProvider | IpcProvider
 
 export class LightNode extends ZkopruNode {
   constructor({
@@ -61,7 +59,7 @@ export class LightNode extends ZkopruNode {
 
   async bootstrap() {
     if (!this.bootstrapHelper) return
-    const latest = await this.layer1.upstream.methods.latest().call()
+    const latest = await this.layer1.zkopru.latest()
     const latestBlockFromDB = await this.layer2.getBlock(Bytes32.from(latest))
     if (latestBlockFromDB && latestBlockFromDB.verified) {
       return
@@ -71,7 +69,7 @@ export class LightNode extends ZkopruNode {
       logger.error('bootstrap api is not giving proposalTx')
       return
     }
-    const proposalData = await this.layer1.web3.eth.getTransaction(
+    const proposalData = await this.layer1.provider.getTransaction(
       bootstrapData.proposal.proposalTx,
     )
     // console.log('bootstrap should give proposal num and etc', proposalData)
@@ -98,29 +96,26 @@ export class LightNode extends ZkopruNode {
     slasher,
     bootstrapHelper,
   }: {
-    provider: provider
+    provider: BaseProvider
     address: string
     db: DB
-    slasher?: Account
+    slasher?: Signer
     accounts?: ZkAccount[]
     bootstrapHelper: BootstrapHelper
   }): Promise<LightNode> {
-    if (!provider.connected) throw Error('provider is not connected')
+    // if (!provider.) throw Error('provider is not connected')
     if (!bootstrapHelper)
       throw Error('You need bootstrap node to run light node')
-    const web3: Web3 = new Web3(provider)
     // Add zk account to the web3 object if it exists
     const tracker = new Tracker(db)
     if (accounts) {
       await tracker.addAccounts(...accounts)
-      for (const account of accounts) {
-        web3.eth.accounts.wallet.add(account.toAddAccount())
-      }
     }
-    const l1Contract = new L1Contract(web3, address)
+    const l1Contract = new L1Contract(provider, address)
     // retrieve l2 chain from database
-    const networkId = await web3.eth.net.getId()
-    const chainId = await web3.eth.getChainId()
+    const network = await provider.getNetwork()
+    const networkId = network.chainId // todo
+    const { chainId } = network
     const l2Chain: L2Chain = await ZkopruNode.initLayer2(
       db,
       l1Contract,
@@ -130,7 +125,7 @@ export class LightNode extends ZkopruNode {
       accounts,
     )
     const validator = new LightValidator(l1Contract, l2Chain)
-    const blockCache = new BlockCache(web3, db)
+    const blockCache = new BlockCache(provider, db)
     const blockProcessor = new BlockProcessor({
       db,
       blockCache,

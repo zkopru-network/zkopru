@@ -6,7 +6,6 @@ import {
   MassDeposit as MassDepositSql,
 } from '@zkopru/database'
 import { Grove, GrovePatch, Leaf } from '@zkopru/tree'
-import BN from 'bn.js'
 import AsyncLock from 'async-lock'
 import { Bytes32, Address, Uint256 } from 'soltypes'
 import { logger, mergeDeposits } from '@zkopru/utils'
@@ -17,6 +16,7 @@ import {
   TokenRegistry,
   ZkTx,
 } from '@zkopru/transaction'
+import { BigNumber } from 'ethers'
 import { Block, Header, MassDeposit } from '../block'
 import { BootstrapData } from '../node/bootstrap'
 import { SNARKVerifier, VerifyingKey } from '../snark/snark-verifier'
@@ -405,14 +405,17 @@ export class L2Chain {
 
     // 2. try to find invalid outflow
     for (const outflow of zkTx.outflow) {
-      if (outflow.outflowType.eqn(OutflowType.UTXO)) {
+      if (outflow.outflowType.eq(OutflowType.UTXO)) {
         if (outflow.data !== undefined) return false
-      } else if (outflow.outflowType.eqn(OutflowType.MIGRATION)) {
+      } else if (outflow.outflowType.eq(OutflowType.MIGRATION)) {
         if (outflow.data === undefined) return false
-        if (!outflow.data.nft.eqn(0)) return false // migration cannot have nft
-        if (outflow.data.tokenAddr.eqn(0) && !outflow.data.erc20Amount.eqn(0))
+        if (!outflow.data.nft.isZero()) return false // migration cannot have nft
+        if (
+          outflow.data.tokenAddr.isZero() &&
+          !outflow.data.erc20Amount.isZero()
+        )
           return false // migration cannot have nft
-        if (!outflow.data.tokenAddr.eqn(0)) {
+        if (!outflow.data.tokenAddr.isZero()) {
           const registeredInfo = await this.db.findOne('TokenRegistry', {
             where: { address: outflow.data.tokenAddr.toString() },
           })
@@ -464,7 +467,7 @@ export class L2Chain {
     )
     const header = block.hash.toString()
     const utxos: Leaf<Fp>[] = []
-    const withdrawals: Leaf<BN>[] = []
+    const withdrawals: Leaf<BigNumber>[] = []
     const nullifiers: Fp[] = []
 
     const deposits = await this.getDeposits(...block.body.massDeposits)
@@ -474,9 +477,9 @@ export class L2Chain {
     const withdrawalHashes: { noteHash: Fp; withdrawalHash: Uint256 }[] = []
     for (const tx of block.body.txs) {
       for (const outflow of tx.outflow) {
-        if (outflow.outflowType.eqn(OutflowType.UTXO)) {
+        if (outflow.outflowType.eq(OutflowType.UTXO)) {
           utxoHashes.push(outflow.note)
-        } else if (outflow.outflowType.eqn(OutflowType.WITHDRAWAL)) {
+        } else if (outflow.outflowType.eq(OutflowType.WITHDRAWAL)) {
           if (!outflow.data) throw Error('Withdrawal should have public data')
           withdrawalHashes.push({
             noteHash: outflow.note,
@@ -490,13 +493,13 @@ export class L2Chain {
     }
     const myUtxoList = await this.db.findMany('Utxo', {
       where: {
-        hash: utxoHashes.map(output => output.toString(10)),
+        hash: utxoHashes.map(output => output.toString()),
         treeId: null,
       },
     })
     const myWithdrawalList = await this.db.findMany('Withdrawal', {
       where: {
-        hash: withdrawalHashes.map(h => h.noteHash.toString(10)),
+        hash: withdrawalHashes.map(h => h.noteHash.toString()),
         treeId: null,
       },
     })
@@ -508,16 +511,16 @@ export class L2Chain {
       shouldTrack[myNote.hash] = true
     }
     for (const output of utxoHashes) {
-      const trackThisNote = shouldTrack[output.toString(10)]
+      const trackThisNote = shouldTrack[output.toString()]
       utxos.push({
         hash: output,
         shouldTrack: !!trackThisNote,
       })
     }
     for (const hash of withdrawalHashes) {
-      const keepTrack = shouldTrack[hash.noteHash.toString(10)]
+      const keepTrack = shouldTrack[hash.noteHash.toString()]
       withdrawals.push({
-        hash: hash.withdrawalHash.toBN(),
+        hash: hash.withdrawalHash.toBigNumber(),
         noteHash: hash.noteHash,
         shouldTrack: !!keepTrack,
       })

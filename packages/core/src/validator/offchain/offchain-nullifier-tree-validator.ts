@@ -1,7 +1,7 @@
 import { Hasher, keccakHasher, SMT } from '@zkopru/tree'
 import assert from 'assert'
-import BN from 'bn.js'
 import { Bytes32, Uint256 } from 'soltypes'
+import { BigNumber } from 'ethers'
 import { L2Chain } from '../../context/layer2'
 import { headerHash } from '../../block'
 import {
@@ -16,7 +16,7 @@ import { CODE } from '../code'
 
 export class OffchainNullifierTreeValidator extends OffchainValidatorContext
   implements NullifierTreeValidator {
-  hasher: Hasher<BN>
+  hasher: Hasher<BigNumber>
 
   constructor(layer2: L2Chain) {
     super(layer2)
@@ -37,21 +37,21 @@ export class OffchainNullifierTreeValidator extends OffchainValidatorContext
     )
     const nullifiers = block.body.txs.reduce((arr, tx) => {
       return [...arr, ...tx.inflow.map(inflow => inflow.nullifier)]
-    }, [] as BN[])
+    }, [] as BigNumber[])
     assert(
-      numOfNullifiers.toBN().eqn(nullifiers.length),
+      numOfNullifiers.toBigNumber().eq(nullifiers.length),
       'Invalid numOfNullifier',
     )
     const computedRoot = SMT.batchFill(
       this.hasher,
-      parentHeader.nullifierRoot.toBN(),
+      parentHeader.nullifierRoot.toBigNumber(),
       nullifiers,
-      siblingsArr.map(arr => arr.map(sib => sib.toBN())),
+      siblingsArr.map(arr => arr.map(sib => sib.toBigNumber())),
     )
     // Return the result
     const slash: Validation = {
       // NFT cannot exists more than 1
-      slashable: computedRoot.eq(block.header.nullifierRoot.toBN()),
+      slashable: computedRoot.eq(block.header.nullifierRoot.toBigNumber()),
       reason: CODE.N1,
     }
     return slash

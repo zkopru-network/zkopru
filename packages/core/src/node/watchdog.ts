@@ -1,39 +1,37 @@
-import { Account } from 'web3-core'
-import { TransactionObject } from '@zkopru/contracts'
 import { logger } from '@zkopru/utils'
+import { TransactionRequest } from '@ethersproject/providers'
+import { Signer } from 'ethers'
 import { L1Contract } from '../context/layer1'
 
 export class Watchdog {
   layer1: L1Contract
 
-  account: Account
+  account: Signer
 
-  constructor(layer1: L1Contract, account: Account) {
-    logger.trace(
-      `core/watchdog - Watchdog::constructor(${layer1.address}, ${account.address})`,
-    )
+  constructor(layer1: L1Contract, account: Signer) {
+    account.getAddress().then(accountAddr => {
+      logger.trace(
+        `core/watchdog - Watchdog::constructor(${layer1.address}, ${accountAddr})`,
+      )
+    })
     this.layer1 = layer1
     this.account = account
   }
 
   async slash(
-    slashTx: TransactionObject<{
-      slash: boolean
-      reason: string
-      0: boolean
-      1: string
-    }>,
-    prerequesites?: TransactionObject<any>[],
+    slashTx: TransactionRequest,
+    prerequesites?: TransactionRequest[],
   ): Promise<boolean> {
     logger.trace('core/watchdog - Watchdog::slash()')
     if (prerequesites) {
       logger.info(`core/watchdog - Prerequisite txs exist.`)
       for (const tx of prerequesites) {
-        const receipt = await this.layer1.sendTx(tx, this.account)
+        const txResponse = await this.account.sendTransaction(tx)
         logger.info(
-          `core/watchdog - Preparing a slash / Tx ID: ${receipt?.transactionHash}.`,
+          `core/watchdog - Preparing a slash / Tx ID: ${txResponse.hash}.`,
         )
-        if (!receipt?.status || !receipt) {
+        const receipt = await txResponse.wait()
+        if (!receipt.status || !receipt) {
           logger.error(
             `core/watchdog - Failed to execute a prerequisite tx: ${receipt?.transactionHash}.`,
           )
@@ -42,14 +40,15 @@ export class Watchdog {
       }
     }
     try {
-      const receipt = await this.layer1.sendTx(slashTx, this.account)
+      const txResponse = await this.account.sendTransaction(slashTx)
       logger.info(
-        `core/watchdog - Preparing a slash / Tx ID: ${receipt?.transactionHash}.`,
+        `core/watchdog - Preparing a slash / Tx ID: ${txResponse?.hash}.`,
       )
-      return receipt?.status || false
+      const receipt = await txResponse.wait()
+      return !!receipt.status || false
     } catch (err) {
       logger.error(`core/watchdog - Error executing slash`)
-      logger.error(err)
+      logger.error(err as any)
       return false
     }
   }
