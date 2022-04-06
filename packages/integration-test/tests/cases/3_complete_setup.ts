@@ -1,61 +1,35 @@
-/* eslint-disable jest/no-expect-resolves */
-/* eslint-disable jest/require-tothrow-message */
-/* eslint-disable jest/no-export */
-/* eslint-disable jest/require-top-level-describe */
+import chai from 'chai'
 
-import { toWei } from 'web3-utils'
-import { sleep } from '@zkopru/utils'
-import { Layer1 } from '@zkopru/contracts'
+import { sleep } from '~utils'
 import { Address } from 'soltypes'
-import { ZkWallet } from '@zkopru/zk-wizard'
-import { verifyingKeyIdentifier } from '@zkopru/core'
-import { CtxProvider } from './context'
+import { ZkWallet } from '~zk-wizard'
+import { verifyingKeyIdentifier } from '~core'
+import { CtxProvider } from '../context'
+
+const { expect } = chai
 
 export const testCompleteSetup = (ctx: CtxProvider) => async () => {
   const { accounts, contract } = ctx()
-  const tx = contract.setup.methods.completeSetup()
-  const gas = await tx.estimateGas()
-  await expect(
-    tx.send({ from: accounts.alice.ethAddress, gas }),
-  ).rejects.toThrow()
-  await expect(
-    tx.send({ from: accounts.bob.ethAddress, gas }),
-  ).rejects.toThrow()
-  await expect(
-    tx.send({ from: accounts.carl.ethAddress, gas }),
-  ).rejects.toThrow()
-  await expect(
-    tx.send({ from: accounts.coordinator.ethAddress, gas }),
-  ).resolves.toHaveProperty('transactionHash')
+  console.log('Now Genesis!')
+  const tx = await contract.zkopru.populateTransaction.completeSetup()
+  console.log('Genesis!')
+  await expect(accounts.alice.ethAccount.sendTransaction(tx)).to.be.reverted
+  await expect(accounts.bob.ethAccount.sendTransaction(tx)).to.be.reverted
+  await expect(accounts.carl.ethAccount.sendTransaction(tx)).to.be.reverted
+  const response = await accounts.coordinator.ethAccount.sendTransaction(tx)
+  const receipt = await response.wait()
+  expect(receipt.status).to.eq(1)
 }
 
 export const testRejectVkRegistration = (ctx: CtxProvider) => async () => {
   const { accounts, contract } = ctx()
-  const tx = contract.setup.methods.completeSetup()
-  await expect(
-    tx.estimateGas({ from: accounts.alice.ethAddress }),
-  ).rejects.toThrow()
-  await expect(
-    tx.estimateGas({ from: accounts.bob.ethAddress }),
-  ).rejects.toThrow()
-  await expect(
-    tx.estimateGas({ from: accounts.carl.ethAddress }),
-  ).rejects.toThrow()
-  await expect(
-    tx.estimateGas({ from: accounts.coordinator.ethAddress }),
-  ).rejects.toThrow()
-}
+  const tx = await contract.setup.populateTransaction.completeSetup()
 
-export const registerCoordinator = (ctx: CtxProvider) => async () => {
-  const { wallets, web3, contract } = ctx()
-  const consensus = await contract.upstream.methods.consensusProvider().call()
-  await wallets.coordinator.sendLayer1Tx({
-    contract: consensus,
-    tx: Layer1.getIBurnAuction(web3, consensus).methods.register(),
-    option: {
-      value: toWei('32', 'ether'),
-    },
-  })
+  await expect(accounts.alice.ethAccount.sendTransaction(tx)).to.be.reverted
+  await expect(accounts.bob.ethAccount.sendTransaction(tx)).to.be.reverted
+  await expect(accounts.carl.ethAccount.sendTransaction(tx)).to.be.reverted
+  await expect(accounts.coordinator.ethAccount.sendTransaction(tx)).to.be
+    .reverted
 }
 
 export const updateVerifyingKeys = (ctx: CtxProvider) => async () => {
@@ -80,21 +54,14 @@ export const updateVerifyingKeys = (ctx: CtxProvider) => async () => {
 }
 
 export const testRegisterTokens = (ctx: CtxProvider) => async () => {
-  const { wallets, contract, tokens } = ctx()
-  const registerERC20Tx = contract.coordinator.methods.registerERC20(
-    tokens.erc20.address,
-  )
-  await wallets.coordinator.sendLayer1Tx({
-    contract: contract.address,
-    tx: registerERC20Tx,
-  })
-  const registerERC721Tx = contract.coordinator.methods.registerERC721(
-    tokens.erc721.address,
-  )
-  await wallets.coordinator.sendLayer1Tx({
-    contract: contract.address,
-    tx: registerERC721Tx,
-  })
+  const { accounts, contract, tokens, wallets, fixtureProvider } = ctx()
+  console.log('register!')
+  await contract.coordinator
+    .connect(accounts.coordinator.ethAccount)
+    .registerERC20(tokens.erc20.address)
+  await contract.coordinator
+    .connect(accounts.coordinator.ethAccount)
+    .registerERC721(tokens.erc721.address)
   const isSynced = async (wallet: ZkWallet) => {
     const tokenRegistry = await wallet.node.layer2.getTokenRegistry()
     const erc20Sync = !!tokenRegistry.erc20s.find(addr =>
@@ -106,7 +73,9 @@ export const testRegisterTokens = (ctx: CtxProvider) => async () => {
     return !!(erc20Sync && erc721Sync)
   }
   let synced = false
+  await fixtureProvider.advanceBlock(10)
   do {
+    // console.log(wallets.alice.node.layer2)
     const aliceSyncedNewTokenRegistration = await isSynced(wallets.alice)
     const bobSyncedNewTokenRegistration = await isSynced(wallets.bob)
     const carlSyncedNewTokenRegistration = await isSynced(wallets.carl)
@@ -116,4 +85,5 @@ export const testRegisterTokens = (ctx: CtxProvider) => async () => {
       carlSyncedNewTokenRegistration
     if (!synced) await sleep(500)
   } while (!synced)
+  expect(synced).to.eq(true)
 }

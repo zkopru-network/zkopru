@@ -1,16 +1,13 @@
-/* eslint-disable jest/no-truthy-falsy */
-/* eslint-disable jest/no-expect-resolves */
-/* eslint-disable jest/require-tothrow-message */
-/* eslint-disable jest/no-export */
-/* eslint-disable jest/require-top-level-describe */
-
-import { toBN, toWei } from 'web3-utils'
-import { TxBuilder, Utxo, ZkTx } from '@zkopru/transaction'
-import { Fp } from '@zkopru/babyjubjub'
-import { sleep } from '@zkopru/utils'
+import chai from 'chai'
+import { TxBuilder, Utxo, ZkTx } from '~transaction'
+import { Fp } from '~babyjubjub'
+import { sleep } from '~utils'
+import { parseUnits } from 'ethers/lib/utils'
 import { Uint256 } from 'soltypes'
-import { Block } from '@zkopru/core'
-import { CtxProvider } from './context'
+import { Block } from '~core'
+import { CtxProvider } from '../context'
+
+const { expect } = chai
 
 export const buildZkTxAliceSendEthToBob = async (
   ctx: CtxProvider,
@@ -25,9 +22,9 @@ export const buildZkTxAliceSendEthToBob = async (
   const aliceSpendables: Utxo[] = await aliceWallet.getSpendables(alice)
   const aliceRawTx = TxBuilder.from(alice.zkAddress)
     .provide(...aliceSpendables.map(note => Utxo.from(note)))
-    .weiPerByte(toWei('100000', 'gwei'))
+    .weiPerByte(parseUnits('100000', 'gwei'))
     .sendEther({
-      eth: Fp.from(toWei('1', 'ether')),
+      eth: Fp.from(parseUnits('1', 'ether')),
       to: bob.zkAddress,
     })
     .build()
@@ -36,7 +33,7 @@ export const buildZkTxAliceSendEthToBob = async (
   })
   const aliceNewBalance = await aliceWallet.getSpendableAmount(alice)
   const aliceLockedAmount = await aliceWallet.getLockedAmount(alice)
-  expect(aliceNewBalance.eth.add(aliceLockedAmount.eth)).toBe(
+  expect(aliceNewBalance.eth.add(aliceLockedAmount.eth)).to.eq(
     alicePrevBalance.eth.add(alicePrevLocked.eth),
   )
   return aliceZkTx
@@ -55,9 +52,9 @@ export const buildZkTxBobSendEthToCarl = async (
   const bobPrevLocked = await bobWallet.getLockedAmount(bob)
   const bobRawTx = TxBuilder.from(bob.zkAddress)
     .provide(...bobSpendables.map(note => Utxo.from(note)))
-    .weiPerByte(toWei('100000', 'gwei'))
+    .weiPerByte(parseUnits('100000', 'gwei'))
     .sendEther({
-      eth: Fp.from(toWei('1', 'ether')),
+      eth: Fp.from(parseUnits('1', 'ether')),
       to: carl.zkAddress,
     })
     .build()
@@ -66,7 +63,7 @@ export const buildZkTxBobSendEthToCarl = async (
   })
   const bobNewBalance = await bobWallet.getSpendableAmount(bob)
   const bobLockedAmount = await bobWallet.getLockedAmount(bob)
-  expect(bobNewBalance.eth.add(bobLockedAmount.eth)).toBe(
+  expect(bobNewBalance.eth.add(bobLockedAmount.eth)).to.eq(
     bobPrevBalance.eth.add(bobPrevLocked.eth),
   )
   return bobZkTx
@@ -85,9 +82,9 @@ export const buildZkTxCarlSendEthToAlice = async (
   const carlSpendables: Utxo[] = await carlWallet.getSpendables(carl)
   const carlRawTx = TxBuilder.from(carl.zkAddress)
     .provide(...carlSpendables.map(note => Utxo.from(note)))
-    .weiPerByte(toWei('100000', 'gwei'))
+    .weiPerByte(parseUnits('100000', 'gwei'))
     .sendEther({
-      eth: Fp.from(toWei('1', 'ether')),
+      eth: Fp.from(parseUnits('1', 'ether')),
       to: alice.zkAddress,
     })
     .build()
@@ -96,7 +93,7 @@ export const buildZkTxCarlSendEthToAlice = async (
   })
   const carlNewBalance = await carlWallet.getSpendableAmount(carl)
   const carlLockedAmount = await carlWallet.getLockedAmount(carl)
-  expect(carlNewBalance.eth.add(carlLockedAmount.eth)).toBe(
+  expect(carlNewBalance.eth.add(carlLockedAmount.eth)).to.eq(
     carlPrevBalance.eth.add(carlPrevLocked.eth),
   )
   return carlZkTx
@@ -118,45 +115,46 @@ export const testRound3SendZkTxsToCoordinator = (
     bobTransfer,
     carlTransfer,
   ])
-  expect(r.status).toStrictEqual(200)
+  expect(r.status).to.eq(200)
 }
 
 export const testRound3NewBlockProposalAndSlashing = (
   ctx: CtxProvider,
 ) => async () => {
-  const { wallets, coordinator } = ctx()
+  const { wallets, coordinator, fixtureProvider } = ctx()
   const prevLatestBlock = await coordinator.layer2().latestBlock()
   // prepare deposits more than 32
   let count = 0
   while (count < 33) {
     try {
       const result = await wallets.alice.depositEther(
-        toWei('100', 'milliether'),
-        toWei('1', 'milliether'),
+        parseUnits('0.1', 'ether'),
+        parseUnits('0.001', 'ether'),
       )
       if (result) count += 1
     } catch {
+      await fixtureProvider.advanceBlock(8)
       await sleep(1000)
     }
   }
   // commit the mass deposit
   await coordinator.commitMassDeposits()
-  let slashed = !(await coordinator.context.node.layer1.upstream.methods
-    .isProposable(coordinator.context.account.address)
-    .call())
+  let slashed = !(await coordinator.context.node.layer1.zkopru.isProposable(
+    await coordinator.context.account.getAddress(),
+  ))
   const latestBlock = await coordinator.layer2().latestBlock()
   const currentUtxoIndex = (await coordinator.layer2().getBlock(latestBlock))
     ?.header.utxoIndex
   coordinator.middlewares.proposer.setPreProcessor(block => {
     const numOfNewUtxos = block.header.utxoIndex
-      .toBN()
-      .sub(currentUtxoIndex?.toBN() || toBN(0))
-    if (numOfNewUtxos.gtn(32)) {
+      .toBigNumber()
+      .sub(currentUtxoIndex?.toBigNumber() || 0)
+    if (numOfNewUtxos.gt(32)) {
       const cloned = Block.from(block.serializeBlock())
       cloned.header.utxoRoot = Uint256.from(
         block.header.utxoRoot
-          .toBN()
-          .addn(1)
+          .toBigNumber()
+          .add(1)
           .toString(),
       )
       return cloned
@@ -165,9 +163,10 @@ export const testRound3NewBlockProposalAndSlashing = (
   })
   let wait = 600000
   do {
-    slashed = !(await coordinator.context.node.layer1.upstream.methods
-      .isProposable(coordinator.context.account.address)
-      .call())
+    slashed = !(await coordinator.context.node.layer1.zkopru.isProposable(
+      await coordinator.context.account.getAddress(),
+    ))
+    await fixtureProvider.advanceBlock(8)
     await sleep(1000)
     wait -= 1000
   } while (!slashed && wait > 0)
@@ -177,10 +176,10 @@ export const testRound3NewBlockProposalAndSlashing = (
   const carlLatestBlock = await wallets.carl.node.layer2.latestBlock()
   const coordinatorLatestBlock = await coordinator.node().layer2.latestBlock()
   // Nodes should throw away the slashed block
-  expect(slashed).toBeTruthy()
-  expect(aliceLatestBlock.eq(prevLatestBlock)).toBeTruthy()
-  expect(bobLatestBlock.eq(prevLatestBlock)).toBeTruthy()
-  expect(carlLatestBlock.eq(prevLatestBlock)).toBeTruthy()
-  expect(coordinatorLatestBlock.eq(prevLatestBlock)).toBeTruthy()
+  expect(slashed).to.be.true
+  expect(aliceLatestBlock.eq(prevLatestBlock)).to.be.true
+  expect(bobLatestBlock.eq(prevLatestBlock)).to.be.true
+  expect(carlLatestBlock.eq(prevLatestBlock)).to.be.true
+  expect(coordinatorLatestBlock.eq(prevLatestBlock)).to.be.true
   coordinator.middlewares.proposer.removePreProcessor()
 }

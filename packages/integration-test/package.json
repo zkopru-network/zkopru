@@ -1,56 +1,59 @@
 {
   "name": "@zkopru/integration-test",
-  "private": true,
   "version": "2.0.0-beta.8",
   "license": "GPL-3.0-or-later",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "files": [
+    "dist",
+    "typechain",
+    "contracts"
+  ],
   "_moduleAliases": {
     "~account": "../account/dist",
     "~babyjubjub": "../babyjubjub/dist",
     "~cli": "../cli/dist",
-    "~contracts": "../contracts/dist",
+    "~contracts": "../contracts/dist/src",
+    "~contracts-utils": "../contracts/utils",
     "~core": "../core/dist",
+    "~core-ts": "../core/src",
     "~coordinator": "../coordinator/dist",
     "~database": "../database/dist",
+    "~dataset": "../dataset/dist",
     "~transaction": "../transaction/dist",
+    "~tree": "../tree/dist",
     "~utils": "../utils/dist",
     "~utils-docker": "../utils-docker/dist",
     "~zk-wizard": "../zk-wizard/dist"
   },
-  "scripts": {
-    "prebuild": "shx mkdir -p dist",
-    "build": "tsc --build tsconfig.build.json",
-    "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
-    "link-modules": "link-module-alias",
-    "test": "jest --bail=1 --forceExit",
-    "test:trace": "LOG_LEVEL=trace PRINT_LOG=true yarn test",
-    "test:unit": "jest test/unit",
-    "test:watch": "jest --watch",
-    "test:ci": "jest --coverage --ci --reporters='jest-junit'",
-    "coverage": "jest --coverage",
-    "coverage:show": "live-server coverage",
-    "dev": "ts-node-dev -r tsconfig-paths/register src/index.ts",
-    "start": "node dist/index.js"
-  },
   "dependencies": {
+    "@ethereumjs/tx": "3.2.0",
+    "@openzeppelin/contracts": "3.4.1",
     "@zkopru/account": "file:../account",
     "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/cli": "file:../cli",
     "@zkopru/contracts": "file:../contracts",
     "@zkopru/coordinator": "file:../coordinator",
     "@zkopru/core": "file:../core",
+    "@zkopru/database": "file:../database",
+    "@zkopru/dataset": "file:../dataset",
     "@zkopru/transaction": "file:../transaction",
+    "@zkopru/tree": "file:../tree",
     "@zkopru/utils": "file:../utils",
     "@zkopru/zk-wizard": "file:../zk-wizard",
-    "bn.js": "^5.2.0",
-    "node-docker-api": "^1.1.22",
-    "puppeteer": "^5.0.0",
-    "soltypes": "^1.3.5",
-    "web3": "^1.2.7",
-    "web3-core": "^1.2.7",
-    "web3-utils": "^1.2.7"
+    "soltypes": "^2.0.0",
+    "web3": "^1.3.6"
   },
-  "devDependencies": {
-    "pino-pretty": "^4.0.0"
+  "scripts": {
+    "hardhat": "hardhat",
+    "compile": "hardhat compile",
+    "build": "yarn compile && tsc --build tsconfig.build.json",
+    "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist build && jest --clearCache",
+    "link-modules": "link-module-alias",
+    "tsc": "tsc --build tsconfig.build.json && link-module-alias",
+    "test": "yarn compile && hardhat test tests/index.test.ts",
+    "prettier": "prettier --write ./**/*.{ts,js,sol}",
+    "testblock:generate": "node utils/testblock-generator"
   },
   "publishConfig": {
     "access": "public"
