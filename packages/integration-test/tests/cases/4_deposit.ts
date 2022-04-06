@@ -1,83 +1,93 @@
-/* eslint-disable jest/no-expect-resolves */
-/* eslint-disable jest/require-tothrow-message */
-/* eslint-disable jest/no-export */
-/* eslint-disable jest/require-top-level-describe */
+import chai from 'chai'
 
-import { toWei } from 'web3-utils'
-import { sleep } from '@zkopru/utils'
-import { CtxProvider } from './context'
+import { sleep } from '~utils'
+import { parseUnits } from 'ethers/lib/utils'
+import assert from 'assert'
+import { CtxProvider } from '../context'
+
+const { expect } = chai
 
 export const depositEther = (ctx: CtxProvider) => async () => {
   const { wallets } = ctx()
-  await expect(
-    wallets.alice.depositEther(toWei('10', 'ether'), toWei('1', 'milliether')),
-  ).resolves.toStrictEqual(true)
-  await expect(
-    wallets.bob.depositEther(toWei('10', 'ether'), toWei('1', 'milliether')),
-  ).resolves.toStrictEqual(true)
-  await expect(
-    wallets.carl.depositEther(toWei('10', 'ether'), toWei('1', 'milliether')),
-  ).resolves.toStrictEqual(true)
+  for (const wallet of [wallets.alice, wallets.bob, wallets.carl]) {
+    expect(
+      await wallet.depositEther(
+        parseUnits('10', 'ether'),
+        parseUnits('0.001', 'ether'),
+      ),
+    ).to.be.true
+  }
 }
 
 export const bobDepositsErc20 = (ctx: CtxProvider) => async () => {
   const { wallets, accounts, tokens, zkopruAddress } = ctx()
   // Get airdrop for the initial balance
-  await wallets.coordinator.sendLayer1Tx({
-    contract: tokens.erc20.address,
-    tx: tokens.erc20.contract.methods.transfer(
-      accounts.bob.ethAddress,
-      toWei('100', 'ether'),
-    ),
-  })
+  const coordinatorAccount = wallets.coordinator.account
+  assert(coordinatorAccount !== undefined)
+  assert(wallets.bob.account !== undefined)
+  await tokens.erc20.contract
+    .connect(coordinatorAccount.ethAccount)
+    .transfer(accounts.bob.ethAddress, parseUnits('100', 'ether'))
   // Approve
-  const amount = toWei('10', 'ether')
-  await wallets.bob.sendLayer1Tx({
-    contract: tokens.erc20.address,
-    tx: tokens.erc20.contract.methods.approve(zkopruAddress, amount),
-  })
+  const amount = parseUnits('10', 'ether')
+  await tokens.erc20.contract
+    .connect(wallets.bob.account.ethAccount)
+    .approve(zkopruAddress, amount)
+
   // Deposit ERC20
-  await expect(
-    wallets.bob.depositERC20(
-      toWei('0', 'ether'),
+  expect(
+    await wallets.bob.depositERC20(
+      parseUnits('0', 'ether'),
       tokens.erc20.address,
       amount,
-      toWei('10', 'milliether'),
+      parseUnits('0.01', 'ether'),
     ),
-  ).resolves.toStrictEqual(true)
+  ).to.be.true
 }
 
 export const depositERC721 = (ctx: CtxProvider) => async () => {
   const { wallets, accounts, tokens, zkopruAddress } = ctx()
   // Send NFT '0' to carl
-  await wallets.coordinator.sendLayer1Tx({
-    contract: tokens.erc721.address,
-    tx: tokens.erc721.contract.methods[
-      'safeTransferFrom(address,address,uint256)'
-    ](accounts.coordinator.ethAddress, accounts.carl.ethAddress, '1'),
-  })
+
+  assert(wallets.coordinator.account !== undefined)
+  assert(wallets.carl.account !== undefined)
+  await tokens.erc721.contract
+    .connect(wallets.coordinator.account.ethAccount)
+    ['safeTransferFrom(address,address,uint256)'](
+      accounts.coordinator.ethAddress,
+      accounts.carl.ethAddress,
+      '1',
+    )
   // Approve
-  await wallets.carl.sendLayer1Tx({
-    contract: tokens.erc721.address,
-    tx: tokens.erc721.contract.methods.setApprovalForAll(zkopruAddress, true),
-  })
+  await tokens.erc721.contract
+    .connect(wallets.carl.account.ethAccount)
+    .setApprovalForAll(zkopruAddress, true)
   // Deposit NFT id 1
-  await expect(
-    wallets.carl.depositERC721(
-      toWei('0', 'ether'),
+  expect(
+    await wallets.carl.depositERC721(
+      parseUnits('0', 'ether'),
       tokens.erc721.address,
       '1',
-      toWei('10', 'milliether'),
+      parseUnits('0.01', 'ether'),
     ),
-  ).resolves.toStrictEqual(true)
+  ).to.be.true
 }
 
 export const testMassDeposits = (ctx: CtxProvider) => async () => {
-  const { coordinator } = ctx()
+  const { coordinator, fixtureProvider } = ctx()
   await coordinator.commitMassDeposits()
-  await sleep(1000)
-  const pendingMassDeposits = await coordinator
-    .layer2()
-    .getPendingMassDeposits()
-  expect(pendingMassDeposits.leaves).toHaveLength(5)
+
+  const isSynced = async () => {
+    const pendingMassDeposits = await coordinator
+      .layer2()
+      .getPendingMassDeposits()
+    return pendingMassDeposits.leaves.length === 5
+  }
+  let synced = false
+  do {
+    await fixtureProvider.advanceBlock(8)
+    if (!synced) await sleep(500)
+    synced = await isSynced()
+  } while (!synced)
+  expect(synced).to.eq(true)
 }
