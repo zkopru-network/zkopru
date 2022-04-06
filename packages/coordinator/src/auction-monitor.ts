@@ -1,32 +1,29 @@
-import { Layer1 } from '@zkopru/contracts'
-import { Subscription } from 'web3-core-subscriptions'
 import { FullNode, CoordinatorManager } from '@zkopru/core'
-import BN from 'bn.js'
-import { Account } from 'web3-core'
-import { BlockHeader } from 'web3-eth'
 import { logger, validatePublicUrls, externalIp } from '@zkopru/utils'
 import AsyncLock from 'async-lock'
-import { EventEmitter } from 'events'
+import { BigNumber, BigNumberish, Signer } from 'ethers'
+import {
+  IBurnAuction,
+  IBurnAuction__factory,
+  IConsensusProvider,
+  IConsensusProvider__factory,
+} from '@zkopru/contracts'
+import { TypedListener } from '@zkopru/contracts/typechain/common'
+import { formatEther } from 'ethers/lib/utils'
 
 export interface AuctionMonitorConfig {
   port: number
-  maxBid: number
+  maxBid: BigNumberish
   publicUrls?: string // TODO: use this
 }
 
 interface Bid {
   owner: string
-  amount: BN
+  amount: BigNumber
 }
 
 export class AuctionMonitor {
   node: FullNode
-
-  blockSubscription?: Subscription<BlockHeader>
-
-  newHighBidSubscription?: EventEmitter
-
-  stakeSubscription?: EventEmitter
 
   currentProposer: string
 
@@ -42,11 +39,11 @@ export class AuctionMonitor {
 
   isProposableLastUpdated = 0
 
-  account: Account
+  account: Signer
 
   port: number | string
 
-  maxBid: BN
+  maxBid: BigNumber
 
   nodeUrl = ''
 
@@ -63,57 +60,43 @@ export class AuctionMonitor {
 
   coordinatorManager: CoordinatorManager
 
-  constructor(node: FullNode, account: Account, config: AuctionMonitorConfig) {
+  handleNewBlock?: (blockNumber: number) => Promise<void>
+
+  constructor(node: FullNode, account: Signer, config: AuctionMonitorConfig) {
     this.node = node
     this.currentProposer = '0x0000000000000000000000000000000000000000'
     this.consensusAddress = '0x0000000000000000000000000000000000000000'
     this.account = account
     this.port = config.port
-    this.maxBid = new BN(config.maxBid.toString()).mul(new BN(`${10 ** 9}`))
+    this.maxBid = BigNumber.from(config.maxBid)
     this.nodeUrl = config.publicUrls || ''
     this.coordinatorManager = new CoordinatorManager(
       this.node.layer1.address,
-      this.node.layer1.web3,
+      this.node.layer1.provider,
     )
   }
 
-  auction() {
-    const { layer1 } = this.node
-    return Layer1.getIBurnAuction(layer1.web3, this.consensusAddress)
-  }
-
-  consensus() {
-    const { layer1 } = this.node
-    return Layer1.getIConsensusProvider(layer1.web3, this.consensusAddress)
-  }
-
   async updateUrl(newUrl: string) {
-    const auction = this.auction()
-    const { layer1 } = this.node
     try {
-      await layer1.sendExternalTx(
-        auction.methods.setUrl(newUrl),
-        this.account,
-        this.consensusAddress,
-      )
-      await this.coordinatorManager.updateUrl(this.account.address)
+      await this.auction()
+        .connect(this.account)
+        .setUrl(newUrl)
+      await this.coordinatorManager.updateUrl(await this.account.getAddress())
     } catch (err) {
       logger.error(
-        `coordinator/auction-monitor.ts - Error updating url ${err.toString()}`,
+        `coordinator/auction-monitor.ts - Error updating url ${(err as any).toString()}`,
       )
     }
   }
 
   async start() {
     const { layer1 } = this.node
-    this.consensusAddress = await layer1.upstream.methods
-      .consensusProvider()
-      .call()
+    this.consensusAddress = await layer1.zkopru.consensusProvider()
     const auction = this.auction()
     const [startBlock, roundLength, blockNumber] = await Promise.all([
-      auction.methods.startBlock().call(),
-      auction.methods.roundLength().call(),
-      layer1.web3.eth.getBlockNumber(),
+      auction.startBlock(),
+      auction.roundLength(),
+      layer1.provider.getBlockNumber(),
       this.updateIsProposable(),
     ])
     this.startBlock = +startBlock
@@ -124,17 +107,16 @@ export class AuctionMonitor {
     this.startNewHighBidSubscription()
     this.startStakeSubscription()
     this.coordinatorManager.start()
+    const accountAddress = await this.account.getAddress()
 
-    const balance = await layer1.web3.eth.getBalance(this.account.address)
-    if (new BN(balance).eq(new BN('0'))) {
+    const balance = await layer1.provider.getBalance(accountAddress)
+    if (balance.eq(0)) {
       logger.info(
         `coordinator/auction-monitor.ts - Empty wallet, skipping auction participation`,
       )
       return
     }
-    const myUrl = await auction.methods
-      .coordinatorUrls(this.account.address)
-      .call()
+    const myUrl = await auction.coordinatorUrls(accountAddress)
     if (!myUrl || myUrl !== this.nodeUrl) {
       const newUrl = this.nodeUrl || `${await externalIp()}:${this.port}`
       // This will throw if invalid
@@ -148,82 +130,70 @@ export class AuctionMonitor {
   }
 
   startBlockSubscription() {
-    if (this.blockSubscription) return
     const { layer1 } = this.node
-    this.blockSubscription = layer1.web3.eth
-      .subscribe('newBlockHeaders')
-      .on('data', this.blockReceived.bind(this))
+    if (!this.handleNewBlock) {
+      this.handleNewBlock = async (blockNumber: number) => {
+        const newRound = this.roundForBlock(blockNumber)
+        const midBlock = this.roundStartBlock(newRound) + this.roundLength / 2
+
+        if (
+          blockNumber >= midBlock &&
+          this.isProposableLastUpdated < midBlock
+        ) {
+          // check if proposable
+          await this.updateIsProposable()
+        }
+        if (newRound === this.currentRound) {
+          return
+        }
+        const [activeProposer] = await Promise.all([
+          this.auction().coordinatorForRound(newRound),
+          this.updateIsProposable(),
+        ])
+        // Entered a new round, update the proposer
+        this.currentRound = newRound
+        this.currentProposer = activeProposer
+        // Call on each new round
+        await this.bidIfNeeded()
+      }
+      layer1.provider.on('block', this.handleNewBlock)
+    }
   }
 
   startNewHighBidSubscription() {
-    if (this.newHighBidSubscription) return
-    this.newHighBidSubscription = this.auction()
-      .events.NewHighBid()
-      .on('connected', subId => {
-        logger.info(
-          `coordinator/auction-monitor.ts - NewHighBid listener is connected. Id: ${subId}`,
-        )
-      })
-      .on('data', async data => {
-        const { roundIndex, bidder, amount } = data.returnValues
-        const currentRound = parseInt(roundIndex, 10)
-        this.bidsPerRound[currentRound] = {
-          owner: bidder,
-          amount: new BN(amount),
-        }
-        if (
-          bidder.toLowerCase() !== this.account.address.toLowerCase() &&
-          !new BN(amount).gt(this.maxBid) &&
-          currentRound - this.currentRound <= this.roundBidThreshold
-        ) {
-          // update our bid if we're close enough to trigger a bid
-          await this.bidIfNeeded()
-        }
-        logger.info(
-          `coordinator/auction-monitor.ts - New high bid for round ${currentRound}`,
-        )
-      })
+    const auction = this.auction()
+    const filter = auction.filters.NewHighBid()
+    const listners = auction.listeners(filter)
+    if (!listners.find(l => l === this.newHighBidReceived)) {
+      auction.on(filter, this.newHighBidReceived)
+    }
   }
 
   /**
    * TODO: Listen for slash events for this.context.account, StakeChanged
    * will not be called in this case
    * */
-  startStakeSubscription() {
-    if (this.stakeSubscription) return
-    this.stakeSubscription = this.node.layer1.coordinator.events
-      .StakeChanged({
-        filter: {
-          coordinator: this.account.address,
-        },
-      })
-      .on('data', this.updateIsProposable.bind(this))
-      .on('changed', this.updateIsProposable.bind(this))
-      .on('error', async err => {
-        logger.error(
-          `coordinator/auction-monitor.ts - Coordinator, stake subscription error: ${err.toString()}`,
-        )
-      })
+  async startStakeSubscription() {
+    const filter = this.node.layer1.coordinator.filters.StakeChanged(
+      await this.account.getAddress(),
+    )
+    const listners = this.node.layer1.coordinator.listeners(filter)
+    if (!listners.find(l => l === this.updateIsProposable)) {
+      this.node.layer1.coordinator.on(filter, this.updateIsProposable)
+    }
   }
 
   async stop() {
-    if (this.blockSubscription) {
-      try {
-        await this.blockSubscription.unsubscribe()
-      } catch (e) {
-        logger.error(`coordinator/auction-monitor.ts - ${e.toString()}`)
-      } finally {
-        this.blockSubscription = undefined
-      }
+    if (this.handleNewBlock) {
+      this.node.layer1.provider.off('block', this.handleNewBlock)
     }
-    if (this.newHighBidSubscription) {
-      this.newHighBidSubscription.removeAllListeners()
-      this.newHighBidSubscription = undefined
-    }
-    if (this.stakeSubscription) {
-      this.stakeSubscription.removeAllListeners()
-      this.stakeSubscription = undefined
-    }
+    const auction = this.auction()
+    auction.off(auction.filters.NewHighBid(), this.newHighBidReceived)
+    const { coordinator } = this.node.layer1
+    coordinator.off(
+      coordinator.filters.StakeChanged(await this.account.getAddress()),
+      this.updateIsProposable,
+    )
     await this.coordinatorManager.stop()
   }
 
@@ -231,73 +201,51 @@ export class AuctionMonitor {
     return this.coordinatorManager.coordinatorUrl(address)
   }
 
-  roundForBlock(blockNumber: number) {
+  roundForBlock(blockNumber: number): number {
+    if (this.roundLength === 0) return 0
     return Math.floor((blockNumber - this.startBlock) / this.roundLength)
   }
 
-  roundStartBlock(roundNumber: number) {
+  roundStartBlock(roundNumber: number): number {
     return this.startBlock + this.roundLength * roundNumber
   }
 
-  roundEndBlock(roundNumber: number) {
+  roundEndBlock(roundNumber: number): number {
     return this.roundStartBlock(roundNumber) + this.roundLength - 1
   }
 
-  async updateIsProposable() {
-    const [isProposable, blockNumber] = await Promise.all([
-      this.node.layer1.coordinator.methods
-        .isProposable(this.account.address)
-        .call(),
-      this.node.layer1.web3.eth.getBlockNumber(),
-    ])
-    logger.info(
-      `coordinator/auction-monitor.ts - Updated isProposable at block ${blockNumber}: ${isProposable}`,
+  auction(): IBurnAuction {
+    return IBurnAuction__factory.connect(
+      this.consensusAddress,
+      this.node.layer1.provider,
     )
-    this.isProposable = isProposable
-    this.isProposableLastUpdated = blockNumber
   }
 
-  async blockReceived(block: BlockHeader) {
-    const newRound = this.roundForBlock(block.number)
-    const midBlock = this.roundStartBlock(newRound) + this.roundLength / 2
-    if (block.number >= midBlock && this.isProposableLastUpdated < midBlock) {
-      // check if proposable
-      await this.updateIsProposable()
-    }
-    if (newRound === this.currentRound) {
-      return
-    }
-    const [activeProposer] = await Promise.all([
-      this.auction()
-        .methods.coordinatorForRound(newRound)
-        .call(),
-      this.updateIsProposable(),
-    ])
-    // Entered a new round, update the proposer
-    this.currentRound = newRound
-    this.currentProposer = activeProposer
-    // Call on each new round
-    await this.bidIfNeeded()
+  consensus(): IConsensusProvider {
+    return IConsensusProvider__factory.connect(
+      this.consensusAddress,
+      this.node.layer1.provider,
+    )
   }
 
   async loadUrl(address: string) {
     await this.coordinatorManager.updateUrl(address)
   }
 
-  async setMaxBid(newMaxBid: BN | string) {
+  async setMaxBid(newMaxBid: BigNumberish) {
     await this.bidLock.acquire('bidIfNeeded', async () => {
-      this.maxBid = new BN(newMaxBid)
+      this.maxBid = BigNumber.from(newMaxBid)
     })
     // Bid asynchronously
     this.bidIfNeeded()
   }
 
-  async bidIfNeeded() {
+  private async bidIfNeeded() {
     if (this.bidLock.isBusy('bidIfNeeded')) return
     await this.bidLock.acquire('bidIfNeeded', async () => {
-      const staked = await this.node.layer1.upstream.methods
-        .isStaked(this.account.address)
-        .call()
+      const staked = await this.node.layer1.zkopru.isStaked(
+        await this.account.getAddress(),
+      )
       if (!staked) {
         logger.info(
           'coordinator/auction-monitor.ts - Skipping auction bid, not staked',
@@ -305,11 +253,11 @@ export class AuctionMonitor {
         return
       }
       logger.info('coordinator/auction-monitor.ts - Examining auction state')
-      const auction = this.auction()
       // TODO: calculate these locally
+      const auction = this.auction()
       const [earliestRound, latestRound] = await Promise.all([
-        auction.methods.earliestBiddableRound().call(),
-        auction.methods.latestBiddableRound().call(),
+        auction.earliestBiddableRound(),
+        auction.latestBiddableRound(),
       ])
       const roundsToBid = [] as number[]
       for (let x = +earliestRound; x <= +latestRound; x += 1) {
@@ -321,18 +269,17 @@ export class AuctionMonitor {
           const {
             0: highBidAmount,
             1: highBidOwner,
-          } = await auction.methods.highestBidForRound(x).call()
+          } = await auction.highestBidForRound(x)
           highBid = {
-            amount: new BN(highBidAmount),
+            amount: highBidAmount,
             owner: highBidOwner,
           }
           this.bidsPerRound[x] = highBid
         }
         if (
-          highBid.amount
-            .add(highBid.amount.div(new BN('10')))
-            .lt(this.maxBid) &&
-          highBid.owner.toLowerCase() !== this.account.address.toLowerCase()
+          highBid.amount.add(highBid.amount.div(10)).lt(this.maxBid) &&
+          highBid.owner.toLowerCase() !==
+            (await this.account.getAddress()).toLowerCase()
         ) {
           roundsToBid.push(x)
         }
@@ -354,18 +301,16 @@ export class AuctionMonitor {
         `coordinator/auction-monitor.ts - Bidding on ${roundsToBid.length} auctions`,
       )
       // estimate the cost of bidding
-      let weiCost = new BN('0')
+      let weiCost = BigNumber.from(0)
       for (let x = 0; x < roundsToBid.length; x += 1) {
         const roundIndex = roundsToBid[x]
         // added above
         const currentBidAmount = this.bidsPerRound[roundIndex].amount
-        const nextBidAmount = currentBidAmount.add(
-          currentBidAmount.div(new BN('10')),
-        )
-        weiCost = weiCost.clone().add(nextBidAmount)
+        const nextBidAmount = currentBidAmount.add(currentBidAmount.div(10))
+        weiCost = weiCost.add(nextBidAmount)
       }
       logger.info(
-        `coordinator/auction-monitor.ts - estimated cost: ${this.node.layer1.web3.utils.fromWei(
+        `coordinator/auction-monitor.ts - estimated cost: ${formatEther(
           weiCost,
         )} eth`,
       )
@@ -376,28 +321,64 @@ export class AuctionMonitor {
         `coordinator/auction-monitor.ts - end round: ${latestBidRound}`,
       )
       try {
-        const tx = auction.methods.multiBid(
-          0,
-          this.maxBid.toString(),
-          earliestBidRound,
-          latestBidRound,
-        )
-        await this.node.layer1.sendExternalTx(
-          tx,
-          this.account,
-          this.consensusAddress,
-          {
-            value: weiCost.toString(),
-          },
-        )
+        const response = await auction
+          .connect(this.account)
+          .multiBid(
+            0,
+            this.maxBid.toString(),
+            earliestBidRound,
+            latestBidRound,
+            {
+              value: weiCost,
+            },
+          )
+        await response.wait()
         logger.info(
           `coordinator/auction-monitor.ts - Successfully bid on transactions`,
         )
       } catch (err) {
         logger.error(
-          `coordinator/auction-monitor.ts - Error bidding on auctions ${err.toString()}`,
+          `coordinator/auction-monitor.ts - Error bidding on auctions ${(err as any).toString()}`,
         )
       }
     })
+  }
+
+  private async updateIsProposable() {
+    const [isProposable, blockNumber] = await Promise.all([
+      this.node.layer1.coordinator.isProposable(
+        await this.account.getAddress(),
+      ),
+      this.node.layer1.provider.getBlockNumber(),
+    ])
+    logger.trace(
+      `coordinator/auction-monitor.ts - Updated isProposable at block ${blockNumber}`,
+    )
+    this.isProposable = isProposable
+    this.isProposableLastUpdated = blockNumber
+  }
+
+  private newHighBidReceived: TypedListener<
+    [BigNumber, string, BigNumber],
+    { roundIndex: BigNumber; bidder: string; amount: BigNumber }
+  > = async (...event) => {
+    const { roundIndex, bidder, amount } = event[3].args
+    const currentRound = roundIndex.toNumber()
+    this.bidsPerRound[currentRound] = {
+      owner: bidder,
+      amount,
+    }
+    if (
+      bidder.toLowerCase() !==
+        (await this.account.getAddress()).toLowerCase() &&
+      !amount.gt(this.maxBid) &&
+      currentRound - this.currentRound <= this.roundBidThreshold
+    ) {
+      // update our bid if we're close enough to trigger a bid
+      await this.bidIfNeeded()
+    }
+    logger.info(
+      `coordinator/auction-monitor.ts - New high bid for round ${currentRound}`,
+    )
   }
 }
