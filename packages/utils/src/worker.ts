@@ -65,10 +65,12 @@ export class Worker<T> extends EventEmitter {
         setTimeout(this.detectDanglingTask, task.timeout)
       }
       try {
-        await Promise.all([this.runTask(task.task), sleep(task.interval)])
+        await this.runTask(task.task)
       } catch (err) {
         logger.error('Uncaught error in task')
         logger.error(err as string)
+      } finally {
+        await sleep(task.interval)
       }
     }
   }

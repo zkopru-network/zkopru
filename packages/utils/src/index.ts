@@ -136,7 +136,7 @@ export function hexify(
     hex = n.toString(16)
   } else if (typeof n === 'string') {
     if (n.startsWith('0x')) {
-      hex = n.substr(2)
+      hex = n.substring(2)
     } else {
       if (/[a-fA-F]/.test(n)) {
         throw new Error('Detected hex value in expected decimal string')
