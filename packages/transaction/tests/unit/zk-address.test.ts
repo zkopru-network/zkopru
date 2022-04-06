@@ -1,7 +1,7 @@
 import { ZkAddress } from '@zkopru/transaction'
 import { Fp, Point } from '@zkopru/babyjubjub'
 
-describe('ZkAddress', () => {
+describe('zkAddress', () => {
   Array(50)
     .fill(null)
     .forEach((_, i) => {
@@ -10,7 +10,7 @@ describe('ZkAddress', () => {
         const dummyN = Point.generate(1000 + i)
         const zkAddr = ZkAddress.from(dummyPubSK, dummyN)
         const recovered = ZkAddress.fromBuffer(zkAddr.toBuffer())
-        expect(zkAddr.toString()).toEqual(recovered.toString())
+        expect(zkAddr.toString()).toStrictEqual(recovered.toString())
       })
     })
 })

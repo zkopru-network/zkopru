@@ -2,6 +2,7 @@ import { Fp, Point } from '@zkopru/babyjubjub'
 import base58 from 'bs58'
 import createKeccak from 'keccak'
 import assert from 'assert'
+import BN from 'bn.js'
 
 export class ZkAddress {
   private PubSK: Fp // public spending key = poseidon(Ax, Ay, n)
@@ -20,7 +21,9 @@ export class ZkAddress {
       .slice(0, 4)
     if (!checksum.equals(decoded.slice(64)))
       throw Error('Checksum does not match')
-    this.PubSK = Fp.from(decoded.slice(0, 32))
+    this.PubSK = Fp.from(
+      new BN(decoded.slice(0, 32), undefined, 'le').toString(),
+    )
     this.N = Point.decode(decoded.slice(32, 64))
     this.address = addr
   }
