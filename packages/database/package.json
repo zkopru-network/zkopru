@@ -28,10 +28,12 @@
     "coverage": "jest --coverage"
   },
   "dependencies": {
+    "@ethersproject/providers": "^5.6.0",
     "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/utils": "file:../utils",
     "async-lock": "^1.2.11",
     "bn.js": "^5.2.0",
+    "ethers": "^5.6.0",
     "fake-indexeddb": "^3.1.2",
     "idb": "^6.0.0",
     "pg": "^8.5.1",

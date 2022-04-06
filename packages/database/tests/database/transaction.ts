@@ -75,7 +75,7 @@ export default function(this: { db: DB }) {
       })
       assert(false)
     } catch (err) {
-      assert(true)
+      if (err instanceof Error) assert(true)
     }
     // No documents should exist
     const count = await this.db.count(table, {})
@@ -166,7 +166,8 @@ export default function(this: { db: DB }) {
     try {
       await transactionPromise
     } catch (err) {
-      assert.equal(err.toString(), 'Error: test error')
+      if (err instanceof Error)
+        assert.equal(err.toString(), 'Error: test error')
     }
     assert(!committed)
     assert(completed)
@@ -191,7 +192,8 @@ export default function(this: { db: DB }) {
     try {
       await transactionPromise
     } catch (err) {
-      assert.equal(err.toString(), 'Error: test error')
+      if (err instanceof Error)
+        assert.equal(err.toString(), 'Error: test error')
     }
     assert(completed)
   })
@@ -229,28 +231,31 @@ export default function(this: { db: DB }) {
         db.onCommit({} as any)
         assert(false)
       } catch (err) {
-        assert.equal(
-          err.toString(),
-          'Error: Non-function onCommit callback supplied',
-        )
+        if (err instanceof Error)
+          assert.equal(
+            err.toString(),
+            'Error: Non-function onCommit callback supplied',
+          )
       }
       try {
         db.onError({} as any)
         assert(false)
       } catch (err) {
-        assert.equal(
-          err.toString(),
-          'Error: Non-function onError callback supplied',
-        )
+        if (err instanceof Error)
+          assert.equal(
+            err.toString(),
+            'Error: Non-function onError callback supplied',
+          )
       }
       try {
         db.onComplete({} as any)
         assert(false)
       } catch (err) {
-        assert.equal(
-          err.toString(),
-          'Error: Non-function onComplete callback supplied',
-        )
+        if (err instanceof Error)
+          assert.equal(
+            err.toString(),
+            'Error: Non-function onComplete callback supplied',
+          )
       }
     })
     await transactionPromise
