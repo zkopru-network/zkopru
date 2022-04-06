@@ -20,6 +20,7 @@ export class Fr implements BigNumber {
   static Red = BN.red(new BN(Fr.ORDER.toString()))
 
   readonly _hex: string
+
   readonly _isBigNumber: boolean
 
   constructor(constructorGuard: any, hex: string) {
@@ -40,7 +41,7 @@ export class Fr implements BigNumber {
   }
 
   static from(number: BigNumberish): Fr {
-    let n: BigNumber = BigNumber.from(number)
+    const n: BigNumber = BigNumber.from(number)
     let val: BigNumber
     if (n.isNegative()) {
       val = n.mod(Fr.ORDER).add(Fr.ORDER)
@@ -145,6 +146,7 @@ export class Fr implements BigNumber {
   shl(value: number): Fr {
     return Fr.from(this.toBigNumber().shl(value))
   }
+
   shr(value: number): Fr {
     return Fr.from(this.toBigNumber().shr(value))
   }
@@ -166,18 +168,23 @@ export class Fr implements BigNumber {
   lte(other: BigNumberish): boolean {
     return this.toBigNumber().lte(other)
   }
+
   gt(other: BigNumberish): boolean {
     return this.toBigNumber().gt(other)
   }
+
   gte(other: BigNumberish): boolean {
     return this.toBigNumber().gte(other)
   }
+
   isNegative(): boolean {
     return this.toBigNumber().isNegative()
   }
+
   isZero(): boolean {
     return this.toBigNumber().isZero()
   }
+
   toNumber(): number {
     return this.toBigNumber().toNumber()
   }

@@ -38,15 +38,7 @@ describe('finite field', () => {
     expect(constant.eq(b)).toBe(true)
   })
   it('should return same hex', () => {
-    console.log('should return same hex test')
     const f = Fp.from('0xabcd1234abcd1234')
-    console.log('vall 1')
-    console.log(f.toHexString())
-    console.log('vall 2')
-    console.log(f.toHexString(8))
-    console.log('vall 3')
-    console.log(f.toHexString(8))
-    console.log(f.toHexString(8))
     expect(f.toHexString(8)).toStrictEqual('0xabcd1234abcd1234')
   })
   it('should return cyclic hex for a number beyond the field range', () => {
@@ -106,5 +98,9 @@ describe('cyclic group', () => {
     const a = Fp.from(18)
     const b = Fp.from(20)
     expect(a.sub(b).gt(a)).toBe(true)
+  })
+  it('a + ORDER = a', () => {
+    const a = Fp.from(18)
+    expect(a.add(Fp.ORDER).eq(a)).toBe(true)
   })
 })

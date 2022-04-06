@@ -15,7 +15,7 @@
     "build": "tsc --build tsconfig.build.json",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "link-modules": "link-module-alias",
-    "test": "jest",
+    "test": "jest --env=jsdom",
     "test:trace": "LOG_LEVEL=trace PRINT_LOG=true jest",
     "test:unit": "jest test/unit",
     "test:integration": "jest test/unit",
@@ -32,6 +32,7 @@
     "blake-hash": "^1.1.0",
     "bn.js": "^5.2.0",
     "circomlib": "0.5.1",
+    "ethers": "^5.5.2",
     "ffjavascript": "0.2.22",
     "soltypes": "^2.0.0",
     "web3-utils": "1.2.11"
