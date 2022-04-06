@@ -7,6 +7,7 @@
 
 import fs from 'fs'
 import { genSNARK, SNARKResult } from '~zk-wizard/snark'
+import { accounts } from '~dataset/testset-predefined'
 import {
   checkPhase1Setup,
   compileCircuit,
@@ -14,7 +15,6 @@ import {
   phase2Setup,
   prepareArtifactsDirectory,
 } from './helper'
-import { accounts } from '~dataset/testset-predefined'
 
 const fileName = 'spending_pubkey.test.circom'
 const artifacts = getArtifacts(fileName)
