@@ -54,7 +54,8 @@ export default function(this: { db: DB }) {
       })
       assert(false)
     } catch (err) {
-      assert(/Unrecognized value .* for type Bool/.test(err.toString()))
+      if (err instanceof Error)
+        assert(/Unrecognized value .* for type Bool/.test(err.toString()))
     }
     try {
       await this.db.create(table, {
@@ -65,7 +66,8 @@ export default function(this: { db: DB }) {
       })
       assert(false)
     } catch (err) {
-      assert(/Unrecognized value .* for type Bool/.test(err.toString()))
+      if (err instanceof Error)
+        assert(/Unrecognized value .* for type Bool/.test(err.toString()))
     }
     try {
       await this.db.create(table, {
@@ -76,7 +78,8 @@ export default function(this: { db: DB }) {
       })
       assert(false)
     } catch (err) {
-      assert(/Unrecognized value .* for type Bool/.test(err.toString()))
+      if (err instanceof Error)
+        assert(/Unrecognized value .* for type Bool/.test(err.toString()))
     }
     try {
       await this.db.create(table, {
@@ -87,7 +90,8 @@ export default function(this: { db: DB }) {
       })
       assert(false)
     } catch (err) {
-      assert(/Unrecognized value .* for type Int/.test(err.toString()))
+      if (err instanceof Error)
+        assert(/Unrecognized value .* for type Int/.test(err.toString()))
     }
     try {
       await this.db.create(table, {
@@ -98,7 +102,8 @@ export default function(this: { db: DB }) {
       })
       assert(false)
     } catch (err) {
-      assert(/Unrecognized value .* for type Int/.test(err.toString()))
+      if (err instanceof Error)
+        assert(/Unrecognized value .* for type Int/.test(err.toString()))
     }
     try {
       await this.db.create(table, {
@@ -109,7 +114,8 @@ export default function(this: { db: DB }) {
       })
       assert(false)
     } catch (err) {
-      assert(/Unrecognized value .* for type Int/.test(err.toString()))
+      if (err instanceof Error)
+        assert(/Unrecognized value .* for type Int/.test(err.toString()))
     }
     try {
       await this.db.create(table, {
@@ -120,7 +126,8 @@ export default function(this: { db: DB }) {
       })
       assert(false)
     } catch (err) {
-      assert(/Unrecognized value .* for type String/.test(err.toString()))
+      if (err instanceof Error)
+        assert(/Unrecognized value .* for type String/.test(err.toString()))
     }
     try {
       await this.db.create(table, {
@@ -131,7 +138,8 @@ export default function(this: { db: DB }) {
       })
       assert(false)
     } catch (err) {
-      assert(/Unrecognized value .* for type String/.test(err.toString()))
+      if (err instanceof Error)
+        assert(/Unrecognized value .* for type String/.test(err.toString()))
     }
     try {
       await this.db.create(table, {
@@ -142,7 +150,8 @@ export default function(this: { db: DB }) {
       })
       assert(false)
     } catch (err) {
-      assert(/Unrecognized value .* for type String/.test(err.toString()))
+      if (err instanceof Error)
+        assert(/Unrecognized value .* for type String/.test(err.toString()))
     }
     try {
       await this.db.create(table, {
@@ -153,7 +162,8 @@ export default function(this: { db: DB }) {
       })
       assert(false)
     } catch (err) {
-      assert(/Unrecognized value .* for type Object/.test(err.toString()))
+      if (err instanceof Error)
+        assert(/Unrecognized value .* for type Object/.test(err.toString()))
     }
     try {
       await this.db.create(table, {
@@ -164,7 +174,8 @@ export default function(this: { db: DB }) {
       })
       assert(false)
     } catch (err) {
-      assert(/Unrecognized value .* for type Object/.test(err.toString()))
+      if (err instanceof Error)
+        assert(/Unrecognized value .* for type Object/.test(err.toString()))
     }
     try {
       await this.db.create(table, {
@@ -175,7 +186,8 @@ export default function(this: { db: DB }) {
       })
       assert(false)
     } catch (err) {
-      assert(/Unrecognized value .* for type Object/.test(err.toString()))
+      if (err instanceof Error)
+        assert(/Unrecognized value .* for type Object/.test(err.toString()))
     }
   })
 }

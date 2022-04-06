@@ -1,5 +1,5 @@
-import Web3 from 'web3'
 import { logger } from '@zkopru/utils'
+import { Provider } from '@ethersproject/providers'
 import {
   DB,
   UpsertOptions,
@@ -41,7 +41,7 @@ type PendingOperation = {
 }
 
 export class BlockCache {
-  web3: Web3
+  provider: Provider
 
   db: DB
 
@@ -55,34 +55,28 @@ export class BlockCache {
     process.env.BLOCK_CONFIRMATIONS ?? DEFAULT_BLOCK_CONFIRMATIONS
   )
 
-  constructor(web3: Web3, db: DB) {
-    this.web3 = web3
+  constructor(provider: Provider, db: DB) {
+    this.provider = provider
     this.db = db
-    this.blockHeaderSubscription = this.web3.eth
-      .subscribe('newBlockHeaders', err => {
-        if (err) {
-          logger.info(
-            `database/block-cache - Error subscribing to block headers: ${err.toString()}`,
-          )
-        }
-      })
-      .on('data', async blockHeader => {
-        this.currentBlockNumber = blockHeader.number
-        // write stuff if needed
-        try {
-          await this.writeChangesIfNeeded()
-        } catch (err) {
-          logger.info(
-            `database/block-cache - Error writing block cache changes: ${err.toString()}`,
-          )
-        }
-      })
+    this.provider.on('block', async (blockNumber: number) => {
+      this.currentBlockNumber = blockNumber
+      // write stuff if needed
+      try {
+        await this.writeChangesIfNeeded()
+      } catch (err) {
+        logger.info(
+          `database/block-cache - Error writing block cache changes: ${
+            err instanceof Error ? err.message : 'unknown'
+          }`,
+        )
+      }
+    })
   }
 
   async blockNumber() {
     if (this.currentBlockNumber === 0) {
       // async load it
-      this.currentBlockNumber = await this.web3.eth.getBlockNumber()
+      this.currentBlockNumber = await this.provider.getBlockNumber()
     }
     return this.currentBlockNumber
   }
@@ -95,7 +89,8 @@ export class BlockCache {
 
   // Write any data that is old enough to be considered confirmed
   async writeChangesIfNeeded() {
-    const docsToRemove = [] as any[]
+    const docsToRemove: PendingOperation[] = []
+    if (this.pendingOperations.length === 0) return
     for (const op of this.pendingOperations) {
       if (this.currentBlockNumber - op.blockNumber < this.BLOCK_CONFIRMATIONS) {
         // eslint-disable-next-line no-continue
@@ -103,7 +98,7 @@ export class BlockCache {
       }
       // otherwise write
       try {
-        logger.info(`Writing ${op.collection}`)
+        logger.trace(`Writing ${op.collection}`)
         await this.writeChange(op)
         docsToRemove.push(op)
       } catch (err) {
