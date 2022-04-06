@@ -10,8 +10,9 @@ import {
 import { Fp } from '@zkopru/babyjubjub'
 import { Address } from 'soltypes'
 import { root } from '@zkopru/utils'
-import { Transaction } from 'web3-core'
 import AbiCoder from 'web3-eth-abi'
+import { BigNumber, Transaction } from 'ethers'
+import { parseEther, parseUnits } from 'ethers/lib/utils'
 import { loadZkTxs } from './testset-zktxs'
 
 function strToFp(val: string): Fp {
@@ -19,7 +20,7 @@ function strToFp(val: string): Fp {
 }
 
 export const dummyHeader: Header = {
-  proposer: Address.from(strToFp('proposer').toHex(20)),
+  proposer: Address.from(strToFp('proposer').toHexString(20)),
   parentBlock: strToFp('parentBlock').toBytes32(),
   fee: strToFp('totalFee').toUint256(),
   utxoRoot: strToFp('utxoRoot').toUint256(),
@@ -47,7 +48,7 @@ export async function getDummyBody(): Promise<Body> {
     ],
     massMigrations: [
       {
-        destination: Address.from(strToFp('mm1/dest').toHex(20)),
+        destination: Address.from(strToFp('mm1/dest').toHexString(20)),
         asset: {
           eth: strToFp('mm1/totalETH').toUint256(),
           token: strToFp('mm1/totalETH').toAddress(),
@@ -82,15 +83,13 @@ export async function getDummyBlock(): Promise<Block> {
   const dummyTx: Transaction = {
     hash: 'dummyhash',
     nonce: 1,
-    blockHash: 'dummyblockhash',
-    blockNumber: 10000,
-    transactionIndex: 3,
     from: 'dummyfrom',
     to: 'dummyto',
-    value: 'dummyvalue',
-    gasPrice: 'dummygas',
-    gas: 11,
-    input: `0x${dummySelector.replace('0x', '')}${inputData.replace('0x', '')}`,
+    value: parseEther('32'),
+    gasPrice: parseUnits('132', 'gwei'),
+    gasLimit: BigNumber.from(10000000),
+    data: `0x${dummySelector.replace('0x', '')}${inputData.replace('0x', '')}`,
+    chainId: 1,
   }
   return Block.fromTx(dummyTx)
 }

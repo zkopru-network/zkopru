@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-import { TokenRegistry } from '~transaction/tokens'
+import { TokenRegistry } from '~transaction'
 import { getDummyBody } from '../src/testset-block'
 import { accounts } from '../src/testset-predefined'
 import { loadZkTxs } from '../src/testset-zktxs'
