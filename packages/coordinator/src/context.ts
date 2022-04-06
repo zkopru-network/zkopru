@@ -1,6 +1,5 @@
 import { FullNode } from '@zkopru/core'
-import BN from 'bn.js'
-import { Account } from 'web3-core'
+import { BigNumber, Signer } from 'ethers'
 import { TxPoolInterface } from './tx-pool'
 import { AuctionMonitor } from './auction-monitor'
 
@@ -20,9 +19,9 @@ export interface CoordinatorContext {
 
   node: FullNode
 
-  account: Account
+  account: Signer
 
-  gasPrice?: BN
+  gasPrice?: BigNumber
 
   txPool: TxPoolInterface
 

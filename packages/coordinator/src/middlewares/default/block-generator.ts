@@ -11,9 +11,9 @@ import {
 } from '@zkopru/core'
 import { OutflowType, Withdrawal, ZkTx } from '@zkopru/transaction'
 import { Leaf, DryPatchResult } from '@zkopru/tree'
-import { logger, root, bnToBytes32, bnToUint256 } from '@zkopru/utils'
-import { Address } from 'soltypes'
-import BN from 'bn.js'
+import { logger, root } from '@zkopru/utils'
+import { Address, Bytes32, Uint256 } from 'soltypes'
+import { BigNumber } from 'ethers'
 import { GeneratorBase } from '../interfaces/generator-base'
 
 export class BlockGenerator extends GeneratorBase {
@@ -34,7 +34,7 @@ export class BlockGenerator extends GeneratorBase {
     // 2. pick transactions
     const pendingTxs = await this.context.txPool.pickTxs(
       this.context.config.maxBytes - consumedBytes,
-      this.context.gasPrice.muln(this.context.config.priceMultiplier),
+      this.context.gasPrice.mul(this.context.config.priceMultiplier),
     )
     const usedNullifiers = {}
     const validPendingsTxs = (
@@ -103,14 +103,18 @@ export class BlockGenerator extends GeneratorBase {
     }
     const { massDeposits } = pendingMassDeposits
     const header: Header = {
-      proposer: Address.from(this.context.account.address),
+      proposer: Address.from(await this.context.account.getAddress()),
       parentBlock: latest,
       fee: aggregatedFee.toUint256(),
       utxoRoot: expectedGrove.utxoTreeRoot.toUint256(),
       utxoIndex: expectedGrove.utxoTreeIndex.toUint256(),
-      nullifierRoot: bnToBytes32(expectedGrove.nullifierTreeRoot),
-      withdrawalRoot: bnToUint256(expectedGrove.withdrawalTreeRoot),
-      withdrawalIndex: bnToUint256(expectedGrove.withdrawalTreeIndex),
+      nullifierRoot: Bytes32.from(
+        expectedGrove.nullifierTreeRoot.toHexString(),
+      ),
+      withdrawalRoot: Uint256.from(expectedGrove.withdrawalTreeRoot.toString()),
+      withdrawalIndex: Uint256.from(
+        expectedGrove.withdrawalTreeIndex.toString(),
+      ),
       txRoot: root(txs.map(tx => tx.hash())),
       depositRoot: root(massDeposits.map(massDepositHash)),
       migrationRoot: root(massMigrations.map(massMigrationHash)),
@@ -140,29 +144,29 @@ export class BlockGenerator extends GeneratorBase {
           return [
             ...arr,
             ...tx.outflow
-              .filter(outflow => outflow.outflowType.eqn(OutflowType.UTXO))
+              .filter(outflow => outflow.outflowType.eq(OutflowType.UTXO))
               .map(outflow => outflow.note),
           ]
         }, pendingMassDeposits.leaves)
         .map(hash => ({ hash })) as Leaf<Fp>[]
 
-      const withdrawals: Leaf<BN>[] = txs.reduce((arr, tx) => {
+      const withdrawals: Leaf<BigNumber>[] = txs.reduce((arr, tx) => {
         return [
           ...arr,
           ...tx.outflow
-            .filter(outflow => outflow.outflowType.eqn(OutflowType.WITHDRAWAL))
+            .filter(outflow => outflow.outflowType.eq(OutflowType.WITHDRAWAL))
             .map(outflow => {
               if (!outflow.data) throw Error('No withdrawal public data')
               return {
                 hash: Withdrawal.withdrawalHash(
                   outflow.note,
                   outflow.data,
-                ).toBN(),
+                ).toBigNumber(),
                 noteHash: outflow.note,
               }
             }),
         ]
-      }, [] as Leaf<BN>[])
+      }, [] as Leaf<BigNumber>[])
       const nullifiers = txs.reduce((arr, tx) => {
         return [...arr, ...tx.inflow.map(inflow => inflow.nullifier)]
       }, [] as Fp[])
