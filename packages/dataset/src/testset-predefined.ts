@@ -1,16 +1,11 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { ZkAccount } from '@zkopru/account'
 import { TokenUtils } from '@zkopru/transaction'
-import { trimHexToLength } from '@zkopru/utils'
 
-const alicePrivKey = trimHexToLength(
-  Buffer.from("I am Alice's private key"),
-  64,
-)
-const bobPrivKey = trimHexToLength(
-  Buffer.from("I am Bob's private key").toString('hex'),
-  64,
-)
+const alicePrivKey =
+  '0x1111111111111111111111111111111111111111111111111111111111111111'
+const bobPrivKey =
+  '0x2222222222222222222222222222222222222222222222222222222222222222'
 const alice = new ZkAccount(alicePrivKey)
 const bob = new ZkAccount(bobPrivKey)
 
