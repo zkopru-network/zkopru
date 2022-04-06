@@ -1,17 +1,14 @@
-/* eslint-disable jest/no-truthy-falsy */
-/* eslint-disable jest/no-expect-resolves */
-/* eslint-disable jest/require-tothrow-message */
-/* eslint-disable jest/no-export */
-/* eslint-disable jest/require-top-level-describe */
-
-import { toWei, toBN } from 'web3-utils'
-import { Sum, SwapTxBuilder, Utxo, ZkTx } from '@zkopru/transaction'
-import { Fp } from '@zkopru/babyjubjub'
-import { sleep } from '@zkopru/utils'
+import chai from 'chai'
+import { Sum, SwapTxBuilder, Utxo, ZkTx } from '~transaction'
+import { Fp } from '~babyjubjub'
+import { sleep } from '~utils'
+import { parseUnits } from 'ethers/lib/utils'
 import { Bytes32 } from 'soltypes'
-import { CtxProvider } from './context'
+import { CtxProvider } from '../context'
 
-const WEI_PER_BYTE = toWei('100000', 'gwei')
+const { expect } = chai
+
+const WEI_PER_BYTE = parseUnits('100000', 'gwei')
 
 export const buildZkSwapTxAliceSendEthToBobAndReceiveERC20 = async (
   ctx: CtxProvider,
@@ -29,13 +26,13 @@ export const buildZkSwapTxAliceSendEthToBobAndReceiveERC20 = async (
     .provide(...aliceSpendables.map(note => Utxo.from(note)))
     .weiPerByte(WEI_PER_BYTE)
     .sendEther({
-      eth: Fp.from(toWei('1', 'ether')),
+      eth: Fp.from(parseUnits('1', 'ether')),
       to: bob.zkAddress,
       salt: 1, // salt of new ETH note bob receives
     })
     .receiveERC20({
       tokenAddr,
-      erc20Amount: Fp.from(toWei('1', 'ether')),
+      erc20Amount: Fp.from(parseUnits('1', 'ether')),
       salt: 2, // salt of new ERC20 note alice receives
     })
     .build()
@@ -47,7 +44,7 @@ export const buildZkSwapTxAliceSendEthToBobAndReceiveERC20 = async (
   const aliceNewBalance = await aliceWallet.getSpendableAmount(alice)
   const aliceLockedAmount = await aliceWallet.getLockedAmount(alice)
 
-  expect(aliceNewBalance.eth.add(aliceLockedAmount.eth)).toBe(
+  expect(aliceNewBalance.eth.add(aliceLockedAmount.eth)).to.eq(
     alicePrevBalance.eth.add(alicePrevLocked.eth),
   )
 
@@ -70,12 +67,12 @@ export const buildZkSwapTxBobSendERC20ToAliceAndReceiveEther = async (
     .weiPerByte(WEI_PER_BYTE)
     .sendERC20({
       tokenAddr,
-      erc20Amount: Fp.from(toWei('1', 'ether')),
+      erc20Amount: Fp.from(parseUnits('1', 'ether')),
       to: alice.zkAddress,
       salt: 2, // salt of new ERC20 note alice receives
     })
     .receiveEther(
-      Fp.from(toWei('1', 'ether')),
+      Fp.from(parseUnits('1', 'ether')),
       1, // salt of new ETH note bob receives
     )
     .build()
@@ -90,7 +87,7 @@ export const buildZkSwapTxBobSendERC20ToAliceAndReceiveEther = async (
     (bobNewBalance.erc20[tokenAddr] || Fp.zero).add(
       bobLockedAmount.erc20[tokenAddr] || Fp.zero,
     ),
-  ).toBe(
+  ).to.eq(
     (bobPrevBalance.erc20[tokenAddr] || Fp.zero).add(
       bobPrevLocked.erc20[tokenAddr] || Fp.zero,
     ),
@@ -109,7 +106,7 @@ export const testRound4SendZkTxsToCoordinator = (
   const { wallets } = ctx()
   const { aliceSwap, bobSwap } = txs()
   const r = await wallets.alice.sendLayer2Tx([aliceSwap, bobSwap])
-  expect(r.status).toStrictEqual(200)
+  expect(r.status).to.eq(200)
 }
 
 export const testRound4NewBlockProposal = (
@@ -118,7 +115,7 @@ export const testRound4NewBlockProposal = (
     prevLatestBlock: Bytes32
   },
 ) => async () => {
-  const { wallets, coordinator } = ctx()
+  const { wallets, coordinator, fixtureProvider } = ctx()
   const { prevLatestBlock } = subCtx()
   let updated = false
   let newBlockHash!: Bytes32
@@ -135,10 +132,11 @@ export const testRound4NewBlockProposal = (
       newBlockHash = aliceLatestBlock
       break
     }
+    await fixtureProvider.advanceBlock(8)
     await sleep(1000)
   } while (!updated)
   const newBlock = await wallets.alice.node.layer2.getBlock(newBlockHash)
-  expect(newBlock?.body.txs).toHaveLength(2)
+  expect(newBlock?.body.txs).to.have.length(2)
 }
 
 export const testRound4NewSpendableUtxos = (
@@ -162,28 +160,20 @@ export const testRound4NewSpendableUtxos = (
   const aliceBalanceAfter = await wallets.alice.getSpendableAmount()
   const bobBalanceAfter = await wallets.bob.getSpendableAmount()
 
-  const erc20Amount = toBN(toWei('1', 'ether'))
-  const ethAmount = toBN(toWei('1', 'ether'))
+  const erc20Amount = parseUnits('1', 'ether')
+  const ethAmount = parseUnits('1', 'ether')
 
-  expect(
-    aliceBalanceAfter.erc20[tokenAddr].eq(
-      (aliceSpendablesBefore.erc20[tokenAddr] || Fp.zero).add(erc20Amount),
-    ),
-  ).toBeTruthy()
-  expect(
-    bobBalanceAfter.erc20[tokenAddr].eq(
-      (bobSpendablesBefore.erc20[tokenAddr] || Fp.zero).sub(erc20Amount),
-    ),
-  ).toBeTruthy()
+  expect(aliceBalanceAfter.erc20[tokenAddr]).to.eq(
+    (aliceSpendablesBefore.erc20[tokenAddr] || Fp.zero).add(erc20Amount),
+  )
+  expect(bobBalanceAfter.erc20[tokenAddr]).to.eq(
+    (bobSpendablesBefore.erc20[tokenAddr] || Fp.zero).sub(erc20Amount),
+  )
 
-  expect(
-    aliceBalanceAfter.eth.eq(
-      (aliceSpendablesBefore.eth || Fp.zero).sub(ethAmount).sub(aliceSwap.fee),
-    ),
-  ).toBeTruthy()
-  expect(
-    bobBalanceAfter.eth.eq(
-      (bobSpendablesBefore.eth || Fp.zero).add(ethAmount).sub(bobSwap.fee),
-    ),
-  ).toBeTruthy()
+  expect(aliceBalanceAfter.eth).to.eq(
+    (aliceSpendablesBefore.eth || Fp.zero).sub(ethAmount).sub(aliceSwap.fee),
+  )
+  expect(bobBalanceAfter.eth).to.eq(
+    (bobSpendablesBefore.eth || Fp.zero).add(ethAmount).sub(bobSwap.fee),
+  )
 }
