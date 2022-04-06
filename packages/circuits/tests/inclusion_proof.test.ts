@@ -11,19 +11,19 @@ import { Fp } from '~babyjubjub'
 import { DB, TreeSpecies, schema, SQLiteMemoryConnector } from '~database/node'
 import { genSNARK, SNARKResult } from '~zk-wizard/snark'
 import {
-  checkPhase1Setup,
-  compileCircuit,
-  getArtifacts,
-  phase2Setup,
-  prepareArtifactsDirectory,
-} from './helper'
-import {
   UtxoTree,
   TreeConfig,
   poseidonHasher,
   genesisRoot,
   TreeCache,
 } from '~tree'
+import {
+  checkPhase1Setup,
+  compileCircuit,
+  getArtifacts,
+  phase2Setup,
+  prepareArtifactsDirectory,
+} from './helper'
 
 const fileName = 'inclusion_proof.test.circom'
 const artifacts = getArtifacts(fileName)
