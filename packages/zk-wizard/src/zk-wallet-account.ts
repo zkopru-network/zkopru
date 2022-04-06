@@ -17,22 +17,21 @@ import {
   Outflow,
   Withdrawal,
 } from '@zkopru/transaction'
-import { Fp, F } from '@zkopru/babyjubjub'
-import { Layer1, TransactionObject, Tx, TxUtil } from '@zkopru/contracts'
+import { Fp } from '@zkopru/babyjubjub'
 import fetch, { Response } from 'node-fetch'
 import { logger } from '@zkopru/utils'
-import { TransactionReceipt, Account } from 'web3-core'
 import { signTypedData_v4 as signTypedData } from 'eth-sig-util'
+import { ERC20__factory, ERC721__factory } from '@zkopru/contracts'
+import { BigNumberish } from 'ethers'
 import { ZkWizard } from './zk-wizard'
 
 export interface Balance {
-  eth: string
+  eth: BigNumberish
 
-  erc20: { [addr: string]: string }
+  erc20: { [addr: string]: BigNumberish }
 
-  erc721: { [addr: string]: string }
+  erc721: { [addr: string]: BigNumberish }
 }
-
 export interface ZkWalletAccountConfig {
   privateKey?: Buffer | string
   account?: ZkAccount
@@ -64,12 +63,12 @@ export class ZkWalletAccount {
     this.node = obj.node
     this.coordinatorManager = new CoordinatorManager(
       this.node.layer1.address,
-      this.node.layer1.web3,
+      this.node.layer1.provider,
     )
     this.erc20 = obj.erc20
     this.erc721 = obj.erc721
     if (obj.privateKey) {
-      this.account = new ZkAccount(obj.privateKey)
+      this.account = new ZkAccount(obj.privateKey, obj.node.layer1.provider)
     } else if (obj.account) {
       this.account = obj.account
     } else if (obj.accounts && obj.accounts.length > 0) {
@@ -169,7 +168,7 @@ export class ZkWalletAccount {
           salt: obj.salt,
         })
       }
-      if (obj.erc20Amount && Fp.from(obj.erc20Amount || 0).gtn(0)) {
+      if (obj.erc20Amount && Fp.from(obj.erc20Amount || 0).gt(0)) {
         return Utxo.newERC20Note({
           eth: obj.eth,
           owner: targetAccount.zkAddress,
@@ -201,25 +200,21 @@ export class ZkWalletAccount {
       erc721: {},
     }
     const promises: (() => Promise<void>)[] = []
-    const { web3 } = this.node.layer1
+    const { provider } = this.node.layer1
     promises.push(async () => {
-      balance.eth = await web3.eth.getBalance(targetAccount.ethAddress)
+      balance.eth = await provider.getBalance(targetAccount.ethAddress)
     })
     promises.push(
       ...this.erc20.map(addr => async () => {
-        const erc20 = Layer1.getERC20(web3, addr.toString())
-        const bal = await erc20.methods
-          .balanceOf(targetAccount.ethAddress)
-          .call()
+        const erc20 = ERC20__factory.connect(addr.toString(), provider)
+        const bal = await erc20.balanceOf(targetAccount.ethAddress)
         balance.erc20[addr.toString()] = bal
       }),
     )
     promises.push(
       ...this.erc721.map(addr => async () => {
-        const erc721 = Layer1.getIERC721Enumerable(web3, addr.toString())
-        const count = await erc721.methods
-          .balanceOf(targetAccount.ethAddress)
-          .call()
+        const erc721 = ERC721__factory.connect(addr.toString(), provider)
+        const count = await erc721.balanceOf(targetAccount.ethAddress)
         balance.erc721[addr.toString()] = count
       }),
     )
@@ -237,22 +232,18 @@ export class ZkWalletAccount {
       throw Error('Provide account parameter or set default account')
     const promises: (() => Promise<void>)[] = []
     const nfts: string[] = []
-    const { web3 } = this.node.layer1
+    const { provider } = this.node.layer1
     // 0x4f6ccce7 = tokenOfOwnerByIndex func sig
-    const supportEnumeration = await Layer1.getIERC721Enumerable(
-      web3,
-      erc721Addr,
-    )
-      .methods.supportsInterface('0x4f6ccce7')
-      .call()
+    const erc721 = ERC721__factory.connect(erc721Addr, provider)
+    const supportEnumeration = await erc721.supportsInterface('0x4f6ccce7')
     if (supportEnumeration) {
       promises.push(
         ...Array(balance)
           .fill(0)
           .map((_, i) => async () => {
-            nfts[i] = await Layer1.getIERC721Enumerable(web3, erc721Addr)
-              .methods.tokenOfOwnerByIndex(targetAccount.ethAddress, i)
-              .call()
+            nfts[i] = (
+              await erc721.tokenOfOwnerByIndex(targetAccount.ethAddress, i)
+            ).toString()
           }),
       )
       await Promise.all(promises.map(task => task()))
@@ -263,10 +254,10 @@ export class ZkWalletAccount {
   }
 
   async depositEther(
-    eth: F,
-    fee: F,
+    eth: BigNumberish,
+    fee: BigNumberish,
     to?: ZkAddress,
-    salt?: F,
+    salt?: BigNumberish,
   ): Promise<boolean> {
     if (!this.account) {
       logger.error('Account is not set')
@@ -288,32 +279,11 @@ export class ZkWalletAccount {
     return result
   }
 
-  depositEtherTx(
-    eth: F,
-    fee: F,
-    to?: ZkAddress,
-  ): {
-    to: string
-    data: any
-    value: string
-    onComplete: () => Promise<any>
-  } {
-    if (!this.account) {
-      logger.error('Account is not set')
-      throw new Error('Account is not set')
-    }
-    const note = Utxo.newEtherNote({
-      eth,
-      owner: to || this.account.zkAddress,
-    })
-    return this.depositTx(note, Fp.strictFrom(fee))
-  }
-
   async depositERC20(
-    eth: F,
+    eth: BigNumberish,
     addr: string,
-    amount: F,
-    fee: F,
+    amount: BigNumberish,
+    fee: BigNumberish,
     to?: ZkAddress,
   ): Promise<boolean> {
     if (!this.account) {
@@ -345,35 +315,11 @@ export class ZkWalletAccount {
     return result
   }
 
-  depositERC20Tx(
-    eth: F,
-    addr: string,
-    amount: F,
-    fee: F,
-    to?: ZkAddress,
-  ): {
-    to: string
-    data: any
-    value: string
-    onComplete: () => Promise<any>
-  } {
-    if (!this.account) {
-      throw new Error('Account is not set')
-    }
-    const note = Utxo.newERC20Note({
-      eth,
-      owner: to || this.account.zkAddress,
-      tokenAddr: addr,
-      erc20Amount: amount,
-    })
-    return this.depositTx(note, Fp.strictFrom(fee))
-  }
-
   async depositERC721(
-    eth: F,
+    eth: BigNumberish,
     addr: string,
-    nft: F,
-    fee: F,
+    nft: BigNumberish,
+    fee: BigNumberish,
     to?: ZkAddress,
   ): Promise<boolean> {
     if (!this.account) {
@@ -410,20 +356,22 @@ export class ZkWalletAccount {
     if (!withdrawal.includedIn) throw Error('No block hash which includes it')
     if (!withdrawal.index) throw Error('No leaf index')
     const siblings: string[] = JSON.parse(withdrawal.siblings)
-    const tx = this.node.layer1.user.methods.withdraw(
-      withdrawal.hash,
-      withdrawal.to,
-      withdrawal.eth,
-      withdrawal.tokenAddr,
-      withdrawal.erc20Amount,
-      withdrawal.nft,
-      withdrawal.fee,
-      withdrawal.includedIn,
-      withdrawal.index,
-      siblings,
-    )
-    const receipt = await this.node.layer1.sendTx(tx, this.account.ethAccount)
-    if (receipt) {
+    const response = await this.node.layer1.user
+      .connect(this.account?.ethAccount)
+      .withdraw(
+        withdrawal.hash,
+        withdrawal.to,
+        withdrawal.eth,
+        withdrawal.tokenAddr,
+        withdrawal.erc20Amount,
+        withdrawal.nft,
+        withdrawal.fee,
+        withdrawal.includedIn,
+        withdrawal.index,
+        siblings,
+      )
+    const receipt = await response.wait()
+    if (receipt.status) {
       await this.db.update('Withdrawal', {
         where: { hash: withdrawal.hash },
         update: { status: WithdrawalStatus.WITHDRAWN },
@@ -449,7 +397,8 @@ export class ZkWalletAccount {
     if (!withdrawal.index) throw Error('No leaf index')
 
     const siblings: string[] = JSON.parse(withdrawal.siblings)
-    const chainId = await this.node.layer1.web3.eth.getChainId()
+    const network = await this.node.layer1.provider.getNetwork()
+    const { chainId } = network
     const msgParams = {
       domain: {
         chainId,
@@ -504,10 +453,9 @@ export class ZkWalletAccount {
       body: JSON.stringify(data),
     })
     if (response.ok) {
-      const signedTx = await response.text()
-      const receipt = await this.node.layer1.web3.eth.sendSignedTransaction(
-        signedTx,
-      )
+      const { txHash } = await response.json()
+      const tx = await this.node.layer1.provider.getTransaction(txHash)
+      const receipt = await tx.wait()
       if (receipt.status) {
         // mark withdrawal as transferred
         await this.db.update('Withdrawal', {
@@ -528,30 +476,6 @@ export class ZkWalletAccount {
       if (weiPerByte) return weiPerByte
     }
     throw Error(`${response}`)
-  }
-
-  async sendLayer1Tx<T>({
-    contract,
-    tx,
-    signer,
-    option,
-  }: {
-    contract: Address | string
-    tx: TransactionObject<T>
-    signer?: Account
-    option?: Tx
-  }): Promise<TransactionReceipt | undefined> {
-    const { web3 } = this.node.layer1
-    const from = signer || this.account?.ethAccount
-    if (!from) throw Error(`You need to set 'from' account`)
-    const result = await TxUtil.sendTx(
-      tx,
-      contract.toString(),
-      web3,
-      from,
-      option,
-    )
-    return result
   }
 
   async lockUtxos(utxos: Utxo[], db?: TransactionDB): Promise<void> {
@@ -624,7 +548,7 @@ export class ZkWalletAccount {
       })
       return zkTx
     } catch (err) {
-      logger.error(err)
+      logger.error(err as any)
       throw err
     }
   }
@@ -647,9 +571,9 @@ export class ZkWalletAccount {
       if (!tokenAddress && !i.tokenAddr().eq(Fp.from(0))) {
         tokenAddress = i.tokenAddr()
       }
-      ethSentAmount.iadd(i.asset.eth)
+      ethSentAmount.add(i.asset.eth)
       if (tokenAddress && i.asset.tokenAddr.eq(Fp.from(tokenAddress))) {
-        tokenSentAmount.iadd(i.asset.erc20Amount)
+        tokenSentAmount.add(i.asset.erc20Amount)
       }
     }
     // const tokenAddress = `0x${notes[0].asset.tokenAddr.toString('hex')}`
@@ -657,9 +581,9 @@ export class ZkWalletAccount {
     const myEthAmount = Fp.from(0)
     for (const note of notes) {
       if (tokenAddress && note.asset.tokenAddr.eq(tokenAddress)) {
-        myTokenAmount.iadd(note.asset.erc20Amount)
+        myTokenAmount.add(note.asset.erc20Amount)
       }
-      myEthAmount.iadd(note.asset.eth)
+      myEthAmount.add(note.asset.eth)
     }
     // sentAmount = totalInflow - myOutflow - fee
     const tokenSent = tokenSentAmount.sub(myTokenAmount)
@@ -674,7 +598,7 @@ export class ZkWalletAccount {
       inflow: zkTx.inflow,
       outflow: zkTx.outflow,
       senderAddress: from.zkAddress.toString(),
-      tokenAddr: tokenAddress ? tokenAddress.toHex() : '0x0',
+      tokenAddr: tokenAddress ? tokenAddress.toHexString() : '0x0',
       erc20Amount: tokenSent.toString(),
       eth: ethSent.toString(),
     }
@@ -763,94 +687,42 @@ export class ZkWalletAccount {
       logger.error('Account is not set')
       return false
     }
-    const tx = this.node.layer1.user.methods.deposit(
-      note.owner.spendingPubKey().toString(),
-      note.salt.toUint256().toString(),
-      note
-        .eth()
-        .toUint256()
-        .toString(),
-      note
-        .tokenAddr()
-        .toAddress()
-        .toString(),
-      note
-        .erc20Amount()
-        .toUint256()
-        .toString(),
-      note
-        .nft()
-        .toUint256()
-        .toString(),
-      fee.toUint256().toString(),
-    )
-    const receipt = await this.node.layer1.sendTx(tx, this.account.ethAccount, {
-      value: note
-        .eth()
-        .add(fee)
-        .toString(),
-    })
-    // TODO check what web3 methods returns when it failes
-    if (receipt) {
+    const response = await this.node.layer1.user
+      .connect(this.account?.ethAccount)
+      .deposit(
+        note.owner.spendingPubKey().toBigNumber(),
+        note.salt.toUint256().toBigNumber(),
+        note
+          .eth()
+          .toUint256()
+          .toBigNumber(),
+        note
+          .tokenAddr()
+          .toAddress()
+          .toString(),
+        note
+          .erc20Amount()
+          .toUint256()
+          .toBigNumber(),
+        note
+          .nft()
+          .toUint256()
+          .toBigNumber(),
+        fee.toUint256().toBigNumber(),
+        {
+          value: note
+            .eth()
+            .add(fee)
+            .toBigNumber(),
+        },
+      )
+    const receipt = await response.wait()
+
+    if (receipt.status) {
       await this.saveOutflow(note)
       return true
     }
     return false
-  }
-
-  private depositTx(
-    note: Utxo,
-    fee: Fp,
-  ): {
-    data: string
-    onComplete: () => Promise<any>
-    to: string
-    value: string
-  } {
-    if (!this.account) {
-      throw new Error('Account is not set')
-    }
-    const tx = this.node.layer1.user.methods.deposit(
-      note.owner.spendingPubKey().toString(),
-      note.salt.toUint256().toString(),
-      note
-        .eth()
-        .toUint256()
-        .toString(),
-      note
-        .tokenAddr()
-        .toAddress()
-        .toString(),
-      note
-        .erc20Amount()
-        .toUint256()
-        .toString(),
-      note
-        .nft()
-        .toUint256()
-        .toString(),
-      fee.toUint256().toString(),
-    )
-    return {
-      to: this.node.layer1.user.options.address,
-      data: tx.encodeABI(),
-      value: note
-        .eth()
-        .add(fee)
-        .toString(16),
-      onComplete: async () => {
-        await this.db.transaction(async db => {
-          db.create('PendingDeposit', {
-            note: note
-              .hash()
-              .toUint256()
-              .toString(),
-            fee: fee.toUint256().toString(),
-          })
-          await this.saveOutflow(note, db)
-        })
-      },
-    }
   }
 
   private async saveOutflow(outflow: Outflow, db?: TransactionDB) {

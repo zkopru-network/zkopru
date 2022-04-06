@@ -21,7 +21,7 @@ process.on(
       })
       process.send({ snark })
     } catch (err) {
-      process.send({ err: err.message })
+      process.send({ err: (err as any).message })
     } finally {
       process.exit(0)
     }

@@ -30,7 +30,7 @@ async function loadGrove(db: DB): Promise<{ grove: Grove }> {
   await grove.init()
   const latestTree = grove.utxoTree
   const size = latestTree ? latestTree.latestLeafIndex() : Fp.zero
-  if (size.eqn(0)) {
+  if (size.eq(0)) {
     await db.transaction(txdb =>
       grove.applyGrovePatch(
         {
