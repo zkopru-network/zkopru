@@ -1,3 +1,4 @@
+/* eslint-disable camelcase, import/no-extraneous-dependencies */
 import { FullNode, CoordinatorManager } from '@zkopru/core'
 import { logger, validatePublicUrls, externalIp } from '@zkopru/utils'
 import AsyncLock from 'async-lock'
@@ -306,7 +307,9 @@ export class AuctionMonitor {
         const roundIndex = roundsToBid[x]
         // added above
         const currentBidAmount = this.bidsPerRound[roundIndex].amount
-        const nextBidAmount = currentBidAmount.add(currentBidAmount.div(10))
+        const nextBidAmount = currentBidAmount.add(
+          currentBidAmount.div(BigNumber.from(5)),
+        )
         weiCost = weiCost.add(nextBidAmount)
       }
       logger.info(
@@ -320,19 +323,27 @@ export class AuctionMonitor {
       logger.info(
         `coordinator/auction-monitor.ts - end round: ${latestBidRound}`,
       )
+
+      // get remain balance at pending and calculating eth amount for bidding
+      const pendingBalance = await auction.pendingBalances(
+        await this.account.getAddress(),
+      )
+      const needWeiCost = weiCost.sub(BigNumber.from(pendingBalance))
+
       try {
-        const response = await auction
-          .connect(this.account)
-          .multiBid(
-            0,
-            this.maxBid.toString(),
-            earliestBidRound,
-            latestBidRound,
-            {
-              value: weiCost,
-            },
-          )
-        await response.wait()
+        const tx = await auction.multiBid(
+          weiCost.div(BigNumber.from(roundsToBid.length)).toString(), // possible not exactly 20 percent higher previous bid amount
+          this.maxBid.toString(),
+          earliestBidRound,
+          latestBidRound,
+          {
+            value: needWeiCost.lt(BigNumber.from(0))
+              ? '0x0'
+              : needWeiCost.toString(),
+          },
+        )
+        await tx.wait()
+
         logger.info(
           `coordinator/auction-monitor.ts - Successfully bid on transactions`,
         )
