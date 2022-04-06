@@ -37,9 +37,10 @@ export class TreeCache {
     leafIndex: BigNumberish,
   ): Promise<TreeNode[]> {
     const siblingIndexes = Array(depth).fill(null)
-    const leafPath = BigNumber.from(1).shl(depth).or(leafIndex)
-    if (leafPath.lte(leafIndex))
-      throw Error('Leaf index is out of range')
+    const leafPath = BigNumber.from(1)
+      .shl(depth)
+      .or(leafIndex)
+    if (leafPath.lte(leafIndex)) throw Error('Leaf index is out of range')
 
     for (let level = 0; level < depth; level += 1) {
       const pathIndex = leafPath.shr(level)

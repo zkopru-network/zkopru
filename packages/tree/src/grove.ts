@@ -11,6 +11,7 @@ import {
   TransactionDB,
 } from '@zkopru/database'
 import { ZkAddress } from '@zkopru/transaction'
+import { BigNumber } from 'ethers'
 import { Hasher, genesisRoot } from './hasher'
 import { MerkleProof, verifyProof, startingLeafProof } from './merkle-proof'
 import { Leaf } from './light-rollup-tree'
@@ -18,7 +19,6 @@ import { UtxoTree } from './utxo-tree'
 import { WithdrawalTree } from './withdrawal-tree'
 import { NullifierTree } from './nullifier-tree'
 import { TreeCache } from './utils'
-import { BigNumber } from 'ethers'
 
 export interface GroveConfig {
   utxoTreeDepth: number
@@ -339,7 +339,9 @@ export class Grove {
       const level =
         1 +
         this.config.utxoTreeDepth -
-        BigNumber.from(obj.nodeIndex || 0).toBigInt().toString(2).length
+        BigNumber.from(obj.nodeIndex || 0)
+          .toBigInt()
+          .toString(2).length
       if (level === this.config.utxoTreeDepth) {
         root = Fp.from(obj.value)
       } else {
@@ -380,7 +382,9 @@ export class Grove {
       const level =
         1 +
         this.config.withdrawalTreeDepth -
-        BigNumber.from(obj.nodeIndex || 0).toBigInt().toString(2).length
+        BigNumber.from(obj.nodeIndex || 0)
+          .toBigInt()
+          .toString(2).length
       if (level === this.config.withdrawalTreeDepth) {
         root = BigNumber.from(obj.value)
       } else {

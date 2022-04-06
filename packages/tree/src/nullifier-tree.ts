@@ -8,10 +8,10 @@ import {
   NULLIFIER_TREE_ID,
   TransactionDB,
 } from '@zkopru/database'
+import { BigNumber } from 'ethers'
 import { Hasher, genesisRoot } from './hasher'
 import { verifyProof, MerkleProof } from './merkle-proof'
 import { TreeCache } from './utils'
-import { BigNumber } from 'ethers'
 
 export interface SMT<T extends Fp | BigNumber> {
   depth: number
