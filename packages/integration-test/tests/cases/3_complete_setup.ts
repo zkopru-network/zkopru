@@ -28,6 +28,8 @@ export const testRejectVkRegistration = (ctx: CtxProvider) => async () => {
   await expect(accounts.alice.ethAccount.sendTransaction(tx)).to.be.reverted
   await expect(accounts.bob.ethAccount.sendTransaction(tx)).to.be.reverted
   await expect(accounts.carl.ethAccount.sendTransaction(tx)).to.be.reverted
+  await expect(accounts.newCoordinator.ethAccount.sendTransaction(tx)).to.be
+    .reverted
   await expect(accounts.coordinator.ethAccount.sendTransaction(tx)).to.be
     .reverted
 }
