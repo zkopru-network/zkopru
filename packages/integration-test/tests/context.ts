@@ -12,6 +12,7 @@ import { ZkWallet } from '~zk-wizard'
 import { TestERC20, TestERC721, ZkopruContract } from '~contracts'
 import { VerifyingKey } from '~zk-wizard/snark'
 import { Signer } from 'ethers'
+import { parseEther } from 'ethers/lib/utils'
 import { FixtureProvider } from './fixtures'
 import { DEFAULT } from '~cli/apps/coordinator/config'
 
@@ -27,6 +28,7 @@ type VKs = { [nIn: string]: { [nOut: string]: VerifyingKey } }
 export interface Context {
   accounts: {
     coordinator: ZkAccount
+    newCoordinator: ZkAccount
     alice: ZkAccount
     bob: ZkAccount
     carl: ZkAccount
@@ -34,6 +36,7 @@ export interface Context {
   }
   wallets: {
     coordinator: ZkWallet
+    newCoordinator: ZkWallet
     alice: ZkWallet
     bob: ZkWallet
     carl: ZkWallet
@@ -68,6 +71,7 @@ export async function terminate(ctx: CtxProvider) {
     wallets.bob.node.stop(),
     wallets.carl.node.stop(),
     wallets.coordinator.node.stop(),
+    wallets.newCoordinator.node.stop(),
     ...wallets.users.map(wallet => wallet.node.stop()),
   ])
   await new Promise(r => setTimeout(r, 20000))
@@ -125,6 +129,7 @@ async function getCoordinator(
   provider: JsonRpcProvider,
   address: string,
   account: Signer,
+  overrides?: { port: number, maxBid: number },
 ): Promise<{ coordinator: Coordinator; mockupDB: DB }> {
   const mockupDB = await SQLiteConnector.create(schema, ':memory:')
   const fullNode: FullNode = await FullNode.new({
@@ -137,9 +142,9 @@ async function getCoordinator(
     maxBytes,
     priceMultiplier, // 32 gas is the current default price for 1 byte
     vhosts: '*',
-    publicUrls: `localhost:${port}`,
-    port,
-    maxBid: 20000,
+    publicUrls: `localhost:${overrides?.port ?? port}`,
+    port: overrides?.port ?? port,
+    maxBid: overrides?.maxBid ?? 20000,
     bootstrap: false,
   })
   return { coordinator, mockupDB }
@@ -213,13 +218,19 @@ export async function initContext(): Promise<Context> {
   )
   const erc20 = testFixtures.testERC20
   const erc721 = testFixtures.testERC721
-  const accounts = await getAccounts(ethers.provider, 36)
+  const accounts = await getAccounts(ethers.provider, 5)
   const vks = await loadKeys(path.join(__dirname, '../../circuits/keys/vks'))
-  const [coordinatorAccount] = accounts
+  const [coordinatorAccount, newCoordinatorAccount] = accounts
   const { coordinator, mockupDB: coordinatorDB } = await getCoordinator(
     ethers.provider,
     zkopruAddress,
     coordinatorAccount.ethAccount,
+  )
+  const { coordinator: newCoordinator, mockupDB: newCoordinatorDB } = await getCoordinator(
+    ethers.provider,
+    zkopruAddress,
+    newCoordinatorAccount.ethAccount,
+    { port: 8889, maxBid: 30000 }
   )
   await coordinator.start()
   const { wallets, dbs } = await getWallets({
@@ -231,7 +242,23 @@ export async function initContext(): Promise<Context> {
       erc721s: [erc721.address],
     },
   })
-  const [coordinatorWallet, aliceWallet, bobWallet, carlWallet] = wallets
+  const [coordinatorWallet, newCoordinatorWallet, aliceWallet, bobWallet, carlWallet] = wallets
+    // Send Ether to Testing participants Wallet
+    const receivers = [newCoordinatorWallet, aliceWallet, bobWallet, carlWallet].map(wallet => {
+      return wallet.account?.ethAddress
+    })
+    for (const receiver of receivers) {
+      const { ethAccount } = coordinatorWallet.accounts[0]
+      const unSignedTx = {
+        to: receiver,
+        value: parseEther('1000'),
+      }
+      console.log(`rawTx: ${unSignedTx.value}`)
+      const signedTx = await ethAccount.populateTransaction(
+        unSignedTx,
+      )
+      await ethAccount.sendTransaction(signedTx)
+    }
   coordinatorWallet.node.start()
   aliceWallet.node.start()
   bobWallet.node.start()
@@ -240,18 +267,20 @@ export async function initContext(): Promise<Context> {
   return {
     accounts: {
       coordinator: accounts[0],
-      alice: accounts[1],
-      bob: accounts[2],
-      carl: accounts[3],
-      users: accounts.slice(4),
+      newCoordinator: accounts[1],
+      alice: accounts[2],
+      bob: accounts[3],
+      carl: accounts[4],
+      users: accounts.slice(5),
     },
     provider: ethers.provider,
     zkopruAddress,
-    dbs: [...dbs, coordinatorDB],
+    dbs: [...dbs, coordinatorDB, newCoordinatorDB],
     contract,
     coordinator,
     wallets: {
       coordinator: coordinatorWallet,
+      newCoordinator: newCoordinatorWallet,
       alice: aliceWallet,
       bob: bobWallet,
       carl: carlWallet,

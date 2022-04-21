@@ -8,6 +8,7 @@ import { GroveSnapshot } from '~tree/grove'
 import { sleep } from '~utils'
 import { Context, initContext, terminate } from './context'
 import {
+  testNewCoordinatorAccount,
   testAliceAccount,
   testCarlAccount,
   testBobAccount,
@@ -96,12 +97,13 @@ describe('testnet', () => {
     })
   })
   describe('1: Zk Account', () => {
+    it(`newCoordinator should have 1000 ETH for its initial balance`, testNewCoordinatorAccount(ctx))
     it(
-      'alice should have 100 ETH for her initial balance',
+      'alice should have 1000 ETH for her initial balance',
       testAliceAccount(ctx),
     )
-    it('bob should have 100 ETH for his initial balance', testBobAccount(ctx))
-    it('carl should have 100 ETH for his initial balance', testCarlAccount(ctx))
+    it('bob should have 1000 ETH for his initial balance', testBobAccount(ctx))
+    it('carl should have 1000 ETH for his initial balance', testCarlAccount(ctx))
   })
   describe('2: Register verifying keys', () => {
     it('coordinator can register vks', testRegisterVKs(ctx))
@@ -261,7 +263,7 @@ describe('testnet', () => {
         'they should send zk transactions to the coordinator',
         testRound4SendZkTxsToCoordinator(ctx, subCtx),
       )
-
+      console.log(`they complete`)
       it(
         'coordinator should propose a new block and wallet clients detect them',
         testRound4NewBlockProposal(ctx, subCtx),
