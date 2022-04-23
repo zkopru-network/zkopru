@@ -67,6 +67,7 @@ import {
   waitCoordinatorToProcessTheNewBlockFor33Deposits,
   waitCoordinatorToProposeANewBlockFor33Deposits,
 } from './cases/9_massive_deposits'
+import { registerNewCoordinator, bidAuctionEachOther } from './cases/11_auction'
 import {
   buildZkTxAliceSendEthToBob as round3Tx1,
   buildZkTxBobSendEthToCarl as round3Tx2,
@@ -97,13 +98,19 @@ describe('testnet', () => {
     })
   })
   describe('1: Zk Account', () => {
-    it(`newCoordinator should have 1000 ETH for its initial balance`, testNewCoordinatorAccount(ctx))
+    it(
+      `newCoordinator should have 1000 ETH for its initial balance`,
+      testNewCoordinatorAccount(ctx),
+    )
     it(
       'alice should have 1000 ETH for her initial balance',
       testAliceAccount(ctx),
     )
     it('bob should have 1000 ETH for his initial balance', testBobAccount(ctx))
-    it('carl should have 1000 ETH for his initial balance', testCarlAccount(ctx))
+    it(
+      'carl should have 1000 ETH for his initial balance',
+      testCarlAccount(ctx),
+    )
   })
   describe('2: Register verifying keys', () => {
     it('coordinator can register vks', testRegisterVKs(ctx))
@@ -263,7 +270,6 @@ describe('testnet', () => {
         'they should send zk transactions to the coordinator',
         testRound4SendZkTxsToCoordinator(ctx, subCtx),
       )
-      console.log(`they complete`)
       it(
         'coordinator should propose a new block and wallet clients detect them',
         testRound4NewBlockProposal(ctx, subCtx),
@@ -353,7 +359,7 @@ describe('testnet', () => {
       waitCoordinatorToProcessTheNewBlockFor33Deposits(ctx),
     )
   })
-  describe('10: Zk Transactions round 3', () => {
+  describe('11: Zk Transactions round 3', () => {
     let aliceTransfer: ZkTx
     let bobTransfer: ZkTx
     let carlTransfer: ZkTx
@@ -378,7 +384,11 @@ describe('testnet', () => {
       )
     })
   })
-  describe('11: Migration', () => {
-    it('please add test scenarios here')
+  describe(`12: bidding test by two coordinators`, () => {
+    it(`register coordinator by newCoordinator`, registerNewCoordinator(ctx))
+    it(`coordinator and newCoordinator bid slots`, bidAuctionEachOther(ctx))
+  })
+  describe('13: Migration', () => {
+    it.todo('please add test scenarios here')
   })
 })

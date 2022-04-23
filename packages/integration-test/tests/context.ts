@@ -13,8 +13,8 @@ import { TestERC20, TestERC721, ZkopruContract } from '~contracts'
 import { VerifyingKey } from '~zk-wizard/snark'
 import { Signer } from 'ethers'
 import { parseEther } from 'ethers/lib/utils'
-import { FixtureProvider } from './fixtures'
 import { DEFAULT } from '~cli/apps/coordinator/config'
+import { FixtureProvider } from './fixtures'
 
 export interface TestFixture {
   deployer: SignerWithAddress
@@ -129,7 +129,7 @@ async function getCoordinator(
   provider: JsonRpcProvider,
   address: string,
   account: Signer,
-  overrides?: { port: number, maxBid: number },
+  overrides?: { port: number; maxBid: number },
 ): Promise<{ coordinator: Coordinator; mockupDB: DB }> {
   const mockupDB = await SQLiteConnector.create(schema, ':memory:')
   const fullNode: FullNode = await FullNode.new({
@@ -226,11 +226,11 @@ export async function initContext(): Promise<Context> {
     zkopruAddress,
     coordinatorAccount.ethAccount,
   )
-  const { coordinator: newCoordinator, mockupDB: newCoordinatorDB } = await getCoordinator(
+  const { mockupDB: newCoordinatorDB } = await getCoordinator(
     ethers.provider,
     zkopruAddress,
     newCoordinatorAccount.ethAccount,
-    { port: 8889, maxBid: 30000 }
+    { port: 8889, maxBid: 30000 },
   )
   await coordinator.start()
   const { wallets, dbs } = await getWallets({
@@ -242,23 +242,31 @@ export async function initContext(): Promise<Context> {
       erc721s: [erc721.address],
     },
   })
-  const [coordinatorWallet, newCoordinatorWallet, aliceWallet, bobWallet, carlWallet] = wallets
-    // Send Ether to Testing participants Wallet
-    const receivers = [newCoordinatorWallet, aliceWallet, bobWallet, carlWallet].map(wallet => {
-      return wallet.account?.ethAddress
-    })
-    for (const receiver of receivers) {
-      const { ethAccount } = coordinatorWallet.accounts[0]
-      const unSignedTx = {
-        to: receiver,
-        value: parseEther('1000'),
-      }
-      console.log(`rawTx: ${unSignedTx.value}`)
-      const signedTx = await ethAccount.populateTransaction(
-        unSignedTx,
-      )
-      await ethAccount.sendTransaction(signedTx)
+  const [
+    coordinatorWallet,
+    newCoordinatorWallet,
+    aliceWallet,
+    bobWallet,
+    carlWallet,
+  ] = wallets
+  // Send Ether to Testing participants Wallet
+  const receivers = [
+    newCoordinatorWallet,
+    aliceWallet,
+    bobWallet,
+    carlWallet,
+  ].map(wallet => {
+    return wallet.account?.ethAddress
+  })
+  for (const receiver of receivers) {
+    const { ethAccount } = coordinatorWallet.accounts[0]
+    const unSignedTx = {
+      to: receiver,
+      value: parseEther('1000'),
     }
+    const signedTx = await ethAccount.populateTransaction(unSignedTx)
+    await ethAccount.sendTransaction(signedTx)
+  }
   coordinatorWallet.node.start()
   aliceWallet.node.start()
   bobWallet.node.start()
