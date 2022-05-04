@@ -69,7 +69,7 @@ export class AuctionMonitor {
     this.consensusAddress = '0x0000000000000000000000000000000000000000'
     this.account = account
     this.port = config.port
-    this.maxBid = BigNumber.from(config.maxBid)
+    this.maxBid = BigNumber.from(config.maxBid).mul(10 ** 9) // gwei to wei
     this.nodeUrl = config.publicUrls || ''
     this.coordinatorManager = new CoordinatorManager(
       this.node.layer1.address,
@@ -280,7 +280,7 @@ export class AuctionMonitor {
         if (
           highBid.amount.add(highBid.amount.div(10)).lt(this.maxBid) &&
           highBid.owner.toLowerCase() !==
-            (await this.account.getAddress()).toLowerCase()
+          (await this.account.getAddress()).toLowerCase()
         ) {
           roundsToBid.push(x)
         }
@@ -381,7 +381,7 @@ export class AuctionMonitor {
     }
     if (
       bidder.toLowerCase() !==
-        (await this.account.getAddress()).toLowerCase() &&
+      (await this.account.getAddress()).toLowerCase() &&
       !amount.gt(this.maxBid) &&
       currentRound - this.currentRound <= this.roundBidThreshold
     ) {
