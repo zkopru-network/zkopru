@@ -359,7 +359,7 @@ describe('testnet', () => {
       waitCoordinatorToProcessTheNewBlockFor33Deposits(ctx),
     )
   })
-  describe('11: Zk Transactions round 3', () => {
+  describe('10: Zk Transactions round 3', () => {
     let aliceTransfer: ZkTx
     let bobTransfer: ZkTx
     let carlTransfer: ZkTx
@@ -384,11 +384,11 @@ describe('testnet', () => {
       )
     })
   })
-  describe(`12: bidding test by two coordinators`, () => {
+  describe(`11: bidding test by two coordinators`, () => {
     it(`register coordinator by newCoordinator`, registerNewCoordinator(ctx))
     it(`coordinator and newCoordinator bid slots`, bidAuctionEachOther(ctx))
   })
-  describe('13: Migration', () => {
+  describe('12: Migration', () => {
     it.todo('please add test scenarios here')
   })
 })
