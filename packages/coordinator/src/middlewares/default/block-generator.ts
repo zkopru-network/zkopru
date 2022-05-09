@@ -18,7 +18,7 @@ import { GeneratorBase } from '../interfaces/generator-base'
 
 export class BlockGenerator extends GeneratorBase {
   async genBlock(): Promise<Block> {
-    if (!this.context.gasPrice) {
+    if (!this.context.effectiveGasPrice) {
       throw Error('coordinator.js: Gas price is not synced')
     }
 
@@ -34,7 +34,7 @@ export class BlockGenerator extends GeneratorBase {
     // 2. pick transactions
     const pendingTxs = await this.context.txPool.pickTxs(
       this.context.config.maxBytes - consumedBytes,
-      this.context.gasPrice.mul(this.context.config.priceMultiplier),
+      this.context.effectiveGasPrice.mul(this.context.config.priceMultiplier),
     )
     const usedNullifiers = {}
     const validPendingsTxs = (

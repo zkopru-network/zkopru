@@ -484,7 +484,7 @@ export class CoordinatorApi {
   }
 
   private bytePriceHandler: RequestHandler = async (_, res) => {
-    const weiPerByte: string | undefined = this.context.gasPrice
+    const weiPerByte: string | undefined = this.context.effectiveGasPrice
       ?.mul(this.context.config.priceMultiplier)
       .toString()
     res.send({ weiPerByte })
