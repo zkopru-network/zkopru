@@ -10,7 +10,7 @@ export class BlockProposer extends ProposerBase {
   protected async handleProcessedBlock(
     block: Block,
   ): Promise<TransactionReceipt | undefined> {
-    if (!this.context.gasPrice) {
+    if (!this.context.effectiveGasPrice) {
       throw Error('coordinator.js: Gas price is not synced')
     }
     const { layer1, layer2 } = this.context.node
@@ -87,7 +87,7 @@ export class BlockProposer extends ProposerBase {
       }
       return undefined
     }
-    const expectedFee = this.context.gasPrice.mul(expectedGas)
+    const expectedFee = this.context.effectiveGasPrice.mul(expectedGas)
     if (block.header.fee.toBigNumber().lte(expectedFee)) {
       logger.info(
         `core/block-proposer.ts - Aggregated fee: ${block.header.fee} / ${expectedFee}`,
@@ -98,7 +98,7 @@ export class BlockProposer extends ProposerBase {
       ...proposeTx,
       nonce: await this.context.account.getTransactionCount('latest'),
       gasLimit: expectedGas,
-      gasPrice: this.context.gasPrice,
+      gasPrice: this.context.effectiveGasPrice,
     })
     const tx = await layer1.provider.sendTransaction(signedTx)
     const receipt = await tx.wait()

@@ -21,7 +21,7 @@ export interface CoordinatorContext {
 
   account: Signer
 
-  gasPrice?: BigNumber
+  effectiveGasPrice?: BigNumber
 
   txPool: TxPoolInterface
 
