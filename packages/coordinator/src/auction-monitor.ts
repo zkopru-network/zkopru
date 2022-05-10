@@ -331,7 +331,7 @@ export class AuctionMonitor {
       const needWeiCost = weiCost.sub(BigNumber.from(pendingBalance))
 
       try {
-        const tx = await auction.multiBid(
+        const tx = await auction.connect(this.account).multiBid(
           weiCost.div(BigNumber.from(roundsToBid.length)).toString(), // possible not exactly 20 percent higher previous bid amount
           this.maxBid.toString(),
           earliestBidRound,
