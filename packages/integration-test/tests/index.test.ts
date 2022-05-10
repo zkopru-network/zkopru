@@ -389,6 +389,6 @@ describe('testnet', () => {
     it(`coordinator and newCoordinator bid slots`, bidAuctionEachOther(ctx))
   })
   describe('12: Migration', () => {
-    it.todo('please add test scenarios here')
+    it('please add test scenarios here')
   })
 })
