@@ -544,9 +544,7 @@ export class Coordinator extends EventEmitter {
         logger.warn(`coordinator/coordinator.ts - could not receive feeData`)
         this.context.effectiveGasPrice = Fp.from(1)
       }
-      this.layer1().provider.on('block', blockNumber =>
-        this.gasHandler(blockNumber),
-      )
+      this.layer1().provider.on('block', () => this.gasHandler())
     }
   }
 
@@ -554,15 +552,20 @@ export class Coordinator extends EventEmitter {
     this.layer1().provider.off('block', this.gasHandler)
   }
 
-  private gasHandler = async (blockNumber: number) => {
-    const { maxFeePerGas, gasPrice } = await this.layer1().provider.getFeeData()
+  private gasHandler = async () => {
+    const block = await this.layer1().provider.getBlock('latest')
+
+    let maxFeePerGas: BigNumber | undefined
+
+    if (block && block.baseFeePerGas) {
+      const maxPriorityFeePerGas = BigNumber.from(
+        this.context.config.maxPriorityFeePerGas ?? '2500000000',
+      )
+      maxFeePerGas = block.baseFeePerGas.mul(2).add(maxPriorityFeePerGas)
+    }
+
     if (maxFeePerGas) {
       this.context.effectiveGasPrice = Fp.from(maxFeePerGas)
-    } else if (gasPrice) {
-      const block = await this.layer1().provider.getBlock(blockNumber)
-      this.context.effectiveGasPrice = Fp.from(gasPrice).add(
-        block.baseFeePerGas ?? 1,
-      )
     } else {
       logger.warn(
         `coordinator/coordinator.ts - gasHandler could not update effectiveGasPrice`,
