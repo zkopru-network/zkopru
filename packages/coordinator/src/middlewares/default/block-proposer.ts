@@ -94,11 +94,17 @@ export class BlockProposer extends ProposerBase {
       )
       return undefined
     }
+    const [chainId, nonce] = await Promise.all([
+      this.context.account.getChainId(),
+      this.context.account.getTransactionCount('latest'),
+    ])
     const signedTx = await this.context.account.signTransaction({
       ...proposeTx,
-      nonce: await this.context.account.getTransactionCount('latest'),
+      chainId,
+      nonce,
       gasLimit: expectedGas,
-      gasPrice: this.context.effectiveGasPrice,
+      maxFeePerGas: this.context.effectiveGasPrice,
+      type: 2,
     })
     const tx = await layer1.provider.sendTransaction(signedTx)
     const receipt = await tx.wait()
