@@ -9,6 +9,7 @@ export interface CoordinatorConfig {
   port: number
   priceMultiplier: number // gas per byte is 16, our default value is 32
   maxBid: number
+  maxPriorityFeePerGas?: number
   publicUrls?: string
   vhosts: string
   corsdomain?: string

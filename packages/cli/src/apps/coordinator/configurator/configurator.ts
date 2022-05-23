@@ -22,6 +22,7 @@ export interface Config {
   passwordFile?: string
   daemon?: boolean
   maxBid: number
+  maxPriorityFeePerGas?: number
   publicUrls?: string
   vhosts: string
   corsdomain?: string
