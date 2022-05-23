@@ -1,5 +1,5 @@
 import chai from 'chai'
-// import { BigNumber } from 'ethers'
+import { BigNumber } from 'ethers'
 // import { parseEther } from 'ethers/lib/utils'
 // import { ethers } from 'hardhat'
 import { Bytes32 } from 'soltypes'
@@ -67,7 +67,6 @@ import {
   waitCoordinatorToProcessTheNewBlockFor33Deposits,
   waitCoordinatorToProposeANewBlockFor33Deposits,
 } from './cases/9_massive_deposits'
-import { registerNewCoordinator, bidAuctionEachOther } from './cases/11_auction'
 import {
   buildZkTxAliceSendEthToBob as round3Tx1,
   buildZkTxBobSendEthToCarl as round3Tx2,
@@ -75,6 +74,15 @@ import {
   testRound3SendZkTxsToCoordinator,
   testRound3NewBlockProposalAndSlashing,
 } from './cases/10_zk_tx_round_3'
+import {
+  testInvalidBid,
+  stakeForBeingCoordintor,
+  setUrlForActiveCoordinator,
+  initializeAuctionConditions,
+  bidSlotsByCoordinator,
+  bidSlotByNewCoordinator,
+  bidSlotsAgainByCoordinator,
+} from './cases/11_auction'
 
 const { expect } = chai
 
@@ -385,8 +393,41 @@ describe('testnet', () => {
     })
   })
   describe(`11: bidding test by two coordinators`, () => {
-    it(`register coordinator by newCoordinator`, registerNewCoordinator(ctx))
-    it(`coordinator and newCoordinator bid slots`, bidAuctionEachOther(ctx))
+    let bidArguments: {
+      round: BigNumber
+      targetRound: BigNumber
+      minBid: BigNumber
+      minNextBid: BigNumber
+    }
+    const getBidArguments = () => bidArguments
+    describe(`register A new coordinator`, () => {
+      it(`new coordinator trying to bid without staking`, testInvalidBid(ctx)),
+        it(
+          `new coordinator stake Eth can be coordinator`,
+          stakeForBeingCoordintor(ctx),
+        ),
+        it(
+          `new coordinator set url to being active`,
+          setUrlForActiveCoordinator(ctx),
+        )
+    })
+    describe(`coordinator and newCoordinator bid slots`, () => {
+      it(`initialize testing condition and get arguments for testing`, async () => {
+        bidArguments = await initializeAuctionConditions(ctx)
+      })
+      it(
+        `coordinator bid slots to be highest bidder`,
+        bidSlotsByCoordinator(ctx, getBidArguments),
+      )
+      it(
+        `new coordinator bid the slot placed highest bidder as the coordinator`,
+        bidSlotByNewCoordinator(ctx, getBidArguments),
+      )
+      it(
+        `the coordinator take back highest bidder the slot taken by highest bidder`,
+        bidSlotsAgainByCoordinator(ctx, getBidArguments),
+      )
+    })
   })
   describe('12: Migration', () => {
     it('please add test scenarios here')
