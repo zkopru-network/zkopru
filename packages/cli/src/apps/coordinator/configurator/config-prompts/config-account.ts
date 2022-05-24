@@ -25,7 +25,11 @@ export default class ConfigureAccount extends Configurator {
         JSON.stringify(this.base.keystore),
         password,
       )
-      return { context: { ...context, account }, next: Menu.LOAD_DATABASE }
+      const connectedAccount = account.connect(context.provider)
+      return {
+        context: { ...context, account: connectedAccount },
+        next: Menu.LOAD_DATABASE,
+      }
     }
     let choice: number
     if (this.base.daemon) {
@@ -83,17 +87,17 @@ export default class ConfigureAccount extends Configurator {
       const { password } = this.base.password
         ? this.base
         : await this.ask({
-            type: 'password',
-            name: 'password',
-            message: 'password',
-          })
+          type: 'password',
+          name: 'password',
+          message: 'password',
+        })
       const { retyped } = this.base.password
         ? { retyped: this.base.password }
         : await this.ask({
-            type: 'password',
-            name: 'retyped',
-            message: 'confirm password',
-          })
+          type: 'password',
+          name: 'retyped',
+          message: 'confirm password',
+        })
       confirmed = password === retyped
       confirmedPassword = password
     } while (!confirmed)
