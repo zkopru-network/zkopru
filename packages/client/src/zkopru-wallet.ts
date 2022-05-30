@@ -19,6 +19,16 @@ export default class ZkopruWallet {
 
   wallet: ZkWalletAccount
 
+  static async new(
+    node: ZkopruNode,
+    privateKey: Buffer | string,
+  ): Promise<ZkopruWallet> {
+    const wallet = new ZkopruWallet(node, privateKey)
+    // wait until wallet account initialization finished
+    await Promise.all(wallet.wallet.promises)
+    return wallet
+  }
+
   constructor(node: ZkopruNode, privateKey: Buffer | string) {
     this.node = node
     if (!this.node.node) {
