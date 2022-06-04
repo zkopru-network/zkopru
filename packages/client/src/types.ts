@@ -62,6 +62,7 @@ export type NodeConfig = {
   address?: string
   bootstrap?: boolean
   websocket?: string
+  chainId?: number
   rpcUrl?: string
   accounts?: ZkAccount[]
 }
