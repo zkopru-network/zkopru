@@ -40,7 +40,8 @@ export default class ZkopruNode {
 
   private async initDB(...args: any[]) {
     if (!this._db) {
-      this._db = await this.connectorType.create(schema, ...args)
+      const databaseName = `zkopru-${this.config.chainId}-${this.config.address?.slice(2,)}`
+      this._db = await this.connectorType.create(schema, databaseName, ...args)
     }
   }
 
@@ -79,6 +80,8 @@ export default class ZkopruNode {
     provider.connect()
     await waitConnection(provider)
     await new Promise(r => setTimeout(r, 1000))
+    const web3 = new Web3(provider)
+    this.config.chainId = await web3.eth.getChainId()
     this.node = await FullNode.new({
       address: this.config.address as string,
       provider,
