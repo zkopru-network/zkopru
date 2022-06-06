@@ -44,8 +44,8 @@ export class Worker<T> extends EventEmitter {
     this.keepRunning = false
     const currentTask = this.job
     if (currentTask) {
-      await currentTask
       this.job = null
+      await currentTask
     }
   }
 
