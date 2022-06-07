@@ -266,7 +266,7 @@ describe('index', () => {
         encryptTo: accounts.bob.zkAddress,
       })
       expect(calculatedSize).toBe(zkTx.size())
-    })
+    }, 60000)
 
     it('1 input - 1 output - no swap - v2 memo', async () => {
       const tx = txs.tx_5_1
@@ -283,7 +283,7 @@ describe('index', () => {
         from: accounts.alice,
       })
       expect(calculatedSize).toBe(zkTx.size())
-    })
+    }, 60000)
 
     it('1 input - 2 output - no swap - v1 memo', async () => {
       const tx = txs.tx_5_2
@@ -301,7 +301,7 @@ describe('index', () => {
         encryptTo: accounts.bob.zkAddress,
       })
       expect(calculatedSize).toBe(zkTx.size())
-    })
+    }, 60000)
 
     it('1 input - 2 output - no swap - v2 memo', async () => {
       const tx = txs.tx_5_2
@@ -318,7 +318,7 @@ describe('index', () => {
         from: accounts.alice,
       })
       expect(calculatedSize).toBe(zkTx.size())
-    })
+    }, 60000)
 
     it('1 input - 2 output - 1 swap - v1 memo', async () => {
       const tx = txs.tx_5_3
@@ -336,7 +336,7 @@ describe('index', () => {
         encryptTo: accounts.bob.zkAddress,
       })
       expect(calculatedSize).toBe(zkTx.size())
-    })
+    }, 60000)
 
     it('1 input - 2 output - 1 swap - v2 memo', async () => {
       const tx = txs.tx_5_3
@@ -353,6 +353,6 @@ describe('index', () => {
         from: accounts.alice,
       })
       expect(calculatedSize).toBe(zkTx.size())
-    })
+    }, 60000)
   })
 })
