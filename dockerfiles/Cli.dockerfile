@@ -25,7 +25,7 @@ COPY ./packages/zk-wizard/package.json /proj/packages/zk-wizard/package.json
 COPY ./yarn.lock /proj/yarn.lock
 
 # install build tools
-RUN apk add --no-cache --virtual .gyp \
+RUN apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.10/main --virtual .gyp \
     python2 \
     make \
     g++ \
@@ -55,6 +55,7 @@ COPY ./packages/cli/wallet.*.json /proj/packages/cli/
 ENV GOROOT /usr/lib/go
 ENV GOPATH /go
 ENV PATH /go/bin:$PATH
+RUN go env -w GO111MODULE=off
 RUN mkdir -p ${GOPATH}/src ${GOPATH}/bin \
     && go get github.com/sorenisanerd/gotty
 
