@@ -1,4 +1,4 @@
-FROM node:16-alpine
+FROM node:16-alpine3.16
 RUN apk add --no-cache git go sqlite postgresql-client netcat-openbsd tmux musl-dev
 RUN mkdir -p /usr/share/man/man1 \
     && mkdir -p /usr/share/man/man7
