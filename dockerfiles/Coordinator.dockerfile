@@ -1,4 +1,4 @@
-FROM node:16-alpine
+FROM node:16-alpine3.16
 RUN apk add --no-cache git
 WORKDIR /proj
 
@@ -17,7 +17,7 @@ COPY ./packages/tree/package.json /proj/packages/tree/package.json
 COPY ./packages/utils/package.json /proj/packages/utils/package.json
 COPY ./packages/zk-wizard/package.json /proj/packages/zk-wizard/package.json
 
-RUN apk add --no-cache --virtual .gyp \
+RUN apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.10/main --virtual .gyp \
     python2 \
     make \
     g++ \

@@ -1,4 +1,4 @@
-FROM node:16-alpine
+FROM node:16-alpine3.16
 RUN apk add --no-cache git sqlite
 WORKDIR /proj
 
@@ -7,7 +7,7 @@ RUN git clone --depth=1 https://github.com/zkopru-network/zkopru
 WORKDIR /proj/zkopru
 
 # install build tools temporarily
-RUN apk add --no-cache --virtual .gyp \
+RUN apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.10/main --virtual .gyp \
         python3 \
         python2 \
         make \
