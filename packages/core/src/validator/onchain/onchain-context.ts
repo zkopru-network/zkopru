@@ -11,18 +11,18 @@ export class OnchainValidatorContext {
     this.layer1 = layer1
   }
 
-  async isSlashable(tx: TransactionRequest): Promise<Validation> {
+  async isSlashable(tx: TransactionRequest, methodName?: string): Promise<Validation> {
     let slashable = false
     try {
       await this.layer1.provider.call(tx)
       slashable = true
       const estimatedGas = await this.layer1.provider.estimateGas(tx)
       logger.warn(
-        `core/onchain-context.ts - slashable ${tx['_method']?.name}: ${estimatedGas}`,
+        `core/onchain-context.ts - slashable ${methodName ?? 'unknown'}: ${estimatedGas}`,
       )
     } catch (err) {
       logger.trace(
-        `core/onchain-context.ts - onchain validation: ${tx['_method']?.name}(valid)`,
+        `core/onchain-context.ts - onchain validation:  ${methodName ?? 'unknown'}(valid)`,
       )
       slashable = false
     }

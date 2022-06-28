@@ -13,7 +13,7 @@ export class OnchainDepositValidator extends OnchainValidatorContext
       blockDataToHexString(block),
       index.toBigNumber(),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'MassDeposit')
     return result
   }
 }

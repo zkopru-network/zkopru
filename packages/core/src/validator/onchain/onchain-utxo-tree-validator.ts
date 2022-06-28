@@ -15,7 +15,7 @@ export class OnchainUtxoTreeValidator extends OnchainValidatorContext
       headerDataToHexString(parentHeader),
       deposits.map(d => d.toBigNumber()),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'UTXOIndex')
     return result
   }
 
@@ -31,7 +31,7 @@ export class OnchainUtxoTreeValidator extends OnchainValidatorContext
       deposits.map(d => d.toBigNumber()),
       subtreeSiblings.map(d => d.toBigNumber()),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'UTXORoot')
     return result
   }
 }
