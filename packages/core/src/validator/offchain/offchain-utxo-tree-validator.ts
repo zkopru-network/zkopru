@@ -50,7 +50,9 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
         merged = Bytes32.from(
           soliditySha3Raw(
             merged.toString(),
-            deposits[depositIndex].toBytes().toString(),
+            deposits[depositIndex]
+              ? deposits[depositIndex].toBytes().toString()
+              : '',
           ),
         )
         depositIndex += 1
