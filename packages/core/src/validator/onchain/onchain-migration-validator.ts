@@ -15,7 +15,7 @@ export class OnchainMigrationValidator extends OnchainValidatorContext
       migrationIndex1.toBigNumber(),
       migrationIndex2.toBigNumber(),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'DuplicatedMigrations')
     return result
   }
 
@@ -27,7 +27,7 @@ export class OnchainMigrationValidator extends OnchainValidatorContext
       blockDataToHexString(block),
       migrationIndex.toBigNumber(),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'EthMigration')
     return result
   }
 
@@ -39,7 +39,7 @@ export class OnchainMigrationValidator extends OnchainValidatorContext
       blockDataToHexString(block),
       migrationIndex.toBigNumber(),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'ERC20Migration')
     return result
   }
 
@@ -51,7 +51,7 @@ export class OnchainMigrationValidator extends OnchainValidatorContext
       blockDataToHexString(block),
       migrationIndex.toBigNumber(),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'MergedLeaves')
     return result
   }
 
@@ -63,7 +63,7 @@ export class OnchainMigrationValidator extends OnchainValidatorContext
       blockDataToHexString(block),
       migrationIndex.toBigNumber(),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'MigrationFee')
     return result
   }
 
@@ -75,7 +75,7 @@ export class OnchainMigrationValidator extends OnchainValidatorContext
       blockDataToHexString(block),
       migrationIndex.toBigNumber(),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'TokenRegistration')
     return result
   }
 
@@ -89,7 +89,7 @@ export class OnchainMigrationValidator extends OnchainValidatorContext
       txIndex.toBigNumber(),
       outflowIndex.toBigNumber(),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'MissedMassMigration')
     return result
   }
 }

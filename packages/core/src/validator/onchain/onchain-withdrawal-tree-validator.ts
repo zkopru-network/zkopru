@@ -18,7 +18,7 @@ export class OnchainWithdrawalTreeValidator extends OnchainValidatorContext
       blockDataToHexString(block),
       headerDataToHexString(parentHeader),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'WithdrawalIndex')
     return result
   }
 
@@ -32,7 +32,7 @@ export class OnchainWithdrawalTreeValidator extends OnchainValidatorContext
       headerDataToHexString(parentHeader),
       subtreeSiblings.map(d => d.toString()),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'WithdrawalRoot')
     return result
   }
 
@@ -48,7 +48,7 @@ export class OnchainWithdrawalTreeValidator extends OnchainValidatorContext
       numOfNullifiers.toString(),
       siblings.map(sibs => sibs.map(s => s.toString())) as any,
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'NullifierRollUp')
     return result
   }
 }

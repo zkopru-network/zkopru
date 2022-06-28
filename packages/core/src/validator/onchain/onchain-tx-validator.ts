@@ -15,7 +15,7 @@ export class OnchainTxValidator extends OnchainValidatorContext
       txIndex.toBigNumber(),
       inflowIndex.toBigNumber(),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'Inclusion')
     return result
   }
 
@@ -27,7 +27,7 @@ export class OnchainTxValidator extends OnchainValidatorContext
       blockDataToHexString(block),
       txIndex.toBigNumber(),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'Outflow')
     return result
   }
 
@@ -39,7 +39,7 @@ export class OnchainTxValidator extends OnchainValidatorContext
       blockDataToHexString(block),
       txIndex.toBigNumber(),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'AtomicSwap')
     return result
   }
 
@@ -57,7 +57,7 @@ export class OnchainTxValidator extends OnchainValidatorContext
       inflowIndex.toBigNumber(),
       siblings.map(s => s.toBigNumber()) as any,
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'UsedNullifier')
     return result
   }
 
@@ -69,7 +69,7 @@ export class OnchainTxValidator extends OnchainValidatorContext
       blockDataToHexString(block),
       nullifier.toString(),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'DuplicatedNullifier')
     return result
   }
 
@@ -78,7 +78,7 @@ export class OnchainTxValidator extends OnchainValidatorContext
       blockDataToHexString(block),
       txIndex.toBigNumber(),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'SNARK')
     return result
   }
 }
