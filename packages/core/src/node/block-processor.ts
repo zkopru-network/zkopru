@@ -199,6 +199,32 @@ export class BlockProcessor extends EventEmitter {
       return proposal.proposalNum
     }
 
+    // Check parent block is Uncle
+    if (proposal.proposalNum > 1) {
+      // start to check first proposal
+      const parentBlock = await this.db.findOne('Proposal', {
+        where: {
+          hash: block.header.parentBlock.toString(),
+        },
+      })
+
+      logger.trace(
+        `core/block-processor - Checking ParentBlock is Uncle: ${block.header.parentBlock.toString()}`,
+      )
+      if (parentBlock.isUncle) {
+        logger.trace(
+          `core/block-processor - the ParentBlock is Uncle, mark invalid block`,
+        )
+        await this.db.transaction(db => {
+          db.update('Proposal', {
+            where: { hash: block.hash.toString() },
+            update: { isUncle: true, verified: false },
+          })
+        })
+        return proposal.proposalNum
+      }
+    }
+
     logger.info(
       `core/block-processor - Processing proposal #${proposal.proposalNum}()`,
     )
