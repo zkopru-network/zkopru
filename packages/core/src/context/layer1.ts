@@ -125,11 +125,13 @@ export class L1Contract extends ZkopruContract {
       ],
     ])
 
-    const networkId = network.chainId // TODO add a amethod to specify network id
+    const networkId = network.chainId // TODO add a method to specify network id
     const { chainId } = network
-    const zkopruId = ethers.utils.keccak256(
-      hexify(networkId, 32) + hexify(chainId, 32) + hexify(this.address, 20),
-    )
+    const concatenated = 
+      hexify(networkId, 32) + 
+      hexify(chainId, 32) + 
+      hexify(this.address, 20)
+    const zkopruId = ethers.utils.keccak256(Buffer.from(concatenated))
     if (!zkopruId) throw Error('hash error to get zkopru id')
     this.config = {
       id: zkopruId,
