@@ -6,11 +6,11 @@ import {
 } from '@zkopru/database'
 import * as Utils from '@zkopru/utils'
 import { logger } from '@zkopru/utils'
-import { soliditySha3Raw } from 'web3-utils'
-import AbiCoder from 'web3-eth-abi'
 import { Bytes32, Uint256 } from 'soltypes'
 // import assert from 'assert'
 import { Transaction } from 'ethers'
+import { ethers } from 'ethers'
+import { Interface } from 'ethers/lib/utils'
 import { Finalization, Header, Body } from './types'
 import {
   deserializeHeaderFrom,
@@ -172,31 +172,29 @@ export class Block {
         .toString()
         .slice(0, 6)}...)::checksum()`,
     )
-    const data = `0x${this.serializeBlock().toString('hex')}`
-    return soliditySha3Raw(data)
+    return ethers.utils.keccak256(this.serializeBlock())
   }
 
   static fromTx(tx: Transaction, verified?: boolean): Block {
     logger.trace(`core/block.ts - Block::fromTx(${tx.hash?.slice(0, 6)}...)`)
+    const abi = [
+      'function propose(bytes)',
+      'function safePropose(bytes,bytes32,bytes32[])',
+    ]
     const queue = new Utils.StringifiedHexQueue(tx.data)
     // remove function selector
-    const selector = queue.dequeue(4).toString()
+    const selector = queue.dequeue(4).toLowerCase()
     const data = queue.dequeueAll()
-    // Type issues come from the web3 typings
-    // https://github.com/ChainSafe/web3.js/pull/4100
-    const encodeFunctionSignature = (AbiCoder as any).encodeFunctionSignature.bind(
-      AbiCoder,
-    )
-    const decodeParameters = (AbiCoder as any).decodeParameters.bind(AbiCoder)
-    if (selector === encodeFunctionSignature('propose(bytes)')) {
-      return Block.from(decodeParameters(['bytes'], data)['0'], verified)
-    }
-    if (
-      selector ===
-      encodeFunctionSignature('safePropose(bytes,bytes32,bytes32[])')
-    ) {
+    const iface = new Interface(abi)
+    if (selector === iface.getSighash('propose').toLowerCase()) {
       return Block.from(
-        decodeParameters(['bytes', 'bytes32', 'bytes32[]'], data)['0'],
+        iface.decodeFunctionData('propose', data)['0'],
+        verified,
+      )
+    }
+    if (selector === iface.getSighash('safePropose').toLowerCase()) {
+      return Block.from(
+        iface.decodeFunctionData('safePropose', data)['0'],
         verified,
       )
     }

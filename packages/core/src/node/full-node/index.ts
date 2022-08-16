@@ -58,7 +58,6 @@ export class FullNode extends ZkopruNode {
     accounts?: ZkAccount[]
   }): Promise<FullNode> {
     const tracker = new Tracker(db)
-    // Add zk account to the web3 object if it exists
     if (accounts) {
       await tracker.addAccounts(...accounts)
     }

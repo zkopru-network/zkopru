@@ -10,7 +10,7 @@ export default class ConfigureAccount extends Configurator {
   async run(context: Context): Promise<{ context: Context; next: number }> {
     console.log(chalk.blue('Setting up the coordinator account'))
     if (!context.provider) throw Error('Web3 is not loaded')
-    if (this.base.keystore) {
+    if (this.base.encryptedKeystore) {
       let password: string
       if (this.base.password) {
         password = this.base.password
@@ -22,7 +22,7 @@ export default class ConfigureAccount extends Configurator {
         throw Error('Password is not configured')
       }
       const account = await Wallet.fromEncryptedJson(
-        JSON.stringify(this.base.keystore),
+        JSON.stringify(this.base.encryptedKeystore),
         password,
       )
       const connectedAccount = account.connect(context.provider)
@@ -87,24 +87,24 @@ export default class ConfigureAccount extends Configurator {
       const { password } = this.base.password
         ? this.base
         : await this.ask({
-          type: 'password',
-          name: 'password',
-          message: 'password',
-        })
+            type: 'password',
+            name: 'password',
+            message: 'password',
+          })
       const { retyped } = this.base.password
         ? { retyped: this.base.password }
         : await this.ask({
-          type: 'password',
-          name: 'retyped',
-          message: 'confirm password',
-        })
+            type: 'password',
+            name: 'retyped',
+            message: 'confirm password',
+          })
       confirmed = password === retyped
       confirmedPassword = password
     } while (!confirmed)
 
     const keystore = await account.encrypt(confirmedPassword)
     return {
-      context: { ...context, keystore: JSON.parse(keystore), account },
+      context: { ...context, encryptedKeystore: JSON.parse(keystore), account },
       next: Menu.SAVE_CONFIG,
     }
   }
