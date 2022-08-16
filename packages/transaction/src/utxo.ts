@@ -1,8 +1,8 @@
-import { randomHex } from 'web3-utils'
 import { poseidon } from 'circomlib'
 import * as chacha20 from 'chacha20'
 import { BigNumberish } from 'ethers'
 import { Fp, Fr, Point } from '@zkopru/babyjubjub'
+import crypto from 'crypto'
 import { ZkAddress } from './zk-address'
 import { Note, OutflowType, NoteStatus, Asset } from './note'
 import { Withdrawal } from './withdrawal'
@@ -51,7 +51,9 @@ export class Utxo extends Note {
   }
 
   encrypt(): Buffer {
-    const ephemeralSecretKey: Fr = Fr.from(randomHex(16))
+    const ephemeralSecretKey: Fr = Fr.from(
+      crypto.randomBytes(16).toString('hex'),
+    )
     const sharedKey: Buffer = this.owner
       .viewingPubKey()
       .mul(ephemeralSecretKey)
@@ -181,7 +183,7 @@ export class Utxo extends Note {
   }): Utxo {
     const note = new Note(
       owner,
-      salt ? Fp.from(salt) : Fp.from(randomHex(16)),
+      salt ? Fp.from(salt) : Fp.from(crypto.randomBytes(16).toString('hex')),
       {
         eth: Fp.from(eth),
         tokenAddr: Fp.from(0),
@@ -207,7 +209,7 @@ export class Utxo extends Note {
   }): Utxo {
     const note = new Note(
       owner,
-      salt ? Fp.from(salt) : Fp.from(randomHex(16)),
+      salt ? Fp.from(salt) : Fp.from(crypto.randomBytes(16).toString('hex')),
       {
         eth: Fp.from(eth),
         tokenAddr: Fp.from(tokenAddr),
@@ -233,7 +235,7 @@ export class Utxo extends Note {
   }): Utxo {
     const note = new Note(
       owner,
-      salt ? Fp.from(salt) : Fp.from(randomHex(16)),
+      salt ? Fp.from(salt) : Fp.from(crypto.randomBytes(16).toString('hex')),
       {
         eth: Fp.from(eth),
         tokenAddr: Fp.from(tokenAddr),

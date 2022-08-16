@@ -44,7 +44,7 @@ const main = async () => {
   Object.assign(config, argv)
   // Load keystore if needed
   if (config.keystoreFile) {
-    if (config.keystore) {
+    if (config.encryptedKeystore) {
       logger.info(
         `Overriding provided keystore with keystore at ${config.keystoreFile}`,
       )
@@ -54,7 +54,7 @@ const main = async () => {
     )
     Object.assign(config, { keystore })
   }
-  if (!config.keystore) {
+  if (!config.encryptedKeystore) {
     throw Error('You must provide either a keystore or keystore file')
   }
   const coordinator = await getCoordinator(config)

@@ -1,5 +1,3 @@
-import Web3 from 'web3'
-import { EncryptedKeystoreV3Json } from 'web3-core'
 import {
   Fr,
   Fp,
@@ -67,12 +65,14 @@ export class ZkAccount extends ZkViewer {
   }
 
   static fromEncryptedKeystoreV3Json(
-    obj: EncryptedKeystoreV3Json,
+    encryptedKeystoreV3Json: string,
     password: string,
     provider?: Provider,
   ): ZkAccount {
-    const web3 = new Web3()
-    const account = web3.eth.accounts.decrypt(obj, password)
+    const account = Wallet.fromEncryptedJsonSync(
+      encryptedKeystoreV3Json,
+      password,
+    )
     return new ZkAccount(account.privateKey, provider)
   }
 }

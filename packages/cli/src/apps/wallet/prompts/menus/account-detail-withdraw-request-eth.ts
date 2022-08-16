@@ -1,6 +1,6 @@
 import { Fp } from '@zkopru/babyjubjub'
 import { Sum, TxBuilder, RawTx, Utxo, ZkAddress } from '@zkopru/transaction'
-import { parseStringToUnit, logger } from '@zkopru/utils'
+import { logger } from '@zkopru/utils'
 import { Address } from 'soltypes'
 import { formatUnits, isAddress, parseUnits } from 'ethers/lib/utils'
 import { BigNumber } from 'ethers'
@@ -73,8 +73,7 @@ export default class WithdrawRequestEth extends App {
         initial: 0,
         message: 'How much ETH do you want to transfer(ex: 0.3 ETH)?',
       })
-      const eth = parseStringToUnit(amount, 'ether')
-      amountWei = parseUnits(eth.val, eth.unit).toString()
+      amountWei = parseUnits(amount, 'ether').toString()
       msgs.push(`Sending amount: ${formatUnits(amountWei, 'ether')} ETH`)
       msgs.push(`    = ${amountWei} wei`)
       this.print([...messages, ...msgs].join('\n'))
@@ -85,8 +84,7 @@ export default class WithdrawRequestEth extends App {
         initial: `${gweiPerByte} gwei`,
         message: `Fee per byte. ex) ${gweiPerByte} gwei`,
       })
-      const confirmedWei = parseStringToUnit(fee, 'gwei')
-      confirmedWeiPerByte = parseUnits(confirmedWei.val, confirmedWei.unit)
+      confirmedWeiPerByte = parseUnits(fee, 'gwei')
       msgs.push(
         `Wei per byte: ${formatUnits(confirmedWeiPerByte, 'ether')} ETH`,
       )
@@ -98,11 +96,7 @@ export default class WithdrawRequestEth extends App {
         initial: `0 gwei`,
         message: `Additional fee for instant withdrawal.`,
       })
-      const confirmedPrePayFee = parseStringToUnit(prePayFee, 'gwei')
-      const confirmedPrePayFeeToWei = parseUnits(
-        confirmedPrePayFee.val,
-        confirmedPrePayFee.unit,
-      )
+      const confirmedPrePayFeeToWei = parseUnits(prePayFee, 'gwei')
       msgs.push(
         `Instant withdrawal fee: ${formatUnits(
           confirmedPrePayFeeToWei,

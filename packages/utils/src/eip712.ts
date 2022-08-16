@@ -1,13 +1,16 @@
-import { soliditySha3Raw } from 'web3-utils'
-import AbiCoder from 'web3-eth-abi'
 import { Bytes32 } from 'soltypes'
 import BN from 'bn.js'
+import { utils } from 'ethers'
 
-export const PREPAY_DOMAIN_TYPEHASH = soliditySha3Raw(
-  'PrepayRequest(address prepayer,bytes32 withdrawalHash,uint256 prepayFeeInEth,uint256 prepayFeeInToken,uint256 expiration)',
+export const PREPAY_DOMAIN_TYPEHASH = utils.keccak256(
+  utils.toUtf8Bytes(
+    'PrepayRequest(address prepayer,bytes32 withdrawalHash,uint256 prepayFeeInEth,uint256 prepayFeeInToken,uint256 expiration)',
+  ),
 )
-export const EIP712_DOMAIN_TYPEHASH = soliditySha3Raw(
-  'EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)',
+export const EIP712_DOMAIN_TYPEHASH = utils.keccak256(
+  utils.toUtf8Bytes(
+    'EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)',
+  ),
 )
 
 export function prepayHash({
@@ -27,8 +30,8 @@ export function prepayHash({
   chainId: number | string
   verifyingContract: string
 }) {
-  const encodeParameters = (AbiCoder as any).encodeParameters.bind(AbiCoder)
-  const structParams = encodeParameters(
+  const abiCoder = utils.defaultAbiCoder
+  const structParams = abiCoder.encode(
     ['bytes32', 'address', 'bytes32', 'uint256', 'uint256', 'uint256'],
     [
       PREPAY_DOMAIN_TYPEHASH,
@@ -41,16 +44,10 @@ export function prepayHash({
       expiration,
     ],
   )
-  const structHash = soliditySha3Raw(structParams)
-  const domainName = soliditySha3Raw({
-    t: 'bytes',
-    v: `0x${Buffer.from('Zkopru', 'utf8').toString('hex')}`,
-  })
-  const domainVersion = soliditySha3Raw({
-    t: 'bytes',
-    v: `0x${Buffer.from('1', 'utf8').toString('hex')}`,
-  })
-  const separatorParams = encodeParameters(
+  const structHash = utils.keccak256(structParams)
+  const domainName = utils.keccak256(Buffer.from('Zkopru', 'utf8'))
+  const domainVersion = utils.keccak256(Buffer.from('1', 'utf8'))
+  const separatorParams = abiCoder.encode(
     ['bytes32', 'bytes32', 'bytes32', 'uint256', 'address'],
     [
       EIP712_DOMAIN_TYPEHASH,
@@ -60,11 +57,6 @@ export function prepayHash({
       verifyingContract,
     ],
   )
-  const seperator = soliditySha3Raw(separatorParams)
-  // we can use the soliditySha3 directly because params are tightly packed
-  return soliditySha3Raw(
-    '\x19\x01',
-    { t: 'bytes32', v: seperator },
-    { t: 'bytes32', v: structHash },
-  )
+  const separator = utils.keccak256(separatorParams)
+  return utils.keccak256('\x19\x01'.concat(separator).concat(structHash))
 }

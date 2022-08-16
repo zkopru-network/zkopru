@@ -4,7 +4,7 @@
 /* eslint-disable jest/require-top-level-describe */
 /* eslint-disable jest/consistent-test-it */
 
-import { randomHex } from "web3-utils";
+import crypto from "crypto";
 import { Fp } from "~babyjubjub/fp";
 import { Block } from "~core/block";
 import { UtxoTree } from "~tree";
@@ -91,7 +91,7 @@ describe("utxoTreeValidator test", () => {
     describe("prepare a proof", () => {
       let proofId: string;
       before(() => {
-        proofId = randomHex(32);
+        proofId = crypto.randomBytes(32).toString("hex");
       });
       it("should create a proof", async () => {
         await utxoTreeValidatorTester.newProof(
