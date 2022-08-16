@@ -51,9 +51,7 @@ export class Utxo extends Note {
   }
 
   encrypt(): Buffer {
-    const ephemeralSecretKey: Fr = Fr.from(
-      crypto.randomBytes(16).toString('hex'),
-    )
+    const ephemeralSecretKey: Fr = Fr.from(crypto.randomBytes(16))
     const sharedKey: Buffer = this.owner
       .viewingPubKey()
       .mul(ephemeralSecretKey)
@@ -183,7 +181,7 @@ export class Utxo extends Note {
   }): Utxo {
     const note = new Note(
       owner,
-      salt ? Fp.from(salt) : Fp.from(crypto.randomBytes(16).toString('hex')),
+      salt ? Fp.from(salt) : Fp.from(crypto.randomBytes(16)),
       {
         eth: Fp.from(eth),
         tokenAddr: Fp.from(0),
@@ -209,7 +207,7 @@ export class Utxo extends Note {
   }): Utxo {
     const note = new Note(
       owner,
-      salt ? Fp.from(salt) : Fp.from(crypto.randomBytes(16).toString('hex')),
+      salt ? Fp.from(salt) : Fp.from(crypto.randomBytes(16)),
       {
         eth: Fp.from(eth),
         tokenAddr: Fp.from(tokenAddr),
@@ -235,7 +233,7 @@ export class Utxo extends Note {
   }): Utxo {
     const note = new Note(
       owner,
-      salt ? Fp.from(salt) : Fp.from(crypto.randomBytes(16).toString('hex')),
+      salt ? Fp.from(salt) : Fp.from(crypto.randomBytes(16)),
       {
         eth: Fp.from(eth),
         tokenAddr: Fp.from(tokenAddr),

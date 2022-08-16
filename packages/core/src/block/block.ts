@@ -184,17 +184,16 @@ export class Block {
     const queue = new Utils.StringifiedHexQueue(tx.data)
     // remove function selector
     const selector = queue.dequeue(4).toLowerCase()
-    const data = queue.dequeueAll()
     const iface = new Interface(abi)
     if (selector === iface.getSighash('propose').toLowerCase()) {
       return Block.from(
-        iface.decodeFunctionData('propose', data)['0'],
+        iface.decodeFunctionData('propose', tx.data)['0'],
         verified,
       )
     }
     if (selector === iface.getSighash('safePropose').toLowerCase()) {
       return Block.from(
-        iface.decodeFunctionData('safePropose', data)['0'],
+        iface.decodeFunctionData('safePropose', tx.data)['0'],
         verified,
       )
     }

@@ -5,6 +5,7 @@
 /* eslint-disable jest/consistent-test-it */
 
 import crypto from "crypto";
+import { BigNumberish } from "ethers";
 import { Fp } from "~babyjubjub/fp";
 import { Block } from "~core/block";
 import { UtxoTree } from "~tree";
@@ -89,9 +90,9 @@ describe("utxoTreeValidator test", () => {
       resultSnapshot = await tsTree.dryAppend(utxos.map(toLeaf));
     });
     describe("prepare a proof", () => {
-      let proofId: string;
+      let proofId: BigNumberish;
       before(() => {
-        proofId = crypto.randomBytes(32).toString("hex");
+        proofId = crypto.randomBytes(32);
       });
       it("should create a proof", async () => {
         await utxoTreeValidatorTester.newProof(
