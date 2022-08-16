@@ -1,16 +1,15 @@
 import assert from 'assert'
-import { BigNumber } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 import { Bytes32 } from 'soltypes'
-import { soliditySha3Raw } from 'web3-utils'
 import { Hasher } from '../hasher'
 
 // This TS code corresponds to the SMT.sol code file
 
 export const EXIST: BigNumber = Bytes32.from(
-  soliditySha3Raw('exist'),
+  ethers.utils.keccak256(ethers.utils.toUtf8Bytes('exist')),
 ).toBigNumber()
 export const NON_EXIST: BigNumber = Bytes32.from(
-  soliditySha3Raw(0),
+  ethers.utils.keccak256('0x'),
 ).toBigNumber()
 assert(
   Bytes32.from(

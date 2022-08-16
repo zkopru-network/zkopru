@@ -8,8 +8,7 @@ import {
   TokenRegistry,
 } from '@zkopru/transaction'
 import { Fp } from '@zkopru/babyjubjub'
-import { BigNumberish } from 'ethers'
-import { toChecksumAddress } from 'web3-utils'
+import { ethers, BigNumberish } from 'ethers'
 import ZkopruNode from './zkopru-node'
 import fetch from './fetch'
 
@@ -327,7 +326,9 @@ export default class ZkopruWallet {
     })
     const allWithdrawals = await this.wallet.db.findMany('Withdrawal', {
       where: {
-        to: toChecksumAddress(ethAddress),
+        // an incorrect checksum address will throw an error.
+        // to avoid this, convert to lowercase first
+        to: ethers.utils.getAddress(ethAddress.toLocaleLowerCase()),
       },
       include: {
         proposal: { header: true },

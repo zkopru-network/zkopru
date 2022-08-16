@@ -7,7 +7,7 @@ import {
   TokenRegistry,
   ZkOutflow,
 } from '@zkopru/transaction'
-import { soliditySha3Raw } from 'web3-utils'
+import { utils } from 'ethers'
 
 export class ZkViewer {
   private A: Point // EdDSA Public Key
@@ -77,7 +77,10 @@ export class ZkViewer {
       this.A.x.toBytes32().toBuffer(),
       this.A.y.toBytes32().toBuffer(),
       this.v.toBytes32().toBuffer(),
-      Buffer.from(soliditySha3Raw(this.zkAddress.toString()).slice(-8), 'hex'),
+      Buffer.from(
+        utils.keccak256(utils.toUtf8Bytes(this.zkAddress.toString())).slice(-8),
+        'hex',
+      ),
     ])
     return concatenated.toString('hex')
   }
@@ -92,7 +95,9 @@ export class ZkViewer {
     const viewer = new ZkViewer(A, v)
     const success = addressHash.equals(
       Buffer.from(
-        soliditySha3Raw(viewer.zkAddress.toString()).slice(-8),
+        utils
+          .keccak256(utils.toUtf8Bytes(viewer.zkAddress.toString()))
+          .slice(-8),
         'hex',
       ),
     )
