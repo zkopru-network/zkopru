@@ -5,12 +5,12 @@ import { Hasher } from '../hasher'
 
 // This TS code corresponds to the SMT.sol code file
 
-export const EXIST: BigNumber = Bytes32.from(
+export const EXIST: BigNumber = BigNumber.from(
   ethers.utils.keccak256(ethers.utils.toUtf8Bytes('exist')),
-).toBigNumber()
-export const NON_EXIST: BigNumber = Bytes32.from(
-  ethers.utils.keccak256('0x'),
-).toBigNumber()
+)
+export const NON_EXIST: BigNumber = BigNumber.from(
+  ethers.utils.keccak256('0x0000000000000000000000000000000000000000000000000000000000000000'),
+)
 assert(
   Bytes32.from(
     '0xb0b4e07bb5592f3d3821b2c1331b436763d7be555cf452d6c6836f74d5201e85',
