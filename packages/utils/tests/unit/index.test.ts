@@ -1,6 +1,5 @@
 import assert from 'assert'
-import { soliditySha3Raw } from 'web3-utils'
-import BN from 'bn.js'
+import { BigNumber, utils } from 'ethers'
 import {
   PREPAY_DOMAIN_TYPEHASH,
   EIP712_DOMAIN_TYPEHASH,
@@ -24,12 +23,12 @@ describe('eip712', () => {
     // Hard coded values calculated using remix IDE
     const expectedHash =
       '0x1496f59662b7ce256334938c1c9959547c1fd7163ecbfb0bf5d3196c64a968df'
-    const withdrawalHash = soliditySha3Raw('test hash')
+    const withdrawalHash = utils.keccak256(utils.toUtf8Bytes('test hash'))
     const hash = prepayHash({
       prepayer: '0x0000000000000000000000000000000000000000',
       withdrawalHash,
-      prepayFeeInEth: new BN('100'),
-      prepayFeeInToken: new BN('200'),
+      prepayFeeInEth: BigNumber.from('100'),
+      prepayFeeInToken: BigNumber.from('200'),
       expiration: 500,
       chainId: '100',
       verifyingContract: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',

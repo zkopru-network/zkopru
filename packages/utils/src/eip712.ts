@@ -1,6 +1,5 @@
 import { Bytes32 } from 'soltypes'
-import BN from 'bn.js'
-import { utils } from 'ethers'
+import { BigNumber, utils } from 'ethers'
 
 export const PREPAY_DOMAIN_TYPEHASH = utils.keccak256(
   utils.toUtf8Bytes(
@@ -24,8 +23,8 @@ export function prepayHash({
 }: {
   prepayer: string
   withdrawalHash: string | Bytes32
-  prepayFeeInEth: BN
-  prepayFeeInToken: BN
+  prepayFeeInEth: BigNumber
+  prepayFeeInToken: BigNumber
   expiration: number
   chainId: number | string
   verifyingContract: string
@@ -53,10 +52,11 @@ export function prepayHash({
       EIP712_DOMAIN_TYPEHASH,
       domainName,
       domainVersion,
-      +chainId,
+      BigNumber.from(chainId),
       verifyingContract,
     ],
   )
   const separator = utils.keccak256(separatorParams)
-  return utils.keccak256('\x19\x01'.concat(separator).concat(structHash))
+  const concatenated = '0x1901'.concat(separator.slice(2)).concat(structHash.slice(2))
+  return utils.keccak256(concatenated)
 }
