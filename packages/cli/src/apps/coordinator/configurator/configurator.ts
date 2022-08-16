@@ -3,7 +3,6 @@ import { NetworkStatus } from '@zkopru/core'
 import { DB } from '@zkopru/database'
 import { PromptApp } from '@zkopru/utils'
 import { BaseProvider } from '@ethersproject/providers'
-import { EncryptedKeystoreV3Json } from 'web3-core'
 import { Signer } from 'ethers'
 
 export interface Config {
@@ -16,7 +15,7 @@ export interface Config {
   priceMultiplier: number
   port: number
   config?: string
-  keystore?: EncryptedKeystoreV3Json
+  encryptedKeystore?: string
   keystoreFile?: string
   password?: string
   passwordFile?: string
@@ -43,7 +42,7 @@ export interface Context {
   provider?: BaseProvider
   db?: DB
   coordinator?: Coordinator
-  keystore?: EncryptedKeystoreV3Json
+  encryptedKeystore?: string
   account?: Signer
 }
 

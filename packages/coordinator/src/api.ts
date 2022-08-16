@@ -2,14 +2,13 @@ import express, { RequestHandler } from 'express'
 import { WithdrawalStatus, ZkTx } from '@zkopru/transaction'
 import { logger } from '@zkopru/utils'
 import { Server } from 'http'
-import { toChecksumAddress } from 'web3-utils'
 import { Address, Bytes32, Uint256 } from 'soltypes'
 import { Fp } from '@zkopru/babyjubjub'
 import { BootstrapData } from '@zkopru/core'
 import fetch from 'node-fetch'
 import { verifyProof } from '@zkopru/tree'
 import { solidityKeccak256 } from 'ethers/lib/utils'
-import { BigNumber } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 import { CoordinatorContext } from './context'
 import { ClientApi } from './client-api'
 
@@ -322,8 +321,8 @@ export class CoordinatorApi {
       signature: withdrawal.signature as string,
     }
     if (
-      toChecksumAddress(prepayer.toString()) !==
-      toChecksumAddress(await this.context.account.getAddress())
+      ethers.utils.getAddress(prepayer.toLowerCase()) !==
+      ethers.utils.getAddress(await this.context.account.getAddress())
     ) {
       res.status(400).send('This server does not have that prepayer account.')
       return

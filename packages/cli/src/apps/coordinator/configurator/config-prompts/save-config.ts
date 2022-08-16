@@ -35,10 +35,10 @@ export default class SaveConfig extends Configurator {
         })
         password = retyped
         try {
-          if (!context.provider || !context.keystore)
-            throw Error('web3 or keystore is not configured')
+          if (!context.provider || !context.encryptedKeystore)
+            throw Error('provider or keystore is not configured')
           const wallet = Wallet.fromEncryptedJsonSync(
-            JSON.stringify(context.keystore),
+            context.encryptedKeystore,
             password,
           )
           if (wallet.address != (await context.account?.getAddress()))
@@ -73,7 +73,7 @@ export default class SaveConfig extends Configurator {
     } while (!pathConfirmed)
     const newConfig = {
       ...this.base,
-      keystore: context.keystore,
+      keystore: context.encryptedKeystore,
       password: savePassword ? password : undefined,
     }
     fs.writeFileSync(configPath, JSON.stringify(newConfig))

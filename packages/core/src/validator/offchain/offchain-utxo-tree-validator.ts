@@ -2,9 +2,9 @@ import { Fp } from '@zkopru/babyjubjub'
 import { Hasher, poseidonHasher, SubTreeLib } from '@zkopru/tree'
 import assert from 'assert'
 import { Bytes32, Uint256 } from 'soltypes'
-import { randomHex, soliditySha3Raw } from 'web3-utils'
 import { OutflowType, ZkOutflow } from '@zkopru/transaction'
-import { BigNumber } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
+import crypto from 'crypto'
 import { L1Contract } from '../../context/layer1'
 import { L2Chain } from '../../context/layer2'
 import { Block, headerHash } from '../../block'
@@ -48,9 +48,11 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
       let merged = Uint256.from('0').toBytes()
       while (!block.body.massDeposits[i].merged.eq(merged)) {
         merged = Bytes32.from(
-          soliditySha3Raw(
-            merged.toString(),
-            deposits[depositIndex].toBytes().toString(),
+          ethers.utils.keccak256(
+            Buffer.concat([
+              merged.toBuffer(),
+              deposits[depositIndex].toBuffer(),
+            ]),
           ),
         )
         depositIndex += 1
@@ -137,7 +139,7 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
     )
     if (!computedRoot.eq(block.header.utxoRoot.toBigNumber())) {
       // slashable
-      const proofId = randomHex(32)
+      const proofId = crypto.randomBytes(32).toString('hex')
       const startTx = await this.layer1.validators.utxoTree.populateTransaction.newProof(
         proofId,
         parentHeader.utxoRoot.toString(),

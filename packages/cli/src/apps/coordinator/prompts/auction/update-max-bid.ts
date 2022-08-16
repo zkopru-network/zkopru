@@ -1,5 +1,4 @@
 import chalk from 'chalk'
-import { parseStringToUnit } from '@zkopru/utils'
 import { formatUnits, parseUnits } from 'ethers/lib/utils'
 import App, { AppMenu, Context } from '..'
 
@@ -17,8 +16,7 @@ export default class UpdateMaxBid extends App {
       message: 'New max bid price (gwei):',
     })
     if (amount.trim()) {
-      const parsed = parseStringToUnit(amount, 'gwei')
-      const amountWei = parseUnits(parsed.val, parsed.unit).toString()
+      const amountWei = parseUnits(amount, 'gwei')
       this.print(chalk.blue(`Updating max bid...`))
       await this.base.context.auctionMonitor.setMaxBid(amountWei)
       this.print(
