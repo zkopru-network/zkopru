@@ -1,6 +1,4 @@
 export default [
-  'web3_clientVersion',
-  'web3_sha3',
   'net_version',
   'net_peerCount',
   'net_listening',
