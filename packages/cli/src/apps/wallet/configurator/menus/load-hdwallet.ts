@@ -12,7 +12,7 @@ export default class LoadHDWallet extends Configurator {
       throw Error('Database is not loaded')
     }
     if (!(await context.provider?.ready)) {
-      throw Error('Web3 is not connected')
+      throw Error('Provider is not connected')
     }
     const { provider, db } = context
     if (!provider) throw Error('Provider is not ready')
