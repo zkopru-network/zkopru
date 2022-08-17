@@ -9,7 +9,7 @@ export default class ConfigureAccount extends Configurator {
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
     console.log(chalk.blue('Setting up the coordinator account'))
-    if (!context.provider) throw Error('Web3 is not loaded')
+    if (!context.provider) throw Error('Provider is not loaded')
     if (this.base.encryptedKeystore) {
       let password: string
       if (this.base.password) {
