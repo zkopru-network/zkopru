@@ -283,13 +283,13 @@ describe('coordinator test to run testnet', () => {
       expect(data.result.erc721s).to.be.an.instanceOf(Array)
     })
 
-    it('should passthrough web3 request', async () => {
+    it('should passthrough rpc request', async () => {
       const { response, data } = await callMethod('eth_blockNumber')
       expect(response.status).to.eq(200)
       assert(!Number.isNaN(data.result))
     })
 
-    it('should passthrough web3 error', async () => {
+    it('should passthrough rpc error', async () => {
       // sending incorrect number of args
       const { response, data } = await callMethod('eth_getBlockByNumber', 0xfff)
       expect(response.status).to.eq(400)
