@@ -9,7 +9,7 @@ export const EXIST: BigNumber = BigNumber.from(
   ethers.utils.keccak256(ethers.utils.toUtf8Bytes('exist')),
 )
 export const NON_EXIST: BigNumber = BigNumber.from(
-  ethers.utils.keccak256('0x0000000000000000000000000000000000000000000000000000000000000000'),
+  ethers.utils.keccak256(ethers.constants.HashZero),
 )
 assert(
   Bytes32.from(
