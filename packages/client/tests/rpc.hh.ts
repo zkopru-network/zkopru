@@ -140,7 +140,7 @@ describe('rPC tests', () => {
 
   it('should get transaction by hash')
 
-  it('should get passthrough web3 instance', async () => {
+  it('should get blockNumber', async () => {
     const { provider } = rpc
     const blockNumber = await provider.getBlockNumber()
     assert(typeof blockNumber === 'number')
