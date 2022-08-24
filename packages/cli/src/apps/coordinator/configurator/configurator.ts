@@ -15,7 +15,7 @@ export interface Config {
   priceMultiplier: number
   port: number
   config?: string
-  encryptedKeystore?: string
+  keystore?: string
   keystoreFile?: string
   password?: string
   passwordFile?: string
@@ -42,7 +42,7 @@ export interface Context {
   provider?: BaseProvider
   db?: DB
   coordinator?: Coordinator
-  encryptedKeystore?: string
+  keystore?: string
   account?: Signer
 }
 
