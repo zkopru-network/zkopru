@@ -1,20 +1,12 @@
 {
-  "_": [],
   "bootstrap": true,
-  "b": true,
-  "ws": "ws://testnet:5000",
-  "websocket": "ws://testnet:5000",
-  "sqlite": "/proj/coordinator-wallet.db",
+  "provider": "ws://testnet:5000",
+  "sqlite": "coordinator.db",
   "address": "0x970e8f18ebfEa0B08810f33a5A40438b9530FBCF",
-  "a": "0x970e8f18ebfEa0B08810f33a5A40438b9530FBCF",
-  "db": "db",
   "maxBytes": 131072,
-  "max-bytes": 131072,
   "priceMultiplier": 48,
-  "price-multiplier": 48,
   "corsdomain": "*",
   "port": 8888,
-  "$0": "zkopru-coordinator",
   "keystore": {
     "version": 3,
     "id": "5c1043d1-c95d-49b3-ad52-e67e377ee64f",
@@ -22,17 +14,17 @@
     "crypto": {
       "ciphertext": "5d334c6d4b80d89725a3fbd4d8e6cb5a51285d5100ae98cbe5e4ad5d83d83d5b",
       "cipherparams": { "iv": "9454222d759f0c0cf340725a76156f24" },
-      "cipher": "aes-128-ctr",
-      "kdf": "scrypt",
-      "kdfparams": {
-        "dklen": 32,
-        "salt": "a760a305564c7d0b8d6ff835579a4aa50241ba1baa87965bae795a9594c40ab2",
-        "n": 8192,
-        "r": 8,
-        "p": 1
-      },
-      "mac": "fe55615bb0216bda70d9bd5d547e0f465bc863342357c9de01ce4f8c2f35583c"
-    }
-  },
-  "password": "helloworld"
+      "cipher": "aes-128-ctr",                                                                                                                                                                                     
+      "kdf": "scrypt",                                                                                                                                                                                             
+      "kdfparams": {                                                                                                                                                                                               
+        "dklen": 32,                                                                                                                                                                                               
+        "salt": "a760a305564c7d0b8d6ff835579a4aa50241ba1baa87965bae795a9594c40ab2",                                                                                                                                
+        "n": 8192,                                                                                                                                                                                                 
+        "r": 8,                                                                                                                                                                                                    
+        "p": 1                                                                                                                                                                                                     
+      },                                                                                                                                                                                                           
+      "mac": "fe55615bb0216bda70d9bd5d547e0f465bc863342357c9de01ce4f8c2f35583c"                                                                                                                                    
+    }                                                                                                                                                                                                              
+  },                                                                                                                                                                                                               
+  "password": "helloworld"                                                                                                                                                                                         
 }
