@@ -139,7 +139,7 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
     )
     if (!computedRoot.eq(block.header.utxoRoot.toBigNumber())) {
       // slashable
-      const proofId = crypto.randomBytes(32).toString('hex')
+      const proofId = crypto.randomBytes(32)
       const startTx = await this.layer1.validators.utxoTree.populateTransaction.newProof(
         proofId,
         parentHeader.utxoRoot.toString(),
