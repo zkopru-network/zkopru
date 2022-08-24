@@ -30,7 +30,7 @@ export default class Wallet extends PromptApp<ExampleConfigContext, void> {
       message: `Enter a password to encrypt (press enter to use secure password):`,
       initial: securePassword,
     })
-    const encryptedKeystore = await account.encrypt(password)
+    const keystore = await account.encrypt(password)
     const { passwordFile } = await this.ask({
       type: 'text',
       name: 'passwordFile',
@@ -43,7 +43,7 @@ export default class Wallet extends PromptApp<ExampleConfigContext, void> {
       context: {
         config: {
           ...context.config,
-          encryptedKeystore,
+          keystore,
           passwordFile,
         },
         outputPath: context.outputPath,
