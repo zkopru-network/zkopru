@@ -10,7 +10,7 @@ export default class ConfigureAccount extends Configurator {
   async run(context: Context): Promise<{ context: Context; next: number }> {
     console.log(chalk.blue('Setting up the coordinator account'))
     if (!context.provider) throw Error('Provider is not loaded')
-    if (this.base.encryptedKeystore) {
+    if (this.base.keystore) {
       let password: string
       if (this.base.password) {
         password = this.base.password
@@ -22,7 +22,7 @@ export default class ConfigureAccount extends Configurator {
         throw Error('Password is not configured')
       }
       const account = await Wallet.fromEncryptedJson(
-        JSON.stringify(this.base.encryptedKeystore),
+        JSON.stringify(this.base.keystore),
         password,
       )
       const connectedAccount = account.connect(context.provider)
@@ -104,7 +104,7 @@ export default class ConfigureAccount extends Configurator {
 
     const keystore = await account.encrypt(confirmedPassword)
     return {
-      context: { ...context, encryptedKeystore: JSON.parse(keystore), account },
+      context: { ...context, keystore: JSON.parse(keystore), account },
       next: Menu.SAVE_CONFIG,
     }
   }
