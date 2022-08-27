@@ -140,6 +140,7 @@ export type MassDeposit = {
 }
 
 export type Deposit = {
+  id: string
   note: string
   fee: string
   transactionIndex: number
