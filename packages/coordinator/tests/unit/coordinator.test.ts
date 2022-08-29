@@ -4,7 +4,7 @@ import fetch from 'node-fetch'
 import { FullNode } from '~core'
 import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
-import { sleep, trimHexToLength } from '~utils'
+import { trimHexToLength } from '~utils'
 import { DB, SQLiteConnector, schema } from '~database/node'
 import { ethers } from 'hardhat'
 import { deploy } from '~contracts-utils/deployer'
@@ -70,10 +70,7 @@ describe('coordinator test to run testnet', () => {
     const { zkopru } = await deploy(deployer)
     // logStream.addStream(process.stdout)
     mockup = await SQLiteConnector.create(schema, ':memory:')
-    // It may take about few minutes. If you want to skip building image,
-    // run `yarn pull:images` on the root directory
     address = zkopru.zkopru.address
-    await sleep(3000)
     fullNode = await FullNode.new({
       provider: ethers.provider,
       address,
