@@ -23,7 +23,8 @@
     "build": "tsc --build tsconfig.build.json",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "link-modules": "link-module-alias",
-    "test": "jest",
+    "hardhat": "hardhat node&",
+    "test": "hardhat test:jest",
     "test:trace": "LOG_LEVEL=trace PRINT_LOG=true jest",
     "test:unit": "jest test/unit",
     "test:watch": "jest --watch",
@@ -65,5 +66,11 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "devDependencies": {
+    "@jest/globals": "27.0.6",
+    "jest-mock": "27.0.6",
+    "hardhat-jest-plugin": "0.0.6"
   }
+
 }

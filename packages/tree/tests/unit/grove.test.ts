@@ -190,7 +190,6 @@ describe('grove full sync grove()', () => {
           .latestLeafIndex()
           .eq(fullSyncGrove.withdrawalTree.latestLeafIndex()),
       ).toBe(true)
-      await mockup.close()
     })
   })
   describe('merkle proof', () => {
