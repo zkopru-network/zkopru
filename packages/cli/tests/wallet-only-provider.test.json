@@ -1,0 +1,17 @@
+{
+  "_": [],
+  "fullnode": true,
+  "f": true,
+  "develop": false,
+  "d": false,
+  "provider": "http://localhost:5001",
+  "coordinator": "http://coordinator:8888",
+  "r": "http://coordinator:8888",
+  "networkId": 1,
+  "n": 1,
+  "network-id": 1,
+  "chainId": 1,
+  "c": 1,
+  "chain-id": 1,
+  "address": "0x970e8f18ebfEa0B08810f33a5A40438b9530FBCF"
+}
