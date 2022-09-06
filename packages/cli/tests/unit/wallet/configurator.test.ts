@@ -1,15 +1,13 @@
 import fs from 'fs'
-
 import { JsonRpcProvider, WebSocketProvider } from '@ethersproject/providers'
 import { NetworkStatus } from '@zkopru/core'
 import { HDWallet } from '@zkopru/account'
 import {
-  loadConfig,
-  mockedLoadDatabase,
-  mockedLoadHDWallet,
-  mockedSaveConfig,
-  mockedTrackingAccount,
-} from '../../utils'
+  mockLoadDatabase,
+  mockLoadHDWallet,
+  mockSaveConfig,
+  mockTrackingAccount,
+} from './mocksForConfigurator'
 import {
   Context,
   Menu,
@@ -20,6 +18,7 @@ import LoadDatabase from '../../../src/apps/wallet/configurator/menus/load-datab
 import TrackingAccount from '../../../src/apps/wallet/configurator/menus/config-tracking-accounts'
 import LoadNode from '../../../src/apps/wallet/configurator/menus/load-node'
 import SaveConfig from '../../../src/apps/wallet/configurator/menus/save-config'
+import { loadConfig } from '../../utils'
 
 const WALLET_CONFIG = './tests/wallet.test.json'
 const WALLET_CONFIG_ONLY_PROVIDER = './tests/wallet-only-provider.test.json'
@@ -33,7 +32,7 @@ const ACCOUNT0_ADDR = '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1'
 // mock prompt module
 jest.mock('../../../../utils/src/prompt')
 
-describe('configurator', () => {
+describe.only('configurator', () => {
   jest.setTimeout(20000)
 
   let context: Context
@@ -158,7 +157,7 @@ describe('configurator', () => {
       const defaultConfig = option.base
       let configWithoutDB = loadConfig(WALLET_CONFIG_ONLY_PROVIDER)
       option.base = configWithoutDB
-      const mockedDB = mockedLoadDatabase(option)
+      const mockedDB = mockLoadDatabase(option)
       mockedDB.ask.mockResolvedValue({
         dbType: 1,
         dbName: SQLITE_DB_NAME,
@@ -178,7 +177,7 @@ describe('configurator', () => {
       await db.run(contextForLoadDB)
 
       // create db again but without overwrite it
-      const mockedDB = mockedLoadDatabase(option)
+      const mockedDB = mockLoadDatabase(option)
       mockedDB.ask.mockResolvedValue({
         dbType: 1,
         dbName: SQLITE_DB_NAME,
@@ -227,7 +226,7 @@ describe('configurator', () => {
     })
 
     it('get from seedKeystore provided by json file', async () => {
-      const mockedHdWallet = mockedLoadHDWallet(optionForHDWallet)
+      const mockedHdWallet = mockLoadHDWallet(optionForHDWallet)
       mockedHdWallet.ask.mockResolvedValue({
         password: 'helloworld',
       })
@@ -248,7 +247,7 @@ describe('configurator', () => {
 
     it('get an existing wallet in DB', async () => {
       // create a wallet in db first
-      const mockedHdWallet = mockedLoadHDWallet(optionForHDWallet)
+      const mockedHdWallet = mockLoadHDWallet(optionForHDWallet)
       mockedHdWallet.ask.mockResolvedValue({
         password: 'helloworld',
       })
@@ -260,7 +259,7 @@ describe('configurator', () => {
       // new a LoadHDWallet instance and wallets inside should be from DB
       let configWithoutKeystore = loadConfig(WALLET_CONFIG_ONLY_PROVIDER)
       optionForHDWallet.base = configWithoutKeystore
-      const hdWallet = mockedLoadHDWallet(optionForHDWallet)
+      const hdWallet = mockLoadHDWallet(optionForHDWallet)
       hdWallet.ask.mockResolvedValue({
         password: 'helloworld',
       })
@@ -283,7 +282,7 @@ describe('configurator', () => {
       let configWithoutKeystore = loadConfig(WALLET_CONFIG_ONLY_PROVIDER)
       configWithoutKeystore.mnemonic = MNEMONIC
       optionForHDWallet.base = configWithoutKeystore
-      let mockedHdWallet = mockedLoadHDWallet(optionForHDWallet)
+      let mockedHdWallet = mockLoadHDWallet(optionForHDWallet)
       mockedHdWallet.ask.mockResolvedValue({
         password: 'helloworld',
         retyped: 'helloworld',
@@ -293,7 +292,7 @@ describe('configurator', () => {
 
       // create 2nd wallet through keystore
       optionForHDWallet.base = defaultConfig
-      mockedHdWallet = mockedLoadHDWallet(optionForHDWallet)
+      mockedHdWallet = mockLoadHDWallet(optionForHDWallet)
       mockedHdWallet.ask.mockResolvedValue({
         password: 'helloworld',
       })
@@ -303,7 +302,7 @@ describe('configurator', () => {
 
       // select the 2nd wallet
       optionForHDWallet.base = configWithoutKeystore
-      const hdWallet = mockedLoadHDWallet(optionForHDWallet)
+      const hdWallet = mockLoadHDWallet(optionForHDWallet)
       hdWallet.ask.mockResolvedValue({
         idx: 1,
         password: 'helloworld',
@@ -325,7 +324,7 @@ describe('configurator', () => {
     it('create a new wallet', async () => {
       const configWithoutKeystore = loadConfig(WALLET_CONFIG_ONLY_PROVIDER)
       optionForHDWallet.base = configWithoutKeystore
-      const mockedHdWallet = mockedLoadHDWallet(optionForHDWallet)
+      const mockedHdWallet = mockLoadHDWallet(optionForHDWallet)
       mockedHdWallet.ask.mockResolvedValue({
         create: 1,
         language: 8,
@@ -352,7 +351,7 @@ describe('configurator', () => {
       let configWithoutKeystore = loadConfig(WALLET_CONFIG_ONLY_PROVIDER)
       configWithoutKeystore.mnemonic = MNEMONIC
       optionForHDWallet.base = configWithoutKeystore
-      const mockedHdWallet = mockedLoadHDWallet(optionForHDWallet)
+      const mockedHdWallet = mockLoadHDWallet(optionForHDWallet)
       mockedHdWallet.ask.mockResolvedValue({
         password: 'helloworld',
         retyped: 'helloworld',
@@ -373,7 +372,7 @@ describe('configurator', () => {
     it('abort while creating a new wallet', async () => {
       const configWithoutKeystore = loadConfig(WALLET_CONFIG_ONLY_PROVIDER)
       optionForHDWallet.base = configWithoutKeystore
-      const mockedHdWallet = mockedLoadHDWallet(optionForHDWallet)
+      const mockedHdWallet = mockLoadHDWallet(optionForHDWallet)
       mockedHdWallet.ask.mockResolvedValue({
         create: 1,
         language: 8,
@@ -390,7 +389,7 @@ describe('configurator', () => {
 
     it('provide an undefined db object', async () => {
       const defaultDB = contextForHDWallet.db
-      const mockedHdWallet = mockedLoadHDWallet(optionForHDWallet)
+      const mockedHdWallet = mockLoadHDWallet(optionForHDWallet)
       contextForHDWallet.db = undefined
       await expect(mockedHdWallet.run(contextForHDWallet)).rejects.toThrow(
         'Database is not loaded',
@@ -400,7 +399,7 @@ describe('configurator', () => {
     })
     it('provide an undefined provider object', async () => {
       const defaultProvider = contextForHDWallet.provider
-      const mockedHdWallet = mockedLoadHDWallet(optionForHDWallet)
+      const mockedHdWallet = mockLoadHDWallet(optionForHDWallet)
       contextForHDWallet.provider = undefined
       await expect(mockedHdWallet.run(contextForHDWallet)).rejects.toThrow(
         'Provider is not connected',
@@ -452,7 +451,7 @@ describe('configurator', () => {
       let configWithoutKeystore = loadConfig(WALLET_CONFIG_ONLY_PROVIDER)
       configWithoutKeystore.mnemonic = MNEMONIC
       option.base = configWithoutKeystore
-      const mockedHdWallet = mockedLoadHDWallet(option)
+      const mockedHdWallet = mockLoadHDWallet(option)
       mockedHdWallet.ask.mockResolvedValue({
         password: 'helloworld',
         retyped: 'helloworld',
@@ -461,7 +460,7 @@ describe('configurator', () => {
       const contextForNewAccount = ret.context
       const accounts = await contextForNewAccount.wallet!.retrieveAccounts()
 
-      const mockedAccount = mockedTrackingAccount(option)
+      const mockedAccount = mockTrackingAccount(option)
       mockedAccount.ask.mockResolvedValue({ idx: 1 }) // 1: jump to next step
       ret = await mockedAccount.run(contextForNewAccount)
 
@@ -481,7 +480,7 @@ describe('configurator', () => {
       let configWithoutKeystore = loadConfig(WALLET_CONFIG_ONLY_PROVIDER)
       configWithoutKeystore.mnemonic = MNEMONIC
       option.base = configWithoutKeystore
-      const mockedHdWallet = mockedLoadHDWallet(option)
+      const mockedHdWallet = mockLoadHDWallet(option)
       mockedHdWallet.ask.mockResolvedValue({
         password: 'helloworld',
         retyped: 'helloworld',
@@ -490,7 +489,7 @@ describe('configurator', () => {
       const contextForNewAccount = ret.context
       const accounts = await contextForNewAccount.wallet!.retrieveAccounts()
 
-      const mockedAccount = mockedTrackingAccount(option)
+      const mockedAccount = mockTrackingAccount(option)
       mockedAccount.ask.mockResolvedValue({ idx: 2 }) // only 0 and 1 are defined
       ret = await mockedAccount.run(contextForNewAccount)
 
@@ -504,7 +503,7 @@ describe('configurator', () => {
     })
 
     it('get accounts created in loadHDWallet (isInitialSetup == false)', async () => {
-      let mockedHdWallet = mockedLoadHDWallet(option)
+      let mockedHdWallet = mockLoadHDWallet(option)
       mockedHdWallet.ask.mockResolvedValue({
         password: 'helloworld',
       })
@@ -522,7 +521,7 @@ describe('configurator', () => {
     })
 
     it('get accounts from previous history (numberOfAccounts != 0)', async () => {
-      let mockedHdWallet = mockedLoadHDWallet(option)
+      let mockedHdWallet = mockLoadHDWallet(option)
       mockedHdWallet.ask.mockResolvedValue({
         password: 'helloworld',
       })
@@ -554,7 +553,7 @@ describe('configurator', () => {
       // let configWithoutKeystore = loadConfig(WALLET_CONFIG_ONLY_PROVIDER)
       // configWithoutKeystore.mnemonic = MNEMONIC
       // option.base = configWithoutKeystore
-      // const mockedHdWallet = mockedLoadHDWallet(option)
+      // const mockedHdWallet = mockLoadHDWallet(option)
       // mockedHdWallet.ask.mockResolvedValue({
       //   password: 'helloworld',
       //   retyped: 'helloworld',
@@ -562,7 +561,7 @@ describe('configurator', () => {
       // let ret = await mockedHdWallet.run(contextForTA)
       // const contextForNewAccount = ret.context
       // const accounts = await contextForNewAccount.wallet!.retrieveAccounts()
-      // const mockedAccount = mockedTrackingAccount(option)
+      // const mockedAccount = mockTrackingAccount(option)
       // // mockedAccount.ask.mockResolvedValue({ idx: 0 }) // 0: create a new account
       // ret = await mockedAccount.run(contextForNewAccount)
     })
@@ -576,7 +575,7 @@ describe('configurator', () => {
       let ret = await connection.run(context)
       let db = new LoadDatabase(option)
       ret = await db.run(ret.context)
-      let mockedHdWallet = mockedLoadHDWallet(option)
+      let mockedHdWallet = mockLoadHDWallet(option)
       mockedHdWallet.ask.mockResolvedValue({
         password: 'helloworld',
       })
@@ -657,7 +656,7 @@ describe('configurator', () => {
       let ret = await connection.run(context)
       let db = new LoadDatabase(option)
       ret = await db.run(ret.context)
-      let mockedHdWallet = mockedLoadHDWallet(option)
+      let mockedHdWallet = mockLoadHDWallet(option)
       mockedHdWallet.ask.mockResolvedValue({
         password: 'helloworld',
       })
@@ -677,7 +676,7 @@ describe('configurator', () => {
 
     it('save a newly config', async () => {
       contextForConfig.isInitialSetup = true
-      const mockedConfig = mockedSaveConfig(option)
+      const mockedConfig = mockSaveConfig(option)
       mockedConfig.ask.mockResolvedValue({
         save: true,
         password: 'helloworld',
@@ -695,7 +694,7 @@ describe('configurator', () => {
       expect(fs.existsSync(NEW_WALLET_CONFIG_PATH)).toBe(true)
 
       contextForConfig.isInitialSetup = true
-      const mockedConfig = mockedSaveConfig(option)
+      const mockedConfig = mockSaveConfig(option)
       mockedConfig.ask.mockResolvedValue({
         save: true,
         password: 'helloworld',
@@ -712,7 +711,7 @@ describe('configurator', () => {
 
     it('not saving config', async () => {
       contextForConfig.isInitialSetup = true
-      const mockedConfig = mockedSaveConfig(option)
+      const mockedConfig = mockSaveConfig(option)
       mockedConfig.ask.mockResolvedValue({
         save: false,
       })
@@ -726,7 +725,7 @@ describe('configurator', () => {
       contextForConfig.isInitialSetup = true
       const defaultWallet = contextForConfig.wallet
       contextForConfig.wallet = undefined
-      const mockedConfig = mockedSaveConfig(option)
+      const mockedConfig = mockSaveConfig(option)
       mockedConfig.ask.mockResolvedValue({
         save: true,
       })
