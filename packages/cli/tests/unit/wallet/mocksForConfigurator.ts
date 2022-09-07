@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import { NetworkStatus } from '@zkopru/core'
+import { NetworkStatus, ZkopruNode } from '@zkopru/core'
 import { PromptApp } from '@zkopru/utils'
 import { ZkWallet } from '@zkopru/zk-wizard'
 import LoadDatabase from '../../../src/apps/wallet/configurator/menus/load-database'
@@ -17,6 +17,8 @@ import { Address } from 'soltypes'
 import assert from 'assert'
 import { loadConfig } from '../../utils'
 
+jest.mock('../../../../core/src/node/zkopru-node')
+jest.mock('../../../../zk-wizard/src/zk-wallet-account')
 export async function getMockedZKWallet(
   walletConfig: string,
   onCancel: () => Promise<void>,
@@ -50,17 +52,24 @@ export async function getMockedZKWallet(
   assert(wallet, 'wallet')
   assert(accounts, 'accounts')
   assert(node, 'node')
+  // Mock ZkopruNode here
+  // bcs the purpose of test here is to make sure CLI behaves as we expect
+  // not interacting with layer2 node
+  const mockedNode = node as jest.Mocked<ZkopruNode>
+  mockedNode.start = jest.fn()
+  mockedNode.isRunning = jest.fn()
+  mockedNode.isRunning.mockReturnValue(true)
   const zkWallet = new ZkWallet({
     db,
     wallet,
-    node,
+    node: mockedNode,
     accounts,
     erc20: erc20?.map(Address.from) || [],
     erc721: erc721?.map(Address.from) || [],
     snarkKeyPath,
     snarkKeyCid,
   })
-  return zkWallet
+  return zkWallet as jest.Mocked<ZkWallet>
 }
 
 export function mockLoadDatabase(
