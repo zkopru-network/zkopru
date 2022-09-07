@@ -32,7 +32,7 @@ const ACCOUNT0_ADDR = '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1'
 // mock prompt module
 jest.mock('../../../../utils/src/prompt')
 
-describe.only('configurator', () => {
+describe('configurator', () => {
   jest.setTimeout(20000)
 
   let context: Context
@@ -81,7 +81,7 @@ describe.only('configurator', () => {
     })
 
     it('with websocket provider', async () => {
-      const wsProviderUrl = 'ws:localhost:5001'
+      const wsProviderUrl = 'ws://localhost:5001'
       option.base.provider = wsProviderUrl
 
       const connection = new ConnectWeb3(option)
@@ -235,6 +235,7 @@ describe.only('configurator', () => {
       const walletContext = ret.context
       expect(walletContext.isInitialSetup).toBe(false)
       expect(walletContext.accounts!.length).toBeGreaterThan(0)
+      expect(walletContext.accounts![0].ethAccount.provider).toBeDefined()
       const walleAccounts = await walletContext.wallet!.retrieveAccounts()
       expect(walleAccounts[0].ethAccount.address).toEqual(
         walletContext.accounts![0].ethAccount.address,
@@ -273,6 +274,7 @@ describe.only('configurator', () => {
       expect(walletContext.accounts![0].ethAddress).toEqual(
         zkAccount.ethAddress,
       )
+      expect(walletContext.accounts![0].ethAccount.provider).toBeDefined()
     })
 
     it('select from existing wallets in DB', async () => {
@@ -313,6 +315,7 @@ describe.only('configurator', () => {
       const wallets = await walletContext.wallet!.list()
       expect(wallets.length).toEqual(2)
       expect(walletContext.accounts!.length).toEqual(1)
+      expect(walletContext.accounts![0].ethAccount.provider).toBeDefined()
 
       // make sure returned `accounts` is equivalent to `wallet`
       // const accountFrom2ndWallet = await secondHDWallet.retrieveAccounts()
@@ -338,6 +341,7 @@ describe.only('configurator', () => {
       const walletContext = ret.context
       expect(walletContext.isInitialSetup).toBe(true)
       expect(walletContext.accounts!.length).toBeGreaterThan(0)
+      expect(walletContext.accounts![0].ethAccount.provider).toBeDefined()
       const walleAccounts = await walletContext.wallet!.retrieveAccounts()
       expect(walleAccounts[0].ethAccount.address).toEqual(
         walletContext.accounts![0].ethAccount.address,
@@ -363,6 +367,7 @@ describe.only('configurator', () => {
       expect(walletContext.accounts![0].ethAccount.address).toEqual(
         ACCOUNT0_ADDR,
       )
+      expect(walletContext.accounts![0].ethAccount.provider).toBeDefined()
 
       const hdWallet = new HDWallet(walletContext.provider!, walletContext.db!)
       const wallets = await hdWallet.list()
