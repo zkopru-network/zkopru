@@ -9,7 +9,7 @@ export default class OnSyncing extends App {
   async run(context: Context): Promise<{ context: Context; next: number }> {
     this.print(chalk.yellow('On syncing...'))
     await sleep(1000)
-    return { context, next: AppMenu.TOP_MENU }
+    return { context, next: AppMenu.ACCOUNT_DETAIL }
     // const { idx } = await this.ask({
     //   type: 'select',
     //   name: 'idx',
