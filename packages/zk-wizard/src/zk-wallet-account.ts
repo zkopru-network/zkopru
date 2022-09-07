@@ -22,7 +22,7 @@ import fetch, { Response } from 'node-fetch'
 import { logger } from '@zkopru/utils'
 import { signTypedData_v4 as signTypedData } from 'eth-sig-util'
 import { ERC20__factory, ERC721__factory } from '@zkopru/contracts'
-import { BigNumberish } from 'ethers'
+import { BigNumber, BigNumberish } from 'ethers'
 import { ZkWizard } from './zk-wizard'
 
 export interface Balance {
@@ -261,6 +261,10 @@ export class ZkWalletAccount {
   ): Promise<boolean> {
     if (!this.account) {
       logger.error('Account is not set')
+      return false
+    }
+    if (BigNumber.from(eth).isZero()) {
+      logger.error('input eth amount is zero')
       return false
     }
     const balance = await this.fetchLayer1Assets(this.account)
