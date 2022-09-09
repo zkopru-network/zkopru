@@ -2,7 +2,12 @@ import { Fp } from '@zkopru/babyjubjub'
 import { Sum, TxBuilder, RawTx, Utxo, ZkAddress } from '@zkopru/transaction'
 import { logger } from '@zkopru/utils'
 import { BigNumber } from 'ethers'
-import { formatUnits, parseUnits } from 'ethers/lib/utils'
+import {
+  formatEther,
+  formatUnits,
+  parseEther,
+  parseUnits,
+} from 'ethers/lib/utils'
 import App, { AppMenu, Context } from '..'
 
 export default class TransferEth extends App {
@@ -19,7 +24,6 @@ export default class TransferEth extends App {
     try {
       weiPerByte = await wallet.fetchPrice()
     } catch (err) {
-      logger.error('price fetch error')
       if (err instanceof Error) logger.error(err.toString())
       throw err
     }
@@ -66,8 +70,8 @@ export default class TransferEth extends App {
         initial: 0,
         message: 'How much ETH do you want to transfer(ex: 0.3 ETH)?',
       })
-      amountWei = parseUnits(amount, 'ether').toString()
-      msgs.push(`Sending amount: ${formatUnits(amountWei, 'ether')} ETH`)
+      amountWei = parseEther(amount.toString()).toString()
+      msgs.push(`Sending amount: ${formatEther(amountWei)} ETH`)
       msgs.push(`    = ${amountWei} wei`)
       this.print([...messages, ...msgs].join('\n'))
       const gweiPerByte = formatUnits(weiPerByte, 'gwei')
@@ -77,7 +81,7 @@ export default class TransferEth extends App {
         initial: `${gweiPerByte} gwei`,
         message: `Fee per byte. ex) ${gweiPerByte} gwei`,
       })
-      confirmedWeiPerByte = parseUnits(fee, 'gwei')
+      confirmedWeiPerByte = parseUnits(fee.toString(), 'gwei')
       logger.info(`confirmedWeiPerByte: ${confirmedWeiPerByte}`)
       msgs.push(
         `Wei per byte: ${formatUnits(confirmedWeiPerByte, 'ether')} ETH`,
