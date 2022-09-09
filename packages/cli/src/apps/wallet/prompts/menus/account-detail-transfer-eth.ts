@@ -24,6 +24,7 @@ export default class TransferEth extends App {
     try {
       weiPerByte = await wallet.fetchPrice()
     } catch (err) {
+      logger.error('price fetch error')
       if (err instanceof Error) logger.error(err.toString())
       throw err
     }
