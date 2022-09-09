@@ -56,7 +56,7 @@ export async function getMockedZKWallet(
   // bcs the purpose of test here is to make sure CLI behaves as we expect
   // not interacting with layer2 node
   const mockedNode = node as jest.Mocked<ZkopruNode>
-  mockedNode.start = jest.fn()
+  // mockedNode.start = jest.fn()
   mockedNode.isRunning = jest.fn()
   mockedNode.isRunning.mockReturnValue(true)
   const zkWallet = new ZkWallet({
