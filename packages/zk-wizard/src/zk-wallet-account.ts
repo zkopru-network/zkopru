@@ -165,12 +165,19 @@ export class ZkWalletAccount {
     const targetAccount = account || this.account
     if (!targetAccount)
       throw Error('Provide account parameter or set default account')
+
+    const whereClause = status
+      ? {
+          owner: [targetAccount.zkAddress.toString()],
+          status: status ? [status].flat() : null,
+          usedAt: null,
+        }
+      : {
+          owner: [targetAccount.zkAddress.toString()],
+          usedAt: null,
+        }
     const notes = await this.db.findMany('Utxo', {
-      where: {
-        owner: [targetAccount.zkAddress.toString()],
-        status: status ? [status].flat() : undefined,
-        usedAt: null,
-      },
+      where: whereClause,
     })
     return notes.map(obj => {
       if (!obj.eth) throw Error('should have Ether data')
