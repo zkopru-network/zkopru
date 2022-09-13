@@ -4,24 +4,51 @@ import { AppMenu, Context } from '../../../src/apps/wallet/prompts'
 import { getMockedZKWallet } from './mocksForConfigurator'
 import {
   mockAccountDetail,
+  mockAtomicSwap,
+  mockAtomicSwapGiveEth,
+  mockAtomicSwapTake,
+  mockAtomicSwapTakeEth,
   mockDeposit,
   mockDepositEther,
   mockTopMenu,
   mockTransferEth,
   mockTransferMenu,
+  mockWithdrawableList,
+  mockWithdrawRequest,
+  mockWithdrawRequestEth,
 } from './mocksForPrompts'
-import { parseEther } from 'ethers/lib/utils'
+import { parseEther, parseUnits } from 'ethers/lib/utils'
 import { ZkAccount } from '@zkopru/account'
 import { ZkWallet } from '@zkopru/zk-wizard'
-import { sleep } from '@zkopru/utils'
-import { Utxo, UtxoStatus, ZkAddress } from '@zkopru/transaction'
+import { SwapTxBuilder, Utxo, UtxoStatus, ZkAddress } from '@zkopru/transaction'
 import TransferEth from '../../../src/apps/wallet/prompts/menus/account-detail-transfer-eth'
+import Withdraw from '../../../src/apps/wallet/prompts/menus/account-detail-withdraw'
 
 jest.mock('../../../../utils/src/prompt')
-jest.mock('../../../../transaction/src/tx-builder')
 
 describe('wallet', () => {
   jest.setTimeout(20000)
+
+  function getFakeUtxo(owner: ZkAddress, status: UtxoStatus): Utxo {
+    const fakeUtxo: Utxo = Utxo.newEtherNote({
+      owner: owner,
+      eth: parseEther('1').toString(),
+      salt: '0x84dac2a7faad73dfa5793039beabff6f',
+    })
+    fakeUtxo.status = status
+    return fakeUtxo
+  }
+
+  function getFakeSwapTxBuilder(from: ZkAddress): SwapTxBuilder {
+    const txBuilder = SwapTxBuilder.from(from)
+
+    const spendables: Utxo[] = [getFakeUtxo(from, UtxoStatus.UNSPENT)]
+    let swapTxBuilder = txBuilder
+      .provide(...spendables.map(note => Utxo.from(note)))
+      .weiPerByte(parseUnits('1', 'gwei'))
+
+    return swapTxBuilder
+  }
 
   let context: Context
   let option
@@ -41,19 +68,16 @@ describe('wallet', () => {
     }
 
     zkWallet.node.start()
+    await option.base.createAccount(1)
   })
 
-  async function handleAfter() {
-    // if (fs.existsSync('zkwallet-db')) {
-    //   fs.unlinkSync('zkwallet-db')
-    // }
-  }
+  async function handleAfter() {}
 
-  afterEach(async () => {
-    await handleAfter()
-  })
   afterAll(async () => {
     await option.base.node.stop()
+    if (fs.existsSync('zkwallet-db')) {
+      fs.unlinkSync('zkwallet-db')
+    }
   })
 
   describe('top menu', () => {
@@ -214,21 +238,21 @@ describe('wallet', () => {
         fee: 0.001,
         confirmed: true,
       })
-      let utxos = await option.base.getUtxos()
-      let utxoLen = utxos.length
+      // mock deposit and depositEther here to save testing time
+      const spyDepositEth = jest.spyOn(option.base, 'depositEther')
+      const spyDeposit = jest
+        .spyOn(option.base, 'deposit')
+        .mockImplementation((() => {
+          return true
+        }) as any)
 
       const ret = await mockedDepositETH.run(contextForDepositETH)
-      sleep(500)
-
-      let cnt = 0
-      do {
-        utxos = await option.base.getUtxos()
-        if (utxoLen > utxos.length) break
-        if (++cnt > 5) break
-        sleep(500)
-      } while (true)
-      expect(utxos.length).toBeGreaterThan(utxoLen)
       expect(ret.next).toEqual(AppMenu.DEPOSIT)
+      expect(spyDepositEth).toHaveBeenCalledWith(
+        parseEther('0.01'),
+        parseEther('0.001'),
+      )
+      expect(spyDeposit).toHaveBeenCalled()
     })
 
     it('deposit ETH with 0 fee', async () => {
@@ -239,7 +263,9 @@ describe('wallet', () => {
         tryAgain: true,
       })
       const spyDepositEth = jest.spyOn(option.base, 'depositEther')
-      const spyDeposit = jest.spyOn(option.base, 'deposit')
+      const spyDeposit = jest
+        .spyOn(option.base, 'deposit')
+        .mockImplementation((() => {}) as any)
 
       const ret = await mockedDepositETH.run(contextForDepositETH)
       expect(ret.next).toEqual(AppMenu.DEPOSIT)
@@ -257,8 +283,12 @@ describe('wallet', () => {
         confirmed: true,
         tryAgain: true,
       })
-      const spyDepositEth = jest.spyOn(option.base, 'depositEther')
-      const spyDeposit = jest.spyOn(option.base, 'deposit')
+      const spyDepositEth = jest
+        .spyOn(option.base, 'depositEther')
+        .mockImplementation((() => {}) as any)
+      const spyDeposit = jest
+        .spyOn(option.base, 'deposit')
+        .mockImplementation((() => {}) as any)
 
       const ret = await mockedDepositETH.run(contextForDepositETH)
       expect(ret.next).toEqual(AppMenu.DEPOSIT)
@@ -275,7 +305,9 @@ describe('wallet', () => {
         fee: 0.001,
         confirmed: false,
       })
-      const spyDepositEth = jest.spyOn(option.base, 'depositEther')
+      const spyDepositEth = jest
+        .spyOn(option.base, 'depositEther')
+        .mockImplementation((() => {}) as any)
 
       const ret = await mockedDepositETH.run(contextForDepositETH)
       expect(ret.next).toEqual(AppMenu.DEPOSIT)
@@ -289,7 +321,9 @@ describe('wallet', () => {
         confirmed: true,
         tryAgain: false,
       })
-      const spyDepositEth = jest.spyOn(option.base, 'depositEther')
+      const spyDepositEth = jest
+        .spyOn(option.base, 'depositEther')
+        .mockImplementation((() => {}) as any)
 
       const ret = await mockedDepositETH.run(contextForDepositETH)
       expect(ret.next).toEqual(AppMenu.DEPOSIT_ETHER)
@@ -339,22 +373,9 @@ describe('wallet', () => {
     })
   })
 
-  describe.only('transfer ETH', () => {
+  describe('transfer ETH', () => {
     let contextForTransferETH: Context
     let mockedTransferETH
-
-    function getFakeUtxo(status: UtxoStatus): Utxo {
-      const zkAddr: ZkAddress = new ZkAddress(
-        'KTPpjY6zjQnwKXUs1aQb7KHMdfmxwCQGnFT3b7cMyDWgoBoirHDhbc69QsHBHvQztHgrceN6YVf5BpVxX7c24TdNc85am',
-      )
-      const fakeUtxo: Utxo = Utxo.newEtherNote({
-        owner: zkAddr,
-        eth: parseEther('1').toString(),
-        salt: '0x84dac2a7faad73dfa5793039beabff6f',
-      })
-      fakeUtxo.status = status
-      return fakeUtxo
-    }
 
     beforeAll(async () => {
       let mockedTopMenu = mockTopMenu(option)
@@ -380,18 +401,18 @@ describe('wallet', () => {
       contextForTransferETH = ret.context
       mockedTransferETH = mockTransferEth(option)
 
-      // create a new account as recipient
-      await option.base.createAccount(1)
+      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
       // mock zkWallet.fetchPrice bcs it queries coordinator
       option.base.fetchPrice = jest.fn()
       option.base.fetchPrice.mockResolvedValue(100)
-      // bcs fullnode was not launced, utxo status here is always NON_INCLUDED
+      // bcs fullnode was not launched, utxo status here is always NON_INCLUDED
       // that's why we need to mock one here.
       option.base.getSpendables = jest.fn()
       option.base.getSpendables.mockResolvedValue([
-        getFakeUtxo(UtxoStatus.UNSPENT),
+        getFakeUtxo(accounts[0].zkAddress, UtxoStatus.UNSPENT),
       ])
     })
+
     beforeEach(async () => {
       jest.restoreAllMocks()
     })
@@ -399,11 +420,13 @@ describe('wallet', () => {
     it('transfer ETH', async () => {
       const accounts: ZkAccount[] = await option.base.retrieveAccounts()
       mockedTransferETH.ask.mockResolvedValue({
-        zkAddress: accounts[1].zkAddress,
+        zkAddress: accounts[1].zkAddress.toString(),
         amount: 0.01, // ETH
         fee: 1, // gwei
       })
-      const spySendTx = jest.spyOn(option.base, 'sendTx')
+      const spySendTx = jest
+        .spyOn(option.base, 'sendTx')
+        .mockImplementation((() => {}) as any)
 
       const ret = await mockedTransferETH.run(contextForTransferETH)
       expect(ret.next).toEqual(AppMenu.TRANSFER)
@@ -413,11 +436,13 @@ describe('wallet', () => {
     it('transfer 0 ETH', async () => {
       const accounts: ZkAccount[] = await option.base.retrieveAccounts()
       mockedTransferETH.ask.mockResolvedValue({
-        zkAddress: accounts[1].zkAddress,
+        zkAddress: accounts[1].zkAddress.toString(),
         amount: 0, // ETH
         fee: 1, // gwei
       })
-      const spySendTx = jest.spyOn(option.base, 'sendTx')
+      const spySendTx = jest
+        .spyOn(option.base, 'sendTx')
+        .mockImplementation((() => {}) as any)
 
       const ret = await mockedTransferETH.run(contextForTransferETH)
       expect(ret.next).toEqual(AppMenu.TRANSFER)
@@ -427,11 +452,13 @@ describe('wallet', () => {
     it('transfer ETH with 0 fee', async () => {
       const accounts: ZkAccount[] = await option.base.retrieveAccounts()
       mockedTransferETH.ask.mockResolvedValue({
-        zkAddress: accounts[1].zkAddress,
+        zkAddress: accounts[1].zkAddress.toString(),
         amount: 0.01, // ETH
         fee: 0, // gwei
       })
-      const spySendTx = jest.spyOn(option.base, 'sendTx')
+      const spySendTx = jest
+        .spyOn(option.base, 'sendTx')
+        .mockImplementation((() => {}) as any)
 
       const ret = await mockedTransferETH.run(contextForTransferETH)
       expect(ret.next).toEqual(AppMenu.TRANSFER)
@@ -442,6 +469,420 @@ describe('wallet', () => {
       option.base.fetchPrice.mockRestore()
       const transferEth = new TransferEth(option)
       await expect(transferEth.run(contextForTransferETH)).rejects.toThrow()
+    })
+  })
+
+  describe('atomic swap', () => {
+    let contextForAtomicSwap: Context
+    let mockedAtomicSwap
+
+    beforeAll(async () => {
+      let mockedTopMenu = mockTopMenu(option)
+      mockedTopMenu.ask.mockResolvedValue({ idx: 0 })
+      let ret = await mockedTopMenu.run(context)
+      let contextForAccountDetail = mockAccountDetail(option)
+      contextForAccountDetail.ask.mockResolvedValue({
+        choice: AppMenu.DEPOSIT,
+      })
+      ret = await contextForAccountDetail.run(ret.context)
+      contextForAtomicSwap = ret.context
+      mockedAtomicSwap = mockAtomicSwap(option)
+    })
+
+    it('select to swap', async () => {
+      mockedAtomicSwap.ask.mockResolvedValue({
+        choice: { menu: AppMenu.ATOMIC_SWAP_GIVE_ETH },
+      })
+      const ret = await mockedAtomicSwap.run(contextForAtomicSwap)
+      expect(ret.next).toEqual(AppMenu.ATOMIC_SWAP_GIVE_ETH)
+      expect(ret.context.address).toBeUndefined()
+    })
+
+    it('select to swap with a spendable utxo', async () => {
+      mockedAtomicSwap.ask.mockResolvedValue({
+        choice: { menu: AppMenu.ATOMIC_SWAP_GIVE_ETH },
+      })
+      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
+      option.base.getSpendables = jest.fn()
+      option.base.getSpendables.mockResolvedValue([
+        getFakeUtxo(accounts[0].zkAddress, UtxoStatus.UNSPENT),
+      ])
+      option.base.getUtxos = jest.fn()
+      option.base.getUtxos.mockResolvedValue([
+        getFakeUtxo(accounts[0].zkAddress, UtxoStatus.SPENDING),
+      ])
+
+      // should be the same no matter there are spendable utxos or not
+      const ret = await mockedAtomicSwap.run(contextForAtomicSwap)
+      expect(ret.next).toEqual(AppMenu.ATOMIC_SWAP_GIVE_ETH)
+      expect(ret.context.address).toBeUndefined()
+    })
+
+    it('select to go back', async () => {
+      mockedAtomicSwap.ask.mockResolvedValue({
+        choice: { menu: AppMenu.ACCOUNT_DETAIL },
+      })
+      const ret = await mockedAtomicSwap.run(contextForAtomicSwap)
+      expect(ret.next).toEqual(AppMenu.ACCOUNT_DETAIL)
+      expect(ret.context.address).toBeUndefined()
+    })
+  })
+
+  describe('atomic swap to give Eth', () => {
+    let contextForAtomicSwap: Context
+    let mockedAtomicSwap
+
+    beforeAll(async () => {
+      let mockedTopMenu = mockTopMenu(option)
+      mockedTopMenu.ask.mockResolvedValue({ idx: 0 })
+      let ret = await mockedTopMenu.run(context)
+      let contextForAccountDetail = mockAccountDetail(option)
+      contextForAccountDetail.ask.mockResolvedValue({
+        choice: AppMenu.DEPOSIT,
+      })
+      ret = await contextForAccountDetail.run(ret.context)
+      let mockedAtomicSwapMenu = mockAtomicSwap(option)
+      mockedAtomicSwapMenu.ask.mockResolvedValue({
+        choice: { menu: AppMenu.ATOMIC_SWAP_GIVE_ETH },
+      })
+      ret = await mockedAtomicSwapMenu.run(ret.context)
+      contextForAtomicSwap = ret.context
+      mockedAtomicSwap = mockAtomicSwapGiveEth(option)
+
+      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
+      option.base.getSpendables = jest.fn()
+      option.base.getSpendables.mockResolvedValue([
+        getFakeUtxo(accounts[0].zkAddress, UtxoStatus.UNSPENT),
+      ])
+    })
+    beforeEach(async () => {
+      if (fs.existsSync('zkwallet-db')) {
+        fs.unlinkSync('zkwallet-db')
+      }
+    })
+
+    it('select to swap with a spendable utxo', async () => {
+      option.base.fetchPrice = jest.fn()
+      option.base.fetchPrice.mockResolvedValue(100)
+      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
+      mockedAtomicSwap.ask.mockResolvedValue({
+        zkAddress: accounts[1].zkAddress.toString(),
+        amount: '0.01', // eth
+        fee: '1', // gwei
+        salt: '1234',
+      })
+
+      const ret = await mockedAtomicSwap.run(contextForAtomicSwap)
+      expect(ret.next).toEqual(AppMenu.ATOMIC_SWAP_TAKE)
+      const txBuilder = ret.context.swapTxBuilder
+      expect(txBuilder.sendings.length).toEqual(1)
+      expect(txBuilder.sendings[0].owner.address).toEqual(
+        accounts[1].zkAddress.toString(),
+      )
+
+      // recovery
+      option.base.fetchPrice.mockRestore()
+    })
+
+    it('failed to call fetchPrice', async () => {
+      // Not to mock `fetchPrice` here
+      await expect(mockedAtomicSwap.run(contextForAtomicSwap)).rejects.toThrow()
+    })
+  })
+
+  describe('atomic swap menu for taking', () => {
+    let contextForAtomicSwap: Context
+    let mockedAtomicSwap
+
+    beforeAll(async () => {
+      let mockedTopMenu = mockTopMenu(option)
+      mockedTopMenu.ask.mockResolvedValue({ idx: 0 })
+      let ret = await mockedTopMenu.run(context)
+      let contextForAccountDetail = mockAccountDetail(option)
+      contextForAccountDetail.ask.mockResolvedValue({
+        choice: AppMenu.DEPOSIT,
+      })
+      ret = await contextForAccountDetail.run(ret.context)
+      contextForAtomicSwap = ret.context
+      mockedAtomicSwap = mockAtomicSwapTake(option)
+    })
+
+    it('select to take Eth', async () => {
+      mockedAtomicSwap.ask.mockResolvedValue({
+        choice: { menu: AppMenu.ATOMIC_SWAP_TAKE_ETH },
+      })
+      const ret = await mockedAtomicSwap.run(contextForAtomicSwap)
+      expect(ret.next).toEqual(AppMenu.ATOMIC_SWAP_TAKE_ETH)
+      expect(ret.address).toBeUndefined()
+    })
+
+    it('select to go back', async () => {
+      mockedAtomicSwap.ask.mockResolvedValue({
+        choice: { menu: AppMenu.ACCOUNT_DETAIL },
+      })
+
+      // should be the same no matter there are spendable utxos or not
+      const ret = await mockedAtomicSwap.run(contextForAtomicSwap)
+      expect(ret.next).toEqual(AppMenu.ACCOUNT_DETAIL)
+      expect(ret.address).toBeUndefined()
+    })
+  })
+
+  describe('atomic swap to take Eth', () => {
+    let contextForAtomicSwap: Context
+    let mockedAtomicSwap
+
+    beforeAll(async () => {
+      const mockedTopMenu = mockTopMenu(option)
+      mockedTopMenu.ask.mockResolvedValue({ idx: 0 })
+      let ret = await mockedTopMenu.run(context)
+      let contextForAccountDetail = mockAccountDetail(option)
+      contextForAccountDetail.ask.mockResolvedValue({
+        choice: AppMenu.DEPOSIT,
+      })
+      ret = await contextForAccountDetail.run(ret.context)
+
+      contextForAtomicSwap = ret.context
+      mockedAtomicSwap = mockAtomicSwapTakeEth(option)
+    })
+
+    beforeEach(async () => {
+      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
+      contextForAtomicSwap.swapTxBuilder = getFakeSwapTxBuilder(
+        accounts[0].zkAddress,
+      )
+    })
+
+    it('take Eth less than giver gave', async () => {
+      mockedAtomicSwap.ask.mockResolvedValue({
+        amount: '0.01', // Eth
+        salt: '1234',
+      })
+      const spySendTx = jest
+        .spyOn(option.base, 'sendTx')
+        .mockImplementation((() => {}) as any)
+
+      const ret = await mockedAtomicSwap.run(contextForAtomicSwap)
+      expect(ret.next).toEqual(AppMenu.ACCOUNT_DETAIL)
+      expect(spySendTx).toHaveBeenCalled()
+    })
+
+    it('take Eth equal to giver gave', async () => {
+      mockedAtomicSwap.ask.mockResolvedValue({
+        amount: '1', // Eth
+        salt: '1234',
+      })
+      const spySendTx = jest
+        .spyOn(option.base, 'sendTx')
+        .mockImplementation((() => {}) as any)
+
+      const ret = await mockedAtomicSwap.run(contextForAtomicSwap)
+      expect(ret.next).toEqual(AppMenu.ACCOUNT_DETAIL)
+      expect(spySendTx).toHaveBeenCalled()
+    })
+
+    it('take Eth more than giver gave', async () => {
+      // cli should still be working even a user claims more than he/she has
+      mockedAtomicSwap.ask.mockResolvedValue({
+        amount: '1.01', // Eth
+        salt: '1234',
+      })
+      const spySendTx = jest
+        .spyOn(option.base, 'sendTx')
+        .mockImplementation((() => {}) as any)
+
+      const ret = await mockedAtomicSwap.run(contextForAtomicSwap)
+      expect(ret.next).toEqual(AppMenu.ACCOUNT_DETAIL)
+      expect(spySendTx).toHaveBeenCalled()
+    })
+  })
+
+  describe('withdraw request', () => {
+    let contextForWithdraw
+    let mockedWithdraw
+
+    beforeAll(async () => {
+      let mockedTopMenu = mockTopMenu(option)
+      mockedTopMenu.ask.mockResolvedValue({ idx: 0 })
+      let ret = await mockedTopMenu.run(context)
+      contextForWithdraw = ret.context
+
+      mockedWithdraw = mockWithdrawRequest(option)
+    })
+
+    it('select each menu', async () => {
+      const choices = [
+        AppMenu.ACCOUNT_DETAIL,
+        AppMenu.WITHDRAW_REQUEST_ETH,
+        -1, // unsupported value
+      ]
+      for (let choice of choices) {
+        mockedWithdraw.ask.mockResolvedValue({ choice: { menu: choice } })
+        const ret = await mockedWithdraw.run(contextForWithdraw)
+        expect(ret.context.address).toBeUndefined()
+        expect(ret.next).toEqual(choice)
+      }
+    })
+  })
+
+  describe('withdraw request Eth', () => {
+    let contextForWithdraw
+    let mockedWithdraw
+
+    beforeAll(async () => {
+      let mockedTopMenu = mockTopMenu(option)
+      mockedTopMenu.ask.mockResolvedValue({ idx: 0 })
+      let ret = await mockedTopMenu.run(context)
+      contextForWithdraw = ret.context
+      mockedWithdraw = mockWithdrawRequestEth(option)
+
+      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
+      option.base.getSpendables = jest.fn()
+      option.base.getSpendables.mockResolvedValue([
+        getFakeUtxo(accounts[0].zkAddress, UtxoStatus.UNSPENT),
+      ])
+      // mock zkWallet.fetchPrice bcs it queries coordinator
+      option.base.fetchPrice = jest.fn()
+      option.base.fetchPrice.mockResolvedValue(100)
+    })
+
+    beforeEach(async () => {
+      jest.restoreAllMocks()
+    })
+
+    it('withdraw to self', async () => {
+      mockedWithdraw.ask.mockResolvedValue({
+        address: contextForWithdraw.account?.ethAddress,
+        amount: '0.1', // eth
+        fee: '1', // gwei
+        prePayFee: '0', // gwei
+      })
+      const spySendTx = jest
+        .spyOn(option.base, 'sendTx')
+        .mockImplementation((() => {}) as any)
+
+      const ret = await mockedWithdraw.run(contextForWithdraw)
+      expect(ret.next).toEqual(AppMenu.TRANSFER)
+      expect(spySendTx).toHaveBeenCalled()
+    })
+
+    it('withdraw to accounts[1]', async () => {
+      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
+      mockedWithdraw.ask.mockResolvedValue({
+        address: accounts[1].ethAddress,
+        amount: '0.1', // eth
+        fee: '1', // gwei
+        prePayFee: '0', // gwei
+      })
+      const spySendTx = jest
+        .spyOn(option.base, 'sendTx')
+        .mockImplementation((() => {}) as any)
+
+      const ret = await mockedWithdraw.run(contextForWithdraw)
+      expect(ret.next).toEqual(AppMenu.TRANSFER)
+      expect(spySendTx).toHaveBeenCalled()
+    })
+  })
+
+  describe('withdraw list', () => {
+    let contextForWithdraw: Context
+    let mockedWithdraw
+
+    beforeAll(async () => {
+      let mockedTopMenu = mockTopMenu(option)
+      mockedTopMenu.ask.mockResolvedValue({ idx: 0 })
+      let ret = await mockedTopMenu.run(context)
+      contextForWithdraw = ret.context
+
+      mockedWithdraw = mockWithdrawableList(option)
+    })
+
+    it('select to withdraw', async () => {
+      const choices = [AppMenu.INSTANT_WITHDRAW, AppMenu.WITHDRAW]
+      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
+      const w = {
+        hash: '',
+        withdrawalHash: '',
+        eth: parseEther('0.01'),
+        tokenAddr: '0x0',
+        erc20Amount: '0',
+        nft: '0',
+        to: accounts[0].ethAddress,
+        fee: '1',
+      }
+      for (let choice of choices) {
+        mockedWithdraw.ask.mockResolvedValue({
+          choice: { menu: choice, withdrawal: w },
+        })
+        const ret = await mockedWithdraw.run(contextForWithdraw)
+        expect(ret.next).toEqual(choice)
+        expect(ret.context.withdrawal).toEqual(w)
+      }
+    })
+
+    it('select to go back', async () => {
+      const choices = [
+        AppMenu.ACCOUNT_DETAIL,
+        -1, // unsupported value
+      ]
+      for (let choice of choices) {
+        mockedWithdraw.ask.mockResolvedValue({
+          choice: { menu: choice },
+        })
+        const ret = await mockedWithdraw.run(contextForWithdraw)
+        expect(ret.next).toEqual(choice)
+        expect(ret.context.withdrawal).toBeUndefined()
+      }
+    })
+  })
+
+  describe('withdraw', () => {
+    let contextForWithdraw: Context
+    let withdraw
+
+    beforeAll(async () => {
+      let mockedTopMenu = mockTopMenu(option)
+      mockedTopMenu.ask.mockResolvedValue({ idx: 0 })
+      let ret = await mockedTopMenu.run(context)
+      contextForWithdraw = ret.context
+      withdraw = new Withdraw(option)
+    })
+
+    beforeEach(async () => {
+      jest.restoreAllMocks()
+    })
+
+    it('withdraw', async () => {
+      const mockedWithdrawList = mockWithdrawableList(option)
+      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
+      const w = {
+        hash: '0x123',
+        withdrawalHash: '0xabc',
+        eth: parseEther('0.01'),
+        tokenAddr: '0x0',
+        erc20Amount: '0',
+        nft: '0',
+        to: accounts[0].ethAddress,
+        fee: '1',
+      }
+      mockedWithdrawList.ask.mockResolvedValue({
+        choice: { menu: AppMenu.WITHDRAW, withdrawal: w },
+      })
+      let ret = await mockedWithdrawList.run(contextForWithdraw)
+
+      const spyWithdraw = jest
+        .spyOn(option.base, 'withdraw')
+        .mockImplementation((() => {}) as any)
+      ret = await withdraw.run(ret.context)
+      expect(ret.next).toEqual(AppMenu.WITHDRAWABLE_LIST)
+      expect(ret.context.withdrawal).toBeUndefined()
+      expect(spyWithdraw).toBeCalledWith(w)
+    })
+
+    it('withdraw but not correct context', async () => {
+      await expect(withdraw.run(contextForWithdraw)).rejects.toThrowError(
+        'Withdrawal is not set',
+      )
     })
   })
 })
