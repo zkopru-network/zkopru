@@ -1,6 +1,8 @@
+import { Fp } from '@zkopru/babyjubjub'
 import { RawTx } from '@zkopru/transaction'
 import { logger } from '@zkopru/utils'
 import assert from 'assert'
+import { parseEther } from 'ethers/lib/utils'
 import App, { AppMenu, Context } from '..'
 
 export default class AtomicSwapTakeEth extends App {
@@ -28,7 +30,8 @@ export default class AtomicSwapTakeEth extends App {
 
     const { swapTxBuilder } = context
     assert(swapTxBuilder, 'swap tx builder is not configured')
-    swapTxBuilder.receiveEther(amount, salt)
+    const amountWei = parseEther(amount)
+    swapTxBuilder.receiveEther(Fp.from(amountWei), salt)
     let tx!: RawTx
     try {
       tx = swapTxBuilder.build()
@@ -36,6 +39,7 @@ export default class AtomicSwapTakeEth extends App {
     } catch (err) {
       if (err instanceof Error)
         this.print(`Failed to build transaction \n${err.toString()}`)
+      console.log(err)
     }
     try {
       await wallet.sendTx({ tx, from: account })

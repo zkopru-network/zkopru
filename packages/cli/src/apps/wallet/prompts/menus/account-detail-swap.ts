@@ -1,5 +1,5 @@
 import { Sum } from '@zkopru/transaction'
-import { formatUnits } from 'ethers/lib/utils'
+import { formatEther } from 'ethers/lib/utils'
 import App, { AppMenu, Context } from '..'
 
 export default class AtomicSwap extends App {
@@ -18,10 +18,9 @@ export default class AtomicSwap extends App {
       choices: [
         { title: 'Go back', value: { menu: AppMenu.ACCOUNT_DETAIL } },
         {
-          title: `Ether (balance: ${formatUnits(
+          title: `Ether (balance: ${formatEther(
             spendables.eth,
-            'ether',
-          )} ETH / locked: ${formatUnits(locked.eth, 'ether')} ETH)`,
+          )} ETH / locked: ${formatEther(locked.eth)} ETH)`,
           value: { menu: AppMenu.ATOMIC_SWAP_GIVE_ETH },
         },
         ...Object.keys(spendables.erc20).map(address => ({
