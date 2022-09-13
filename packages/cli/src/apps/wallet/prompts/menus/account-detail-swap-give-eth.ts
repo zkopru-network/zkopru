@@ -2,7 +2,12 @@ import { Fp } from '@zkopru/babyjubjub'
 import { Sum, Utxo, SwapTxBuilder, ZkAddress } from '@zkopru/transaction'
 import { logger } from '@zkopru/utils'
 import { BigNumber } from 'ethers'
-import { formatEther, formatUnits, parseUnits } from 'ethers/lib/utils'
+import {
+  formatEther,
+  formatUnits,
+  parseEther,
+  parseUnits,
+} from 'ethers/lib/utils'
 import App, { AppMenu, Context } from '..'
 
 export default class AtomicSwapGiveEth extends App {
@@ -66,8 +71,8 @@ export default class AtomicSwapGiveEth extends App {
         initial: 0,
         message: 'How much ETH do you give(ex: 0.3 ETH)?',
       })
-      amountWei = parseUnits(amount, 'ether').toString()
-      msgs.push(`Sending amount: ${formatUnits(amountWei, 'ether')} ETH`)
+      amountWei = parseEther(amount).toString()
+      msgs.push(`Sending amount: ${formatEther(amountWei)} ETH`)
       msgs.push(`    = ${amountWei} wei`)
       this.print([...messages, ...msgs].join('\n'))
       const gweiPerByte = formatUnits(weiPerByte, 'gwei')
@@ -84,9 +89,7 @@ export default class AtomicSwapGiveEth extends App {
       })
       confirmedWeiPerByte = parseUnits(fee, 'gwei')
       logger.info(`confirmedWeiPerByte: ${confirmedWeiPerByte}`)
-      msgs.push(
-        `Wei per byte: ${formatUnits(confirmedWeiPerByte, 'ether')} ETH`,
-      )
+      msgs.push(`Wei per byte: ${formatEther(confirmedWeiPerByte)} ETH`)
       msgs.push(`    = ${formatUnits(confirmedWeiPerByte, 'gwei')} gwei`)
       this.print(messages.join('\n'))
 
