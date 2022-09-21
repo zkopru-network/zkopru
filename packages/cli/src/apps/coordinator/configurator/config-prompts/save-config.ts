@@ -8,6 +8,9 @@ export default class SaveConfig extends Configurator {
   static code = Menu.SAVE_CONFIG
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
+    if (!context.provider || !context.keystore)
+      throw Error('provider and keystore is not configured')
+
     const { save } = await this.ask({
       type: 'confirm',
       initial: true,
@@ -35,10 +38,8 @@ export default class SaveConfig extends Configurator {
         })
         password = retyped
         try {
-          if (!context.provider || !context.keystore)
-            throw Error('provider or keystore is not configured')
           const wallet = Wallet.fromEncryptedJsonSync(
-            context.keystore,
+            JSON.stringify(context.keystore),
             password,
           )
           if (wallet.address != (await context.account?.getAddress()))
