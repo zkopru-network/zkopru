@@ -3,6 +3,7 @@ import { JsonRpcProvider, WebSocketProvider } from '@ethersproject/providers'
 import { NetworkStatus } from '@zkopru/core'
 import { loadConfig } from '../../utils'
 import {
+  Config,
   Context,
   Menu,
 } from '../../../src/apps/coordinator/configurator/configurator'
@@ -34,7 +35,7 @@ describe('configurator', () => {
     await handleAfter()
 
     // init context and option
-    const config = loadConfig(COORDINATOR_CONFIG)
+    const config = loadConfig(COORDINATOR_CONFIG) as Config
     context = {
       networkStatus: NetworkStatus.STOPPED,
     }
@@ -137,7 +138,7 @@ describe('configurator', () => {
 
     it('import from a private key', async () => {
       const defaultConfig = option.base
-      option.base = loadConfig(COORDINATOR_CONFIG_ONLY_PROVIDER)
+      option.base = loadConfig(COORDINATOR_CONFIG_ONLY_PROVIDER) as Config
 
       const mockedConfig = mockConfigureAccount(option)
       mockedConfig.ask.mockResolvedValue({
@@ -162,7 +163,7 @@ describe('configurator', () => {
 
     it('select to create a new account', async () => {
       const defaultConfig = option.base
-      option.base = loadConfig(COORDINATOR_CONFIG_ONLY_PROVIDER)
+      option.base = loadConfig(COORDINATOR_CONFIG_ONLY_PROVIDER) as Config
 
       const mockedConfig = mockConfigureAccount(option)
       mockedConfig.ask.mockResolvedValue({
@@ -185,7 +186,7 @@ describe('configurator', () => {
 
     it('create a new account by config.daemon ', async () => {
       const defaultConfig = option.base
-      option.base = loadConfig(COORDINATOR_CONFIG_ONLY_PROVIDER)
+      option.base = loadConfig(COORDINATOR_CONFIG_ONLY_PROVIDER) as Config
       option.base.daemon = true
 
       const mockedConfig = mockConfigureAccount(option)
@@ -297,7 +298,9 @@ describe('configurator', () => {
 
     beforeEach(async () => {
       defaultConfig = option.base
-      const configWithoutDB = loadConfig(COORDINATOR_CONFIG_ONLY_PROVIDER)
+      const configWithoutDB = loadConfig(
+        COORDINATOR_CONFIG_ONLY_PROVIDER,
+      ) as Config
       option.base = configWithoutDB
       mockedLoadDB = mockLoadDatabase(option)
     })

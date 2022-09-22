@@ -1,8 +1,7 @@
 /* eslint-disable no-case-declarations */
 import fs from 'fs'
-import { Config } from '../src/apps/wallet/configurator/configurator'
 
-export function loadConfig(path: string): Config {
+export function loadConfig(path: string): any {
   const config = {
     ...JSON.parse(fs.readFileSync(path).toString('utf8')),
   }
