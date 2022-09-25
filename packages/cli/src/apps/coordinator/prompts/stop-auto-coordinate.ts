@@ -6,7 +6,7 @@ export default class StopAutoCoordination extends App {
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
     this.print(chalk.blue('Stop auto coordination'))
-    this.base.stop()
+    await this.base.stop()
     return { context, next: AppMenu.TOP_MENU }
   }
 }
