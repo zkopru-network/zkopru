@@ -9,6 +9,7 @@ import {
   mockTrackingAccount,
 } from './mocksForConfigurator'
 import {
+  Config,
   Context,
   Menu,
 } from '../../../src/apps/wallet/configurator/configurator'
@@ -43,7 +44,7 @@ describe('configurator', () => {
     await handleAfter()
 
     // init context and option
-    const config = loadConfig(WALLET_CONFIG)
+    const config = loadConfig(WALLET_CONFIG) as Config
     context = {
       menu: 0,
       networkStatus: NetworkStatus.STOPPED,
@@ -155,7 +156,7 @@ describe('configurator', () => {
 
     it('create a new sqlite db', async () => {
       const defaultConfig = option.base
-      let configWithoutDB = loadConfig(WALLET_CONFIG_ONLY_PROVIDER)
+      let configWithoutDB = loadConfig(WALLET_CONFIG_ONLY_PROVIDER) as Config
       option.base = configWithoutDB
       const mockedDB = mockLoadDatabase(option)
       mockedDB.ask.mockResolvedValue({
@@ -189,7 +190,7 @@ describe('configurator', () => {
 
     it('provide an undefined provider object', async () => {
       const defaultProvider = contextForLoadDB.provider
-      const db = new LoadDatabase(contextForLoadDB)
+      const db = new LoadDatabase(option)
       contextForLoadDB.provider = undefined
       await expect(db.run(contextForLoadDB)).rejects.toThrow(
         'Provider is not connected',
@@ -258,7 +259,9 @@ describe('configurator', () => {
       const zkAccount = walletContext.accounts![0]
 
       // new a LoadHDWallet instance and wallets inside should be from DB
-      let configWithoutKeystore = loadConfig(WALLET_CONFIG_ONLY_PROVIDER)
+      let configWithoutKeystore = loadConfig(
+        WALLET_CONFIG_ONLY_PROVIDER,
+      ) as Config
       optionForHDWallet.base = configWithoutKeystore
       const hdWallet = mockLoadHDWallet(optionForHDWallet)
       hdWallet.ask.mockResolvedValue({
@@ -281,7 +284,9 @@ describe('configurator', () => {
       const defaultConfig = optionForHDWallet.base
 
       // create a wallet with type of EncryptedWallet in db first
-      let configWithoutKeystore = loadConfig(WALLET_CONFIG_ONLY_PROVIDER)
+      let configWithoutKeystore = loadConfig(
+        WALLET_CONFIG_ONLY_PROVIDER,
+      ) as Config
       configWithoutKeystore.mnemonic = MNEMONIC
       optionForHDWallet.base = configWithoutKeystore
       let mockedHdWallet = mockLoadHDWallet(optionForHDWallet)
@@ -325,7 +330,9 @@ describe('configurator', () => {
     })
 
     it('create a new wallet', async () => {
-      const configWithoutKeystore = loadConfig(WALLET_CONFIG_ONLY_PROVIDER)
+      const configWithoutKeystore = loadConfig(
+        WALLET_CONFIG_ONLY_PROVIDER,
+      ) as Config
       optionForHDWallet.base = configWithoutKeystore
       const mockedHdWallet = mockLoadHDWallet(optionForHDWallet)
       mockedHdWallet.ask.mockResolvedValue({
@@ -352,7 +359,9 @@ describe('configurator', () => {
     })
 
     it('create a new wallet from input mnemonic', async () => {
-      let configWithoutKeystore = loadConfig(WALLET_CONFIG_ONLY_PROVIDER)
+      let configWithoutKeystore = loadConfig(
+        WALLET_CONFIG_ONLY_PROVIDER,
+      ) as Config
       configWithoutKeystore.mnemonic = MNEMONIC
       optionForHDWallet.base = configWithoutKeystore
       const mockedHdWallet = mockLoadHDWallet(optionForHDWallet)
@@ -375,7 +384,9 @@ describe('configurator', () => {
     })
 
     it('abort while creating a new wallet', async () => {
-      const configWithoutKeystore = loadConfig(WALLET_CONFIG_ONLY_PROVIDER)
+      const configWithoutKeystore = loadConfig(
+        WALLET_CONFIG_ONLY_PROVIDER,
+      ) as Config
       optionForHDWallet.base = configWithoutKeystore
       const mockedHdWallet = mockLoadHDWallet(optionForHDWallet)
       mockedHdWallet.ask.mockResolvedValue({
@@ -453,7 +464,9 @@ describe('configurator', () => {
       const defaultConfig = option.base
 
       // create a new account in LoadHDWallet to make `isInitialSetup == true`
-      let configWithoutKeystore = loadConfig(WALLET_CONFIG_ONLY_PROVIDER)
+      let configWithoutKeystore = loadConfig(
+        WALLET_CONFIG_ONLY_PROVIDER,
+      ) as Config
       configWithoutKeystore.mnemonic = MNEMONIC
       option.base = configWithoutKeystore
       const mockedHdWallet = mockLoadHDWallet(option)
@@ -482,7 +495,9 @@ describe('configurator', () => {
       const defaultConfig = option.base
 
       // create a new account in LoadHDWallet to make `isInitialSetup == true`
-      let configWithoutKeystore = loadConfig(WALLET_CONFIG_ONLY_PROVIDER)
+      let configWithoutKeystore = loadConfig(
+        WALLET_CONFIG_ONLY_PROVIDER,
+      ) as Config
       configWithoutKeystore.mnemonic = MNEMONIC
       option.base = configWithoutKeystore
       const mockedHdWallet = mockLoadHDWallet(option)
@@ -555,7 +570,7 @@ describe('configurator', () => {
     it.skip('create a new account', async () => {
       // const defaultConfig = option.base
       // // create a new account in LoadHDWallet to make `isInitialSetup == true`
-      // let configWithoutKeystore = loadConfig(WALLET_CONFIG_ONLY_PROVIDER)
+      // let configWithoutKeystore = loadConfig(WALLET_CONFIG_ONLY_PROVIDER)  as Config
       // configWithoutKeystore.mnemonic = MNEMONIC
       // option.base = configWithoutKeystore
       // const mockedHdWallet = mockLoadHDWallet(option)
@@ -673,7 +688,7 @@ describe('configurator', () => {
       contextForConfig = ret.context
     })
 
-    it('return directly if not a new create wallet', async () => {
+    it('return directly if not a new created wallet', async () => {
       const config = new SaveConfig(option)
       const ret = await config.run(contextForConfig)
       expect(ret.next).toEqual(Menu.COMPLETE)
@@ -686,7 +701,6 @@ describe('configurator', () => {
         save: true,
         password: 'helloworld',
         filePath: NEW_WALLET_CONFIG_PATH,
-        // overwrite: false,
       })
       const ret = await mockedConfig.run(contextForConfig)
 
@@ -710,7 +724,7 @@ describe('configurator', () => {
 
       expect(ret.next).toEqual(Menu.COMPLETE)
       expect(fs.existsSync(NEW_WALLET_CONFIG_PATH)).toBe(true)
-      const newConfig = loadConfig(NEW_WALLET_CONFIG_PATH)
+      const newConfig = loadConfig(NEW_WALLET_CONFIG_PATH) as Config
       expect(newConfig['accountNumber']).toEqual(ret.context.accounts!.length)
     })
 
