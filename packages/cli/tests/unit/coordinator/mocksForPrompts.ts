@@ -16,7 +16,7 @@ import RegisterVk from '../../../src/apps/coordinator/prompts/setup/register-vks
 import StopAutoCoordination from '../../../src/apps/coordinator/prompts/stop-auto-coordinate'
 import TopMenu from '../../../src/apps/coordinator/prompts/top-menus'
 import AuctionInfo from '../../../src/apps/coordinator/prompts/auction-info'
-import { Context } from '../../../src/apps/coordinator/configurator/configurator'
+import { Context } from '../../../src/apps/coordinator/prompts'
 
 // mock prompt module
 jest.mock('../../../../utils/src/prompt')
