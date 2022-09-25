@@ -31,6 +31,7 @@ import { BlockGenerator } from './middlewares/default/block-generator'
 import { BlockProposer } from './middlewares/default/block-proposer'
 import { CoordinatorApi } from './api'
 import { AuctionMonitor } from './auction-monitor'
+import { ethers } from 'ethers'
 
 export interface CoordinatorInterface {
   start: () => void
@@ -291,7 +292,9 @@ export class Coordinator extends EventEmitter {
   }
 
   async deregister(): Promise<TransactionReceipt> {
-    const tx = await this.layer1().coordinator.deregister()
+    const tx = await this.layer1()
+      .coordinator.connect(this.context.account)
+      .deregister()
     const receipt = await tx.wait()
     return receipt
   }
@@ -399,10 +402,9 @@ export class Coordinator extends EventEmitter {
       serializeBody(block.body),
     ])
     const expectedGas = (
-      await this.layer1().coordinator.estimateGas.propose(
-        `0x${bytes.toString('hex')}`,
-        { from: this.context.account.getAddress() },
-      )
+      await this.layer1()
+        .coordinator.connect(this.context.account)
+        .estimateGas.propose(`0x${bytes.toString('hex')}`)
     ).add(MAX_MASS_DEPOSIT_COMMIT_GAS)
     const expectedCost = this.context.effectiveGasPrice.mul(expectedGas)
     logger.info(
