@@ -606,7 +606,6 @@ describe('configurator', () => {
     })
 
     it('run a full node', async () => {
-      // option.base.fullnode = true
       const node = new LoadNode(option)
       const ret = await node.run(contextForLoadNode)
 
@@ -619,16 +618,20 @@ describe('configurator', () => {
       expect(ret.context.node!.bootstrapHelper).toBeUndefined()
     })
 
-    // FIXME: need to launch coordinator
-    it.skip('run a light node', async () => {
+    it('run a light node', async () => {
       option.base.fullnode = false
-      const node = new LoadNode(option)
-      const ret = await node.run(contextForLoadNode)
 
-      expect(ret.next).toEqual(Menu.SAVE_CONFIG)
-      expect(ret.context.node).toBeDefined()
-      expect(ret.context.node!.isRunning()).toEqual(false)
-      expect(ret.context.node!.bootstrapHelper).toBeDefined()
+      const mockExit = jest.spyOn(process, 'exit').mockImplementation((() => {
+        throw Error('process.exit(1)')
+      }) as any)
+
+      const node = new LoadNode(option)
+      await expect(node.run(contextForLoadNode)).rejects.toThrowError(
+        'process.exit(1)',
+      )
+      expect(mockExit).toHaveBeenCalled()
+
+      mockExit.mockRestore()
     })
 
     it('provide an undefined provider obj', async () => {
