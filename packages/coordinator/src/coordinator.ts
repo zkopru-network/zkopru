@@ -31,7 +31,6 @@ import { BlockGenerator } from './middlewares/default/block-generator'
 import { BlockProposer } from './middlewares/default/block-proposer'
 import { CoordinatorApi } from './api'
 import { AuctionMonitor } from './auction-monitor'
-import { ethers } from 'ethers'
 
 export interface CoordinatorInterface {
   start: () => void
@@ -287,7 +286,7 @@ export class Coordinator extends EventEmitter {
       consensus,
       this.context.account,
     ).register({ value: minimumStake })
-    const receipt = tx.wait()
+    const receipt = await tx.wait()
     return receipt
   }
 
