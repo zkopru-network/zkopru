@@ -110,6 +110,7 @@ describe('example-config', () => {
   })
 
   describe('setWebsocket', () => {
+    jest.setTimeout(10000)
     it('input a websocket', async () => {
       const websocket = 'ws://localhost:5001'
       const mockedSetWebsocket = mockSetWebsocket(option)

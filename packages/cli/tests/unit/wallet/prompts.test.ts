@@ -196,16 +196,15 @@ describe('wallet', () => {
 
     // FIXME: to have ERC20 and ERC721
     it.skip('run', async () => {
-      const choices = [AppMenu.DEPOSIT_ERC20, AppMenu.DEPOSIT_ERC721]
-      for (let choice of choices) {
-        mockedDeposit.ask.mockResolvedValue({ choice: { menu: choice } })
-        const ret = await mockedDeposit.run(contextForDeposit)
-        expect(ret.context.address).toBeDefined()
-        expect(ret.context.address).toEqual(
-          '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1',
-        )
-        expect(ret.next).toEqual(choice)
-      }
+      mockedDeposit.ask.mockResolvedValue({
+        choice: { menu: AppMenu.DEPOSIT_ERC20 },
+      })
+      const ret = await mockedDeposit.run(contextForDeposit)
+      expect(ret.context.address).toBeDefined()
+      expect(ret.context.address).toEqual(
+        '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1',
+      )
+      expect(ret.next).toEqual(AppMenu.DEPOSIT_ERC20)
     })
   })
 
@@ -297,6 +296,29 @@ describe('wallet', () => {
         parseEther('0'),
       )
       expect(spyDeposit).not.toHaveBeenCalled()
+    })
+
+    it('deposit ETH and amount with leading and trailing space', async () => {
+      mockedDepositETH.ask.mockResolvedValue({
+        amount: ' 0.01 ',
+        fee: ' 0.001 ',
+        confirmed: true,
+      })
+      // mock deposit and depositEther here to save testing time
+      const spyDepositEth = jest.spyOn(option.base, 'depositEther')
+      const spyDeposit = jest
+        .spyOn(option.base, 'deposit')
+        .mockImplementation((() => {
+          return true
+        }) as any)
+
+      const ret = await mockedDepositETH.run(contextForDepositETH)
+      expect(ret.next).toEqual(AppMenu.DEPOSIT)
+      expect(spyDepositEth).toHaveBeenCalledWith(
+        parseEther('0.01'),
+        parseEther('0.001'),
+      )
+      expect(spyDeposit).toHaveBeenCalled()
     })
 
     it('Reject to confirm Eth deposit', async () => {
@@ -465,6 +487,22 @@ describe('wallet', () => {
       expect(spySendTx).toHaveBeenCalled()
     })
 
+    it('transfer ETH and amount with leading and trailing space', async () => {
+      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
+      mockedTransferETH.ask.mockResolvedValue({
+        zkAddress: accounts[1].zkAddress.toString(),
+        amount: ' 0.01 ', // ETH
+        fee: ' 1 ', // gwei
+      })
+      const spySendTx = jest
+        .spyOn(option.base, 'sendTx')
+        .mockImplementation((() => {}) as any)
+
+      const ret = await mockedTransferETH.run(contextForTransferETH)
+      expect(ret.next).toEqual(AppMenu.TRANSFER)
+      expect(spySendTx).toHaveBeenCalled()
+    })
+
     it('failed to fetch price', async () => {
       option.base.fetchPrice.mockRestore()
       const transferEth = new TransferEth(option)
@@ -569,6 +607,29 @@ describe('wallet', () => {
         zkAddress: accounts[1].zkAddress.toString(),
         amount: '0.01', // eth
         fee: '1', // gwei
+        salt: '1234',
+      })
+
+      const ret = await mockedAtomicSwap.run(contextForAtomicSwap)
+      expect(ret.next).toEqual(AppMenu.ATOMIC_SWAP_TAKE)
+      const txBuilder = ret.context.swapTxBuilder
+      expect(txBuilder.sendings.length).toEqual(1)
+      expect(txBuilder.sendings[0].owner.address).toEqual(
+        accounts[1].zkAddress.toString(),
+      )
+
+      // recovery
+      option.base.fetchPrice.mockRestore()
+    })
+
+    it('select to swap with a spendable utxo and amount with with leading and trailing space', async () => {
+      option.base.fetchPrice = jest.fn()
+      option.base.fetchPrice.mockResolvedValue(100)
+      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
+      mockedAtomicSwap.ask.mockResolvedValue({
+        zkAddress: accounts[1].zkAddress.toString(),
+        amount: ' 0.01 ', // eth
+        fee: ' 1 ', // gwei
         salt: '1234',
       })
 
@@ -695,6 +756,20 @@ describe('wallet', () => {
       expect(ret.next).toEqual(AppMenu.ACCOUNT_DETAIL)
       expect(spySendTx).toHaveBeenCalled()
     })
+
+    it('take Eth less than giver gave and amount with leading and trailing space', async () => {
+      mockedAtomicSwap.ask.mockResolvedValue({
+        amount: ' 0.01 ', // Eth
+        salt: '1234',
+      })
+      const spySendTx = jest
+        .spyOn(option.base, 'sendTx')
+        .mockImplementation((() => {}) as any)
+
+      const ret = await mockedAtomicSwap.run(contextForAtomicSwap)
+      expect(ret.next).toEqual(AppMenu.ACCOUNT_DETAIL)
+      expect(spySendTx).toHaveBeenCalled()
+    })
   })
 
   describe('withdraw request', () => {
@@ -773,6 +848,22 @@ describe('wallet', () => {
         amount: '0.1', // eth
         fee: '1', // gwei
         prePayFee: '0', // gwei
+      })
+      const spySendTx = jest
+        .spyOn(option.base, 'sendTx')
+        .mockImplementation((() => {}) as any)
+
+      const ret = await mockedWithdraw.run(contextForWithdraw)
+      expect(ret.next).toEqual(AppMenu.TRANSFER)
+      expect(spySendTx).toHaveBeenCalled()
+    })
+
+    it('withdraw to self and amount with leading and trailing space', async () => {
+      mockedWithdraw.ask.mockResolvedValue({
+        address: contextForWithdraw.account?.ethAddress,
+        amount: ' 0.1 ', // eth
+        fee: ' 1 ', // gwei
+        prePayFee: ' 0 ', // gwei
       })
       const spySendTx = jest
         .spyOn(option.base, 'sendTx')

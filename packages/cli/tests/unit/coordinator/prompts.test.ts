@@ -13,7 +13,6 @@ import { loadConfig } from '../../utils'
 import {
   mockAuctionMenu,
   mockRefund,
-  mockRegisterVk,
   mockSetupMenu,
   mockTopMenu,
   mockUpdateMaxBid,
@@ -25,7 +24,6 @@ import ConnectWeb3 from '../../../src/apps/coordinator/configurator/config-promp
 import ConfigureAccount from '../../../src/apps/coordinator/configurator/config-prompts/config-account'
 import LoadDatabase from '../../../src/apps/coordinator/configurator/config-prompts/load-database'
 import LoadCoordinator from '../../../src/apps/coordinator/configurator/config-prompts/load-coordinator'
-import CompleteSetup from '../../../src/apps/coordinator/prompts/setup/complete-setup'
 import CommitDeposits from '../../../src/apps/coordinator/prompts/setup/commit-deposits'
 import RegisterAsCoordinator from '../../../src/apps/coordinator/prompts/setup/register-as-coordinator'
 import Deregister from '../../../src/apps/coordinator/prompts/setup/deregister'
@@ -38,7 +36,7 @@ const ADDR_ZKOPRU_CONTRACT = '0x970e8f18ebfEa0B08810f33a5A40438b9530FBCF'
 const PRIVATE_KEY =
   '0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d'
 
-describe('prompts', () => {
+describe.skip('prompts', () => {
   jest.setTimeout(25000)
 
   let context: Context
@@ -148,30 +146,6 @@ describe('prompts', () => {
         const ret = await mockedMenu.run(context)
         expect(ret.next).toEqual(code)
       }
-    })
-  })
-
-  describe.skip('RegisterVk', () => {
-    const vkPath = '../circuits/keys/vks/zk_transaction_1_1.vk.json'
-    it('register verification keys', async () => {
-      const mockedRegisterVk = mockRegisterVk(option)
-      // path.join(vkPath, `zk_transaction_${i}_${j}.vk.json`)
-      mockedRegisterVk.ask.mockResolvedValue({
-        chosenPath: vkPath,
-        nIn: 4,
-        nOut: 4,
-      })
-
-      const ret = await mockedRegisterVk.run(context)
-      expect(ret.next).toEqual(AppMenu.SETUP_MENU)
-    })
-  })
-
-  describe.skip('CompleteSetup', () => {
-    it('complete setup', async () => {
-      const completeSetup = new CompleteSetup(option)
-      const ret = await completeSetup.run(context)
-      expect(ret.next).toEqual(AppMenu.SETUP_MENU)
     })
   })
 
