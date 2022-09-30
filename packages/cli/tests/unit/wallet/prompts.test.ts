@@ -194,17 +194,34 @@ describe('wallet', () => {
       }
     })
 
-    // FIXME: to have ERC20 and ERC721
-    it.skip('run', async () => {
+    it('deposit ERC20', async () => {
       mockedDeposit.ask.mockResolvedValue({
-        choice: { menu: AppMenu.DEPOSIT_ERC20 },
+        choice: {
+          menu: AppMenu.DEPOSIT_ERC20,
+          address: '0x9561C133DD8580860B6b7E504bC5Aa500f0f06a7',
+        },
       })
       const ret = await mockedDeposit.run(contextForDeposit)
       expect(ret.context.address).toBeDefined()
       expect(ret.context.address).toEqual(
-        '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1',
+        '0x9561C133DD8580860B6b7E504bC5Aa500f0f06a7',
       )
       expect(ret.next).toEqual(AppMenu.DEPOSIT_ERC20)
+    })
+
+    it('deposit ERC721', async () => {
+      mockedDeposit.ask.mockResolvedValue({
+        choice: {
+          menu: AppMenu.DEPOSIT_ERC721,
+          address: '0xe982E462b094850F12AF94d21D470e21bE9D0E9C',
+        },
+      })
+      const ret = await mockedDeposit.run(contextForDeposit)
+      expect(ret.context.address).toBeDefined()
+      expect(ret.context.address).toEqual(
+        '0xe982E462b094850F12AF94d21D470e21bE9D0E9C',
+      )
+      expect(ret.next).toEqual(AppMenu.DEPOSIT_ERC721)
     })
   })
 
