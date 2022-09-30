@@ -1,3 +1,4 @@
+import chalk from 'chalk'
 import { Fp } from '@zkopru/babyjubjub'
 import { RawTx } from '@zkopru/transaction'
 import { logger } from '@zkopru/utils'
@@ -16,12 +17,21 @@ export default class AtomicSwapTakeEth extends App {
     const messages: string[] = []
     this.print(messages.join('\n'))
 
-    const { amount } = await this.ask({
-      type: 'text',
-      name: 'amount',
-      initial: 0,
-      message: 'How much ETH do you take(ex: 0.3 ETH)?',
-    })
+    let formatedAmount
+    do {
+      const { amount } = await this.ask({
+        type: 'text',
+        name: 'amount',
+        initial: 0,
+        message: 'How much ETH do you take(ex: 0.3 ETH)?',
+      })
+
+      formatedAmount = parseFloat(amount)
+      if (!isNaN(formatedAmount)) {
+        break
+      }
+      this.print(chalk.red('integer or float number only'))
+    } while (true)
     const { salt } = await this.ask({
       type: 'text',
       name: 'salt',
@@ -30,7 +40,7 @@ export default class AtomicSwapTakeEth extends App {
 
     const { swapTxBuilder } = context
     assert(swapTxBuilder, 'swap tx builder is not configured')
-    const amountWei = parseEther(amount)
+    const amountWei = parseEther(formatedAmount.toString())
     swapTxBuilder.receiveEther(Fp.from(amountWei), salt)
     let tx!: RawTx
     try {

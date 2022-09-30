@@ -163,8 +163,7 @@ export default class LoadHDWallet extends Configurator {
       try {
         await wallet.load(existing, password)
       } catch (err) {
-        console.error(err)
-        this.print('Failed to load wallet. Try again')
+        console.log('Failed to load wallet. Try again')
         const result = await this.run(context)
         return result
       }

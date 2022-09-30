@@ -19,12 +19,11 @@ export default class UpdateMaxBid extends App {
       })
 
       formatedAmount = parseFloat(amount)
-      if (isNaN(formatedAmount)) {
-        console.log(chalk.red('integer or float number only'))
-        continue
+      if (!isNaN(formatedAmount)) {
+        break
       }
-    } while (false)
-
+      this.print(chalk.red('integer or float number only'))
+    } while (true)
     const amountWei = parseUnits(formatedAmount.toString(), 'gwei')
     this.print(chalk.blue(`Updating max bid...`))
     await this.base.context.auctionMonitor.setMaxBid(amountWei)
