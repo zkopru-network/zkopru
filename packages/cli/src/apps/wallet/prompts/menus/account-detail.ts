@@ -1,4 +1,5 @@
 import { Balance } from '@zkopru/zk-wizard'
+import { logger } from '@zkopru/utils'
 import { formatUnits } from 'ethers/lib/utils'
 import App, { AppMenu, Context } from '..'
 
@@ -9,8 +10,18 @@ export default class AccountDetail extends App {
   async run(context: Context): Promise<{ context: Context; next: number }> {
     const wallet = this.base
     const { account } = context
-    if (!account) throw Error('Account is not set')
-    const balance: Balance = await wallet.fetchLayer1Assets(account)
+    if (!account) {
+      this.print('Account is not set, try to execute cli/wallet again')
+      return { next: AppMenu.TOP_MENU, context }
+    }
+    let balance: Balance
+    try {
+      balance = await wallet.fetchLayer1Assets(account)
+    } catch (err) {
+      this.print('failed to fetch L1 account info')
+      logger.error(err as any)
+      return { next: AppMenu.TOP_MENU, context }
+    }
     const spendables = await wallet.getSpendableAmount(account)
     const messages: string[] = []
     const { eth, erc20, erc721 } = balance

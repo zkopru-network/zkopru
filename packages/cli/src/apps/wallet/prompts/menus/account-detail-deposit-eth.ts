@@ -18,25 +18,42 @@ export default class DepositEther extends App {
     let feeWei: BigNumber
     let hasEnoughBalance = false
     do {
-      const { amount } = await this.ask({
-        type: 'text',
-        name: 'amount',
-        initial: 0,
-        message: 'How much ETH do you want to deposit?',
-      })
-      amountWei = parseEther(amount.toString())
+      let formatedAmount
+      let formatedFee
+      do {
+        const { amount } = await this.ask({
+          type: 'text',
+          name: 'amount',
+          initial: 0,
+          message: 'How much ETH do you want to deposit?',
+        })
+        formatedAmount = parseFloat(amount)
+        if (!isNaN(formatedAmount)) {
+          break
+        }
+        this.print(chalk.red('integer or float number only'))
+      } while (true)
+
+      amountWei = parseEther(formatedAmount.toString())
       const messages: string[] = []
-      messages.push(`Amount: ${amount} ETH`)
+      messages.push(`Amount: ${formatedAmount} ETH`)
       messages.push(`    = ${amountWei.toString()} wei`)
       this.print(messages.join('\n'))
-      const { fee } = await this.ask({
-        type: 'text',
-        name: 'fee',
-        initial: 0,
-        message: 'How much ETH do you want to pay for the fee?',
-      })
-      feeWei = parseEther(fee.toString())
-      messages.push(`Fee: ${fee} ETH`)
+      do {
+        const { fee } = await this.ask({
+          type: 'text',
+          name: 'fee',
+          initial: 0,
+          message: 'How much ETH do you want to pay for the fee?',
+        })
+        formatedFee = parseFloat(fee)
+        if (!isNaN(formatedFee)) {
+          break
+        }
+        this.print(chalk.red('integer or float number only'))
+      } while (true)
+      feeWei = parseEther(formatedFee.toString())
+      messages.push(`Fee: ${formatedFee} ETH`)
       messages.push(`    = ${feeWei.toString()} wei`)
       this.print(messages.join('\n'))
       const total = amountWei.add(feeWei)
