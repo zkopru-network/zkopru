@@ -211,7 +211,7 @@ export class Coordinator extends EventEmitter {
         },
         ic: vk.IC.map((ic: string[]) => ({ X: ic[0], Y: ic[1] })),
       })
-    const receipt = tx.wait()
+    const receipt = await tx.wait()
     return receipt
   }
 
@@ -273,8 +273,7 @@ export class Coordinator extends EventEmitter {
       const tx = await auction
         .connect(this.context.account)
         ['bid(uint256)'](x, { value: nextBid })
-      const receipt = tx.wait()
-      promises.push(receipt)
+      promises.push(tx.wait())
     }
     await Promise.all(promises)
   }
