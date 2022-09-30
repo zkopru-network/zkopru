@@ -24,9 +24,9 @@
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "link-modules": "link-module-alias",
     "hardhat": "hardhat node&",
-    "test": "hardhat test:jest",
+    "test": "jest tests --runInBand --forceExit",
     "test:trace": "LOG_LEVEL=trace PRINT_LOG=true jest",
-    "test:unit": "jest test/unit",
+    "test:unit": "jest tests",
     "test:watch": "jest --watch",
     "test:ci": "jest --coverage --ci --reporters='jest-junit'",
     "coverage": "jest --coverage",
@@ -72,5 +72,4 @@
     "jest-mock": "27.0.6",
     "hardhat-jest-plugin": "0.0.6"
   }
-
 }
