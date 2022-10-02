@@ -7,13 +7,10 @@ import prettier from 'pino-pretty'
 import { AnsiTerminal } from 'node-ansiterminal'
 import AnsiParser from 'node-ansiparser'
 import { instruction } from './instruction'
+import { DashboardCode } from './dashboard-code'
 
 export class Dashboard<T, B> {
-  static START_CODE = -777
-
-  static EXIT_CODE = -999
-
-  code: number = Dashboard.START_CODE
+  code: number = DashboardCode.START_CODE
 
   screen: Widgets.Screen
 
@@ -235,8 +232,8 @@ export class Dashboard<T, B> {
   }
 
   async run(): Promise<void> {
-    let code = await this.runPrompts(Dashboard.START_CODE)
-    while (code !== Dashboard.EXIT_CODE) {
+    let code = await this.runPrompts(DashboardCode.START_CODE)
+    while (code !== DashboardCode.EXIT_CODE) {
       code = await this.runPrompts(code)
     }
   }
@@ -255,6 +252,6 @@ export class Dashboard<T, B> {
       return next
     }
     logger.info('terminating app')
-    return Dashboard.EXIT_CODE
+    return DashboardCode.EXIT_CODE
   }
 }
