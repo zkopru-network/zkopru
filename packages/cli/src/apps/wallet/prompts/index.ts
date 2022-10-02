@@ -3,7 +3,7 @@ import { Sum, SwapTxBuilder } from '@zkopru/transaction'
 import { PromptApp } from '@zkopru/utils'
 import { ZkWallet, Balance } from '@zkopru/zk-wizard'
 import { Withdrawal as WithdrawalSql } from '@zkopru/database'
-// import { Dashboard } from '../../../dashboard'
+import { DashboardCode } from '../../../dashboard-code'
 
 export enum AppMenu {
   ON_SYNCING,
@@ -27,8 +27,8 @@ export enum AppMenu {
   WITHDRAW,
   INSTANT_WITHDRAW,
   WITHDRAWABLE_LIST,
-  TOP_MENU = -777, //Dashboard.START_CODE,
-  EXIT = -999, //Dashboard.EXIT_CODE,
+  TOP_MENU = DashboardCode.START_CODE,
+  EXIT = DashboardCode.EXIT_CODE,
 }
 
 export interface Context {
