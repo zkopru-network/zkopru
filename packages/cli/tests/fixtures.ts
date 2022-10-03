@@ -2,7 +2,7 @@ import { ethers } from 'hardhat'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { TestERC20, TestERC721, ZkopruContract } from '@zkopru/contracts'
-import { deploy } from '@zkopru/contracts/utils/deployer'
+import { deploy } from '~contracts-utils/deployer'
 
 export interface TestFixture {
   deployer: SignerWithAddress

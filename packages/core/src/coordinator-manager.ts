@@ -140,7 +140,11 @@ export class CoordinatorManager {
     event: TypedEvent<[string] & { coordinator: string }>,
   ) {
     const { coordinator } = event.args
-    await this.updateUrl(coordinator)
+    try {
+      await this.updateUrl(coordinator)
+    } catch (err) {
+      console.log(err)
+    }
   }
 
   async stop() {

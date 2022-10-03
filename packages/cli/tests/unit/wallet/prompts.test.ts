@@ -78,7 +78,6 @@ describe('wallet', () => {
   })
 
   async function handleAfter() {
-    await option.base.node.stop()
     if (fs.existsSync('zkwallet-db')) {
       fs.unlinkSync('zkwallet-db')
     }
@@ -86,6 +85,7 @@ describe('wallet', () => {
 
   afterAll(async () => {
     handleAfter()
+    await option.base.node.stop()
   })
 
   describe('top menu', () => {
