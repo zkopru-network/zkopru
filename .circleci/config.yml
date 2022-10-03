@@ -6,9 +6,9 @@ workflows:
       # - lint:
       #     requires:
       #       - build
-      - load_keys:
-          requires:
-            - build
+      # - load_keys:
+      #     requires:
+      #       - build
       # - test_circuits:
       #     requires:
       #       - build_keys
@@ -45,7 +45,7 @@ workflows:
 jobs:
   build:
     machine:
-      image: ubuntu-2004:202111-01
+      image: ubuntu-2204:2022.07.1
     steps:
       - checkout
       - run:
@@ -95,7 +95,7 @@ jobs:
           no_output_timeout: 120m
   test_coordinator:
     machine:
-      image: ubuntu-2004:202111-01
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -190,10 +190,11 @@ jobs:
           command: LOG_LEVEL=debug yarn test --scope=@zkopru/integration-test
   test_cli:
     machine:
-      image: ubuntu-2004:202111-01
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
       - run:
           name: Cli Tests
-          command: yarn test --scope=@zkopru/cli
+          command: LOG_LEVEL=debug yarn test --scope=@zkopru/cli
+          no_output_timeout: 20m
