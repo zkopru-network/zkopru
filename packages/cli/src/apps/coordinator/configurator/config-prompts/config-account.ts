@@ -84,7 +84,6 @@ export default class ConfigureAccount extends Configurator {
     }
     console.log(chalk.bold(`Configured account`))
     console.log(`Account: ${await account.getAddress()}`)
-    // console.log(`Private key: ${account.privateKey}`)
     let confirmed = false
     let confirmedPassword!: string
     do {

@@ -23,11 +23,13 @@ import { ZkWallet } from '@zkopru/zk-wizard'
 import { SwapTxBuilder, Utxo, UtxoStatus, ZkAddress } from '@zkopru/transaction'
 import TransferEth from '../../../src/apps/wallet/prompts/menus/account-detail-transfer-eth'
 import Withdraw from '../../../src/apps/wallet/prompts/menus/account-detail-withdraw'
+import { Context as NodeContext } from '../../context'
+import { getCtx } from '../setupTest'
 
 jest.mock('../../../../utils/src/prompt')
 
 describe('wallet', () => {
-  jest.setTimeout(20000)
+  jest.setTimeout(25000)
 
   function getFakeUtxo(owner: ZkAddress, status: UtxoStatus): Utxo {
     const fakeUtxo: Utxo = Utxo.newEtherNote({
@@ -50,6 +52,7 @@ describe('wallet', () => {
     return swapTxBuilder
   }
 
+  let ctx: NodeContext
   let context: Context
   let option
 
@@ -58,7 +61,10 @@ describe('wallet', () => {
       fs.unlinkSync('zkwallet-db')
     }
 
+    ctx = await getCtx()
+
     let zkWallet: ZkWallet = await getMockedZKWallet(
+      ctx,
       './tests/wallet.test.json',
       handleAfter,
     )
@@ -71,13 +77,15 @@ describe('wallet', () => {
     await option.base.createAccount(1)
   })
 
-  async function handleAfter() {}
-
-  afterAll(async () => {
+  async function handleAfter() {
     await option.base.node.stop()
     if (fs.existsSync('zkwallet-db')) {
       fs.unlinkSync('zkwallet-db')
     }
+  }
+
+  afterAll(async () => {
+    handleAfter()
   })
 
   describe('top menu', () => {

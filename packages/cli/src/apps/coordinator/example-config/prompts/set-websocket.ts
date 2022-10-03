@@ -1,6 +1,6 @@
 import chalk from 'chalk'
 import { PromptApp } from '@zkopru/utils'
-import { ethers } from 'ethers'
+import { WebSocketProvider } from '@ethersproject/providers'
 import { Menu, ExampleConfigContext } from '../menu'
 
 const addressesByNetworkId = {
@@ -32,7 +32,7 @@ export default class Wallet extends PromptApp<ExampleConfigContext, void> {
         continue
       }
       try {
-        const provider = ethers.getDefaultProvider(websocketUrl)
+        const provider = new WebSocketProvider(websocketUrl)
         const network = await provider.getNetwork()
         const { chainId } = network
         address = addressesByNetworkId[chainId.toString(10)]
