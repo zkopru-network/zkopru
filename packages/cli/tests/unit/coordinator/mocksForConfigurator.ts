@@ -9,9 +9,6 @@ import {
   Context,
 } from '../../../src/apps/coordinator/configurator/configurator'
 
-// jest.mock('../../../../core/src/node/zkopru-node')
-// jest.mock('../../../../zk-wizard/src/zk-wallet-account')
-
 // mock prompt module
 jest.mock('../../../../utils/src/prompt')
 

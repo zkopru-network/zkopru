@@ -22,9 +22,6 @@ describe('example-config', () => {
   let option
 
   beforeAll(async () => {
-    // to avoid that db and config was not deleted in previous testing
-    await handleAfter()
-
     // init context and option
     const config = loadConfig(COORDINATOR_CONFIG) as Config
     const exampleConfig = {
@@ -41,11 +38,7 @@ describe('example-config', () => {
     }
   })
 
-  async function handleAfter() {
-    // if (fs.existsSync(NEW_COORDINATOR_CONFIG_PATH)) {
-    //   fs.unlinkSync(NEW_COORDINATOR_CONFIG_PATH)
-    // }
-  }
+  async function handleAfter() {}
 
   afterEach(async () => {
     await handleAfter()
@@ -112,7 +105,7 @@ describe('example-config', () => {
   describe('setWebsocket', () => {
     jest.setTimeout(10000)
     it('input a websocket', async () => {
-      const websocket = 'ws://localhost:5001'
+      const websocket = 'ws://localhost:8545'
       const mockedSetWebsocket = mockSetWebsocket(option)
       mockedSetWebsocket.ask.mockResolvedValue({
         websocketUrl: websocket,

@@ -6,7 +6,6 @@ import LoadDatabase from '../../../src/apps/wallet/configurator/menus/load-datab
 import LoadHDWallet from '../../../src/apps/wallet/configurator/menus/load-hdwallet'
 import TrackingAccount from '../../../src/apps/wallet/configurator/menus/config-tracking-accounts'
 import SaveConfig from '../../../src/apps/wallet/configurator/menus/save-config'
-import ConnectWeb3 from '../../../src/apps/wallet/configurator/menus/connect-web3'
 import LoadNode from '../../../src/apps/wallet/configurator/menus/load-node'
 import {
   Config,
@@ -16,24 +15,27 @@ import {
 import { Address } from 'soltypes'
 import assert from 'assert'
 import { loadConfig } from '../../utils'
+import { Context as NodeContext } from '../../context'
 
 jest.mock('../../../../core/src/node/zkopru-node')
 jest.mock('../../../../zk-wizard/src/zk-wallet-account')
 export async function getMockedZKWallet(
+  ctx: NodeContext,
   walletConfig: string,
   onCancel: () => Promise<void>,
 ): Promise<ZkWallet> {
   let context: Context = {
     menu: Menu.SPLASH,
     networkStatus: NetworkStatus.STOPPED,
+    provider: ctx.provider,
   }
   const option = {
     base: loadConfig(walletConfig),
     onCancel: onCancel,
   }
+  option.base.address = ctx.contract.address
 
-  let ret = await new ConnectWeb3(option).run(context)
-  ret = await new LoadDatabase(option).run(ret.context)
+  let ret = await new LoadDatabase(option).run(context)
   let mockedHdWallet = mockLoadHDWallet(option)
   mockedHdWallet.ask.mockResolvedValue({
     password: 'helloworld',
