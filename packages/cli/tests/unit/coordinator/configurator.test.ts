@@ -17,6 +17,8 @@ import ConfigureAccount from '../../../src/apps/coordinator/configurator/config-
 import SaveConfig from '../../../src/apps/coordinator/configurator/config-prompts/save-config'
 import LoadDatabase from '../../../src/apps/coordinator/configurator/config-prompts/load-database'
 import LoadCoordinator from '../../../src/apps/coordinator/configurator/config-prompts/load-coordinator'
+import { Context as NodeContext } from '../../context'
+import { getCtx } from '../setupTest'
 
 const COORDINATOR_CONFIG = './tests/coordinator.test.json'
 const COORDINATOR_CONFIG_ONLY_PROVIDER =
@@ -25,8 +27,9 @@ const NEW_COORDINATOR_CONFIG_PATH = './tests/coordinator-tmp.json'
 const SQLITE_DB_NAME = 'zkopru-coordinator'
 
 describe('configurator', () => {
-  jest.setTimeout(10000)
+  jest.setTimeout(25000)
 
+  let ctx: NodeContext
   let context: Context
   let option
 
@@ -34,15 +37,19 @@ describe('configurator', () => {
     // to avoid that db and config was not deleted in previous testing
     await handleAfter()
 
+    ctx = await getCtx()
+
     // init context and option
     const config = loadConfig(COORDINATOR_CONFIG) as Config
     context = {
       networkStatus: NetworkStatus.STOPPED,
+      provider: ctx.provider,
     }
     option = {
       base: config,
       onCancel: handleAfter,
     }
+    option.base.address = ctx.contract.address
   })
 
   async function handleAfter() {
@@ -57,11 +64,12 @@ describe('configurator', () => {
 
   describe('ConnectWeb3', () => {
     it('with default provider', async () => {
-      // make sure the provider passed to `run` is undefined
-      expect(context.provider).toBeUndefined()
+      const localContext = {
+        networkStatus: NetworkStatus.STOPPED,
+      }
 
       const connection = new ConnectWeb3(option)
-      const ret = await connection.run(context)
+      const ret = await connection.run(localContext)
       expect(ret.next).toEqual(Menu.CONFIG_ACCOUNT)
 
       let provider = ret.context.provider as JsonRpcProvider
@@ -69,11 +77,14 @@ describe('configurator', () => {
     })
 
     it('with websocket provider', async () => {
-      const wsProviderUrl = 'ws://localhost:5001'
+      const localContext = {
+        networkStatus: NetworkStatus.STOPPED,
+      }
+      const wsProviderUrl = 'ws://localhost:8545'
       option.base.provider = wsProviderUrl
 
       const connection = new ConnectWeb3(option)
-      const ret = await connection.run(context)
+      const ret = await connection.run(localContext)
 
       let wsProvider = ret.context.provider as WebSocketProvider
       expect(wsProvider.connection.url).toEqual(wsProviderUrl)
@@ -84,9 +95,7 @@ describe('configurator', () => {
     let contextConfigureAccount: Context
 
     beforeAll(async () => {
-      const connection = new ConnectWeb3(option)
-      const ret = await connection.run(context)
-      contextConfigureAccount = ret.context
+      contextConfigureAccount = context
     })
 
     it('import from keystore', async () => {
@@ -212,10 +221,8 @@ describe('configurator', () => {
     let contextConfig: Context
 
     beforeAll(async () => {
-      const connection = new ConnectWeb3(option)
-      let ret = await connection.run(context)
       const configureAccount = new ConfigureAccount(option)
-      ret = await configureAccount.run(ret.context)
+      let ret = await configureAccount.run(context)
       contextConfig = ret.context
     })
 
@@ -289,10 +296,8 @@ describe('configurator', () => {
     let defaultConfig
 
     beforeAll(async () => {
-      const connection = new ConnectWeb3(option)
-      let ret = await connection.run(context)
       const configureAccount = new ConfigureAccount(option)
-      ret = await configureAccount.run(ret.context)
+      let ret = await configureAccount.run(context)
       contextLoadDB = ret.context
     })
 
@@ -302,6 +307,7 @@ describe('configurator', () => {
         COORDINATOR_CONFIG_ONLY_PROVIDER,
       ) as Config
       option.base = configWithoutDB
+      option.base.address = ctx.contract.address
       mockedLoadDB = mockLoadDatabase(option)
     })
 
@@ -383,10 +389,8 @@ describe('configurator', () => {
     let contextLoadCoordinator: Context
 
     beforeAll(async () => {
-      const connection = new ConnectWeb3(option)
-      let ret = await connection.run(context)
       const configureAccount = new ConfigureAccount(option)
-      ret = await configureAccount.run(ret.context)
+      let ret = await configureAccount.run(context)
       const db = new LoadDatabase(option)
       ret = await db.run(ret.context)
       contextLoadCoordinator = ret.context

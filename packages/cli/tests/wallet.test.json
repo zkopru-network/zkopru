@@ -1,13 +1,11 @@
 {
   "_": [],
   "fullnode": true,
-  "provider": "http://localhost:5001",
-  "coordinator": "http://coordinator:8888",
+  "provider": "http://localhost:8545",
   "networkId": 1,
   "network-id": 1,
   "chainId": 1,
   "chain-id": 1,
-  "address": "0x970e8f18ebfEa0B08810f33a5A40438b9530FBCF",
   "sqlite": "zkwallet-db",
   "seedKeystore": {
     "ciphertext": "f34047785c14c5b1b87ce540c1bbd0bdb748f7ddf95fdf95d2d1e462de1dde98cf7815e280084111567fc3aac24225aa",

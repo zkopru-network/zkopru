@@ -20,6 +20,8 @@ import TrackingAccount from '../../../src/apps/wallet/configurator/menus/config-
 import LoadNode from '../../../src/apps/wallet/configurator/menus/load-node'
 import SaveConfig from '../../../src/apps/wallet/configurator/menus/save-config'
 import { loadConfig } from '../../utils'
+import { Context as NodeContext } from '../../context'
+import { getCtx } from '../setupTest'
 
 const WALLET_CONFIG = './tests/wallet.test.json'
 const WALLET_CONFIG_ONLY_PROVIDER = './tests/wallet-only-provider.test.json'
@@ -36,6 +38,7 @@ jest.mock('../../../../utils/src/prompt')
 describe('configurator', () => {
   jest.setTimeout(20000)
 
+  let ctx: NodeContext
   let context: Context
   let option
 
@@ -43,16 +46,20 @@ describe('configurator', () => {
     // to avoid that db and config was not deleted in previous testing
     await handleAfter()
 
+    ctx = await getCtx()
+
     // init context and option
     const config = loadConfig(WALLET_CONFIG) as Config
     context = {
       menu: 0,
       networkStatus: NetworkStatus.STOPPED,
+      provider: ctx.provider,
     }
     option = {
       base: config,
       onCancel: handleAfter,
     }
+    option.base.address = ctx.contract.address
   })
 
   async function handleAfter() {
@@ -62,21 +69,23 @@ describe('configurator', () => {
     if (fs.existsSync(NEW_WALLET_CONFIG_PATH)) {
       fs.unlinkSync(NEW_WALLET_CONFIG_PATH)
     }
-    // restore the spy created with spyOn
-    jest.restoreAllMocks()
   }
 
   afterEach(async () => {
     await handleAfter()
+    // restore the spy created with spyOn
+    jest.restoreAllMocks()
   })
 
   describe('ConnectWeb3', () => {
     it('with default provider', async () => {
-      // make sure the provider passed to `run` is undefined
-      expect(context.provider).toBeUndefined()
+      const localContext = {
+        menu: 0,
+        networkStatus: NetworkStatus.STOPPED,
+      }
 
       const connection = new ConnectWeb3(option)
-      const ret = await connection.run(context)
+      const ret = await connection.run(localContext)
       expect(ret.next).toEqual(Menu.DOWNLOAD_KEYS)
 
       let provider = ret.context.provider as JsonRpcProvider
@@ -84,7 +93,7 @@ describe('configurator', () => {
     })
 
     it('with websocket provider', async () => {
-      const wsProviderUrl = 'ws://localhost:5001'
+      const wsProviderUrl = 'ws://localhost:8545'
       option.base.provider = wsProviderUrl
 
       const connection = new ConnectWeb3(option)
@@ -140,17 +149,9 @@ describe('configurator', () => {
   })
 
   describe('LoadDatabase', () => {
-    let contextForLoadDB
-
-    beforeAll(async () => {
-      const connection = new ConnectWeb3(option)
-      let ret = await connection.run(context)
-      contextForLoadDB = ret.context
-    })
-
     it('create a new sqlite db by a given sqlite path from json config', async () => {
       const db = new LoadDatabase(option)
-      const ret = await db.run(contextForLoadDB)
+      const ret = await db.run(context)
       expect(ret.context.db).toBeDefined()
     })
 
@@ -158,6 +159,7 @@ describe('configurator', () => {
       const defaultConfig = option.base
       let configWithoutDB = loadConfig(WALLET_CONFIG_ONLY_PROVIDER) as Config
       option.base = configWithoutDB
+      option.base.address = ctx.contract.address
       const mockedDB = mockLoadDatabase(option)
       mockedDB.ask.mockResolvedValue({
         dbType: 1,
@@ -165,7 +167,7 @@ describe('configurator', () => {
         overwrite: true,
       }) // 1: SQLITE
 
-      const ret = await mockedDB.run(contextForLoadDB)
+      const ret = await mockedDB.run(context)
       expect(ret.context.db).toBeDefined()
 
       // recover config
@@ -175,7 +177,7 @@ describe('configurator', () => {
     it('create a new sqlite db without overwriting existing one', async () => {
       // create a db first
       const db = new LoadDatabase(option)
-      await db.run(contextForLoadDB)
+      await db.run(context)
 
       // create db again but without overwrite it
       const mockedDB = mockLoadDatabase(option)
@@ -184,19 +186,17 @@ describe('configurator', () => {
         dbName: SQLITE_DB_NAME,
         overwrite: false,
       })
-      const ret = await mockedDB.run(contextForLoadDB)
+      const ret = await mockedDB.run(context)
       expect(ret.context.db).toBeDefined()
     })
 
     it('provide an undefined provider object', async () => {
-      const defaultProvider = contextForLoadDB.provider
+      const defaultProvider = context.provider
       const db = new LoadDatabase(option)
-      contextForLoadDB.provider = undefined
-      await expect(db.run(contextForLoadDB)).rejects.toThrow(
-        'Provider is not connected',
-      )
+      context.provider = undefined
+      await expect(db.run(context)).rejects.toThrow('Provider is not connected')
       // recover provider object
-      contextForLoadDB.provider = defaultProvider
+      context.provider = defaultProvider
     })
   })
 
@@ -208,15 +208,12 @@ describe('configurator', () => {
     beforeAll(async () => {
       optionForHDWallet = option
       defaultConfig = option.base
-      const connection = new ConnectWeb3(optionForHDWallet)
-      let ret = await connection.run(context)
-      contextForHDWallet = ret.context
     })
 
     beforeEach(async () => {
       optionForHDWallet.base = defaultConfig
-      let db = new LoadDatabase(optionForHDWallet)
-      let ret = await db.run(contextForHDWallet)
+      let db = new LoadDatabase(option)
+      let ret = await db.run(context)
       contextForHDWallet = ret.context
     })
 
@@ -443,15 +440,9 @@ describe('configurator', () => {
   describe('TrackingAccount', () => {
     let contextForTA
 
-    beforeAll(async () => {
-      const connection = new ConnectWeb3(option)
-      let ret = await connection.run(context)
-      contextForTA = ret.context
-    })
-
     beforeEach(async () => {
       let db = new LoadDatabase(option)
-      const ret = await db.run(contextForTA)
+      const ret = await db.run(context)
       contextForTA = ret.context
     })
 
@@ -592,10 +583,8 @@ describe('configurator', () => {
     let contextForLoadNode
 
     beforeAll(async () => {
-      const connection = new ConnectWeb3(option)
-      let ret = await connection.run(context)
       let db = new LoadDatabase(option)
-      ret = await db.run(ret.context)
+      let ret = await db.run(context)
       let mockedHdWallet = mockLoadHDWallet(option)
       mockedHdWallet.ask.mockResolvedValue({
         password: 'helloworld',
@@ -676,10 +665,8 @@ describe('configurator', () => {
     let contextForConfig
 
     beforeAll(async () => {
-      const connection = new ConnectWeb3(option)
-      let ret = await connection.run(context)
       let db = new LoadDatabase(option)
-      ret = await db.run(ret.context)
+      let ret = await db.run(context)
       let mockedHdWallet = mockLoadHDWallet(option)
       mockedHdWallet.ask.mockResolvedValue({
         password: 'helloworld',

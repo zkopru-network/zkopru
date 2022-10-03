@@ -1,8 +1,7 @@
 {
   "bootstrap": true,
-  "provider": "http://localhost:5001",
+  "provider": "http://localhost:8545",
   "sqlite": "coordinator.test.db",
-  "address": "0x970e8f18ebfEa0B08810f33a5A40438b9530FBCF",
   "maxBytes": 131072,
   "maxBid": 10,
   "priceMultiplier": 48,
