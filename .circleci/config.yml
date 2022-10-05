@@ -45,7 +45,7 @@ workflows:
 jobs:
   build:
     machine:
-      image: ubuntu-2204:2022.07.1
+      image: ubuntu-2004:202111-01
     steps:
       - checkout
       - run:
@@ -190,11 +190,12 @@ jobs:
           command: LOG_LEVEL=debug yarn test --scope=@zkopru/integration-test
   test_cli:
     machine:
-      image: ubuntu-2204:2022.07.1
+      image: ubuntu-2004:202111-01
     steps:
       - attach_workspace:
           at: ~/
       - run:
           name: Cli Tests
-          command: LOG_LEVEL=debug yarn test --scope=@zkopru/cli
-          no_output_timeout: 20m
+          command: |
+            cd packages/cli
+            yarn test

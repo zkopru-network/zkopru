@@ -25,7 +25,7 @@ import { getCtx } from '../setupTest'
 const COORDINATOR_CONFIG = './tests/coordinator.test.json'
 
 describe('prompts', () => {
-  jest.setTimeout(25000)
+  jest.setTimeout(100000)
 
   let ctx: NodeContext
   let context: Context

@@ -221,16 +221,22 @@ export async function initContext(): Promise<Context> {
   const accounts = await getAccounts(ethers.provider, 5)
   const vks = await loadKeys(path.join(__dirname, '../../circuits/keys/vks'))
   const [coordinatorAccount, newCoordinatorAccount] = accounts
-  const { coordinator, mockupDB: coordinatorDB } = await getCoordinator(
+  const rand = Math.floor(Math.random() * 1000)
+  const {
+    coordinator,
+    mockupDB: coordinatorDB,
+  } = await getCoordinator(
     ethers.provider,
     zkopruAddress,
     coordinatorAccount.ethAccount,
+    { port: 8889 + rand, maxBid: 30000 },
   )
+
   const { mockupDB: newCoordinatorDB } = await getCoordinator(
     ethers.provider,
     zkopruAddress,
     newCoordinatorAccount.ethAccount,
-    { port: 8899, maxBid: 30000 },
+    { port: 9889 + rand, maxBid: 30000 },
   )
   await coordinator.start()
   const { wallets, dbs } = await getWallets({

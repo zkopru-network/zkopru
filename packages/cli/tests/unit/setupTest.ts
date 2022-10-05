@@ -12,7 +12,6 @@ afterAll(async () => {
 
 export async function getCtx() {
   if (ctx == undefined) {
-    console.log('initContext')
     ctx = await initContext()
   }
   return ctx
