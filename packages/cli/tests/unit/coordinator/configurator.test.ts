@@ -24,10 +24,10 @@ const COORDINATOR_CONFIG = './tests/coordinator.test.json'
 const COORDINATOR_CONFIG_ONLY_PROVIDER =
   './tests/coordinator-only-provider.test.json'
 const NEW_COORDINATOR_CONFIG_PATH = './tests/coordinator-tmp.json'
-const SQLITE_DB_NAME = 'zkopru-coordinator'
+const SQLITE_DB_NAME = 'zkopru-coordinator-configurator'
 
 describe('configurator', () => {
-  jest.setTimeout(25000)
+  jest.setTimeout(100000)
 
   let ctx: NodeContext
   let context: Context
@@ -45,6 +45,7 @@ describe('configurator', () => {
       networkStatus: NetworkStatus.STOPPED,
       provider: ctx.provider,
     }
+    config.port = 9999
     option = {
       base: config,
       onCancel: handleAfter,
