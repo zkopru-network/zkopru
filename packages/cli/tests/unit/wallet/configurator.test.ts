@@ -1,7 +1,7 @@
 import fs from 'fs'
 import { JsonRpcProvider, WebSocketProvider } from '@ethersproject/providers'
 import { NetworkStatus } from '@zkopru/core'
-import { HDWallet } from '@zkopru/account'
+import { HDWallet, ZkAccount } from '@zkopru/account'
 import {
   mockLoadDatabase,
   mockLoadHDWallet,
@@ -26,7 +26,7 @@ import { getCtx } from '../setupTest'
 const WALLET_CONFIG = './tests/wallet.test.json'
 const WALLET_CONFIG_ONLY_PROVIDER = './tests/wallet-only-provider.test.json'
 const NEW_WALLET_CONFIG_PATH = './tests/wallet-temp.test.json'
-const SQLITE_DB_NAME = 'zkwallet-db'
+const SQLITE_DB_NAME = 'zkwallet-db-configurator'
 const MNEMONIC =
   'myth like bonus scare over problem client lizard pioneer submit female collect'
 // the first account from above mnemonic
@@ -36,7 +36,7 @@ const ACCOUNT0_ADDR = '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1'
 jest.mock('../../../../utils/src/prompt')
 
 describe('configurator', () => {
-  jest.setTimeout(20000)
+  jest.setTimeout(100000)
 
   let ctx: NodeContext
   let context: Context
@@ -55,6 +55,7 @@ describe('configurator', () => {
       networkStatus: NetworkStatus.STOPPED,
       provider: ctx.provider,
     }
+    config.sqlite = SQLITE_DB_NAME
     option = {
       base: config,
       onCancel: handleAfter,
@@ -215,12 +216,6 @@ describe('configurator', () => {
       let db = new LoadDatabase(option)
       let ret = await db.run(context)
       contextForHDWallet = ret.context
-    })
-
-    afterEach(async () => {
-      if (fs.existsSync(SQLITE_DB_NAME)) {
-        fs.unlinkSync(SQLITE_DB_NAME)
-      }
     })
 
     it('get from seedKeystore provided by json file', async () => {
@@ -438,18 +433,23 @@ describe('configurator', () => {
   })
 
   describe('TrackingAccount', () => {
-    let contextForTA
+    let contextWithoutWallet
+    let contextWithWallet
+    let accounts: ZkAccount[]
 
-    beforeEach(async () => {
+    beforeAll(async () => {
       let db = new LoadDatabase(option)
-      const ret = await db.run(context)
-      contextForTA = ret.context
-    })
+      let ret = await db.run(context)
+      contextWithoutWallet = ret.context
 
-    afterEach(async () => {
-      if (fs.existsSync(SQLITE_DB_NAME)) {
-        fs.unlinkSync(SQLITE_DB_NAME)
-      }
+      // to save test time, retrieveAccounts is time consuming
+      let mockedHdWallet = mockLoadHDWallet(option)
+      mockedHdWallet.ask.mockResolvedValue({
+        password: 'helloworld',
+      })
+      ret = await mockedHdWallet.run(ret.context)
+      contextWithWallet = ret.context
+      accounts = await contextWithWallet.wallet!.retrieveAccounts()
     })
 
     it('select existing accounts', async () => {
@@ -466,46 +466,14 @@ describe('configurator', () => {
         password: 'helloworld',
         retyped: 'helloworld',
       })
-      let ret = await mockedHdWallet.run(contextForTA)
+      let ret = await mockedHdWallet.run(contextWithoutWallet)
       const contextForNewAccount = ret.context
       const accounts = await contextForNewAccount.wallet!.retrieveAccounts()
 
       const mockedAccount = mockTrackingAccount(option)
       mockedAccount.ask.mockResolvedValue({ idx: 1 }) // 1: jump to next step
       ret = await mockedAccount.run(contextForNewAccount)
-
       expect(ret.next).toEqual(Menu.LOAD_NODE)
-      expect(ret.context.accounts![0].ethAddress).toEqual(
-        accounts[0].ethAddress,
-      )
-
-      // recovery
-      option.base = defaultConfig
-    })
-
-    it('select unsupported idx', async () => {
-      const defaultConfig = option.base
-
-      // create a new account in LoadHDWallet to make `isInitialSetup == true`
-      let configWithoutKeystore = loadConfig(
-        WALLET_CONFIG_ONLY_PROVIDER,
-      ) as Config
-      configWithoutKeystore.mnemonic = MNEMONIC
-      option.base = configWithoutKeystore
-      const mockedHdWallet = mockLoadHDWallet(option)
-      mockedHdWallet.ask.mockResolvedValue({
-        password: 'helloworld',
-        retyped: 'helloworld',
-      })
-      let ret = await mockedHdWallet.run(contextForTA)
-      const contextForNewAccount = ret.context
-      const accounts = await contextForNewAccount.wallet!.retrieveAccounts()
-
-      const mockedAccount = mockTrackingAccount(option)
-      mockedAccount.ask.mockResolvedValue({ idx: 2 }) // only 0 and 1 are defined
-      ret = await mockedAccount.run(contextForNewAccount)
-
-      expect(ret.next).toEqual(Menu.EXIT)
       expect(ret.context.accounts![0].ethAddress).toEqual(
         accounts[0].ethAddress,
       )
@@ -515,16 +483,8 @@ describe('configurator', () => {
     })
 
     it('get accounts created in loadHDWallet (isInitialSetup == false)', async () => {
-      let mockedHdWallet = mockLoadHDWallet(option)
-      mockedHdWallet.ask.mockResolvedValue({
-        password: 'helloworld',
-      })
-      let ret = await mockedHdWallet.run(contextForTA)
-      const accountContext = ret.context
-      const accounts = await accountContext.wallet!.retrieveAccounts()
-
       const account = new TrackingAccount(option)
-      ret = await account.run(accountContext)
+      const ret = await account.run(contextWithWallet)
 
       expect(ret.next).toEqual(Menu.LOAD_NODE)
       expect(ret.context.accounts![0].ethAddress).toEqual(
@@ -533,17 +493,9 @@ describe('configurator', () => {
     })
 
     it('get accounts from previous history (numberOfAccounts != 0)', async () => {
-      let mockedHdWallet = mockLoadHDWallet(option)
-      mockedHdWallet.ask.mockResolvedValue({
-        password: 'helloworld',
-      })
-      let ret = await mockedHdWallet.run(contextForTA)
-      const accountContext = ret.context
-      const accounts = await accountContext.wallet!.retrieveAccounts()
-
       option.base.numberOfAccounts = 2
       const account = new TrackingAccount(option)
-      ret = await account.run(accountContext)
+      const ret = await account.run(contextWithWallet)
 
       expect(ret.next).toEqual(Menu.LOAD_NODE)
       expect(ret.context.accounts![0].ethAddress).toEqual(
@@ -553,7 +505,7 @@ describe('configurator', () => {
 
     it('provide an undefined wallet obj', async () => {
       const account = new TrackingAccount(option)
-      await expect(account.run(contextForTA)).rejects.toThrow(
+      await expect(account.run(contextWithoutWallet)).rejects.toThrow(
         'Wallet is not loaded',
       )
     })

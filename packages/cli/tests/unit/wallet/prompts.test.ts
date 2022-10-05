@@ -29,7 +29,7 @@ import { getCtx } from '../setupTest'
 jest.mock('../../../../utils/src/prompt')
 
 describe('wallet', () => {
-  jest.setTimeout(25000)
+  jest.setTimeout(100000)
 
   function getFakeUtxo(owner: ZkAddress, status: UtxoStatus): Utxo {
     const fakeUtxo: Utxo = Utxo.newEtherNote({
@@ -57,9 +57,7 @@ describe('wallet', () => {
   let option
 
   beforeAll(async () => {
-    if (fs.existsSync('zkwallet-db')) {
-      fs.unlinkSync('zkwallet-db')
-    }
+    await handleAfter()
 
     ctx = await getCtx()
 
@@ -423,6 +421,7 @@ describe('wallet', () => {
   describe('transfer ETH', () => {
     let contextForTransferETH: Context
     let mockedTransferETH
+    let accounts: ZkAccount[]
 
     beforeAll(async () => {
       let mockedTopMenu = mockTopMenu(option)
@@ -448,7 +447,7 @@ describe('wallet', () => {
       contextForTransferETH = ret.context
       mockedTransferETH = mockTransferEth(option)
 
-      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
+      accounts = await option.base.retrieveAccounts()
       // mock zkWallet.fetchPrice bcs it queries coordinator
       option.base.fetchPrice = jest.fn()
       option.base.fetchPrice.mockResolvedValue(100)
@@ -465,7 +464,6 @@ describe('wallet', () => {
     })
 
     it('transfer ETH', async () => {
-      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
       mockedTransferETH.ask.mockResolvedValue({
         zkAddress: accounts[1].zkAddress.toString(),
         amount: 0.01, // ETH
@@ -481,7 +479,6 @@ describe('wallet', () => {
     })
 
     it('transfer 0 ETH', async () => {
-      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
       mockedTransferETH.ask.mockResolvedValue({
         zkAddress: accounts[1].zkAddress.toString(),
         amount: 0, // ETH
@@ -497,7 +494,6 @@ describe('wallet', () => {
     })
 
     it('transfer ETH with 0 fee', async () => {
-      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
       mockedTransferETH.ask.mockResolvedValue({
         zkAddress: accounts[1].zkAddress.toString(),
         amount: 0.01, // ETH
@@ -513,7 +509,6 @@ describe('wallet', () => {
     })
 
     it('transfer ETH and amount with leading and trailing space', async () => {
-      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
       mockedTransferETH.ask.mockResolvedValue({
         zkAddress: accounts[1].zkAddress.toString(),
         amount: ' 0.01 ', // ETH
@@ -538,6 +533,7 @@ describe('wallet', () => {
   describe('atomic swap', () => {
     let contextForAtomicSwap: Context
     let mockedAtomicSwap
+    let accounts: ZkAccount[]
 
     beforeAll(async () => {
       let mockedTopMenu = mockTopMenu(option)
@@ -550,6 +546,7 @@ describe('wallet', () => {
       ret = await contextForAccountDetail.run(ret.context)
       contextForAtomicSwap = ret.context
       mockedAtomicSwap = mockAtomicSwap(option)
+      accounts = await option.base.retrieveAccounts()
     })
 
     it('select to swap', async () => {
@@ -565,7 +562,6 @@ describe('wallet', () => {
       mockedAtomicSwap.ask.mockResolvedValue({
         choice: { menu: AppMenu.ATOMIC_SWAP_GIVE_ETH },
       })
-      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
       option.base.getSpendables = jest.fn()
       option.base.getSpendables.mockResolvedValue([
         getFakeUtxo(accounts[0].zkAddress, UtxoStatus.UNSPENT),
@@ -594,6 +590,7 @@ describe('wallet', () => {
   describe('atomic swap to give Eth', () => {
     let contextForAtomicSwap: Context
     let mockedAtomicSwap
+    let accounts: ZkAccount[]
 
     beforeAll(async () => {
       let mockedTopMenu = mockTopMenu(option)
@@ -612,22 +609,16 @@ describe('wallet', () => {
       contextForAtomicSwap = ret.context
       mockedAtomicSwap = mockAtomicSwapGiveEth(option)
 
-      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
+      accounts = await option.base.retrieveAccounts()
       option.base.getSpendables = jest.fn()
       option.base.getSpendables.mockResolvedValue([
         getFakeUtxo(accounts[0].zkAddress, UtxoStatus.UNSPENT),
       ])
     })
-    beforeEach(async () => {
-      if (fs.existsSync('zkwallet-db')) {
-        fs.unlinkSync('zkwallet-db')
-      }
-    })
 
     it('select to swap with a spendable utxo', async () => {
       option.base.fetchPrice = jest.fn()
       option.base.fetchPrice.mockResolvedValue(100)
-      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
       mockedAtomicSwap.ask.mockResolvedValue({
         zkAddress: accounts[1].zkAddress.toString(),
         amount: '0.01', // eth
@@ -650,7 +641,6 @@ describe('wallet', () => {
     it('select to swap with a spendable utxo and amount with with leading and trailing space', async () => {
       option.base.fetchPrice = jest.fn()
       option.base.fetchPrice.mockResolvedValue(100)
-      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
       mockedAtomicSwap.ask.mockResolvedValue({
         zkAddress: accounts[1].zkAddress.toString(),
         amount: ' 0.01 ', // eth
@@ -717,6 +707,7 @@ describe('wallet', () => {
   describe('atomic swap to take Eth', () => {
     let contextForAtomicSwap: Context
     let mockedAtomicSwap
+    let accounts: ZkAccount[]
 
     beforeAll(async () => {
       const mockedTopMenu = mockTopMenu(option)
@@ -730,10 +721,10 @@ describe('wallet', () => {
 
       contextForAtomicSwap = ret.context
       mockedAtomicSwap = mockAtomicSwapTakeEth(option)
+      accounts = await option.base.retrieveAccounts()
     })
 
     beforeEach(async () => {
-      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
       contextForAtomicSwap.swapTxBuilder = getFakeSwapTxBuilder(
         accounts[0].zkAddress,
       )
@@ -828,6 +819,7 @@ describe('wallet', () => {
   describe('withdraw request Eth', () => {
     let contextForWithdraw
     let mockedWithdraw
+    let accounts: ZkAccount[]
 
     beforeAll(async () => {
       let mockedTopMenu = mockTopMenu(option)
@@ -836,7 +828,7 @@ describe('wallet', () => {
       contextForWithdraw = ret.context
       mockedWithdraw = mockWithdrawRequestEth(option)
 
-      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
+      accounts = await option.base.retrieveAccounts()
       option.base.getSpendables = jest.fn()
       option.base.getSpendables.mockResolvedValue([
         getFakeUtxo(accounts[0].zkAddress, UtxoStatus.UNSPENT),
@@ -867,7 +859,6 @@ describe('wallet', () => {
     })
 
     it('withdraw to accounts[1]', async () => {
-      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
       mockedWithdraw.ask.mockResolvedValue({
         address: accounts[1].ethAddress,
         amount: '0.1', // eth
@@ -903,6 +894,7 @@ describe('wallet', () => {
   describe('withdraw list', () => {
     let contextForWithdraw: Context
     let mockedWithdraw
+    let accounts: ZkAccount[]
 
     beforeAll(async () => {
       let mockedTopMenu = mockTopMenu(option)
@@ -911,11 +903,11 @@ describe('wallet', () => {
       contextForWithdraw = ret.context
 
       mockedWithdraw = mockWithdrawableList(option)
+      accounts = await option.base.retrieveAccounts()
     })
 
     it('select to withdraw', async () => {
       const choices = [AppMenu.INSTANT_WITHDRAW, AppMenu.WITHDRAW]
-      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
       const w = {
         hash: '',
         withdrawalHash: '',
@@ -955,6 +947,7 @@ describe('wallet', () => {
   describe('withdraw', () => {
     let contextForWithdraw: Context
     let withdraw
+    let accounts: ZkAccount[]
 
     beforeAll(async () => {
       let mockedTopMenu = mockTopMenu(option)
@@ -962,6 +955,7 @@ describe('wallet', () => {
       let ret = await mockedTopMenu.run(context)
       contextForWithdraw = ret.context
       withdraw = new Withdraw(option)
+      accounts = await option.base.retrieveAccounts()
     })
 
     beforeEach(async () => {
@@ -970,7 +964,6 @@ describe('wallet', () => {
 
     it('withdraw', async () => {
       const mockedWithdrawList = mockWithdrawableList(option)
-      const accounts: ZkAccount[] = await option.base.retrieveAccounts()
       const w = {
         hash: '0x123',
         withdrawalHash: '0xabc',
