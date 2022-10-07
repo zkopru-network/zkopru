@@ -1,6 +1,6 @@
 import { PromptApp } from '@zkopru/utils'
 import { Coordinator } from '@zkopru/coordinator'
-import { Dashboard } from '../../../dashboard'
+import { DashboardCode } from '../../../dashboard-code'
 
 export enum AppMenu {
   PRINT_STATUS,
@@ -19,8 +19,8 @@ export enum AppMenu {
   REGISTER_AS_COORDINATOR,
   DEREGISTER,
   COMMIT_DEPOSITS,
-  TOP_MENU = Dashboard.START_CODE,
-  EXIT = Dashboard.EXIT_CODE,
+  TOP_MENU = DashboardCode.START_CODE,
+  EXIT = DashboardCode.EXIT_CODE,
 }
 
 export interface Context {

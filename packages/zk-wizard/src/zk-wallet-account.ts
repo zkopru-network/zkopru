@@ -22,7 +22,7 @@ import fetch, { Response } from 'node-fetch'
 import { logger } from '@zkopru/utils'
 import { signTypedData_v4 as signTypedData } from 'eth-sig-util'
 import { ERC20__factory, ERC721__factory } from '@zkopru/contracts'
-import { BigNumberish } from 'ethers'
+import { BigNumber, BigNumberish } from 'ethers'
 import { ZkWizard } from './zk-wizard'
 
 export interface Balance {
@@ -147,12 +147,19 @@ export class ZkWalletAccount {
     const targetAccount = account || this.account
     if (!targetAccount)
       throw Error('Provide account parameter or set default account')
+
+    const whereClause = status
+      ? {
+          owner: [targetAccount.zkAddress.toString()],
+          status: status ? [status].flat() : null,
+          usedAt: null,
+        }
+      : {
+          owner: [targetAccount.zkAddress.toString()],
+          usedAt: null,
+        }
     const notes = await this.db.findMany('Utxo', {
-      where: {
-        owner: [targetAccount.zkAddress.toString()],
-        status: status ? [status].flat() : undefined,
-        usedAt: null,
-      },
+      where: whereClause,
     })
     return notes.map(obj => {
       if (!obj.eth) throw Error('should have Ether data')
@@ -261,6 +268,10 @@ export class ZkWalletAccount {
   ): Promise<boolean> {
     if (!this.account) {
       logger.error('Account is not set')
+      return false
+    }
+    if (BigNumber.from(eth).isZero()) {
+      logger.error('input eth amount is zero')
       return false
     }
     const balance = await this.fetchLayer1Assets(this.account)

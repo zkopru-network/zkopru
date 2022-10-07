@@ -8,7 +8,9 @@
     "dist"
   ],
   "_moduleAliases": {
-    "~zk-wizard": "dist"
+    "~zk-wizard": "dist",
+    "~contracts": "../contracts/dist/src",
+    "~contracts-utils": "../contracts/utils"
   },
   "bin": {
     "zkopru-wallet": "dist/apps/wallet/cli.js",
@@ -23,11 +25,13 @@
     "build": "tsc --build tsconfig.build.json",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "link-modules": "link-module-alias",
-    "test": "jest",
+    "test": "yarn hardhat && sleep 5 && yarn test:jest",
+    "test:jest": "jest",
     "test:trace": "LOG_LEVEL=trace PRINT_LOG=true jest",
-    "test:unit": "jest test/unit",
+    "test:unit": "jest tests",
     "test:watch": "jest --watch",
     "test:ci": "jest --coverage --ci --reporters='jest-junit'",
+    "hardhat": "hardhat node &",
     "coverage": "jest --coverage",
     "coverage:show": "live-server coverage",
     "wallet": "ts-node src/apps/wallet/cli.ts",
@@ -65,5 +69,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "devDependencies": {
+    "jest-mock": "27.0.6"
   }
 }

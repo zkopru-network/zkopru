@@ -102,7 +102,12 @@ export class HDWallet {
         keys[i].encrypted,
         this.password,
       )
-      accounts.push(ZkAccount.fromEthAccount(keystoreAccount, provider))
+      accounts.push(
+        ZkAccount.fromEthAccount(
+          keystoreAccount,
+          provider == undefined ? this.provider : provider,
+        ),
+      )
     }
     return accounts
   }
@@ -122,7 +127,10 @@ export class HDWallet {
       this.provider,
     )
     const account = ZkAccount.fromEthAccount(ethAccount, this.provider)
-    await this.db.create('Keystore', await account.toKeystoreSqlObj(this.password))
+    await this.db.create(
+      'Keystore',
+      await account.toKeystoreSqlObj(this.password),
+    )
     return account
   }
 

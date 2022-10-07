@@ -1,8 +1,14 @@
+import chalk from 'chalk'
 import { Fp } from '@zkopru/babyjubjub'
 import { Sum, Utxo, SwapTxBuilder, ZkAddress } from '@zkopru/transaction'
 import { logger } from '@zkopru/utils'
 import { BigNumber } from 'ethers'
-import { formatEther, formatUnits, parseUnits } from 'ethers/lib/utils'
+import {
+  formatEther,
+  formatUnits,
+  parseEther,
+  parseUnits,
+} from 'ethers/lib/utils'
 import App, { AppMenu, Context } from '..'
 
 export default class AtomicSwapGiveEth extends App {
@@ -60,33 +66,47 @@ export default class AtomicSwapGiveEth extends App {
         logger.error(`Failed to get a point from ${zkAddress}`)
         if (err instanceof Error) logger.error(err)
       }
-      const { amount } = await this.ask({
-        type: 'text',
-        name: 'amount',
-        initial: 0,
-        message: 'How much ETH do you give(ex: 0.3 ETH)?',
-      })
-      amountWei = parseUnits(amount, 'ether').toString()
-      msgs.push(`Sending amount: ${formatUnits(amountWei, 'ether')} ETH`)
+      let formatedAmount
+      do {
+        const { amount } = await this.ask({
+          type: 'text',
+          name: 'amount',
+          initial: 0,
+          message: 'How much ETH do you give(ex: 0.3 ETH)?',
+        })
+        formatedAmount = parseFloat(amount)
+        if (!isNaN(formatedAmount)) {
+          break
+        }
+        this.print(chalk.red('integer or float number only'))
+      } while (true)
+      amountWei = parseEther(formatedAmount.toString()).toString()
+      msgs.push(`Sending amount: ${formatEther(amountWei)} ETH`)
       msgs.push(`    = ${amountWei} wei`)
       this.print([...messages, ...msgs].join('\n'))
       const gweiPerByte = formatUnits(weiPerByte, 'gwei')
-      const { fee } = await this.ask({
-        type: 'text',
-        name: 'fee',
-        initial: `${gweiPerByte} gwei`,
-        message: `Fee per byte. ex) ${gweiPerByte} gwei`,
-      })
+      let formatedFee
+      do {
+        const { fee } = await this.ask({
+          type: 'text',
+          name: 'fee',
+          initial: `${gweiPerByte} gwei`,
+          message: `Fee per byte. ex) ${gweiPerByte} gwei`,
+        })
+        formatedFee = parseFloat(fee)
+        if (!isNaN(formatedFee)) {
+          break
+        }
+        this.print(chalk.red('integer or float number only'))
+      } while (true)
       const { salt } = await this.ask({
         type: 'text',
         name: 'salt',
         message: `Salt of the UTXO for the recipient`,
       })
-      confirmedWeiPerByte = parseUnits(fee, 'gwei')
+      confirmedWeiPerByte = parseUnits(formatedFee.toString(), 'gwei')
       logger.info(`confirmedWeiPerByte: ${confirmedWeiPerByte}`)
-      msgs.push(
-        `Wei per byte: ${formatUnits(confirmedWeiPerByte, 'ether')} ETH`,
-      )
+      msgs.push(`Wei per byte: ${formatEther(confirmedWeiPerByte)} ETH`)
       msgs.push(`    = ${formatUnits(confirmedWeiPerByte, 'gwei')} gwei`)
       this.print(messages.join('\n'))
 
