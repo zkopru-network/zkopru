@@ -32,7 +32,7 @@
     "images:build": "docker-compose -f compose/docker-compose.yml build",
     "images:pull": "docker-compose -f compose/docker-compose.yml pull",
     "images:push": "docker-compose -f compose/docker-compose.yml push",
-    "postinstall": "yarn workspace @zkopru/circuits download-keys",
+    "postinstall": "yarn workspace @zkopru/circuits download-keys && yarn clean",
     "link-modules": "lerna run --parallel link-modules",
     "lint": "eslint --ext js --ext ts --ext md",
     "lint:ci": "yarn lint . --format junit",
