@@ -1,5 +1,5 @@
 import fs from 'fs'
-import { JsonRpcProvider, WebSocketProvider } from '@ethersproject/providers'
+import {  WebSocketProvider } from '@ethersproject/providers'
 import { NetworkStatus } from '@zkopru/core'
 import { loadConfig } from '../../utils'
 import {
@@ -19,6 +19,7 @@ import LoadDatabase from '../../../src/apps/coordinator/configurator/config-prom
 import LoadCoordinator from '../../../src/apps/coordinator/configurator/config-prompts/load-coordinator'
 import { Context as NodeContext } from '../../context'
 import { getCtx } from '../setupTest'
+import { Web3Provider } from '@ethersproject/providers/src.ts/web3-provider'
 
 const COORDINATOR_CONFIG = './tests/coordinator.test.json'
 const COORDINATOR_CONFIG_ONLY_PROVIDER =
@@ -73,8 +74,9 @@ describe('configurator', () => {
       const ret = await connection.run(localContext)
       expect(ret.next).toEqual(Menu.CONFIG_ACCOUNT)
 
-      let provider = ret.context.provider as JsonRpcProvider
-      expect(provider.connection.url).toEqual(option.base.provider)
+      let provider = ret.context.provider as Web3Provider
+      let wsProvider = (provider.provider as any)as WebSocketProvider
+      expect(wsProvider.connection.url).toEqual(option.base.provider)
     })
 
     it('with websocket provider', async () => {
@@ -87,7 +89,8 @@ describe('configurator', () => {
       const connection = new ConnectWeb3(option)
       const ret = await connection.run(localContext)
 
-      let wsProvider = ret.context.provider as WebSocketProvider
+      let provider = ret.context.provider as Web3Provider
+      let wsProvider = (provider.provider as any)as WebSocketProvider
       expect(wsProvider.connection.url).toEqual(wsProviderUrl)
     })
   })
