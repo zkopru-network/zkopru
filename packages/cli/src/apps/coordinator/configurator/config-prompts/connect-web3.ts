@@ -1,5 +1,6 @@
 import chalk from 'chalk'
-import { WebSocketProvider, JsonRpcProvider } from '@ethersproject/providers'
+import { ethers } from 'ethers'
+import Web3WsProvider from 'web3-providers-ws'
 import Configurator, { Context, Menu } from '../configurator'
 
 export default class ConnectWeb3 extends Configurator {
@@ -7,11 +8,18 @@ export default class ConnectWeb3 extends Configurator {
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
     console.log(chalk.blue('Connecting to the Ethereum network'))
-    const provider:
-      | WebSocketProvider
-      | JsonRpcProvider = this.base.provider.startsWith('ws')
-      ? new WebSocketProvider(this.base.provider)
-      : new JsonRpcProvider(this.base.provider)
+    const provider = new ethers.providers.Web3Provider(
+      new (Web3WsProvider as any)(this.base.provider, {
+        reconnect: {
+          delay: 2000,
+          auto: true,
+          onTimeout: false
+        },
+        clientConfig: {
+          keepalive: true,
+          keepaliveInterval: 30000,
+        },
+      }))
     async function waitConnection() {
       return new Promise<void>(async res => {
         if (await provider.ready) return res()
