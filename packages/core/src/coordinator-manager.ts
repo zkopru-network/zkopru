@@ -143,7 +143,7 @@ export class CoordinatorManager {
     try {
       await this.updateUrl(coordinator)
     } catch (err) {
-      console.log(err)
+      logger.warn(`core/coordinator-manager.ts - ${err}`)
     }
   }
 
