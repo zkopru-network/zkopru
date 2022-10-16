@@ -23,7 +23,11 @@ export class ZkAccount extends ZkViewer {
   ethAccount: Wallet
 
   constructor(_privateKey: BytesLike, _provider?: Provider) {
-    const privateKey = hexlify(_privateKey)
+    const privateKey = hexlify(
+      _privateKey.toString().startsWith('0x')
+        ? _privateKey
+        : '0x' + _privateKey.toString(),
+    )
 
     const ethAccount = new Wallet(_privateKey, _provider)
 
