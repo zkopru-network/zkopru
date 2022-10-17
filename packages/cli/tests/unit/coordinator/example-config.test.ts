@@ -15,7 +15,7 @@ import {
 } from './mocksForExampleConfig'
 import { ethers } from 'ethers'
 
-const COORDINATOR_CONFIG = './tests/coordinator.test.json'
+const COORDINATOR_CONFIG = './tests/configuration/coordinator.test.json'
 
 describe('example-config', () => {
   let context: ExampleConfigContext
@@ -45,7 +45,7 @@ describe('example-config', () => {
   })
 
   describe('CreateWallet', () => {
-    const passwordFile = './tests/password-file.secret'
+    const passwordFile = './tests/configuration/password-file.secret'
 
     it('create a wallet', async () => {
       const mockedWallet = mockCreateWallet(option)

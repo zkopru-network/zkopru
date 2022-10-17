@@ -63,7 +63,7 @@ describe('wallet', () => {
 
     let zkWallet: ZkWallet = await getMockedZKWallet(
       ctx,
-      './tests/wallet.test.json',
+      './tests/configuration/wallet.test.json',
       handleAfter,
     )
     option = {
@@ -403,11 +403,15 @@ describe('wallet', () => {
       }
     })
 
-    // FIXME: to have ERC20 and ERC721
-    it.skip('run', async () => {
+    it('run', async () => {
       const choices = [AppMenu.DEPOSIT_ERC20, AppMenu.DEPOSIT_ERC721]
       for (let choice of choices) {
-        mockedTransfer.ask.mockResolvedValue({ choice: { menu: choice } })
+        mockedTransfer.ask.mockResolvedValue({
+          choice: {
+            menu: choice,
+            address: '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1',
+          },
+        })
         const ret = await mockedTransfer.run(contextForTransfer)
         expect(ret.context.address).toBeDefined()
         expect(ret.context.address).toEqual(

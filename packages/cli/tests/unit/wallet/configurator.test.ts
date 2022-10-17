@@ -23,8 +23,9 @@ import { loadConfig } from '../../utils'
 import { Context as NodeContext } from '../../context'
 import { getCtx } from '../setupTest'
 
-const WALLET_CONFIG = './tests/wallet.test.json'
-const WALLET_CONFIG_ONLY_PROVIDER = './tests/wallet-only-provider.test.json'
+const WALLET_CONFIG = './tests/configuration/wallet.test.json'
+const WALLET_CONFIG_ONLY_PROVIDER =
+  './tests/configuration/wallet-only-provider.test.json'
 const NEW_WALLET_CONFIG_PATH = './tests/wallet-temp.test.json'
 const SQLITE_DB_NAME = 'zkwallet-db-configurator'
 const MNEMONIC =

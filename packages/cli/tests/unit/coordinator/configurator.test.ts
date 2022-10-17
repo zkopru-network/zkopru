@@ -1,5 +1,5 @@
 import fs from 'fs'
-import {  WebSocketProvider } from '@ethersproject/providers'
+import { WebSocketProvider } from '@ethersproject/providers'
 import { NetworkStatus } from '@zkopru/core'
 import { loadConfig } from '../../utils'
 import {
@@ -21,9 +21,9 @@ import { Context as NodeContext } from '../../context'
 import { getCtx } from '../setupTest'
 import { Web3Provider } from '@ethersproject/providers/src.ts/web3-provider'
 
-const COORDINATOR_CONFIG = './tests/coordinator.test.json'
+const COORDINATOR_CONFIG = './tests/configuration/coordinator.test.json'
 const COORDINATOR_CONFIG_ONLY_PROVIDER =
-  './tests/coordinator-only-provider.test.json'
+  './tests/configuration/coordinator-only-provider.test.json'
 const NEW_COORDINATOR_CONFIG_PATH = './tests/coordinator-tmp.json'
 const SQLITE_DB_NAME = 'zkopru-coordinator-configurator'
 
@@ -75,7 +75,7 @@ describe('configurator', () => {
       expect(ret.next).toEqual(Menu.CONFIG_ACCOUNT)
 
       let provider = ret.context.provider as Web3Provider
-      let wsProvider = (provider.provider as any)as WebSocketProvider
+      let wsProvider = (provider.provider as any) as WebSocketProvider
       expect(wsProvider.connection.url).toEqual(option.base.provider)
     })
 
@@ -90,7 +90,7 @@ describe('configurator', () => {
       const ret = await connection.run(localContext)
 
       let provider = ret.context.provider as Web3Provider
-      let wsProvider = (provider.provider as any)as WebSocketProvider
+      let wsProvider = (provider.provider as any) as WebSocketProvider
       expect(wsProvider.connection.url).toEqual(wsProviderUrl)
     })
   })
@@ -118,7 +118,7 @@ describe('configurator', () => {
     it('import from keystore and password from a password file', async () => {
       const defaultPsw = option.base.password
       option.base.password = undefined
-      option.base.passwordFile = './tests/password-file'
+      option.base.passwordFile = './tests/configuration/password-file'
 
       const configureAccount = new ConfigureAccount(option)
       const ret = await configureAccount.run(contextConfigureAccount)
