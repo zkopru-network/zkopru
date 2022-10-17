@@ -22,7 +22,7 @@ import Refund from '../../../src/apps/coordinator/prompts/auction/refund'
 import { Context as NodeContext } from '../../context'
 import { getCtx } from '../setupTest'
 
-const COORDINATOR_CONFIG = './tests/coordinator.test.json'
+const COORDINATOR_CONFIG = './tests/configuration/coordinator.test.json'
 
 describe('prompts', () => {
   jest.setTimeout(100000)
