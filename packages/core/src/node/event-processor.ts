@@ -1,3 +1,4 @@
+import * as uuid from 'uuid'
 import { BigNumber } from 'ethers'
 import { TypedEvent } from '@zkopru/contracts/typechain/common'
 import {
@@ -40,6 +41,7 @@ export class EventProcessor extends EventEmitter {
       const { args, logIndex, transactionIndex, blockNumber } = event
       const { note, fee, queuedAt } = args
       const deposit: DepositSql = {
+        id: uuid.v4(),
         note: note.toString(),
         fee: fee.toString(),
         queuedAt: queuedAt.toString(),
@@ -47,11 +49,15 @@ export class EventProcessor extends EventEmitter {
         logIndex,
         blockNumber,
       }
-      db.upsert('Deposit', {
-        where: { note: deposit.note },
-        update: deposit,
-        create: deposit,
-      })
+      try {
+        db.upsert('Deposit', {
+          where: { id: deposit.id },
+          update: deposit,
+          create: deposit,
+        })
+      } catch (error) {
+        logger.error(`core/even-processor - deposit upsert error: ${error}`)
+      }
       db.delete('PendingDeposit', {
         where: {
           note: deposit.note,
