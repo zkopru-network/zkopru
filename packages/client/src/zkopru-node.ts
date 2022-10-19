@@ -40,7 +40,9 @@ export default class ZkopruNode {
 
   private async initDB(...args: any[]) {
     if (!this._db) {
-      const databaseName = `zkopru-${this.config.chainId}-${this.config.address?.slice(2,)}`
+      const databaseName =
+        this.config.databaseName ||
+        `zkopru-${this.config.chainId}-${this.config.address?.slice(2)}`
       this._db = await this.connectorType.create(schema, databaseName, ...args)
     }
   }
