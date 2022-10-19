@@ -25,3 +25,6 @@ export default {
 
 export { ZkAccount } from '@zkopru/account'
 export { UtxoStatus } from '@zkopru/transaction'
+
+export { default as ZkopruNode } from './zkopru-node'
+export { default as ZkopruWallet } from './zkopru-wallet'
