@@ -88,6 +88,7 @@ export default class ZkopruNode {
       address: this.config.address as string,
       provider,
       db: await this.db(...args),
+      accounts: this.config.accounts,
     })
   }
 
