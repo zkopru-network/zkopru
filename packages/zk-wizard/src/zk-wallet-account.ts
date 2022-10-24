@@ -308,6 +308,27 @@ export class ZkWalletAccount {
     return result
   }
 
+  depositEtherTx(
+    eth: BigNumberish,
+    fee: BigNumberish,
+    to?: ZkAddress,
+  ): {
+    to: string
+    data: any
+    value: string
+    onComplete: () => Promise<any>
+  } {
+    if (!this.account) {
+      logger.error('Account is not set')
+      throw new Error('Account is not set')
+    }
+    const note = Utxo.newEtherNote({
+      eth,
+      owner: to || this.account.zkAddress,
+    })
+    return this.depositTx(note, Fp.strictFrom(fee))
+  }
+
   async depositERC20(
     eth: BigNumberish,
     addr: string,
@@ -342,6 +363,30 @@ export class ZkWalletAccount {
     })
     const result = await this.deposit(note, Fp.strictFrom(fee))
     return result
+  }
+
+  depositERC20Tx(
+    eth: BigNumberish,
+    addr: string,
+    amount: BigNumberish,
+    fee: BigNumberish,
+    to?: ZkAddress,
+  ): {
+    to: string
+    data: any
+    value: string
+    onComplete: () => Promise<any>
+  } {
+    if (!this.account) {
+      throw new Error('Account is not set')
+    }
+    const note = Utxo.newERC20Note({
+      eth,
+      owner: to || this.account.zkAddress,
+      tokenAddr: addr,
+      erc20Amount: amount,
+    })
+    return this.depositTx(note, Fp.strictFrom(fee))
   }
 
   async depositERC721(
@@ -776,6 +821,63 @@ export class ZkWalletAccount {
       return true
     }
     return false
+  }
+
+  private depositTx(
+    note: Utxo,
+    fee: Fp,
+  ): {
+    data: string
+    onComplete: () => Promise<any>
+    to: string
+    value: string
+  } {
+    if (!this.account) {
+      throw new Error('Account is not set')
+    }
+    const data = this.node.layer1.user.interface.encodeFunctionData('deposit', [
+      note.owner.spendingPubKey().toString(),
+      note.salt.toUint256().toString(),
+      note
+        .eth()
+        .toUint256()
+        .toString(),
+      note
+        .tokenAddr()
+        .toAddress()
+        .toString(),
+      note
+        .erc20Amount()
+        .toUint256()
+        .toString(),
+      note
+        .nft()
+        .toUint256()
+        .toString(),
+      fee.toUint256().toString(),
+    ])
+    return {
+      to: this.node.layer1.user.address,
+      data,
+      value: BigNumber.from(
+        note
+          .eth()
+          .add(fee)
+          .toString(),
+      ).toHexString(),
+      onComplete: async () => {
+        await this.db.transaction(async db => {
+          db.create('PendingDeposit', {
+            note: note
+              .hash()
+              .toUint256()
+              .toString(),
+            fee: fee.toUint256().toString(),
+          })
+          await this.saveOutflow(note, db)
+        })
+      },
+    }
   }
 
   private async saveOutflow(outflow: Outflow, db?: TransactionDB) {
