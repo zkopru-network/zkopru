@@ -261,7 +261,6 @@ export class L2Chain {
 
   async getPendingMassDeposits(): Promise<PendingMassDeposits> {
     const leaves: Fp[] = []
-    let aggregatedFee: Fp = Fp.zero
     // 1. pick mass deposits
     const commits: MassDepositSql[] = await this.db.findMany('MassDeposit', {
       where: { includedIn: null },
@@ -286,9 +285,6 @@ export class L2Chain {
       return a.logIndex - b.logIndex
     })
     leaves.push(...pendingDeposits.map(deposit => Fp.from(deposit.note)))
-    aggregatedFee = aggregatedFee.add(
-      pendingDeposits.reduce((prev, item) => prev.add(item.fee), Fp.zero),
-    )
     const includedIndexes = {}
     const validLeaves = [] as Fp[]
     for (const commit of commits) {
@@ -324,7 +320,7 @@ export class L2Chain {
       leaves: validLeaves,
       totalFee: commits.reduce((acc, commit) => {
         if (!includedIndexes[commit.index]) return acc
-        return acc.add(Fp.from(commit.fee))
+        return acc.add(commit.fee)
       }, Fp.zero),
       calldataSize: massDeposits.length ? massDeposits.length * 64 + 1 : 0,
     }

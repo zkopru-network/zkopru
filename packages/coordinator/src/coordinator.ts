@@ -22,7 +22,7 @@ import fetch from 'node-fetch'
 import { BigNumber, BigNumberish, Signer } from 'ethers'
 import { TransactionReceipt } from '@ethersproject/providers'
 import { IBurnAuction__factory } from '@zkopru/contracts'
-import { parseUnits } from 'ethers/lib/utils'
+import { formatUnits, parseUnits } from 'ethers/lib/utils'
 import { TxMemPool } from './tx-pool'
 import { CoordinatorConfig, CoordinatorContext } from './context'
 import { GeneratorBase } from './middlewares/interfaces/generator-base'
@@ -173,6 +173,7 @@ export class Coordinator extends EventEmitter {
       this.context.auctionMonitor.stop(),
       this.api.stop(),
       this.stopGasPriceSubscription(),
+      this.context.node.synchronizer.removeAllListeners(),
     ])
     this.emit('stop')
   }
@@ -405,12 +406,7 @@ export class Coordinator extends EventEmitter {
         .estimateGas.propose(`0x${bytes.toString('hex')}`)
     ).add(MAX_MASS_DEPOSIT_COMMIT_GAS)
     const expectedCost = this.context.effectiveGasPrice.mul(expectedGas)
-    logger.info(
-      `coordinator/coordinator.ts - Skipping mass deposit, need ${expectedCost.toString()} have ${block.header.fee
-        .toBigNumber()
-        .add(stagedDeposits.fee)
-        .toString()}`,
-    )
+
     if (
       expectedCost.lte(block.header.fee.toBigNumber().add(stagedDeposits.fee))
     ) {
@@ -421,6 +417,15 @@ export class Coordinator extends EventEmitter {
       const receipt = await tx.wait()
       return receipt
     }
+    logger.info(
+      `coordinator/coordinator.ts - Skipping mass deposit, need ${formatUnits(
+        expectedCost,
+        'gwei',
+      )} have ${formatUnits(
+        block.header.fee.toBigNumber(),
+        'gwei',
+      )} + ${formatUnits(stagedDeposits.fee, 'gwei')}`,
+    )
   }
 
   async commitMassDeposits(): Promise<TransactionReceipt | undefined> {
