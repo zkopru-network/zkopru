@@ -17,6 +17,7 @@ import { L1Contract } from '../context/layer1'
 import { Block, headerHash } from '../block'
 import { genesis } from '../block/genesis'
 import { EventProcessor } from './event-processor'
+import { formatUnits } from 'ethers/lib/utils'
 
 export enum NetworkStatus {
   STOPPED = 'stopped',
@@ -566,9 +567,7 @@ export class Synchronizer extends EventProcessor {
     logger.info(
       `core/synchronizer - Scan deposit hashes from block number ${fromBlock}`,
     )
-    const pivotBlock =
-      (await this.l1Contract.provider.getBlockNumber()) -
-      this.blockCache.BLOCK_CONFIRMATIONS
+    const pivotBlock = await this.l1Contract.provider.getBlockNumber()
     const SCAN_LENGTH = 1000
     let currentBlock = fromBlock
     while (currentBlock < pivotBlock && this.isListening) {
@@ -627,9 +626,7 @@ export class Synchronizer extends EventProcessor {
     logger.info(
       `core/synchronizer - Scan deposit details from block number ${fromBlock}`,
     )
-    const pivotBlock =
-      (await this.l1Contract.provider.getBlockNumber()) -
-      this.blockCache.BLOCK_CONFIRMATIONS
+    const pivotBlock = await this.l1Contract.provider.getBlockNumber()
     const SCAN_LENGTH = 1000
     let currentBlock = fromBlock
     const depositUtxoFilter = this.l1Contract.user.filters.DepositUtxo(
@@ -679,12 +676,12 @@ export class Synchronizer extends EventProcessor {
       limit: 1,
     })
     const fromBlock = lastMassDeposit[0]?.blockNumber || proposedAt
-    const pivotBlock =
-      (await this.l1Contract.provider.getBlockNumber()) -
-      this.blockCache.BLOCK_CONFIRMATIONS
+    const pivotBlock = await this.l1Contract.provider.getBlockNumber()
     const SCAN_LENGTH = 1000
     let currentBlock = fromBlock
     const massDepositCommitFilter = this.l1Contract.coordinator.filters.MassDepositCommit()
+    // if we compare with pivotBlock(l1.getBlockNumber() - BLOCK_CONFIRMATIONS),
+    // we could miss some events from pivotBlock to l1.getBlockNumber()
     while (currentBlock < pivotBlock && this.isListening) {
       const start = currentBlock
       const end = Math.min(currentBlock + SCAN_LENGTH - 1, pivotBlock)
@@ -708,7 +705,9 @@ export class Synchronizer extends EventProcessor {
         const typedEvent = events[3]
         const { args } = typedEvent
         logger.info(
-          `core/synchronizer - Total fee for MassDepositCommit #${args.index}(${args.merged}) is ${args.fee} gwei`,
+          `core/synchronizer - Total fee for MassDepositCommit #${args.index}(${
+            args.merged
+          }) is ${formatUnits(args.fee, 'gwei')} gwei`,
         )
         await this.blockCache.transactionCache(
           db => {
@@ -739,9 +738,7 @@ export class Synchronizer extends EventProcessor {
       limit: 1,
     })
     const fromBlock = lastProposal[0]?.proposedAt || proposedAt
-    const pivotBlock =
-      (await this.l1Contract.provider.getBlockNumber()) -
-      this.blockCache.BLOCK_CONFIRMATIONS
+    const pivotBlock = await this.l1Contract.provider.getBlockNumber()
     const SCAN_LENGTH = 1000
     let currentBlock = fromBlock
     const newProposalFilter = this.l1Contract.coordinator.filters.NewProposal()
@@ -801,9 +798,7 @@ export class Synchronizer extends EventProcessor {
       limit: 1,
     })
     const fromBlock = lastSlash[0]?.slashedAt || proposedAt
-    const pivotBlock =
-      (await this.l1Contract.provider.getBlockNumber()) -
-      this.blockCache.BLOCK_CONFIRMATIONS
+    const pivotBlock = await this.l1Contract.provider.getBlockNumber()
     const SCAN_LENGTH = 1000
     let currentBlock = fromBlock
     const slashFilter = this.l1Contract.challenger.filters.Slash()
@@ -853,9 +848,7 @@ export class Synchronizer extends EventProcessor {
       orderBy: { proposedAt: 'desc' },
     })
     const fromBlock = lastFinalized?.proposedAt || proposedAt
-    const pivotBlock =
-      (await this.l1Contract.provider.getBlockNumber()) -
-      this.blockCache.BLOCK_CONFIRMATIONS
+    const pivotBlock = await this.l1Contract.provider.getBlockNumber()
     const SCAN_LENGTH = 1000
     let currentBlock = fromBlock
     const fianlizedFilter = this.l1Contract.coordinator.filters.Finalized()
