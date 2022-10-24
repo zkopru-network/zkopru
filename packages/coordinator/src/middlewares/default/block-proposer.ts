@@ -98,15 +98,13 @@ export class BlockProposer extends ProposerBase {
       this.context.account.getChainId(),
       this.context.account.getTransactionCount('latest'),
     ])
-    const signedTx = await this.context.account.signTransaction({
+    const tx = await this.context.account.sendTransaction({
       ...proposeTx,
       chainId,
       nonce,
       gasLimit: expectedGas,
       maxFeePerGas: this.context.effectiveGasPrice,
-      type: 2,
     })
-    const tx = await layer1.provider.sendTransaction(signedTx)
     const receipt = await tx.wait()
     if (receipt.status) {
       logger.info(
