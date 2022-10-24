@@ -308,7 +308,7 @@ export default [
   },
   {
     name: 'Deposit',
-    primaryKey: 'id',
+    primaryKey: 'note',
     rows: [
       ['id', 'String'],
       ['note', 'String', { index: true }],
