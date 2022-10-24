@@ -20,6 +20,9 @@ const config: HardhatUserConfig = {
         mnemonic:
           'myth like bonus scare over problem client lizard pioneer submit female collect',
       },
+      mining: {
+        interval: 3000,
+      },
     },
   },
   etherscan: {
