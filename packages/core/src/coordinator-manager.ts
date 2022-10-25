@@ -6,7 +6,7 @@ import {
   BurnAuction__factory,
   ZkopruContract,
 } from '@zkopru/contracts'
-import { TypedEvent } from '@zkopru/contracts/typechain/common'
+import { TypedListener } from '@zkopru/contracts/typechain/common'
 import fetch from 'node-fetch'
 
 /**
@@ -135,12 +135,12 @@ export class CoordinatorManager {
     burnAuction.on(filter, this.handleUrlUpdate)
   }
 
-  async handleUrlUpdate(
+  handleUrlUpdate: TypedListener<[string], { coordinatorAddr: string }> = async (
     _: string,
-    event: TypedEvent<[string] & { coordinator: string }>,
-  ) {
-    const { coordinator } = event.args
-    await this.updateUrl(coordinator)
+    event,
+  ) => {
+    const { coordinatorAddr } = event.args
+    await this.updateUrl(coordinatorAddr)
   }
 
   async stop() {
