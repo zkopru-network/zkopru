@@ -135,12 +135,12 @@ export class CoordinatorManager {
     burnAuction.on(filter, this.handleUrlUpdate)
   }
 
-  handleUrlUpdate: TypedListener<[string], { coordinatorAddr: string }> = async (
+  handleUrlUpdate: TypedListener<[string], { coordinator: string }> = async (
     _: string,
     event,
   ) => {
-    const { coordinatorAddr } = event.args
-    await this.updateUrl(coordinatorAddr)
+    const { coordinator } = event.args
+    await this.updateUrl(coordinator)
   }
 
   async stop() {
