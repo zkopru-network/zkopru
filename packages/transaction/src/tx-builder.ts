@@ -319,12 +319,14 @@ export class TxBuilder {
       'inflow != outflow',
     )
     for (const addr of Object.keys(inflowSum.erc20)) {
+      if (outflowSum.getERC20(addr).eq('0')) continue
       assert(
         inflowSum.getERC20(addr).eq(outflowSum.getERC20(addr)),
         'erc20 in-out is different',
       )
     }
     for (const addr of Object.keys(inflowSum.erc721)) {
+      if (outflowSum.getNFTs.length == 0) continue
       const inflowNFTs = JSON.stringify(
         inflowSum.getNFTs(addr).map(f => f.toString()),
       )
