@@ -104,8 +104,6 @@ export class BlockProposer extends ProposerBase {
       nonce,
       gasLimit: expectedGas,
       maxFeePerGas: this.context.effectiveGasPrice,
-      // FIXME: add it back
-      // type: 2,
     })
     const receipt = await tx.wait()
     if (receipt.status) {
