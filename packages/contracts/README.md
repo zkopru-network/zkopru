@@ -25,6 +25,29 @@ npx solhint 'contracts/**/*.sol'
 npx solhint 'contracts/**/*.sol' --fix
 ```
 
+# Run hardhat node for local testnet
+
+To deploy zkopru contract on hardhat node, you should start the hardhat node first
+
+```shell
+packages/contracts $ npx hardhat node
+```
+
+You may need flags as an option following your condition. for example.
+
+```shell
+packages/contracts $ npx hardhat node --hostname 0.0.0.0 --port 9545
+```
+
+then, you can deploy zkopru contract with this command.
+
+```shell
+packages/contracts $ npx hardhat run --network testnet scripts/deploy.ts`
+```
+
+If the deploy script runs successfully, the hardhat node will start interval mining( every 5 sec ).
+That is for a coordinator, which will be run in your local environment.
+
 # Etherscan verification
 
 To try out Etherscan verification, you first need to deploy a contract to an Ethereum network that's supported by Etherscan, such as Ropsten.
