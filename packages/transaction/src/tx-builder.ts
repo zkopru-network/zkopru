@@ -268,6 +268,8 @@ export class TxBuilder {
     }
 
     // Spend ETH containing notes until it hits the number
+    const utxosWithERC20: Utxo[] = []
+    const utxosWithNft: Utxo[] = []
     spendables.sort((a, b) => (a.eth().gt(b.eth()) ? 1 : -1))
     while (getRequiredETH().gte(Sum.from(spendings).eth)) {
       logger.info(
@@ -299,6 +301,12 @@ export class TxBuilder {
       if (spending.eth().gt(0)) {
         spendings.push(spending)
       }
+      if (spending.asset.erc20Amount.gt('0')) {
+        utxosWithERC20.push(spending)
+      }
+      if (spending.asset.nft.gt('0')) {
+        utxosWithNft.push(spending)
+      }
     }
 
     // Calculate ETH change
@@ -306,7 +314,46 @@ export class TxBuilder {
     const changeETH = spendingAmount().eth.sub(getRequiredETH())
     const finalFee = getTxFee()
     if (!changeETH.isZero()) {
-      changes.push(Utxo.newEtherNote({ eth: changeETH, owner: this.changeTo }))
+      changes.push(
+        Utxo.newEtherNote({
+          eth: changeETH,
+          owner: this.changeTo,
+        }),
+      )
+    }
+
+    // check if ETH spending utxos includes ERC20 or nft
+    if (utxosWithERC20.length > 0) {
+      const extraERC20 = () => Sum.from(utxosWithERC20)
+      Object.keys(extraERC20().erc20).forEach(addr => {
+        const change = extraERC20().getERC20(addr)
+        if (!change.isZero()) {
+          changes.push(
+            Utxo.newERC20Note({
+              eth: 0,
+              tokenAddr: Fp.from(addr),
+              erc20Amount: change,
+              owner: this.changeTo,
+            }),
+          )
+        }
+      })
+    }
+
+    if (utxosWithNft.length > 0) {
+      const extraNFTs = () => Sum.from(utxosWithNft)
+      Object.keys(extraNFTs).forEach(addr => {
+        extraNFTs[addr].forEach(nft => {
+          changes.push(
+            Utxo.newNFTNote({
+              eth: 0,
+              tokenAddr: Fp.from(addr),
+              nft,
+              owner: this.changeTo,
+            }),
+          )
+        })
+      })
     }
 
     const inflow = [...spendings]
