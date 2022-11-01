@@ -667,7 +667,8 @@ export class Synchronizer extends EventEmitter {
           )
           if (!owner) {
             // skip storing Deposit details
-            return
+            // eslint-disable-next-line no-continue
+            continue
           }
           const salt = Fp.from(returnValues.salt)
           const note = new Note(owner, salt, {
