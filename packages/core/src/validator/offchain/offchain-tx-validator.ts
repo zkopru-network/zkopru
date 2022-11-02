@@ -180,20 +180,22 @@ export class OffchainTxValidator extends OffchainValidatorContext
     // TODO: use index when booleans are supported
     if (finalized.find(p => !!p.finalized)) return true
     // Or check the recent precedent blocks has that utxo tree root
-    let currentBlockHash: string = blockHash.toString()
+    let childBlockHash: string = blockHash.toString()
     for (let i = 0; i < this.layer2.config.referenceDepth; i += 1) {
-      const hash = currentBlockHash
-      const currentBlock = await this.layer2.db.findOne('Block', {
-        where: { hash },
+      const childBlockHeader = await this.layer2.db.findOne('Header', {
+        where: { hash: childBlockHash },
+      })
+      const parentBlock = await this.layer2.db.findOne('Block', {
+        where: { hash: childBlockHeader.parentBlock },
         include: { header: true, slash: true },
       })
-      if (currentBlock === null || currentBlock.slash !== null) {
+      if (parentBlock === null || parentBlock.slash !== null) {
         return false
       }
-      if (inclusionRef.eq(Uint256.from(currentBlock.header.utxoRoot))) {
+      if (inclusionRef.eq(Uint256.from(parentBlock.header.utxoRoot))) {
         return true
       }
-      currentBlockHash = currentBlock.header.parentBlock
+      childBlockHash = childBlockHeader.parentBlock
     }
     return false
   }
