@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import BN from 'bn.js'
 import Web3 from 'web3'
+import Common from '@ethereumjs/common'
+import { TransactionFactory } from '@ethereumjs/tx'
 import { Account, TransactionReceipt } from 'web3-core'
 import { logger } from '@zkopru/utils'
 import {
@@ -43,18 +45,57 @@ export class TxUtil {
     }
 
     const value = option ? (option as PayableTx).value : undefined
-    const { rawTransaction } = await web3.eth.accounts.signTransaction(
-      {
-        gasPrice,
-        gas,
+
+    // this can be replace with `web3.eth.account.signTransaction`
+    // but, there are some benefits using @ethereumjs/tx for signing tx
+    // less dependency on web3 version and more accurate gas can be use it
+    let rawTransaction
+    const nonce = option?.nonce
+      ? +option.nonce.toString()
+      : await web3.eth.getTransactionCount(account.address)
+    try {
+      const txParams = {
+        from: account.address,
         to: address,
-        value,
+        gasPrice: `0x${new BN(gasPrice).toString('hex')}`,
+        gasLimit: `0x${new BN(gas).toString('hex')}`,
+        value: `0x${new BN(value ?? 0).toString('hex')}`,
         data: tx.encodeABI(),
-        nonce: option?.nonce ? +option.nonce.toString() : undefined,
-      },
-      account.privateKey,
-    )
+        nonce,
+      }
+
+      const common = await this.getCommon(web3)
+      const unSignedTx = TransactionFactory.fromTxData(txParams, { common })
+      const signedTx = unSignedTx.sign(
+        Buffer.from(account.privateKey.substring(2), 'hex'),
+      )
+
+      if (signedTx.isSigned() && !signedTx.verifySignature()) {
+        throw new Error(`Invalid Signature`)
+      }
+
+      rawTransaction = `0x${signedTx.serialize().toString('hex')}`
+    } catch (error) {
+      logger.error(
+        `contracts/tx-utils - getting signed transaction failed : ${error}`,
+      )
+    }
+
     return rawTransaction as string
+  }
+
+  // depends on chainId, @ethereumjs supports mainnet and other testchain
+  static async getCommon(web3: Web3): Promise<Common> {
+    const chainId = await web3.eth.getChainId()
+    const knownChainID = [1, 3, 4, 42, 5] // base on enum Chain on @ethereumjs/common
+
+    let common: Common
+    if (knownChainID.includes(chainId)) {
+      common = new Common({ chain: chainId })
+    } else {
+      common = Common.custom({ chainId })
+    }
+    return common
   }
 
   static async sendTx<T>(
