@@ -47,7 +47,7 @@
     "testnet": "truffle develop --testnet",
     "prettier": "prettier --write ./**/*.{ts,js,sol}",
     "testblock:generate": "node utils/testblock-generator",
-    "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
+    "deploy:local": "hardhat run scripts/deploy.ts --network testnet",
     "deploy:goerli": "hardhat run scripts/deploy.ts --network goerli",
     "deploy:mainnet": "hardhat run scripts/deploy.ts --network mainnet --skip-dry-run"
   },
