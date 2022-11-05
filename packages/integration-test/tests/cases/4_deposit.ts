@@ -26,12 +26,12 @@ export const bobDepositsErc20 = (ctx: CtxProvider) => async () => {
   assert(coordinatorAccount !== undefined)
   assert(wallets.bob.account !== undefined)
   await tokens.erc20.contract
-    .connect(coordinatorAccount.ethAccount)
+    .connect(coordinatorAccount.ethAccount!)
     .transfer(accounts.bob.ethAddress, parseUnits('100', 'ether'))
   // Approve
   const amount = parseUnits('10', 'ether')
   await tokens.erc20.contract
-    .connect(wallets.bob.account.ethAccount)
+    .connect(wallets.bob.account.ethAccount!)
     .approve(zkopruAddress, amount)
 
   // Deposit ERC20
@@ -52,7 +52,7 @@ export const depositERC721 = (ctx: CtxProvider) => async () => {
   assert(wallets.coordinator.account !== undefined)
   assert(wallets.carl.account !== undefined)
   await tokens.erc721.contract
-    .connect(wallets.coordinator.account.ethAccount)
+    .connect(wallets.coordinator.account.ethAccount!)
     ['safeTransferFrom(address,address,uint256)'](
       accounts.coordinator.ethAddress,
       accounts.carl.ethAddress,
@@ -60,7 +60,7 @@ export const depositERC721 = (ctx: CtxProvider) => async () => {
     )
   // Approve
   await tokens.erc721.contract
-    .connect(wallets.carl.account.ethAccount)
+    .connect(wallets.carl.account.ethAccount!)
     .setApprovalForAll(zkopruAddress, true)
   // Deposit NFT id 1
   expect(

@@ -9,12 +9,11 @@ import { deploy } from '~contracts-utils/deployer'
 import { RpcType } from '~client/types'
 import { DB, SQLiteConnector, schema } from '~database-node'
 import Zkopru from '../src'
+import { Wallet } from 'ethers'
 // const { expect } = chai
 
 describe('rPC tests', () => {
-  const accounts: ZkAccount[] = [
-    new ZkAccount(trimHexToLength(Buffer.from('sample private key'), 64)),
-  ]
+  let account: ZkAccount
   let address: string
   let fullNode: FullNode
   let mockup: DB
@@ -27,6 +26,14 @@ describe('rPC tests', () => {
   })
   // setup a coordinator node to query
   before(async () => {
+    account = new ZkAccount(
+      trimHexToLength(Buffer.from('sample private key'), 64),
+      '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1',
+      new Wallet(
+        trimHexToLength(Buffer.from('sample private key'), 64),
+        ethers.provider,
+      ),
+    )
     // logStream.addStream(process.stdout)
     mockup = await SQLiteConnector.create(schema, ':memory:')
     // It may take about few minutes. If you want to skip building image,
@@ -43,9 +50,9 @@ describe('rPC tests', () => {
       provider: ethers.provider,
       address,
       db: mockup,
-      accounts,
+      accounts: [account],
     })
-    coordinator = new Coordinator(fullNode, accounts[0].ethAccount, {
+    coordinator = new Coordinator(fullNode, account.ethAccount!, {
       maxBytes: 131072,
       bootstrap: true,
       priceMultiplier: 48, // 32 gas is the current default price for 1 byte

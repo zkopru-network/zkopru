@@ -13,10 +13,10 @@ export const testCompleteSetup = (ctx: CtxProvider) => async () => {
   console.log('Now Genesis!')
   const tx = await contract.zkopru.populateTransaction.completeSetup()
   console.log('Genesis!')
-  await expect(accounts.alice.ethAccount.sendTransaction(tx)).to.be.reverted
-  await expect(accounts.bob.ethAccount.sendTransaction(tx)).to.be.reverted
-  await expect(accounts.carl.ethAccount.sendTransaction(tx)).to.be.reverted
-  const response = await accounts.coordinator.ethAccount.sendTransaction(tx)
+  await expect(accounts.alice.ethAccount!.sendTransaction(tx)).to.be.reverted
+  await expect(accounts.bob.ethAccount!.sendTransaction(tx)).to.be.reverted
+  await expect(accounts.carl.ethAccount!.sendTransaction(tx)).to.be.reverted
+  const response = await accounts.coordinator.ethAccount!.sendTransaction(tx)
   const receipt = await response.wait()
   expect(receipt.status).to.eq(1)
 }
@@ -25,12 +25,12 @@ export const testRejectVkRegistration = (ctx: CtxProvider) => async () => {
   const { accounts, contract } = ctx()
   const tx = await contract.setup.populateTransaction.completeSetup()
 
-  await expect(accounts.alice.ethAccount.sendTransaction(tx)).to.be.reverted
-  await expect(accounts.bob.ethAccount.sendTransaction(tx)).to.be.reverted
-  await expect(accounts.carl.ethAccount.sendTransaction(tx)).to.be.reverted
-  await expect(accounts.newCoordinator.ethAccount.sendTransaction(tx)).to.be
+  await expect(accounts.alice.ethAccount!.sendTransaction(tx)).to.be.reverted
+  await expect(accounts.bob.ethAccount!.sendTransaction(tx)).to.be.reverted
+  await expect(accounts.carl.ethAccount!.sendTransaction(tx)).to.be.reverted
+  await expect(accounts.newCoordinator.ethAccount!.sendTransaction(tx)).to.be
     .reverted
-  await expect(accounts.coordinator.ethAccount.sendTransaction(tx)).to.be
+  await expect(accounts.coordinator.ethAccount!.sendTransaction(tx)).to.be
     .reverted
 }
 
@@ -59,10 +59,10 @@ export const testRegisterTokens = (ctx: CtxProvider) => async () => {
   const { accounts, contract, tokens, wallets, fixtureProvider } = ctx()
   console.log('register!')
   await contract.coordinator
-    .connect(accounts.coordinator.ethAccount)
+    .connect(accounts.coordinator.ethAccount!)
     .registerERC20(tokens.erc20.address)
   await contract.coordinator
-    .connect(accounts.coordinator.ethAccount)
+    .connect(accounts.coordinator.ethAccount!)
     .registerERC721(tokens.erc721.address)
   const isSynced = async (wallet: ZkWallet) => {
     const tokenRegistry = await wallet.node.layer2.getTokenRegistry()
