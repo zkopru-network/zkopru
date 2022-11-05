@@ -10,7 +10,7 @@ export const testInvalidBid = (ctx: CtxProvider) => async () => {
   const { wallets } = ctx()
   const { newCoordinator } = wallets
 
-  const newCoordinatorAccount = newCoordinator.accounts[0].ethAccount
+  const newCoordinatorAccount = newCoordinator.accounts[0].ethAccount!
   const burnAuction = (await newCoordinator.coordinatorManager.burnAuction()) as BurnAuction
   const newCoordinatorAuction = burnAuction.connect(newCoordinatorAccount)
 
@@ -31,7 +31,7 @@ export const stakeForBeingCoordintor = (ctx: CtxProvider) => async () => {
   const { newCoordinator } = wallets
 
   const newCoordinatorAddr = newCoordinator.accounts[0].ethAddress
-  const newCoordinatorAccount = newCoordinator.accounts[0].ethAccount
+  const newCoordinatorAccount = newCoordinator.accounts[0].ethAccount!
   const burnAuction = (await newCoordinator.coordinatorManager.burnAuction()) as BurnAuction
   const newCoordinatorAuction = burnAuction.connect(newCoordinatorAccount)
 
@@ -60,7 +60,7 @@ export const setUrlForActiveCoordinator = (ctx: CtxProvider) => async () => {
   const { newCoordinator } = wallets
 
   const newCoordinatorAddr = newCoordinator.accounts[0].ethAddress
-  const newCoordinatorAccount = newCoordinator.accounts[0].ethAccount
+  const newCoordinatorAccount = newCoordinator.accounts[0].ethAccount!
   const burnAuction = (await newCoordinator.coordinatorManager.burnAuction()) as BurnAuction
   const newCoordinatorAuction = burnAuction.connect(newCoordinatorAccount)
 
@@ -112,7 +112,7 @@ export const initializeAuctionConditions = async (ctx: CtxProvider) => {
   const { coordinator } = wallets
 
   const coordinatorAddr = coordinator.accounts[0].ethAddress
-  const coordinatorAccount = coordinator.accounts[0].ethAccount
+  const coordinatorAccount = coordinator.accounts[0].ethAccount!
 
   const burnAuction = await coordinator.coordinatorManager.burnAuction() // as BurnAuction
   const coordinatorAuction = burnAuction.connect(
@@ -177,7 +177,7 @@ export const bidSlotsByCoordinator = (
   const { round, minBid, minNextBid } = bidArguments
 
   const coordinatorAddr = coordinator.accounts[0].ethAddress
-  const coordinatorAccount = coordinator.accounts[0].ethAccount
+  const coordinatorAccount = coordinator.accounts[0].ethAccount!
 
   const burnAuction = await coordinator.coordinatorManager.burnAuction() // as BurnAuction
   const coordinatorAuction = burnAuction.connect(
@@ -233,7 +233,7 @@ export const bidSlotByNewCoordinator = (
   const { targetRound } = bidArguments
 
   const newCoordinatorAddr = newCoordinator.accounts[0].ethAddress
-  const newCoordinatorAccount = newCoordinator.accounts[0].ethAccount
+  const newCoordinatorAccount = newCoordinator.accounts[0].ethAccount!
 
   const burnAuction = await newCoordinator.coordinatorManager.burnAuction()
   const newCoordinatorAuction = burnAuction.connect(
@@ -272,7 +272,7 @@ export const bidSlotsAgainByCoordinator = (
   const { round, targetRound, minNextBid } = bidArguments
 
   const coordinatorAddr = coordinator.accounts[0].ethAddress
-  const coordinatorAccount = coordinator.accounts[0].ethAccount
+  const coordinatorAccount = coordinator.accounts[0].ethAccount!
 
   const burnAuction = await coordinator.coordinatorManager.burnAuction() // as BurnAuction
   const coordinatorAuction = burnAuction.connect(
@@ -304,9 +304,7 @@ export const bidSlotsAgainByCoordinator = (
     coordinatorAddr,
   )
   for (let i = round.toNumber() - 1; i > round.toNumber() - 11; i = i - 1) {
-    const {
-      1: bidder,
-    } = await coordinatorAuction.highestBidForRound(i)
+    const { 1: bidder } = await coordinatorAuction.highestBidForRound(i)
     expect(bidder).to.eq(coordinatorAddr)
   }
 }

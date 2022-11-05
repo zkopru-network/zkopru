@@ -176,6 +176,7 @@ export async function getWallet({
     wallet: hdWallet,
     node,
     accounts: [account],
+    l1Address: account.ethAddress,
     erc20: erc20s.map(Address.from),
     erc721: erc721s.map(Address.from),
     snarkKeyPath: path.join(__dirname, '../../circuits/keys'),
@@ -228,14 +229,14 @@ export async function initContext(): Promise<Context> {
   } = await getCoordinator(
     ethers.provider,
     zkopruAddress,
-    coordinatorAccount.ethAccount,
+    coordinatorAccount.ethAccount!,
     { port: 8889 + rand, maxBid: 30000 },
   )
 
   const { mockupDB: newCoordinatorDB } = await getCoordinator(
     ethers.provider,
     zkopruAddress,
-    newCoordinatorAccount.ethAccount,
+    newCoordinatorAccount.ethAccount!,
     { port: 9889 + rand, maxBid: 30000 },
   )
   await coordinator.start()
@@ -270,8 +271,8 @@ export async function initContext(): Promise<Context> {
       to: receiver,
       value: parseEther('1000'),
     }
-    const signedTx = await ethAccount.populateTransaction(unSignedTx)
-    await ethAccount.sendTransaction(signedTx)
+    const signedTx = await ethAccount!.populateTransaction(unSignedTx)
+    await ethAccount!.sendTransaction(signedTx)
   }
   coordinatorWallet.node.start()
   aliceWallet.node.start()
