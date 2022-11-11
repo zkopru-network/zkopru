@@ -142,19 +142,8 @@ export class TxBuilder {
     return this
   }
 
-  build(): RawTx & { withdrawals: Withdrawal[] } {
-    const spendables: Utxo[] = [...this.spendables]
+  protected collectERC20Notes(sendingAmount: Sum): Utxo[] {
     const spendings: Utxo[] = []
-    const sendingAmount = Sum.from(this.sendings)
-    const outgoingNotes: (Withdrawal | Migration)[] = this.sendings.filter(
-      sending => sending instanceof Withdrawal || sending instanceof Migration,
-    ) as (Withdrawal | Migration)[]
-    const l1Fee = outgoingNotes.reduce(
-      (acc, note) => acc.add(note.publicData.fee),
-      Fp.zero,
-    )
-
-    // Find ERC20 notes to spend
     Object.keys(sendingAmount.erc20).forEach(addr => {
       const targetAmount: Fp = sendingAmount.getERC20(addr)
       const sameERC20UTXOs: Utxo[] = this.spendables
@@ -165,19 +154,30 @@ export class TxBuilder {
             .eq(Address.from(addr)),
         )
         .sort((a, b) => (a.erc20Amount().gt(b.erc20Amount()) ? 1 : -1))
+      let spendingOfSameERC20: Utxo[] = []
       for (const utxo of sameERC20UTXOs) {
-        if (targetAmount.gt(Sum.from(spendings).getERC20(addr))) {
-          spendings.push(...spendables.splice(spendables.indexOf(utxo), 1))
+        if (utxo.asset.erc20Amount.gte(targetAmount)) {
+          spendingOfSameERC20 = [utxo]
+          break
+        } else if (targetAmount.gt(Sum.from(spendings).getERC20(addr))) {
+          spendingOfSameERC20.push(utxo)
+          // spendingOfSameERC20.push(
+          //   ...this.spendables.splice(this.spendables.indexOf(utxo), 1),
+          // )
         } else {
           break
         }
       }
+      spendings.push(...spendingOfSameERC20)
       if (targetAmount.gt(Sum.from(spendings).getERC20(addr))) {
         throw Error(`Not enough ERC20 token ${addr} / ${targetAmount}`)
       }
     })
+    return spendings
+  }
 
-    // Find ERC721 notes to spend
+  protected collectERC721Notes(sendingAmount: Sum): Utxo[] {
+    const spendings: Utxo[] = []
     Object.keys(sendingAmount.erc721).forEach(addr => {
       const sendingNFTs: Fp[] = sendingAmount
         .getNFTs(addr)
@@ -200,15 +200,22 @@ export class TxBuilder {
           throw Error('Failed to find the exact NFT')
       }
       for (const utxo of spendingNFTNotes) {
-        spendings.push(...spendables.splice(spendables.indexOf(utxo), 1))
+        // spendings.push(
+        //   ...this.spendables.splice(this.spendables.indexOf(utxo), 1),
+        // )
+        spendings.push(utxo)
       }
     })
+    return spendings
+  }
 
+  protected calculateERC20Changes(
+    spendingAmount: Sum,
+    sendingAmount: Sum,
+  ): Utxo[] {
     const changes: Utxo[] = []
-    // Start to calculate ERC20 changes
-    const spendingAmount = () => Sum.from(spendings)
-    Object.keys(spendingAmount().erc20).forEach(addr => {
-      const change = spendingAmount()
+    Object.keys(spendingAmount.erc20).forEach(addr => {
+      const change = spendingAmount
         .getERC20(addr)
         .sub(sendingAmount.getERC20(addr))
       if (!change.isZero()) {
@@ -222,20 +229,25 @@ export class TxBuilder {
         )
       }
     })
-    // Start to calculate ERC721 changes
+    return changes
+  }
+
+  protected calculateERC721Changes(
+    spendingAmount: Sum,
+    sendingAmount: Sum,
+  ): Utxo[] {
+    const changes: Utxo[] = []
     const extraNFTs: { [addr: string]: Fp[] } = {}
-    Object.keys(spendingAmount().erc721).forEach(addr => {
-      extraNFTs[addr] = spendingAmount()
-        .getNFTs(addr)
-        .filter(nft => {
-          if (sendingAmount.getNFTs(addr).length === 0) {
-            return true
-          }
-          if (sendingAmount.getNFTs(addr).find(f => f.eq(nft)) === undefined) {
-            return true
-          }
-          return false
-        })
+    Object.keys(spendingAmount.erc721).forEach(addr => {
+      extraNFTs[addr] = spendingAmount.getNFTs(addr).filter(nft => {
+        if (sendingAmount.getNFTs(addr).length === 0) {
+          return true
+        }
+        if (sendingAmount.getNFTs(addr).find(f => f.eq(nft)) === undefined) {
+          return true
+        }
+        return false
+      })
     })
     Object.keys(extraNFTs).forEach(addr => {
       extraNFTs[addr].forEach(nft => {
@@ -249,47 +261,151 @@ export class TxBuilder {
         )
       })
     })
+    return changes
+  }
 
-    // Start to check how many ETH this tx requires
-    const getTxFee = (): Fp => {
-      const size = txSizeCalculator(
-        spendings.length,
-        this.sendings.length + changes.length + 1, // 1 is for Ether change note
-        this.sendings.filter(note => note.outflowType !== OutflowType.UTXO)
-          .length,
-        !!this.swap,
-        false,
+  protected getTxFee(spendings: Utxo[], changes: Utxo[]): Fp {
+    const size = txSizeCalculator(
+      spendings.length,
+      this.sendings.length + changes.length, // 1 is for Ether change note
+      this.sendings.filter(note => note.outflowType !== OutflowType.UTXO)
+        .length,
+      !!this.swap,
+      false,
+    )
+    return this.feePerByte.mul(size)
+  }
+
+  protected getRequiredETH(
+    sendingEthAmount: Fp,
+    spendings: Utxo[],
+    changes: Utxo[],
+    l1Fee: Fp,
+  ): Fp {
+    return sendingEthAmount.add(this.getTxFee(spendings, changes)).add(l1Fee)
+  }
+
+  protected mergeERC20Changes(spending: Utxo, finalChanges: Utxo[]): Utxo[] {
+    let isNewERC20Utxo = true
+    finalChanges.forEach(change => {
+      if (change.asset.tokenAddr.eq(spending.asset.tokenAddr)) {
+        finalChanges.splice(
+          finalChanges.indexOf(change),
+          1,
+          Utxo.newERC20Note({
+            eth: '0',
+            tokenAddr: spending.asset.tokenAddr,
+            erc20Amount: change.asset.erc20Amount.add(
+              spending.asset.erc20Amount,
+            ),
+            owner: spending.owner,
+          }),
+        )
+        isNewERC20Utxo = false
+      }
+    })
+    if (isNewERC20Utxo) {
+      finalChanges.push(
+        Utxo.newERC20Note({
+          eth: '0',
+          tokenAddr: spending.asset.tokenAddr,
+          erc20Amount: spending.asset.erc20Amount,
+          owner: spending.owner,
+        }),
       )
-      return this.feePerByte.mul(size)
     }
 
-    const getRequiredETH = (): Fp => {
-      return sendingAmount.eth.add(getTxFee()).add(l1Fee)
-    }
+    return finalChanges
+  }
 
-    // Spend ETH containing notes until it hits the number
-    const utxosWithERC20: Utxo[] = []
-    const utxosWithNft: Utxo[] = []
-    spendables.sort((a, b) => (a.eth().gt(b.eth()) ? 1 : -1))
-    while (getRequiredETH().gte(Sum.from(spendings).eth)) {
+  protected collectETHNotesAndChanges(
+    sendingAmount: Fp,
+    spendables: Utxo[],
+    spendings: Utxo[],
+    changes: Utxo[],
+    l1Fee: Fp,
+  ): {
+    finalSpendings: Utxo[]
+    finalChanges: Utxo[]
+  } {
+    let finalSpendings: Utxo[] = []
+    let finalChanges: Utxo[] = []
+    let ethChanges: Utxo
+    let requiredETH: Fp
+
+    // merge changes by asset type
+    const initEthChanges = Utxo.newEtherNote({
+      eth: Sum.from(changes).eth,
+      owner: this.changeTo,
+    })
+    finalChanges.push(initEthChanges)
+    ethChanges = initEthChanges
+
+    Object.keys(Sum.from(changes).erc20).forEach(addr => {
+      const change = Sum.from(changes).getERC20(addr)
+      if (!change.isZero()) {
+        finalChanges.push(
+          Utxo.newERC20Note({
+            eth: 0,
+            tokenAddr: Fp.from(addr),
+            erc20Amount: change,
+            owner: this.changeTo,
+          }),
+        )
+      }
+    })
+    Object.keys(Sum.from(changes).erc721).forEach(addr => {
+      Sum.from(changes)[addr].forEach(nft => {
+        finalChanges.push(
+          Utxo.newNFTNote({
+            eth: 0,
+            tokenAddr: Fp.from(addr),
+            nft,
+            owner: this.changeTo,
+          }),
+        )
+      })
+    })
+    finalSpendings.push(...spendings)
+    changes = [...finalChanges]
+
+    requiredETH = this.getRequiredETH(
+      sendingAmount,
+      spendings,
+      finalChanges,
+      l1Fee,
+    )
+
+    let index = 0
+    do {
       logger.info(
-        `transaction/tx-builder.ts - required eth: ${getRequiredETH().toString()}`,
+        `transaction/tx-builder.ts - required eth: ${requiredETH.toString()}`,
       )
       logger.info(
-        `transaction/tx-builder.ts - spending eth: ${Sum.from(spendings).eth}`,
+        `transaction/tx-builder.ts - spending eth: ${
+          Sum.from(finalSpendings).eth
+        }`,
       )
-      const spending = spendables.pop()
-      logger.info(
-        `transaction/tx-builder.ts - spending utxos: [${spendings.map(utxo =>
-          utxo
-            .hash()
-            .toBytes32()
-            .toString(),
-        )}]`,
-      )
+
+      // fetch spending from spendings or spendables
+      let spending
+      if (spendings.length > index) {
+        spending = spendings[index]
+        // remove the same item from spendables for efficiency
+        spendables.splice(spendables.indexOf(spending), 1)
+      } else {
+        spending = spendables[index - spendings.length]
+      }
+      index++
+
       if (spending === undefined) {
-        const owned = Sum.from(spendings).eth
-        const target = getRequiredETH()
+        const owned = Sum.from(spendables).eth
+        const target = this.getRequiredETH(
+          sendingAmount,
+          finalSpendings,
+          changes,
+          l1Fee,
+        )
         const insufficient = target.sub(owned)
         throw Error(
           `Not enough Ether. Insufficient: ${formatUnits(
@@ -298,68 +414,117 @@ export class TxBuilder {
           )}`,
         )
       }
-      if (spending.eth().gt(0)) {
-        spendings.push(spending)
-      }
-      if (spending.asset.erc20Amount.gt('0')) {
-        utxosWithERC20.push(spending)
-      }
-      if (spending.asset.nft.gt('0')) {
-        utxosWithNft.push(spending)
-      }
-    }
 
-    // Calculate ETH change
-    assert(spendingAmount().eth.gte(getRequiredETH()), 'not enough eth')
-    const changeETH = spendingAmount().eth.sub(getRequiredETH())
-    const finalFee = getTxFee()
-    if (!changeETH.isZero()) {
-      changes.push(
-        Utxo.newEtherNote({
-          eth: changeETH,
-          owner: this.changeTo,
-        }),
+      const isFromInputSpendings = spendings.includes(spending)
+      if (spending.eth().eq(0)) continue
+      // if any one of spending is enough to afford the requirement, using the spending directly.
+      if (spending.eth().gte(requiredETH)) {
+        if (!isFromInputSpendings) {
+          finalSpendings = spendings.concat(spending)
+        }
+        finalChanges = [...changes]
+      } else {
+        if (!isFromInputSpendings) finalSpendings.push(spending)
+      }
+
+      logger.info(
+        `transaction/tx-builder.ts - spending finalSpendings: [${spending
+          .hash()
+          .toBytes32()
+          .toString()}]`,
       )
-    }
 
-    // check if ETH spending utxos includes ERC20 or nft
-    if (utxosWithERC20.length > 0) {
-      const extraERC20 = () => Sum.from(utxosWithERC20)
-      Object.keys(extraERC20().erc20).forEach(addr => {
-        const change = extraERC20().getERC20(addr)
-        if (!change.isZero()) {
-          changes.push(
-            Utxo.newERC20Note({
-              eth: 0,
-              tokenAddr: Fp.from(addr),
-              erc20Amount: change,
-              owner: this.changeTo,
+      if (!isFromInputSpendings) {
+        if (spending.asset.erc20Amount.gt('0')) {
+          finalChanges = this.mergeERC20Changes(spending, finalChanges)
+        }
+        if (spending.asset.nft.gt('0')) {
+          finalChanges.push(
+            Utxo.newNFTNote({
+              eth: '0',
+              tokenAddr: spending.asset.tokenAddr,
+              nft: spending.asset.nft,
+              owner: spending.owner,
             }),
           )
         }
-      })
-    }
+      }
 
-    if (utxosWithNft.length > 0) {
-      const extraNFTs = () => Sum.from(utxosWithNft)
-      Object.keys(extraNFTs).forEach(addr => {
-        extraNFTs[addr].forEach(nft => {
-          changes.push(
-            Utxo.newNFTNote({
-              eth: 0,
-              tokenAddr: Fp.from(addr),
-              nft,
-              owner: this.changeTo,
-            }),
-          )
-        })
+      requiredETH = this.getRequiredETH(
+        sendingAmount,
+        finalSpendings,
+        finalChanges,
+        l1Fee,
+      )
+      const currentEthChangesIdx = finalChanges.indexOf(ethChanges)
+      ethChanges = Utxo.newEtherNote({
+        eth: Sum.from(finalSpendings).eth.sub(requiredETH),
+        owner: this.changeTo,
       })
-    }
+      finalChanges.splice(
+        currentEthChangesIdx >= 0
+          ? currentEthChangesIdx
+          : finalChanges.indexOf(initEthChanges),
+        1,
+        ethChanges,
+      )
+    } while (requiredETH.gte(Sum.from(finalSpendings).eth))
 
-    const inflow = [...spendings]
-    const outflow = [...this.sendings, ...changes]
+    return {
+      finalSpendings,
+      finalChanges,
+    }
+  }
+
+  build(): RawTx & { withdrawals: Withdrawal[] } {
+    const spendables: Utxo[] = [...this.spendables]
+    const spendings: Utxo[] = []
+    const sendingAmount = Sum.from(this.sendings)
+    const outgoingNotes: (Withdrawal | Migration)[] = this.sendings.filter(
+      sending => sending instanceof Withdrawal || sending instanceof Migration,
+    ) as (Withdrawal | Migration)[]
+    const l1Fee = outgoingNotes.reduce(
+      (acc, note) => acc.add(note.publicData.fee),
+      Fp.zero,
+    )
+
+    // collect ERC20 and ERC721 notes for spendings
+    spendings.push(...this.collectERC20Notes(sendingAmount))
+    const spendingsOfERC20NERC721 = spendings.concat(
+      this.collectERC721Notes(sendingAmount).filter(
+        item => spendings.indexOf(item) < 0,
+      ),
+    )
+
+    // collect ERC20 and ERC721 changes
+    const changes: Utxo[] = []
+    changes.push(
+      ...this.calculateERC20Changes(
+        Sum.from(spendingsOfERC20NERC721),
+        sendingAmount,
+      ),
+    )
+    changes.push(
+      ...this.calculateERC721Changes(
+        Sum.from(spendingsOfERC20NERC721),
+        sendingAmount,
+      ),
+    )
+
+    const { finalSpendings, finalChanges } = this.collectETHNotesAndChanges(
+      Sum.from(this.sendings).eth,
+      spendables.sort((a, b) => (a.eth().gt(b.eth()) ? 1 : -1)),
+      spendings,
+      changes,
+      l1Fee,
+    )
+
+    const inflow = [...finalSpendings]
+    const outflow = [...this.sendings, ...finalChanges]
     const inflowSum = Sum.from(inflow)
     const outflowSum = Sum.from(outflow)
+    const finalFee = this.getTxFee(inflow, finalChanges)
+
     assert(
       inflowSum.eth.eq(outflowSum.eth.add(finalFee).add(l1Fee)),
       'inflow != outflow',
