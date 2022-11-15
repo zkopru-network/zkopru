@@ -14,6 +14,7 @@ import { OutflowType } from './note'
 import { RawTx } from './raw-tx'
 
 export class TxBuilder {
+  MAX_INFLOW_NUM = 4
   spendables: Utxo[]
 
   sendings: Outflow[]
@@ -142,11 +143,11 @@ export class TxBuilder {
     return this
   }
 
-  protected collectERC20Notes(sendingAmount: Sum): Utxo[] {
+  protected collectERC20Notes(sendingAmount: Sum, spendables: Utxo[]): Utxo[] {
     const spendings: Utxo[] = []
     Object.keys(sendingAmount.erc20).forEach(addr => {
       const targetAmount: Fp = sendingAmount.getERC20(addr)
-      const sameERC20UTXOs: Utxo[] = this.spendables
+      const sameERC20UTXOs: Utxo[] = spendables
         .filter(utxo =>
           utxo
             .tokenAddr()
@@ -156,14 +157,14 @@ export class TxBuilder {
         .sort((a, b) => (a.erc20Amount().gt(b.erc20Amount()) ? 1 : -1))
       let spendingOfSameERC20: Utxo[] = []
       for (const utxo of sameERC20UTXOs) {
+        if (utxo.asset.erc20Amount.isZero()) continue
         if (utxo.asset.erc20Amount.gte(targetAmount)) {
           spendingOfSameERC20 = [utxo]
           break
-        } else if (targetAmount.gt(Sum.from(spendings).getERC20(addr))) {
+        } else if (
+          targetAmount.gt(Sum.from(spendingOfSameERC20).getERC20(addr))
+        ) {
           spendingOfSameERC20.push(utxo)
-          // spendingOfSameERC20.push(
-          //   ...this.spendables.splice(this.spendables.indexOf(utxo), 1),
-          // )
         } else {
           break
         }
@@ -176,13 +177,13 @@ export class TxBuilder {
     return spendings
   }
 
-  protected collectERC721Notes(sendingAmount: Sum): Utxo[] {
+  protected collectERC721Notes(sendingAmount: Sum, spendables: Utxo[]): Utxo[] {
     const spendings: Utxo[] = []
     Object.keys(sendingAmount.erc721).forEach(addr => {
       const sendingNFTs: Fp[] = sendingAmount
         .getNFTs(addr)
         .sort((a, b) => (a.gt(b) ? 1 : -1))
-      const spendingNFTNotes: Utxo[] = this.spendables.filter(utxo => {
+      const spendingNFTNotes: Utxo[] = spendables.filter(utxo => {
         return (
           utxo
             .tokenAddr()
@@ -200,9 +201,6 @@ export class TxBuilder {
           throw Error('Failed to find the exact NFT')
       }
       for (const utxo of spendingNFTNotes) {
-        // spendings.push(
-        //   ...this.spendables.splice(this.spendables.indexOf(utxo), 1),
-        // )
         spendings.push(utxo)
       }
     })
@@ -264,10 +262,10 @@ export class TxBuilder {
     return changes
   }
 
-  protected getTxFee(spendings: Utxo[], changes: Utxo[]): Fp {
+  protected getTxFee(spendingsLen: number, changesLen: number): Fp {
     const size = txSizeCalculator(
-      spendings.length,
-      this.sendings.length + changes.length, // 1 is for Ether change note
+      spendingsLen,
+      this.sendings.length + changesLen,
       this.sendings.filter(note => note.outflowType !== OutflowType.UTXO)
         .length,
       !!this.swap,
@@ -276,46 +274,33 @@ export class TxBuilder {
     return this.feePerByte.mul(size)
   }
 
-  protected getRequiredETH(
-    sendingEthAmount: Fp,
-    spendings: Utxo[],
-    changes: Utxo[],
-    l1Fee: Fp,
-  ): Fp {
-    return sendingEthAmount.add(this.getTxFee(spendings, changes)).add(l1Fee)
+  protected getNotesCountForFeeCalc(spendings: Utxo[]): number {
+    let hasERC20Notes: boolean = false
+    let hasERC721otes: boolean = false
+    // always have one for eth
+    let noteCount = 1
+    spendings.forEach(spending => {
+      if (spending.asset.erc20Amount.gt(0)) hasERC20Notes = true
+      if (spending.asset.nft.gt(0)) hasERC721otes = true
+    })
+    if (hasERC20Notes) noteCount++
+    if (hasERC721otes) noteCount++
+    return noteCount
   }
 
-  protected mergeERC20Changes(spending: Utxo, finalChanges: Utxo[]): Utxo[] {
-    let isNewERC20Utxo = true
-    finalChanges.forEach(change => {
-      if (change.asset.tokenAddr.eq(spending.asset.tokenAddr)) {
-        finalChanges.splice(
-          finalChanges.indexOf(change),
-          1,
-          Utxo.newERC20Note({
-            eth: '0',
-            tokenAddr: spending.asset.tokenAddr,
-            erc20Amount: change.asset.erc20Amount.add(
-              spending.asset.erc20Amount,
-            ),
-            owner: spending.owner,
-          }),
-        )
-        isNewERC20Utxo = false
-      }
-    })
-    if (isNewERC20Utxo) {
-      finalChanges.push(
-        Utxo.newERC20Note({
-          eth: '0',
-          tokenAddr: spending.asset.tokenAddr,
-          erc20Amount: spending.asset.erc20Amount,
-          owner: spending.owner,
-        }),
-      )
-    }
+  protected getRequiredETH(
+    sendingEthAmount: Fp,
+    spendingsLen: number,
+    changesLen: number,
+    l1Fee: Fp,
+  ): Fp {
+    return sendingEthAmount
+      .add(this.getTxFee(spendingsLen, changesLen))
+      .add(l1Fee)
+  }
 
-    return finalChanges
+  protected mergeUtxos(a: Utxo[], b: Utxo[]): Utxo[] {
+    return a.concat(b.filter(item => a.indexOf(item) < 0))
   }
 
   protected collectETHNotesAndChanges(
@@ -325,68 +310,21 @@ export class TxBuilder {
     changes: Utxo[],
     l1Fee: Fp,
   ): {
-    finalSpendings: Utxo[]
-    finalChanges: Utxo[]
+    ethSpendings: Utxo[]
+    ethChange: Utxo
   } {
-    let finalSpendings: Utxo[] = []
-    let finalChanges: Utxo[] = []
-    let ethChanges: Utxo
+    let ethSpendings: Utxo[] = []
     let requiredETH: Fp
-
-    // merge changes by asset type
-    const initEthChanges = Utxo.newEtherNote({
-      eth: Sum.from(changes).eth,
-      owner: this.changeTo,
-    })
-    finalChanges.push(initEthChanges)
-    ethChanges = initEthChanges
-
-    Object.keys(Sum.from(changes).erc20).forEach(addr => {
-      const change = Sum.from(changes).getERC20(addr)
-      if (!change.isZero()) {
-        finalChanges.push(
-          Utxo.newERC20Note({
-            eth: 0,
-            tokenAddr: Fp.from(addr),
-            erc20Amount: change,
-            owner: this.changeTo,
-          }),
-        )
-      }
-    })
-    Object.keys(Sum.from(changes).erc721).forEach(addr => {
-      Sum.from(changes)[addr].forEach(nft => {
-        finalChanges.push(
-          Utxo.newNFTNote({
-            eth: 0,
-            tokenAddr: Fp.from(addr),
-            nft,
-            owner: this.changeTo,
-          }),
-        )
-      })
-    })
-    finalSpendings.push(...spendings)
-    changes = [...finalChanges]
 
     requiredETH = this.getRequiredETH(
       sendingAmount,
-      spendings,
-      finalChanges,
+      spendings.length,
+      this.getNotesCountForFeeCalc(changes),
       l1Fee,
     )
 
     let index = 0
     do {
-      logger.info(
-        `transaction/tx-builder.ts - required eth: ${requiredETH.toString()}`,
-      )
-      logger.info(
-        `transaction/tx-builder.ts - spending eth: ${
-          Sum.from(finalSpendings).eth
-        }`,
-      )
-
       // fetch spending from spendings or spendables
       let spending
       if (spendings.length > index) {
@@ -394,7 +332,7 @@ export class TxBuilder {
         // remove the same item from spendables for efficiency
         spendables.splice(spendables.indexOf(spending), 1)
       } else {
-        spending = spendables[index - spendings.length]
+        spending = spendables.pop()
       }
       index++
 
@@ -402,8 +340,8 @@ export class TxBuilder {
         const owned = Sum.from(spendables).eth
         const target = this.getRequiredETH(
           sendingAmount,
-          finalSpendings,
-          changes,
+          this.mergeUtxos(spendings, ethSpendings).length,
+          this.getNotesCountForFeeCalc(changes.concat(ethSpendings)),
           l1Fee,
         )
         const insufficient = target.sub(owned)
@@ -415,64 +353,57 @@ export class TxBuilder {
         )
       }
 
-      const isFromInputSpendings = spendings.includes(spending)
       if (spending.eth().eq(0)) continue
       // if any one of spending is enough to afford the requirement, using the spending directly.
       if (spending.eth().gte(requiredETH)) {
-        if (!isFromInputSpendings) {
-          finalSpendings = spendings.concat(spending)
-        }
-        finalChanges = [...changes]
+        ethSpendings = [spending]
       } else {
-        if (!isFromInputSpendings) finalSpendings.push(spending)
+        if (
+          this.mergeUtxos(spendings, ethSpendings).length >= this.MAX_INFLOW_NUM
+        ) {
+          for (let i = 0; i < ethSpendings.length; i++) {
+            // if the spending is one of input spendings, skip it
+            if (spendings.includes(ethSpendings[i])) continue
+            ethSpendings.splice(ethSpendings.indexOf(ethSpendings[i]), 1)
+            break
+          }
+        }
+        ethSpendings.push(spending)
       }
 
       logger.info(
-        `transaction/tx-builder.ts - spending finalSpendings: [${spending
+        `transaction/tx-builder.ts - required eth: ${requiredETH.toString()}`,
+      )
+      logger.info(
+        `transaction/tx-builder.ts - spending eth: ${
+          Sum.from(ethSpendings).eth
+        }`,
+      )
+      logger.info(
+        `transaction/tx-builder.ts - spending ethSpendings: [${spending
           .hash()
           .toBytes32()
           .toString()}]`,
       )
 
-      if (!isFromInputSpendings) {
-        if (spending.asset.erc20Amount.gt('0')) {
-          finalChanges = this.mergeERC20Changes(spending, finalChanges)
-        }
-        if (spending.asset.nft.gt('0')) {
-          finalChanges.push(
-            Utxo.newNFTNote({
-              eth: '0',
-              tokenAddr: spending.asset.tokenAddr,
-              nft: spending.asset.nft,
-              owner: spending.owner,
-            }),
-          )
-        }
-      }
-
       requiredETH = this.getRequiredETH(
         sendingAmount,
-        finalSpendings,
-        finalChanges,
+        this.mergeUtxos(spendings, ethSpendings).length,
+        this.getNotesCountForFeeCalc(changes.concat(ethSpendings)),
         l1Fee,
       )
-      const currentEthChangesIdx = finalChanges.indexOf(ethChanges)
-      ethChanges = Utxo.newEtherNote({
-        eth: Sum.from(finalSpendings).eth.sub(requiredETH),
-        owner: this.changeTo,
-      })
-      finalChanges.splice(
-        currentEthChangesIdx >= 0
-          ? currentEthChangesIdx
-          : finalChanges.indexOf(initEthChanges),
-        1,
-        ethChanges,
-      )
-    } while (requiredETH.gte(Sum.from(finalSpendings).eth))
+    } while (
+      requiredETH.gte(Sum.from(this.mergeUtxos(spendings, ethSpendings)).eth)
+    )
 
     return {
-      finalSpendings,
-      finalChanges,
+      ethSpendings,
+      ethChange: Utxo.newEtherNote({
+        eth: Sum.from(this.mergeUtxos(spendings, ethSpendings)).eth.sub(
+          requiredETH,
+        ),
+        owner: this.changeTo,
+      }),
     }
   }
 
@@ -489,12 +420,16 @@ export class TxBuilder {
     )
 
     // collect ERC20 and ERC721 notes for spendings
-    spendings.push(...this.collectERC20Notes(sendingAmount))
-    const spendingsOfERC20NERC721 = spendings.concat(
-      this.collectERC721Notes(sendingAmount).filter(
-        item => spendings.indexOf(item) < 0,
-      ),
+    spendings.push(...this.collectERC20Notes(sendingAmount, spendables))
+    const spendingsOfERC20NERC721 = this.mergeUtxos(
+      spendings,
+      this.collectERC721Notes(sendingAmount, spendables),
     )
+    if (spendingsOfERC20NERC721.length > this.MAX_INFLOW_NUM) {
+      throw Error(
+        `Number of ERC20 and ERC721 spendings exceed the max number of inflow, had ${spendingsOfERC20NERC721.length}`,
+      )
+    }
 
     // collect ERC20 and ERC721 changes
     const changes: Utxo[] = []
@@ -511,19 +446,38 @@ export class TxBuilder {
       ),
     )
 
-    const { finalSpendings, finalChanges } = this.collectETHNotesAndChanges(
+    const { ethSpendings, ethChange } = this.collectETHNotesAndChanges(
       Sum.from(this.sendings).eth,
-      spendables.sort((a, b) => (a.eth().gt(b.eth()) ? 1 : -1)),
-      spendings,
+      spendables.sort((a, b) => (a.eth().gt(b.eth()) ? -1 : 1)),
+      spendingsOfERC20NERC721,
       changes,
       l1Fee,
+    )
+
+    // merge spendings and changes
+    const finalChanges: Utxo[] = []
+    const finalSpendings = this.mergeUtxos(
+      spendingsOfERC20NERC721,
+      ethSpendings,
+    )
+    if (finalSpendings.length > this.MAX_INFLOW_NUM) {
+      throw Error(`Exceed max number of inflow, had ${ethSpendings.length}`)
+    }
+
+    finalChanges.push(ethChange)
+    // ethSpendings could include ERC20 or ERC721 notes, recalculate ERC20 and ERC721 notes here
+    finalChanges.push(
+      ...this.calculateERC20Changes(Sum.from(finalSpendings), sendingAmount),
+    )
+    finalChanges.push(
+      ...this.calculateERC721Changes(Sum.from(finalSpendings), sendingAmount),
     )
 
     const inflow = [...finalSpendings]
     const outflow = [...this.sendings, ...finalChanges]
     const inflowSum = Sum.from(inflow)
     const outflowSum = Sum.from(outflow)
-    const finalFee = this.getTxFee(inflow, finalChanges)
+    const finalFee = this.getTxFee(inflow.length, finalChanges.length)
 
     assert(
       inflowSum.eth.eq(outflowSum.eth.add(finalFee).add(l1Fee)),
