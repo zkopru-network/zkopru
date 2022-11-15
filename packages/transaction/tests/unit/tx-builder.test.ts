@@ -1,6 +1,8 @@
 import { ZkAccount } from '@zkopru/account/src/account'
 import { Fp } from '@zkopru/babyjubjub'
 import { Note, TxBuilder, Utxo } from '@zkopru/transaction'
+import { randomInt } from 'crypto'
+import { BigNumber } from 'ethers'
 import { parseUnits, parseEther } from 'ethers/lib/utils'
 import { Address } from 'soltypes'
 
@@ -12,8 +14,18 @@ describe('tx builder', () => {
   let txBuilder: TxBuilder
 
   function generateUtxo(ethAmount: string, erc20Amount: string): Utxo {
+    if (BigNumber.from(erc20Amount).eq('0')) {
+      Utxo.from(
+        new Note(alice.zkAddress, Fp.from(randomInt(1000).toString()), {
+          eth: Fp.from(parseEther(ethAmount.toString())),
+          tokenAddr: Fp.zero,
+          erc20Amount: Fp.zero,
+          nft: Fp.zero,
+        }),
+      )
+    }
     return Utxo.from(
-      new Note(alice.zkAddress, Fp.from('123456'), {
+      new Note(alice.zkAddress, Fp.from(randomInt(1000).toString()), {
         eth: Fp.from(parseEther(ethAmount.toString())),
         tokenAddr: Fp.from(Address.from(ERC20_ADDR).toBigNumber()),
         erc20Amount: Fp.from(parseEther(erc20Amount.toString())),
@@ -280,14 +292,14 @@ describe('tx builder', () => {
 
       // check inflow
       expect(rawTx.inflow.length).toEqual(3)
-      expect(rawTx.inflow[0].asset.eth.toString()).toEqual(
-        parseEther('1').toString(),
-      )
-      expect(rawTx.inflow[1].asset.erc20Amount.toString()).toEqual(
+      expect(rawTx.inflow[0].asset.erc20Amount.toString()).toEqual(
         parseEther('100').toString(),
       )
-      expect(rawTx.inflow[2].asset.erc20Amount.toString()).toEqual(
+      expect(rawTx.inflow[1].asset.erc20Amount.toString()).toEqual(
         parseEther('200').toString(),
+      )
+      expect(rawTx.inflow[2].asset.eth.toString()).toEqual(
+        parseEther('1').toString(),
       )
       // check outflow
       expect(rawTx.outflow.length).toEqual(3)
@@ -823,7 +835,7 @@ describe('tx builder', () => {
       expect(rawTx.outflow[3].owner).toEqual(alice.zkAddress)
     })
 
-    it('IN: 1 (ETH + ERC20) utxo and 1 ETH utxo, SPENT: (ETH + ERC20) and both of utxos were used', async () => {
+    it('IN: 1 (ETH + ERC20) utxo and 1 ETH utxo, SPENT: (ETH + ERC20) and all of utxos were used', async () => {
       const utxo = generateUtxo('1', '100')
       const utxo2 = generateUtxo('10', '200')
       const utxoETH5 = generateUtxo('5', '0')
@@ -919,6 +931,183 @@ describe('tx builder', () => {
         parseEther('50').toString(),
       )
       expect(rawTx.outflow[3].owner).toEqual(alice.zkAddress)
+    })
+  })
+
+  describe('max number of inflow', () => {
+    describe('should throw error', () => {
+      it('spent 5 ERC20 utxos', async () => {
+        const utxoETH = generateUtxo('1', '0')
+        const utxoERC20_10 = generateUtxo('0', '10')
+        const utxoERC20_20 = generateUtxo('0', '20')
+        const utxoERC20_30 = generateUtxo('0', '30')
+        const utxoERC20_40 = generateUtxo('0', '40')
+        const utxoERC20_50 = generateUtxo('0', '50')
+        try {
+          txBuilder
+            .provide(utxoETH)
+            .provide(utxoERC20_10)
+            .provide(utxoERC20_20)
+            .provide(utxoERC20_30)
+            .provide(utxoERC20_40)
+            .provide(utxoERC20_50)
+            .sendERC20({
+              eth: Fp.zero,
+              tokenAddr: ERC20_ADDR,
+              erc20Amount: Fp.from(parseEther('105')),
+              to: bob.zkAddress,
+            })
+            .build()
+        } catch (err) {
+          expect((err as Error).message).toContain(
+            'Number of ERC20 and ERC721 spendings exceed the max number of inflow',
+          )
+        }
+      })
+
+      it('spent 4 ERC20 utxos and 1 ETH utxo', async () => {
+        const utxoETH = generateUtxo('1', '0')
+        const utxoERC20_10 = generateUtxo('0', '10')
+        const utxoERC20_20 = generateUtxo('0', '20')
+        const utxoERC20_30 = generateUtxo('0', '30')
+        const utxoERC20_40 = generateUtxo('0', '40')
+        const utxoERC20_50 = generateUtxo('0', '50')
+        try {
+          txBuilder
+            .provide(utxoETH)
+            .provide(utxoERC20_10)
+            .provide(utxoERC20_20)
+            .provide(utxoERC20_30)
+            .provide(utxoERC20_40)
+            .provide(utxoERC20_50)
+            .sendERC20({
+              eth: Fp.zero,
+              tokenAddr: ERC20_ADDR,
+              erc20Amount: Fp.from(parseEther('95')),
+              to: bob.zkAddress,
+            })
+            .build()
+        } catch (err) {
+          expect((err as Error).message).toContain(
+            'Exceed max number of inflow',
+          )
+        }
+      })
+
+      it('spent 1 ERC20 utxos and 4 ETH utxo', async () => {
+        const utxoETH1 = generateUtxo('1', '0')
+        const utxoETH2 = generateUtxo('2', '0')
+        const utxoETH3 = generateUtxo('3', '0')
+        const utxoETH4 = generateUtxo('4', '0')
+        const utxoERC20_10 = generateUtxo('0', '10')
+
+        try {
+          txBuilder
+            .provide(utxoETH1)
+            .provide(utxoETH2)
+            .provide(utxoETH3)
+            .provide(utxoETH4)
+            .provide(utxoERC20_10)
+            .sendERC20({
+              eth: Fp.zero,
+              tokenAddr: ERC20_ADDR,
+              erc20Amount: Fp.from(parseEther('10')),
+              to: bob.zkAddress,
+            })
+            .sendEther({
+              eth: Fp.from(parseEther('8')),
+              to: bob.zkAddress,
+            })
+            .build()
+        } catch (err) {
+          expect((err as Error).message).toContain(
+            'Exceed max number of inflow',
+          )
+        }
+      })
+    })
+    describe('adjust inflow dynamically', () => {
+      it('spent 1 ERC20 utxos and the last 3 ETH utxos', async () => {
+        const utxoETH1 = generateUtxo('1', '0')
+        const utxoETH2 = generateUtxo('2', '0')
+        const utxoETH3 = generateUtxo('3', '0')
+        const utxoETH4 = generateUtxo('4', '0')
+        const utxoERC20_10 = generateUtxo('0', '10')
+
+        const rawTx = txBuilder
+          .provide(utxoETH1)
+          .provide(utxoETH2)
+          .provide(utxoETH3)
+          .provide(utxoETH4)
+          .provide(utxoERC20_10)
+          .sendERC20({
+            eth: Fp.zero,
+            tokenAddr: ERC20_ADDR,
+            erc20Amount: Fp.from(parseEther('10')),
+            to: bob.zkAddress,
+          })
+          .sendEther({
+            eth: Fp.from(parseEther('6')),
+            to: bob.zkAddress,
+          })
+          .build()
+
+        // check inflow
+        expect(rawTx.inflow.length).toEqual(4)
+        expect(rawTx.inflow[0].hash()).toEqual(utxoERC20_10.hash())
+        expect(rawTx.inflow[1].hash()).toEqual(utxoETH2.hash())
+        expect(rawTx.inflow[2].hash()).toEqual(utxoETH3.hash())
+        expect(rawTx.inflow[3].hash()).toEqual(utxoETH4.hash())
+
+        // check outflow
+        expect(rawTx.outflow.length).toEqual(3)
+      })
+    })
+  })
+
+  describe('nft', () => {
+    it('IN: 1 NFT utxo and ETH utxo, SPENT: NFT', async () => {
+      // gen a 100 ERC20 utxo and a 1 ETH utxo
+      const utxoERC20 = generateUtxo('0', '100')
+      const utxoETH = generateUtxo('1', '0')
+      const rawTx = txBuilder
+        .provide(utxoERC20)
+        .provide(utxoETH)
+        .sendERC20({
+          tokenAddr: ERC20_ADDR,
+          erc20Amount: Fp.from(parseEther('30')),
+          to: bob.zkAddress,
+        })
+        .build()
+
+      // check inflow
+      expect(rawTx.inflow.length).toEqual(2)
+      expect(rawTx.inflow[1].asset.eth.toString()).toEqual(
+        parseEther('1').toString(),
+      )
+      expect(rawTx.inflow[0].asset.erc20Amount.toString()).toEqual(
+        parseEther('100').toString(),
+      )
+      // check outflow
+      // 0: erc20 utxo for Bob, 1: erc20 utxo for Alice and 2: eth utxo for Alice
+      expect(rawTx.outflow.length).toEqual(3)
+      expect(rawTx.outflow[0].asset.erc20Amount.toString()).toEqual(
+        parseEther('30').toString(),
+      )
+      expect(rawTx.outflow[0].asset.eth.toString()).toEqual('0')
+      expect(rawTx.outflow[0].owner).toEqual(bob.zkAddress)
+      expect(rawTx.outflow[1].owner).toEqual(alice.zkAddress)
+      expect(rawTx.outflow[1].asset.eth.toString()).toEqual(
+        parseEther('1')
+          .sub(parseUnits('567', 'gwei'))
+          .toString(),
+      )
+      expect(rawTx.outflow[2].asset.eth.toString()).toEqual('0')
+      expect(rawTx.outflow[2].asset.erc20Amount.toString()).toEqual(
+        parseEther('70').toString(),
+      )
+      expect(rawTx.outflow[2].owner).toEqual(alice.zkAddress)
+      expect(rawTx.fee.toString()).toEqual(parseUnits('567', 'gwei').toString())
     })
   })
 })
