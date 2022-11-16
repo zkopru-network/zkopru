@@ -8,6 +8,7 @@ import { Address } from 'soltypes'
 
 describe('tx builder', () => {
   const ERC20_ADDR = '0x254dffcd3277C0b1660F6d42EFbB754edaBAbC2B'
+  const ERC721_ADDR = '0x004dffcd3277C0b1660F6d42EFbB754edaBAbC2B'
   const GAS_PRICE = parseUnits('1', 'gwei')
   let alice: ZkAccount
   let bob: ZkAccount
@@ -29,10 +30,21 @@ describe('tx builder', () => {
         eth: Fp.from(parseEther(ethAmount.toString())),
         tokenAddr: Fp.from(Address.from(ERC20_ADDR).toBigNumber()),
         erc20Amount: Fp.from(parseEther(erc20Amount.toString())),
-        nft: Fp.from('0'),
+        nft: Fp.zero,
       }),
     )
   }
+  function generateNtfUtxo(id: string): Utxo {
+    return Utxo.from(
+      new Note(alice.zkAddress, Fp.from(randomInt(1000).toString()), {
+        eth: Fp.zero,
+        tokenAddr: Fp.from(Address.from(ERC721_ADDR).toBigNumber()),
+        erc20Amount: Fp.zero,
+        nft: Fp.from(id),
+      }),
+    )
+  }
+
   beforeEach(async () => {
     alice = new ZkAccount(
       '0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d',
@@ -1067,47 +1079,55 @@ describe('tx builder', () => {
 
   describe('nft', () => {
     it('IN: 1 NFT utxo and ETH utxo, SPENT: NFT', async () => {
-      // gen a 100 ERC20 utxo and a 1 ETH utxo
-      const utxoERC20 = generateUtxo('0', '100')
+      const utxoNft = generateNtfUtxo('1')
       const utxoETH = generateUtxo('1', '0')
       const rawTx = txBuilder
-        .provide(utxoERC20)
+        .provide(utxoNft)
         .provide(utxoETH)
-        .sendERC20({
-          tokenAddr: ERC20_ADDR,
-          erc20Amount: Fp.from(parseEther('30')),
+        .sendNFT({
+          tokenAddr: ERC721_ADDR,
+          nft: Fp.from('1'),
           to: bob.zkAddress,
         })
         .build()
 
       // check inflow
       expect(rawTx.inflow.length).toEqual(2)
-      expect(rawTx.inflow[1].asset.eth.toString()).toEqual(
-        parseEther('1').toString(),
-      )
-      expect(rawTx.inflow[0].asset.erc20Amount.toString()).toEqual(
-        parseEther('100').toString(),
-      )
+
       // check outflow
-      // 0: erc20 utxo for Bob, 1: erc20 utxo for Alice and 2: eth utxo for Alice
-      expect(rawTx.outflow.length).toEqual(3)
-      expect(rawTx.outflow[0].asset.erc20Amount.toString()).toEqual(
-        parseEther('30').toString(),
-      )
+      expect(rawTx.outflow.length).toEqual(2)
       expect(rawTx.outflow[0].asset.eth.toString()).toEqual('0')
+      expect(rawTx.outflow[0].asset.nft.toString()).toEqual('1')
       expect(rawTx.outflow[0].owner).toEqual(bob.zkAddress)
+      expect(rawTx.outflow[1].asset.eth).not.toEqual(0)
       expect(rawTx.outflow[1].owner).toEqual(alice.zkAddress)
-      expect(rawTx.outflow[1].asset.eth.toString()).toEqual(
-        parseEther('1')
-          .sub(parseUnits('567', 'gwei'))
-          .toString(),
-      )
-      expect(rawTx.outflow[2].asset.eth.toString()).toEqual('0')
-      expect(rawTx.outflow[2].asset.erc20Amount.toString()).toEqual(
-        parseEther('70').toString(),
-      )
+    })
+
+    it('IN: 1 NFT utxo and (ETH + ERC20) utxo, SPENT: NFT', async () => {
+      const utxoNft = generateNtfUtxo('1')
+      const utxo = generateUtxo('1', '100')
+      const rawTx = txBuilder
+        .provide(utxoNft)
+        .provide(utxo)
+        .sendNFT({
+          tokenAddr: ERC721_ADDR,
+          nft: Fp.from('1'),
+          to: bob.zkAddress,
+        })
+        .build()
+
+      // check inflow
+      expect(rawTx.inflow.length).toEqual(2)
+
+      // check outflow
+      expect(rawTx.outflow.length).toEqual(3)
+      expect(rawTx.outflow[0].asset.eth.toString()).toEqual('0')
+      expect(rawTx.outflow[0].asset.nft.toString()).toEqual('1')
+      expect(rawTx.outflow[0].owner).toEqual(bob.zkAddress)
+      expect(rawTx.outflow[1].asset.eth).not.toEqual(0)
+      expect(rawTx.outflow[1].owner).toEqual(alice.zkAddress)
+      expect(rawTx.outflow[2].asset.erc20Amount).not.toEqual(0)
       expect(rawTx.outflow[2].owner).toEqual(alice.zkAddress)
-      expect(rawTx.fee.toString()).toEqual(parseUnits('567', 'gwei').toString())
     })
   })
 })
