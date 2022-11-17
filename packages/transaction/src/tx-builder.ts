@@ -277,14 +277,17 @@ export class TxBuilder {
   protected getNotesCountForFeeCalc(spendings: Utxo[]): number {
     let hasERC20Notes: boolean = false
     let hasERC721otes: boolean = false
+    let hasETHNotes: boolean = false
     // always have one for eth
-    let noteCount = 1
+    let noteCount = 0
     spendings.forEach(spending => {
       if (spending.asset.erc20Amount.gt(0)) hasERC20Notes = true
       if (spending.asset.nft.gt(0)) hasERC721otes = true
+      if (spending.asset.eth.gt(0)) hasETHNotes = true
     })
     if (hasERC20Notes) noteCount++
     if (hasERC721otes) noteCount++
+    if (hasETHNotes) noteCount++
     return noteCount
   }
 
@@ -324,6 +327,7 @@ export class TxBuilder {
     )
 
     let index = 0
+    let finalSpendings: Utxo[] = []
     do {
       // fetch spending from spendings or spendables
       let spending
@@ -337,20 +341,32 @@ export class TxBuilder {
       index++
 
       if (spending === undefined) {
-        const owned = Sum.from(spendables).eth
-        const target = this.getRequiredETH(
+        // special case: if a user is trying to spend all ETH, the ETH change should be 0
+        const requiredETHWithoutETHChanges = this.getRequiredETH(
           sendingAmount,
-          this.mergeUtxos(spendings, ethSpendings).length,
-          this.getNotesCountForFeeCalc(changes.concat(ethSpendings)),
+          finalSpendings.length,
+          this.getNotesCountForFeeCalc(changes.concat(ethSpendings)) - 1,
           l1Fee,
         )
-        const insufficient = target.sub(owned)
-        throw Error(
-          `Not enough Ether. Insufficient: ${formatUnits(
-            insufficient.toString(),
-            'ether',
-          )}`,
-        )
+        if (Sum.from(finalSpendings).eth.gte(requiredETHWithoutETHChanges)) {
+          return {
+            ethSpendings,
+            ethChange: Utxo.newEtherNote({
+              eth: Fp.zero,
+              owner: ZkAddress.null,
+            }),
+          }
+        }
+
+        const owned = Sum.from(this.spendables).eth
+        const insufficient = requiredETH.sub(owned)
+        if (requiredETH)
+          throw Error(
+            `Not enough Ether. Insufficient: ${formatUnits(
+              insufficient.toString(),
+              'ether',
+            )}`,
+          )
       }
 
       if (spending.eth().eq(0)) continue
@@ -358,6 +374,7 @@ export class TxBuilder {
       if (spending.eth().gte(requiredETH)) {
         ethSpendings = [spending]
       } else {
+        // if total utxo exceed the limit, remove the utxo with least eth amount
         if (
           this.mergeUtxos(spendings, ethSpendings).length >= this.MAX_INFLOW_NUM
         ) {
@@ -386,22 +403,19 @@ export class TxBuilder {
           .toString()}]`,
       )
 
+      finalSpendings = this.mergeUtxos(spendings, ethSpendings)
       requiredETH = this.getRequiredETH(
         sendingAmount,
-        this.mergeUtxos(spendings, ethSpendings).length,
+        finalSpendings.length,
         this.getNotesCountForFeeCalc(changes.concat(ethSpendings)),
         l1Fee,
       )
-    } while (
-      requiredETH.gte(Sum.from(this.mergeUtxos(spendings, ethSpendings)).eth)
-    )
+    } while (requiredETH.gt(Sum.from(finalSpendings).eth))
 
     return {
       ethSpendings,
       ethChange: Utxo.newEtherNote({
-        eth: Sum.from(this.mergeUtxos(spendings, ethSpendings)).eth.sub(
-          requiredETH,
-        ),
+        eth: Sum.from(finalSpendings).eth.sub(requiredETH),
         owner: this.changeTo,
       }),
     }
@@ -464,7 +478,9 @@ export class TxBuilder {
       throw Error(`Exceed max number of inflow, had ${ethSpendings.length}`)
     }
 
-    finalChanges.push(ethChange)
+    if (ethChange.asset.eth.gt('0')) {
+      finalChanges.push(ethChange)
+    }
     // ethSpendings could include ERC20 or ERC721 notes, recalculate ERC20 and ERC721 notes here
     finalChanges.push(
       ...this.calculateERC20Changes(Sum.from(finalSpendings), sendingAmount),
