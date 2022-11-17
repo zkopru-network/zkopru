@@ -1077,6 +1077,67 @@ describe('tx builder', () => {
     })
   })
 
+  describe('spent ALL!', () => {
+    it('IN: 2 ETH utxos, SPENT: all ETH and spent both of utxos to Bob', async () => {
+      // gen a 10 ETH utxo and a 1 ETH utxo
+      const utxoETH10 = generateUtxo('10', '0')
+      const utxoETH = generateUtxo('1', '0')
+      const fee = parseUnits('501', 'gwei')
+      const sendAmount = Fp.from(parseEther('11').sub(fee))
+      const rawTx = txBuilder
+        .provide(...[utxoETH10, utxoETH])
+        .sendEther({
+          eth: sendAmount,
+          to: bob.zkAddress,
+        })
+        .build()
+
+      // check inflow
+      expect(rawTx.inflow.length).toEqual(2)
+
+      // check outflow
+      expect(rawTx.outflow.length).toEqual(1)
+      expect(rawTx.outflow[0].asset.eth.toString()).toEqual(
+        sendAmount.toString(),
+      )
+      expect(rawTx.outflow[0].owner).toEqual(bob.zkAddress)
+      expect(rawTx.fee.toString()).toEqual(fee.toString())
+    })
+
+    it('IN: 2 ETH utxos and 1 ERC20, SPENT: all ETH and ERC20 utxos', async () => {
+      // gen a 10 ETH utxo and a 1 ETH utxo
+      const utxoETH10 = generateUtxo('10', '0')
+      const utxoETH = generateUtxo('1', '0')
+      const utxoERC20 = generateUtxo('0', '100')
+      const fee = parseUnits('598', 'gwei')
+      const sendAmount = Fp.from(parseEther('11').sub(fee))
+      const rawTx = txBuilder
+        .provide(...[utxoETH10, utxoETH, utxoERC20])
+        .sendEther({
+          eth: sendAmount,
+          to: bob.zkAddress,
+        })
+        .sendERC20({
+          tokenAddr: ERC20_ADDR,
+          erc20Amount: parseEther('100'),
+          to: bob.zkAddress,
+        })
+        .build()
+
+      // check inflow
+      expect(rawTx.inflow.length).toEqual(3)
+
+      // check outflow
+      expect(rawTx.outflow.length).toEqual(2)
+      expect(rawTx.outflow[0].asset.eth.toString()).toEqual(
+        sendAmount.toString(),
+      )
+      expect(rawTx.outflow[0].owner).toEqual(bob.zkAddress)
+      expect(rawTx.outflow[1].owner).toEqual(bob.zkAddress)
+      expect(rawTx.fee.toString()).toEqual(fee.toString())
+    })
+  })
+
   describe('nft', () => {
     it('IN: 1 NFT utxo and ETH utxo, SPENT: NFT', async () => {
       const utxoNft = generateNtfUtxo('1')
