@@ -314,7 +314,7 @@ export class TxBuilder {
     l1Fee: Fp,
   ): {
     ethSpendings: Utxo[]
-    ethChange: Utxo
+    ethChange?: Utxo
   } {
     let ethSpendings: Utxo[] = []
     let requiredETH: Fp
@@ -351,10 +351,6 @@ export class TxBuilder {
         if (Sum.from(finalSpendings).eth.gte(requiredETHWithoutETHChanges)) {
           return {
             ethSpendings,
-            ethChange: Utxo.newEtherNote({
-              eth: Fp.zero,
-              owner: ZkAddress.null,
-            }),
           }
         }
 
@@ -478,7 +474,7 @@ export class TxBuilder {
       throw Error(`Exceed max number of inflow, had ${ethSpendings.length}`)
     }
 
-    if (ethChange.asset.eth.gt('0')) {
+    if (ethChange !== undefined) {
       finalChanges.push(ethChange)
     }
     // ethSpendings could include ERC20 or ERC721 notes, recalculate ERC20 and ERC721 notes here
