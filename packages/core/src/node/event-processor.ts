@@ -1,5 +1,4 @@
-import * as uuid from 'uuid'
-import { BigNumber } from 'ethers'
+import { BigNumber, utils } from 'ethers'
 import { TypedEvent } from '@zkopru/contracts/typechain/common'
 import {
   Deposit as DepositSql,
@@ -40,18 +39,26 @@ export class EventProcessor extends EventEmitter {
     for (const event of [events].flat()) {
       const { args, logIndex, transactionIndex, blockNumber } = event
       const { note, fee, queuedAt } = args
+      const depositHash = utils.keccak256(Buffer.concat([
+        Buffer.from(blockNumber.toString()),
+        Buffer.from(transactionIndex.toString()),
+        Buffer.from(queuedAt.toString()),
+        Buffer.from(note.toString()),
+        Buffer.from(fee.toString())
+      ]))
+      console.log(`depositHash: ${depositHash}`)
       const deposit: DepositSql = {
-        id: uuid.v4(),
+        id: depositHash,
         note: note.toString(),
         fee: fee.toString(),
         queuedAt: queuedAt.toString(),
         transactionIndex,
         logIndex,
-        blockNumber,
+        blockNumber
       }
       try {
         db.upsert('Deposit', {
-          where: { note: deposit.note },
+          where: { id: depositHash },
           update: deposit,
           create: deposit,
         })
