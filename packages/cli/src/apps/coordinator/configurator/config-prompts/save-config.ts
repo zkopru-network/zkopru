@@ -39,7 +39,7 @@ export default class SaveConfig extends Configurator {
         password = retyped
         try {
           const wallet = Wallet.fromEncryptedJsonSync(
-            JSON.stringify(context.keystore),
+            context.keystore,
             password,
           )
           if (wallet.address != (await context.account?.getAddress()))
