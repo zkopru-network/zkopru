@@ -14,6 +14,8 @@ export { PromptApp } from './prompt'
 
 export { Worker } from './worker'
 
+export { getL2PrivateKeyBySignature } from './l2Keypair'
+
 export function txSizeCalculator(
   inflowNum: number,
   outflowNum: number,

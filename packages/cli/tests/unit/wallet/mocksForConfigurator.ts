@@ -65,6 +65,7 @@ export async function getMockedZKWallet(
     wallet,
     node: mockedNode,
     accounts,
+    l1Address: accounts[0].ethAddress,
     erc20: erc20?.map(Address.from) || [],
     erc721: erc721?.map(Address.from) || [],
     snarkKeyPath,

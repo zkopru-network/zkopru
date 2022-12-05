@@ -13,8 +13,14 @@ describe('class ZkAccount', () => {
       Buffer.from("I am Bob's private key"),
       64,
     )
-    const alice = new ZkAccount(alicePrivKey)
-    const bob = new ZkAccount(bobPrivKey)
+    const alice = new ZkAccount(
+      alicePrivKey,
+      '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1',
+    )
+    const bob = new ZkAccount(
+      bobPrivKey,
+      '0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0',
+    )
     const msg = Fp.from('0xabcd12344321d')
     const aliceSig = alice.signEdDSA(msg)
     const bobSig = bob.signEdDSA(msg)

@@ -11,7 +11,7 @@ export const sendETH = (ctx: CtxProvider) => async () => {
 
   await Promise.all(
     accounts.users.map(account =>
-      account.ethAccount.sendTransaction({
+      account.ethAccount!.sendTransaction({
         to: account.ethAddress,
         value: parseUnits('2', 'ether'),
         from: accounts.alice.ethAddress,

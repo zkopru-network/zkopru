@@ -229,10 +229,10 @@ describe('configurator', () => {
       const walletContext = ret.context
       expect(walletContext.isInitialSetup).toBe(false)
       expect(walletContext.accounts!.length).toBeGreaterThan(0)
-      expect(walletContext.accounts![0].ethAccount.provider).toBeDefined()
+      expect(walletContext.accounts![0].ethAccount!.provider).toBeDefined()
       const walleAccounts = await walletContext.wallet!.retrieveAccounts()
-      expect(walleAccounts[0].ethAccount.address).toEqual(
-        walletContext.accounts![0].ethAccount.address,
+      expect(walleAccounts[0].ethAccount!.address).toEqual(
+        walletContext.accounts![0].ethAccount!.address,
       )
 
       const hdWallet = new HDWallet(walletContext.provider!, walletContext.db!)
@@ -270,7 +270,7 @@ describe('configurator', () => {
       expect(walletContext.accounts![0].ethAddress).toEqual(
         zkAccount.ethAddress,
       )
-      expect(walletContext.accounts![0].ethAccount.provider).toBeDefined()
+      expect(walletContext.accounts![0].ethAccount!.provider).toBeDefined()
     })
 
     it('select from existing wallets in DB', async () => {
@@ -313,7 +313,7 @@ describe('configurator', () => {
       const wallets = await walletContext.wallet!.list()
       expect(wallets.length).toEqual(2)
       expect(walletContext.accounts!.length).toEqual(1)
-      expect(walletContext.accounts![0].ethAccount.provider).toBeDefined()
+      expect(walletContext.accounts![0].ethAccount!.provider).toBeDefined()
 
       // make sure returned `accounts` is equivalent to `wallet`
       // const accountFrom2ndWallet = await secondHDWallet.retrieveAccounts()
@@ -341,10 +341,10 @@ describe('configurator', () => {
       const walletContext = ret.context
       expect(walletContext.isInitialSetup).toBe(true)
       expect(walletContext.accounts!.length).toBeGreaterThan(0)
-      expect(walletContext.accounts![0].ethAccount.provider).toBeDefined()
+      expect(walletContext.accounts![0].ethAccount!.provider).toBeDefined()
       const walleAccounts = await walletContext.wallet!.retrieveAccounts()
-      expect(walleAccounts[0].ethAccount.address).toEqual(
-        walletContext.accounts![0].ethAccount.address,
+      expect(walleAccounts[0].ethAccount!.address).toEqual(
+        walletContext.accounts![0].ethAccount!.address,
       )
       const hdWallet = new HDWallet(walletContext.provider!, walletContext.db!)
       const wallets = await hdWallet.list()
@@ -366,10 +366,10 @@ describe('configurator', () => {
 
       const walletContext = ret.context
       expect(walletContext.isInitialSetup).toBe(true)
-      expect(walletContext.accounts![0].ethAccount.address).toEqual(
+      expect(walletContext.accounts![0].ethAccount!.address).toEqual(
         ACCOUNT0_ADDR,
       )
-      expect(walletContext.accounts![0].ethAccount.provider).toBeDefined()
+      expect(walletContext.accounts![0].ethAccount!.provider).toBeDefined()
 
       const hdWallet = new HDWallet(walletContext.provider!, walletContext.db!)
       const wallets = await hdWallet.list()

@@ -14,7 +14,7 @@ export const testRegisterVKs = (ctx: CtxProvider) => async () => {
     for (const j of nOut) {
       const vk = vks[i][j]
       const tx = await contract.setup
-        .connect(accounts.coordinator.ethAccount)
+        .connect(accounts.coordinator.ethAccount!)
         .registerVk(i, j, {
           alpha1: {
             X: BigNumber.from(vk.vk_alpha_1[0]),
@@ -71,7 +71,7 @@ export const testRegisterVKFails = (ctx: CtxProvider) => async () => {
       ic: sampleVk.IC.map((ic: string[]) => ({ X: ic[0], Y: ic[1] })),
     },
   )
-  await expect(accounts.alice.ethAccount.sendTransaction(tx)).to.be.reverted
-  await expect(accounts.bob.ethAccount.sendTransaction(tx)).to.be.reverted
-  await expect(accounts.carl.ethAccount.sendTransaction(tx)).to.be.reverted
+  await expect(accounts.alice.ethAccount!.sendTransaction(tx)).to.be.reverted
+  await expect(accounts.bob.ethAccount!.sendTransaction(tx)).to.be.reverted
+  await expect(accounts.carl.ethAccount!.sendTransaction(tx)).to.be.reverted
 }

@@ -13,7 +13,7 @@ export const registerCoordinator = (ctx: CtxProvider) => async () => {
   const { accounts, contract, provider } = ctx()
   const consensusAddress = await contract.zkopru.consensusProvider()
   await IBurnAuction__factory.connect(consensusAddress, provider)
-    .connect(accounts.coordinator.ethAccount)
+    .connect(accounts.coordinator.ethAccount!)
     .register({ value: parseEther('32') })
 }
 
