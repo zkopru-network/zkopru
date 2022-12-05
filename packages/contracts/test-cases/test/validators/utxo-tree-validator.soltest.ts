@@ -4,7 +4,8 @@
 /* eslint-disable jest/require-top-level-describe */
 /* eslint-disable jest/consistent-test-it */
 
-import { randomHex } from "web3-utils";
+import crypto from "crypto";
+import { BigNumberish } from "ethers";
 import { Fp } from "~babyjubjub/fp";
 import { Block } from "~core/block";
 import { UtxoTree } from "~tree";
@@ -89,9 +90,9 @@ describe("utxoTreeValidator test", () => {
       resultSnapshot = await tsTree.dryAppend(utxos.map(toLeaf));
     });
     describe("prepare a proof", () => {
-      let proofId: string;
+      let proofId: BigNumberish;
       before(() => {
-        proofId = randomHex(32);
+        proofId = crypto.randomBytes(32);
       });
       it("should create a proof", async () => {
         await utxoTreeValidatorTester.newProof(

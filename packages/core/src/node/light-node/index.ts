@@ -106,7 +106,6 @@ export class LightNode extends ZkopruNode {
     // if (!provider.) throw Error('provider is not connected')
     if (!bootstrapHelper)
       throw Error('You need bootstrap node to run light node')
-    // Add zk account to the web3 object if it exists
     const tracker = new Tracker(db)
     if (accounts) {
       await tracker.addAccounts(...accounts)

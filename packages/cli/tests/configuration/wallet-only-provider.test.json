@@ -1,0 +1,14 @@
+{
+  "_": [],
+  "fullnode": true,
+  "f": true,
+  "develop": false,
+  "d": false,
+  "provider": "http://localhost:8545",
+  "networkId": 1,
+  "n": 1,
+  "network-id": 1,
+  "chainId": 1,
+  "c": 1,
+  "chain-id": 1
+}

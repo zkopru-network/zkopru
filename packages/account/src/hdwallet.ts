@@ -8,9 +8,8 @@ import {
 import crypto from 'crypto'
 import HDNode from 'hdkey'
 import { Fp } from '@zkopru/babyjubjub'
-import { Provider } from '@ethersproject/abstract-provider'
+import { Provider } from '@ethersproject/providers'
 import { DB, EncryptedWallet, Keystore } from '@zkopru/database'
-import { decryptKeystore } from '@ethersproject/json-wallets'
 import { Wallet } from 'ethers'
 import { ZkAccount } from './account'
 
@@ -98,11 +97,13 @@ export class HDWallet {
     const keys: Keystore[] = await this.db.findMany('Keystore', { where: {} })
     const accounts: ZkAccount[] = []
     for (let i = 0; i < keys.length; i += 1) {
-      const keystoreAccount = await decryptKeystore(
-        keys[i].encrypted,
-        this.password,
+      accounts.push(
+        await ZkAccount.fromEncryptedKeystoreV3Json(
+          keys[i].encrypted,
+          this.password,
+          provider == undefined ? this.provider : provider,
+        ),
       )
-      accounts.push(ZkAccount.fromEthAccount(keystoreAccount, provider))
     }
     return accounts
   }
@@ -121,8 +122,11 @@ export class HDWallet {
       typeof privateKey === 'string' ? privateKey : privateKey.toString('hex'),
       this.provider,
     )
-    const account = ZkAccount.fromEthAccount(ethAccount, this.provider)
-    await this.db.create('Keystore', account.toKeystoreSqlObj(this.password))
+    const account = await ZkAccount.fromEthAccount(ethAccount)
+    await this.db.create(
+      'Keystore',
+      await account.toKeystoreSqlObj(this.password),
+    )
     return account
   }
 

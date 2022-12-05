@@ -1,30 +1,24 @@
 import assert from 'assert'
-import { BigNumber } from 'ethers'
-import { Bytes32 } from 'soltypes'
-import { soliditySha3Raw } from 'web3-utils'
+import { BigNumber, ethers } from 'ethers'
 import { Hasher } from '../hasher'
 
 // This TS code corresponds to the SMT.sol code file
 
-export const EXIST: BigNumber = Bytes32.from(
-  soliditySha3Raw('exist'),
-).toBigNumber()
-export const NON_EXIST: BigNumber = Bytes32.from(
-  soliditySha3Raw(0),
-).toBigNumber()
+export const EXIST: BigNumber = BigNumber.from(
+  ethers.utils.keccak256(ethers.utils.toUtf8Bytes('exist')),
+)
+export const NON_EXIST: BigNumber = BigNumber.from(
+  ethers.utils.keccak256(ethers.constants.HashZero),
+)
 assert(
-  Bytes32.from(
-    '0xb0b4e07bb5592f3d3821b2c1331b436763d7be555cf452d6c6836f74d5201e85',
-  )
-    .toBigNumber()
+  BigNumber.from(
+    '0xb0b4e07bb5592f3d3821b2c1331b436763d7be555cf452d6c6836f74d5201e85')
     .eq(EXIST),
   'EXISBN should be same with the hardcoded value in solidity',
 )
 assert(
-  Bytes32.from(
-    '0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563',
-  )
-    .toBigNumber()
+  BigNumber.from(
+    '0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563')
     .eq(NON_EXIST),
   'NON_EXISBN should be same with the hardcoded value in solidity',
 )

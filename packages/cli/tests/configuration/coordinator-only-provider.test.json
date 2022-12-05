@@ -1,0 +1,9 @@
+{
+  "bootstrap": true,
+  "provider": "http://localhost:8545",
+  "maxBytes": 131072,
+  "priceMultiplier": 48,
+  "corsdomain": "*",
+  "port": 8888,
+  "password": "helloworld"
+}

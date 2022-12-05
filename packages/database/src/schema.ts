@@ -310,7 +310,8 @@ export default [
     name: 'Deposit',
     primaryKey: 'note',
     rows: [
-      ['note', 'String'],
+      ['id', 'String'],
+      ['note', 'String', { index: true }],
       ['fee', 'String'],
       ['transactionIndex', 'Int'],
       ['logIndex', 'Int'],

@@ -40,11 +40,7 @@
     "ethers": "^5.5.2",
     "hdkey": "^1.1.1",
     "keccak": "^3.0.1",
-    "soltypes": "^2.0.0",
-    "web3": "1.2.11",
-    "web3-core": "1.2.11",
-    "web3-eth-accounts": "1.2.11",
-    "web3-utils": "1.2.11"
+    "soltypes": "^2.0.0"
   },
   "devDependencies": {
     "uuid": "^8.1.0"

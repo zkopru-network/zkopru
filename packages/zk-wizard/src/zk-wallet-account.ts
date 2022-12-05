@@ -5,7 +5,7 @@ import {
   Withdrawal as WithdrawalSql,
   TransactionDB,
 } from '@zkopru/database'
-import { Address, Uint256, Bytes32 } from 'soltypes'
+import { Address, Uint256 } from 'soltypes'
 import {
   UtxoStatus,
   Sum,
@@ -20,9 +20,8 @@ import {
 import { Fp } from '@zkopru/babyjubjub'
 import fetch, { Response } from 'node-fetch'
 import { logger } from '@zkopru/utils'
-import { signTypedData_v4 as signTypedData } from 'eth-sig-util'
 import { ERC20__factory, ERC721__factory } from '@zkopru/contracts'
-import { BigNumberish } from 'ethers'
+import { BigNumber, BigNumberish } from 'ethers'
 import { ZkWizard } from './zk-wizard'
 
 export interface Balance {
@@ -33,9 +32,10 @@ export interface Balance {
   erc721: { [addr: string]: BigNumberish }
 }
 export interface ZkWalletAccountConfig {
-  privateKey?: Buffer | string
+  l2PrivateKey?: Buffer | string
   account?: ZkAccount
   accounts?: ZkAccount[]
+  l1Address: string
   node: ZkopruNode
   erc20: Address[]
   erc721: Address[]
@@ -67,8 +67,8 @@ export class ZkWalletAccount {
     )
     this.erc20 = obj.erc20
     this.erc721 = obj.erc721
-    if (obj.privateKey) {
-      this.account = new ZkAccount(obj.privateKey, obj.node.layer1.provider)
+    if (obj.l2PrivateKey) {
+      this.account = new ZkAccount(obj.l2PrivateKey, obj.l1Address)
     } else if (obj.account) {
       this.account = obj.account
     } else if (obj.accounts && obj.accounts.length > 0) {
@@ -147,12 +147,19 @@ export class ZkWalletAccount {
     const targetAccount = account || this.account
     if (!targetAccount)
       throw Error('Provide account parameter or set default account')
+
+    const whereClause = status
+      ? {
+          owner: [targetAccount.zkAddress.toString()],
+          status: status ? [status].flat() : null,
+          usedAt: null,
+        }
+      : {
+          owner: [targetAccount.zkAddress.toString()],
+          usedAt: null,
+        }
     const notes = await this.db.findMany('Utxo', {
-      where: {
-        owner: [targetAccount.zkAddress.toString()],
-        status: status ? [status].flat() : undefined,
-        usedAt: null,
-      },
+      where: whereClause,
     })
     return notes.map(obj => {
       if (!obj.eth) throw Error('should have Ether data')
@@ -259,8 +266,12 @@ export class ZkWalletAccount {
     to?: ZkAddress,
     salt?: BigNumberish,
   ): Promise<boolean> {
-    if (!this.account) {
+    if (!this.account || !this.account.ethAccount) {
       logger.error('Account is not set')
+      return false
+    }
+    if (BigNumber.from(eth).isZero()) {
+      logger.error('input eth amount is zero')
       return false
     }
     const balance = await this.fetchLayer1Assets(this.account)
@@ -279,6 +290,27 @@ export class ZkWalletAccount {
     return result
   }
 
+  depositEtherTx(
+    eth: BigNumberish,
+    fee: BigNumberish,
+    to?: ZkAddress,
+  ): {
+    to: string
+    data: any
+    value: string
+    onComplete: () => Promise<any>
+  } {
+    if (!this.account) {
+      logger.error('Account is not set')
+      throw new Error('Account is not set')
+    }
+    const note = Utxo.newEtherNote({
+      eth,
+      owner: to || this.account.zkAddress,
+    })
+    return this.depositTx(note, Fp.strictFrom(fee))
+  }
+
   async depositERC20(
     eth: BigNumberish,
     addr: string,
@@ -286,7 +318,7 @@ export class ZkWalletAccount {
     fee: BigNumberish,
     to?: ZkAddress,
   ): Promise<boolean> {
-    if (!this.account) {
+    if (!this.account || !this.account.ethAccount) {
       logger.error('Account is not set')
       return false
     }
@@ -315,6 +347,30 @@ export class ZkWalletAccount {
     return result
   }
 
+  depositERC20Tx(
+    eth: BigNumberish,
+    addr: string,
+    amount: BigNumberish,
+    fee: BigNumberish,
+    to?: ZkAddress,
+  ): {
+    to: string
+    data: any
+    value: string
+    onComplete: () => Promise<any>
+  } {
+    if (!this.account) {
+      throw new Error('Account is not set')
+    }
+    const note = Utxo.newERC20Note({
+      eth,
+      owner: to || this.account.zkAddress,
+      tokenAddr: addr,
+      erc20Amount: amount,
+    })
+    return this.depositTx(note, Fp.strictFrom(fee))
+  }
+
   async depositERC721(
     eth: BigNumberish,
     addr: string,
@@ -322,7 +378,7 @@ export class ZkWalletAccount {
     fee: BigNumberish,
     to?: ZkAddress,
   ): Promise<boolean> {
-    if (!this.account) {
+    if (!this.account || !this.account.ethAccount) {
       logger.error('Account is not set')
       return false
     }
@@ -348,7 +404,7 @@ export class ZkWalletAccount {
   }
 
   async withdraw(withdrawal: WithdrawalSql): Promise<boolean> {
-    if (!this.account) {
+    if (!this.account || !this.account.ethAccount) {
       logger.error('Account is not set')
       return false
     }
@@ -388,7 +444,7 @@ export class ZkWalletAccount {
     withdrawal: WithdrawalSql,
     expiration: number,
   ): Promise<boolean> {
-    if (!this.account) {
+    if (!this.account || !this.account.ethAccount) {
       logger.error('Account is not set')
       return false
     }
@@ -399,44 +455,35 @@ export class ZkWalletAccount {
     const siblings: string[] = JSON.parse(withdrawal.siblings)
     const network = await this.node.layer1.provider.getNetwork()
     const { chainId } = network
-    const msgParams = {
-      domain: {
-        chainId,
-        name: 'Zkopru',
-        verifyingContract: this.node.layer1.address,
-        version: '1',
-      },
-      primaryType: 'PrepayRequest' as const,
-      types: {
-        EIP712Domain: [
-          { name: 'name', type: 'string' },
-          { name: 'version', type: 'string' },
-          { name: 'chainId', type: 'uint256' },
-          { name: 'verifyingContract', type: 'address' },
-        ],
-        PrepayRequest: [
-          { name: 'prepayer', type: 'address' },
-          { name: 'withdrawalHash', type: 'bytes32' },
-          { name: 'prepayFeeInEth', type: 'uint256' },
-          { name: 'prepayFeeInToken', type: 'uint256' },
-          { name: 'expiration', type: 'uint256' },
-        ],
-      },
-      message: {
-        prepayer: prePayer.toString(),
-        withdrawalHash: Uint256.from(withdrawal.withdrawalHash)
-          .toBytes()
-          .toString(),
-        prepayFeeInEth: prepayFeeInEth.toString(),
-        prepayFeeInToken: prepayFeeInToken.toString(),
-        expiration,
-      },
+
+    const domain = {
+      chainId,
+      name: 'Zkopru',
+      verifyingContract: this.node.layer1.address,
+      version: '1',
     }
-    const signature = signTypedData(
-      Bytes32.from(this.account.ethAccount.privateKey).toBuffer(),
-      {
-        data: msgParams,
-      },
+    const types = {
+      PrepayRequest: [
+        { name: 'prepayer', type: 'address' },
+        { name: 'withdrawalHash', type: 'bytes32' },
+        { name: 'prepayFeeInEth', type: 'uint256' },
+        { name: 'prepayFeeInToken', type: 'uint256' },
+        { name: 'expiration', type: 'uint256' },
+      ],
+    }
+    const message = {
+      prepayer: prePayer.toString(),
+      withdrawalHash: Uint256.from(withdrawal.withdrawalHash)
+        .toBytes()
+        .toString(),
+      prepayFeeInEth: prepayFeeInEth.toString(),
+      prepayFeeInToken: prepayFeeInToken.toString(),
+      expiration,
+    }
+    const signature = await this.account.ethAccount._signTypedData(
+      domain,
+      types,
+      message,
     )
     const data = {
       ...withdrawal,
@@ -465,6 +512,9 @@ export class ZkWalletAccount {
         return true
       }
     }
+    logger.warn(
+      `zk-wizard/zk-wallet-account.ts - instantWithdrawal failed due to '${response.statusText}'`,
+    )
     return false
   }
 
@@ -683,12 +733,12 @@ export class ZkWalletAccount {
   }
 
   private async deposit(note: Utxo, fee: Fp): Promise<boolean> {
-    if (!this.account) {
+    if (!this.account || !this.account.ethAccount) {
       logger.error('Account is not set')
       return false
     }
     const response = await this.node.layer1.user
-      .connect(this.account?.ethAccount)
+      .connect(this.account.ethAccount)
       .deposit(
         note.owner.spendingPubKey().toBigNumber(),
         note.salt.toUint256().toBigNumber(),
@@ -723,6 +773,63 @@ export class ZkWalletAccount {
       return true
     }
     return false
+  }
+
+  private depositTx(
+    note: Utxo,
+    fee: Fp,
+  ): {
+    data: string
+    onComplete: () => Promise<any>
+    to: string
+    value: string
+  } {
+    if (!this.account) {
+      throw new Error('Account is not set')
+    }
+    const data = this.node.layer1.user.interface.encodeFunctionData('deposit', [
+      note.owner.spendingPubKey().toString(),
+      note.salt.toUint256().toString(),
+      note
+        .eth()
+        .toUint256()
+        .toString(),
+      note
+        .tokenAddr()
+        .toAddress()
+        .toString(),
+      note
+        .erc20Amount()
+        .toUint256()
+        .toString(),
+      note
+        .nft()
+        .toUint256()
+        .toString(),
+      fee.toUint256().toString(),
+    ])
+    return {
+      to: this.node.layer1.user.address,
+      data,
+      value: BigNumber.from(
+        note
+          .eth()
+          .add(fee)
+          .toString(),
+      ).toHexString(),
+      onComplete: async () => {
+        await this.db.transaction(async db => {
+          db.create('PendingDeposit', {
+            note: note
+              .hash()
+              .toUint256()
+              .toString(),
+            fee: fee.toUint256().toString(),
+          })
+          await this.saveOutflow(note, db)
+        })
+      },
+    }
   }
 
   private async saveOutflow(outflow: Outflow, db?: TransactionDB) {

@@ -12,8 +12,8 @@ import {
 import { Header as HeaderSql } from '@zkopru/database'
 import * as Utils from '@zkopru/utils'
 import { Fp } from '@zkopru/babyjubjub'
-import { soliditySha3Raw } from 'web3-utils'
 import { Bytes32, Uint256, Address } from 'soltypes'
+import { ethers } from 'ethers'
 import {
   Body,
   Finalization,
@@ -330,7 +330,7 @@ export function headerHash(header: Header): Bytes32 {
       header.migrationRoot,
     ].map(val => val.toBuffer()),
   )
-  const result = soliditySha3Raw(`0x${concatenated.toString('hex')}`)
+  const result = ethers.utils.keccak256(concatenated)
   return Bytes32.from(result)
 }
 
@@ -338,7 +338,7 @@ export function massDepositHash(massDeposit: MassDeposit): Bytes32 {
   const concatenated = Buffer.concat(
     [massDeposit.merged, massDeposit.fee].map(val => val.toBuffer()),
   )
-  const result = soliditySha3Raw(`0x${concatenated.toString('hex')}`)
+  const result = ethers.utils.keccak256(concatenated)
   return Bytes32.from(result)
 }
 
@@ -353,7 +353,7 @@ export function massMigrationHash(massMigration: MassMigration): Bytes32 {
       massMigration.depositForDest.fee,
     ].map(val => val.toBuffer()),
   )
-  const result = soliditySha3Raw(`0x${concatenated.toString('hex')}`)
+  const result = ethers.utils.keccak256(concatenated)
   return Bytes32.from(result)
 }
 

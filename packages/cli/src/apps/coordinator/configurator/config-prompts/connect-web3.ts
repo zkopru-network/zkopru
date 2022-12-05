@@ -83,8 +83,7 @@ export default class ConnectWeb3 extends Configurator {
   static code = Menu.CONNECT_WEB3
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
-    console.log(chalk.blue('Connecting to the Ethereum network'))
-
+    console.log(chalk.blue('Connecting to the Ethereum network')
     const provider = new WebSocketProvider(this.base.provider);
 
     console.log(chalk.blue(`Connected via ${this.base.provider}`))

@@ -1,6 +1,6 @@
 import chalk from 'chalk'
 import { PromptApp } from '@zkopru/utils'
-import Web3 from 'web3'
+import { WebSocketProvider } from '@ethersproject/providers'
 import { Menu, ExampleConfigContext } from '../menu'
 
 const addressesByNetworkId = {
@@ -32,8 +32,9 @@ export default class Wallet extends PromptApp<ExampleConfigContext, void> {
         continue
       }
       try {
-        const web3 = new Web3(websocketUrl)
-        const chainId = await web3.eth.getChainId()
+        const provider = new WebSocketProvider(websocketUrl)
+        const network = await provider.getNetwork()
+        const { chainId } = network
         address = addressesByNetworkId[chainId.toString(10)]
         if (address) {
           websocket = websocketUrl

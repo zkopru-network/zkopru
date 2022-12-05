@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { soliditySha3Raw } from 'web3-utils'
 import { Fp } from '@zkopru/babyjubjub'
 import * as Utils from '@zkopru/utils'
 import { Bytes4, Bytes32, Uint256 } from 'soltypes'
+import { ethers } from 'ethers'
 import { OutflowType } from './note'
 import {
   Memo,
@@ -196,9 +196,7 @@ export class ZkTx {
         this.proof.pi_c[1].toBuffer('be', 32),
         this.fee.toBuffer('be', 32),
       ])
-      const hash = Bytes32.from(
-        soliditySha3Raw(`0x${encodePacked.toString('hex')}`),
-      )
+      const hash = Bytes32.from(ethers.utils.keccak256(encodePacked))
       this.cache.hash = hash
     }
     if (!this.cache.hash) throw Error('Failed to compute hash')

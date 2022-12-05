@@ -7,8 +7,7 @@ import {
   SwapTxBuilder,
 } from '@zkopru/transaction'
 import { Fp } from '@zkopru/babyjubjub'
-import { BigNumberish } from 'ethers'
-import { toChecksumAddress } from 'web3-utils'
+import { ethers, BigNumberish } from 'ethers'
 import ZkopruNode from './zkopru-node'
 import fetch from './fetch'
 
@@ -21,13 +20,18 @@ export default class ZkopruWallet {
 
   wallet: ZkWalletAccount
 
-  constructor(node: ZkopruNode, privateKey: Buffer | string) {
+  constructor(
+    node: ZkopruNode,
+    l2PrivateKey: Buffer | string,
+    l1Address: string,
+  ) {
     this.node = node
     if (!this.node.node) {
       throw new Error('ZkopruNode does not have a full node initialized')
     }
     this.wallet = new ZkWalletAccount({
-      privateKey,
+      l2PrivateKey,
+      l1Address,
       node: this.node.node,
       snarkKeyCid: DEFAULT_KEY_CID,
       // TODO: pre-written list or retrieve from remote
@@ -277,7 +281,9 @@ export default class ZkopruWallet {
     })
     const allWithdrawals = await this.wallet.db.findMany('Withdrawal', {
       where: {
-        to: toChecksumAddress(ethAddress),
+        // an incorrect checksum address will throw an error.
+        // to avoid this, convert to lowercase first
+        to: ethers.utils.getAddress(ethAddress.toLocaleLowerCase()),
       },
       include: {
         proposal: { header: true },

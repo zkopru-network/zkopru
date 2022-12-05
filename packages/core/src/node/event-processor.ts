@@ -1,3 +1,4 @@
+import * as uuid from 'uuid'
 import { BigNumber } from 'ethers'
 import { TypedEvent } from '@zkopru/contracts/typechain/common'
 import {
@@ -7,7 +8,7 @@ import {
   TokenRegistry as TokenRegistrySql,
   TransactionDB,
 } from '@zkopru/database'
-import { Bytes32, Address, Uint256 } from 'soltypes'
+import { Bytes32, Address } from 'soltypes'
 import { Note, ZkAddress } from '@zkopru/transaction'
 import { Fp } from '@zkopru/babyjubjub'
 import { logger } from '@zkopru/utils'
@@ -40,6 +41,7 @@ export class EventProcessor extends EventEmitter {
       const { args, logIndex, transactionIndex, blockNumber } = event
       const { note, fee, queuedAt } = args
       const deposit: DepositSql = {
+        id: uuid.v4(),
         note: note.toString(),
         fee: fee.toString(),
         queuedAt: queuedAt.toString(),
@@ -47,11 +49,15 @@ export class EventProcessor extends EventEmitter {
         logIndex,
         blockNumber,
       }
-      db.upsert('Deposit', {
-        where: { note: deposit.note },
-        update: deposit,
-        create: deposit,
-      })
+      try {
+        db.upsert('Deposit', {
+          where: { note: deposit.note },
+          update: deposit,
+          create: deposit,
+        })
+      } catch (error) {
+        logger.error(`core/even-processor - deposit upsert error: ${error}`)
+      }
       db.delete('PendingDeposit', {
         where: {
           note: deposit.note,
@@ -161,9 +167,9 @@ export class EventProcessor extends EventEmitter {
     for (const event of [events].flat()) {
       const { args, blockNumber } = event
       const massDeposit: MassDepositSql = {
-        index: Uint256.from(args.index.toString()).toString(),
+        index: args.index.toString(),
         merged: Bytes32.from(args.merged).toString(),
-        fee: Uint256.from(args.fee.toString()).toString(),
+        fee: args.fee.toString(),
         blockNumber,
         includedIn: null,
       }

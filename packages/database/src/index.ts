@@ -1,4 +1,4 @@
-import { Provider } from '@ethersproject/abstract-provider'
+import { Provider } from '@ethersproject/providers'
 import schema from './schema'
 import { DB } from './types'
 import { Config } from './schema.types'

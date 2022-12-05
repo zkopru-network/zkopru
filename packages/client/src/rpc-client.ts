@@ -42,7 +42,7 @@ export default class RpcClient {
     }
   }
 
-  // Return a passthrough web3 instance
+  // Return a provider instance from ethers
   get provider() {
     if (!this._provider) {
       if (this.config.l1Provider) {
