@@ -1,14 +1,14 @@
 /**
  * @jest-environment node
  */
-import AbiCoder from 'web3-eth-abi'
 import { getDummyBody, dummyHeader } from '~dataset/testset-block'
 import { serializeHeader, serializeBody, Block, headerHash } from '~core'
 import { Transaction, BigNumber } from 'ethers'
-import { parseEther, parseUnits } from 'ethers/lib/utils'
+import { Interface, parseEther, parseUnits } from 'ethers/lib/utils'
 
 describe('block.ts', () => {
   it('should be serialized and deserialized', async () => {
+    const abi = ['function propose(bytes)']
     const header = dummyHeader
     const body = await getDummyBody()
     expect(header).toBeDefined()
@@ -18,13 +18,9 @@ describe('block.ts', () => {
       serializeBody(body),
     ])
 
-    // Need a real selector or the abi decoder will fail
-    const encodeFunctionSignature = (AbiCoder as any).encodeFunctionSignature.bind(
-      AbiCoder,
-    )
-    const encodeParameters = (AbiCoder as any).encodeParameters.bind(AbiCoder)
-    const dummySelector = encodeFunctionSignature('propose(bytes)')
-    const inputData = encodeParameters(['bytes'], [serializedBlock])
+    const iface = new Interface(abi)
+    const encodeRawData = iface.encodeFunctionData('propose', [serializedBlock])
+
     const dummyTx: Transaction = {
       hash: 'dummyhash',
       nonce: 1,
@@ -33,10 +29,7 @@ describe('block.ts', () => {
       value: parseEther('32'),
       gasPrice: parseUnits('132', 'gwei'),
       gasLimit: BigNumber.from(10000000),
-      data: `0x${dummySelector.replace('0x', '')}${inputData.replace(
-        '0x',
-        '',
-      )}`,
+      data: encodeRawData,
       chainId: 1,
     }
     const deserializedBlock = Block.fromTx(dummyTx)

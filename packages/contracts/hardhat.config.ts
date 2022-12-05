@@ -15,6 +15,9 @@ dotenv.config();
 const config: HardhatUserConfig = {
   solidity: "0.7.4",
   networks: {
+    testnet: {
+      url: process.env.HARDHAT_URL || "http://localhost:8545",
+    },
     ropsten: {
       url: process.env.ROPSTEN_URL || "",
       accounts:

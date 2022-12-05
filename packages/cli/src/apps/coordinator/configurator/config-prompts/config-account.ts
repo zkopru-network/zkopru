@@ -9,7 +9,7 @@ export default class ConfigureAccount extends Configurator {
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
     console.log(chalk.blue('Setting up the coordinator account'))
-    if (!context.provider) throw Error('Web3 is not loaded')
+    if (!context.provider) throw Error('Provider is not loaded')
     if (this.base.keystore) {
       let password: string
       if (this.base.password) {
@@ -27,15 +27,19 @@ export default class ConfigureAccount extends Configurator {
       )
       const connectedAccount = account.connect(context.provider)
       return {
-        context: { ...context, account: connectedAccount },
+        context: {
+          ...context,
+          account: connectedAccount,
+          keystore: this.base.keystore,
+        },
         next: Menu.LOAD_DATABASE,
       }
     }
-    let choice: number
+    let selection: number
     if (this.base.daemon) {
-      choice = 1
+      selection = 1
     } else {
-      const result = await this.ask({
+      const { choice } = await this.ask({
         type: 'select',
         name: 'choice',
         message: 'You need to configure an Ethereum account for coordination',
@@ -51,11 +55,11 @@ export default class ConfigureAccount extends Configurator {
           },
         ],
       })
-      choice = result.choice
+      selection = choice
     }
 
     let account: Wallet
-    if (choice === 1) {
+    if (selection === 1) {
       account = Wallet.createRandom()
     } else {
       let pk!: string
@@ -80,24 +84,23 @@ export default class ConfigureAccount extends Configurator {
     }
     console.log(chalk.bold(`Configured account`))
     console.log(`Account: ${await account.getAddress()}`)
-    console.log(`Private key: ${account.privateKey}`)
     let confirmed = false
     let confirmedPassword!: string
     do {
       const { password } = this.base.password
         ? this.base
         : await this.ask({
-          type: 'password',
-          name: 'password',
-          message: 'password',
-        })
+            type: 'password',
+            name: 'password',
+            message: 'password',
+          })
       const { retyped } = this.base.password
         ? { retyped: this.base.password }
         : await this.ask({
-          type: 'password',
-          name: 'retyped',
-          message: 'confirm password',
-        })
+            type: 'password',
+            name: 'retyped',
+            message: 'confirm password',
+          })
       confirmed = password === retyped
       confirmedPassword = password
     } while (!confirmed)

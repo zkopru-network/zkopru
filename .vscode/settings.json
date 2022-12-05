@@ -11,5 +11,8 @@
   "[solidity]": {
     "editor.defaultFormatter": "JuanBlanco.solidity"
   },
+  "[typescript]": { 
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+  },
   "editor.formatOnSave": true
 }

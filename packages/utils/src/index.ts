@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable max-classes-per-file */
 import path from 'path'
-import { Unit, soliditySha3Raw } from 'web3-utils'
 import { Bytes32, Uint256, Address } from 'soltypes'
 import BN from 'bn.js'
 import axios from 'axios'
+import { BigNumber, ethers, utils } from 'ethers'
 
 export { logger, logStream, attachConsoleLogToPino } from './logger'
 
@@ -14,53 +14,7 @@ export { PromptApp } from './prompt'
 
 export { Worker } from './worker'
 
-const units: Unit[] = [
-  'noether',
-  'wei',
-  'kwei',
-  'Kwei',
-  'babbage',
-  'femtoether',
-  'mwei',
-  'Mwei',
-  'lovelace',
-  'picoether',
-  'gwei',
-  'Gwei',
-  'shannon',
-  'nanoether',
-  'nano',
-  'szabo',
-  'microether',
-  'micro',
-  'finney',
-  'milliether',
-  'milli',
-  'ether',
-  'kether',
-  'grand',
-  'mether',
-  'gether',
-  'tether',
-]
-
-export function parseStringToUnit(
-  str: string,
-  defaultUnit?: Unit,
-): { val: string; unit: Unit } {
-  const val = parseFloat(str).toString()
-  // eslint-disable-next-line no-useless-escape
-  const unitParser = str.match(/[\d.\-\+]*\s*(.*)/)
-  const parsedUnit = (unitParser ? unitParser[1] : '') as Unit
-  let unit = defaultUnit || 'ether'
-  if (units.includes(parsedUnit)) {
-    unit = parsedUnit
-  }
-  return {
-    val,
-    unit,
-  }
-}
+export { getL2PrivateKeyBySignature } from './l2Keypair'
 
 export function txSizeCalculator(
   inflowNum: number,
@@ -105,11 +59,18 @@ export function root(hashes: Bytes32[]): Bytes32 {
   for (let i = 0; i < numOfParentNodes; i += 1) {
     if (hasEmptyLeaf && i === numOfParentNodes - 1) {
       parents[i] = Bytes32.from(
-        soliditySha3Raw(hashes[i * 2].toString(), hashes[i * 2].toString()),
+        utils.keccak256(
+          Buffer.concat([hashes[i * 2].toBuffer(), hashes[i * 2].toBuffer()]),
+        ),
       )
     } else {
       parents[i] = Bytes32.from(
-        soliditySha3Raw(hashes[i * 2].toString(), hashes[i * 2 + 1].toString()),
+        utils.keccak256(
+          Buffer.concat([
+            hashes[i * 2].toBuffer(),
+            hashes[i * 2 + 1].toBuffer(),
+          ]),
+        ),
       )
     }
   }
@@ -215,9 +176,15 @@ export function mergeDeposits(
   fee: Uint256
 } {
   let fee = new BN(0)
-  let merged = ''
+  let merged = ethers.constants.HashZero
+
   for (const deposit of deposits) {
-    merged = soliditySha3Raw(merged, deposit.note.toString())
+    merged = utils.keccak256(
+      utils.defaultAbiCoder.encode(
+        ['bytes32', 'uint256'],
+        [merged, BigNumber.from(deposit.note)],
+      ),
+    )
     fee = fee.add(new BN(deposit.fee.toString()))
   }
   return {

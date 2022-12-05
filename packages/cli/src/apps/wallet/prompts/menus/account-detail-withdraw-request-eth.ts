@@ -1,6 +1,7 @@
+import chalk from 'chalk'
 import { Fp } from '@zkopru/babyjubjub'
 import { Sum, TxBuilder, RawTx, Utxo, ZkAddress } from '@zkopru/transaction'
-import { parseStringToUnit, logger } from '@zkopru/utils'
+import { logger } from '@zkopru/utils'
 import { Address } from 'soltypes'
 import { formatUnits, isAddress, parseUnits } from 'ethers/lib/utils'
 import { BigNumber } from 'ethers'
@@ -67,41 +68,61 @@ export default class WithdrawRequestEth extends App {
         // eslint-disable-next-line no-continue
         continue
       }
-      const { amount } = await this.ask({
-        type: 'text',
-        name: 'amount',
-        initial: 0,
-        message: 'How much ETH do you want to transfer(ex: 0.3 ETH)?',
-      })
-      const eth = parseStringToUnit(amount, 'ether')
-      amountWei = parseUnits(eth.val, eth.unit).toString()
+      let formatedAmount
+      do {
+        const { amount } = await this.ask({
+          type: 'text',
+          name: 'amount',
+          initial: 0,
+          message: 'How much ETH do you want to transfer(ex: 0.3 ETH)?',
+        })
+        formatedAmount = parseFloat(amount)
+        if (!isNaN(formatedAmount)) {
+          break
+        }
+      } while (true)
+      amountWei = parseUnits(formatedAmount.toString(), 'ether').toString()
       msgs.push(`Sending amount: ${formatUnits(amountWei, 'ether')} ETH`)
       msgs.push(`    = ${amountWei} wei`)
       this.print([...messages, ...msgs].join('\n'))
       const gweiPerByte = formatUnits(weiPerByte, 'gwei')
-      const { fee } = await this.ask({
-        type: 'text',
-        name: 'fee',
-        initial: `${gweiPerByte} gwei`,
-        message: `Fee per byte. ex) ${gweiPerByte} gwei`,
-      })
-      const confirmedWei = parseStringToUnit(fee, 'gwei')
-      confirmedWeiPerByte = parseUnits(confirmedWei.val, confirmedWei.unit)
+      let formatedFee
+      do {
+        const { fee } = await this.ask({
+          type: 'text',
+          name: 'fee',
+          initial: `${gweiPerByte} gwei`,
+          message: `Fee per byte. ex) ${gweiPerByte} gwei`,
+        })
+        formatedFee = parseFloat(fee)
+        if (!isNaN(formatedFee)) {
+          break
+        }
+      } while (true)
+      confirmedWeiPerByte = parseUnits(formatedFee.toString(), 'gwei')
       msgs.push(
         `Wei per byte: ${formatUnits(confirmedWeiPerByte, 'ether')} ETH`,
       )
       msgs.push(`    = ${formatUnits(confirmedWeiPerByte, 'gwei')} gwei`)
       this.print(messages.join('\n'))
-      const { prePayFee } = await this.ask({
-        type: 'text',
-        name: 'prePayFee',
-        initial: `0 gwei`,
-        message: `Additional fee for instant withdrawal.`,
-      })
-      const confirmedPrePayFee = parseStringToUnit(prePayFee, 'gwei')
+
+      let formatedPrePayFee
+      do {
+        const { prePayFee } = await this.ask({
+          type: 'text',
+          name: 'prePayFee',
+          initial: `0 gwei`,
+          message: `Additional fee for instant withdrawal.`,
+        })
+        formatedPrePayFee = parseFloat(prePayFee)
+        if (!isNaN(formatedPrePayFee)) {
+          break
+        }
+        this.print(chalk.red('integer or float number only'))
+      } while (true)
       const confirmedPrePayFeeToWei = parseUnits(
-        confirmedPrePayFee.val,
-        confirmedPrePayFee.unit,
+        formatedPrePayFee.toString(),
+        'gwei',
       )
       msgs.push(
         `Instant withdrawal fee: ${formatUnits(

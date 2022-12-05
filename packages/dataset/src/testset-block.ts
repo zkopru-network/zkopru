@@ -10,9 +10,8 @@ import {
 import { Fp } from '@zkopru/babyjubjub'
 import { Address } from 'soltypes'
 import { root } from '@zkopru/utils'
-import AbiCoder from 'web3-eth-abi'
 import { BigNumber, Transaction } from 'ethers'
-import { parseEther, parseUnits } from 'ethers/lib/utils'
+import { Interface, parseEther, parseUnits } from 'ethers/lib/utils'
 import { loadZkTxs } from './testset-zktxs'
 
 function strToFp(val: string): Fp {
@@ -64,6 +63,7 @@ export async function getDummyBody(): Promise<Body> {
 }
 
 export async function getDummyBlock(): Promise<Block> {
+  const abi = ['function propose(bytes)']
   const header = dummyHeader
   const body = await getDummyBody()
   header.txRoot = root(body.txs.map(tx => tx.hash()))
@@ -73,13 +73,8 @@ export async function getDummyBlock(): Promise<Block> {
     serializeHeader(header),
     serializeBody(body),
   ])
-  // Need a real selector or the abi decoder will fail
-  const encodeFunctionSignature = (AbiCoder as any).encodeFunctionSignature.bind(
-    AbiCoder,
-  )
-  const encodeParameters = (AbiCoder as any).encodeParameters.bind(AbiCoder)
-  const dummySelector = encodeFunctionSignature('propose(bytes)')
-  const inputData = encodeParameters(['bytes'], [serializedBlock])
+  const iface = new Interface(abi)
+  const encodeRawData = iface.encodeFunctionData('propose', [serializedBlock])
   const dummyTx: Transaction = {
     hash: 'dummyhash',
     nonce: 1,
@@ -88,7 +83,7 @@ export async function getDummyBlock(): Promise<Block> {
     value: parseEther('32'),
     gasPrice: parseUnits('132', 'gwei'),
     gasLimit: BigNumber.from(10000000),
-    data: `0x${dummySelector.replace('0x', '')}${inputData.replace('0x', '')}`,
+    data: encodeRawData,
     chainId: 1,
   }
   return Block.fromTx(dummyTx)

@@ -4,10 +4,11 @@ import fetch from 'node-fetch'
 import { FullNode } from '~core'
 import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
-import { sleep, trimHexToLength } from '~utils'
+import { trimHexToLength } from '~utils'
 import { DB, SQLiteConnector, schema } from '~database/node'
 import { ethers } from 'hardhat'
 import { deploy } from '~contracts-utils/deployer'
+import { Wallet } from 'ethers'
 
 const { expect } = chai
 
@@ -54,12 +55,7 @@ async function callMethod(
 }
 
 describe('coordinator test to run testnet', () => {
-  const accounts: ZkAccount[] = [
-    new ZkAccount(
-      trimHexToLength(Buffer.from('sample private key'), 64),
-      ethers.provider,
-    ),
-  ]
+  let account: ZkAccount
   let address: string
   let fullNode: FullNode
   let mockup: DB
@@ -68,17 +64,22 @@ describe('coordinator test to run testnet', () => {
   before(async () => {
     const [deployer] = await ethers.getSigners()
     const { zkopru } = await deploy(deployer)
+    account = new ZkAccount(
+      trimHexToLength(Buffer.from('sample private key'), 64),
+      '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1',
+      new Wallet(
+        trimHexToLength(Buffer.from('sample private key'), 64),
+        ethers.provider,
+      ),
+    )
     // logStream.addStream(process.stdout)
     mockup = await SQLiteConnector.create(schema, ':memory:')
-    // It may take about few minutes. If you want to skip building image,
-    // run `yarn pull:images` on the root directory
     address = zkopru.zkopru.address
-    await sleep(3000)
     fullNode = await FullNode.new({
       provider: ethers.provider,
       address,
       db: mockup,
-      accounts,
+      accounts: [account],
     })
   })
   after(async () => {
@@ -90,7 +91,7 @@ describe('coordinator test to run testnet', () => {
   })
   describe('coordinator', () => {
     it('should be defined', async () => {
-      coordinator = new Coordinator(fullNode, accounts[0].ethAccount, {
+      coordinator = new Coordinator(fullNode, account.ethAccount!, {
         maxBytes: 131072,
         bootstrap: true,
         priceMultiplier: 48, // 32 gas is the current default price for 1 byte
@@ -106,7 +107,7 @@ describe('coordinator test to run testnet', () => {
 
   describe('api host tests', () => {
     it('should restrict using vhosts', async () => {
-      const coord = new Coordinator(fullNode, accounts[0].ethAccount, {
+      const coord = new Coordinator(fullNode, account.ethAccount!, {
         maxBytes: 131072,
         bootstrap: true,
         priceMultiplier: 48, // 32 gas is the current default price for 1 byte
@@ -136,7 +137,7 @@ describe('coordinator test to run testnet', () => {
     })
 
     it('should restrict using corsdomain', async () => {
-      const coord = new Coordinator(fullNode, accounts[0].ethAccount, {
+      const coord = new Coordinator(fullNode, account.ethAccount!, {
         maxBytes: 131072,
         bootstrap: true,
         priceMultiplier: 48, // 32 gas is the current default price for 1 byte
@@ -283,13 +284,13 @@ describe('coordinator test to run testnet', () => {
       expect(data.result.erc721s).to.be.an.instanceOf(Array)
     })
 
-    it('should passthrough web3 request', async () => {
+    it('should passthrough rpc request', async () => {
       const { response, data } = await callMethod('eth_blockNumber')
       expect(response.status).to.eq(200)
       assert(!Number.isNaN(data.result))
     })
 
-    it('should passthrough web3 error', async () => {
+    it('should passthrough rpc error', async () => {
       // sending incorrect number of args
       const { response, data } = await callMethod('eth_getBlockByNumber', 0xfff)
       expect(response.status).to.eq(400)

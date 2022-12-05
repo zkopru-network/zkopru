@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import chalk from 'chalk'
 import App, { AppMenu, Context } from '..'
+import { logger } from '@zkopru/utils'
 
 export default class RegisterVk extends App {
   static code = AppMenu.REGISTER_VK
@@ -51,7 +52,12 @@ export default class RegisterVk extends App {
       message: 'Number of outputs',
     })
     const vk = JSON.parse(fs.readFileSync(currentPath, 'utf8'))
-    const receipt = await this.base.registerVk(nIn, nOut, vk)
+    let receipt
+    try {
+      receipt = await this.base.registerVk(nIn, nOut, vk)
+    } catch (err) {
+      logger.error(err as any)
+    }
     if (receipt) {
       this.print('Registered verifying key successfully')
     } else {

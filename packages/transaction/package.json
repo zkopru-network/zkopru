@@ -17,8 +17,8 @@
     "link-modules": "link-module-alias",
     "test": "jest",
     "test:trace": "LOG_LEVEL=trace PRINT_LOG=true jest",
-    "test:unit": "jest test/unit",
-    "test:integration": "jest test/unit",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/unit",
     "test:watch": "jest --watch",
     "test:ci": "jest --coverage --ci --reporters='jest-junit'",
     "coverage": "jest --coverage",
@@ -33,11 +33,10 @@
     "bs58": "^4.0.1",
     "chacha20": "^0.1.4",
     "circomlib": "0.5.1",
+    "ethers": "5.6.9",
     "keccak": "^3.0.1",
     "snarkjs": "0.3.33",
-    "soltypes": "^2.0.0",
-    "web3-eth-abi": "1.2.11",
-    "web3-utils": "1.2.11"
+    "soltypes": "^2.0.0"
   },
   "publishConfig": {
     "access": "public"

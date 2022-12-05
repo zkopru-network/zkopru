@@ -7,7 +7,7 @@ import {
   TokenRegistry as TokenRegistrySql,
   TransactionDB,
 } from '@zkopru/database'
-import { Bytes32, Address, Uint256 } from 'soltypes'
+import { Bytes32, Address } from 'soltypes'
 import { Note, ZkAddress } from '@zkopru/transaction'
 import { Fp } from '@zkopru/babyjubjub'
 import { logger } from '@zkopru/utils'
@@ -174,9 +174,9 @@ export class EventProcessor extends EventEmitter {
     for (const event of [events].flat()) {
       const { args, blockNumber } = event
       const massDeposit: MassDepositSql = {
-        index: Uint256.from(args.index.toString()).toString(),
+        index: args.index.toString(),
         merged: Bytes32.from(args.merged).toString(),
-        fee: Uint256.from(args.fee.toString()).toString(),
+        fee: args.fee.toString(),
         blockNumber,
         includedIn: null,
       }

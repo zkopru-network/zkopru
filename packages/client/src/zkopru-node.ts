@@ -1,7 +1,7 @@
 /* eslint-disable no-underscore-dangle */
 import { SomeDBConnector, DB, schema } from '@zkopru/database'
 import { FullNode } from '@zkopru/core'
-import { IERC20__factory } from '@zkopru/contracts'
+import { ERC20__factory } from '@zkopru/contracts'
 import {
   BaseProvider,
   JsonRpcProvider,
@@ -44,7 +44,10 @@ export default class ZkopruNode {
 
   private async initDB(...args: any[]) {
     if (!this._db) {
-      this._db = await this.connectorType.create(schema, ...args)
+      const databaseName = `zkopru-${
+        this.config.chainId
+      }-${this.config.address?.slice(2)}`
+      this._db = await this.connectorType.create(schema, databaseName, ...args)
     }
   }
 
@@ -74,6 +77,7 @@ export default class ZkopruNode {
     }
     await waitConnection(provider)
     await new Promise(r => setTimeout(r, 1000))
+    this.config.chainId = provider.network.chainId
     this.node = await FullNode.new({
       address: this.config.address as string,
       provider,
@@ -127,6 +131,6 @@ export default class ZkopruNode {
 
   async getERC20Contract(address: string) {
     if (!this.node) throw new Error('Zkopru node is not initialized')
-    return IERC20__factory.connect(address, this.node.layer1.provider)
+    return ERC20__factory.connect(address, this.node.layer1.provider)
   }
 }

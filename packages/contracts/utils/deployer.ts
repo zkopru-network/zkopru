@@ -44,7 +44,7 @@ import {
   Zkopru__factory
 } from "../typechain";
 import { ZkopruContract } from "../src";
-// import { ZkopruContract } from "../src";
+
 const poseidonGenContract = require("circomlib/src/poseidon_gencontract.js");
 
 let log = false;
@@ -448,6 +448,11 @@ export async function deploy(
   };
   await setup(contracts, deployer, option);
   await migrateTest(contracts, deployer, option);
+  if (hre.network.name === "testnet") {
+    // Set interval mining instead autoMining due to coordinator's block confirmation
+    await hre.network.provider.send(`evm_setAutomine`, [false]);
+    await hre.network.provider.send(`evm_setIntervalMining`, [5000]);
+  }
   return {
     zkopru: new ZkopruContract(deployer, zkopru.address),
     contracts

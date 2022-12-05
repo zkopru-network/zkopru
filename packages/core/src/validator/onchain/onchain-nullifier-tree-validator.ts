@@ -22,7 +22,7 @@ export class OnchainNullifierTreeValidator extends OnchainValidatorContext
       numOfNullifiers.toBigNumber(),
       siblings.map(sibs => sibs.map(s => s.toBigNumber())) as any,
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'NullifierRollUp')
     return result
   }
 }

@@ -12,7 +12,7 @@ export default class LoadHDWallet extends Configurator {
       throw Error('Database is not loaded')
     }
     if (!(await context.provider?.ready)) {
-      throw Error('Web3 is not connected')
+      throw Error('Provider is not connected')
     }
     const { provider, db } = context
     if (!provider) throw Error('Provider is not ready')
@@ -108,24 +108,24 @@ export default class LoadHDWallet extends Configurator {
             return result
           }
         }
-        let confirmed = false
-        let confirmedPassword!: string
-        do {
-          const { password } = await this.ask({
-            type: 'password',
-            name: 'password',
-            message: 'password',
-          })
-          const { retyped } = await this.ask({
-            type: 'password',
-            name: 'retyped',
-            message: 'confirm password',
-          })
-          confirmed = password === retyped
-          confirmedPassword = password
-        } while (!confirmed)
-        await wallet.init(mnemonic, confirmedPassword)
       }
+      let confirmed = false
+      let confirmedPassword!: string
+      do {
+        const { password } = await this.ask({
+          type: 'password',
+          name: 'password',
+          message: 'password',
+        })
+        const { retyped } = await this.ask({
+          type: 'password',
+          name: 'retyped',
+          message: 'confirm password',
+        })
+        confirmed = password === retyped
+        confirmedPassword = password
+      } while (!confirmed)
+      await wallet.init(mnemonic, confirmedPassword)
     } else {
       let existing!: EncryptedWallet
       if (this.base.seedKeystore) {
@@ -163,8 +163,7 @@ export default class LoadHDWallet extends Configurator {
       try {
         await wallet.load(existing, password)
       } catch (err) {
-        console.error(err)
-        this.print('Failed to load wallet. Try again')
+        console.log('Failed to load wallet. Try again')
         const result = await this.run(context)
         return result
       }

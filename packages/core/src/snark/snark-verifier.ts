@@ -3,9 +3,9 @@ import { ZkTx } from '@zkopru/transaction'
 import { logger } from '@zkopru/utils'
 import { join } from 'path'
 import assert from 'assert'
-import { Uint256 } from 'soltypes'
 import * as ffjs from 'ffjavascript'
 import * as snarkjs from 'snarkjs'
+import { BigNumber } from 'ethers'
 
 export interface VerifyingKey {
   protocol: string
@@ -22,8 +22,7 @@ export interface VerifyingKey {
 export function verifyingKeyIdentifier(nI: number, nO: number): string {
   assert(nI < 256, 'nI is a 8 bit value')
   assert(nO < 256, 'nI is a 8 bit value')
-  return Uint256.from(`${nI}`)
-    .toBigNumber()
+  return BigNumber.from(nI)
     .shl(128)
     .add(nO)
     .toString()
