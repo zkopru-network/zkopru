@@ -27,15 +27,19 @@ export default class ConfigureAccount extends Configurator {
       )
       const connectedAccount = account.connect(context.provider)
       return {
-        context: { ...context, account: connectedAccount },
+        context: {
+          ...context,
+          account: connectedAccount,
+          keystore: this.base.keystore,
+        },
         next: Menu.LOAD_DATABASE,
       }
     }
-    let choice: number
+    let selection: number
     if (this.base.daemon) {
-      choice = 1
+      selection = 1
     } else {
-      const result = await this.ask({
+      const { choice } = await this.ask({
         type: 'select',
         name: 'choice',
         message: 'You need to configure an Ethereum account for coordination',
@@ -51,11 +55,11 @@ export default class ConfigureAccount extends Configurator {
           },
         ],
       })
-      choice = result.choice
+      selection = choice
     }
 
     let account: Wallet
-    if (choice === 1) {
+    if (selection === 1) {
       account = Wallet.createRandom()
     } else {
       let pk!: string
@@ -80,7 +84,6 @@ export default class ConfigureAccount extends Configurator {
     }
     console.log(chalk.bold(`Configured account`))
     console.log(`Account: ${await account.getAddress()}`)
-    console.log(`Private key: ${account.privateKey}`)
     let confirmed = false
     let confirmedPassword!: string
     do {

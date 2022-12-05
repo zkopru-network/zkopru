@@ -23,7 +23,11 @@ export class ZkAccount extends ZkViewer {
   ethAccount: Wallet
 
   constructor(_privateKey: BytesLike, _provider?: Provider) {
-    const privateKey = hexlify(_privateKey)
+    const privateKey = hexlify(
+      _privateKey.toString().startsWith('0x')
+        ? _privateKey
+        : '0x' + _privateKey.toString(),
+    )
 
     const ethAccount = new Wallet(_privateKey, _provider)
 
@@ -50,11 +54,11 @@ export class ZkAccount extends ZkViewer {
     return new ZkAccount(account.privateKey, provider)
   }
 
-  toKeystoreSqlObj(password: string): Keystore {
+  async toKeystoreSqlObj(password: string): Promise<Keystore> {
     return {
       zkAddress: this.zkAddress.toString(),
       address: this.ethAddress,
-      encrypted: JSON.stringify(this.ethAccount.encrypt(password)),
+      encrypted: await this.ethAccount.encrypt(password),
     }
   }
 

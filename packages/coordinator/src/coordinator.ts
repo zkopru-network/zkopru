@@ -211,7 +211,7 @@ export class Coordinator extends EventEmitter {
         },
         ic: vk.IC.map((ic: string[]) => ({ X: ic[0], Y: ic[1] })),
       })
-    const receipt = tx.wait()
+    const receipt = await tx.wait()
     return receipt
   }
 
@@ -273,8 +273,7 @@ export class Coordinator extends EventEmitter {
       const tx = await auction
         .connect(this.context.account)
         ['bid(uint256)'](x, { value: nextBid })
-      const receipt = tx.wait()
-      promises.push(receipt)
+      promises.push(tx.wait())
     }
     await Promise.all(promises)
   }
@@ -286,12 +285,14 @@ export class Coordinator extends EventEmitter {
       consensus,
       this.context.account,
     ).register({ value: minimumStake })
-    const receipt = tx.wait()
+    const receipt = await tx.wait()
     return receipt
   }
 
   async deregister(): Promise<TransactionReceipt> {
-    const tx = await this.layer1().coordinator.deregister()
+    const tx = await this.layer1()
+      .coordinator.connect(this.context.account)
+      .deregister()
     const receipt = await tx.wait()
     return receipt
   }
@@ -399,10 +400,9 @@ export class Coordinator extends EventEmitter {
       serializeBody(block.body),
     ])
     const expectedGas = (
-      await this.layer1().coordinator.estimateGas.propose(
-        `0x${bytes.toString('hex')}`,
-        { from: this.context.account.getAddress() },
-      )
+      await this.layer1()
+        .coordinator.connect(this.context.account)
+        .estimateGas.propose(`0x${bytes.toString('hex')}`)
     ).add(MAX_MASS_DEPOSIT_COMMIT_GAS)
     const expectedCost = this.context.effectiveGasPrice.mul(expectedGas)
     logger.info(

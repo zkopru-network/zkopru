@@ -1,7 +1,7 @@
 /* eslint-disable no-underscore-dangle */
 import { SomeDBConnector, DB, schema } from '@zkopru/database'
 import { FullNode } from '@zkopru/core'
-import { IERC20__factory } from '@zkopru/contracts'
+import { ERC20__factory } from '@zkopru/contracts'
 import {
   BaseProvider,
   JsonRpcProvider,
@@ -127,6 +127,6 @@ export default class ZkopruNode {
 
   async getERC20Contract(address: string) {
     if (!this.node) throw new Error('Zkopru node is not initialized')
-    return IERC20__factory.connect(address, this.node.layer1.provider)
+    return ERC20__factory.connect(address, this.node.layer1.provider)
   }
 }

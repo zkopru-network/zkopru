@@ -356,17 +356,21 @@ export class AuctionMonitor {
   }
 
   private async updateIsProposable() {
-    const [isProposable, blockNumber] = await Promise.all([
-      this.node.layer1.coordinator.isProposable(
-        await this.account.getAddress(),
-      ),
-      this.node.layer1.provider.getBlockNumber(),
-    ])
-    logger.trace(
-      `coordinator/auction-monitor.ts - Updated isProposable at block ${blockNumber}`,
-    )
-    this.isProposable = isProposable
-    this.isProposableLastUpdated = blockNumber
+    try {
+      const [isProposable, blockNumber] = await Promise.all([
+        this.node.layer1.coordinator.isProposable(
+          await this.account.getAddress(),
+        ),
+        this.node.layer1.provider.getBlockNumber(),
+      ])
+      logger.trace(
+        `coordinator/auction-monitor.ts - Updated isProposable at block ${blockNumber}`,
+      )
+      this.isProposable = isProposable
+      this.isProposableLastUpdated = blockNumber
+    } catch (err) {
+      logger.warn(`coordinator/auction-monitor.ts - unexpected error: ${err}`)
+    }
   }
 
   private newHighBidReceived: TypedListener<
