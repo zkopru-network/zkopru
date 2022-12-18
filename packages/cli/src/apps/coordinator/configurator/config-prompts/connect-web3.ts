@@ -1,5 +1,6 @@
 import chalk from 'chalk'
 import { ethers } from 'ethers'
+import { JsonRpcProvider } from '@ethersproject/providers';
 import Configurator, { Context, Menu } from '../configurator'
 
 // this provider code block comes in here
@@ -37,8 +38,8 @@ export class WebSocketProvider extends WebSocketProviderClass() {
     }
 
     const provider = new ethers.providers.WebSocketProvider(this.providerUrl, this.provider?.network?.chainId);
-    let pingInterval: NodeJS.Timer | undefined;
-    let pongTimeout: NodeJS.Timeout | undefined;
+    let pingInterval: NodeJS.Timer
+    let pongTimeout: NodeJS.Timeout
 
     provider._websocket.on('open', () => {
       pingInterval = setInterval(() => {
@@ -83,8 +84,21 @@ export default class ConnectWeb3 extends Configurator {
   static code = Menu.CONNECT_WEB3
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
-    console.log(chalk.blue('Connecting to the Ethereum network')
-    const provider = new WebSocketProvider(this.base.provider);
+    console.log(chalk.blue('Connecting to the Ethereum network'))
+    // Recommand to use websocket for operating coordinator
+    let provider: WebSocketProvider | JsonRpcProvider
+    if (this.base.provider.startsWith('ws')) {
+      provider = new WebSocketProvider(this.base.provider)
+    } else {
+      provider = new JsonRpcProvider(this.base.provider)
+      async function waitConnection() {
+        return new Promise<void>(async res => {
+          if (await provider.ready) return res()
+          provider.on('connect', res)
+        })
+      }
+      await waitConnection()
+    }
 
     console.log(chalk.blue(`Connected via ${this.base.provider}`))
     return {

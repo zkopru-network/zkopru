@@ -75,8 +75,8 @@ describe('configurator', () => {
       expect(ret.next).toEqual(Menu.CONFIG_ACCOUNT)
 
       let provider = ret.context.provider as Web3Provider
-      let wsProvider = (provider.provider as any) as WebSocketProvider
-      expect(wsProvider.connection.url).toEqual(option.base.provider)
+      expect(provider.connection.url).toEqual(option.base.provider)
+      provider.removeAllListeners()
     })
 
     it('with websocket provider', async () => {
@@ -89,9 +89,10 @@ describe('configurator', () => {
       const connection = new ConnectWeb3(option)
       const ret = await connection.run(localContext)
 
-      let provider = ret.context.provider as Web3Provider
-      let wsProvider = (provider.provider as any) as WebSocketProvider
+      let wsProvider = ret.context.provider as WebSocketProvider
       expect(wsProvider.connection.url).toEqual(wsProviderUrl)
+      wsProvider.removeAllListeners()
+      await wsProvider.destroy()
     })
   })
 
