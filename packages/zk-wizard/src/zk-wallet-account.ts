@@ -411,18 +411,18 @@ export class ZkWalletAccount {
     return result
   }
 
-  async depositERC721Tx(
+  depositERC721Tx(
     eth: F,
     addr: string,
     nft: F,
     fee: F,
     to?: ZkAddress,
-  ): Promise<{
+  ): {
     to: string
     data: any
     value: string
     onComplete: () => Promise<any>
-  }> {
+  } {
     if (!this.account) {
       throw new Error('Account is not set')
     }
