@@ -411,6 +411,30 @@ export class ZkWalletAccount {
     return result
   }
 
+  async depositERC721Tx(
+    eth: F,
+    addr: string,
+    nft: F,
+    fee: F,
+    to?: ZkAddress,
+  ): Promise<{
+    to: string
+    data: any
+    value: string
+    onComplete: () => Promise<any>
+  }> {
+    if (!this.account) {
+      throw new Error('Account is not set')
+    }
+    const note = Utxo.newNFTNote({
+      eth,
+      owner: to || this.account.zkAddress,
+      tokenAddr: addr,
+      nft,
+    })
+    return this.depositTx(note, Fp.strictFrom(fee))
+  }
+
   async withdraw(withdrawal: WithdrawalSql): Promise<boolean> {
     if (!this.account) {
       logger.error('Account is not set')
