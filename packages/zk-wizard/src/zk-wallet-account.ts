@@ -101,7 +101,9 @@ export class ZkWalletAccount {
   addERC20(...addresses: string[]) {
     this.erc20.push(
       ...addresses
-        .filter(addr => this.erc20.find(Address.from(addr).eq) === undefined)
+        .filter(
+          addr => this.erc20.find(e => Address.from(addr).eq(e)) === undefined,
+        )
         .map(Address.from),
     )
   }
@@ -111,7 +113,13 @@ export class ZkWalletAccount {
   }
 
   addERC721(...addresses: string[]) {
-    this.erc721.push(...addresses.map(Address.from))
+    this.erc721.push(
+      ...addresses
+        .filter(
+          addr => this.erc721.find(e => Address.from(addr).eq(e)) === undefined,
+        )
+        .map(Address.from),
+    )
   }
 
   removeERC721(address: string) {
