@@ -5,6 +5,7 @@ import {
   Utxo,
   ZkAddress,
   SwapTxBuilder,
+  TokenRegistry,
 } from '@zkopru/transaction'
 import { Fp, F } from '@zkopru/babyjubjub'
 import ZkopruNode from './zkopru-node'
@@ -173,8 +174,8 @@ export default class ZkopruWallet {
       throw new Error('Account is not set')
     }
     const spendables = await this.wallet.getSpendables(this.wallet.account)
-    const { erc20 } = this.wallet
-    const { erc721 } = this.wallet
+    const tokenRegistry = await this.node.node?.layer2.getTokenRegistry()
+    const { erc20s, erc721s } = tokenRegistry as TokenRegistry
 
     let txBuilder = SwapTxBuilder.from(this.wallet.account.zkAddress)
 
@@ -191,7 +192,7 @@ export default class ZkopruWallet {
           salt,
         })
       } else if (
-        erc20.find(
+        erc20s.find(
           address =>
             address.toString().toLowerCase() === sendTokenAddress.toLowerCase(),
         )
@@ -204,7 +205,7 @@ export default class ZkopruWallet {
           salt,
         })
       } else if (
-        erc721.find(
+        erc721s.find(
           address =>
             address.toString().toLowerCase() === sendTokenAddress.toLowerCase(),
         )
@@ -216,13 +217,17 @@ export default class ZkopruWallet {
           to: new ZkAddress(to),
           salt,
         })
+      } else {
+        throw new Error(
+          `Cannot find the sending token address "${sendTokenAddress}" in the token registry`,
+        )
       }
 
       if (receiveTokenAddress === ZERO_ADDRESS) {
         // receive ETH
         txBuilder = txBuilder.receiveEther(Fp.from(receiveAmountOrId), salt)
       } else if (
-        erc20.find(
+        erc20s.find(
           address =>
             address.toString().toLowerCase() ===
             receiveTokenAddress.toLowerCase(),
@@ -235,7 +240,7 @@ export default class ZkopruWallet {
           salt,
         })
       } else if (
-        erc721.find(
+        erc721s.find(
           address =>
             address.toString().toLowerCase() ===
             receiveTokenAddress.toLowerCase(),
@@ -243,10 +248,14 @@ export default class ZkopruWallet {
       ) {
         // receive ERC20
         txBuilder = txBuilder.receiveNFT({
-          tokenAddr: sendTokenAddress,
-          nft: sendAmountOrId,
+          tokenAddr: receiveTokenAddress,
+          nft: receiveAmountOrId,
           salt,
         })
+      } else {
+        throw new Error(
+          `Cannot find the receiving token address "${receiveTokenAddress}" in the token registry`,
+        )
       }
 
       return txBuilder.build()
