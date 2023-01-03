@@ -65,4 +65,5 @@ export type NodeConfig = {
   chainId?: number
   rpcUrl?: string
   accounts?: ZkAccount[]
+  databaseName?: string
 }

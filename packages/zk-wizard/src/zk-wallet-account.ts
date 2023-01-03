@@ -58,6 +58,16 @@ export class ZkWalletAccount {
 
   wizard: ZkWizard
 
+  // store promises created inside constructor
+  promises: Array<Promise<unknown>> = []
+
+  static async new(obj: ZkWalletAccountConfig): Promise<ZkWalletAccount> {
+    const account = new ZkWalletAccount(obj)
+    // wait until all the promises are resolved
+    await Promise.all(account.promises)
+    return account
+  }
+
   constructor(obj: ZkWalletAccountConfig) {
     this.db = obj.node.db
     this.node = obj.node
@@ -79,7 +89,7 @@ export class ZkWalletAccount {
         'Neither privateKey or account supplied for wallet account',
       )
     }
-    this.node.tracker.addAccounts(this.account)
+    this.promises.push(this.node.tracker.addAccounts(this.account))
     this.wizard = new ZkWizard({
       utxoTree: this.node.layer2.grove.utxoTree,
       path: obj.snarkKeyPath,
@@ -90,7 +100,9 @@ export class ZkWalletAccount {
   addERC20(...addresses: string[]) {
     this.erc20.push(
       ...addresses
-        .filter(addr => this.erc20.find(Address.from(addr).eq) === undefined)
+        .filter(
+          addr => this.erc20.find(e => Address.from(addr).eq(e)) === undefined,
+        )
         .map(Address.from),
     )
   }
@@ -100,7 +112,13 @@ export class ZkWalletAccount {
   }
 
   addERC721(...addresses: string[]) {
-    this.erc721.push(...addresses.map(Address.from))
+    this.erc721.push(
+      ...addresses
+        .filter(
+          addr => this.erc721.find(e => Address.from(addr).eq(e)) === undefined,
+        )
+        .map(Address.from),
+    )
   }
 
   removeERC721(address: string) {

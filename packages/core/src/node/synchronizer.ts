@@ -648,6 +648,44 @@ export class Synchronizer extends EventProcessor {
           this.handleDepositUtxoEvents(events, account, db, cb)
         })
       }
+      for (const event of events) {
+        try {
+          // try to load the transaction sender
+          const tx = await this.l1Contract.web3.eth.getTransaction(
+            event.transactionHash,
+          )
+          const { returnValues } = event
+          const owner = addresses.find(addr =>
+            Fp.from(returnValues.spendingPubKey).eq(addr.spendingPubKey()),
+          )
+          if (!owner) {
+            // skip storing Deposit details
+            // eslint-disable-next-line no-continue
+            continue
+          }
+          const salt = Fp.from(returnValues.salt)
+          const note = new Note(owner, salt, {
+            eth: Fp.from(returnValues.eth),
+            tokenAddr: Fp.from(Address.from(returnValues.token).toBN()),
+            erc20Amount: Fp.from(returnValues.amount),
+            nft: Fp.from(returnValues.nft),
+          })
+          await this.db.update('Deposit', {
+            where: {
+              note: note
+                .hash()
+                .toUint256()
+                .toString(),
+            },
+            update: {
+              from: tx.from,
+            },
+          })
+        } catch (err) {
+          logger.info(err)
+          logger.error('core/synchronizer - Error loading deposit transaction')
+        }
+      }
       currentBlock = end + 1
     }
     if (this.isListening && !this.depositUtxoSubscribers[account.toString()]) {

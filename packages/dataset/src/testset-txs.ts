@@ -41,6 +41,26 @@ const tx_4: RawTx = {
   outflow: [utxos.migration_4_1, utxos.migration_4_2, utxos.migration_4_3],
   fee: Fp.from(1),
 }
+
+const tx_5_1: RawTx = {
+  inflow: [utxos.utxo5_1_in_1],
+  outflow: [utxos.utxo5_1_out_1],
+  fee: Fp.from(1),
+}
+
+const tx_5_2: RawTx = {
+  inflow: [utxos.utxo5_2_in_1],
+  outflow: [utxos.utxo5_2_out_1, utxos.utxo5_2_out_2],
+  fee: Fp.from(1),
+}
+
+const tx_5_3: RawTx = {
+  inflow: [utxos.utxo5_3_in_1],
+  outflow: [utxos.utxo5_3_out_1, utxos.utxo5_3_out_2],
+  swap: utxos.utxo5_3_out_2.hash(),
+  fee: Fp.from(1),
+}
+
 export const txs = {
   tx_1,
   tx_1_false,
@@ -48,4 +68,7 @@ export const txs = {
   tx_2_2,
   tx_3,
   tx_4,
+  tx_5_1,
+  tx_5_2,
+  tx_5_3,
 }

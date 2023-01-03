@@ -77,11 +77,13 @@ export default class ZkopruNode {
     }
     await waitConnection(provider)
     await new Promise(r => setTimeout(r, 1000))
-    this.config.chainId = provider.network.chainId
+    const web3 = new Web3(provider)
+    this.config.chainId = await web3.eth.getChainId()
     this.node = await FullNode.new({
       address: this.config.address as string,
       provider,
       db: await this.db(...args),
+      accounts: this.config.accounts,
     })
   }
 

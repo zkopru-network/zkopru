@@ -22,6 +22,7 @@ export function txSizeCalculator(
   crossLayerOutflowNum: number,
   hasSwap?: boolean,
   noMemo?: boolean,
+  memoV1?: boolean,
 ): number {
   let size = 0
   size += 1 // inflow num length
@@ -36,10 +37,17 @@ export function txSizeCalculator(
   size += crossLayerOutflowNum * 32 // cross-layer outflow has token amount
   size += crossLayerOutflowNum * 32 // cross-layer outflow has nft id
   size += crossLayerOutflowNum * 32 // cross-layer outflow has fee
+  size += 32 // fee
   size += 1 // swap & memo indicator
   size += hasSwap ? 32 : 0 // note hash to swap with
-  size += noMemo ? 0 : 81 // note hash to swap
+  // memo size
+  if (!noMemo) {
+    // memoV1: only memo.data 81 bytes
+    // memoV2: memo data length 2 bytes + V2_MEMO_ABI 4 bytes + encrypted outflow 81 bytes each
+    size += memoV1 ? 81 : outflowNum * 81 + 4 + 2
+  }
   size += 256 // snark proof size
+
   return size
 }
 

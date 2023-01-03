@@ -9,7 +9,7 @@ RUN apk add --no-cache --virtual .gyp \
     python3 \
     make \
     g++ \
-    && yarn global add ganache-cli \
+    && yarn global add truffle ganache-cli \
     && yarn install \
     && apk del .gyp
 
