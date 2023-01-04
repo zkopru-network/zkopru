@@ -262,19 +262,17 @@ export class TxBuilder {
     return changes
   }
 
-    // Start to check how many ETH this tx requires
-    const getTxFee = (): Fp => {
-      const size = txSizeCalculator(
-        spendings.length,
-        this.sendings.length + changes.length + 1, // 1 is for Ether change note
-        this.sendings.filter(note => note.outflowType !== OutflowType.UTXO)
-          .length,
-        !!this.swap,
-        false,
-        false,
-      )
-      return this.feePerByte.muln(size)
-    }
+  protected getTxFee(spendingsLen: number, changesLen: number): Fp {
+    const size = txSizeCalculator(
+      spendingsLen,
+      this.sendings.length + changesLen,
+      this.sendings.filter(note => note.outflowType !== OutflowType.UTXO)
+        .length,
+      !!this.swap,
+      false,
+    )
+    return this.feePerByte.mul(size)
+  }
 
   protected getNotesCountForFeeCalc(spendings: Utxo[]): number {
     let hasERC20Notes: boolean = false

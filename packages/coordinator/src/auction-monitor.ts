@@ -308,7 +308,7 @@ export class AuctionMonitor {
         // added above
         const currentBidAmount = this.bidsPerRound[roundIndex].amount
         const nextBidAmount = currentBidAmount.add(
-          currentBidAmount.div(new BN('5')),
+          currentBidAmount.div(BigNumber.from(5)),
         )
         weiCost = weiCost.add(nextBidAmount)
       }
@@ -325,25 +325,21 @@ export class AuctionMonitor {
       )
 
       // get remain balance at pending and calculating eth amount for bidding
-      const pendingBalance = await auction.methods
-        .pendingBalances(this.account.address)
-        .call()
-      const needWeiCost = weiCost.sub(new BN(pendingBalance))
+      const pendingBalance = await auction.pendingBalances(
+        await this.account.getAddress(),
+      )
+      const needWeiCost = weiCost.sub(BigNumber.from(pendingBalance))
 
       try {
-        const tx = auction.methods.multiBid(
-          weiCost.div(new BN(roundsToBid.length)).toString(), // possible not exactly 20 percent higher previous bid amount
+        const tx = await auction.connect(this.account).multiBid(
+          weiCost.div(BigNumber.from(roundsToBid.length)).toString(), // possible not exactly 20 percent higher previous bid amount
           this.maxBid.toString(),
           earliestBidRound,
           latestBidRound,
-        )
-
-        await this.node.layer1.sendExternalTx(
-          tx,
-          this.account,
-          this.consensusAddress,
           {
-            value: needWeiCost.lt(new BN(0)) ? '0x0' : needWeiCost.toString(),
+            value: needWeiCost.lt(BigNumber.from(0))
+              ? '0x0'
+              : needWeiCost.toString(),
           },
         )
         await tx.wait()

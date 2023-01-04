@@ -13,7 +13,7 @@ RUN apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.10/m
         make \
         g++ \
         chromium \
-        && yarn global add truffle ganache-cli \
+        && yarn global add hardhat ganache-cli \
         && yarn \
         && yarn install \
         && npx lerna run build --scope=@zkopru/cli \

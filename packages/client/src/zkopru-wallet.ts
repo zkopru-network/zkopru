@@ -21,17 +21,11 @@ export default class ZkopruWallet {
 
   wallet: ZkWalletAccount
 
-  static async new(
+  constructor(
     node: ZkopruNode,
-    privateKey: Buffer | string,
-  ): Promise<ZkopruWallet> {
-    const wallet = new ZkopruWallet(node, privateKey)
-    // wait until wallet account initialization finished
-    await Promise.all(wallet.wallet.promises)
-    return wallet
-  }
-
-  constructor(node: ZkopruNode, privateKey: Buffer | string) {
+    l2PrivateKey: Buffer | string,
+    l1Address: string,
+  ) {
     this.node = node
     if (!this.node.node) {
       throw new Error('ZkopruNode does not have a full node initialized')
