@@ -5,6 +5,7 @@ import {
   Utxo,
   ZkAddress,
   SwapTxBuilder,
+  TokenRegistry,
 } from '@zkopru/transaction'
 import { Fp, F } from '@zkopru/babyjubjub'
 import ZkopruNode from './zkopru-node'
@@ -163,9 +164,9 @@ export default class ZkopruWallet {
   async generateSwapTransaction(
     to: string,
     sendTokenAddress: string,
-    sendAmount: string,
+    sendAmountOrId: string,
     receiveTokenAddress: string,
-    receiveAmount: string,
+    receiveAmountOrId: string,
     weiPerByte: number | string,
     salt: F,
   ): Promise<RawTx> {
@@ -173,49 +174,88 @@ export default class ZkopruWallet {
       throw new Error('Account is not set')
     }
     const spendables = await this.wallet.getSpendables(this.wallet.account)
+    const tokenRegistry = await this.node.node?.layer2.getTokenRegistry()
+    const { erc20s, erc721s } = tokenRegistry as TokenRegistry
+
     let txBuilder = SwapTxBuilder.from(this.wallet.account.zkAddress)
 
     try {
       txBuilder = txBuilder
         .provide(...spendables.map(note => Utxo.from(note)))
         .weiPerByte(weiPerByte)
+
       if (sendTokenAddress === ZERO_ADDRESS) {
-        // send ETH receive ERC20
-        txBuilder = txBuilder
-          .sendEther({
-            eth: Fp.from(sendAmount),
-            to: new ZkAddress(to),
-            salt,
-          })
-          .receiveERC20({
-            tokenAddr: receiveTokenAddress,
-            erc20Amount: receiveAmount,
-            salt,
-          })
-      } else if (receiveTokenAddress === ZERO_ADDRESS) {
-        // send ERC20 receive ETH
-        txBuilder = txBuilder
-          .sendERC20({
-            tokenAddr: sendTokenAddress,
-            erc20Amount: sendAmount,
-            to: new ZkAddress(to),
-            salt,
-          })
-          .receiveEther(Fp.from(receiveAmount), salt)
+        // send ETH
+        txBuilder = txBuilder.sendEther({
+          eth: Fp.from(sendAmountOrId),
+          to: new ZkAddress(to),
+          salt,
+        })
+      } else if (
+        erc20s.find(
+          address =>
+            address.toString().toLowerCase() === sendTokenAddress.toLowerCase(),
+        )
+      ) {
+        // send erc20
+        txBuilder = txBuilder.sendERC20({
+          tokenAddr: sendTokenAddress,
+          erc20Amount: sendAmountOrId,
+          to: new ZkAddress(to),
+          salt,
+        })
+      } else if (
+        erc721s.find(
+          address =>
+            address.toString().toLowerCase() === sendTokenAddress.toLowerCase(),
+        )
+      ) {
+        // send erc721
+        txBuilder = txBuilder.sendNFT({
+          tokenAddr: sendTokenAddress,
+          nft: sendAmountOrId,
+          to: new ZkAddress(to),
+          salt,
+        })
       } else {
-        // send ERC20 receive ERC20
-        txBuilder = txBuilder
-          .sendERC20({
-            tokenAddr: sendTokenAddress,
-            erc20Amount: sendAmount,
-            to: new ZkAddress(to),
-            salt,
-          })
-          .receiveERC20({
-            tokenAddr: receiveTokenAddress,
-            erc20Amount: receiveAmount,
-            salt,
-          })
+        throw new Error(
+          `Cannot find the sending token address "${sendTokenAddress}" in the token registry`,
+        )
+      }
+
+      if (receiveTokenAddress === ZERO_ADDRESS) {
+        // receive ETH
+        txBuilder = txBuilder.receiveEther(Fp.from(receiveAmountOrId), salt)
+      } else if (
+        erc20s.find(
+          address =>
+            address.toString().toLowerCase() ===
+            receiveTokenAddress.toLowerCase(),
+        )
+      ) {
+        // receive ERC20
+        txBuilder = txBuilder.receiveERC20({
+          tokenAddr: receiveTokenAddress,
+          erc20Amount: receiveAmountOrId,
+          salt,
+        })
+      } else if (
+        erc721s.find(
+          address =>
+            address.toString().toLowerCase() ===
+            receiveTokenAddress.toLowerCase(),
+        )
+      ) {
+        // receive ERC20
+        txBuilder = txBuilder.receiveNFT({
+          tokenAddr: receiveTokenAddress,
+          nft: receiveAmountOrId,
+          salt,
+        })
+      } else {
+        throw new Error(
+          `Cannot find the receiving token address "${receiveTokenAddress}" in the token registry`,
+        )
       }
 
       return txBuilder.build()
