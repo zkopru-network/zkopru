@@ -1,59 +1,87 @@
-import Web3 from 'web3'
-import { ContractOptions } from 'web3-eth-contract'
-import { IChallengeable } from './contracts/IChallengeable'
-import { ICoordinatable } from './contracts/ICoordinatable'
-import { IDepositValidator } from './contracts/IDepositValidator'
-import { IHeaderValidator } from './contracts/IHeaderValidator'
-import { IMigratable } from './contracts/IMigratable'
-import { IMigrationValidator } from './contracts/IMigrationValidator'
-import { INullifierTreeValidator } from './contracts/INullifierTreeValidator'
-import { ISetupWizard } from './contracts/ISetupWizard'
-import { ITxValidator } from './contracts/ITxValidator'
-import { IUserInteractable } from './contracts/IUserInteractable'
-import { IUtxoTreeValidator } from './contracts/IUtxoTreeValidator'
-import { IWithdrawalTreeValidator } from './contracts/IWithdrawalTreeValidator'
-import { Zkopru } from './contracts/Zkopru'
-
-import { Layer1 } from './layer1'
+import { Signer } from "ethers";
+import { Provider } from "@ethersproject/providers";
+import {
+  IChallengeable,
+  IChallengeable__factory,
+  ICoordinatable,
+  ICoordinatable__factory,
+  IDepositValidator,
+  IDepositValidator__factory,
+  IHeaderValidator,
+  IHeaderValidator__factory,
+  IMigratable,
+  IMigratable__factory,
+  IMigrationValidator,
+  IMigrationValidator__factory,
+  INullifierTreeValidator,
+  INullifierTreeValidator__factory,
+  ITxValidator,
+  ITxValidator__factory,
+  IUserInteractable,
+  IUserInteractable__factory,
+  IUtxoTreeValidator,
+  IUtxoTreeValidator__factory,
+  IWithdrawalTreeValidator,
+  IWithdrawalTreeValidator__factory,
+  ISetupWizard,
+  ISetupWizard__factory,
+  Zkopru,
+  Zkopru__factory
+} from "../typechain";
 
 export class ZkopruContract {
-  upstream: Zkopru
+  zkopru: Zkopru;
 
-  coordinator: ICoordinatable
+  coordinator: ICoordinatable;
 
-  user: IUserInteractable
+  user: IUserInteractable;
 
-  migrator: IMigratable
+  migrator: IMigratable;
 
-  challenger: IChallengeable
+  challenger: IChallengeable;
 
   validators: {
-    deposit: IDepositValidator
-    migration: IMigrationValidator
-    header: IHeaderValidator
-    tx: ITxValidator
-    utxoTree: IUtxoTreeValidator
-    withdrawalTree: IWithdrawalTreeValidator
-    nullifierTree: INullifierTreeValidator
-  }
+    deposit: IDepositValidator;
+    migration: IMigrationValidator;
+    header: IHeaderValidator;
+    tx: ITxValidator;
+    utxoTree: IUtxoTreeValidator;
+    withdrawalTree: IWithdrawalTreeValidator;
+    nullifierTree: INullifierTreeValidator;
+  };
 
-  setup: ISetupWizard
+  setup: ISetupWizard;
 
-  constructor(web3: Web3, address: string, option?: ContractOptions) {
-    this.upstream = Layer1.getZkopru(web3, address, option)
-    this.coordinator = Layer1.getICoordinatable(web3, address, option)
-    this.user = Layer1.getIUserInteractable(web3, address, option)
-    this.migrator = Layer1.getIMigratable(web3, address, option)
-    this.challenger = Layer1.getIChallengeable(web3, address, option)
+  constructor(signerOrProvider: Signer | Provider, address: string) {
+    this.zkopru = Zkopru__factory.connect(address, signerOrProvider);
+    this.coordinator = ICoordinatable__factory.connect(
+      address,
+      signerOrProvider
+    );
+    this.user = IUserInteractable__factory.connect(address, signerOrProvider);
+    this.migrator = IMigratable__factory.connect(address, signerOrProvider);
+    this.challenger = IChallengeable__factory.connect(
+      address,
+      signerOrProvider
+    );
     this.validators = {
-      deposit: Layer1.getIDepositValidator(web3, address, option),
-      migration: Layer1.getIMigrationValidator(web3, address, option),
-      header: Layer1.getIHeaderValidator(web3, address, option),
-      tx: Layer1.getITxValidator(web3, address, option),
-      utxoTree: Layer1.getIUtxoTreeValidator(web3, address, option),
-      withdrawalTree: Layer1.getIWithdrawalTreeValidator(web3, address, option),
-      nullifierTree: Layer1.getINullifierTreeValidator(web3, address, option),
-    }
-    this.setup = Layer1.getISetupWizard(web3, address, option)
+      deposit: IDepositValidator__factory.connect(address, signerOrProvider),
+      migration: IMigrationValidator__factory.connect(
+        address,
+        signerOrProvider
+      ),
+      header: IHeaderValidator__factory.connect(address, signerOrProvider),
+      tx: ITxValidator__factory.connect(address, signerOrProvider),
+      utxoTree: IUtxoTreeValidator__factory.connect(address, signerOrProvider),
+      withdrawalTree: IWithdrawalTreeValidator__factory.connect(
+        address,
+        signerOrProvider
+      ),
+      nullifierTree: INullifierTreeValidator__factory.connect(
+        address,
+        signerOrProvider
+      )
+    };
+    this.setup = ISetupWizard__factory.connect(address, signerOrProvider);
   }
 }

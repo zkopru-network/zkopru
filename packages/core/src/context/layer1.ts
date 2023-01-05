@@ -1,25 +1,18 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import {
-  ZkopruContract,
-  TransactionObject,
-  Tx,
-  TxUtil,
-} from '@zkopru/contracts'
+import { ZkopruContract } from '@zkopru/contracts'
 import { Config } from '@zkopru/database'
-import { Account, TransactionReceipt } from 'web3-core'
 import { hexify, logger } from '@zkopru/utils'
-import Web3 from 'web3'
-import { ContractOptions } from 'web3-eth-contract'
+import { Provider } from '@ethersproject/providers'
 import * as ffjs from 'ffjavascript'
-import { soliditySha3 } from 'web3-utils'
 import AsyncLock from 'async-lock'
+import { ethers } from 'ethers'
 import { verifyingKeyIdentifier, VerifyingKey } from '../snark/snark-verifier'
 
 // https://github.com/zkopru-network/zkopru/issues/235
 export const MAX_MASS_DEPOSIT_COMMIT_GAS = 72000
 
 export class L1Contract extends ZkopruContract {
-  web3: Web3
+  provider: Provider
 
   address: string
 
@@ -27,12 +20,12 @@ export class L1Contract extends ZkopruContract {
 
   sendTxLock: AsyncLock
 
-  constructor(web3: Web3, address: string, option?: ContractOptions) {
-    super(web3, address, option)
+  constructor(provider: Provider, address: string) {
+    super(provider, address)
     logger.trace(
       `core/layer1.ts - L1Contract::constructor(${address.slice(0, 6)}...)`,
     )
-    this.web3 = web3
+    this.provider = provider
     this.address = address
     this.sendTxLock = new AsyncLock()
   }
@@ -48,34 +41,34 @@ export class L1Contract extends ZkopruContract {
     for (let nI = 1; nI <= NUM_OF_INPUTS; nI += 1) {
       for (let nO = 1; nO <= NUM_OF_OUTPUTS; nO += 1) {
         tasks.push(async () => {
-          const vk = await this.upstream.methods.getVk(nI, nO).call()
+          const vk = await this.zkopru.getVk(nI, nO)
           const sig = verifyingKeyIdentifier(nI, nO)
           const vk_alpha_1 = [
-            BigInt(vk.alpha1[0]),
-            BigInt(vk.alpha1[1]),
+            vk.alpha1[0].toBigInt(),
+            vk.alpha1[1].toBigInt(),
             BigInt('1'),
           ]
           // caution: snarkjs G2Point is reversed
           const vk_beta_2 = [
-            [BigInt(vk.beta2[0][1]), BigInt(vk.beta2[0][0])],
-            [BigInt(vk.beta2[1][1]), BigInt(vk.beta2[1][0])],
+            [vk.beta2[0][1].toBigInt(), vk.beta2[0][0].toBigInt()],
+            [vk.beta2[1][1].toBigInt(), vk.beta2[1][0].toBigInt()],
             [BigInt('1'), BigInt('0')],
           ]
           const vk_gamma_2 = [
-            [BigInt(vk.gamma2[0][1]), BigInt(vk.gamma2[0][0])],
-            [BigInt(vk.gamma2[1][1]), BigInt(vk.gamma2[1][0])],
+            [vk.gamma2[0][1].toBigInt(), vk.gamma2[0][0].toBigInt()],
+            [vk.gamma2[1][1].toBigInt(), vk.gamma2[1][0].toBigInt()],
             [BigInt('1'), BigInt('0')],
           ]
           const vk_delta_2 = [
-            [BigInt(vk.delta2[0][1]), BigInt(vk.delta2[0][0])],
-            [BigInt(vk.delta2[1][1]), BigInt(vk.delta2[1][0])],
+            [vk.delta2[0][1].toBigInt(), vk.delta2[0][0].toBigInt()],
+            [vk.delta2[1][1].toBigInt(), vk.delta2[1][0].toBigInt()],
             [BigInt('1'), BigInt('0')],
           ]
           const vk_alphabeta_12 = bn128.pairing(
             bn128.G1.fromObject(vk_alpha_1),
             bn128.G2.fromObject(vk_beta_2),
           )
-          const IC = vk.ic.map(ic => [BigInt(ic[0]), BigInt(ic[1]), BigInt(1)])
+          const IC = vk.ic.map(ic => [...ic.map(v => v.toBigInt())])
           vks[sig] = {
             protocol: 'groth16',
             curve: 'bn128',
@@ -98,149 +91,66 @@ export class L1Contract extends ZkopruContract {
   async getConfig(): Promise<Config> {
     logger.trace(`core/layer1.ts - L1Contract::getConfig()`)
     if (this.config) return this.config
-    let networkId!: number
-    let chainId!: number
-    let utxoTreeDepth!: number
-    let withdrawalTreeDepth!: number
-    let nullifierTreeDepth!: number
-    let challengePeriod!: number
-    let minimumStake!: string
-    let referenceDepth!: number
-    let maxUtxo!: string
-    let maxWithdrawal!: string
-    let utxoSubTreeDepth!: number
-    let utxoSubTreeSize!: number
-    let withdrawalSubTreeDepth!: number
-    let withdrawalSubTreeSize!: number
     /** test start */
     /** test ends */
-    const tasks = [
-      async () => {
-        networkId = await this.web3.eth.net.getId()
-      },
-      async () => {
-        chainId = await this.web3.eth.getChainId()
-      },
-      async () => {
-        utxoTreeDepth = parseInt(
-          await this.upstream.methods.UTXO_TREE_DEPTH().call(),
-          10,
-        )
-      },
-      async () => {
-        withdrawalTreeDepth = parseInt(
-          await this.upstream.methods.WITHDRAWAL_TREE_DEPTH().call(),
-          10,
-        )
-      },
-      async () => {
-        nullifierTreeDepth = parseInt(
-          await this.upstream.methods.NULLIFIER_TREE_DEPTH().call(),
-          10,
-        )
-      },
-      async () => {
-        challengePeriod = parseInt(
-          await this.upstream.methods.CHALLENGE_PERIOD().call(),
-          10,
-        )
-      },
-      async () => {
-        utxoSubTreeDepth = parseInt(
-          await this.upstream.methods.UTXO_SUB_TREE_DEPTH().call(),
-          10,
-        )
-      },
-      async () => {
-        utxoSubTreeSize = parseInt(
-          await this.upstream.methods.UTXO_SUB_TREE_SIZE().call(),
-          10,
-        )
-      },
-      async () => {
-        withdrawalSubTreeDepth = parseInt(
-          await this.upstream.methods.WITHDRAWAL_SUB_TREE_DEPTH().call(),
-          10,
-        )
-      },
-      async () => {
-        withdrawalSubTreeSize = parseInt(
-          await this.upstream.methods.WITHDRAWAL_SUB_TREE_SIZE().call(),
-          10,
-        )
-      },
-      async () => {
-        minimumStake = await this.upstream.methods.MINIMUM_STAKE().call()
-      },
-      async () => {
-        referenceDepth = parseInt(
-          await this.upstream.methods.REF_DEPTH().call(),
-          10,
-        )
-      },
-      async () => {
-        maxUtxo = await this.upstream.methods.MAX_UTXO().call()
-      },
-      async () => {
-        maxWithdrawal = await this.upstream.methods.MAX_WITHDRAWAL().call()
-      },
-    ]
-    await Promise.all(tasks.map(task => task()))
-    const zkopruId = soliditySha3(
-      hexify(networkId, 32),
-      hexify(chainId, 32),
-      hexify(this.address, 20),
-    )
+    const [
+      network,
+      utxoTreeDepth,
+      withdrawalTreeDepth,
+      nullifierTreeDepth,
+      challengePeriod,
+      utxoSubTreeDepth,
+      utxoSubTreeSize,
+      withdrawalSubTreeDepth,
+      withdrawalSubTreeSize,
+      minimumStake,
+      referenceDepth,
+      maxUtxo,
+      maxWithdrawal,
+    ] = await Promise.all([
+      this.provider.getNetwork(),
+      ...[
+        this.zkopru.UTXO_TREE_DEPTH(),
+        this.zkopru.WITHDRAWAL_TREE_DEPTH(),
+        this.zkopru.NULLIFIER_TREE_DEPTH(),
+        this.zkopru.CHALLENGE_PERIOD(),
+        this.zkopru.UTXO_SUB_TREE_DEPTH(),
+        this.zkopru.UTXO_SUB_TREE_SIZE(),
+        this.zkopru.WITHDRAWAL_SUB_TREE_DEPTH(),
+        this.zkopru.WITHDRAWAL_SUB_TREE_SIZE(),
+        this.zkopru.MINIMUM_STAKE(),
+        this.zkopru.REF_DEPTH(),
+        this.zkopru.MAX_UTXO(),
+        this.zkopru.MAX_WITHDRAWAL(),
+      ],
+    ])
+
+    const networkId = network.chainId // TODO add a method to specify network id
+    const { chainId } = network
+    const concatenated = 
+      hexify(networkId, 32) + 
+      hexify(chainId, 32) + 
+      hexify(this.address, 20)
+    const zkopruId = ethers.utils.keccak256(Buffer.from(concatenated))
     if (!zkopruId) throw Error('hash error to get zkopru id')
     this.config = {
       id: zkopruId,
       networkId,
       chainId,
       address: this.address,
-      utxoTreeDepth,
-      withdrawalTreeDepth,
-      nullifierTreeDepth,
-      utxoSubTreeDepth,
-      utxoSubTreeSize,
-      withdrawalSubTreeDepth,
-      withdrawalSubTreeSize,
-      challengePeriod,
-      minimumStake,
-      referenceDepth,
-      maxUtxo,
-      maxWithdrawal,
+      utxoTreeDepth: utxoTreeDepth.toNumber(),
+      withdrawalTreeDepth: withdrawalTreeDepth.toNumber(),
+      nullifierTreeDepth: nullifierTreeDepth.toNumber(),
+      utxoSubTreeDepth: utxoSubTreeDepth.toNumber(),
+      utxoSubTreeSize: utxoSubTreeSize.toNumber(),
+      withdrawalSubTreeDepth: withdrawalSubTreeDepth.toNumber(),
+      withdrawalSubTreeSize: withdrawalSubTreeSize.toNumber(),
+      challengePeriod: challengePeriod.toNumber(),
+      minimumStake: minimumStake.toString(),
+      referenceDepth: referenceDepth.toNumber(),
+      maxUtxo: maxUtxo.toString(),
+      maxWithdrawal: maxWithdrawal.toString(),
     }
     return this.config
-  }
-
-  async sendExternalTx<T>(
-    tx: TransactionObject<T>,
-    account: Account,
-    to: string,
-    option?: Tx,
-  ): Promise<TransactionReceipt | undefined> {
-    const receipt = await TxUtil.sendTx(tx, to, this.web3, account, option)
-    logger.trace(
-      `core/layer1.ts - L1Contract::sendExternalTx(${receipt?.transactionHash
-        .toString()
-        .slice(0, 6)}...)`,
-    )
-    return receipt
-  }
-
-  async sendTx<T>(
-    tx: TransactionObject<T>,
-    account: Account,
-    option?: Tx,
-  ): Promise<TransactionReceipt | undefined> {
-    const result = await this.sendTxLock.acquire(account.address, () =>
-      TxUtil.sendTx(tx, this.address, this.web3, account, option),
-    )
-    logger.trace(
-      `core/layer1.ts - L1Contract::sendTx(${result?.transactionHash
-        .toString()
-        .slice(0, 6)}...)`,
-    )
-    return result
   }
 }

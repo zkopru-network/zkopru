@@ -1,7 +1,7 @@
 import chalk from 'chalk'
 import fs from 'fs'
-import { Account } from 'web3-core'
 import { makePathAbsolute } from '@zkopru/utils'
+import { Wallet } from 'ethers'
 import Configurator, { Context, Menu } from '../configurator'
 
 export default class ConfigureAccount extends Configurator {
@@ -9,7 +9,7 @@ export default class ConfigureAccount extends Configurator {
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
     console.log(chalk.blue('Setting up the coordinator account'))
-    if (!context.web3) throw Error('Web3 is not loaded')
+    if (!context.provider) throw Error('Provider is not loaded')
     if (this.base.keystore) {
       let password: string
       if (this.base.password) {
@@ -21,17 +21,25 @@ export default class ConfigureAccount extends Configurator {
       } else {
         throw Error('Password is not configured')
       }
-      const account = context.web3.eth.accounts.decrypt(
-        this.base.keystore,
+      const account = await Wallet.fromEncryptedJson(
+        JSON.stringify(this.base.keystore),
         password,
       )
-      return { context: { ...context, account }, next: Menu.LOAD_DATABASE }
+      const connectedAccount = account.connect(context.provider)
+      return {
+        context: {
+          ...context,
+          account: connectedAccount,
+          keystore: this.base.keystore,
+        },
+        next: Menu.LOAD_DATABASE,
+      }
     }
-    let choice: number
+    let selection: number
     if (this.base.daemon) {
-      choice = 1
+      selection = 1
     } else {
-      const result = await this.ask({
+      const { choice } = await this.ask({
         type: 'select',
         name: 'choice',
         message: 'You need to configure an Ethereum account for coordination',
@@ -47,12 +55,12 @@ export default class ConfigureAccount extends Configurator {
           },
         ],
       })
-      choice = result.choice
+      selection = choice
     }
 
-    let account: Account
-    if (choice === 1) {
-      account = context.web3.eth.accounts.create()
+    let account: Wallet
+    if (selection === 1) {
+      account = Wallet.createRandom()
     } else {
       let pk!: string
       while (pk === undefined) {
@@ -72,12 +80,10 @@ export default class ConfigureAccount extends Configurator {
           )
         }
       }
-      account = context.web3.eth.accounts.privateKeyToAccount(pk)
-      context.web3.eth.accounts.wallet.add(account)
+      account = new Wallet(pk)
     }
     console.log(chalk.bold(`Configured account`))
-    console.log(`Account: ${account.address}`)
-    console.log(`Private key: ${account.privateKey}`)
+    console.log(`Account: ${await account.getAddress()}`)
     let confirmed = false
     let confirmedPassword!: string
     do {
@@ -99,9 +105,9 @@ export default class ConfigureAccount extends Configurator {
       confirmedPassword = password
     } while (!confirmed)
 
-    const keystore = account.encrypt(confirmedPassword)
+    const keystore = await account.encrypt(confirmedPassword)
     return {
-      context: { ...context, keystore, account },
+      context: { ...context, keystore: JSON.parse(keystore), account },
       next: Menu.SAVE_CONFIG,
     }
   }

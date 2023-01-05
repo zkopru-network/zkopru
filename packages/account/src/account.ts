@@ -1,5 +1,3 @@
-import Web3 from 'web3'
-import { Account, EncryptedKeystoreV3Json, AddAccount } from 'web3-core'
 import {
   Fr,
   Fp,
@@ -11,71 +9,75 @@ import {
 import { Keystore } from '@zkopru/database'
 import createKeccak from 'keccak'
 import assert from 'assert'
+import { Wallet } from 'ethers'
+import { BytesLike, hexlify } from 'ethers/lib/utils'
+import { Provider } from '@ethersproject/providers'
 import { ZkViewer } from './viewer'
+import { getL2PrivateKeyBySignature } from '@zkopru/utils'
 
 export class ZkAccount extends ZkViewer {
-  private privateKey: string // ECDSA private key
+  private l2PrivateKey: string // EdDSA private key
 
   ethAddress: string
 
-  ethAccount: Account
+  ethAccount?: Wallet
 
-  constructor(_privateKey: Buffer | string) {
-    const web3 = new Web3()
-    const privateKey =
-      typeof _privateKey === 'string'
-        ? _privateKey
-        : _privateKey.toString('hex')
+  constructor(
+    _l2PrivateKey: BytesLike,
+    _l1Address: string,
+    _l1Wallet?: Wallet,
+  ) {
+    const l2PrivateKey = hexlify(
+      _l2PrivateKey.toString().startsWith('0x')
+        ? _l2PrivateKey
+        : '0x' + _l2PrivateKey.toString(),
+    )
 
-    const ethAccount = web3.eth.accounts.privateKeyToAccount(privateKey)
-
-    const A = Point.fromPrivKey(privateKey)
+    const A = Point.fromPrivKey(l2PrivateKey)
     // https://github.com/zkopru-network/zkopru/issues/34#issuecomment-666988505
     // Note: viewing key can be derived using another method. This is just for the convenience
     // to make it easy to restore spending key & viewing key together from a mnemonic source in
     // a deterministic way
     const v = Fr.from(
       createKeccak('keccak256')
-        .update(privateKey)
+        .update(l2PrivateKey)
         .digest(),
     )
     super(A, v)
-    this.privateKey = privateKey
-    this.ethAddress = ethAccount.address
-    this.ethAccount = ethAccount
+    this.l2PrivateKey = l2PrivateKey
+    this.ethAccount = _l1Wallet
+    this.ethAddress = _l1Wallet ? _l1Wallet.address : _l1Address
   }
 
-  static fromEthAccount(account: Account): ZkAccount {
-    return new ZkAccount(account.privateKey)
+  static async fromEthAccount(_l1Wallet: Wallet): Promise<ZkAccount> {
+    const l2PrivateKey = await getL2PrivateKeyBySignature(_l1Wallet)
+    return new ZkAccount(l2PrivateKey, _l1Wallet.address, _l1Wallet)
   }
 
-  toKeystoreSqlObj(password: string): Keystore {
+  async toKeystoreSqlObj(password: string): Promise<Keystore> {
     return {
       zkAddress: this.zkAddress.toString(),
-      address: this.ethAddress,
-      encrypted: JSON.stringify(this.ethAccount.encrypt(password)),
+      address: this.ethAddress!,
+      encrypted: await this.ethAccount!.encrypt(password),
     }
   }
 
   signEdDSA(msg: Fp): EdDSA {
-    const signature = signEdDSA({ msg, privKey: this.privateKey })
+    const signature = signEdDSA({ msg, privKey: this.l2PrivateKey })
     assert(verifyEdDSA(msg, signature, this.getEdDSAPubKey()))
     return signature
   }
 
-  toAddAccount(): AddAccount {
-    return {
-      address: this.ethAddress,
-      privateKey: this.privateKey,
-    }
-  }
-
-  static fromEncryptedKeystoreV3Json(
-    obj: EncryptedKeystoreV3Json,
+  static async fromEncryptedKeystoreV3Json(
+    encryptedKeystoreV3Json: string,
     password: string,
-  ): ZkAccount {
-    const web3 = new Web3()
-    const account = web3.eth.accounts.decrypt(obj, password)
-    return new ZkAccount(account.privateKey)
+    provider: Provider,
+  ): Promise<ZkAccount> {
+    const account = Wallet.fromEncryptedJsonSync(
+      encryptedKeystoreV3Json,
+      password,
+    ).connect(provider)
+    const l2PrivateKey = await getL2PrivateKeyBySignature(account)
+    return new ZkAccount(l2PrivateKey, account.address, account)
   }
 }

@@ -2,13 +2,13 @@ import express, { RequestHandler } from 'express'
 import { WithdrawalStatus, ZkTx } from '@zkopru/transaction'
 import { logger } from '@zkopru/utils'
 import { Server } from 'http'
-import { soliditySha3Raw, toBN, toChecksumAddress } from 'web3-utils'
-import { Bytes32 } from 'soltypes'
+import { Address, Bytes32, Uint256 } from 'soltypes'
 import { Fp } from '@zkopru/babyjubjub'
 import { BootstrapData } from '@zkopru/core'
-import { TxUtil } from '@zkopru/contracts'
 import fetch from 'node-fetch'
 import { verifyProof } from '@zkopru/tree'
+import { solidityKeccak256 } from 'ethers/lib/utils'
+import { BigNumber, ethers } from 'ethers'
 import { CoordinatorContext } from './context'
 import { ClientApi } from './client-api'
 
@@ -17,7 +17,8 @@ function catchError(fn: Function): RequestHandler {
     try {
       await fn(req, res, next)
     } catch (err) {
-      res.status(500).send(`Internal server error: ${err.toString()}`)
+      if (err instanceof Error)
+        res.status(500).send(`Internal server error: ${err.toString()}`)
     }
   }
 }
@@ -125,12 +126,7 @@ export class CoordinatorApi {
       return
     }
     try {
-      const result = await this.clientApi.callMethod(
-        method,
-        params,
-        id,
-        jsonrpc,
-      )
+      const result = await this.clientApi.callMethod(method, params)
       // The id at the top level of the response needs to be left as a number
       // we use this variable to avoid leaving other id variables as numbers
       let firstId = true
@@ -153,11 +149,12 @@ export class CoordinatorApi {
       )
       res.send(payload)
     } catch (err) {
-      res.status(400).json({
-        id,
-        jsonrpc,
-        message: err.message,
-      })
+      if (err instanceof Error)
+        res.status(400).json({
+          id,
+          jsonrpc,
+          message: err.message,
+        })
     }
   }
 
@@ -206,6 +203,7 @@ export class CoordinatorApi {
   private multiTxHandler: RequestHandler = async (req, res) => {
     const txs = req.body
     const zkTxs = [] as ZkTx[]
+
     for (const tx of txs) {
       const zkTx = ZkTx.decode(Buffer.from(tx, 'hex'))
       // const zkTx = ZkTx.decode(txData)
@@ -239,7 +237,7 @@ export class CoordinatorApi {
           throw new Error(await r.text())
         }
       } catch (err) {
-        logger.error(err)
+        if (err instanceof Error) logger.error(err)
         logger.error('Error forwarding transaction')
       }
     }
@@ -281,7 +279,7 @@ export class CoordinatorApi {
           throw new Error(await r.text())
         }
       } catch (err) {
-        logger.error(err)
+        if (err instanceof Error) logger.error(err)
         logger.error('Error forwarding transaction')
       }
     }
@@ -306,42 +304,54 @@ export class CoordinatorApi {
       prepayer,
       expiration,
       signature,
-    } = withdrawal
+    } = {
+      hash: Uint256.from(withdrawal.hash).toString(),
+      to: Address.from(withdrawal.to).toString(),
+      eth: Uint256.from(withdrawal.eth).toBigNumber(),
+      tokenAddr: Address.from(withdrawal.tokenAddr).toString(),
+      erc20Amount: Uint256.from(withdrawal.erc20Amount).toBigNumber(),
+      nft: Uint256.from(withdrawal.nft).toBigNumber(),
+      fee: Uint256.from(withdrawal.fee).toBigNumber(),
+      prepayFeeInEth: Uint256.from(withdrawal.prepayFeeInEth).toBigNumber(),
+      prepayFeeInToken: Uint256.from(withdrawal.prepayFeeInToken).toBigNumber(),
+      includedIn: Bytes32.from(withdrawal.includedIn).toString(),
+      index: Uint256.from(withdrawal.index).toBigNumber(),
+      prepayer: Address.from(withdrawal.prepayer).toString(),
+      expiration: withdrawal.expiration as number,
+      signature: withdrawal.signature as string,
+    }
     if (
-      toChecksumAddress(prepayer) !==
-      toChecksumAddress(this.context.account.address)
+      ethers.utils.getAddress(prepayer.toLowerCase()) !==
+      ethers.utils.getAddress(await this.context.account.getAddress())
     ) {
       res.status(400).send('This server does not have that prepayer account.')
       return
     }
-    const withdrawalHash = soliditySha3Raw(
-      hash,
-      to,
-      eth,
-      tokenAddr,
-      erc20Amount,
-      nft,
-      fee,
-    )
-    const tx = layer1.user.methods.payInAdvance(
-      hash,
-      [to, eth, tokenAddr, erc20Amount, nft, fee],
-      [prepayer, withdrawalHash, prepayFeeInEth, prepayFeeInToken, expiration],
-      signature,
+    const withdrawalHash = solidityKeccak256(
+      [
+        'uint256',
+        'address',
+        'uint256',
+        'address',
+        'uint256',
+        'uint256',
+        'uint256',
+      ],
+      [hash, to, eth, tokenAddr, erc20Amount, nft, fee],
     )
 
     const data = {
       hash,
       withdrawalHash,
       to,
-      eth,
-      tokenAddr,
-      erc20Amount,
-      nft,
-      fee,
+      eth: eth.toString(),
+      tokenAddr: tokenAddr.toString(),
+      erc20Amount: erc20Amount.toString(),
+      nft: nft.toString(),
+      fee: fee.toString(),
       includedIn,
-      index,
-      expiration: parseInt(expiration, 10),
+      index: index.toString(),
+      expiration,
       siblings: JSON.stringify(withdrawal.siblings),
       status: WithdrawalStatus.UNFINALIZED,
     }
@@ -357,10 +367,10 @@ export class CoordinatorApi {
     })
     if (!!header && proposal?.verified) {
       const proof = {
-        root: toBN(header.withdrawalRoot),
-        index: toBN(index),
-        leaf: toBN(withdrawalHash),
-        siblings: withdrawal.siblings.map(sib => toBN(sib)),
+        root: BigNumber.from(header.withdrawalRoot),
+        index: BigNumber.from(index),
+        leaf: BigNumber.from(withdrawalHash),
+        siblings: withdrawal.siblings.map(sib => BigNumber.from(sib)),
       }
       const isValidRequest = verifyProof(
         this.context.node.layer2.grove.config.withdrawalHasher,
@@ -370,23 +380,44 @@ export class CoordinatorApi {
         res.status(400).send('API accepts only a single string')
         return
       }
+      const response = await layer1.user
+        .connect(this.context.account)
+        .payInAdvance(
+          hash.toString(),
+          {
+            to,
+            eth,
+            token: tokenAddr,
+            amount: erc20Amount,
+            nft,
+            fee,
+          },
+          {
+            prepayer,
+            withdrawalHash,
+            prepayFeeInEth,
+            prepayFeeInToken,
+            expiration,
+          },
+          signature,
+          {
+            value: eth,
+          },
+        )
+        .catch(err => {
+          logger.error(
+            `coordinator/api.ts - Failed to send a prepay tx: ${err.toString()}`,
+          )
+          throw err
+        })
       await layer2.db.upsert('Withdrawal', {
         where: { hash },
         create: data,
         update: data,
       })
-      const signedTx = await TxUtil.getSignedTransaction(
-        tx,
-        layer1.address,
-        layer1.web3,
-        this.context.account,
-        {
-          value: eth,
-        },
-      )
       // save withdrawal
-      logger.info('pay in advance')
-      res.send(signedTx)
+      logger.info(`pay in advance: ${response.hash}`)
+      res.send({ txHash: response.hash })
     } else {
       res.status(400).send('The withdrawal is not verified.')
     }
@@ -405,7 +436,7 @@ export class CoordinatorApi {
     if (hash) {
       hashForBootstrapBlock = hash
     } else {
-      hashForBootstrapBlock = await layer1.upstream.methods.latest().call()
+      hashForBootstrapBlock = await layer1.zkopru.latest()
     }
     if (this.bootstrapCache[hashForBootstrapBlock]) {
       res.send(this.bootstrapCache[hashForBootstrapBlock])
@@ -438,7 +469,7 @@ export class CoordinatorApi {
       utxoStartingLeafProof: {
         root: block.header.utxoRoot.toString(),
         index: block.header.utxoIndex.toString(),
-        leaf: Fp.zero.toHex(),
+        leaf: Fp.zero.toHexString(),
         siblings: block.bootstrap.utxoBootstrap.map(s => s.toString()),
       },
       withdrawalTreeIndex: block.bootstrap.withdrawalTreeIndex,
@@ -452,9 +483,9 @@ export class CoordinatorApi {
   }
 
   private bytePriceHandler: RequestHandler = async (_, res) => {
-    const weiPerByte: string | undefined = this.context.gasPrice
-      ?.muln(this.context.config.priceMultiplier)
-      .toString(10)
+    const weiPerByte: string | undefined = this.context.effectiveGasPrice
+      ?.mul(this.context.config.priceMultiplier)
+      .toString()
     res.send({ weiPerByte })
   }
 }

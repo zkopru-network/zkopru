@@ -14,11 +14,11 @@ export class OnchainWithdrawalTreeValidator extends OnchainValidatorContext
     block: BlockData,
     parentHeader: HeaderData,
   ): Promise<Validation> {
-    const tx = this.layer1.validators.withdrawalTree.methods.validateWithdrawalIndex(
+    const tx = await this.layer1.validators.withdrawalTree.populateTransaction.validateWithdrawalIndex(
       blockDataToHexString(block),
       headerDataToHexString(parentHeader),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'WithdrawalIndex')
     return result
   }
 
@@ -27,12 +27,12 @@ export class OnchainWithdrawalTreeValidator extends OnchainValidatorContext
     parentHeader: HeaderData,
     subtreeSiblings: Uint256[],
   ): Promise<Validation> {
-    const tx = this.layer1.validators.withdrawalTree.methods.validateWithdrawalRoot(
+    const tx = await this.layer1.validators.withdrawalTree.populateTransaction.validateWithdrawalRoot(
       blockDataToHexString(block),
       headerDataToHexString(parentHeader),
       subtreeSiblings.map(d => d.toString()),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'WithdrawalRoot')
     return result
   }
 
@@ -42,13 +42,13 @@ export class OnchainWithdrawalTreeValidator extends OnchainValidatorContext
     numOfNullifiers: Uint256,
     siblings: Bytes32[][],
   ): Promise<Validation> {
-    const tx = this.layer1.validators.nullifierTree.methods.validateNullifierRollUp(
+    const tx = await this.layer1.validators.nullifierTree.populateTransaction.validateNullifierRollUp(
       blockDataToHexString(block),
       headerDataToHexString(parentHeader),
       numOfNullifiers.toString(),
-      siblings.map(sibs => sibs.map(s => s.toString())),
+      siblings.map(sibs => sibs.map(s => s.toString())) as any,
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'NullifierRollUp')
     return result
   }
 }

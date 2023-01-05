@@ -12,13 +12,6 @@ import { DB, SQLiteMemoryConnector, TreeSpecies, schema } from '~database/node'
 import { genSNARK, SNARKResult } from '~zk-wizard/snark'
 import { ZkWizard } from '~zk-wizard'
 import {
-  checkPhase1Setup,
-  compileCircuit,
-  getArtifacts,
-  phase2Setup,
-  prepareArtifactsDirectory,
-} from './helper'
-import {
   UtxoTree,
   TreeConfig,
   poseidonHasher,
@@ -28,6 +21,13 @@ import {
 import { utxos } from '~dataset/testset-utxos'
 import { txs } from '~dataset/testset-txs'
 import { accounts } from '~dataset/testset-predefined'
+import {
+  checkPhase1Setup,
+  compileCircuit,
+  getArtifacts,
+  phase2Setup,
+  prepareArtifactsDirectory,
+} from './helper'
 
 const fileName = 'zk_transaction_1_2.test.circom'
 const artifacts = getArtifacts(fileName)

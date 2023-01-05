@@ -1,7 +1,12 @@
 /* eslint-disable no-continue, no-underscore-dangle */
-import Web3 from 'web3'
+import { Provider } from '@ethersproject/providers'
 import { logger } from '@zkopru/utils'
-import { Layer1 } from '@zkopru/contracts'
+import {
+  BurnAuction,
+  BurnAuction__factory,
+  ZkopruContract,
+} from '@zkopru/contracts'
+import { TypedListener } from '@zkopru/contracts/typechain/common'
 import fetch from 'node-fetch'
 
 /**
@@ -14,20 +19,18 @@ export class CoordinatorManager {
 
   private _burnAuctionAddress?: string
 
-  private _web3: Web3
+  private _provider: Provider
 
-  private _burnAuction: any
-
-  urlUpdateSubscription?: any
+  private _burnAuction?: BurnAuction
 
   urlsByAddress: { [addr: string]: string } = {}
 
   functionalUrlByAddress: { [addr: string]: string | undefined } = {}
 
-  constructor(address: string, web3: Web3) {
+  constructor(address: string, provider: Provider) {
     // address is the Zkopru contract address, NOT the burn auction address
     this._address = address
-    this._web3 = web3
+    this._provider = provider
   }
 
   // find some number of reachable coordinator urls
@@ -35,22 +38,24 @@ export class CoordinatorManager {
     const urlPromises = [] as Promise<string | void>[]
     const urls = [] as string[]
     const burnAuction = await this.burnAuction()
-    const startBlock = await burnAuction.methods.startBlock().call()
+    const startBlock = await burnAuction.startBlock()
     const blockCount = 500
-    const latestBlock = await this._web3.eth.getBlockNumber()
+    const latestBlock = await this._provider.getBlockNumber()
     let currentBlock = startBlock
     const loaded: { [key: string]: boolean } = {}
     for (;;) {
       const toBlock = +currentBlock + +blockCount
-      const updates = await burnAuction.getPastEvents('UrlUpdate', {
-        fromBlock: currentBlock,
-        toBlock: toBlock > latestBlock ? 'latest' : toBlock,
-      })
+      const filter = burnAuction.filters.UrlUpdate()
+      const updates = await burnAuction.queryFilter(
+        filter,
+        currentBlock,
+        toBlock > latestBlock ? 'latest' : toBlock,
+      )
       currentBlock = toBlock > latestBlock ? latestBlock : toBlock
-      for (const { returnValues } of updates) {
-        if (loaded[returnValues.coordinator]) continue
-        loaded[returnValues.coordinator] = true
-        urlPromises.push(this.coordinatorUrl(returnValues.coordinator))
+      for (const { args } of updates) {
+        if (loaded[args.coordinator]) continue
+        loaded[args.coordinator] = true
+        urlPromises.push(this.coordinatorUrl(args.coordinator))
       }
       if (urlPromises.length >= count || +toBlock >= +latestBlock) {
         urls.push(
@@ -64,7 +69,7 @@ export class CoordinatorManager {
 
   async updateUrl(addr: string) {
     const burnAuction = await this.burnAuction()
-    const newUrl = await burnAuction.methods.coordinatorUrls(addr).call()
+    const newUrl = await burnAuction.coordinatorUrls(addr)
     if (newUrl !== this.urlsByAddress[addr]) {
       delete this.functionalUrlByAddress[addr]
     }
@@ -73,7 +78,7 @@ export class CoordinatorManager {
 
   async activeCoordinator() {
     const burnAuction = await this.burnAuction()
-    return burnAuction.methods.activeCoordinator().call()
+    return burnAuction.activeCoordinator()
   }
 
   async activeCoordinatorUrl(): Promise<string | void> {
@@ -125,40 +130,42 @@ export class CoordinatorManager {
   }
 
   async start() {
-    if (this.urlUpdateSubscription) return
     const burnAuction = await this.burnAuction()
-    this.urlUpdateSubscription = burnAuction.events
-      .UrlUpdate()
-      .on('connected', (subId: string) => {
-        logger.info(
-          `coordinator manager: UrlUpdate listener connected. ID: ${subId}`,
-        )
-      })
-      .on('data', async (data: any) => {
-        const { coordinator } = data.returnValues
-        await this.updateUrl(coordinator)
-      })
+    const filter = burnAuction.filters.UrlUpdate()
+    burnAuction.on(filter, this.handleUrlUpdate)
+  }
+
+  handleUrlUpdate: TypedListener<[string], { coordinator: string }> = async (
+    _: string,
+    event,
+  ) => {
+    const { coordinator } = event.args
+    try {
+      await this.updateUrl(coordinator)
+    } catch (err) {
+      logger.warn(`core/coordinator-manager.ts - ${err}`)
+    }
   }
 
   async stop() {
-    if (!this.urlUpdateSubscription) return
-    this.urlUpdateSubscription.removeAllListeners()
-    this.urlUpdateSubscription = undefined
+    const burnAuction = await this.burnAuction()
+    const filter = burnAuction.filters.UrlUpdate()
+    burnAuction.removeListener(filter, this.handleUrlUpdate)
   }
 
   async burnAuctionAddress() {
     if (this._burnAuctionAddress) {
       return this._burnAuctionAddress
     }
-    const zkopru = Layer1.getZkopru(this._web3, this._address)
-    this._burnAuctionAddress = await zkopru.methods.consensusProvider().call()
+    const zkopru = new ZkopruContract(this._provider, this._address)
+    this._burnAuctionAddress = await zkopru.zkopru.consensusProvider()
     return this._burnAuctionAddress
   }
 
   async burnAuction() {
     if (this._burnAuction) return this._burnAuction
     const address = await this.burnAuctionAddress()
-    this._burnAuction = Layer1.getIBurnAuction(this._web3, address)
+    this._burnAuction = BurnAuction__factory.connect(address, this._provider)
     return this._burnAuction
   }
 }

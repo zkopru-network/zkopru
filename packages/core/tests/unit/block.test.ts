@@ -1,17 +1,14 @@
 /**
  * @jest-environment node
  */
-import { Transaction } from 'web3-core'
-import AbiCoder from 'web3-eth-abi'
 import { getDummyBody, dummyHeader } from '~dataset/testset-block'
 import { serializeHeader, serializeBody, Block, headerHash } from '~core'
-
-const encodeFunctionSignature = (AbiCoder as any).encodeFunctionSignature.bind(
-  AbiCoder,
-)
+import { Transaction, BigNumber } from 'ethers'
+import { Interface, parseEther, parseUnits } from 'ethers/lib/utils'
 
 describe('block.ts', () => {
   it('should be serialized and deserialized', async () => {
+    const abi = ['function propose(bytes)']
     const header = dummyHeader
     const body = await getDummyBody()
     expect(header).toBeDefined()
@@ -20,24 +17,20 @@ describe('block.ts', () => {
       serializeHeader(header),
       serializeBody(body),
     ])
-    const dummySelector = encodeFunctionSignature('propose(bytes)')
-    const encodeParameters = (AbiCoder as any).encodeParameters.bind(AbiCoder)
-    const inputData = encodeParameters(['bytes'], [serializedBlock])
+
+    const iface = new Interface(abi)
+    const encodeRawData = iface.encodeFunctionData('propose', [serializedBlock])
+
     const dummyTx: Transaction = {
       hash: 'dummyhash',
       nonce: 1,
-      blockHash: 'dummyblockhash',
-      blockNumber: 10000,
-      transactionIndex: 3,
       from: 'dummyfrom',
       to: 'dummyto',
-      value: 'dummyvalue',
-      gasPrice: 'dummygas',
-      gas: 11,
-      input: `0x${dummySelector.replace('0x', '')}${inputData.replace(
-        '0x',
-        '',
-      )}`,
+      value: parseEther('32'),
+      gasPrice: parseUnits('132', 'gwei'),
+      gasLimit: BigNumber.from(10000000),
+      data: encodeRawData,
+      chainId: 1,
     }
     const deserializedBlock = Block.fromTx(dummyTx)
     expect(deserializedBlock).toBeDefined()

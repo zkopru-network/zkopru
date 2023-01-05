@@ -1,5 +1,5 @@
 /* eslint-disable jest/no-hooks */
-import Web3 from 'web3'
+import { ethers } from 'ethers'
 import { HDWallet, ZkAccount } from '~account'
 import { DB, SQLiteConnector, schema } from '~database/node'
 
@@ -12,8 +12,7 @@ describe('unit test', () => {
     await mockup.close()
   })
   it('has same private keys and eth address with ganache default accounts', async () => {
-    const web3 = new Web3()
-    const hdWallet = new HDWallet(web3, mockup)
+    const hdWallet = new HDWallet(ethers.getDefaultProvider(), mockup)
     await hdWallet.init(
       'myth like bonus scare over problem client lizard pioneer submit female collect',
       'samplepassword',

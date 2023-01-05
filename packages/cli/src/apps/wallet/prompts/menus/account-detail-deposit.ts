@@ -1,5 +1,6 @@
 import { Balance } from '@zkopru/zk-wizard'
-import { fromWei } from 'web3-utils'
+import { BigNumber } from 'ethers/lib/ethers'
+import { formatEther } from 'ethers/lib/utils'
 import App, { AppMenu, Context } from '..'
 
 export default class Deposit extends App {
@@ -17,11 +18,13 @@ export default class Deposit extends App {
       choices: [
         { title: 'Go back', value: { menu: AppMenu.ACCOUNT_DETAIL } },
         {
-          title: `Ether (balance: ${fromWei(balance.eth, 'ether')} ETH)`,
+          title: `Ether (balance: ${formatEther(
+            BigNumber.from(balance.eth),
+          )} ETH)`,
           value: { menu: AppMenu.DEPOSIT_ETHER },
         },
-        ...Object.keys(balance.erc721).map(address => ({
-          title: `ERC20 to the zkopru network ${address} : ${balance.erc721[address]}`,
+        ...Object.keys(balance.erc20).map(address => ({
+          title: `ERC20 to the zkopru network ${address} : ${balance.erc20[address]}`,
           value: { menu: AppMenu.DEPOSIT_ERC20, address },
         })),
         ...Object.keys(balance.erc721).map(address => ({

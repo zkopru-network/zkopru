@@ -1,6 +1,6 @@
-import { Fp, F } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
+import { BigNumberish, ethers } from 'ethers'
 import { Uint256, Bytes32 } from 'soltypes'
-import { soliditySha3 } from 'web3-utils'
 import { ZkAddress } from './zk-address'
 import { ZkOutflow, PublicData } from './zk-tx'
 import { Note, OutflowType, NoteStatus, Asset } from './note'
@@ -73,13 +73,13 @@ export class Withdrawal extends Note {
       publicData.nft.toBytes32().toBuffer(),
       publicData.fee.toBytes32().toBuffer(),
     ])
-    const result = soliditySha3(`0x${concatenated.toString('hex')}`)
+    const result = ethers.utils.keccak256(concatenated)
     //  uint256 note = uint256(keccak256(abi.encodePacked(owner, eth, token, amount, nft, fee)));
     if (result === null) throw Error('hash result is null')
     return Bytes32.from(result).toUint()
   }
 
-  static from(note: Note, to: F, fee: F): Withdrawal {
+  static from(note: Note, to: BigNumberish, fee: BigNumberish): Withdrawal {
     return new Withdrawal(note.owner, note.salt, note.asset, {
       to: Fp.from(to),
       fee: Fp.from(fee),

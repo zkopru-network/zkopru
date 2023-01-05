@@ -1,28 +1,24 @@
 module.exports = {
-  globals: {
-    artifacts: true,
-    contract: true,
-    it: true,
-    before: true,
-    beforeEach: true,
-    assert: true
-  },
   env: {
-    mocha: true, // for test files
-    "truffle/globals": true // same as "truffle/truffle": true
+    browser: false,
+    es2021: true,
+    mocha: true,
+    node: true
   },
-  plugins: ["truffle"],
+  plugins: ["@typescript-eslint"],
+  extends: [
+    "standard",
+    "plugin:prettier/recommended",
+    "plugin:node/recommended"
+  ],
+  parser: "@typescript-eslint/parser",
+  parserOptions: {
+    ecmaVersion: 12
+  },
   rules: {
-    "no-console": "off",
-    "no-restricted-syntax": "off",
-    "no-await-in-loop": "off",
-    "no-loop-func": "off",
-    "import/no-dynamic-require": "off",
-    "global-require": "off",
-    "import/no-extraneous-dependencies": ["error", { devDependencies: true }],
-    "@typescript-eslint/camelcase": "warn",
-    "@typescript-eslint/ban-ts-ignore": "warn",
-    "import/no-unresolved": "warn",
-    "import/export": "warn"
+    "node/no-unsupported-features/es-syntax": [
+      "error",
+      { ignores: ["modules"] }
+    ]
   }
 };

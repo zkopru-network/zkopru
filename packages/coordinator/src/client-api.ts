@@ -1,3 +1,4 @@
+import { JsonRpcProvider } from '@ethersproject/providers'
 import { Bytes32 } from 'soltypes'
 import { CoordinatorContext } from './context'
 import EthMethods from './eth-rpc-methods'
@@ -25,15 +26,10 @@ export class ClientApi {
     /* eslint-enable @typescript-eslint/camelcase */
   }
 
-  async callMethod(
-    method: string,
-    params: any[] = [],
-    id: string | number,
-    jsonrpc: string,
-  ) {
+  async callMethod(method: string, params: any[] = []) {
     if (this.rpcMethods[method]) return this.rpcMethods[method](...params)
     if (EthMethods.indexOf(method) !== -1) {
-      const provider = this.context.node.layer1.web3.currentProvider
+      const provider = this.context.node.layer1.provider as JsonRpcProvider
       if (
         !provider ||
         typeof provider === 'string' ||
@@ -41,19 +37,13 @@ export class ClientApi {
       )
         throw new Error('Unable to proxy')
       return new Promise((rs, rj) =>
-        (provider as any).send(
-          {
-            id,
-            method,
-            params,
-            jsonrpc,
-          },
-          (err, data) => {
-            if (err) return rj(err)
-            if (data.error) return rj(data.error)
-            rs(data.result)
-          },
-        ),
+        provider
+          .send(method, params)
+          .then(data => {
+            if (data.error) rj(data.error)
+            else rs(data.result)
+          })
+          .catch(err => rj(err)),
       )
     }
     throw new Error(`Invalid method: "${method}"`)

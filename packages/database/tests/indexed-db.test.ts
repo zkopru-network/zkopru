@@ -1,7 +1,7 @@
 /* eslint-disable jest/no-hooks, jest/valid-describe */
 import assert from 'assert'
-import testSchema from './test-schema'
 import { DB, IndexedDBConnector } from '~database/web'
+import testSchema from './test-schema'
 import FindTests from './database/find'
 import CreateTests from './database/create'
 import UpdateTests from './database/update'

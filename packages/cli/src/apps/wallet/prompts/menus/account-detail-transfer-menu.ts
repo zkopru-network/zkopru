@@ -1,5 +1,5 @@
-import { fromWei } from 'web3-utils'
 import { Sum } from '@zkopru/transaction'
+import { formatUnits } from 'ethers/lib/utils'
 import App, { AppMenu, Context } from '..'
 
 export default class TransferMenu extends App {
@@ -18,10 +18,10 @@ export default class TransferMenu extends App {
       choices: [
         { title: 'Go back', value: { menu: AppMenu.ACCOUNT_DETAIL } },
         {
-          title: `Ether (balance: ${fromWei(
+          title: `Ether (balance: ${formatUnits(
             spendables.eth,
             'ether',
-          )} ETH / locked: ${fromWei(locked.eth, 'ether')} ETH)`,
+          )} ETH / locked: ${formatUnits(locked.eth, 'ether')} ETH)`,
           value: { menu: AppMenu.TRANSFER_ETH },
         },
         ...Object.keys(spendables.erc20).map(address => ({

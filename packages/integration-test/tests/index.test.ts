@@ -1,17 +1,14 @@
-/**
- * @jest-environment node
- */
-/* eslint-disable jest/no-disabled-tests */
-/* eslint-disable jest/no-commented-out-tests */
-/* eslint-disable jest/no-expect-resolves */
-/* eslint-disable jest/require-tothrow-message */
-/* eslint-disable @typescript-eslint/camelcase */
-/* eslint-disable jest/no-hooks */
+import chai from 'chai'
+import { BigNumber } from 'ethers'
+// import { parseEther } from 'ethers/lib/utils'
+// import { ethers } from 'hardhat'
 import { Bytes32 } from 'soltypes'
-import { ZkTx, Sum } from '~transaction'
-import { jestExtendToCompareBigNumber, sleep } from '~utils'
-import { Context, initContext, terminate } from './cases/context'
+import { Sum, ZkTx } from '~transaction'
+import { GroveSnapshot } from '~tree/grove'
+import { sleep } from '~utils'
+import { Context, initContext, terminate } from './context'
 import {
+  testNewCoordinatorAccount,
   testAliceAccount,
   testCarlAccount,
   testBobAccount,
@@ -20,7 +17,6 @@ import { testRegisterVKs, testRegisterVKFails } from './cases/2_register_vks'
 import {
   testCompleteSetup,
   testRejectVkRegistration,
-  registerCoordinator,
   updateVerifyingKeys,
   testRegisterTokens,
 } from './cases/3_complete_setup'
@@ -31,11 +27,11 @@ import {
   testMassDeposits,
 } from './cases/4_deposit'
 import {
+  registerCoordinator,
   waitCoordinatorToProposeANewBlock,
   waitCoordinatorToProcessTheNewBlock,
   testBlockSync,
 } from './cases/5_create_block'
-import { GroveSnapshot } from '~tree/grove'
 import {
   buildZkTxAliceSendEthToBob,
   buildZkTxBobSendERC20ToCarl as buildZkTxBobSendErc20ToCarl,
@@ -44,6 +40,13 @@ import {
   testRound1NewBlockProposal,
   testRound1NewSpendableUtxos,
 } from './cases/6_zk_tx_round_1'
+import {
+  buildZkSwapTxAliceSendEthToBobAndReceiveERC20 as round4Tx1,
+  buildZkSwapTxBobSendERC20ToAliceAndReceiveEther as round4Tx2,
+  testRound4SendZkTxsToCoordinator,
+  testRound4NewBlockProposal,
+  testRound4NewSpendableUtxos,
+} from './cases/6-2_zk_tx_round_1-2'
 import {
   buildZkTxAliceWithrawNFT,
   buildZkTxBobWithdrawEth,
@@ -72,54 +75,59 @@ import {
   testRound3NewBlockProposalAndSlashing,
 } from './cases/10_zk_tx_round_3'
 import {
-  buildZkSwapTxAliceSendEthToBobAndReceiveERC20 as round4Tx1,
-  buildZkSwapTxBobSendERC20ToAliceAndReceiveEther as round4Tx2,
-  testRound4SendZkTxsToCoordinator,
-  testRound4NewBlockProposal,
-  testRound4NewSpendableUtxos,
-} from './cases/6-2_zk_tx_round_1-2'
+  testInvalidBid,
+  stakeForBeingCoordintor,
+  setUrlForActiveCoordinator,
+  initializeAuctionConditions,
+  bidSlotsByCoordinator,
+  bidSlotByNewCoordinator,
+  bidSlotsAgainByCoordinator,
+} from './cases/11_auction'
 
-process.env.DEFAULT_COORDINATOR = 'http://localhost:8888'
-process.env.BLOCK_CONFIRMATIONS = '0'
-
-jestExtendToCompareBigNumber(expect)
+const { expect } = chai
 
 describe('testnet', () => {
   let context!: Context
   const ctx = () => context
-  beforeAll(async () => {
+  before(async () => {
     context = await initContext()
-  }, 90000)
-  afterAll(async () => {
+  })
+  after(async () => {
     console.log('terminating...')
     await terminate(ctx)
-  }, 30000)
+  })
   describe('contract deployment', () => {
     it('should define zkopru address', () => {
       // eslint-disable-next-line jest/no-if
       const message = ctx().zkopruAddress
         ? 'Test environment is ready'
-        : 'Try to adjust timeout or check docker status'
+        : 'Try to adjust timeout or check hardhat status'
       console.log(message)
-      expect(context.zkopruAddress).toBeDefined()
     })
   })
   describe('1: Zk Account', () => {
     it(
-      'alice should have 100 ETH for her initial balance',
+      `newCoordinator should have 1000 ETH for its initial balance`,
+      testNewCoordinatorAccount(ctx),
+    )
+    it(
+      'alice should have 1000 ETH for her initial balance',
       testAliceAccount(ctx),
     )
-    it('bob should have 100 ETH for his initial balance', testBobAccount(ctx))
-    it('carl should have 100 ETH for his initial balance', testCarlAccount(ctx))
+    it('bob should have 1000 ETH for his initial balance', testBobAccount(ctx))
+    it(
+      'carl should have 1000 ETH for his initial balance',
+      testCarlAccount(ctx),
+    )
   })
   describe('2: Register verifying keys', () => {
-    it('coordinator can register vks', testRegisterVKs(ctx), 30000)
+    it('coordinator can register vks', testRegisterVKs(ctx))
     it('alice, bob, and carl cannot register vks', testRegisterVKFails(ctx))
   })
   describe('3: Complete setup', () => {
     // Wallets were initialized with empty vks because they were not registered on chain yet.
     // Therefore update the verifying keys after complete the setup process. This process is only needed in this integration test.
-    afterAll(updateVerifyingKeys(ctx))
+    after(updateVerifyingKeys(ctx))
     describe('3-1: before completeSetup() called', () => {
       it('should allow only the coordinator', testCompleteSetup(ctx))
     })
@@ -138,17 +146,13 @@ describe('testnet', () => {
       it('erc721: Carl deposits NFTs', depositERC721(ctx))
     })
     describe('4-2: coordinator commits MassDeposit', () => {
-      it(
-        'coordinator should have 5 pending deposits',
-        testMassDeposits(ctx),
-        30000,
-      )
+      it('coordinator should have 5 pending deposits', testMassDeposits(ctx))
     })
   })
   describe('5: Coordinator create the first block', () => {
     let prevGroveSnapshot!: GroveSnapshot
     let newGroveSnapshot!: GroveSnapshot
-    beforeAll(async () => {
+    before(async () => {
       const { coordinator } = ctx()
       prevGroveSnapshot = await coordinator.layer2().grove.getSnapshot()
     })
@@ -157,30 +161,28 @@ describe('testnet', () => {
       it('should register "coordinator" account', registerCoordinator(ctx))
     })
     describe('coordinator creates the first block when the aggregated fee is enough', () => {
-      afterAll(async () => {
+      after(async () => {
         const { coordinator } = ctx()
         newGroveSnapshot = await coordinator.layer2().grove.getSnapshot()
       })
       it(
         'should propose a new block within a few seconds',
         waitCoordinatorToProposeANewBlock(ctx),
-        30000,
       )
       it(
         'should process the new submitted block',
         waitCoordinatorToProcessTheNewBlock(ctx),
-        90000,
       )
     })
     describe('new block should update trees', () => {
       it('should increase utxo index to at least 32(sub tree size)', () => {
-        expect(
-          prevGroveSnapshot.utxoTreeIndex.addn(32).toString(),
-        ).toStrictEqual(newGroveSnapshot.utxoTreeIndex.toString())
+        expect(prevGroveSnapshot.utxoTreeIndex.add(32)).to.eq(
+          newGroveSnapshot.utxoTreeIndex,
+        )
       })
       it('should update the utxo root', () => {
-        expect(prevGroveSnapshot.utxoTreeRoot.toString()).not.toStrictEqual(
-          newGroveSnapshot.utxoTreeRoot.toString(),
+        expect(prevGroveSnapshot.utxoTreeRoot).not.to.eq(
+          newGroveSnapshot.utxoTreeRoot,
         )
       })
     })
@@ -188,7 +190,6 @@ describe('testnet', () => {
       it(
         'wallets should have updated processed block number',
         testBlockSync(ctx),
-        60000,
       )
     })
   })
@@ -204,35 +205,34 @@ describe('testnet', () => {
       prevLatestBlock,
     })
     describe('users send zk txs to the coordinator', () => {
-      beforeAll(async () => {
+      before(async () => {
+        const { fixtureProvider } = ctx()
         do {
           const latest = await context.coordinator.node().layer2.latestBlock()
           if (latest !== null) {
             prevLatestBlock = latest
             break
           }
+          await fixtureProvider.advanceBlock(8)
           await sleep(1000)
         } while (!prevLatestBlock)
-      }, 30000)
+      })
       it('create 3 transactions: alice transfer 1 Ether to Bob. Bob transfer 1 ERC20 to Carl, and Carl transfer 1 nft to Alice', async () => {
         aliceTransfer = await buildZkTxAliceSendEthToBob(ctx)
         bobTransfer = await buildZkTxBobSendErc20ToCarl(ctx)
         carlTransfer = await buildZkTxCarlSendNftToAlice(ctx)
-      }, 300000)
+      })
       it(
         'they should send zk transactions to the coordinator',
         testRound1SendZkTxsToCoordinator(ctx, subCtx),
-        60000,
       )
       it(
         'coordinator should propose a new block and wallet clients subscribe them',
         testRound1NewBlockProposal(ctx, subCtx),
-        600000,
       )
       it(
         'wallets should have new spendable utxos as they sync the new block',
         testRound1NewSpendableUtxos(ctx),
-        40000,
       )
     })
   })
@@ -253,41 +253,39 @@ describe('testnet', () => {
     })
 
     describe('users send swap zk txs to the coordinator', () => {
-      beforeAll(async () => {
+      before(async () => {
+        const { fixtureProvider } = ctx()
         do {
           const latest = await context.coordinator.node().layer2.latestBlock()
           if (latest !== null) {
             prevLatestBlock = latest
             break
           }
+          await fixtureProvider.advanceBlock(8)
           await sleep(1000)
         } while (!prevLatestBlock)
 
         aliceSpendablesBefore = await context.wallets.alice.getSpendableAmount()
         bobSpendablesBefore = await context.wallets.bob.getSpendableAmount()
-      }, 30000)
+      })
 
       it('create 2 transactions: alice and bob swap 1 Ether and 1 ERC20', async () => {
         aliceSwap = await round4Tx1(ctx)
         bobSwap = await round4Tx2(ctx)
-      }, 300000)
+      })
 
       it(
         'they should send zk transactions to the coordinator',
         testRound4SendZkTxsToCoordinator(ctx, subCtx),
-        600000,
       )
-
       it(
         'coordinator should propose a new block and wallet clients detect them',
         testRound4NewBlockProposal(ctx, subCtx),
-        600000,
       )
 
       it(
         'wallets should have new spendables as they sync new block',
         testRound4NewSpendableUtxos(ctx, subCtx),
-        40000,
       )
     })
   })
@@ -304,35 +302,34 @@ describe('testnet', () => {
       prevLatestBlock,
     })
     describe('users withdraw their assets from the layer 2', () => {
-      beforeAll(async () => {
+      before(async () => {
+        const { fixtureProvider } = ctx()
         do {
           const latest = await context.coordinator.node().layer2.latestBlock()
           if (latest !== null) {
             prevLatestBlock = latest
             break
           }
+          await fixtureProvider.advanceBlock(8)
           await sleep(1000)
         } while (!prevLatestBlock)
-      }, 30000)
+      })
       it('create 3 transactions: alice withdraw 1 NFT. Bob withdraw 1 ETH, and Carl withdraw 1 ERC20', async () => {
         aliceWithdrawal = await buildZkTxAliceWithrawNFT(ctx)
         bobWithdrawal = await buildZkTxBobWithdrawEth(ctx)
         carlWithdrawal = await buildZkTxCarlWithdrawErc20(ctx)
-      }, 300000)
+      })
       it(
         'they should send zk transactions to the coordinator',
         testRound2SendZkTxsToCoordinator(ctx, subCtx),
-        60000,
       )
       it(
         'coordinator should propose a new block and wallet clients subscribe them',
         testRound2NewBlockProposal(ctx, subCtx),
-        600000,
       )
       it(
         'wallets should have new spendable utxos as they sync the new block',
         testRound2NewSpendableUtxos(ctx),
-        40000,
       )
     })
   })
@@ -352,29 +349,22 @@ describe('testnet', () => {
       )
     })
     describe('coordinator prepays ETH for Bob', () => {
-      it(
-        'should transfer 1 ETH to Bob',
-        payForEthWithdrawalInAdvance(ctx),
-        30000,
-      )
+      it('should transfer 1 ETH to Bob', payForEthWithdrawalInAdvance(ctx))
     })
   })
   describe('9: Mass Tx', () => {
-    it('alice deposit ether 33 times', aliceDepositEthers33Times(ctx), 60000)
+    it('alice deposit ether 33 times', aliceDepositEthers33Times(ctx))
     it(
       'commit mass deposit and wait for the block proposal',
       commitMassDeposit(ctx),
-      60000,
     )
     it(
       'wait coordinator propose a new block with 33 deposits',
       waitCoordinatorToProposeANewBlockFor33Deposits(ctx),
-      300000,
     )
     it(
       'wait coordinator process the block',
       waitCoordinatorToProcessTheNewBlockFor33Deposits(ctx),
-      300000,
     )
   })
   describe('10: Zk Transactions round 3', () => {
@@ -391,20 +381,55 @@ describe('testnet', () => {
         aliceTransfer = await round3Tx1(ctx)
         bobTransfer = await round3Tx2(ctx)
         carlTransfer = await round3Tx3(ctx)
-      }, 300000)
+      })
       it(
         'they should send zk transactions to the coordinator & coordinator creates an invalid block',
         testRound3SendZkTxsToCoordinator(ctx, subCtx),
-        60000,
       )
       it(
         'coordinator proposes an invalid block and gets slashed',
         testRound3NewBlockProposalAndSlashing(ctx),
-        600000,
       )
     })
   })
-  describe.skip('11: Migration', () => {
-    it.todo('please add test scenarios here')
+  describe(`11: bidding test by two coordinators`, () => {
+    let bidArguments: {
+      round: BigNumber
+      targetRound: BigNumber
+      minBid: BigNumber
+      minNextBid: BigNumber
+    }
+    const getBidArguments = () => bidArguments
+    describe(`register A new coordinator`, () => {
+      it(`new coordinator trying to bid without staking`, testInvalidBid(ctx)),
+        it(
+          `new coordinator stake Eth can be coordinator`,
+          stakeForBeingCoordintor(ctx),
+        ),
+        it(
+          `new coordinator set url to being active`,
+          setUrlForActiveCoordinator(ctx),
+        )
+    })
+    describe(`coordinator and newCoordinator bid slots`, () => {
+      it(`initialize testing condition and get arguments for testing`, async () => {
+        bidArguments = await initializeAuctionConditions(ctx)
+      })
+      it(
+        `coordinator bid slots to be highest bidder`,
+        bidSlotsByCoordinator(ctx, getBidArguments),
+      )
+      it(
+        `new coordinator bid the slot placed highest bidder as the coordinator`,
+        bidSlotByNewCoordinator(ctx, getBidArguments),
+      )
+      it(
+        `the coordinator take back highest bidder the slot taken by highest bidder`,
+        bidSlotsAgainByCoordinator(ctx, getBidArguments),
+      )
+    })
+  })
+  describe('12: Migration', () => {
+    it('please add test scenarios here')
   })
 })

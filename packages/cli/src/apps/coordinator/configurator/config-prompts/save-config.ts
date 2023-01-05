@@ -1,12 +1,16 @@
 import chalk from 'chalk'
 import path from 'path'
 import fs from 'fs'
+import { Wallet } from 'ethers'
 import Configurator, { Context, Menu } from '../configurator'
 
 export default class SaveConfig extends Configurator {
   static code = Menu.SAVE_CONFIG
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
+    if (!context.provider || !context.keystore)
+      throw Error('provider and keystore is not configured')
+
     const { save } = await this.ask({
       type: 'confirm',
       initial: true,
@@ -34,9 +38,12 @@ export default class SaveConfig extends Configurator {
         })
         password = retyped
         try {
-          if (!context.web3 || !context.keystore)
-            throw Error('web3 or keystore is not configured')
-          context.web3.eth.accounts.decrypt(context.keystore, password)
+          const wallet = Wallet.fromEncryptedJsonSync(
+            JSON.stringify(context.keystore),
+            password,
+          )
+          if (wallet.address != (await context.account?.getAddress()))
+            throw Error('Password is incorrect')
           confirmed = true
         } catch (err) {
           confirmed = false

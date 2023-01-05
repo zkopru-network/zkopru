@@ -1,9 +1,9 @@
+import { TransactionRequest } from '@ethersproject/providers'
 import * as Utils from '@zkopru/utils'
 import { logger } from '@zkopru/utils'
 import { Block, Header, serializeHeader } from '../block'
 import {
   BlockData,
-  ChallengeTx,
   FnCall,
   HeaderData,
   OffchainValidateFn,
@@ -70,7 +70,7 @@ export async function validateBothOnAndOff(
   onchainValidator: OnchainValidateFn,
   offchainValidator: OffchainValidateFn,
   fnCalls: FnCall[],
-): Promise<ChallengeTx | undefined> {
+): Promise<TransactionRequest | undefined> {
   const offchainResult: Validation[] = await Promise.all(
     fnCalls.map(funcs => offchainValidator[funcs.name](...funcs.args)),
   )
@@ -92,7 +92,7 @@ export async function validateBothOnAndOff(
 export async function validateOnchain(
   onchainValidator: OnchainValidateFn,
   fnCalls: FnCall[],
-): Promise<ChallengeTx | undefined> {
+): Promise<TransactionRequest | undefined> {
   const onchainResult: Validation[] = await Promise.all(
     fnCalls.map(funcs => onchainValidator[funcs.name](...funcs.args)),
   )

@@ -3,9 +3,9 @@ import * as ffjs from 'ffjavascript'
 import * as circomlib from 'circomlib'
 import createBlakeHash from 'blake-hash'
 import BN from 'bn.js'
+import { BigNumberish } from 'ethers'
 import { Fp } from './fp'
 import { Fr } from './fr'
-import { F } from './types/ff'
 
 export class Point {
   x: Fp
@@ -22,11 +22,11 @@ export class Point {
 
   static zero = Point.from(0, 1)
 
-  static from(x: F, y: F) {
+  static from(x: BigNumberish, y: BigNumberish) {
     return new Point(Fp.from(x), Fp.from(y))
   }
 
-  static fromY(y: F, xOdd: boolean): Point {
+  static fromY(y: BigNumberish, xOdd: boolean): Point {
     const redY = Fp.from(y).toRed()
     const y2 = redY.redSqr()
     const D = Point.D.toRed()
@@ -39,9 +39,14 @@ export class Point {
       .redSqrt()
       .fromRed()
     if (x.isOdd() === xOdd) {
-      return Point.from(x, y)
+      return Point.from(x.toString(), y)
     }
-    return Point.from(x.neg(), y)
+    return Point.from(
+      Fp.from(x.toString())
+        .neg()
+        .toString(),
+      y,
+    )
   }
 
   static fromHex(hex: string) {
@@ -55,10 +60,10 @@ export class Point {
     const yBuff = Buffer.from(packed)
     yBuff[31] &= 0x7f // clear the most significant bit
     const y = new BN(yBuff, 'le')
-    return Point.fromY(y, oddX)
+    return Point.fromY(y.toString(), oddX)
   }
 
-  static generate(n: F): Point {
+  static generate(n: BigNumberish): Point {
     return Point.BASE8.mul(Fr.from(n))
   }
 
@@ -87,7 +92,7 @@ export class Point {
     return Fr.from(multiplier)
   }
 
-  static isOnJubjub(x: F, y: F): boolean {
+  static isOnJubjub(x: BigNumberish, y: BigNumberish): boolean {
     return circomlib.babyJub.inCurve([
       Fp.from(x).toBigInt(),
       Fp.from(y).toBigInt(),
@@ -99,7 +104,7 @@ export class Point {
     const buff = this.y.toBuffer('le', 32)
     if ((buff[31] & 0x80) !== 0)
       throw Error('The MSB of the final octet should be zero')
-    if (this.x.isOdd()) {
+    if (!this.x.and(1).isZero()) {
       buff[31] |= 0x80
     }
     return buff
@@ -123,7 +128,7 @@ export class Point {
     return Point.from(result[0].toString(), result[1].toString())
   }
 
-  mul(n: F): Point {
+  mul(n: BigNumberish): Point {
     const result = circomlib.babyJub.mulPointEscalar(
       [this.x.toBigInt(), this.y.toBigInt()],
       Fr.from(n).toBigInt(),

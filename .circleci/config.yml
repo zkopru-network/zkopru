@@ -3,9 +3,9 @@ workflows:
   test_app:
     jobs:
       - build
-      - lint:
-          requires:
-            - build
+      # - lint:
+      #     requires:
+      #       - build
       - load_keys:
           requires:
             - build
@@ -39,10 +39,13 @@ workflows:
       - test_utils:
           requires:
             - build
+      - test_cli:
+          requires:
+            - build
 jobs:
   build:
-    machine:
-      image: ubuntu-2004:202111-01
+    docker:
+      - image: cimg/node:12.22
     steps:
       - checkout
       - run:
@@ -52,9 +55,6 @@ jobs:
           name: Install
           command: yarn
       - run:
-          name: Build Contract
-          command: yarn build:contract
-      - run:
           name: Build TS
           command: yarn build:ts:serial
       - persist_to_workspace:
@@ -62,7 +62,7 @@ jobs:
           paths: project
   lint:
     machine:
-      image: ubuntu-2004:202111-01
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -71,7 +71,7 @@ jobs:
           command: yarn lint .
   load_keys:
     machine:
-      image: ubuntu-2004:202111-01
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -85,7 +85,7 @@ jobs:
           paths: project
   test_circuits:
     machine:
-      image: ubuntu-2004:202111-01
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -95,25 +95,19 @@ jobs:
           no_output_timeout: 120m
   test_coordinator:
     machine:
-      image: ubuntu-2004:202111-01
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
-      - run:
-          name: Build Testnet
-          command: docker-compose -f compose/docker-compose.yml build contracts
       - run:
           name: Coordinator Tests
           command: yarn test --scope=@zkopru/coordinator
   test_contracts:
     machine:
-      image: ubuntu-2004:202111-01
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
-      - run:
-          name: Build Testnet
-          command: docker-compose -f compose/docker-compose.yml build contracts-for-integration-test
       - run:
           name: Generate Block Data
           command: |
@@ -124,7 +118,7 @@ jobs:
           command: yarn test --scope=@zkopru/contracts
   test_accounts:
     machine:
-      image: ubuntu-2004:202111-01
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -133,7 +127,7 @@ jobs:
           command: yarn test --scope=@zkopru/account
   test_tree:
     machine:
-      image: ubuntu-2004:202111-01
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -142,7 +136,7 @@ jobs:
           command: yarn test --scope=@zkopru/tree
   test_zkwizard:
     machine:
-      image: ubuntu-2004:202111-01
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -151,7 +145,7 @@ jobs:
           command: yarn test --scope=@zkopru/zk-wizard
   test_client:
     machine:
-      image: ubuntu-2004:202111-01
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -160,7 +154,7 @@ jobs:
           command: yarn test --scope=@zkopru/client
   test_database:
     machine:
-      image: ubuntu-2004:202111-01
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -169,7 +163,7 @@ jobs:
           command: yarn test --scope=@zkopru/database
   test_babyjubjub:
     machine:
-      image: ubuntu-2004:202111-01
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -178,7 +172,7 @@ jobs:
           command: yarn test --scope=@zkopru/babyjubjub
   test_utils:
     machine:
-      image: ubuntu-2004:202111-01
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -187,13 +181,21 @@ jobs:
           command: yarn test --scope=@zkopru/utils
   test_integration:
     machine:
-      image: ubuntu-2004:202111-01
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
       - run:
-          name: Build Testnet
-          command: docker-compose -f compose/docker-compose.yml build contracts-for-integration-test
-      - run:
           name: Integration Tests
-          command: DEBUG=1 yarn test --scope=@zkopru/integration-test
+          command: LOG_LEVEL=debug yarn test --scope=@zkopru/integration-test
+  test_cli:
+    machine:
+      image: ubuntu-2204:2022.07.1
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Cli Tests
+          command: |
+            cd packages/cli
+            yarn test

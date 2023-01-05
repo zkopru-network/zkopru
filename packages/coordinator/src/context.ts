@@ -1,6 +1,5 @@
 import { FullNode } from '@zkopru/core'
-import BN from 'bn.js'
-import { Account } from 'web3-core'
+import { BigNumber, Signer } from 'ethers'
 import { TxPoolInterface } from './tx-pool'
 import { AuctionMonitor } from './auction-monitor'
 
@@ -10,6 +9,7 @@ export interface CoordinatorConfig {
   port: number
   priceMultiplier: number // gas per byte is 16, our default value is 32
   maxBid: number
+  maxPriorityFeePerGas?: number
   publicUrls?: string
   vhosts: string
   corsdomain?: string
@@ -20,9 +20,9 @@ export interface CoordinatorContext {
 
   node: FullNode
 
-  account: Account
+  account: Signer
 
-  gasPrice?: BN
+  effectiveGasPrice?: BigNumber
 
   txPool: TxPoolInterface
 

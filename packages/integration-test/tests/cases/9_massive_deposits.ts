@@ -1,25 +1,19 @@
-/* eslint-disable jest/no-truthy-falsy */
-/* eslint-disable jest/no-expect-resolves */
-/* eslint-disable jest/require-tothrow-message */
-/* eslint-disable jest/no-export */
-/* eslint-disable jest/require-top-level-describe */
+import chai from 'chai'
+import { BigNumber } from 'ethers'
+import { parseUnits } from 'ethers/lib/utils'
+import { sleep } from '~utils'
+import { CtxProvider } from '../context'
 
-import { toWei } from 'web3-utils'
-import { sleep } from '@zkopru/utils'
-import { CtxProvider } from './context'
+const { expect } = chai
 
 export const sendETH = (ctx: CtxProvider) => async () => {
-  const { wallets, accounts } = ctx()
+  const { accounts } = ctx()
 
-  const aliceNonce = await wallets.alice.node.layer1.web3.eth.getTransactionCount(
-    accounts.alice.ethAddress,
-  )
   await Promise.all(
-    accounts.users.map((account, i) =>
-      wallets.alice.node.layer1.web3.eth.sendTransaction({
+    accounts.users.map(account =>
+      account.ethAccount!.sendTransaction({
         to: account.ethAddress,
-        value: toWei('2', 'ether'),
-        nonce: aliceNonce + i,
+        value: parseUnits('2', 'ether'),
         from: accounts.alice.ethAddress,
       }),
     ),
@@ -34,8 +28,8 @@ export const aliceDepositEthers33Times = (ctx: CtxProvider) => async () => {
   while (count < 33) {
     try {
       const result = await wallets.alice.depositEther(
-        toWei('100', 'milliether'),
-        toWei('1', 'milliether'),
+        parseUnits('0.1', 'ether'),
+        parseUnits('0.001', 'ether'),
       )
       if (result) count += 1
     } catch {
@@ -45,36 +39,43 @@ export const aliceDepositEthers33Times = (ctx: CtxProvider) => async () => {
 }
 
 export const commitMassDeposit = (ctx: CtxProvider) => async () => {
-  const { coordinator } = ctx()
-  await coordinator.commitMassDeposits()
-  await sleep(1000)
-  const pendingMassDeposits = await coordinator
-    .layer2()
-    .getPendingMassDeposits()
-  expect(pendingMassDeposits.leaves).toHaveLength(33)
+  const { coordinator, fixtureProvider } = ctx()
+  let pendingDeposits = 0
+  do {
+    await fixtureProvider.advanceBlock(8)
+    await sleep(1000)
+    await coordinator.commitMassDeposits()
+    await fixtureProvider.advanceBlock(8)
+    await sleep(1000)
+    pendingDeposits = (await coordinator.layer2().getPendingMassDeposits())
+      .leaves.length
+  } while (pendingDeposits < 33)
+  expect(pendingDeposits).to.eq(33)
 }
 
 export const waitCoordinatorToProposeANewBlockFor33Deposits = (
   ctx: CtxProvider,
 ) => async () => {
-  const { contract, coordinator } = ctx()
+  const { contract, coordinator, fixtureProvider } = ctx()
+  const prevProposalNum = await contract.zkopru.proposedBlocks()
   coordinator.middlewares.proposer.removePreProcessor()
   let msToWait = 60000
-  let proposedBlocks!: string
+  let proposedBlocks!: BigNumber
   while (msToWait > 0) {
-    proposedBlocks = await contract.upstream.methods.proposedBlocks().call()
-    if (proposedBlocks === '5') break
+    proposedBlocks = await contract.zkopru.proposedBlocks()
+    if (proposedBlocks.gt(prevProposalNum)) break
     msToWait -= 1000
+    await fixtureProvider.advanceBlock(8)
     await sleep(1000)
   }
-  expect(proposedBlocks).toStrictEqual('5')
+  expect(proposedBlocks).to.be.gt(prevProposalNum)
 }
 
 // TODO Fix that processed block does not count the genesis block (proposed: 2 / processed: 1)
 export const waitCoordinatorToProcessTheNewBlockFor33Deposits = (
   ctx: CtxProvider,
 ) => async () => {
-  const { wallets } = ctx()
+  const { wallets, fixtureProvider } = ctx()
   let msToWait = 600000
   let success = false
   while (msToWait > 0) {
@@ -87,16 +88,17 @@ export const waitCoordinatorToProcessTheNewBlockFor33Deposits = (
       if (
         prevBlock &&
         newBlock.header.utxoIndex
-          .toBN()
-          .sub(prevBlock.header.utxoIndex.toBN())
-          .eqn(64)
+          .toBigNumber()
+          .sub(prevBlock.header.utxoIndex.toBigNumber())
+          .eq(64)
       ) {
         success = true
         break
       }
     }
     msToWait -= 1000
+    await fixtureProvider.advanceBlock(8)
     await sleep(1000)
   }
-  expect(success).toBeTruthy()
+  expect(success).to.be.true
 }

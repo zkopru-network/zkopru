@@ -1,6 +1,6 @@
-import { hexToBuffer } from '@zkopru/utils'
 import * as circomlib from 'circomlib'
-import { F } from './types/ff'
+import { BigNumberish, BytesLike } from 'ethers'
+import { arrayify } from 'ethers/lib/utils'
 import { Fp } from './fp'
 import { Point } from './point'
 
@@ -9,7 +9,11 @@ export interface EdDSA {
   S: Fp
 }
 
-export function verifyEdDSA(msg: F, sig: EdDSA, pubKey: Point): boolean {
+export function verifyEdDSA(
+  msg: BigNumberish,
+  sig: EdDSA,
+  pubKey: Point,
+): boolean {
   const result = circomlib.eddsa.verifyPoseidon(
     Fp.from(msg).toBigInt(),
     {
@@ -25,11 +29,10 @@ export function signEdDSA({
   msg,
   privKey,
 }: {
-  msg: F
-  privKey: Buffer | string
+  msg: BigNumberish
+  privKey: BytesLike
 }): EdDSA {
-  const buff: Buffer =
-    typeof privKey === 'string' ? hexToBuffer(privKey) : privKey
+  const buff: Buffer = Buffer.from(arrayify(privKey))
   const result = circomlib.eddsa.signPoseidon(buff, Fp.from(msg).toBigInt())
   return {
     R8: Point.from(result.R8[0].toString(), result.R8[1].toString()),

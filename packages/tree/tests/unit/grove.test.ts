@@ -1,13 +1,13 @@
 /* eslint-disable jest/no-disabled-tests */
 
 import BN from 'bn.js'
-import { toBN } from 'web3-utils'
 import SparseTree from 'simple-smt'
 import { DB, SQLiteConnector, schema } from '~database/node'
 import { Fp } from '~babyjubjub'
 import { Grove, poseidonHasher, keccakHasher, Leaf } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
 import { accounts, address } from '~dataset/testset-predefined'
+import { BigNumber } from 'ethers'
 
 /* eslint-disable jest/no-hooks */
 describe('grove full sync grove()', () => {
@@ -65,10 +65,10 @@ describe('grove full sync grove()', () => {
         note,
         shouldTrack: true,
       }))
-      const withdrawalsToAppend: Leaf<BN>[] = [
+      const withdrawalsToAppend: Leaf<BigNumber>[] = [
         utxos.utxo1_in_1.toWithdrawal({ to: address.USER_A, fee: 1 }),
       ].map(note => ({
-        hash: note.withdrawalHash().toBN(),
+        hash: note.withdrawalHash().toBigNumber(),
         noteHash: note.hash(),
         shouldTrack: true,
       }))
@@ -94,9 +94,9 @@ describe('grove full sync grove()', () => {
       )
       expect(prevResult.nullifierRoot).toBeDefined()
       expect(postResult.nullifierRoot).toBeDefined()
-      expect(
-        prevResult.nullifierRoot?.eq(postResult.nullifierRoot || new BN(0)),
-      ).toBe(true)
+      expect(prevResult.nullifierRoot?.eq(postResult.nullifierRoot || 0)).toBe(
+        true,
+      )
     }, 60000)
   })
   describe('applyPatch()', () => {
@@ -108,10 +108,10 @@ describe('grove full sync grove()', () => {
         hash: note.hash(),
         note,
       }))
-      const withdrawalsToAppend: Leaf<BN>[] = [
+      const withdrawalsToAppend: Leaf<BigNumber>[] = [
         utxos.utxo1_in_1.toWithdrawal({ to: address.USER_A, fee: 1 }),
       ].map(note => ({
-        hash: note.withdrawalHash().toBN(),
+        hash: note.withdrawalHash().toBigNumber(),
         noteHash: note.hash(),
         shouldTrack: true,
       }))
@@ -135,9 +135,9 @@ describe('grove full sync grove()', () => {
       expect(result.withdrawalIndex.eq(expected.withdrawalTreeIndex)).toBe(true)
       expect(result.nullifierRoot).toBeDefined()
       expect(expected.nullifierTreeRoot).toBeDefined()
-      expect(
-        result.nullifierRoot?.eq(expected.nullifierTreeRoot || new BN(0)),
-      ).toBe(true)
+      expect(result.nullifierRoot?.eq(expected.nullifierTreeRoot || 0)).toBe(
+        true,
+      )
     }, 300000)
   })
   describe('light sync grove - applyBootstrap()', () => {
@@ -151,7 +151,7 @@ describe('grove full sync grove()', () => {
         },
         withdrawalStartingLeafProof: {
           ...(await withdrawalTree.getStartingLeafProof()),
-          leaf: toBN(0),
+          leaf: BigNumber.from(0),
         },
       }
 
@@ -190,14 +190,13 @@ describe('grove full sync grove()', () => {
           .latestLeafIndex()
           .eq(fullSyncGrove.withdrawalTree.latestLeafIndex()),
       ).toBe(true)
-      await mockup.close()
     })
   })
   describe('merkle proof', () => {
     it('should generate valid merkle proof', async () => {
       const depth = 31
       const { parentOf, preHash } = keccakHasher(depth)
-      const testTree = new SparseTree<BN>({
+      const testTree = new SparseTree<BigNumber>({
         depth: depth + 1,
         rightToLeft: true,
         hashFn: (item1, item2) => {
@@ -246,11 +245,13 @@ describe('grove full sync grove()', () => {
       testGrove.treeCache.clear()
       const fill = Array(32 - withdrawals.length)
         .fill(null)
-        .map(() => ({ hash: new BN('0') }))
+        .map(() => ({ hash: BigNumber.from(0) }))
       await testDB.transaction(async db => {
         await testGrove.withdrawalTree.append(
           [
-            ...withdrawals.map(w => ({ hash: new BN(w.withdrawalHash) })),
+            ...withdrawals.map(w => ({
+              hash: BigNumber.from(w.withdrawalHash),
+            })),
             ...fill,
           ],
           db,
@@ -258,7 +259,7 @@ describe('grove full sync grove()', () => {
         for (let x = 0; x < withdrawals.length; x += 1) {
           await testGrove.withdrawalMerkleProof(
             withdrawals[x].withdrawalHash,
-            new BN(x),
+            BigNumber.from(x),
           )
         }
       })

@@ -10,12 +10,12 @@ export class OnchainUtxoTreeValidator extends OnchainValidatorContext
     parentHeader: HeaderData,
     deposits: Uint256[],
   ): Promise<Validation> {
-    const tx = this.layer1.validators.utxoTree.methods.validateUTXOIndex(
+    const tx = await this.layer1.validators.utxoTree.populateTransaction.validateUTXOIndex(
       blockDataToHexString(block),
       headerDataToHexString(parentHeader),
-      deposits.map(d => d.toString()),
+      deposits.map(d => d.toBigNumber()),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'UTXOIndex')
     return result
   }
 
@@ -25,13 +25,13 @@ export class OnchainUtxoTreeValidator extends OnchainValidatorContext
     deposits: Uint256[],
     subtreeSiblings: Uint256[],
   ): Promise<Validation> {
-    const tx = this.layer1.validators.utxoTree.methods.validateUTXORoot(
+    const tx = await this.layer1.validators.utxoTree.populateTransaction.validateUTXORoot(
       blockDataToHexString(block),
       headerDataToHexString(parentHeader),
-      deposits.map(d => d.toString()),
-      subtreeSiblings.map(d => d.toString()),
+      deposits.map(d => d.toBigNumber()),
+      subtreeSiblings.map(d => d.toBigNumber()),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'UTXORoot')
     return result
   }
 }

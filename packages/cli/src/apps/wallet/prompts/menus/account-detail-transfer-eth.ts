@@ -1,7 +1,14 @@
+import chalk from 'chalk'
 import { Fp } from '@zkopru/babyjubjub'
 import { Sum, TxBuilder, RawTx, Utxo, ZkAddress } from '@zkopru/transaction'
-import { parseStringToUnit, logger } from '@zkopru/utils'
-import { fromWei, toBN, toWei } from 'web3-utils'
+import { logger } from '@zkopru/utils'
+import { BigNumber } from 'ethers'
+import {
+  formatEther,
+  formatUnits,
+  parseEther,
+  parseUnits,
+} from 'ethers/lib/utils'
 import App, { AppMenu, Context } from '..'
 
 export default class TransferEth extends App {
@@ -19,27 +26,30 @@ export default class TransferEth extends App {
       weiPerByte = await wallet.fetchPrice()
     } catch (err) {
       logger.error('price fetch error')
-      logger.error(err.toString())
+      if (err instanceof Error) logger.error(err.toString())
       throw err
     }
-    const regularPrice = fromWei(
-      toBN(weiPerByte || '0')
-        .muln(566) // 566 : for 2 inputs & 2 outputs
+    const regularPrice = formatUnits(
+      BigNumber.from(weiPerByte || '0')
+        .mul(566) // 566 : for 2 inputs & 2 outputs
         .toString(),
       'ether',
     )
     const messages: string[] = []
     messages.push(`Account: ${account.zkAddress.toString()}`)
-    messages.push(`Spendable ETH: ${fromWei(spendableAmount.eth, 'ether')}`)
+    messages.push(`Spendable ETH: ${formatUnits(spendableAmount.eth, 'ether')}`)
     messages.push(
-      `Recommended fee per byte: ${fromWei(weiPerByte, 'gwei')} gwei / byte`,
+      `Recommended fee per byte: ${formatUnits(
+        weiPerByte,
+        'gwei',
+      )} gwei / byte`,
     )
     messages.push(
       `You may spend ${regularPrice} ETH to send a 566 bytes size tx.`,
     )
     this.print(messages.join('\n'))
     let amountWei: string
-    let confirmedWeiPerByte: string
+    let confirmedWeiPerByte: BigNumber
     let tx!: RawTx
     let to!: ZkAddress
     do {
@@ -54,31 +64,48 @@ export default class TransferEth extends App {
         to = new ZkAddress(zkAddress)
       } catch (err) {
         logger.error(`Failed to get a point from ${zkAddress}`)
-        logger.error(err)
+        if (err instanceof Error) logger.error(err)
       }
-      const { amount } = await this.ask({
-        type: 'text',
-        name: 'amount',
-        initial: 0,
-        message: 'How much ETH do you want to transfer(ex: 0.3 ETH)?',
-      })
-      const eth = parseStringToUnit(amount, 'ether')
-      amountWei = toWei(eth.val, eth.unit).toString()
-      msgs.push(`Sending amount: ${fromWei(amountWei, 'ether')} ETH`)
+      let formatedAmount
+      do {
+        const { amount } = await this.ask({
+          type: 'text',
+          name: 'amount',
+          initial: 0,
+          message: 'How much ETH do you want to transfer(ex: 0.3 ETH)?',
+        })
+        formatedAmount = parseFloat(amount)
+        if (!isNaN(formatedAmount)) {
+          break
+        }
+        this.print(chalk.red('integer or float number only'))
+      } while (true)
+      amountWei = parseEther(formatedAmount.toString()).toString()
+      msgs.push(`Sending amount: ${formatEther(amountWei)} ETH`)
       msgs.push(`    = ${amountWei} wei`)
       this.print([...messages, ...msgs].join('\n'))
-      const gweiPerByte = fromWei(weiPerByte, 'gwei')
-      const { fee } = await this.ask({
-        type: 'text',
-        name: 'fee',
-        initial: `${gweiPerByte} gwei`,
-        message: `Fee per byte. ex) ${gweiPerByte} gwei`,
-      })
-      const confirmedWei = parseStringToUnit(fee, 'gwei')
-      confirmedWeiPerByte = toWei(confirmedWei.val, confirmedWei.unit)
+      const gweiPerByte = formatUnits(weiPerByte, 'gwei')
+      let formatedFee
+      do {
+        const { fee } = await this.ask({
+          type: 'text',
+          name: 'fee',
+          initial: `${gweiPerByte} gwei`,
+          message: `Fee per byte. ex) ${gweiPerByte} gwei`,
+        })
+        formatedFee = parseFloat(fee)
+        if (!isNaN(formatedFee)) {
+          break
+        }
+        this.print(chalk.red('integer or float number only'))
+      } while (true)
+
+      confirmedWeiPerByte = parseUnits(formatedFee.toString(), 'gwei')
       logger.info(`confirmedWeiPerByte: ${confirmedWeiPerByte}`)
-      msgs.push(`Wei per byte: ${fromWei(confirmedWeiPerByte, 'ether')} ETH`)
-      msgs.push(`    = ${fromWei(confirmedWeiPerByte, 'gwei')} gwei`)
+      msgs.push(
+        `Wei per byte: ${formatUnits(confirmedWeiPerByte, 'ether')} ETH`,
+      )
+      msgs.push(`    = ${formatUnits(confirmedWeiPerByte, 'gwei')} gwei`)
       this.print(messages.join('\n'))
 
       const txBuilder = TxBuilder.from(account.zkAddress)
@@ -93,14 +120,15 @@ export default class TransferEth extends App {
           .build()
         this.print(`Succeeded to build a transaction. Start to generate proof`)
       } catch (err) {
-        this.print(`Failed to build transaction \n${err.toString()}`)
+        if (err instanceof Error)
+          this.print(`Failed to build transaction \n${err.toString()}`)
       }
     } while (!tx)
 
     try {
       await wallet.sendTx({ tx, from: account })
     } catch (err) {
-      logger.error(err)
+      if (err instanceof Error) logger.error(err)
       logger.error(tx)
     }
     return { context, next: AppMenu.TRANSFER }

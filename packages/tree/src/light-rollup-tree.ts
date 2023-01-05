@@ -2,40 +2,38 @@
 /* eslint-disable no-underscore-dangle */
 import { Fp } from '@zkopru/babyjubjub'
 import AsyncLock from 'async-lock'
-import BN from 'bn.js'
-import { toBN } from 'web3-utils'
-import { hexify } from '@zkopru/utils'
 import { DB, TreeSpecies, TransactionDB } from '@zkopru/database'
+import { BigNumber } from 'ethers'
 import { Hasher } from './hasher'
 import { MerkleProof, startingLeafProof, verifyProof } from './merkle-proof'
 import { TreeCache } from './utils'
 
-export interface Leaf<T extends Fp | BN> {
+export interface Leaf<T extends Fp | BigNumber> {
   hash: T
   noteHash?: Fp
   shouldTrack?: boolean
 }
 
-export interface TreeMetadata<T extends Fp | BN> {
+export interface TreeMetadata<T extends Fp | BigNumber> {
   id: string
   species: number
   start: T
   end: T
 }
 
-export interface TreeData<T extends Fp | BN> {
+export interface TreeData<T extends Fp | BigNumber> {
   root: T
   index: T
   siblings: T[]
 }
 
-export interface TreeConfig<T extends Fp | BN> {
+export interface TreeConfig<T extends Fp | BigNumber> {
   hasher: Hasher<T>
   forceUpdate?: boolean
   fullSync?: boolean
 }
 
-export abstract class LightRollUpTree<T extends Fp | BN> {
+export abstract class LightRollUpTree<T extends Fp | BigNumber> {
   zero?: T
 
   species: TreeSpecies
@@ -83,8 +81,8 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     return this.data.root
   }
 
-  maxSize(): BN {
-    return new BN(1).shln(this.depth)
+  maxSize(): BigNumber {
+    return BigNumber.from(1).shl(this.depth)
   }
 
   latestLeafIndex(): T {
@@ -98,16 +96,16 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
   async init() {
     const saveResult = await this.db.create('LightTree', {
       species: this.species,
-      start: this.metadata.start.toString(10),
-      end: this.metadata.end.toString(10),
+      start: this.metadata.start.toString(),
+      end: this.metadata.end.toString(),
       root:
         this.data.root instanceof Fp
-          ? this.data.root.toString(10)
-          : hexify(this.data.root),
-      index: this.data.index.toString(10),
+          ? this.data.root.toString()
+          : this.data.root.toHexString(),
+      index: this.data.index.toString(),
       siblings: JSON.stringify(
         this.data.siblings.map(sib =>
-          sib instanceof Fp ? sib.toString(10) : hexify(sib),
+          sib instanceof Fp ? sib.toString() : sib.toHexString(),
         ),
       ),
     })
@@ -154,12 +152,14 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
         const item = items[i]
         // if note exists, save the data and mark as an item to keep tracking
         // udpate the latest siblings and save the intermediate value if it needs to be tracked
-        const leafIndex = new BN(1).shln(this.depth).or(index)
+        const leafIndex = BigNumber.from(1)
+          .shl(this.depth)
+          .or(index)
         let node = item.hash
         let hasRightSibling!: boolean
         for (let level = 0; level < this.depth; level += 1) {
-          const pathIndex = leafIndex.shrn(level)
-          hasRightSibling = pathIndex.and(new BN(1)).isZero()
+          const pathIndex = leafIndex.shr(level)
+          hasRightSibling = pathIndex.and(1).isZero()
           if (hasRightSibling) {
             // right empty sibling
             latestSiblings[level] = node // current node will be the next merkle proof's left sibling
@@ -177,9 +177,9 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
         root = node
         // update index
         if (this.zero instanceof Fp) {
-          index = Fp.from(index.addn(1)) as T
+          index = Fp.from(index.add(1)) as T
         } else {
-          index = index.addn(1) as T
+          index = index.add(1) as T
         }
       }
       // update the latest siblings
@@ -199,12 +199,12 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     return this.lock.acquire('root', async () => {
       const index = this.latestLeafIndex()
       const siblings: T[] = [...this.data.siblings]
-      let path: BN = index
+      let path: BigNumber = index
       for (let i = 0; i < this.depth; i += 1) {
-        if (path.isEven()) {
+        if (path.and(1).isZero()) {
           siblings[i] = this.config.hasher.preHash[i]
         }
-        path = path.shrn(1)
+        path = path.shr(1)
       }
       return {
         root: this.root(),
@@ -227,7 +227,7 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     } else {
       const leafCandidates = await this.db.findMany('TreeNode', {
         where: {
-          value: hexify(hash),
+          value: hash.toHexString(),
           treeId: this.metadata.id,
         },
         limit: 1,
@@ -236,8 +236,10 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
       else if (leafCandidates.length > 1)
         throw Error('Multiple leaves exist for same hash.')
       else {
-        const leafNodeIndex: BN = toBN(leafCandidates[0].nodeIndex)
-        const prefix = new BN(1).shln(this.depth)
+        const leafNodeIndex: BigNumber = BigNumber.from(
+          leafCandidates[0].nodeIndex,
+        )
+        const prefix = BigNumber.from(1).shl(this.depth)
         if (this.zero instanceof Fp) {
           leafIndex = Fp.from(leafNodeIndex.xor(prefix)) as T
         } else {
@@ -262,30 +264,32 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
   private async _getSiblings(leafIndex: T): Promise<T[]> {
     const cachedSiblings = await this._getCachedSiblings(leafIndex)
     const siblings = Array(this.depth).fill(undefined)
-    const leafNodeIndex = new BN(1).shln(this.depth).or(leafIndex)
-    let pathNodeIndex!: BN
-    let siblingNodeIndex!: BN
+    const leafNodeIndex = BigNumber.from(1)
+      .shl(this.depth)
+      .or(leafIndex)
+    let pathNodeIndex!: BigNumber
+    let siblingNodeIndex!: BigNumber
     for (let level = 0; level < this.depth; level += 1) {
-      pathNodeIndex = leafNodeIndex.shrn(level)
-      siblingNodeIndex = new BN(1).xor(pathNodeIndex)
+      pathNodeIndex = leafNodeIndex.shr(level)
+      siblingNodeIndex = BigNumber.from(1).xor(pathNodeIndex)
       const usePreHashed: boolean = siblingNodeIndex.gt(
-        new BN(1)
-          .shln(this.depth)
+        BigNumber.from(1)
+          .shl(this.depth)
           .or(this.metadata.end)
-          .shrn(level),
+          .shr(level),
       )
       if (usePreHashed) {
         // should return pre hashed zero
         siblings[level] = this.config.hasher.preHash[level]
       } else {
         // should find the node value
-        const cached = cachedSiblings[hexify(siblingNodeIndex)]
+        const cached = cachedSiblings[siblingNodeIndex.toHexString()]
         if (!cached) {
           siblings[level] = this.config.hasher.preHash[level]
         } else if (this.zero instanceof Fp) {
           siblings[level] = Fp.from(cached)
         } else {
-          siblings[level] = toBN(cached)
+          siblings[level] = BigNumber.from(cached)
         }
       }
     }
@@ -303,7 +307,9 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     )
     const siblingCache = {}
     for (const sibling of cachedSiblings) {
-      siblingCache[sibling.nodeIndex] = hexify(toBN(sibling.value))
+      siblingCache[sibling.nodeIndex] = BigNumber.from(
+        sibling.value,
+      ).toHexString()
     }
     if (
       this.metadata.start?.gt(leafIndex) ||
@@ -336,40 +342,44 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
       const leaf = leaves[i]
       const index = (leaf.hash instanceof Fp
         ? Fp.from(i).add(start)
-        : new BN(i).add(start)) as T
+        : BigNumber.from(i).add(start)) as T
       if (leaf.shouldTrack) {
         trackingLeaves.push(index)
       }
 
       // udpate the latest siblings and save the intermediate value if it needs to be tracked
-      const leafNodeIndex = new BN(1).shln(this.depth).or(index)
+      const leafNodeIndex = BigNumber.from(1)
+        .shl(this.depth)
+        .or(index)
       let node = leaf.hash
       let hasRightSibling!: boolean
       for (let level = 0; level < this.depth; level += 1) {
-        const pathIndex = leafNodeIndex.shrn(level)
-        hasRightSibling = pathIndex.isEven()
+        const pathIndex = leafNodeIndex.shr(level)
+        hasRightSibling = pathIndex.and(1).isZero()
         if (
           this.config.fullSync ||
           this.shouldTrack(trackingLeaves, pathIndex)
         ) {
-          cached[`0x${pathIndex.toString('hex')}`] = hexify(node)
+          cached[pathIndex.toHexString()] = node.toHexString()
         }
 
-        if (index.gtn(0)) {
+        if (index.gt(0)) {
           // store nodes when if the previous sibling set has a node on the tracking path,
           // because the latest siblings are going to be updated.
-          const prevIndexPath = new BN(1).shln(this.depth).or(index.subn(1))
-          const prevPathIndex = prevIndexPath.shrn(level)
-          const prevSibIndex = new BN(1).xor(prevPathIndex)
+          const prevIndexPath = BigNumber.from(1)
+            .shl(this.depth)
+            .or(index.sub(1))
+          const prevPathIndex = prevIndexPath.shr(level)
+          const prevSibIndex = BigNumber.from(1).xor(prevPathIndex)
           if (
-            prevSibIndex.isEven() &&
+            prevSibIndex.and(1).isZero() &&
             (this.config.fullSync ||
               this.shouldTrack(trackingLeaves, prevSibIndex))
           ) {
             // if this should track the sibling node which is not a pre-hashed zero
-            cached[`0x${prevSibIndex.toString('hex')}`] = `0x${latestSiblings[
+            cached[prevSibIndex.toHexString()] = latestSiblings[
               level
-            ].toString('hex')}`
+            ].toHexString()
           }
         }
 
@@ -389,7 +399,7 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
       // update root
       root = node
     }
-    const end: T = start.addn(leaves.length) as T
+    const end: T = start.add(leaves.length) as T
     // update the latest siblings
     const backupData = { ...this.data }
     const backupMetadata = { ...this.metadata }
@@ -409,14 +419,15 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     // Update database
     // update rollup snapshot
     const rollUpSnapshot = {
-      root: root instanceof Fp ? root.toUint256().toString() : hexify(root),
-      index: end.toString(10),
+      root:
+        root instanceof Fp ? root.toUint256().toString() : root.toHexString(),
+      index: end.toString(),
       siblings: JSON.stringify(
         latestSiblings.map(sib =>
-          sib instanceof Fp ? sib.toUint256().toString() : hexify(sib),
+          sib instanceof Fp ? sib.toUint256().toString() : sib.toHexString(),
         ),
       ),
-      end: end.toString(10),
+      end: end.toString(),
     }
     db.upsert('LightTree', {
       where: { species: this.species },
@@ -457,7 +468,7 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     }
   }
 
-  static async initTreeFromDatabase<T extends Fp | BN>({
+  static async initTreeFromDatabase<T extends Fp | BigNumber>({
     db,
     species,
     metadata,
@@ -486,25 +497,24 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
     const existingTree = await db.findOne('LightTree', {
       where: { species },
     })
-    if (
-      !config.forceUpdate &&
-      data.index.lte(toBN(existingTree?.index || '0'))
-    ) {
+    if (!config.forceUpdate && data.index.lte(existingTree?.index || 0)) {
       throw Error('Bootstrap is behind the database. Use forceUpdate config')
     }
     // Create or update the merkle tree using the "bootstrapTree" preset query
     const tree = {
       species,
       // rollup sync data
-      start: data.index.toString(10),
-      end: data.index.toString(10),
+      start: data.index.toString(),
+      end: data.index.toString(),
       // rollup snapshot data
       root:
-        data.root instanceof Fp ? data.root.toString(10) : hexify(data.root),
-      index: data.index.toString(10),
+        data.root instanceof Fp
+          ? data.root.toString()
+          : data.root.toHexString(),
+      index: data.index.toString(),
       siblings: JSON.stringify(
         data.siblings.map(sib =>
-          sib instanceof Fp ? sib.toString(10) : hexify(sib),
+          sib instanceof Fp ? sib.toString() : sib.toHexString(),
         ),
       ),
     }
@@ -529,8 +539,8 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
       _start = Fp.from(start) as T
       _end = Fp.from(end) as T
     } else {
-      _start = toBN(start) as T
-      _end = toBN(end) as T
+      _start = BigNumber.from(start) as T
+      _end = BigNumber.from(end) as T
     }
     return {
       db,
@@ -549,14 +559,19 @@ export abstract class LightRollUpTree<T extends Fp | BN> {
    * It returns true when the given node is a sibling of any leaf to keep tracking
    * @param nodeIndex Tree node's index
    */
-  private shouldTrack(trackingLeaves: T[], nodeIndex: BN): boolean {
-    let leafIndex: BN
-    let pathIndex: BN
+  private shouldTrack(trackingLeaves: T[], nodeIndex: BigNumber): boolean {
+    let leafIndex: BigNumber
+    let pathIndex: BigNumber
     for (const leaf of trackingLeaves) {
-      leafIndex = new BN(1).shln(this.depth).or(leaf)
-      pathIndex = leafIndex.shrn(leafIndex.bitLength() - nodeIndex.bitLength())
+      leafIndex = BigNumber.from(1)
+        .shl(this.depth)
+        .or(leaf)
+      pathIndex = leafIndex.shr(
+        leafIndex.toBigInt().toString(2).length - // bit length
+          nodeIndex.toBigInt().toString(2).length, // bit length
+      )
       // if the node is one of the sibling for the leaf proof return true
-      if (pathIndex.xor(nodeIndex).eqn(1)) return true
+      if (pathIndex.xor(nodeIndex).eq(1)) return true
     }
     return false
   }

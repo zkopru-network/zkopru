@@ -11,17 +11,14 @@ export default class PrintStatus extends App {
     await Promise.all(
       [
         async () => {
-          const latest = await this.base
-            .layer1()
-            .upstream.methods.latest()
-            .call()
+          const latest = await this.base.layer1().zkopru.latest()
           result = { ...result, latest }
         },
         async () => {
-          const { merged, fee } = await this.base
-            .layer1()
-            .upstream.methods.stagedDeposits()
-            .call()
+          const {
+            merged,
+            fee,
+          } = await this.base.layer1().zkopru.stagedDeposits()
           result = { ...result, merged, fee }
         },
       ].map(f => f()),

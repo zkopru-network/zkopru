@@ -1,5 +1,4 @@
-import Web3 from 'web3'
-
+import { Provider } from '@ethersproject/providers'
 import schema from './schema'
 import { DB } from './types'
 import { Config } from './schema.types'
@@ -10,14 +9,12 @@ interface L1Contract {
 
 export async function initDB(
   db: DB,
-  web3: Web3,
+  provider: Provider,
   address: string,
   layer1: L1Contract,
 ) {
-  const [networkId, chainId] = await Promise.all([
-    web3.eth.net.getId(),
-    web3.eth.getChainId(),
-  ])
+  const network = await provider.getNetwork()
+  const [networkId, chainId] = [network.chainId, network.chainId]
   const config = await db.findOne('Config', {
     where: {
       networkId,

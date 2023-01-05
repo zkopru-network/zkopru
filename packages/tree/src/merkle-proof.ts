@@ -1,35 +1,34 @@
-import { Fp } from '@zkopru/babyjubjub'
-import BN from 'bn.js'
+import { BigNumber } from 'ethers'
 import { Hasher } from './hasher'
 
-export interface MerkleProof<T extends Fp | BN> {
+export interface MerkleProof<T extends BigNumber> {
   root: T
   index: T
   leaf: T
   siblings: T[]
 }
-export function merkleRoot<T extends Fp | BN>(
+export function merkleRoot<T extends BigNumber>(
   hasher: Hasher<T>,
   index: T,
   leaf: T,
   siblings: T[],
 ): T {
-  let path = new BN(index)
+  let path = BigNumber.from(index)
   let node = leaf
   for (let i = 0; i < siblings.length; i += 1) {
-    if (path.isEven()) {
+    if (path.and(1).isZero()) {
       // right sibling
       node = hasher.parentOf(node, siblings[i])
     } else {
       // left sibling
       node = hasher.parentOf(siblings[i], node)
     }
-    path = path.shrn(1)
+    path = path.shr(1)
   }
   return node
 }
 
-export function verifyProof<T extends Fp | BN>(
+export function verifyProof<T extends BigNumber>(
   hasher: Hasher<T>,
   proof: MerkleProof<T>,
 ): boolean {
@@ -37,7 +36,7 @@ export function verifyProof<T extends Fp | BN>(
   return root.eq(proof.root)
 }
 
-export function startingLeafProof<T extends Fp | BN>(
+export function startingLeafProof<T extends BigNumber>(
   hasher: Hasher<T>,
   root: T,
   index: T,
@@ -45,13 +44,13 @@ export function startingLeafProof<T extends Fp | BN>(
 ): boolean {
   const depth = siblings.length
   // calculate the siblings validity
-  let path = new BN(index)
+  let path = BigNumber.from(index)
   for (let i = 0; i < depth; i += 1) {
-    if (path.isEven()) {
+    if (path.and(1).isZero()) {
       // Right sibling should be a prehashed zero
       if (!siblings[i].eq(hasher.preHash[i])) return false
     }
-    path = path.shrn(1)
+    path = path.shr(1)
   }
   return verifyProof<T>(hasher, {
     root,

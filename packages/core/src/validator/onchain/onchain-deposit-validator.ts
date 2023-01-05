@@ -9,11 +9,11 @@ export class OnchainDepositValidator extends OnchainValidatorContext
     block: BlockData,
     index: Uint256,
   ): Promise<Validation> {
-    const tx = this.layer1.validators.deposit.methods.validateMassDeposit(
+    const tx = await this.layer1.validators.deposit.populateTransaction.validateMassDeposit(
       blockDataToHexString(block),
-      index.toString(),
+      index.toBigNumber(),
     )
-    const result = await this.isSlashable(tx)
+    const result = await this.isSlashable(tx, 'MassDeposit')
     return result
   }
 }

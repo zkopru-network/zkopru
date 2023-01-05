@@ -7,7 +7,8 @@ import {
   SwapTxBuilder,
   TokenRegistry,
 } from '@zkopru/transaction'
-import { Fp, F } from '@zkopru/babyjubjub'
+import { Fp } from '@zkopru/babyjubjub'
+import { ethers, BigNumberish } from 'ethers'
 import ZkopruNode from './zkopru-node'
 import fetch from './fetch'
 
@@ -20,23 +21,18 @@ export default class ZkopruWallet {
 
   wallet: ZkWalletAccount
 
-  static async new(
+  constructor(
     node: ZkopruNode,
-    privateKey: Buffer | string,
-  ): Promise<ZkopruWallet> {
-    const wallet = new ZkopruWallet(node, privateKey)
-    // wait until wallet account initialization finished
-    await Promise.all(wallet.wallet.promises)
-    return wallet
-  }
-
-  constructor(node: ZkopruNode, privateKey: Buffer | string) {
+    l2PrivateKey: Buffer | string,
+    l1Address: string,
+  ) {
     this.node = node
     if (!this.node.node) {
       throw new Error('ZkopruNode does not have a full node initialized')
     }
     this.wallet = new ZkWalletAccount({
-      privateKey,
+      l2PrivateKey,
+      l1Address,
       node: this.node.node,
       snarkKeyCid: DEFAULT_KEY_CID,
       // TODO: pre-written list or retrieve from remote
@@ -168,7 +164,7 @@ export default class ZkopruWallet {
     receiveTokenAddress: string,
     receiveAmountOrId: string,
     weiPerByte: number | string,
-    salt: F,
+    salt: BigNumberish,
   ): Promise<RawTx> {
     if (!this.wallet.account) {
       throw new Error('Account is not set')
@@ -273,7 +269,7 @@ export default class ZkopruWallet {
   }
 
   async calculateWeiPerByte() {
-    const currentGasPrice = await this.wallet.node.layer1.web3.eth.getGasPrice()
+    const currentGasPrice = await this.wallet.node.layer1.provider.getGasPrice()
     const gasPerNonZero = 16
     // let's assume all of the bytes are non-zero
     // it's hard to look at an actual tx because the fee is encoded
@@ -325,7 +321,9 @@ export default class ZkopruWallet {
     })
     const allWithdrawals = await this.wallet.db.findMany('Withdrawal', {
       where: {
-        to: this.node.node?.layer1.web3.utils.toChecksumAddress(ethAddress),
+        // an incorrect checksum address will throw an error.
+        // to avoid this, convert to lowercase first
+        to: ethers.utils.getAddress(ethAddress.toLocaleLowerCase()),
       },
       include: {
         proposal: { header: true },

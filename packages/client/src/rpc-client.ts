@@ -1,5 +1,9 @@
 /* eslint-disable no-underscore-dangle */
-import Web3 from 'web3'
+import {
+  BaseProvider,
+  WebSocketProvider,
+  JsonRpcProvider,
+} from '@ethersproject/providers'
 import { RpcType, RpcConfig, Block, Tx, Registry } from './types'
 import fetch from './fetch'
 
@@ -19,7 +23,7 @@ enum RpcMethod {
 export default class RpcClient {
   config: RpcConfig
 
-  private _web3?: Web3
+  private _provider?: BaseProvider
 
   constructor(config: RpcConfig | string) {
     if (typeof config === 'string' && config.indexOf('http') === 0) {
@@ -38,12 +42,20 @@ export default class RpcClient {
     }
   }
 
-  // Return a passthrough web3 instance
-  get web3() {
-    if (!this._web3) {
-      this._web3 = new Web3(this.config.url)
+  // Return a provider instance from ethers
+  get provider() {
+    if (!this._provider) {
+      if (this.config.l1Provider) {
+        this._provider = this.config.l1Provider
+      } else if (this.config.url.startsWith('http')) {
+        this._provider = new JsonRpcProvider(this.config.url)
+      } else if (this.config.url.startsWith('ws')) {
+        this._provider = new WebSocketProvider(this.config.url)
+      } else {
+        this._provider = new BaseProvider(this.config.url)
+      }
     }
-    return this._web3
+    return this._provider
   }
 
   async getAddress(): Promise<string> {

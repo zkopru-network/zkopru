@@ -1,6 +1,6 @@
 import { genesisRoot, poseidonHasher, keccakHasher } from '@zkopru/tree'
-import { bnToBytes32, bnToUint256 } from '@zkopru/utils'
-import { Address, Bytes32 } from 'soltypes'
+import { bnToBytes32 } from '@zkopru/utils'
+import { Address, Bytes32, Uint256 } from 'soltypes'
 import BN from 'bn.js'
 import { Config } from '@zkopru/database'
 import { Header } from './types'
@@ -18,8 +18,8 @@ export const genesis = ({
   const withdrawalHasher = keccakHasher(config.withdrawalTreeDepth)
   const nullifierHasher = keccakHasher(config.nullifierTreeDepth)
   const utxoRoot = genesisRoot(utxoHasher).toUint256()
-  const withdrawalRoot = bnToUint256(genesisRoot(withdrawalHasher))
-  const nullifierRoot = bnToBytes32(genesisRoot(nullifierHasher))
+  const withdrawalRoot = Uint256.from(genesisRoot(withdrawalHasher).toString())
+  const nullifierRoot = Bytes32.from(genesisRoot(nullifierHasher).toHexString())
   const zeroBytes = bnToBytes32(new BN(0))
   return {
     proposer: address,

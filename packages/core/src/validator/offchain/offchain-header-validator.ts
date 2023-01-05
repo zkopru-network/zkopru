@@ -1,6 +1,6 @@
 /* eslint-disable class-methods-use-this */
 import { root } from '@zkopru/utils'
-import BN from 'bn.js'
+import { BigNumber } from 'ethers'
 import { massDepositHash, massMigrationHash } from '../../block'
 import { CODE } from '../code'
 import { BlockData, HeaderValidator, Validation } from '../types'
@@ -44,15 +44,15 @@ export class OffchainHeaderValidator extends OffchainValidatorContext
 
   async validateTotalFee(data: BlockData): Promise<Validation> {
     const block = blockDataToBlock(data)
-    let fee = new BN(0)
+    let fee = BigNumber.from(0)
     for (const massDeposit of block.body.massDeposits) {
-      fee = fee.add(massDeposit.fee.toBN())
+      fee = fee.add(massDeposit.fee.toBigNumber())
     }
     for (const tx of block.body.txs) {
       fee = fee.add(tx.fee)
     }
     const slash: Validation = {
-      slashable: !fee.eq(block.header.fee.toBN()),
+      slashable: !fee.eq(block.header.fee.toBigNumber()),
       reason: CODE.H4,
     }
     return slash

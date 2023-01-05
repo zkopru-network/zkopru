@@ -10,7 +10,7 @@ export default class LoadCoordinator extends Configurator {
     if (!context.provider) throw Error('Websocket provider does not exist')
     if (!context.db) throw Error('Database does not exist')
     if (!context.account) throw Error('Account is not set')
-    if (!context.provider.connected)
+    if (!(await context.provider.ready))
       throw Error('Websocket provider is not connected')
 
     const {

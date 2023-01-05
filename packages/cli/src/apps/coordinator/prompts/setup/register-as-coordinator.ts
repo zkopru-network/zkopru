@@ -1,5 +1,5 @@
 import chalk from 'chalk'
-import { TransactionReceipt } from 'web3-core'
+import { TransactionReceipt } from '@ethersproject/providers'
 import { logger } from '@zkopru/utils'
 import App, { AppMenu, Context } from '..'
 
@@ -12,8 +12,8 @@ export default class RegisterAsCoordinator extends App {
     try {
       receipt = await this.base.registerAsCoordinator()
     } catch (err) {
-      this.print(chalk.red(err))
-      logger.error(err)
+      if (err instanceof Error) this.print(chalk.red(err.message))
+      logger.error(err as any)
     } finally {
       if (receipt && receipt.status) {
         this.print(chalk.green('Successfully registered as a coordinator'))

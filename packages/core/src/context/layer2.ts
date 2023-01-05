@@ -6,7 +6,6 @@ import {
   MassDeposit as MassDepositSql,
 } from '@zkopru/database'
 import { Grove, GrovePatch, Leaf } from '@zkopru/tree'
-import BN from 'bn.js'
 import AsyncLock from 'async-lock'
 import { Bytes32, Address, Uint256 } from 'soltypes'
 import { logger, mergeDeposits } from '@zkopru/utils'
@@ -17,6 +16,7 @@ import {
   TokenRegistry,
   ZkTx,
 } from '@zkopru/transaction'
+import { BigNumber } from 'ethers'
 import { Block, Header, MassDeposit } from '../block'
 import { BootstrapData } from '../node/bootstrap'
 import { SNARKVerifier, VerifyingKey } from '../snark/snark-verifier'
@@ -34,6 +34,7 @@ export interface PendingMassDeposits {
   massDeposits: MassDeposit[]
   leaves: Fp[]
   totalFee: Fp
+  calldataSize: number
 }
 
 export class L2Chain {
@@ -259,13 +260,15 @@ export class L2Chain {
   }
 
   async getPendingMassDeposits(): Promise<PendingMassDeposits> {
+    const leaves: Fp[] = []
     // 1. pick mass deposits
     const commits: MassDepositSql[] = await this.db.findMany('MassDeposit', {
       where: { includedIn: null },
+      orderBy: { blockNumber: 'asc' },
+      limit: 255,
     })
     commits.sort((a, b) => parseInt(a.index, 10) - parseInt(b.index, 10))
-    // 2. pick deposits
-    const pendingDeposits: DepositSql[] = await this.db.findMany('Deposit', {
+    const pendingDeposits = await this.db.findMany('Deposit', {
       where: { queuedAt: commits.map(commit => commit.index) },
     })
     pendingDeposits.sort((a, b) => {
@@ -281,37 +284,45 @@ export class L2Chain {
       }
       return a.logIndex - b.logIndex
     })
-    // 3. validation
-    const validCommits = [] as MassDepositSql[]
-    const validDeposits = [] as DepositSql[]
+    leaves.push(...pendingDeposits.map(deposit => Fp.from(deposit.note)))
+    const includedIndexes = {}
+    const validLeaves = [] as Fp[]
     for (const commit of commits) {
       const deposits = pendingDeposits.filter(deposit => {
         return deposit.queuedAt === commit.index
       })
-      // If found missing deposit or no deposit in commits,
-      // stop iteration
+      // If found missing deposit or no deposit in commits
       if (deposits.length === 0) {
-        break
+        logger.trace(`core/context-layer2.ts - no deposit`)
+        // eslint-disable-next-line no-continue
+        continue
       }
       const { merged, fee } = mergeDeposits(deposits)
       if (
         merged.toString() !== commit.merged ||
         !Fp.from(fee.toString()).eq(Fp.from(commit.fee))
       ) {
-        break
+        logger.trace(`core/context-layer2.ts - missing deposit in commits`)
+        // eslint-disable-next-line no-continue
+        continue
       }
-      validCommits.push(commit)
-      validDeposits.push(...deposits)
+      validLeaves.push(...deposits.map(deposit => Fp.from(deposit.note)))
+      includedIndexes[commit.index] = true
     }
-    return {
-      massDeposits: validCommits.map(commit => ({
+    const massDeposits = commits
+      .filter(commit => includedIndexes[commit.index])
+      .map(commit => ({
         merged: Bytes32.from(commit.merged),
         fee: Uint256.from(commit.fee),
-      })),
-      leaves: validDeposits.map(deposit => Fp.from(deposit.note)),
-      totalFee: validCommits.reduce((acc, commit) => {
-        return acc.add(Fp.from(commit.fee))
+      }))
+    return {
+      massDeposits,
+      leaves: validLeaves,
+      totalFee: commits.reduce((acc, commit) => {
+        if (!includedIndexes[commit.index]) return acc
+        return acc.add(commit.fee)
       }, Fp.zero),
+      calldataSize: massDeposits.length ? massDeposits.length * 64 + 1 : 0,
     }
   }
 
@@ -405,14 +416,17 @@ export class L2Chain {
 
     // 2. try to find invalid outflow
     for (const outflow of zkTx.outflow) {
-      if (outflow.outflowType.eqn(OutflowType.UTXO)) {
+      if (outflow.outflowType.eq(OutflowType.UTXO)) {
         if (outflow.data !== undefined) return false
-      } else if (outflow.outflowType.eqn(OutflowType.MIGRATION)) {
+      } else if (outflow.outflowType.eq(OutflowType.MIGRATION)) {
         if (outflow.data === undefined) return false
-        if (!outflow.data.nft.eqn(0)) return false // migration cannot have nft
-        if (outflow.data.tokenAddr.eqn(0) && !outflow.data.erc20Amount.eqn(0))
+        if (!outflow.data.nft.isZero()) return false // migration cannot have nft
+        if (
+          outflow.data.tokenAddr.isZero() &&
+          !outflow.data.erc20Amount.isZero()
+        )
           return false // migration cannot have nft
-        if (!outflow.data.tokenAddr.eqn(0)) {
+        if (!outflow.data.tokenAddr.isZero()) {
           const registeredInfo = await this.db.findOne('TokenRegistry', {
             where: { address: outflow.data.tokenAddr.toString() },
           })
@@ -464,7 +478,7 @@ export class L2Chain {
     )
     const header = block.hash.toString()
     const utxos: Leaf<Fp>[] = []
-    const withdrawals: Leaf<BN>[] = []
+    const withdrawals: Leaf<BigNumber>[] = []
     const nullifiers: Fp[] = []
 
     const deposits = await this.getDeposits(...block.body.massDeposits)
@@ -474,9 +488,9 @@ export class L2Chain {
     const withdrawalHashes: { noteHash: Fp; withdrawalHash: Uint256 }[] = []
     for (const tx of block.body.txs) {
       for (const outflow of tx.outflow) {
-        if (outflow.outflowType.eqn(OutflowType.UTXO)) {
+        if (outflow.outflowType.eq(OutflowType.UTXO)) {
           utxoHashes.push(outflow.note)
-        } else if (outflow.outflowType.eqn(OutflowType.WITHDRAWAL)) {
+        } else if (outflow.outflowType.eq(OutflowType.WITHDRAWAL)) {
           if (!outflow.data) throw Error('Withdrawal should have public data')
           withdrawalHashes.push({
             noteHash: outflow.note,
@@ -490,13 +504,13 @@ export class L2Chain {
     }
     const myUtxoList = await this.db.findMany('Utxo', {
       where: {
-        hash: utxoHashes.map(output => output.toString(10)),
+        hash: utxoHashes.map(output => output.toString()),
         treeId: null,
       },
     })
     const myWithdrawalList = await this.db.findMany('Withdrawal', {
       where: {
-        hash: withdrawalHashes.map(h => h.noteHash.toString(10)),
+        hash: withdrawalHashes.map(h => h.noteHash.toString()),
         treeId: null,
       },
     })
@@ -508,16 +522,16 @@ export class L2Chain {
       shouldTrack[myNote.hash] = true
     }
     for (const output of utxoHashes) {
-      const trackThisNote = shouldTrack[output.toString(10)]
+      const trackThisNote = shouldTrack[output.toString()]
       utxos.push({
         hash: output,
         shouldTrack: !!trackThisNote,
       })
     }
     for (const hash of withdrawalHashes) {
-      const keepTrack = shouldTrack[hash.noteHash.toString(10)]
+      const keepTrack = shouldTrack[hash.noteHash.toString()]
       withdrawals.push({
-        hash: hash.withdrawalHash.toBN(),
+        hash: hash.withdrawalHash.toBigNumber(),
         noteHash: hash.noteHash,
         shouldTrack: !!keepTrack,
       })

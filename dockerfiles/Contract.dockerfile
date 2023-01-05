@@ -9,16 +9,15 @@ RUN apk add --no-cache --virtual .gyp \
     python3 \
     make \
     g++ \
-    && yarn global add truffle ganache-cli \
+    && yarn global add ganache-cli \
     && yarn install \
     && apk del .gyp
 
 COPY ./contracts /proj/contracts
 COPY ./utils /proj/utils
-COPY ./migrations /proj/migrations
-COPY ./truffle-config.js /proj/truffle-config.js
-RUN truffle compile
+COPY ./hardhat.config.ts /proj/hardhat.config.ts
+RUN yarn compile
 EXPOSE 5000
 COPY ./keys /proj/keys
-RUN ganache-cli --db=/data -i 20200406 -p 5000 --gasLimit 12000000 --deterministic --host 0.0.0.0 & sleep 5 && truffle migrate --network testnet
+RUN ganache-cli --db=/data -i 20200406 -p 5000 --gasLimit 12000000 --deterministic --host 0.0.0.0 & sleep 5 && yarn hardhat run scripts/deploy.ts --network testnet
 CMD ganache-cli --db=/data -b 5 -i 20200406 -p 5000 --gasLimit 12000000 --deterministic --host 0.0.0.0 --gasPrice 2000000000

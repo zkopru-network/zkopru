@@ -33,7 +33,7 @@ export default class Wallet extends PromptApp<ExampleConfigContext, void> {
         validatePublicUrls(urls)
         publicUrls = urls
       } catch (err) {
-        console.log(chalk.red(err.message))
+        if (err instanceof Error) console.log(chalk.red(err.message))
       }
     } while (!publicUrls)
     return {

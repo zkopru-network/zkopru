@@ -15,8 +15,8 @@ export default class LoadDatabase extends Configurator {
 
   async run(context: Context): Promise<{ context: Context; next: number }> {
     console.log(chalk.blue('Loading database'))
-    if (!context.web3) {
-      throw Error(chalk.red('Web3 does not exist'))
+    if (!context.provider) {
+      throw Error(chalk.red('Provider does not exist'))
     }
     let database: DB
     if (this.base.postgres) {
@@ -115,9 +115,9 @@ export default class LoadDatabase extends Configurator {
     }
     await initDB(
       database,
-      context.web3,
+      context.provider,
       this.base.address,
-      new L1Contract(context.web3, this.base.address),
+      new L1Contract(context.provider, this.base.address),
     )
     return {
       context: {
