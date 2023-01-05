@@ -446,19 +446,6 @@ export class ZkWalletAccount {
   }
 
   async withdraw(withdrawal: WithdrawalSql): Promise<boolean> {
-    if (!this.account) {
-      throw new Error('Account is not set')
-    }
-    const note = Utxo.newNFTNote({
-      eth,
-      owner: to || this.account.zkAddress,
-      tokenAddr: addr,
-      nft,
-    })
-    return this.depositTx(note, Fp.strictFrom(fee))
-  }
-
-  async withdraw(withdrawal: WithdrawalSql): Promise<boolean> {
     if (!this.account || !this.account.ethAccount) {
       logger.error('Account is not set')
       return false
