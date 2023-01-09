@@ -46,7 +46,6 @@ export class EventProcessor extends EventEmitter {
         Buffer.from(note.toString()),
         Buffer.from(fee.toString())
       ]))
-      console.log(`depositHash: ${depositHash}`)
       const deposit: DepositSql = {
         id: depositHash,
         note: note.toString(),
