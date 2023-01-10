@@ -80,14 +80,11 @@ describe('configurator', () => {
     })
 
     it('with websocket provider', async () => {
-      const localContext = {
-        networkStatus: NetworkStatus.STOPPED,
-      }
       const wsProviderUrl = 'ws://localhost:8545'
       option.base.provider = wsProviderUrl
 
       const connection = new ConnectWeb3(option)
-      const ret = await connection.run(localContext)
+      const ret = await connection.run(context)
 
       let wsProvider = ret.context.provider as WebSocketProvider
       expect(wsProvider.connection.url).toEqual(wsProviderUrl)

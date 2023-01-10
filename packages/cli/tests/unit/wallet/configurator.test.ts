@@ -103,6 +103,7 @@ describe('configurator', () => {
 
       let wsProvider = ret.context.provider as WebSocketProvider
       expect(wsProvider.connection.url).toEqual(wsProviderUrl)
+      await wsProvider.destroy()
     })
   })
 
