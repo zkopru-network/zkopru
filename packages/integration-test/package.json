@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "@ethereumjs/tx": "3.2.0",
-    "@openzeppelin/contracts": "3.4.1",
+    "@openzeppelin/contracts": "4.7.3",
     "@zkopru/account": "file:../account",
     "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/cli": "file:../cli",
