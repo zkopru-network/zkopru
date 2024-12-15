@@ -46,7 +46,7 @@ contract UserInteractable is Storage {
     );
 
     /**
-     * @notice Users can use zkopru network by submitting a new homomorphically hiden note.
+     * @notice Users can use zkopru network by submitting a new homomorphically hidden note.
      * @param spendingPubKey P = poseidon(p*G, N) https://github.com/zkopru-network/zkopru/issues/34#issuecomment-666988505
      * @param salt 254bit salt for the privacy
      * @param eth Amount of Ether to deposit

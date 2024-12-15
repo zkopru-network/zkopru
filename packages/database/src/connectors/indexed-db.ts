@@ -556,7 +556,7 @@ export class IndexedDBConnector extends DB {
         })
         tx = this.db.transaction(storesUnique, 'readwrite')
         // explicitly cast the start function because TS cannot determine that it's
-        // set above. The body of a promise is executed sychronously so start will
+        // set above. The body of a promise is executed synchronously so start will
         // be assigned at this point
         ;(start as Function)()
         await Promise.all([promise, tx.done])
