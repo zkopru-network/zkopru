@@ -53,7 +53,7 @@ A where clause using all possible comparison operators is shown below.
 
 #### OrderBy
 
-The `orderBy` field may be used to order the returned documents. The field is a simple object with keys corresponding to either `asc` or `desc`. Muliple keys may be specified.
+The `orderBy` field may be used to order the returned documents. The field is a simple object with keys corresponding to either `asc` or `desc`. Multiple keys may be specified.
 
 ```
 orderBy: {
