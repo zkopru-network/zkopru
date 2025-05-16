@@ -339,7 +339,7 @@ This module contains HD Wallet that manages zk accounts which supports both the 
 
 ### babyjubjub
 
-This modules contains basic crypto classes for the babyjubjub elliptic curve to integrate its third pary libraries into the zkopru project.
+This modules contains basic crypto classes for the babyjubjub elliptic curve to integrate its third party, parry libraries into the zkopru project.
 
 ### circuits
 
@@ -355,7 +355,7 @@ This library contains the smart contract which runs the upstream layer 1 part of
 
 ### coordinator
 
-This is an application package for the coordinator. It synchonizes, verifies, and generates blocks with its full-node feature.
+This is an application package for the coordinator. It synchronizes, verifies, and generates blocks with its full-node feature.
 
 ### core
 
